@@ -124,6 +124,7 @@ const DocEditor = () => {
 
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
   const 历史表 = useRef<Map<string, HistoryStack>>(new Map())
+  const 输入计时器 = useRef<number | null>(null)
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
@@ -435,6 +436,14 @@ const DocEditor = () => {
           if (文档标识.length > 0) {
             updateEditorHtml(文档标识, html)
           }
+          // 输入停止 300 毫秒后记录一次历史，使撤销能回到输入前的状态
+          if (输入计时器.current !== null) {
+            window.clearTimeout(输入计时器.current)
+          }
+          输入计时器.current = window.setTimeout(() => {
+            取历史().record({ html, selection: null })
+            输入计时器.current = null
+          }, 300)
           set内容版本((值) => 值 + 1)
         },
       })

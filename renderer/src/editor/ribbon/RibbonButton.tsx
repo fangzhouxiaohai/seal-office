@@ -22,6 +22,14 @@ interface Props {
   onSelect?: (值: string) => void
 }
 
+/**
+ * 阻止鼠标按下时的默认行为，避免按钮抢占焦点导致编辑区选区丢失，
+ * 这会让加粗、颜色等针对选区的命令失效。
+ */
+const 保持选区 = (事件: React.MouseEvent) => {
+  事件.preventDefault()
+}
+
 /** 把字符串选项规范化为键值对 */
 function 规范化选项(选项列表: Array<string | 下拉选项>): 下拉选项[] {
   return 选项列表.map((项) => (typeof 项 === 'string' ? { label: 项, value: 项 } : 项))
@@ -61,7 +69,7 @@ const RibbonButton = ({
       },
       React.createElement(
         'button',
-        { type: 'button', className: 类名, 'aria-label': label, disabled },
+        { type: 'button', className: 类名, 'aria-label': label, disabled, onMouseDown: 保持选区 },
         React.createElement(Icon, { name: icon, size: 16 }),
         React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
         React.createElement('span', { className: 'wps-ribbon-button__caret' })
@@ -77,6 +85,7 @@ const RibbonButton = ({
       'aria-label': label,
       title: label,
       disabled,
+      onMouseDown: 保持选区,
       onClick: disabled ? undefined : onClick,
     },
     React.createElement(Icon, { name: icon, size: size === 'large' ? 20 : 16 }),
