@@ -3745,3 +3745,34 @@ git commit -m "docs: 更新功能修改说明与 README"
 **类型一致性：** `DocItem`、`DocType`、`SortKey`、`NavKey`、`ViewMode`、`ModuleKey`
 均在任务 3、4、5 中定义，后续任务只引用不重定义；`handleNav` 在任务 16 中定义并在任务 17 中消费；
 `AppState` 字段名在任务 5 与任务 16、17 中保持一致。
+
+---
+
+## 实施偏差记录
+
+以下为实施过程中与计划不一致之处，均已实测验证，非主观调整。
+
+1. **任务 2：测试环境补桩新增 DOM 清理钩子。** 计划中的 `setup.ts` 仅补桩
+   `matchMedia` 与 `ResizeObserver`。实测发现测试配置关闭 `globals` 后，
+   Testing Library 无法自动注册清理钩子，前一个用例的 DOM 残留会导致重复匹配并失败。
+   已在 `setup.ts` 中显式注册 `afterEach(cleanup)`。
+
+2. **任务 7：异常兜底按钮断言改为角色查询。** 计划中断言 `getByText('重试')`，实测失败。
+   根因是 Ant Design 对恰好两个汉字的按钮文案默认插入空格，实际渲染为「重 试」。
+   断言已改为 `getByRole('button', { name: /重\s*试/ })`，并在 `ConfigProvider` 中关闭
+   `button.autoInsertSpace`，保证界面文案与设计稿一致。
+
+3. **任务 17：返回首页按钮限定作用域查询。** 计划中 `App.test.tsx` 直接使用
+   `getByRole('button', { name: '返回首页' })`，实测报「Found multiple elements」。
+   编辑器视图下侧栏与占位页各有一个返回入口，断言已限定在 `.wps-main` 作用域内。
+
+4. **主进程修改超出规格限定范围。** 规格中「本轮不做」包含不修改主进程。
+   实测运行截图显示 Electron 默认菜单栏为英文，与全中文界面文案的刚性要求冲突。
+   已在 `main/main.js` 中移除默认菜单栏，并补充 `F12` 打开开发者工具的能力。
+   该偏差已同步记录到功能修改说明。
+
+5. **删除遗留空文件。** `renderer/src/components/Header.tsx` 为空文件且无人引用，
+   职责已由 `TitleBar.tsx` 承担，计划中未涵盖，实施时一并删除。
+
+6. **提交数量多于任务数。** 除计划中的 19 个任务提交外，另有一次
+   `fix` 提交（主进程菜单栏）与一次 `docs` 提交（文档更新）。
