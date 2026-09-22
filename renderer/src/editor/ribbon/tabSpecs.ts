@@ -214,7 +214,7 @@ const 布局标签: RibbonTabSpec = {
       name: '段落',
       items: [
         大('layout.dropCap', '首字下沉', 'paragraph-mark'),
-        大('layout.textDirection', '文字方向', 'orientation'),
+        下拉('layout.textDirection', '文字方向', 'orientation', ['横排', '竖排'], '横排'),
       ],
     },
   ],
@@ -235,9 +235,27 @@ const 引用标签: RibbonTabSpec = {
     {
       name: '题注',
       items: [
-        大('caption.insert', '插入题注', 'caption'),
+        下拉(
+          'caption.insert',
+          '插入题注',
+          'caption',
+          [
+            { label: '插入表题注', value: '表' },
+            { label: '插入图题注', value: '图' },
+          ],
+          '插入题注'
+        ),
         大('caption.tableOfFigures', '插入表目录', 'toc'),
-        大('crossref.insert', '交叉引用', 'crossref'),
+        下拉(
+          'crossref.insert',
+          '交叉引用',
+          'crossref',
+          [
+            { label: '引用表题注', value: '表' },
+            { label: '引用图题注', value: '图' },
+          ],
+          '交叉引用'
+        ),
       ],
     },
     {
@@ -297,7 +315,17 @@ const 审阅标签: RibbonTabSpec = {
         大('compare.start', '比较', 'compare'),
         大('merge.start', '合并', 'compare'),
         大('protect.start', '保护文档', 'settings'),
-        大('field.insert', '文档部件', 'doc-empty'),
+        下拉(
+          'field.insert',
+          '文档部件',
+          'doc-empty',
+          [
+            { label: '插入日期', value: '日期' },
+            { label: '插入文件名', value: '文件名' },
+            { label: '插入标题', value: '标题' },
+          ],
+          '文档部件'
+        ),
         大('mailmerge.start', '邮件合并', 'users'),
       ],
     },

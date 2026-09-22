@@ -4,6 +4,7 @@ import type { HistoryStack, 保存的选区 } from './history'
 import { countWords } from './wordCount'
 import { 转换简繁带统计 } from './langConvert'
 import { 提取大纲, 生成目录Html } from './toc'
+import { 生成题注, 生成图表目录Html, 提取题注, 统计题注, type 编号类型 } from './captions'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -18,6 +19,17 @@ export interface ViewState {
   水印: string
   页面边框: string
   页面颜色: string
+  文字方向: '横排' | '竖排'
+}
+
+/** 可用于格式刷复制与应用的字符格式 */
+export interface 选区格式 {
+  加粗: boolean
+  斜体: boolean
+  下划线: boolean
+  字体: string
+  字号: string
+  颜色: string
 }
 
 /** 可插入的资源类型，由编辑器容器负责具体实现 */
@@ -72,6 +84,16 @@ export interface CommandContext {
   设置段落样式: (样式: { lineHeight?: string; textAlign?: string; backgroundColor?: string }) => void
   /** 应用内置样式（正文、标题等） */
   应用样式: (样式名: string) => void
+  /** 在选区所在段落上切换类名，用于首字下沉等段落级效果 */
+  切换段落类名: (类名: string) => void
+  /** 读取当前选区的字符格式 */
+  读取选区格式: () => 选区格式
+  /** 把字符格式应用到当前选区 */
+  应用选区格式: (格式: 选区格式) => void
+  /** 格式刷暂存区，值为 null 表示尚未复制格式 */
+  格式刷暂存: { 值: 选区格式 | null }
+  /** 当前文档名，供文档部件等命令使用 */
+  当前文档名: string
 }
 
 export interface EditorCommand {
@@ -137,16 +159,10 @@ const 格式化命令定义: Array<[string, string, string]> = [
 ]
 
 const 未实现命令定义: Array<[string, string]> = [
-  ['clipboard.formatPainter', '格式刷'],
-  ['layout.dropCap', '首字下沉'],
-  ['layout.textDirection', '文字方向'],
   ['table.draw', '绘制表格'],
   ['chart.insert', '图表'],
   ['formula.insert', '公式'],
   ['smartart.insert', 'SmartArt'],
-  ['caption.insert', '插入题注'],
-  ['caption.tableOfFigures', '插入表目录'],
-  ['crossref.insert', '交叉引用'],
   ['citation.insert', '插入引文'],
   ['citation.manageSource', '管理源'],
   ['bibliography.insert', '书目'],
@@ -161,7 +177,6 @@ const 未实现命令定义: Array<[string, string]> = [
   ['merge.start', '合并'],
   ['protect.start', '保护文档'],
   ['mailmerge.start', '邮件合并'],
-  ['field.insert', '文档部件'],
 ]
 
 /** 带参数或需要读取当前状态的字体命令 */
@@ -234,6 +249,19 @@ const 段落命令: EditorCommand[] = [
 
 /** 编辑命令 */
 const 编辑命令: EditorCommand[] = [
+  生成回调命令('clipboard.formatPainter', '格式刷', (上下文) => {
+    if (上下文.格式刷暂存.值 === null) {
+      上下文.格式刷暂存.值 = 上下文.读取选区格式()
+      上下文.notify('已复制当前格式，选中目标内容后再次点击格式刷即可应用')
+      return
+    }
+    const 格式 = 上下文.格式刷暂存.值
+    上下文.history.record({ html: 上下文.读取内容(), selection: null })
+    上下文.应用选区格式(格式)
+    上下文.格式刷暂存.值 = null
+    上下文.notify('格式已应用')
+    上下文.refresh()
+  }),
   生成回调命令('edit.find', '查找', (上下文) => 上下文.打开查找()),
   生成回调命令('edit.replace', '替换', (上下文) => 上下文.打开查找()),
   生成回调命令('edit.selectAll', '全选', (上下文) => 上下文.切换全选()),
@@ -310,6 +338,16 @@ const 布局命令: EditorCommand[] = [
     })
   ),
   生成回调命令('layout.break', '分隔符', (上下文) => 上下文.插入资源('分页符')),
+  生成回调命令('layout.dropCap', '首字下沉', (上下文) => {
+    const 已启用 = 上下文.读取内容().includes('wps-drop-cap')
+    上下文.切换段落类名('wps-drop-cap')
+    上下文.notify(已启用 ? '已取消首字下沉' : '已对当前段落应用首字下沉')
+  }),
+  生成回调命令('layout.textDirection', '文字方向', (上下文, 参数) => {
+    const 目标 = 参数 === '竖排' ? '竖排' : '横排'
+    上下文.setView({ 文字方向: 目标 })
+    上下文.refresh()
+  }),
 ]
 
 /** 引用命令：目录基于文档中的标题层级生成 */
@@ -339,6 +377,45 @@ const 引用命令: EditorCommand[] = [
     上下文.应用内容(原文.replace(目录区块, 生成目录Html(大纲)), null)
     上下文.notify(`目录已更新，共 ${大纲.length} 项`)
     上下文.refresh()
+  }),
+  生成回调命令('caption.insert', '插入题注', (上下文, 参数) => {
+    const 类型: 编号类型 = 参数 === '图' ? '图' : '表'
+    const 序号 = 统计题注(上下文.读取内容(), 类型) + 1
+    // 追加空段落，避免连续插入的题注被并入同一段落
+    上下文.插入内容(`${生成题注(类型, 序号)}<p><br></p>`)
+    上下文.notify(`已插入「${类型} ${序号}」，可在其后补充说明文字`)
+  }),
+  生成回调命令('caption.tableOfFigures', '插入表目录', (上下文) => {
+    const 条目 = 提取题注(上下文.读取内容())
+    if (条目.length === 0) {
+      上下文.notify('文档中尚无题注，请先插入题注')
+      return
+    }
+    上下文.插入内容(`${生成图表目录Html(条目)}<p><br></p>`)
+    上下文.notify(`已插入图表目录，共 ${条目.length} 项`)
+  }),
+  生成回调命令('crossref.insert', '交叉引用', (上下文, 参数) => {
+    const 类型: 编号类型 = 参数 === '图' ? '图' : '表'
+    const 条目 = 提取题注(上下文.读取内容()).filter((项) => 项.类型 === 类型)
+    if (条目.length === 0) {
+      上下文.notify(`文档中尚无${类型}题注，无法插入引用`)
+      return
+    }
+    const 目标 = 条目[条目.length - 1]
+    上下文.插入内容(`<span class="wps-crossref">（见${目标.文本}）</span>`)
+    上下文.notify(`已插入对「${目标.文本}」的引用`)
+  }),
+  生成回调命令('field.insert', '文档部件', (上下文, 参数) => {
+    const 现在 = new Date()
+    const 日期文本 = `${现在.getFullYear()} 年 ${现在.getMonth() + 1} 月 ${现在.getDate()} 日`
+    const 部件表: Record<string, string> = {
+      日期: 日期文本,
+      文件名: 上下文.当前文档名,
+      标题: '文档标题',
+    }
+    const 文本 = 部件表[参数 ?? '日期'] ?? 日期文本
+    上下文.插入内容(`<span class="wps-field">${文本}</span>`)
+    上下文.notify(`已插入文档部件「${参数 ?? '日期'}」`)
   }),
 ]
 

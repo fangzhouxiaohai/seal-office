@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { useAppStore } from '../store'
-import { 命令表, type CommandContext, type InsertableKind, type ViewState } from './commands'
+import { 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
@@ -28,6 +28,7 @@ const 默认视图: ViewState = {
   水印: '无',
   页面边框: '无',
   页面颜色: '无',
+  文字方向: '横排',
 }
 
 /** 转义正则元字符，供查找替换使用 */
@@ -125,9 +126,29 @@ const DocEditor = () => {
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
   const 历史表 = useRef<Map<string, HistoryStack>>(new Map())
   const 输入计时器 = useRef<number | null>(null)
+  /** 格式刷暂存；使用稳定对象以便命令读写同一份状态 */
+  const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+
+  /** 查询格式化指令的开关状态，jsdom 等环境不支持时返回 false */
+  const 查询状态 = (指令: string): boolean => {
+    try {
+      return document.queryCommandState(指令)
+    } catch {
+      return false
+    }
+  }
+
+  /** 查询格式化指令的取值，不支持时返回空字符串 */
+  const 查询取值 = (指令: string): string => {
+    try {
+      return String(document.queryCommandValue(指令) ?? '')
+    } catch {
+      return ''
+    }
+  }
 
   const 取历史 = (): HistoryStack => {
     const 已有 = 历史表.current.get(文档标识)
@@ -319,6 +340,69 @@ const DocEditor = () => {
     选区?.addRange(范围)
   }
 
+  /** 在选区所在段落上切换类名；无明确选区时作用于全部段落 */
+  const 切换段落类名 = (类名: string): void => {
+    const 元素 = 编辑区引用.current
+    if (元素 === null) {
+      return
+    }
+    const 选区 = window.getSelection()
+    let 块: HTMLElement | null = null
+    if (选区 !== null && 选区.anchorNode !== null) {
+      let 节点: Node | null = 选区.anchorNode
+      while (节点 !== null && 节点 !== 元素) {
+        if (节点 instanceof HTMLElement && /^(P|H[1-6]|DIV|LI)$/.test(节点.tagName)) {
+          块 = 节点
+          break
+        }
+        节点 = 节点.parentNode
+      }
+    }
+    记录历史()
+    if (块 === null) {
+      元素.querySelectorAll('p, h1, h2, h3, h4, h5, h6').forEach((项) => 项.classList.toggle(类名))
+    } else {
+      块.classList.toggle(类名)
+    }
+    同步内容()
+  }
+
+  const 读取选区格式 = (): 选区格式 => ({
+    加粗: 查询状态('bold'),
+    斜体: 查询状态('italic'),
+    下划线: 查询状态('underline'),
+    字体: 查询取值('fontName'),
+    字号: 查询取值('fontSize'),
+    颜色: 查询取值('foreColor'),
+  })
+
+  const 应用选区格式 = (格式: 选区格式): void => {
+    const 元素 = 编辑区引用.current
+    if (元素 === null) {
+      return
+    }
+    元素.focus()
+    document.execCommand('styleWithCSS', false, 'true')
+    if (格式.加粗 !== 查询状态('bold')) {
+      document.execCommand('bold')
+    }
+    if (格式.斜体 !== 查询状态('italic')) {
+      document.execCommand('italic')
+    }
+    if (格式.下划线 !== 查询状态('underline')) {
+      document.execCommand('underline')
+    }
+    if (格式.字体.length > 0) {
+      document.execCommand('fontName', false, 格式.字体)
+    }
+    if (格式.字号.length > 0) {
+      document.execCommand('fontSize', false, 格式.字号)
+    }
+    if (格式.颜色.length > 0) {
+      document.execCommand('foreColor', false, 格式.颜色)
+    }
+  }
+
   const 上下文: CommandContext = {
     root: 编辑区引用.current ?? document.createElement('div'),
     history: 取历史(),
@@ -355,6 +439,11 @@ const DocEditor = () => {
     插入资源,
     设置段落样式,
     应用样式,
+    切换段落类名,
+    读取选区格式,
+    应用选区格式,
+    格式刷暂存: 格式刷容器.current,
+    当前文档名: 当前文档?.name ?? '未命名文档',
   }
 
   const 执行命令 = (命令标识: string, 参数?: string): void => {
@@ -427,6 +516,7 @@ const DocEditor = () => {
         html: 当前文档?.html ?? '<p><br></p>',
         showParagraphMark: 视图.段落标记,
         gridlines: 视图.网格线,
+        vertical: 视图.文字方向 === '竖排',
         scale: 视图.缩放,
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素

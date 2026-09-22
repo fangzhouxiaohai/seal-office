@@ -7,6 +7,8 @@ interface Props {
   editable?: boolean
   showParagraphMark?: boolean
   gridlines?: boolean
+  /** 竖排文字，用于文字方向切换 */
+  vertical?: boolean
   scale?: number
   onChange?: (html: string) => void
   onReady?: (元素: HTMLDivElement) => void
@@ -17,6 +19,7 @@ const EditorCanvas = ({
   editable = true,
   showParagraphMark = false,
   gridlines = false,
+  vertical = false,
   scale = 1,
   onChange,
   onReady,
@@ -49,6 +52,7 @@ const EditorCanvas = ({
     'wps-editor-canvas',
     showParagraphMark ? 'wps-editor-canvas--marks' : '',
     gridlines ? 'wps-editor-canvas--gridlines' : '',
+    vertical ? 'wps-editor-canvas--vertical' : '',
   ]
     .filter((项) => 项.length > 0)
     .join(' ')
