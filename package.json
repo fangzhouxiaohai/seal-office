@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "WPS 模仿办公软件",
   "main": "main/main.js",
+  "author": "wps-office",
+  "license": "MIT",
   "scripts": {
     "start": "concurrently -k \"npm run dev\" \"npm run electron:dev\"",
     "dev": "vite",
@@ -11,7 +13,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pack": "npm run build && electron-builder --win --dir",
+    "dist": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "antd": "^5.0.0",
@@ -25,15 +29,44 @@
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^8.0.0",
     "electron": "^25.9.8",
+    "electron-builder": "^26.15.3",
     "jsdom": "^22.1.0",
     "typescript": "^7.0.2",
     "vite": "^4.0.0",
     "vitest": "^0.34.6"
   },
-  "author": "Your Name",
-  "license": "MIT",
-  "windows": {
-    "target": "win32-x64",
-    "icon": "dist/icons/wps.ico"
+  "build": {
+    "appId": "com.example.wpsoffice",
+    "productName": "WPSOffice",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WPS 模仿办公软件"
+    }
   }
 }

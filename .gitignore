@@ -2,5 +2,6 @@ node_modules/
 dist/
 .vite/
 .npm-cache/
+release/
 *.log
 __app_run.log

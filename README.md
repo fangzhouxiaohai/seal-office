@@ -84,6 +84,28 @@ npm run build
 
 构建产物输出至项目根目录 `dist/`。打包运行时 Electron 会加载 `dist/index.html`。
 
+## 打包
+
+```powershell
+npm run pack    # 生成免安装版，输出至 release/win-unpacked
+npm run dist    # 生成安装包，输出至 release/
+```
+
+两条命令都会先执行 `npm run build`。产物：
+
+- `release/win-unpacked/WPSOffice.exe`：免安装版，可直接运行，整目录约 300 MB
+- `release/WPSOffice Setup 1.0.0.exe`：安装包，约 77 MB，
+  支持自选安装目录，并创建桌面与开始菜单快捷方式
+
+应用图标位于 `build/icon.ico`，由 `build/icon.png` 生成。
+
+若打包时下载 Electron 或 NSIS 组件超时，先指定国内镜像：
+
+```powershell
+$env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
+```
+
 ## 目录结构
 
 ```
