@@ -2,6 +2,7 @@
 // 命令通过上下文回调操作编辑区，因此不直接依赖 DOM 细节，便于单元测试。
 import type { HistoryStack, 保存的选区 } from './history'
 import { countWords } from './wordCount'
+import { 转换简繁带统计 } from './langConvert'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -151,7 +152,6 @@ const 未实现命令定义: Array<[string, string]> = [
   ['citation.manageSource', '管理源'],
   ['bibliography.insert', '书目'],
   ['translate.start', '翻译'],
-  ['lang.convert', '简繁转换'],
   ['comment.new', '新建批注'],
   ['comment.delete', '删除批注'],
   ['comment.show', '显示批注'],
@@ -316,6 +316,19 @@ const 布局命令: EditorCommand[] = [
 /** 审阅命令 */
 const 审阅命令: EditorCommand[] = [
   生成回调命令('spell.check', '拼写检查', (上下文) => 上下文.检查拼写()),
+  生成回调命令('lang.convert', '简繁转换', (上下文, 参数) => {
+    const 方向 = 参数 === '繁转简' ? '简' : '繁'
+    const 原文 = 上下文.读取内容()
+    const 结果 = 转换简繁带统计(原文, 方向)
+    if (结果.转换数 === 0) {
+      上下文.notify(方向 === '繁' ? '未发现可转换为繁体的字符' : '未发现可转换为简体的字符')
+      return
+    }
+    上下文.history.record({ html: 原文, selection: null })
+    上下文.应用内容(结果.文本, null)
+    上下文.notify(`已转换 ${结果.转换数} 个字符`)
+    上下文.refresh()
+  }),
   生成回调命令('word.count', '字数统计', (上下文) => {
     const 统计 = countWords(上下文.读取内容().replace(/<[^>]+>/g, ''))
     上下文.notify(`字数：${统计.词数}，字符数：${统计.字符数}，段落数：${统计.段落数}`)

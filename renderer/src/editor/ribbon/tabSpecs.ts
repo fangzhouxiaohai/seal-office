@@ -261,7 +261,19 @@ const 审阅标签: RibbonTabSpec = {
     },
     {
       name: '语言',
-      items: [大('lang.convert', '简繁转换', 'language'), 大('translate.start', '翻译', 'language')],
+      items: [
+        下拉(
+          'lang.convert',
+          '简繁转换',
+          'language',
+          [
+            { label: '简体转繁体', value: '简转繁' },
+            { label: '繁体转简体', value: '繁转简' },
+          ],
+          '简转繁'
+        ),
+        大('translate.start', '翻译', 'language'),
+      ],
     },
     {
       name: '批注',
