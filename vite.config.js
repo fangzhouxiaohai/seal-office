@@ -1,5 +1,5 @@
 // vite.config.js
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
@@ -18,5 +18,13 @@ export default defineConfig({
     // 构建产物输出到项目根目录的 dist
     outDir: '../dist',
     emptyOutDir: true,
+  },
+  // 测试配置：路径相对 root（renderer）解析
+  test: {
+    environment: 'jsdom',
+    globals: false,
+    css: false,
+    include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['src/test/setup.ts'],
   },
 })

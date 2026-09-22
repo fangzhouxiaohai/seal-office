@@ -8,7 +8,9 @@
     "dev": "vite",
     "electron:dev": "electron .",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "antd": "^5.0.0",
@@ -16,10 +18,15 @@
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/user-event": "^14.6.7",
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^8.0.0",
     "electron": "^25.9.8",
-    "vite": "^4.0.0"
+    "jsdom": "^22.1.0",
+    "vite": "^4.0.0",
+    "vitest": "^0.34.6"
   },
   "author": "Your Name",
   "license": "MIT",
