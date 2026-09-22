@@ -40,6 +40,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Ant Design 的 App 组件会在根节点内插入一层容器，
+   需让它继承整屏高度，否则内部高度链断裂，底部状态栏无法贴底 */
+.ant-app {
+  height: 100%;
+}
+
 button {
   font-family: inherit;
 }
