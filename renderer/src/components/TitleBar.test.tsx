@@ -6,7 +6,7 @@ import TitleBar from './TitleBar'
 describe('顶栏', () => {
   it('展示品牌名与当前页名', () => {
     render(<TitleBar pageName="首页" />)
-    expect(screen.getByText('WPS Office')).toBeInTheDocument()
+    expect(screen.getByText('Seal Office')).toBeInTheDocument()
     expect(screen.getByText('首页')).toBeInTheDocument()
   })
 

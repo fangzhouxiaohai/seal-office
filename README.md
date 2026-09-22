@@ -1,7 +1,10 @@
-# WPS 模仿办公软件
+# 海豹办公 Seal Office
 
-基于 Electron 25 + Vite 4 + React 18 + Ant Design 5 的桌面端办公软件示例工程，
-当前已实现仿 WPS 新版（对齐 WPS 365 / 2023）的首页界面。
+基于 Electron 25 + Vite 4 + React 18 + Ant Design 5 的桌面端办公软件，
+当前已实现首页与文字文档编辑器，界面风格对齐 WPS 新版（WPS 365 / 2023）。
+
+品牌标识为圆润的海豹形象，见 `renderer/src/components/SealLogo.tsx`；
+打包图标由 `build/make-icon.ps1` 从同一造型生成，可重复执行。
 
 ## 环境要求
 
@@ -93,11 +96,12 @@ npm run dist    # 生成安装包，输出至 release/
 
 两条命令都会先执行 `npm run build`。产物：
 
-- `release/win-unpacked/WPSOffice.exe`：免安装版，可直接运行，整目录约 300 MB
-- `release/WPSOffice Setup 1.0.0.exe`：安装包，约 77 MB，
+- `release/win-unpacked/SealOffice.exe`：免安装版，可直接运行，整目录约 300 MB
+- `release/SealOffice Setup 1.0.0.exe`：安装包，约 77 MB，
   支持自选安装目录，并创建桌面与开始菜单快捷方式
 
-应用图标位于 `build/icon.ico`，由 `build/icon.png` 生成。
+应用图标由 `build/make-icon.ps1` 从海豹造型生成，输出 `build/icon.ico`（16 至 256 多尺寸）
+与 `build/icon.png`（512 像素展示图），修改造型后重新执行该脚本即可刷新图标。
 
 若打包时下载 Electron 或 NSIS 组件超时，先指定国内镜像：
 
@@ -109,7 +113,7 @@ $env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-
 ## 目录结构
 
 ```
-wps-office/
+seal-office/
 ├── main/                       Electron 主进程
 │   ├── main.js                 主进程入口，创建窗口、移除默认菜单栏
 │   ├── preload.js              预加载脚本（当前配置下 contextBridge 不生效，待整改）
@@ -127,6 +131,7 @@ wps-office/
 │       ├── store.ts            应用状态 Context 与 useAppStore
 │       ├── vite-env.d.ts       Vite 客户端类型声明
 │       ├── components/         界面组件
+│       │   ├── SealLogo.tsx    海豹品牌标识
 │       │   ├── Icon.tsx        内联 SVG 图标集
 │       │   ├── TitleBar.tsx    顶栏
 │       │   ├── Sidebar.tsx     左侧导航
@@ -167,6 +172,10 @@ wps-office/
 │   ├── superpowers/specs/      设计规格
 │   ├── superpowers/plans/      实现计划
 │   └── screenshots/            运行界面验证截图
+├── build/                      打包资源
+│   ├── make-icon.ps1           图标生成脚本
+│   ├── icon.ico                应用图标（多尺寸）
+│   └── icon.png                图标展示图
 ├── vite.config.js              Vite 与 Vitest 配置
 ├── tsconfig.json               TypeScript 配置，仅用于类型校验，不参与构建
 └── package.json

@@ -91,13 +91,9 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: var(--brand);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
 }
 
 .wps-titlebar__name {

@@ -6,7 +6,7 @@ import App from './App'
 describe('应用外壳', () => {
   it('渲染顶栏、侧栏与首页内容', () => {
     render(<App />)
-    expect(screen.getByText('WPS Office')).toBeInTheDocument()
+    expect(screen.getByText('Seal Office')).toBeInTheDocument()
     expect(screen.getByText('新建')).toBeInTheDocument()
     expect(screen.getByText('我的云文档')).toBeInTheDocument()
   })

@@ -18,7 +18,7 @@ const Footer = ({ total, starred, version = 'v1.0.0' }: Props) =>
       React.createElement('span', { className: 'wps-footer__dot' }, '·'),
       React.createElement('span', null, `其中星标 ${starred} 个`)
     ),
-    React.createElement('div', { className: 'wps-footer__right' }, `WPS 模仿版 ${version}`)
+    React.createElement('div', { className: 'wps-footer__right' }, `海豹办公 ${version}`)
   )
 
 export default Footer

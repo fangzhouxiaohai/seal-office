@@ -6,7 +6,7 @@ export function 导出为Html(标题: string, 正文Html: string): string {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="generator" content="WPS 模仿办公软件">
+<meta name="generator" content="海豹办公 Seal Office">
 <title>${标题}</title>
 </head>
 <body>

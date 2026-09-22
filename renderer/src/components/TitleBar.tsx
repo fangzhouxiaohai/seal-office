@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Input, Tooltip } from 'antd'
 import Icon from './Icon'
+import SealLogo from './SealLogo'
 
 interface Props {
   pageName: string
@@ -37,8 +38,12 @@ const TitleBar = ({
     React.createElement(
       'div',
       { className: 'wps-titlebar__brand' },
-      React.createElement('span', { className: 'wps-logo' }, 'W'),
-      React.createElement('span', { className: 'wps-titlebar__name' }, 'WPS Office'),
+      React.createElement(
+        'span',
+        { className: 'wps-logo' },
+        React.createElement(SealLogo, { size: 28 })
+      ),
+      React.createElement('span', { className: 'wps-titlebar__name' }, 'Seal Office'),
       React.createElement('span', { className: 'wps-titlebar__divider' }),
       React.createElement('span', { className: 'wps-titlebar__page' }, pageName)
     ),

@@ -1,9 +1,9 @@
 {
-  "name": "wps-office",
+  "name": "seal-office",
   "version": "1.0.0",
-  "description": "WPS 模仿办公软件",
+  "description": "海豹办公 Seal Office",
   "main": "main/main.js",
-  "author": "wps-office",
+  "author": "seal-office",
   "license": "MIT",
   "scripts": {
     "start": "concurrently -k \"npm run dev\" \"npm run electron:dev\"",
@@ -37,7 +37,7 @@
   },
   "build": {
     "appId": "com.example.wpsoffice",
-    "productName": "WPSOffice",
+    "productName": "SealOffice",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -66,7 +66,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "WPS 模仿办公软件"
+      "shortcutName": "海豹办公"
     }
   }
 }
