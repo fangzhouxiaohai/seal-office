@@ -1,5 +1,5 @@
 // main/main.js
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')
 
 // Vite 开发服务器地址，需与 vite.config.js 中的 server 配置保持一致
@@ -32,6 +32,16 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
+  })
+
+  // 移除 Electron 默认的英文菜单栏，界面文案不出现外文，观感与 WPS 保持一致
+  Menu.setApplicationMenu(null)
+
+  // 菜单栏已移除，单独保留 F12 打开开发者工具的能力，便于排查问题
+  win.webContents.on('before-input-event', (事件, 输入) => {
+    if (输入.type === 'keyDown' && 输入.key === 'F12') {
+      win.webContents.toggleDevTools()
+    }
   })
 
   // 未打包时运行的是源码，加载 Vite 开发服务器；打包后加载构建产物
