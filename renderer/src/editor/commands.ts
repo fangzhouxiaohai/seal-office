@@ -3,6 +3,7 @@
 import type { HistoryStack, 保存的选区 } from './history'
 import { countWords } from './wordCount'
 import { 转换简繁带统计 } from './langConvert'
+import { 提取大纲, 生成目录Html } from './toc'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -143,8 +144,6 @@ const 未实现命令定义: Array<[string, string]> = [
   ['chart.insert', '图表'],
   ['formula.insert', '公式'],
   ['smartart.insert', 'SmartArt'],
-  ['toc.insert', '目录'],
-  ['toc.update', '更新目录'],
   ['caption.insert', '插入题注'],
   ['caption.tableOfFigures', '插入表目录'],
   ['crossref.insert', '交叉引用'],
@@ -313,6 +312,36 @@ const 布局命令: EditorCommand[] = [
   生成回调命令('layout.break', '分隔符', (上下文) => 上下文.插入资源('分页符')),
 ]
 
+/** 引用命令：目录基于文档中的标题层级生成 */
+const 引用命令: EditorCommand[] = [
+  生成回调命令('toc.insert', '目录', (上下文) => {
+    const 大纲 = 提取大纲(上下文.读取内容())
+    if (大纲.length === 0) {
+      上下文.notify('文档中未找到标题，请先对段落应用标题样式')
+      return
+    }
+    上下文.插入内容(`${生成目录Html(大纲)}<p><br></p>`)
+    上下文.notify(`已插入目录，共 ${大纲.length} 项`)
+  }),
+  生成回调命令('toc.update', '更新目录', (上下文) => {
+    const 原文 = 上下文.读取内容()
+    const 大纲 = 提取大纲(原文)
+    if (大纲.length === 0) {
+      上下文.notify('文档中未找到标题，无法生成目录')
+      return
+    }
+    const 目录区块 = /<div class="wps-toc"[\s\S]*?<\/div>/
+    if (!目录区块.test(原文)) {
+      上下文.notify('文档中尚无目录，请先插入目录')
+      return
+    }
+    上下文.history.record({ html: 原文, selection: null })
+    上下文.应用内容(原文.replace(目录区块, 生成目录Html(大纲)), null)
+    上下文.notify(`目录已更新，共 ${大纲.length} 项`)
+    上下文.refresh()
+  }),
+]
+
 /** 审阅命令 */
 const 审阅命令: EditorCommand[] = [
   生成回调命令('spell.check', '拼写检查', (上下文) => 上下文.检查拼写()),
@@ -396,6 +425,7 @@ export const 命令表: Record<string, EditorCommand> = [
   ...编辑命令,
   ...插入命令,
   ...布局命令,
+  ...引用命令,
   ...审阅命令,
   ...视图命令,
   ...导出命令,
