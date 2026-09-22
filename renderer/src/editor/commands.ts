@@ -114,6 +114,8 @@ export interface CommandContext {
   打开表格网格: () => void
   /** 打开文献管理面板 */
   打开文献管理: () => void
+  /** 打开文档比较面板 */
+  打开比较面板: () => void
   /** 当前会话维护的文献列表 */
   文献列表: 文献[]
 }
@@ -182,8 +184,6 @@ const 格式化命令定义: Array<[string, string, string]> = [
 
 const 未实现命令定义: Array<[string, string]> = [
   ['translate.start', '翻译'],
-  ['compare.start', '比较'],
-  ['merge.start', '合并'],
   ['mailmerge.start', '邮件合并'],
 ]
 
@@ -566,6 +566,8 @@ const 审阅命令: EditorCommand[] = [
     上下文.notify(目标 ? '已开启文档保护，编辑区转为只读' : '已解除文档保护，恢复可编辑')
     上下文.refresh()
   }),
+  生成回调命令('compare.start', '比较', (上下文) => 上下文.打开比较面板()),
+  生成回调命令('merge.start', '合并', (上下文) => 上下文.打开比较面板()),
 ]
 
 /** 视图命令 */

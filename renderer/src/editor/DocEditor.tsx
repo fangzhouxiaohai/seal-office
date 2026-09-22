@@ -10,6 +10,8 @@ import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from '.
 import { 检查文本 } from './spellCheck'
 import TableGridPicker from './TableGridPicker'
 import SourceManager from './SourceManager'
+import CompareDialog from './CompareDialog'
+import { 比较文本, 抽取文本, 生成修订Html, 统计差异 } from './compare'
 import type { 文献 } from './citation'
 import RibbonTabs from './ribbon/RibbonTabs'
 import RibbonPanel from './ribbon/RibbonPanel'
@@ -129,6 +131,7 @@ const DocEditor = () => {
   const [查找打开, set查找打开] = useState(false)
   const [网格打开, set网格打开] = useState(false)
   const [文献面板打开, set文献面板打开] = useState(false)
+  const [比较面板打开, set比较面板打开] = useState(false)
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
 
@@ -457,6 +460,7 @@ const DocEditor = () => {
     当前文档名: 当前文档?.name ?? '未命名文档',
     打开表格网格: () => set网格打开(true),
     打开文献管理: () => set文献面板打开(true),
+    打开比较面板: () => set比较面板打开(true),
     文献列表,
   }
 
@@ -570,6 +574,40 @@ const DocEditor = () => {
       sources: 文献列表,
       onClose: () => set文献面板打开(false),
       onChange: set文献列表,
+    }),
+    React.createElement(CompareDialog, {
+      open: 比较面板打开,
+      onClose: () => set比较面板打开(false),
+      onCompare: (另一版本: string) => {
+        const 元素 = 编辑区引用.current
+        if (元素 === null) {
+          return
+        }
+        const 差异 = 比较文本(抽取文本(元素.innerHTML), 抽取文本(另一版本))
+        if (差异.length === 0) {
+          message.warning('两个版本都没有可比较的内容')
+          return
+        }
+        const 统计 = 统计差异(差异)
+        message.info(`共比对 ${差异.length} 段，其中新增 ${统计.新增} 处、删除 ${统计.删除} 处`)
+      },
+      onMerge: (另一版本: string) => {
+        const 元素 = 编辑区引用.current
+        if (元素 === null) {
+          return
+        }
+        const 差异 = 比较文本(抽取文本(元素.innerHTML), 抽取文本(另一版本))
+        const html = 生成修订Html(差异)
+        if (html.length === 0) {
+          message.warning('没有可合并的差异')
+          return
+        }
+        记录历史()
+        元素.innerHTML = html
+        同步内容()
+        set比较面板打开(false)
+        message.success('已合并为修订标记，可用接受修订或拒绝修订收敛')
+      },
     }),
     视图.标尺 ? React.createElement(Ruler, null) : null,
     React.createElement(
