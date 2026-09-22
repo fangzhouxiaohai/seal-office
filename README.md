@@ -68,7 +68,13 @@ npm test             # 监听模式
 npm run test:run -- recentDocs   # 仅运行名称匹配的测试文件
 ```
 
-当前共 16 个测试文件、86 项测试，全部通过。
+当前共 16 个测试文件、104 项测试，全部通过。
+
+类型校验与构建分离执行，Vite 构建只做转译、不做类型检查：
+
+```powershell
+npm run typecheck    # tsc --noEmit
+```
 
 ## 构建
 
@@ -93,8 +99,11 @@ wps-office/
 │       ├── main.tsx            React 入口，挂载根节点
 │       ├── App.tsx             应用外壳：视图分发与整体装配
 │       ├── styles.css          设计令牌与全部组件样式
-│       ├── routes.tsx          导航分组、模块注册表、新建入口映射
+│       ├── navConfig.ts        导航分组、新建入口与文档类型映射（不依赖页面）
+│       ├── routes.tsx          模块注册表：把导航数据与页面组件装配到一起
+│       ├── docMeta.ts          文档类型的文案、图标与配色元数据
 │       ├── store.ts            应用状态 Context 与 useAppStore
+│       ├── vite-env.d.ts       Vite 客户端类型声明
 │       ├── components/         界面组件
 │       │   ├── Icon.tsx        内联 SVG 图标集
 │       │   ├── TitleBar.tsx    顶栏
@@ -122,6 +131,7 @@ wps-office/
 │   ├── superpowers/plans/      实现计划
 │   └── screenshots/            运行界面验证截图
 ├── vite.config.js              Vite 与 Vitest 配置
+├── tsconfig.json               TypeScript 配置，仅用于类型校验，不参与构建
 └── package.json
 ```
 
@@ -152,10 +162,11 @@ wps-office/
 3. 主进程窗口配置中 `webPreferences` 同时启用 `nodeIntegration` 并关闭
    `contextIsolation`，存在安全风险；正式产品应改为通过 `preload` 暴露受控接口。
    当前 `main/preload.js` 使用了 `contextBridge`，在上述配置下不会生效。
-4. 文档、表格、演示三个模块均为占位页，尚未实现真实编辑能力。
-5. 生产构建主包约 557 kB，超过 Vite 默认的 500 kB 提示阈值，
+4. 最近文档使用工程内 12 条静态示例数据，尚未接入真实文件系统。
+5. 文档、表格、演示三个模块均为占位页，尚未实现真实编辑能力。
+6. 生产构建主包约 610 kB，超过 Vite 默认的 500 kB 提示阈值，
    可按需引入组件或配置分包优化。
-6. 编辑器视图下左侧导航与占位页各有一个「返回首页」入口，
+7. 编辑器视图下左侧导航与占位页各有一个「返回首页」入口，
    功能不冲突但存在冗余，真实编辑器落地后应只保留一处。
 
 ## 相关文档
