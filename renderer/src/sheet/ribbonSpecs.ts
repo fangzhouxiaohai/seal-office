@@ -209,6 +209,13 @@ const 视图标签: RibbonTabSpec = {
       name: '显示',
       items: [小('view.gridlines', '网格线', 'gridlines')],
     },
+    {
+      name: '导出',
+      items: [
+        大('file.exportCsv', '导出为 CSV', 'export-file'),
+        大('file.exportHtml', '导出为网页', 'export-file'),
+      ],
+    },
   ],
 }
 

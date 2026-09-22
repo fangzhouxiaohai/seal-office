@@ -252,7 +252,6 @@ export const 表格未实现清单: Array<[string, string]> = [
   ['review.protect', '保护工作表'],
   ['view.freeze', '冻结窗格'],
   ['view.split', '拆分'],
-  ['file.exportCsv', '导出为 CSV'],
 ]
 
 表格未实现清单.forEach(([id, label]) => {

@@ -9,6 +9,8 @@ import { 查找表格命令, type 表格命令上下文, type 选区范围 } fro
 import { 创建工作表, 读取单元格, 写入单元格, 重算工作表, type Sheet } from './model'
 import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单元格位置 } from './address'
 import { 统计选区 } from './selectionStats'
+import { 导出为Csv, 导出为Html表格, 生成表格文件名 } from './sheetExport'
+import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
 import SheetToolbar from './SheetToolbar'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
@@ -54,6 +56,21 @@ const SheetEditor = () => {
         当前.map((项, 下标) => (下标 === 当前索引 ? 重算工作表(项) : 项))
       )
       message.info('已重新计算工作表')
+      return
+    }
+    if (标识 === 'file.exportCsv' || 标识 === 'file.exportHtml') {
+      const 是Csv = 标识 === 'file.exportCsv'
+      const 内容 = 是Csv ? 导出为Csv(工作表) : 导出为Html表格(工作表, 工作表.name)
+      if (内容.length === 0) {
+        message.warning('工作表为空，没有可导出的内容')
+        return
+      }
+      下载文本(
+        内容,
+        生成表格文件名(工作表.name, 是Csv ? 'csv' : 'html'),
+        是Csv ? 'text/csv' : 'text/html'
+      )
+      message.success(是Csv ? '已导出为 CSV 文件' : '已导出为网页文件')
       return
     }
     const 命令 = 查找表格命令(标识)
