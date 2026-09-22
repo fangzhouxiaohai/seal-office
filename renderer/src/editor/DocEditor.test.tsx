@@ -43,8 +43,36 @@ describe('编辑器容器', () => {
   it('点击未实现命令给出中文提示', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    await userEvent.click(screen.getByRole('button', { name: '图表' }))
+    // 绘制表格属于尚未实现的功能，用于验证未实现提示
+    await userEvent.click(screen.getByRole('button', { name: '绘制表格' }))
     expect(await screen.findByText('该功能开发中')).toBeInTheDocument()
+  })
+
+  // jsdom 不支持 execCommand 的真实插入，因此这里只验证命令被正确派发并给出中文提示，
+  // 图形与公式是否真正写入文档由运行窗口验证。
+  it('插入图表命令给出中文提示', async () => {
+    渲染编辑器()
+    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
+    await userEvent.click(screen.getByRole('button', { name: '图表' }))
+    await userEvent.click(await screen.findByText('折线图'))
+    expect(await screen.findByText(/已插入折线图/)).toBeInTheDocument()
+  })
+
+  it('插入公式命令给出中文提示', async () => {
+    渲染编辑器()
+    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
+    await userEvent.click(screen.getByRole('button', { name: '公式' }))
+    await userEvent.click(await screen.findByText('分数'))
+    expect(await screen.findByText(/已插入「分数」公式/)).toBeInTheDocument()
+  })
+
+  it('保护文档后编辑区转为只读', async () => {
+    const { container } = 渲染编辑器()
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '保护文档' }))
+    expect(await screen.findByText(/已开启文档保护/)).toBeInTheDocument()
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content')
+    expect(编辑区?.getAttribute('contenteditable')).toBe('false')
   })
 
   it('点击查找命令后展开查找面板', async () => {

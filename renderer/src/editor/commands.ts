@@ -6,6 +6,16 @@ import { 转换简繁带统计 } from './langConvert'
 import { 提取大纲, 生成目录Html } from './toc'
 import { 生成题注, 生成图表目录Html, 提取题注, 统计题注, type 编号类型 } from './captions'
 import { 删除批注, 接受修订, 提取批注, 生成批注, 拒绝修订, 统计修订 } from './review'
+import {
+  公式模板列表,
+  示例SmartArt节点,
+  示例图表数据,
+  生成公式Html,
+  生成图表Svg,
+  生成SmartArtHtml,
+  type SmartArt类型,
+  type 图表类型,
+} from './graphics'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -23,6 +33,8 @@ export interface ViewState {
   文字方向: '横排' | '竖排'
   显示批注: boolean
   修订模式: boolean
+  /** 文档保护：开启后编辑区转为只读 */
+  文档保护: boolean
 }
 
 /** 可用于格式刷复制与应用的字符格式 */
@@ -163,16 +175,12 @@ const 格式化命令定义: Array<[string, string, string]> = [
 
 const 未实现命令定义: Array<[string, string]> = [
   ['table.draw', '绘制表格'],
-  ['chart.insert', '图表'],
-  ['formula.insert', '公式'],
-  ['smartart.insert', 'SmartArt'],
   ['citation.insert', '插入引文'],
   ['citation.manageSource', '管理源'],
   ['bibliography.insert', '书目'],
   ['translate.start', '翻译'],
   ['compare.start', '比较'],
   ['merge.start', '合并'],
-  ['protect.start', '保护文档'],
   ['mailmerge.start', '邮件合并'],
 ]
 
@@ -287,8 +295,9 @@ const 编辑命令: EditorCommand[] = [
 ]
 
 /** 插入命令：统一走 插入资源，由编辑器容器实现具体动作 */
-const 插入命令: EditorCommand[] = (
-  [
+const 插入命令: EditorCommand[] = [
+  ...(
+    [
     ['page.cover', '封面', '封面'],
     ['page.blank', '空白页', '空白页'],
     ['page.break', '分页符', '分页符'],
@@ -307,9 +316,42 @@ const 插入命令: EditorCommand[] = (
     ['footnote.insert', '插入脚注', '脚注'],
     ['endnote.insert', '插入尾注', '尾注'],
   ] as Array<[string, string, InsertableKind]>
-).map(([id, label, 类型]) =>
-  生成回调命令(id, label, (上下文) => 上下文.插入资源(类型))
-)
+  ).map(([id, label, 类型]) =>
+    生成回调命令(id, label, (上下文) => 上下文.插入资源(类型))
+  ),
+  生成回调命令('chart.insert', '图表', (上下文, 参数) => {
+    const 类型 = (参数 ?? '柱形图') as 图表类型
+    const svg = 生成图表Svg(类型, 示例图表数据)
+    if (svg.length === 0) {
+      上下文.notify('图表数据为空，无法生成图表')
+      return
+    }
+    上下文.插入内容(`<div class="wps-chart" contenteditable="false">${svg}</div><p><br></p>`)
+    上下文.notify(
+      `已插入${类型}，数据为 ${示例图表数据.类别.join('、')} 的示例值，可在文档中替换`
+    )
+  }),
+  生成回调命令('formula.insert', '公式', (上下文, 参数) => {
+    const 键 = 参数 ?? 公式模板列表[0].键
+    const html = 生成公式Html(键)
+    if (html.length === 0) {
+      上下文.notify('请选择公式模板')
+      return
+    }
+    上下文.插入内容(html)
+    上下文.notify(`已插入「${键}」公式，可直接修改其中的占位内容`)
+  }),
+  生成回调命令('smartart.insert', 'SmartArt', (上下文, 参数) => {
+    const 类型 = (参数 ?? '流程') as SmartArt类型
+    const html = 生成SmartArtHtml(类型, 示例SmartArt节点)
+    if (html.length === 0) {
+      上下文.notify('SmartArt 节点为空，无法生成图形')
+      return
+    }
+    上下文.插入内容(html)
+    上下文.notify(`已插入${类型}SmartArt`)
+  }),
+]
 
 /** 页面布局命令 */
 const 布局命令: EditorCommand[] = [
@@ -494,6 +536,12 @@ const 审阅命令: EditorCommand[] = [
     上下文.history.record({ html: 原文, selection: null })
     上下文.应用内容(结果.文本, null)
     上下文.notify(`已拒绝 ${结果.修订数} 处修订`)
+    上下文.refresh()
+  }),
+  生成回调命令('protect.start', '保护文档', (上下文) => {
+    const 目标 = !上下文.view.文档保护
+    上下文.setView({ 文档保护: 目标 })
+    上下文.notify(目标 ? '已开启文档保护，编辑区转为只读' : '已解除文档保护，恢复可编辑')
     上下文.refresh()
   }),
 ]

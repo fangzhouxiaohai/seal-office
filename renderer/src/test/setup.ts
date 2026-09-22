@@ -34,3 +34,13 @@ Object.defineProperty(window, 'ResizeObserver', {
   writable: true,
   value: ResizeObserverStub,
 })
+
+// jsdom 未实现 execCommand，补一个恒返回 false 的空实现。
+// 这样依赖它的命令在测试中仍会走到提示分支，不会因方法缺失而中断；
+// 真实的富文本插入行为由运行窗口验证，而不是在 jsdom 中假装可用。
+if (typeof document.execCommand !== 'function') {
+  Object.defineProperty(document, 'execCommand', {
+    writable: true,
+    value: () => false,
+  })
+}

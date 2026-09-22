@@ -31,6 +31,7 @@ const 默认视图: ViewState = {
   文字方向: '横排',
   显示批注: true,
   修订模式: false,
+  文档保护: false,
 }
 
 /** 转义正则元字符，供查找替换使用 */
@@ -487,6 +488,9 @@ const DocEditor = () => {
         if (命令标识 === 'comment.show') {
           return 视图.显示批注
         }
+        if (命令标识 === 'protect.start') {
+          return 视图.文档保护
+        }
         if (命令标识 === 'view.ruler') {
           return 视图.标尺
         }
@@ -539,6 +543,7 @@ const DocEditor = () => {
       { className: 'wps-editor-stage' },
       React.createElement(EditorCanvas, {
         html: 当前文档?.html ?? '<p><br></p>',
+        editable: !视图.文档保护,
         showParagraphMark: 视图.段落标记,
         gridlines: 视图.网格线,
         vertical: 视图.文字方向 === '竖排',

@@ -153,8 +153,8 @@ const 插入标签: RibbonTabSpec = {
       items: [
         大('image.insert', '图片', 'image'),
         大('shape.insert', '形状', 'shape'),
-        大('chart.insert', '图表', 'chart'),
-        大('smartart.insert', 'SmartArt', 'flow'),
+        下拉('chart.insert', '图表', 'chart', ['柱形图', '折线图', '饼图'], '柱形图'),
+        下拉('smartart.insert', 'SmartArt', 'flow', ['流程', '层级', '循环'], '流程'),
         大('textbox.insert', '文本框', 'textbox'),
       ],
     },
@@ -170,6 +170,20 @@ const 插入标签: RibbonTabSpec = {
       name: '文本',
       items: [
         大('wordart.insert', '艺术字', 'wordart'),
+        下拉(
+          'formula.insert',
+          '公式',
+          'formula',
+          [
+            { label: '分数', value: '分数' },
+            { label: '平方根', value: '平方根' },
+            { label: '求和', value: '求和' },
+            { label: '积分', value: '积分' },
+            { label: '上标', value: '上标' },
+            { label: '下标', value: '下标' },
+          ],
+          '公式'
+        ),
         大('datetime.insert', '日期时间', 'calendar'),
         大('symbol.insert', '符号', 'symbol'),
         大('footnote.insert', '脚注', 'footnote'),

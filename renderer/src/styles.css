@@ -1133,6 +1133,86 @@ button {
   text-decoration: line-through;
 }
 
+/* 图表：以 SVG 承载，居中展示并禁止直接编辑图形本身 */
+.wps-chart {
+  margin: 12px 0;
+  text-align: center;
+}
+
+.wps-chart svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 公式：结构化 HTML 排版 */
+.wps-formula {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 2px;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: 15px;
+}
+
+.wps-formula__分数 {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1.1;
+}
+
+.wps-formula__分子 {
+  padding: 0 4px;
+  border-bottom: 1px solid var(--text-1);
+}
+
+.wps-formula__分母 {
+  padding: 0 4px;
+}
+
+.wps-formula__根号内 {
+  padding: 0 2px;
+  border-top: 1px solid var(--text-1);
+}
+
+/* SmartArt：流程横向排列，层级纵向缩进 */
+.wps-smartart {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: #fafbfd;
+}
+
+.wps-smartart--横向 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wps-smartart--层级 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wps-smartart__node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 8px 14px;
+  border: 1.6px solid var(--brand);
+  border-radius: 6px;
+  background: var(--bg-card);
+  font-size: 13px;
+}
+
+.wps-smartart__label {
+  white-space: nowrap;
+}
+
 /* 查找替换面板 */
 .wps-find {
   display: flex;
