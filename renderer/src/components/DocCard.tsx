@@ -1,29 +1,9 @@
-// 文档卡片：最近文档网格视图的单元，承载缩略图、名称、类型标签与星标操作。
-import React from 'react'
-import { Tooltip } from 'antd'
-import { formatSize, formatTime, type DocItem, type DocType } from '../mock/recentDocs'
+// 文档卡片：最近文档网格视图的单元，承载缩略图、名称、类型标签与操作入口。
+import React, { useState } from 'react'
+import { App as AntdApp, Dropdown, Input, Modal, Tooltip } from 'antd'
+import { formatSize, formatTime, type DocItem } from '../mock/recentDocs'
+import { DOC_TYPE_COLOR, DOC_TYPE_ICON, DOC_TYPE_LABEL } from '../docMeta'
 import Icon from './Icon'
-
-const 类型文案: Record<DocType, string> = {
-  word: '文字',
-  table: '表格',
-  ppt: '演示',
-  pdf: 'PDF',
-}
-
-const 类型图标: Record<DocType, string> = {
-  word: 'doc-word',
-  table: 'doc-table',
-  ppt: 'doc-ppt',
-  pdf: 'doc-pdf',
-}
-
-const 类型颜色: Record<DocType, string> = {
-  word: '#2B6CF6',
-  table: '#00A870',
-  ppt: '#ED7B2F',
-  pdf: '#E34D59',
-}
 
 interface Props {
   doc: DocItem
@@ -31,60 +11,183 @@ interface Props {
   onSelect?: (标识: string) => void
   onOpen?: (标识: string) => void
   onToggleStar?: (标识: string) => void
+  onRename?: (标识: string, 名称: string) => void
+  onRemove?: (标识: string) => void
 }
 
-const DocCard = ({ doc, active = false, onSelect, onOpen, onToggleStar }: Props) => {
-  const 处理星标 = (事件: React.MouseEvent) => {
+const DocCard = ({
+  doc,
+  active = false,
+  onSelect,
+  onOpen,
+  onToggleStar,
+  onRename,
+  onRemove,
+}: Props) => {
+  const { message, modal } = AntdApp.useApp()
+  const [重命名中, set重命名中] = useState(false)
+  const [草稿名称, set草稿名称] = useState(doc.name)
+
+  const 阻止冒泡 = (事件: React.MouseEvent) => {
     事件.stopPropagation()
+  }
+
+  const 处理星标 = (事件: React.MouseEvent) => {
+    阻止冒泡(事件)
     if (onToggleStar !== undefined) {
       onToggleStar(doc.id)
     }
   }
 
+  const 打开重命名 = () => {
+    set草稿名称(doc.name)
+    set重命名中(true)
+  }
+
+  const 确认重命名 = () => {
+    const 规范名称 = 草稿名称.trim()
+    if (规范名称.length === 0) {
+      message.warning('文档名称不能为空')
+      return
+    }
+    if (onRename !== undefined) {
+      onRename(doc.id, 规范名称)
+    }
+    set重命名中(false)
+  }
+
+  const 确认删除 = () => {
+    modal.confirm({
+      title: '删除文档',
+      content: `确定删除「${doc.name}」吗？该操作不可撤销。`,
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => {
+        if (onRemove !== undefined) {
+          onRemove(doc.id)
+        }
+      },
+    })
+  }
+
+  const 菜单项 = [
+    { key: 'open', label: '打开' },
+    { key: 'rename', label: '重命名' },
+    { key: 'star', label: doc.starred ? '取消星标' : '添加星标' },
+    { type: 'divider' as const },
+    { key: 'remove', label: '删除', danger: true },
+  ]
+
+  const 处理菜单点击 = ({ key }: { key: string }) => {
+    switch (key) {
+      case 'open':
+        if (onOpen !== undefined) {
+          onOpen(doc.id)
+        }
+        break
+      case 'rename':
+        打开重命名()
+        break
+      case 'star':
+        if (onToggleStar !== undefined) {
+          onToggleStar(doc.id)
+        }
+        break
+      case 'remove':
+        确认删除()
+        break
+      default:
+        break
+    }
+  }
+
   return React.createElement(
-    'div',
-    {
-      className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}`,
-      onClick: () => onSelect && onSelect(doc.id),
-      onDoubleClick: () => onOpen && onOpen(doc.id),
-    },
+    React.Fragment,
+    null,
     React.createElement(
       'div',
-      { className: 'wps-doc-card__thumb' },
-      React.createElement(Icon, {
-        name: 类型图标[doc.type],
-        size: 40,
-        color: 类型颜色[doc.type],
-      }),
+      {
+        className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}`,
+        onClick: () => onSelect && onSelect(doc.id),
+        onDoubleClick: () => onOpen && onOpen(doc.id),
+      },
       React.createElement(
-        'span',
-        { className: 'wps-doc-card__badge', style: { background: 类型颜色[doc.type] } },
-        类型文案[doc.type]
+        'div',
+        { className: 'wps-doc-card__thumb' },
+        React.createElement(Icon, {
+          name: DOC_TYPE_ICON[doc.type],
+          size: 40,
+          color: DOC_TYPE_COLOR[doc.type],
+        }),
+        React.createElement(
+          'span',
+          { className: 'wps-doc-card__badge', style: { background: DOC_TYPE_COLOR[doc.type] } },
+          DOC_TYPE_LABEL[doc.type]
+        ),
+        React.createElement(
+          'div',
+          { className: 'wps-doc-card__actions' },
+          React.createElement(
+            Dropdown,
+            {
+              menu: { items: 菜单项, onClick: 处理菜单点击 },
+              trigger: ['click'],
+            },
+            React.createElement(
+              'button',
+              {
+                type: 'button',
+                className: 'wps-doc-card__more',
+                'aria-label': '更多操作',
+                onClick: 阻止冒泡,
+              },
+              React.createElement(Icon, { name: 'more', size: 16 })
+            )
+          ),
+          React.createElement(
+            'button',
+            {
+              type: 'button',
+              className: `wps-doc-card__star${doc.starred ? ' wps-doc-card__star--on' : ''}`,
+              'aria-label': doc.starred ? '取消星标' : '添加星标',
+              onClick: 处理星标,
+            },
+            React.createElement(Icon, { name: doc.starred ? 'star-filled' : 'star', size: 16 })
+          )
+        )
       ),
       React.createElement(
-        'button',
-        {
-          type: 'button',
-          className: `wps-doc-card__star${doc.starred ? ' wps-doc-card__star--on' : ''}`,
-          'aria-label': doc.starred ? '取消星标' : '添加星标',
-          onClick: 处理星标,
-        },
-        React.createElement(Icon, { name: doc.starred ? 'star-filled' : 'star', size: 16 })
+        'div',
+        { className: 'wps-doc-card__info' },
+        React.createElement(
+          Tooltip,
+          { title: doc.name },
+          React.createElement('span', { className: 'wps-doc-card__name' }, doc.name)
+        ),
+        React.createElement(
+          'span',
+          { className: 'wps-doc-card__meta' },
+          `${formatTime(doc.updatedAt)} · ${formatSize(doc.size)}`
+        )
       )
     ),
     React.createElement(
-      'div',
-      { className: 'wps-doc-card__info' },
-      React.createElement(
-        Tooltip,
-        { title: doc.name },
-        React.createElement('span', { className: 'wps-doc-card__name' }, doc.name)
-      ),
-      React.createElement(
-        'span',
-        { className: 'wps-doc-card__meta' },
-        `${formatTime(doc.updatedAt)} · ${formatSize(doc.size)}`
-      )
+      Modal,
+      {
+        open: 重命名中,
+        title: '重命名文档',
+        okText: '确定',
+        cancelText: '取消',
+        onOk: 确认重命名,
+        onCancel: () => set重命名中(false),
+      },
+      React.createElement(Input, {
+        value: 草稿名称,
+        placeholder: '请输入新的文档名称',
+        maxLength: 120,
+        onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set草稿名称(事件.target.value),
+      })
     )
   )
 }

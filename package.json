@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "antd": "^5.0.0",
@@ -25,6 +26,7 @@
     "concurrently": "^8.0.0",
     "electron": "^25.9.8",
     "jsdom": "^22.1.0",
+    "typescript": "^7.0.2",
     "vite": "^4.0.0",
     "vitest": "^0.34.6"
   },

@@ -1,8 +1,7 @@
 // 首页：新建入口与最近文档区块的组合页。
 import React from 'react'
-import { message } from 'antd'
+import { App as AntdApp } from 'antd'
 import { useAppStore } from '../store'
-import { DOC_TYPE_TO_MODULE } from '../routes'
 import type { DocType } from '../mock/recentDocs'
 import NewDocGrid from '../components/NewDocGrid'
 import RecentDocs from '../components/RecentDocs'
@@ -16,6 +15,7 @@ const 标题映射: Record<string, string> = {
 }
 
 const HomePage = () => {
+  const { message } = AntdApp.useApp()
   const {
     navKey,
     setNavKey,
@@ -29,7 +29,9 @@ const HomePage = () => {
     setActiveDocId,
     toggleStar,
     openDoc,
-    setModule,
+    createDoc,
+    renameDoc,
+    removeDoc,
   } = useAppStore()
 
   const 处理新建 = (类型: DocType) => {
@@ -37,7 +39,7 @@ const HomePage = () => {
       message.info('PDF 编辑功能开发中')
       return
     }
-    setModule(DOC_TYPE_TO_MODULE[类型])
+    createDoc(类型)
   }
 
   const 处理打开 = (标识: string) => {
@@ -51,6 +53,26 @@ const HomePage = () => {
       return
     }
     openDoc(目标)
+  }
+
+  const 处理重命名 = (标识: string, 名称: string) => {
+    const 目标 = docs.find((文档) => 文档.id === 标识)
+    if (目标 === undefined) {
+      message.error('未找到该文档，可能已被移除')
+      return
+    }
+    renameDoc(标识, 名称)
+    message.success(`已重命名为「${名称}」`)
+  }
+
+  const 处理删除 = (标识: string) => {
+    const 目标 = docs.find((文档) => 文档.id === 标识)
+    if (目标 === undefined) {
+      message.error('未找到该文档，可能已被移除')
+      return
+    }
+    removeDoc(标识)
+    message.success(`已删除「${目标.name}」`)
   }
 
   return React.createElement(
@@ -71,10 +93,12 @@ const HomePage = () => {
       onSelect: setActiveDocId,
       onOpen: 处理打开,
       onToggleStar: toggleStar,
+      onRename: 处理重命名,
+      onRemove: 处理删除,
       onViewModeChange: setViewMode,
       onSortChange: setSortKey,
       onViewAll: () => setNavKey('recent'),
-      onEmptyAction: () => setModule('word'),
+      onEmptyAction: () => createDoc('word'),
     })
   )
 }

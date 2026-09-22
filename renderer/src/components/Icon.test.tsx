@@ -3,15 +3,23 @@ import { render } from '@testing-library/react'
 import Icon, { ICON_NAMES } from './Icon'
 
 describe('图标集', () => {
-  it('登记了全部需要的图标名称', () => {
-    const 需要 = [
-      'home', 'clock', 'star', 'share', 'cloud', 'users', 'pdf', 'mindmap',
-      'flow', 'settings', 'help', 'search', 'grid', 'list', 'sort', 'more',
-      'arrow-left', 'doc-word', 'doc-table', 'doc-ppt', 'doc-pdf',
-    ]
-    需要.forEach((名称) => {
-      expect(ICON_NAMES).toContain(名称)
+  it('登记的每个图标都能渲染出图形内容', () => {
+    ICON_NAMES.forEach((名称) => {
+      const 结果 = render(<Icon name={名称} />)
+      const 图形 = 结果.container.querySelector('svg')
+      expect(图形, `图标 ${名称} 未渲染出 svg`).not.toBeNull()
+      expect(图形?.childElementCount ?? 0, `图标 ${名称} 没有图形内容`).toBeGreaterThan(0)
+      结果.unmount()
     })
+  })
+
+  it('不同图标渲染出的内容互不相同', () => {
+    const 首页 = render(<Icon name="home" />).container.innerHTML
+    const 星标 = render(<Icon name="star" />).container.innerHTML
+    const 表格 = render(<Icon name="doc-table" />).container.innerHTML
+    expect(首页).not.toBe(星标)
+    expect(首页).not.toBe(表格)
+    expect(星标).not.toBe(表格)
   })
 
   it('渲染为 svg 元素', () => {
@@ -32,8 +40,9 @@ describe('图标集', () => {
     expect(container.querySelector('svg')).toHaveAttribute('color', '#2B6CF6')
   })
 
-  it('未知图标名称渲染占位而不抛错', () => {
-    const { container } = render(<Icon name="不存在的图标" />)
-    expect(container.querySelector('svg')).toBeInTheDocument()
+  it('未知图标名称回落为占位图标而不是空白', () => {
+    const 未知 = render(<Icon name="不存在的图标" />).container.innerHTML
+    const 占位 = render(<Icon name="doc-empty" />).container.innerHTML
+    expect(未知).toBe(占位)
   })
 })

@@ -90,6 +90,7 @@ export function formatSize(bytes: number): string {
 /**
  * 将修改时间格式化为中文相对时间。
  * 传入 now 便于测试获得确定性结果。
+ * 未来时间与超过三天的历史时间一律输出具体日期，避免以「今天」掩盖真实时间。
  */
 export function formatTime(value: string, now: Date = new Date()): string {
   const 目标 = new Date(value.replace(' ', 'T'))
@@ -102,13 +103,13 @@ export function formatTime(value: string, now: Date = new Date()): string {
   const 相差天数 = Math.round((当天零点.getTime() - 目标零点.getTime()) / 86400000)
   const 时分 = `${String(目标.getHours()).padStart(2, '0')}:${String(目标.getMinutes()).padStart(2, '0')}`
 
-  if (相差天数 <= 0) {
+  if (相差天数 === 0) {
     return `今天 ${时分}`
   }
   if (相差天数 === 1) {
     return `昨天 ${时分}`
   }
-  if (相差天数 <= 3) {
+  if (相差天数 >= 2 && 相差天数 <= 3) {
     return `${相差天数} 天前`
   }
   return `${目标.getFullYear()}-${String(目标.getMonth() + 1).padStart(2, '0')}-${String(目标.getDate()).padStart(2, '0')}`

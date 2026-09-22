@@ -1,15 +1,17 @@
-import React from 'react'
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { App as AntdApp } from 'antd'
 import HomePage from './HomePage'
 import { AppProvider } from '../store'
 
 const 渲染首页 = () =>
   render(
-    <AppProvider>
-      <HomePage />
-    </AppProvider>
+    <AntdApp>
+      <AppProvider>
+        <HomePage />
+      </AppProvider>
+    </AntdApp>
   )
 
 describe('首页', () => {

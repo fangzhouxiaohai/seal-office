@@ -64,6 +64,9 @@ button {
   padding: 24px;
   overflow: auto;
   background: var(--bg-app);
+  /* 作为容器查询的参照，使文档网格按内容区实际宽度决定列数 */
+  container-type: inline-size;
+  container-name: wps-main;
 }
 
 /* 顶栏 */
@@ -405,19 +408,21 @@ button {
 /* 文档网格 */
 .wps-doc-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
-@media (max-width: 1599px) {
+/* 列数依据主内容区可用宽度决定，侧栏与内边距占用的空间因此被正确扣除，
+   不采用视口媒体查询，避免窄窗口下仍按视口宽度排满五列 */
+@container wps-main (min-width: 1240px) {
   .wps-doc-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1239px) {
+@container wps-main (min-width: 1600px) {
   .wps-doc-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -461,10 +466,17 @@ button {
   line-height: 18px;
 }
 
-.wps-doc-card__star {
+.wps-doc-card__actions {
   position: absolute;
   right: 6px;
   top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wps-doc-card__more,
+.wps-doc-card__star {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -472,16 +484,22 @@ button {
   height: 26px;
   border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--text-3);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s ease, color 0.15s ease;
 }
 
+.wps-doc-card:hover .wps-doc-card__more,
 .wps-doc-card:hover .wps-doc-card__star,
 .wps-doc-card__star--on {
   opacity: 1;
+}
+
+.wps-doc-card__more:hover,
+.wps-doc-card__star:hover {
+  color: var(--brand);
 }
 
 .wps-doc-card__star--on {
@@ -529,6 +547,12 @@ button {
 .wps-doc-list__head {
   background: #fafbfd;
   border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* 表头列使用独立类名，避免继承行内名称与星标列的颜色 */
+.wps-doc-list__col {
   color: var(--text-3);
   font-size: 12px;
 }

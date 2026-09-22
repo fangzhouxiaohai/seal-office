@@ -8,8 +8,7 @@ import {
   type DocItem,
   type SortKey,
 } from './mock/recentDocs'
-import { NAV_GROUPS } from './routes'
-import type { ModuleKey } from './routes'
+import { DOC_TYPE_TO_MODULE, NAV_GROUPS, type ModuleKey } from './navConfig'
 
 export type ViewMode = 'grid' | 'list'
 
@@ -34,19 +33,17 @@ export interface AppState {
   setActiveDocId: (标识: string | null) => void
   /** 打开文档：按文档类型跳转到对应模块 */
   openDoc: (文档: DocItem) => void
+  /** 新建文档：进入对应模块并清空已打开文档 */
+  createDoc: (类型: DocItem['type']) => void
+  /** 重命名文档；传入纯空白名称时不生效，避免写入无效文件名 */
+  renameDoc: (标识: string, 名称: string) => void
+  /** 删除文档；若删除的是当前打开文档，同时清空选中标识 */
+  removeDoc: (标识: string) => void
   /** 处理首页导航点击：未实现项给出中文提示，不切换内容 */
   handleNav: (键: string, 提示: (文本: string) => void) => void
 }
 
 const AppContext = createContext<AppState | null>(null)
-
-/** 文档类型到模块的映射，与 routes.tsx 保持一致，此处内联以避免循环依赖 */
-const 类型到模块: Record<DocItem['type'], ModuleKey> = {
-  word: 'word',
-  table: 'table',
-  ppt: 'ppt',
-  pdf: 'home',
-}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [module, setModule] = useState<ModuleKey>('home')
@@ -69,7 +66,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const openDoc = (文档: DocItem) => {
     setActiveDocId(文档.id)
-    setModule(类型到模块[文档.type])
+    setModule(DOC_TYPE_TO_MODULE[文档.type])
+  }
+
+  /** 新建文档：进入对应模块并清空已打开文档，避免顶栏沿用无关文件名 */
+  const createDoc = (类型: DocItem['type']) => {
+    setActiveDocId(null)
+    setModule(DOC_TYPE_TO_MODULE[类型])
+  }
+
+  const renameDoc = (标识: string, 名称: string) => {
+    const 规范名称 = 名称.trim()
+    if (规范名称.length === 0) {
+      return
+    }
+    setDocs((当前) =>
+      当前.map((文档) => (文档.id === 标识 ? { ...文档, name: 规范名称 } : 文档))
+    )
+  }
+
+  const removeDoc = (标识: string) => {
+    setDocs((当前) => 当前.filter((文档) => 文档.id !== 标识))
+    setActiveDocId((当前) => (当前 === 标识 ? null : 当前))
   }
 
   const handleNav = (键: string, 提示: (文本: string) => void) => {
@@ -101,6 +119,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       activeDocId,
       setActiveDocId,
       openDoc,
+      createDoc,
+      renameDoc,
+      removeDoc,
       handleNav,
     }),
     [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId]

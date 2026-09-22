@@ -17,6 +17,8 @@ interface Props {
   onSelect?: (标识: string) => void
   onOpen?: (标识: string) => void
   onToggleStar?: (标识: string) => void
+  onRename?: (标识: string, 名称: string) => void
+  onRemove?: (标识: string) => void
   onViewModeChange?: (模式: ViewMode) => void
   onSortChange?: (键: SortKey) => void
   onViewAll?: () => void
@@ -29,6 +31,9 @@ const 排序文案: Record<SortKey, string> = {
   size: '按大小',
 }
 
+/** 列表视图列标题，顺序与 .wps-doc-list 的栅格模板一致 */
+const 列表列标题 = ['名称', '类型', '修改时间', '大小', '星标']
+
 const RecentDocs = ({
   docs,
   title,
@@ -38,6 +43,8 @@ const RecentDocs = ({
   onSelect,
   onOpen,
   onToggleStar,
+  onRename,
+  onRemove,
   onViewModeChange,
   onSortChange,
   onViewAll,
@@ -132,6 +139,8 @@ const RecentDocs = ({
                 onSelect,
                 onOpen,
                 onToggleStar,
+                onRename,
+                onRemove,
               })
             )
           )
@@ -141,11 +150,9 @@ const RecentDocs = ({
             React.createElement(
               'div',
               { className: 'wps-doc-list__head' },
-              React.createElement('span', { className: 'wps-doc-row__name' }, '名称'),
-              React.createElement('span', { className: 'wps-doc-row__type' }, '类型'),
-              React.createElement('span', { className: 'wps-doc-row__time' }, '修改时间'),
-              React.createElement('span', { className: 'wps-doc-row__size' }, '大小'),
-              React.createElement('span', { className: 'wps-doc-row__star' }, '星标')
+              列表列标题.map((列名) =>
+                React.createElement('span', { key: 列名, className: 'wps-doc-list__col' }, 列名)
+              )
             ),
             docs.map((文档) => React.createElement(DocRow, { key: 文档.id, doc: 文档, onOpen }))
           )
