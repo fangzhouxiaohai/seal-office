@@ -16,6 +16,7 @@ import {
   type SmartArt类型,
   type 图表类型,
 } from './graphics'
+import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 } from './citation'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -109,6 +110,12 @@ export interface CommandContext {
   格式刷暂存: { 值: 选区格式 | null }
   /** 当前文档名，供文档部件等命令使用 */
   当前文档名: string
+  /** 打开表格网格选择器 */
+  打开表格网格: () => void
+  /** 打开文献管理面板 */
+  打开文献管理: () => void
+  /** 当前会话维护的文献列表 */
+  文献列表: 文献[]
 }
 
 export interface EditorCommand {
@@ -174,10 +181,6 @@ const 格式化命令定义: Array<[string, string, string]> = [
 ]
 
 const 未实现命令定义: Array<[string, string]> = [
-  ['table.draw', '绘制表格'],
-  ['citation.insert', '插入引文'],
-  ['citation.manageSource', '管理源'],
-  ['bibliography.insert', '书目'],
   ['translate.start', '翻译'],
   ['compare.start', '比较'],
   ['merge.start', '合并'],
@@ -351,6 +354,7 @@ const 插入命令: EditorCommand[] = [
     上下文.插入内容(html)
     上下文.notify(`已插入${类型}SmartArt`)
   }),
+  生成回调命令('table.draw', '绘制表格', (上下文) => 上下文.打开表格网格()),
 ]
 
 /** 页面布局命令 */
@@ -455,6 +459,24 @@ const 引用命令: EditorCommand[] = [
     const 文本 = 部件表[参数 ?? '日期'] ?? 日期文本
     上下文.插入内容(`<span class="wps-field">${文本}</span>`)
     上下文.notify(`已插入文档部件「${参数 ?? '日期'}」`)
+  }),
+  生成回调命令('citation.insert', '插入引文', (上下文) => {
+    if (上下文.文献列表.length === 0) {
+      上下文.notify('尚未添加文献，请先在「管理源」中录入')
+      return
+    }
+    const 序号 = 提取引文序号(上下文.读取内容()).length + 1
+    上下文.插入内容(生成引文标记(序号))
+    上下文.notify(`已插入引文 [${序号}]`)
+  }),
+  生成回调命令('citation.manageSource', '管理源', (上下文) => 上下文.打开文献管理()),
+  生成回调命令('bibliography.insert', '书目', (上下文) => {
+    if (上下文.文献列表.length === 0) {
+      上下文.notify('尚未添加文献，请先在「管理源」中录入')
+      return
+    }
+    上下文.插入内容(`${生成书目Html(上下文.文献列表)}<p><br></p>`)
+    上下文.notify(`已插入参考文献列表，共 ${上下文.文献列表.length} 条`)
   }),
 ]
 

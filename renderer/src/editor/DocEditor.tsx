@@ -8,6 +8,9 @@ import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
 import { 检查文本 } from './spellCheck'
+import TableGridPicker from './TableGridPicker'
+import SourceManager from './SourceManager'
+import type { 文献 } from './citation'
 import RibbonTabs from './ribbon/RibbonTabs'
 import RibbonPanel from './ribbon/RibbonPanel'
 import DocumentTabs from './DocumentTabs'
@@ -124,6 +127,9 @@ const DocEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [视图, set视图] = useState<ViewState>(默认视图)
   const [查找打开, set查找打开] = useState(false)
+  const [网格打开, set网格打开] = useState(false)
+  const [文献面板打开, set文献面板打开] = useState(false)
+  const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
 
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
@@ -449,6 +455,9 @@ const DocEditor = () => {
     应用选区格式,
     格式刷暂存: 格式刷容器.current,
     当前文档名: 当前文档?.name ?? '未命名文档',
+    打开表格网格: () => set网格打开(true),
+    打开文献管理: () => set文献面板打开(true),
+    文献列表,
   }
 
   const 执行命令 = (命令标识: string, 参数?: string): void => {
@@ -537,6 +546,31 @@ const DocEditor = () => {
           },
         })
       : null,
+    React.createElement(TableGridPicker, {
+      open: 网格打开,
+      onClose: () => set网格打开(false),
+      onPick: (行数: number, 列数: number) => {
+        set网格打开(false)
+        const 表头 =
+          '<tr>' +
+          Array.from({ length: 列数 }, () => '<td style="border:1px solid #E8EBF0;padding:6px 8px">&nbsp;</td>').join('') +
+          '</tr>'
+        const 数据行 =
+          '<tr>' +
+          Array.from({ length: 列数 }, () => '<td style="border:1px solid #E8EBF0;padding:6px 8px">&nbsp;</td>').join('') +
+          '</tr>'
+        插入内容(
+          `<table style="border-collapse:collapse;width:100%"><tbody>${表头}${数据行.repeat(Math.max(0, 行数 - 1))}</tbody></table><p><br></p>`
+        )
+        message.success(`已插入 ${行数} 行 ${列数} 列的表格`)
+      },
+    }),
+    React.createElement(SourceManager, {
+      open: 文献面板打开,
+      sources: 文献列表,
+      onClose: () => set文献面板打开(false),
+      onChange: set文献列表,
+    }),
     视图.标尺 ? React.createElement(Ruler, null) : null,
     React.createElement(
       'div',

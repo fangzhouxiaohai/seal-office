@@ -42,9 +42,9 @@ describe('编辑器容器', () => {
 
   it('点击未实现命令给出中文提示', async () => {
     渲染编辑器()
-    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    // 绘制表格属于尚未实现的功能，用于验证未实现提示
-    await userEvent.click(screen.getByRole('button', { name: '绘制表格' }))
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    // 翻译属于尚未实现的功能（需要外部服务），用于验证未实现提示
+    await userEvent.click(screen.getByRole('button', { name: '翻译' }))
     expect(await screen.findByText('该功能开发中')).toBeInTheDocument()
   })
 
