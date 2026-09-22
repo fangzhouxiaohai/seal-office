@@ -1,3 +1,4 @@
+import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -7,11 +8,14 @@ import { SheetStatusBar, SheetTabs } from './SheetChrome'
 
 const 渲染表格 = () =>
   render(
-    <ConfigProvider button={{ autoInsertSpace: false }}>
-      <AntdApp>
-        <SheetEditor />
-      </AntdApp>
-    </ConfigProvider>
+    // 与 main.tsx 保持一致地启用 StrictMode，复现真实运行环境的副作用双执行
+    <React.StrictMode>
+      <ConfigProvider button={{ autoInsertSpace: false }}>
+        <AntdApp>
+          <SheetEditor />
+        </AntdApp>
+      </ConfigProvider>
+    </React.StrictMode>
   )
 
 describe('表格编辑器容器', () => {
@@ -80,6 +84,23 @@ describe('表格编辑器容器', () => {
     await userEvent.type(输入框, '42{Enter}')
     // 公式栏也会显示同一原始值，因此限定查询单元格本身
     expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('42')
+  })
+
+  // 复现并锁定「撤销后重做未恢复状态」的缺陷
+  it('加粗后撤销再重做，单元格格式应恢复到加粗状态', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '5{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: '加粗' }))
+
+    const 取字重 = () =>
+      (container.querySelector('[data-地址="A1"]') as HTMLElement).style.fontWeight
+
+    expect(取字重()).toBe('600')
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    expect(取字重()).not.toBe('600')
+    await userEvent.click(screen.getByRole('button', { name: '重做' }))
+    expect(取字重()).toBe('600')
   })
 })
 
