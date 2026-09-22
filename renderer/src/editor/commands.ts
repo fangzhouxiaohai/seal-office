@@ -5,6 +5,7 @@ import { countWords } from './wordCount'
 import { 转换简繁带统计 } from './langConvert'
 import { 提取大纲, 生成目录Html } from './toc'
 import { 生成题注, 生成图表目录Html, 提取题注, 统计题注, type 编号类型 } from './captions'
+import { 删除批注, 接受修订, 提取批注, 生成批注, 拒绝修订, 统计修订 } from './review'
 import { 解析字号, 磅值到档位 } from './fontOptions'
 
 export interface ViewState {
@@ -20,6 +21,8 @@ export interface ViewState {
   页面边框: string
   页面颜色: string
   文字方向: '横排' | '竖排'
+  显示批注: boolean
+  修订模式: boolean
 }
 
 /** 可用于格式刷复制与应用的字符格式 */
@@ -167,12 +170,6 @@ const 未实现命令定义: Array<[string, string]> = [
   ['citation.manageSource', '管理源'],
   ['bibliography.insert', '书目'],
   ['translate.start', '翻译'],
-  ['comment.new', '新建批注'],
-  ['comment.delete', '删除批注'],
-  ['comment.show', '显示批注'],
-  ['track.enable', '修订'],
-  ['track.accept', '接受修订'],
-  ['track.reject', '拒绝修订'],
   ['compare.start', '比较'],
   ['merge.start', '合并'],
   ['protect.start', '保护文档'],
@@ -438,6 +435,66 @@ const 审阅命令: EditorCommand[] = [
   生成回调命令('word.count', '字数统计', (上下文) => {
     const 统计 = countWords(上下文.读取内容().replace(/<[^>]+>/g, ''))
     上下文.notify(`字数：${统计.词数}，字符数：${统计.字符数}，段落数：${统计.段落数}`)
+  }),
+  生成回调命令('comment.new', '新建批注', (上下文) => {
+    const 编号 = 提取批注(上下文.读取内容()).length + 1
+    上下文.插入内容(生成批注(编号, '请补充批注内容'))
+    上下文.notify(`已插入批注 ${编号}，可点击标记查看内容`)
+  }),
+  生成回调命令('comment.delete', '删除批注', (上下文) => {
+    const 已有 = 提取批注(上下文.读取内容())
+    if (已有.length === 0) {
+      上下文.notify('文档中没有批注')
+      return
+    }
+    const 原文 = 上下文.读取内容()
+    let 文本 = 原文
+    let 计数 = 0
+    已有.forEach((项) => {
+      const 结果 = 删除批注(文本, 项.编号)
+      文本 = 结果.文本
+      计数 += 结果.删除数
+    })
+    上下文.history.record({ html: 原文, selection: null })
+    上下文.应用内容(文本, null)
+    上下文.notify(`已删除全部批注，共 ${计数} 处`)
+    上下文.refresh()
+  }),
+  生成回调命令('comment.show', '显示批注', (上下文) => {
+    const 目标 = !上下文.view.显示批注
+    上下文.setView({ 显示批注: 目标 })
+    上下文.notify(目标 ? '已显示批注标记' : '已隐藏批注标记')
+    上下文.refresh()
+  }),
+  生成回调命令('track.enable', '修订', (上下文) => {
+    const 目标 = !上下文.view.修订模式
+    上下文.setView({ 修订模式: 目标 })
+    上下文.notify(目标 ? '已开启修订模式，此后插入的内容会带修订标记' : '已关闭修订模式')
+    上下文.refresh()
+  }),
+  生成回调命令('track.accept', '接受修订', (上下文) => {
+    const 原文 = 上下文.读取内容()
+    if (统计修订(原文).插入数 + 统计修订(原文).删除数 === 0) {
+      上下文.notify('文档中没有待处理的修订')
+      return
+    }
+    const 结果 = 接受修订(原文)
+    上下文.history.record({ html: 原文, selection: null })
+    上下文.应用内容(结果.文本, null)
+    上下文.notify(`已接受 ${结果.修订数} 处修订`)
+    上下文.refresh()
+  }),
+  生成回调命令('track.reject', '拒绝修订', (上下文) => {
+    const 原文 = 上下文.读取内容()
+    if (统计修订(原文).插入数 + 统计修订(原文).删除数 === 0) {
+      上下文.notify('文档中没有待处理的修订')
+      return
+    }
+    const 结果 = 拒绝修订(原文)
+    上下文.history.record({ html: 原文, selection: null })
+    上下文.应用内容(结果.文本, null)
+    上下文.notify(`已拒绝 ${结果.修订数} 处修订`)
+    上下文.refresh()
   }),
 ]
 

@@ -1102,6 +1102,37 @@ button {
   margin: 0 auto;
 }
 
+/* 批注标记与隐藏状态 */
+.wps-comment {
+  margin: 0 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #fff3b0;
+  color: #8a6d1f;
+  font-size: 12px;
+  cursor: help;
+}
+
+.wps-editor-canvas--hide-comments .wps-comment {
+  display: none;
+}
+
+/* 修订标记：插入与删除分别用不同颜色区分 */
+.wps-insert {
+  padding: 0 2px;
+  border-bottom: 1px solid var(--success);
+  background: #e8f7f1;
+  color: #00754f;
+  text-decoration: underline;
+}
+
+.wps-delete {
+  padding: 0 2px;
+  background: #fdecee;
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
 /* 查找替换面板 */
 .wps-find {
   display: flex;

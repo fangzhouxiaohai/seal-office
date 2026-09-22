@@ -29,6 +29,8 @@ const 默认视图: ViewState = {
   页面边框: '无',
   页面颜色: '无',
   文字方向: '横排',
+  显示批注: true,
+  修订模式: false,
 }
 
 /** 转义正则元字符，供查找替换使用 */
@@ -193,7 +195,9 @@ const DocEditor = () => {
       return
     }
     元素.focus()
-    document.execCommand('insertHTML', false, html)
+    // 修订模式下把插入内容标记为修订，便于后续接受或拒绝
+    const 实际内容 = 视图.修订模式 ? `<span class="wps-insert">${html}</span>` : html
+    document.execCommand('insertHTML', false, 实际内容)
     记录历史()
     同步内容()
   }
@@ -473,7 +477,28 @@ const DocEditor = () => {
       onCreate: createEditorDoc,
     }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
-    React.createElement(RibbonPanel, { activeKey: 当前标签, onCommand: 执行命令 }),
+    React.createElement(RibbonPanel, {
+      activeKey: 当前标签,
+      onCommand: 执行命令,
+      获取激活态: (命令标识: string) => {
+        if (命令标识 === 'track.enable') {
+          return 视图.修订模式
+        }
+        if (命令标识 === 'comment.show') {
+          return 视图.显示批注
+        }
+        if (命令标识 === 'view.ruler') {
+          return 视图.标尺
+        }
+        if (命令标识 === 'view.gridlines') {
+          return 视图.网格线
+        }
+        if (命令标识 === 'view.paragraphMark') {
+          return 视图.段落标记
+        }
+        return false
+      },
+    }),
     查找打开
       ? React.createElement(FindReplacePanel, {
           open: 查找打开,
@@ -517,6 +542,7 @@ const DocEditor = () => {
         showParagraphMark: 视图.段落标记,
         gridlines: 视图.网格线,
         vertical: 视图.文字方向 === '竖排',
+        showComments: 视图.显示批注,
         scale: 视图.缩放,
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素
