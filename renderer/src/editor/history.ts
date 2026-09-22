@@ -1,5 +1,5 @@
-// 撤销重做：以「内容快照 + 选区」的形式维护历史，栈上限 100 条。
-// 不使用浏览器原生 undo，避免自研格式化命令与原生撤销栈互相干扰。
+// 撤销重做：以快照形式维护历史，栈上限 100 条。
+// 快照类型泛型化，文字编辑器使用默认的 HTML 快照，表格使用工作表快照。
 
 const 栈上限 = 100
 
@@ -16,15 +16,15 @@ export interface 快照 {
   selection: 保存的选区 | null
 }
 
-export class HistoryStack {
-  private 列表: 快照[] = []
+export class HistoryStack<T = 快照> {
+  private 列表: T[] = []
 
   private 指针 = -1
 
   /** 记录新快照；记录后重做分支被清空 */
-  record(快照: 快照): void {
+  record(项: T): void {
     this.列表 = this.列表.slice(0, this.指针 + 1)
-    this.列表.push(快照)
+    this.列表.push(项)
     if (this.列表.length > 栈上限) {
       this.列表.shift()
     }
@@ -39,7 +39,7 @@ export class HistoryStack {
     return this.指针 < this.列表.length - 1
   }
 
-  undo(): 快照 | null {
+  undo(): T | null {
     if (!this.canUndo()) {
       return null
     }
@@ -47,7 +47,7 @@ export class HistoryStack {
     return this.列表[this.指针]
   }
 
-  redo(): 快照 | null {
+  redo(): T | null {
     if (!this.canRedo()) {
       return null
     }
@@ -55,7 +55,7 @@ export class HistoryStack {
     return this.列表[this.指针]
   }
 
-  current(): 快照 | null {
+  current(): T | null {
     return this.指针 >= 0 ? this.列表[this.指针] : null
   }
 
