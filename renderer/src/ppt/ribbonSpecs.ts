@@ -32,6 +32,10 @@ const 开始标签: RibbonTabSpec = {
       items: [大('clipboard.paste', '粘贴', 'paste'), 小('clipboard.copy', '复制', 'copy')],
     },
     {
+      name: '撤销',
+      items: [小('edit.undo', '撤销', 'undo'), 小('edit.redo', '重做', 'redo')],
+    },
+    {
       name: '幻灯片',
       items: [
         大('slide.new', '新建幻灯片', 'plus'),

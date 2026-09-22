@@ -36,6 +36,10 @@ const 开始标签: RibbonTabSpec = {
       ],
     },
     {
+      name: '撤销',
+      items: [小('edit.undo', '撤销', 'undo'), 小('edit.redo', '重做', 'redo')],
+    },
+    {
       name: '字体',
       items: [
         小('cell.bold', '加粗', 'bold'),
@@ -60,6 +64,7 @@ const 开始标签: RibbonTabSpec = {
         小('cell.alignCenter', '居中', 'align-center'),
         小('cell.alignRight', '右对齐', 'align-right'),
         小('cell.wrap', '自动换行', 'align-justify'),
+        小('cell.mergeCenter', '合并后居中', 'table'),
       ],
     },
     {

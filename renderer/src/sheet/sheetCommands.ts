@@ -5,6 +5,7 @@ import {
   写入单元格,
   设置格式,
   清空单元格,
+  切换合并,
   type CellFormat,
   type Sheet,
 } from './model'
@@ -20,6 +21,9 @@ export interface 表格命令上下文 {
   选区: 选区范围
   更新工作表: (表: Sheet) => void
   notify: (文本: string) => void
+  /** 撤销与重做由容器实现，命令只负责派发 */
+  撤销: () => void
+  重做: () => void
 }
 
 export interface 表格命令 {
@@ -37,8 +41,26 @@ export function 未实现表格命令(id: string, label: string): 表格命令 {
   }
 }
 
-const 选区区域 = (上下文: 表格命令上下文): string =>
-  生成区域地址(上下文.选区.起点, 上下文.选区.终点)
+/** 把选区裁剪到工作表范围内，避免越界写入单元格键并污染导出范围 */
+function 裁剪选区(工作表: Sheet, 选区: 选区范围): 选区范围 {
+  const 行上限 = Math.max(0, 工作表.行数 - 1)
+  const 列上限 = Math.max(0, 工作表.列数 - 1)
+  return {
+    起点: {
+      行: Math.max(0, Math.min(选区.起点.行, 行上限)),
+      列: Math.max(0, Math.min(选区.起点.列, 列上限)),
+    },
+    终点: {
+      行: Math.max(0, Math.min(选区.终点.行, 行上限)),
+      列: Math.max(0, Math.min(选区.终点.列, 列上限)),
+    },
+  }
+}
+
+const 选区区域 = (上下文: 表格命令上下文): string => {
+  const 裁剪后 = 裁剪选区(上下文.工作表, 上下文.选区)
+  return 生成区域地址(裁剪后.起点, 裁剪后.终点)
+}
 
 const 首格格式 = (上下文: 表格命令上下文): CellFormat =>
   读取单元格(
@@ -101,10 +123,11 @@ function 排序命令(方向: '升序' | '降序'): 表格命令 {
     id: 方向 === '升序' ? 'data.sortAsc' : 'data.sortDesc',
     label: 方向,
     run: (上下文) => {
-      const 起点行 = 上下文.选区.起点.行
-      const 终点行 = 上下文.选区.终点.行
-      const 起点列 = 上下文.选区.起点.列
-      const 终点列 = 上下文.选区.终点.列
+      const 裁剪后 = 裁剪选区(上下文.工作表, 上下文.选区)
+      const 起点行 = 裁剪后.起点.行
+      const 终点行 = 裁剪后.终点.行
+      const 起点列 = 裁剪后.起点.列
+      const 终点列 = 裁剪后.终点.列
       if (终点行 - 起点行 < 1) {
         上下文.notify('请先选择两行以上的区域再排序')
         return
@@ -146,6 +169,16 @@ function 排序命令(方向: '升序' | '降序'): 表格命令 {
 }
 
 const 命令列表: 表格命令[] = [
+  {
+    id: 'edit.undo',
+    label: '撤销',
+    run: (上下文) => 上下文.撤销(),
+  },
+  {
+    id: 'edit.redo',
+    label: '重做',
+    run: (上下文) => 上下文.重做(),
+  },
   开关格式命令('cell.bold', '加粗', '加粗'),
   开关格式命令('cell.italic', '斜体', '斜体'),
   开关格式命令('cell.underline', '下划线', '下划线'),
@@ -155,6 +188,17 @@ const 命令列表: 表格命令[] = [
   设置格式命令('cell.fill', '填充颜色', { 填充颜色: '#EBF1FE' }),
   设置格式命令('cell.fontColor', '字体颜色', { 字体颜色: '#E34D59' }),
   设置格式命令('cell.wrap', '自动换行', { 自动换行: true }),
+  {
+    id: 'cell.mergeCenter',
+    label: '合并后居中',
+    run: (上下文) => {
+      const 区域 = 选区区域(上下文)
+      const 已合并 = 上下文.工作表.合并区域.includes(区域)
+      const 居中后 = 设置格式(上下文.工作表, 区域, { 水平对齐: 'center' })
+      上下文.更新工作表(切换合并(居中后, 区域))
+      上下文.notify(已合并 ? '已取消合并' : '已合并并居中')
+    },
+  },
   数字格式命令('number.plain', '常规', '常规'),
   数字格式命令('number.percent', '百分比', '百分比'),
   数字格式命令('number.currency', '货币', '货币'),
@@ -183,9 +227,13 @@ const 命令列表: 表格命令[] = [
     id: 'edit.sum',
     label: '自动求和',
     run: (上下文) => {
-      const { 起点, 终点 } = 上下文.选区
+      const { 起点, 终点 } = 裁剪选区(上下文.工作表, 上下文.选区)
       if (终点.行 - 起点.行 < 1) {
         上下文.notify('请先选择两行以上的数值区域')
+        return
+      }
+      if (终点.行 + 1 >= 上下文.工作表.行数) {
+        上下文.notify('所选区域已在最后一行，无法在下方写入求和结果')
         return
       }
       const 区域地址 = 生成区域地址({ 行: 起点.行, 列: 起点.列 }, { 行: 终点.行, 列: 起点.列 })
@@ -199,7 +247,7 @@ const 命令列表: 表格命令[] = [
     id: 'data.removeDuplicates',
     label: '删除重复项',
     run: (上下文) => {
-      const { 起点, 终点 } = 上下文.选区
+      const { 起点, 终点 } = 裁剪选区(上下文.工作表, 上下文.选区)
       const 已见 = new Set<string>()
       const 要清空: string[] = []
       for (let 行 = 起点.行; 行 <= 终点.行; 行 += 1) {

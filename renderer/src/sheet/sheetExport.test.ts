@@ -79,6 +79,22 @@ describe('HTML 导出', () => {
   it('空工作表返回空字符串', () => {
     expect(导出为Html表格(创建工作表('空表'), '空表')).toBe('')
   })
+
+  it('内容中的 HTML 标签被转义，不破坏导出页结构', () => {
+    let 表 = 创建工作表('测试')
+    表 = 写入单元格(表, 'A1', '<script>alert(1)</script>')
+    const html = 导出为Html表格(表, '测试')
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('标题中的 HTML 标签同样被转义', () => {
+    let 表 = 创建工作表('测试')
+    表 = 写入单元格(表, 'A1', '内容')
+    const html = 导出为Html表格(表, '<b>标题</b>')
+    expect(html).not.toContain('<b>标题</b>')
+    expect(html).toContain('&lt;b&gt;')
+  })
 })
 
 describe('导出文件名', () => {

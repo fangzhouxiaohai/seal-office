@@ -1,5 +1,5 @@
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 下载文本 } from '../editor/exportDoc'
@@ -31,11 +31,43 @@ const PptEditor = () => {
   const [显示网格线, set显示网格线] = useState(false)
   const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
 
+  // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
+  useEffect(() => {
+    历史.record(文稿)
+    // 仅在挂载时记录一次初始快照
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const 当前幻灯片 = 读取当前幻灯片(文稿)
 
+  /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新文稿 = (新文稿: 演示文稿) => {
-    历史.record(文稿)
+    历史.record(新文稿)
     set文稿(新文稿)
+  }
+
+  /** 撤销：回到上一份演示文稿快照 */
+  const 撤销 = () => {
+    const 上一步 = 历史.undo()
+    if (上一步 === null) {
+      message.info('没有可撤销的操作')
+      return
+    }
+    set文稿(上一步)
+    set选中框标识(null)
+    message.success('已撤销')
+  }
+
+  /** 重做：前进到下一份演示文稿快照 */
+  const 重做 = () => {
+    const 下一步 = 历史.redo()
+    if (下一步 === null) {
+      message.info('没有可重做的操作')
+      return
+    }
+    set文稿(下一步)
+    set选中框标识(null)
+    message.success('已重做')
   }
 
   const 上下文: 演示命令上下文 = {
@@ -43,6 +75,8 @@ const PptEditor = () => {
     选中框标识,
     更新文稿,
     notify: (文本: string) => message.info(文本),
+    撤销,
+    重做,
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {

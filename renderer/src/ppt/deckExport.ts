@@ -2,6 +2,11 @@
 
 import { type 演示文稿 } from './deck'
 
+/** 转义 HTML 特殊字符，避免文本框内容破坏导出页结构 */
+function 转义Html(文本: string): string {
+  return 文本.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 /** 导出为 HTML 预览页；无幻灯片时返回空字符串 */
 export function 导出为Html预览(文稿: 演示文稿, 标题: string): string {
   if (文稿.幻灯片列表.length === 0) {
@@ -15,7 +20,9 @@ export function 导出为Html预览(文稿: 演示文稿, 标题: string): strin
           (框) =>
             `<div style="position:absolute;left:${框.x}px;top:${框.y}px;width:${框.width}px;` +
             `height:${框.height}px;font-size:${框.字号}px;color:${框.颜色};` +
-            `font-weight:${框.加粗 ? 600 : 400};text-align:${框.对齐}">${框.text}</div>`
+            `font-weight:${框.加粗 ? 600 : 400};font-style:${框.斜体 ? 'italic' : 'normal'};` +
+            `text-decoration:${框.下划线 ? 'underline' : 'none'};` +
+            `text-align:${框.对齐}">${转义Html(框.text)}</div>`
         )
         .join('')
       return (
@@ -30,7 +37,7 @@ export function 导出为Html预览(文稿: 演示文稿, 标题: string): strin
 
   return (
     '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n' +
-    `<title>${标题}</title>\n</head>\n<body style="margin:0;background:#F5F7FA;font-family:'Microsoft YaHei',sans-serif">\n` +
+    `<title>${转义Html(标题)}</title>\n</head>\n<body style="margin:0;background:#F5F7FA;font-family:\'Microsoft YaHei\',sans-serif">\n` +
     页列表 +
     '\n</body>\n</html>\n'
   )

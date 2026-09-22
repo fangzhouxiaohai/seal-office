@@ -2,7 +2,7 @@
 // 全部为纯函数，返回新的工作表对象，便于配合撤销重做使用。
 
 import { 求值公式 } from './formula'
-import { 展开区域, 生成地址 } from './address'
+import { 展开区域, 生成地址, 生成区域地址, type 单元格位置 } from './address'
 import { 格式化数字, type 数字格式 } from './numberFormat'
 
 export interface CellFormat {
@@ -174,4 +174,57 @@ export function 设置格式(工作表: Sheet, 区域: string, 格式: Partial<C
     新单元格[地址] = { ...单元, 格式: { ...单元.格式, ...格式 } }
   })
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
+}
+
+export interface 合并信息 {
+  是左上角: boolean
+  跨度行: number
+  跨度列: number
+}
+
+/**
+ * 查询位置所在的合并区域。
+ * 返回 null 表示该位置不属于任何合并区域。
+ */
+export function 查询合并(工作表: Sheet, 位置: 单元格位置): 合并信息 | null {
+  const 地址 = 生成地址(位置.行, 位置.列)
+  for (const 区域 of 工作表.合并区域) {
+    const 位置列表 = 展开区域(区域)
+    if (!位置列表.some((项) => 项.行 === 位置.行 && 项.列 === 位置.列)) {
+      continue
+    }
+    const 起点 = 位置列表[0]
+    const 行集合 = 位置列表.map((项) => 项.行)
+    const 列集合 = 位置列表.map((项) => 项.列)
+    return {
+      是左上角: 起点.行 === 位置.行 && 起点.列 === 位置.列,
+      跨度行: Math.max(...行集合) - Math.min(...行集合) + 1,
+      跨度列: Math.max(...列集合) - Math.min(...列集合) + 1,
+    }
+  }
+  void 地址
+  return null
+}
+
+/**
+ * 切换区域的合并状态。
+ * 对已合并的区域再次调用即取消合并；与既有合并区域重叠时会先移除重叠项。
+ */
+export function 切换合并(工作表: Sheet, 区域: string): Sheet {
+  const 位置列表 = 展开区域(区域)
+  if (位置列表.length <= 1) {
+    return 工作表
+  }
+  const 规范区域 = 生成区域地址(
+    { 行: Math.min(...位置列表.map((项) => 项.行)), 列: Math.min(...位置列表.map((项) => 项.列)) },
+    { 行: Math.max(...位置列表.map((项) => 项.行)), 列: Math.max(...位置列表.map((项) => 项.列)) }
+  )
+  if (工作表.合并区域.includes(规范区域)) {
+    return { ...工作表, 合并区域: 工作表.合并区域.filter((项) => 项 !== 规范区域) }
+  }
+  const 目标集合 = new Set(位置列表.map((项) => `${项.行}-${项.列}`))
+  const 保留 = 工作表.合并区域.filter((项) =>
+    展开区域(项).every((位置) => !目标集合.has(`${位置.行}-${位置.列}`))
+  )
+  return { ...工作表, 合并区域: [...保留, 规范区域] }
 }

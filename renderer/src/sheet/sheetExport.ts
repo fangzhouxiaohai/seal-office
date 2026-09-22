@@ -48,6 +48,11 @@ export function 导出为Csv(工作表: Sheet): string {
   return 行列表.join('\n')
 }
 
+/** 转义 HTML 特殊字符，避免单元格内容破坏导出页结构 */
+function 转义Html(文本: string): string {
+  return 文本.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 /** 导出为独立的 HTML 表格文档；无内容时返回空字符串 */
 export function 导出为Html表格(工作表: Sheet, 标题: string): string {
   const { 行数, 列数 } = 计算有效范围(工作表)
@@ -59,13 +64,13 @@ export function 导出为Html表格(工作表: Sheet, 标题: string): string {
     const 单元格列表: string[] = []
     for (let 列 = 0; 列 < 列数; 列 += 1) {
       const 文本 = 读取单元格(工作表, 生成地址(行, 列)).显示值
-      单元格列表.push(`<td style="border:1px solid #E8EBF0;padding:6px 8px">${文本}</td>`)
+      单元格列表.push(`<td style="border:1px solid #E8EBF0;padding:6px 8px">${转义Html(文本)}</td>`)
     }
     行列表.push(`<tr>${单元格列表.join('')}</tr>`)
   }
   return (
     '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n' +
-    `<title>${标题}</title>\n</head>\n<body>\n` +
+    `<title>${转义Html(标题)}</title>\n</head>\n<body>\n` +
     `<table style="border-collapse:collapse">${行列表.join('')}</table>\n</body>\n</html>\n`
   )
 }

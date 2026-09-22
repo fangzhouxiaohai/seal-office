@@ -26,6 +26,23 @@ describe('演示文稿导出', () => {
     const 文稿 = { ...创建演示文稿(), 幻灯片列表: [] }
     expect(导出为Html预览(文稿, '空')).toBe('')
   })
+
+  it('文本框内容中的 HTML 标签被转义', () => {
+    const 文稿 = 创建演示文稿()
+    文稿.幻灯片列表[0].文本框列表[0].text = '<b>粗体</b>'
+    const html = 导出为Html预览(文稿, '测试')
+    expect(html).not.toContain('<b>粗体</b>')
+    expect(html).toContain('&lt;b&gt;')
+  })
+
+  it('斜体与下划线写入内联样式', () => {
+    const 文稿 = 创建演示文稿()
+    文稿.幻灯片列表[0].文本框列表[0].斜体 = true
+    文稿.幻灯片列表[0].文本框列表[0].下划线 = true
+    const html = 导出为Html预览(文稿, '测试')
+    expect(html).toContain('font-style:italic')
+    expect(html).toContain('text-decoration:underline')
+  })
 })
 
 describe('演示文件名', () => {

@@ -10,6 +10,7 @@ import {
   切换幻灯片,
   读取当前幻灯片,
   type 版式类型,
+  type 文本框,
   type 演示文稿,
 } from './deck'
 
@@ -19,6 +20,9 @@ export interface 演示命令上下文 {
   选中框标识: string | null
   更新文稿: (文稿: 演示文稿) => void
   notify: (文本: string) => void
+  /** 撤销与重做由容器实现，命令只负责派发 */
+  撤销: () => void
+  重做: () => void
 }
 
 export interface 演示命令 {
@@ -36,11 +40,20 @@ export function 未实现演示命令(id: string, label: string): 演示命令 {
   }
 }
 
+/** 读取当前选中的文本框；未选中时返回 null */
+export function 取选中框(上下文: 演示命令上下文): 文本框 | null {
+  const 当前 = 读取当前幻灯片(上下文.文稿)
+  if (当前 === null || 上下文.选中框标识 === null) {
+    return null
+  }
+  return 当前.文本框列表.find((项) => 项.id === 上下文.选中框标识) ?? null
+}
+
 /** 对当前选中文本框应用修改 */
 function 修改选中框(
   id: string,
   label: string,
-  生成修改: (参数?: string) => Record<string, unknown>
+  生成修改: (上下文: 演示命令上下文, 参数?: string) => Record<string, unknown>
 ): 演示命令 {
   return {
     id,
@@ -53,7 +66,8 @@ function 修改选中框(
       }
       上下文.更新文稿(
         更新幻灯片(上下文.文稿, 当前.id, {
-          文本框列表: 更新文本框(当前, 上下文.选中框标识, 生成修改(参数) as never).文本框列表,
+          文本框列表: 更新文本框(当前, 上下文.选中框标识, 生成修改(上下文, 参数) as never)
+            .文本框列表,
         })
       )
       上下文.notify(`已应用${label}`)
@@ -76,6 +90,8 @@ const 背景映射: Record<string, string> = {
 }
 
 const 命令列表: 演示命令[] = [
+  { id: 'edit.undo', label: '撤销', run: (上下文) => 上下文.撤销() },
+  { id: 'edit.redo', label: '重做', run: (上下文) => 上下文.重做() },
   {
     id: 'slide.new',
     label: '新建幻灯片',
@@ -134,8 +150,13 @@ const 命令列表: 演示命令[] = [
   修改选中框('text.italic', '斜体', () => ({ 斜体: true })),
   修改选中框('text.underline', '下划线', () => ({ 下划线: true })),
   修改选中框('text.color', '字体颜色', (参数) => ({ 颜色: 参数 ?? '#E34D59' })),
-  修改选中框('text.sizeUp', '增大字号', () => ({ 字号: 32 })),
-  修改选中框('text.sizeDown', '减小字号', () => ({ 字号: 18 })),
+  // 字号按当前值增减，而不是固定赋值，避免出现「点增大反而变小」
+  修改选中框('text.sizeUp', '增大字号', (上下文) => ({
+    字号: Math.min(96, (取选中框(上下文)?.字号 ?? 24) + 4),
+  })),
+  修改选中框('text.sizeDown', '减小字号', (上下文) => ({
+    字号: Math.max(10, (取选中框(上下文)?.字号 ?? 24) - 4),
+  })),
   修改选中框('para.alignLeft', '左对齐', () => ({ 对齐: 对齐映射['para.alignLeft'] })),
   修改选中框('para.alignCenter', '居中', () => ({ 对齐: 对齐映射['para.alignCenter'] })),
   修改选中框('para.alignRight', '右对齐', () => ({ 对齐: 对齐映射['para.alignRight'] })),

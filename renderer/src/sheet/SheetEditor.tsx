@@ -1,5 +1,5 @@
 // 表格编辑器容器：装配 Ribbon、名称框与公式栏、网格、工作表标签与状态栏。
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
@@ -30,11 +30,44 @@ const SheetEditor = () => {
   const [显示网格线, set显示网格线] = useState(true)
   const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [])
 
+  // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
+  useEffect(() => {
+    历史.record(工作表列表)
+    // 仅在挂载时记录一次初始快照
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const 工作表 = 工作表列表[当前索引]
 
+  /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新工作表 = (新表: Sheet) => {
-    历史.record(工作表列表)
-    set工作表列表((当前) => 当前.map((项, 下标) => (下标 === 当前索引 ? 新表 : 项)))
+    const 下一个 = 工作表列表.map((项, 下标) => (下标 === 当前索引 ? 新表 : 项))
+    历史.record(下一个)
+    set工作表列表(下一个)
+  }
+
+  /** 撤销：回到上一份工作表列表快照 */
+  const 撤销 = () => {
+    const 上一步 = 历史.undo()
+    if (上一步 === null) {
+      message.info('没有可撤销的操作')
+      return
+    }
+    set工作表列表(上一步)
+    set当前索引((当前) => Math.min(当前, 上一步.length - 1))
+    message.success('已撤销')
+  }
+
+  /** 重做：前进到下一份工作表列表快照 */
+  const 重做 = () => {
+    const 下一步 = 历史.redo()
+    if (下一步 === null) {
+      message.info('没有可重做的操作')
+      return
+    }
+    set工作表列表(下一步)
+    set当前索引((当前) => Math.min(当前, 下一步.length - 1))
+    message.success('已重做')
   }
 
   const 上下文: 表格命令上下文 = {
@@ -42,6 +75,8 @@ const SheetEditor = () => {
     选区,
     更新工作表,
     notify: (文本: string) => message.info(文本),
+    撤销,
+    重做,
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
@@ -147,6 +182,7 @@ const SheetEditor = () => {
         选区,
         编辑地址,
         编辑值,
+        scale: 缩放,
         on选中: (位置: 单元格位置, 扩展选区: boolean) => {
           if (扩展选区) {
             set选区((当前) => ({ 起点: 当前.起点, 终点: 位置 }))
