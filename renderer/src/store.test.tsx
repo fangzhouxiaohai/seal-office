@@ -17,6 +17,13 @@ const 探针 = ({ 提示文本 }: { 提示文本?: (文本: string) => void }) =
       <span data-testid="total-count">{状态.docs.length}</span>
       <span data-testid="first-name">{状态.docs[0]?.name ?? '无'}</span>
       <span data-testid="active-id">{状态.activeDocId ?? '无'}</span>
+      <span data-testid="editor-doc-count">{状态.documents.length}</span>
+      <span data-testid="active-doc-html">
+        {状态.documents.find((项) => 项.id === 状态.activeDocumentId)?.html ?? '无'}
+      </span>
+      <span data-testid="active-doc-name">
+        {状态.documents.find((项) => 项.id === 状态.activeDocumentId)?.name ?? '无'}
+      </span>
       <button onClick={() => 状态.setModule('word')}>切模块</button>
       <button onClick={() => 状态.setNavKey('star')}>切星标</button>
       <button onClick={() => 状态.setViewMode('list')}>切列表</button>
@@ -28,6 +35,11 @@ const 探针 = ({ 提示文本 }: { 提示文本?: (文本: string) => void }) =
       <button onClick={() => 状态.renameDoc(状态.docs[0].id, '   ')}>重命名空名</button>
       <button onClick={() => 状态.removeDoc(状态.docs[0].id)}>删除首篇</button>
       <button onClick={() => 状态.setActiveDocId(状态.docs[0].id)}>选中首篇</button>
+      <button onClick={() => 状态.createDoc('word')}>新建文字文档</button>
+      <button onClick={() => 状态.updateEditorHtml(状态.activeDocumentId ?? '', '<p>新内容</p>')}>
+        写入内容
+      </button>
+      <button onClick={() => 状态.closeEditorDoc(状态.activeDocumentId ?? '')}>关闭当前文档</button>
     </div>
   )
 }
@@ -128,8 +140,31 @@ describe('应用状态层', () => {
     expect(screen.getByTestId('active-id')).toHaveTextContent('无')
   })
 
-  it('在 Provider 之外使用时抛出中文异常', () => {
-    // 抑制 React 对错误边界的控制台告警，保持测试输出整洁
+  it('新建文档后编辑器文档列表增加一项', async () => {
+    渲染探针()
+    expect(screen.getByTestId('editor-doc-count')).toHaveTextContent('0')
+    await userEvent.click(screen.getByText('新建文字文档'))
+    expect(screen.getByTestId('editor-doc-count')).toHaveTextContent('1')
+    expect(screen.getByTestId('module')).toHaveTextContent('word')
+    expect(screen.getByTestId('active-doc-name')).toHaveTextContent('未命名文档.docx')
+  })
+
+  it('更新文档内容后写回列表', async () => {
+    渲染探针()
+    await userEvent.click(screen.getByText('新建文字文档'))
+    await userEvent.click(screen.getByText('写入内容'))
+    expect(screen.getByTestId('active-doc-html')).toHaveTextContent('新内容')
+  })
+
+  it('关闭最后一个文档后回到首页', async () => {
+    渲染探针()
+    await userEvent.click(screen.getByText('新建文字文档'))
+    await userEvent.click(screen.getByText('关闭当前文档'))
+    expect(screen.getByTestId('editor-doc-count')).toHaveTextContent('0')
+    expect(screen.getByTestId('module')).toHaveTextContent('home')
+  })
+
+  it('在 Provider 之外使用时抛出中文异常', () => {    // 抑制 React 对错误边界的控制台告警，保持测试输出整洁
     const 原始错误 = console.error
     console.error = () => {}
     expect(() => render(<探针 />)).toThrowError(/必须在 AppProvider 内使用/)

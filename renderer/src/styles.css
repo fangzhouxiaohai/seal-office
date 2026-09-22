@@ -723,3 +723,458 @@ button {
 .wps-footer__dot {
   color: var(--border);
 }
+
+/* ===== 文字文档编辑器 ===== */
+
+/* 编辑器占用整个主区，取消首页的内边距与纵向滚动 */
+.wps-main--editor {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 文档标签栏 */
+.wps-doc-tabs {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.wps-doc-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  max-width: 200px;
+  padding: 0 6px 0 10px;
+  margin-right: 4px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wps-doc-tab:hover {
+  background: var(--brand-soft);
+}
+
+.wps-doc-tab--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.wps-doc-tab__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wps-doc-tab__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.wps-doc-tab__close:hover {
+  background: rgba(26, 29, 36, 0.08);
+  opacity: 1;
+}
+
+.wps-doc-tabs__create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.wps-doc-tabs__create:hover {
+  background: var(--bg-hover);
+  color: var(--brand);
+}
+
+/* Ribbon 标签行 */
+.wps-ribbon-tabs {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.wps-ribbon-tab {
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.wps-ribbon-tab:hover {
+  color: var(--brand);
+}
+
+.wps-ribbon-tab--active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+/* Ribbon 功能区 */
+.wps-ribbon-panel {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  min-height: 96px;
+  padding: 6px 8px 0;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.wps-ribbon-group {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px;
+}
+
+.wps-ribbon-group + .wps-ribbon-group {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.wps-ribbon-group__body {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 62px;
+}
+
+.wps-ribbon-group__name {
+  flex: 0 0 auto;
+  padding: 2px 0 4px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* Ribbon 按钮 */
+.wps-ribbon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.wps-ribbon-button--large {
+  flex-direction: column;
+  gap: 4px;
+  min-width: 56px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.wps-ribbon-button--small {
+  width: 26px;
+  height: 26px;
+}
+
+.wps-ribbon-button:hover {
+  background: var(--bg-hover);
+  color: var(--brand);
+}
+
+.wps-ribbon-button--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.wps-ribbon-button--disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.wps-ribbon-button--disabled:hover {
+  background: transparent;
+  color: var(--text-3);
+}
+
+.wps-ribbon-button__label {
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.wps-ribbon-button__value {
+  min-width: 44px;
+  padding: 0 4px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.wps-ribbon-button__caret {
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid currentColor;
+}
+
+/* 水平标尺 */
+.wps-ruler {
+  position: relative;
+  flex: 0 0 auto;
+  height: 20px;
+  margin: 0 auto;
+  width: 794px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.wps-ruler__scale {
+  position: absolute;
+  inset: 0;
+}
+
+.wps-ruler__tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 6px;
+  background: var(--border);
+}
+
+.wps-ruler__marker {
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 8px solid var(--brand);
+}
+
+.wps-ruler__marker--right {
+  transform: translateX(-10px);
+}
+
+.wps-ruler__marker--first {
+  bottom: 8px;
+  border-bottom: none;
+  border-top: 8px solid var(--brand);
+}
+
+/* 编辑区 */
+.wps-editor-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px 0 32px;
+  overflow: auto;
+  background: #f0f2f5;
+}
+
+.wps-editor-canvas {
+  display: flex;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.wps-editor-canvas__paper {
+  width: 794px;
+  min-height: 1123px;
+  padding: 96px 90px;
+  background: var(--bg-card);
+  box-shadow: 0 2px 12px rgba(31, 41, 55, 0.12);
+  transform-origin: top center;
+  transition: transform 0.15s ease;
+}
+
+.wps-editor-canvas__content {
+  min-height: 900px;
+  outline: none;
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+.wps-editor-canvas__content:focus {
+  outline: none;
+}
+
+.wps-editor-canvas__content p {
+  margin: 0 0 10px;
+}
+
+.wps-editor-canvas--marks .wps-editor-canvas__content p::after {
+  content: "¶";
+  margin-left: 4px;
+  color: #c9d2e0;
+  font-size: 12px;
+}
+
+.wps-editor-canvas--gridlines .wps-editor-canvas__paper {
+  background-image: linear-gradient(to bottom, #f7f9fc 1px, transparent 1px);
+  background-size: 100% 28px;
+}
+
+.wps-page-break {
+  height: 0;
+  margin: 18px 0;
+  border-top: 1px dashed #c9d2e0;
+}
+
+/* 查找替换面板 */
+.wps-find {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.wps-find__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wps-find__input {
+  width: 240px;
+}
+
+.wps-find__button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.wps-find__button:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.wps-find__tip {
+  flex: 1 1 auto;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.wps-find__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.wps-find__close:hover {
+  background: var(--bg-hover);
+  color: var(--danger);
+}
+
+/* 编辑器状态栏 */
+.wps-editor-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wps-editor-status__left,
+.wps-editor-status__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wps-editor-status__dot {
+  color: var(--border);
+}
+
+.wps-editor-status__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.wps-editor-status__icon:hover {
+  background: var(--bg-hover);
+  color: var(--brand);
+}
+
+.wps-editor-status__zoom {
+  min-width: 46px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.wps-editor-status__zoom:hover {
+  background: var(--bg-hover);
+  color: var(--brand);
+}

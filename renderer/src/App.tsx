@@ -23,7 +23,7 @@ const 主题 = {
 const 外壳 = () => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message } = AntdApp.useApp()
-  const { module, setModule, navKey, handleNav, docs, activeDocId } = useAppStore()
+  const { module, setModule, navKey, handleNav, docs, documents, activeDocumentId } = useAppStore()
 
   const 是首页 = module === 'home'
   const 当前模块 = MODULES[module]
@@ -34,9 +34,9 @@ const 外壳 = () => {
     if (module === 'home') {
       return undefined
     }
-    const 已打开 = activeDocId === null ? undefined : docs.find((文档) => 文档.id === activeDocId)
+    const 已打开 = documents.find((文档) => 文档.id === activeDocumentId)
     return 已打开?.name ?? NEW_DOC_NAMES[module]
-  }, [module, docs, activeDocId])
+  }, [module, documents, activeDocumentId])
 
   const 页面组件 = 当前模块.page
 
@@ -61,7 +61,7 @@ const 外壳 = () => {
       }),
       React.createElement(
         'main',
-        { className: 'wps-main' },
+        { className: 是首页 ? 'wps-main' : 'wps-main wps-main--editor' },
         // 页面级兜底：单个页面异常时仍保留顶栏与侧栏可用
         React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
       )

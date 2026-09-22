@@ -1,13 +1,6 @@
 import React from 'react'
-import EditorPlaceholder from './EditorPlaceholder'
-import { useAppStore } from '../store'
+import DocEditor from '../editor/DocEditor'
 
-const WordPage = () => {
-  const { setModule } = useAppStore()
-  return React.createElement(EditorPlaceholder, {
-    moduleLabel: '文档',
-    onBack: () => setModule('home'),
-  })
-}
+const WordPage = () => React.createElement(DocEditor)
 
 export default WordPage

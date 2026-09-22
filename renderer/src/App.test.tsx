@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 
@@ -49,13 +49,13 @@ describe('应用外壳', () => {
     expect(screen.getByText('暂无最近文档')).toBeInTheDocument()
   })
 
-  it('进入文档模块后可返回首页', async () => {
-    render(<App />)
+  it('进入文档模块后展示编辑器并可返回首页', async () => {
+    const { container } = render(<App />)
     await userEvent.click(screen.getByText('新建文字'))
-    expect(screen.getByText('编辑功能开发中')).toBeInTheDocument()
-    // 侧栏与占位页均提供返回入口，此处限定在主内容区内点击占位页按钮
-    const 主区 = document.querySelector('.wps-main') as HTMLElement
-    await userEvent.click(within(主区).getByRole('button', { name: '返回首页' }))
+    // 文档模块已由占位页升级为完整编辑器
+    expect(container.querySelector('.wps-ribbon-tabs')).not.toBeNull()
+    expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '返回首页' }))
     expect(screen.getByText('新建')).toBeInTheDocument()
   })
 
