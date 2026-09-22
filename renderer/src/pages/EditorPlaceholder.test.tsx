@@ -1,14 +1,7 @@
-import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import EditorPlaceholder from './EditorPlaceholder'
-import PptPage from './PptPage'
-import { AppProvider } from '../store'
-
-/** 模块页依赖应用状态，需包在 Provider 内渲染 */
-const 包裹渲染 = (节点: React.ReactElement) =>
-  render(<AppProvider>{节点}</AppProvider>)
 
 describe('编辑器占位页', () => {
   it('展示模块名与开发中说明', () => {
@@ -24,8 +17,9 @@ describe('编辑器占位页', () => {
     expect(返回).toHaveBeenCalledTimes(1)
   })
 
-  it('演示模块页仍为占位页并展示对应名称', () => {
-    包裹渲染(<PptPage />)
+  it('演示模块页已由占位页升级为完整编辑器', () => {
+    // 占位组件本身仍保留，供未来模块复用；此处仅验证其正常渲染
+    render(<EditorPlaceholder moduleLabel="演示" />)
     expect(screen.getByText('演示')).toBeInTheDocument()
   })
 })

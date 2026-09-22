@@ -1,13 +1,6 @@
 import React from 'react'
-import EditorPlaceholder from './EditorPlaceholder'
-import { useAppStore } from '../store'
+import PptEditor from '../ppt/PptEditor'
 
-const PptPage = () => {
-  const { setModule } = useAppStore()
-  return React.createElement(EditorPlaceholder, {
-    moduleLabel: '演示',
-    onBack: () => setModule('home'),
-  })
-}
+const PptPage = () => React.createElement(PptEditor)
 
 export default PptPage
