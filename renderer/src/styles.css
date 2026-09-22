@@ -1464,6 +1464,90 @@ button {
   font-family: inherit;
 }
 
+/* 表格网格承载区 */
+.wps-sheet-stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 关闭网格线时仅隐藏单元格分隔线，表头线保留 */
+.wps-sheet-stage--no-gridlines .wps-sheet__cell {
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+/* 工作表标签栏 */
+.wps-sheet-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+
+.wps-sheet-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wps-sheet-tab--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.wps-sheet-tab__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.wps-sheet-tab__close:hover {
+  background: rgba(26, 29, 36, 0.08);
+  opacity: 1;
+}
+
+.wps-sheet-tabs__create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.wps-sheet-tabs__create:hover {
+  background: var(--bg-hover);
+  color: var(--brand);
+}
+
 /* 查找替换面板 */
 .wps-find {
   display: flex;

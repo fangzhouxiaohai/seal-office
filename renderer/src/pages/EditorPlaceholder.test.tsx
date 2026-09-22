@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import EditorPlaceholder from './EditorPlaceholder'
-import TablePage from './TablePage'
 import PptPage from './PptPage'
 import { AppProvider } from '../store'
 
@@ -25,11 +24,7 @@ describe('编辑器占位页', () => {
     expect(返回).toHaveBeenCalledTimes(1)
   })
 
-  it('表格与演示模块页展示对应名称', () => {
-    const { unmount: 卸载一 } = 包裹渲染(<TablePage />)
-    expect(screen.getByText('表格')).toBeInTheDocument()
-    卸载一()
-
+  it('演示模块页仍为占位页并展示对应名称', () => {
     包裹渲染(<PptPage />)
     expect(screen.getByText('演示')).toBeInTheDocument()
   })

@@ -1,17 +1,19 @@
 // Ribbon 标签行：开始、插入、页面布局、引用、审阅、视图。
 import React from 'react'
-import { RIBBON_TABS } from './tabSpecs'
+import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 
 interface Props {
   activeKey: string
   onChange: (键: string) => void
+  /** 标签声明，默认使用文字编辑器的六标签；表格传入自己的七标签 */
+  tabs?: RibbonTabSpec[]
 }
 
-const RibbonTabs = ({ activeKey, onChange }: Props) =>
+const RibbonTabs = ({ activeKey, onChange, tabs = RIBBON_TABS }: Props) =>
   React.createElement(
     'div',
     { className: 'wps-ribbon-tabs', role: 'tablist' },
-    RIBBON_TABS.map((标签) =>
+    tabs.map((标签) =>
       React.createElement(
         'button',
         {

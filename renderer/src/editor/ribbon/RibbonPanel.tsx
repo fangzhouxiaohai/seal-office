@@ -1,12 +1,14 @@
 // Ribbon 功能区：按当前标签渲染功能组与按钮。
 // 按钮只派发命令标识，不包含任何行为逻辑。
 import React from 'react'
-import { RIBBON_TABS } from './tabSpecs'
+import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
 
 interface Props {
   activeKey: string
+  /** 标签声明，默认使用文字编辑器的六标签；表格传入自己的七标签 */
+  tabs?: RibbonTabSpec[]
   /** 按钮被点击时回传命令标识与参数 */
   onCommand?: (命令标识: string, 参数?: string) => void
   /** 查询命令是否处于激活态 */
@@ -17,8 +19,8 @@ interface Props {
   获取当前值?: (命令标识: string) => string | undefined
 }
 
-const RibbonPanel = ({ activeKey, onCommand, 获取激活态, 获取禁用态, 获取当前值 }: Props) => {
-  const 标签 = RIBBON_TABS.find((项) => 项.key === activeKey)
+const RibbonPanel = ({ activeKey, tabs = RIBBON_TABS, onCommand, 获取激活态, 获取禁用态, 获取当前值 }: Props) => {
+  const 标签 = tabs.find((项) => 项.key === activeKey)
   if (标签 === undefined) {
     return null
   }
