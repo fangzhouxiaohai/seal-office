@@ -21,7 +21,7 @@ export const ICON_NAMES = [
   'ruler', 'gridlines', 'paragraph-mark', 'navigation',
   'zoom-in', 'zoom-out', 'zoom-reset', 'fit-width',
   'watermark', 'page-border', 'page-color', 'columns', 'page-break',
-  'margin', 'orientation', 'paper-size', 'line-numbers', 'export-file',
+  'margin', 'orientation', 'paper-size', 'line-numbers', 'export-file', 'close',
 ]
 
 interface IconProps {
@@ -454,6 +454,7 @@ const 线性路径: Record<string, React.ReactNode> = {
       <path d="M8.6 1.8v3.6h3.6M11 11.4v3.2M9.6 13.2 11 14.6l1.4-1.4" />
     </>
   ),
+  close: <path d="M4 4l8 8M12 4l-8 8" />,
 }
 
 /** 文档类型图标：填充风格，颜色由外部传入 */
