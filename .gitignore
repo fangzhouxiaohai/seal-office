@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.vite/
+*.log
+__app_run.log

@@ -1,0 +1,127 @@
+/* renderer/src/styles.css */
+/* 全局基础样式 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #f0f0f0;
+}
+
+/* 应用整体为上下两段式布局 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 顶部导航栏 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  height: 56px;
+  padding: 0 16px;
+  background: #1f6feb;
+  color: #fff;
+}
+
+.header-left h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* 主体区域：左侧栏加右侧内容 */
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 左侧文件管理栏 */
+.sidebar {
+  flex: 0 0 220px;
+  width: 220px;
+  background: #fff;
+  border-right: 1px solid #e5e5e5;
+  overflow-y: auto;
+}
+
+.file-list {
+  padding: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+}
+
+.file-item:hover {
+  background: #f2f6ff;
+}
+
+.file-item.active {
+  background: #e6f0ff;
+  color: #1f6feb;
+  font-weight: 600;
+}
+
+/* 主内容区 */
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+.word-editor,
+.table-editor,
+.ppt-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+.word-toolbar {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  border-radius: 6px 6px 0 0;
+  background: #fafafa;
+  color: #666;
+}
+
+.word-editor-area {
+  flex: 1 1 auto;
+  padding: 16px;
+  outline: none;
+  overflow: auto;
+}
+
+.table-editor,
+.ppt-editor {
+  align-items: center;
+  justify-content: center;
+  color: #888;
+}

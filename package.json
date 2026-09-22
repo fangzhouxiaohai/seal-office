@@ -1,0 +1,30 @@
+{
+  "name": "wps-office",
+  "version": "1.0.0",
+  "description": "WPS 模仿办公软件",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "concurrently -k \"npm run dev\" \"npm run electron:dev\"",
+    "dev": "vite",
+    "electron:dev": "electron .",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "antd": "^5.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^8.0.0",
+    "electron": "^25.9.8",
+    "vite": "^4.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "windows": {
+    "target": "win32-x64",
+    "icon": "dist/icons/wps.ico"
+  }
+}
