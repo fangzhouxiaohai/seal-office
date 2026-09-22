@@ -87,8 +87,7 @@ describe('表格编辑器容器', () => {
   })
 
   // 复现并锁定「撤销后重做未恢复状态」的缺陷
-  it('加粗后撤销再重做，单元格格式应恢复到加粗状态', async () => {
-    const { container } = 渲染表格()
+  it('加粗后撤销再重做，单元格格式应恢复到加粗状态', async () => {    const { container } = 渲染表格()
     const 公式栏 = screen.getByLabelText('公式栏')
     await userEvent.type(公式栏, '5{Enter}')
     await userEvent.click(screen.getByRole('button', { name: '加粗' }))
@@ -101,6 +100,107 @@ describe('表格编辑器容器', () => {
     expect(取字重()).not.toBe('600')
     await userEvent.click(screen.getByRole('button', { name: '重做' }))
     expect(取字重()).toBe('600')
+  })
+
+  it('方向键移动选区并在名称框反映', () => {
+    const { container } = 渲染表格()
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'ArrowRight' })
+    expect(screen.getByDisplayValue('B1')).toBeInTheDocument()
+    fireEvent.keyDown(网格, { key: 'ArrowDown' })
+    expect(screen.getByDisplayValue('B2')).toBeInTheDocument()
+  })
+
+  it('方向键在边界处不越界', () => {
+    const { container } = 渲染表格()
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'ArrowUp' })
+    fireEvent.keyDown(网格, { key: 'ArrowLeft' })
+    expect(screen.getByDisplayValue('A1')).toBeInTheDocument()
+  })
+
+  it('回车进入编辑态', () => {
+    const { container } = 渲染表格()
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'Enter' })
+    expect(container.querySelector('.wps-sheet__editor')).not.toBeNull()
+  })
+
+  it('可见字符直接进入编辑并预填该字符', () => {
+    const { container } = 渲染表格()
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: '7' })
+    const 输入框 = container.querySelector('.wps-sheet__editor') as HTMLInputElement
+    expect(输入框).not.toBeNull()
+    expect(输入框.value).toBe('7')
+  })
+
+  it('Delete 清空选区内容', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '9{Enter}')
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('9')
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'Delete' })
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('')
+  })
+  // ---------- 增强键盘快捷键 ----------
+
+  it('Ctrl+A 全选所有单元格', () => {
+    const { container } = 渲染表格()
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'a', ctrlKey: true })
+    // 全选后名称框应显示区域地址 A1:Z99（100行26列）
+    expect(screen.getByDisplayValue('A1:Z99')).toBeInTheDocument()
+  })
+
+  it('Ctrl+Z 撤销操作', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '100{Enter}')
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('100')
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'z', ctrlKey: true })
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('')
+  })
+
+  it('Ctrl+Y 重做操作', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '200{Enter}')
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'z', ctrlKey: true })
+    fireEvent.keyDown(网格, { key: 'y', ctrlKey: true })
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('200')
+  })
+
+  it('Alt+= 自动求和', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '10{Enter}')
+    await userEvent.type(公式栏, '20{Enter}')
+    await userEvent.type(公式栏, '30{Enter}')
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: '=', altKey: true })
+    expect(container.querySelector('[data-地址="A4"]')?.textContent).toBe('60')
+  })
+
+  it('Delete 清空多单元格选区', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏')
+    await userEvent.type(公式栏, '1{Enter}')
+    // 选区 A1:B2
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'ArrowRight' })
+    fireEvent.keyDown(网格, { key: 'ArrowDown' })
+    fireEvent.keyDown(网格, { key: 'ArrowRight' })
+    expect(screen.getByDisplayValue('B2')).toBeInTheDocument()
+    // 清空选区
+    fireEvent.keyDown(网格, { key: 'Delete' })
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('')
+    expect(container.querySelector('[data-地址="B1"]')?.textContent).toBe('')
+    expect(container.querySelector('[data-地址="A2"]')?.textContent).toBe('')
+    expect(container.querySelector('[data-地址="B2"]')?.textContent).toBe('')
   })
 })
 

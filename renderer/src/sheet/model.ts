@@ -46,6 +46,9 @@ export const 默认行数 = 100
 export const 默认列数 = 26
 export const 默认列宽 = 88
 export const 默认行高 = 24
+/** 列宽与行高的下限，避免拖到不可见 */
+export const 最小列宽 = 40
+export const 最小行高 = 18
 
 const 空单元格: SheetCell = { 原始值: '', 显示值: '', 格式: {} }
 
@@ -174,6 +177,36 @@ export function 设置格式(工作表: Sheet, 区域: string, 格式: Partial<C
     新单元格[地址] = { ...单元, 格式: { ...单元.格式, ...格式 } }
   })
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
+}
+
+/**
+ * 调整列宽；低于下限时取下限，越界列返回原工作表。
+ */
+export function 设置列宽(工作表: Sheet, 列: number, 宽: number): Sheet {
+  if (!Number.isFinite(列) || 列 < 0 || 列 >= 工作表.列数) {
+    return 工作表
+  }
+  if (!Number.isFinite(宽)) {
+    return 工作表
+  }
+  const 新列宽 = [...工作表.列宽]
+  新列宽[列] = Math.max(最小列宽, Math.round(宽))
+  return { ...工作表, 列宽: 新列宽 }
+}
+
+/**
+ * 调整行高；低于下限时取下限，越界行返回原工作表。
+ */
+export function 设置行高(工作表: Sheet, 行: number, 高: number): Sheet {
+  if (!Number.isFinite(行) || 行 < 0 || 行 >= 工作表.行数) {
+    return 工作表
+  }
+  if (!Number.isFinite(高)) {
+    return 工作表
+  }
+  const 新行高 = [...工作表.行高]
+  新行高[行] = Math.max(最小行高, Math.round(高))
+  return { ...工作表, 行高: 新行高 }
 }
 
 export interface 合并信息 {

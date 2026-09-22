@@ -24,6 +24,10 @@ interface Props {
   on选中整列: (列: number) => void
   on选中整行: (行: number) => void
   on全选: () => void
+  /** 键盘操作，由容器实现具体行为 */
+  on按键?: (事件: React.KeyboardEvent) => void
+  /** 开始拖动列宽 */
+  on列宽拖动开始?: (列: number, 起始横坐标: number) => void
 }
 
 /** 判断位置是否落在选区内 */
@@ -50,6 +54,8 @@ const GridView = ({
    on选中整列,
   on选中整行,
   on全选,
+  on按键,
+  on列宽拖动开始,
 }: Props) => {
   const 列标 = Array.from({ length: 工作表.列数 }, (_, 列) => 列转字母(列))
   const 行号 = Array.from({ length: 工作表.行数 }, (_, 行) => 行 + 1)
@@ -72,7 +78,20 @@ const GridView = ({
           style: { gridColumn: 列 + 2, gridRow: 1 },
           onClick: () => on选中整列(列),
         },
-        字母
+        字母,
+        // 列标右缘的拖动手柄，用于调整列宽
+        React.createElement('span', {
+          className: 'wps-sheet__col-resizer',
+          'aria-label': `调整第 ${列 + 1} 列宽度`,
+          onMouseDown: (事件: React.MouseEvent) => {
+            事件.stopPropagation()
+            事件.preventDefault()
+            if (on列宽拖动开始 !== undefined) {
+              on列宽拖动开始(列, 事件.clientX)
+            }
+          },
+          onClick: (事件: React.MouseEvent) => 事件.stopPropagation(),
+        })
       )
     ),
   ]
@@ -163,6 +182,9 @@ const GridView = ({
     'div',
     {
       className: 'wps-sheet',
+      // 可聚焦以接收键盘操作；方向键、回车、Delete 等由容器处理
+      tabIndex: 0,
+      onKeyDown: on按键,
       style: {
         // 列宽与行高取自工作表数据，避免调整后网格与单元格错位
         gridTemplateColumns: `46px ${列宽模板}`,

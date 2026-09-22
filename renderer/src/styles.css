@@ -1389,6 +1389,31 @@ button {
   z-index: 2;
 }
 
+/* 列标右缘的拖动手柄；sticky 元素本身即为定位参照 */
+.wps-sheet__col-resizer {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.wps-sheet__col-resizer:hover {
+  background: rgba(43, 108, 246, 0.3);
+}
+
+/* 网格获得焦点时用内描边提示键盘可获得输入 */
+.wps-sheet:focus {
+  outline: none;
+}
+
+.wps-sheet:focus-visible {
+  outline: 1px solid var(--brand);
+  outline-offset: -1px;
+}
+
 .wps-sheet__rownum {
   position: sticky;
   left: 0;
