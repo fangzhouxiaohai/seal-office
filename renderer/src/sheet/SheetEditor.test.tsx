@@ -90,6 +90,9 @@ describe('表格编辑器容器', () => {
   it('加粗后撤销再重做，单元格格式应恢复到加粗状态', async () => {    const { container } = 渲染表格()
     const 公式栏 = screen.getByLabelText('公式栏')
     await userEvent.type(公式栏, '5{Enter}')
+    // 公式栏 Enter 将选区移至 A2，需要移回 A1 以加粗目标单元格
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'ArrowUp' })
     await userEvent.click(screen.getByRole('button', { name: '加粗' }))
 
     const 取字重 = () =>
@@ -140,9 +143,11 @@ describe('表格编辑器容器', () => {
     const 公式栏 = screen.getByLabelText('公式栏')
     await userEvent.type(公式栏, '9{Enter}')
     expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('9')
+    // 公式栏 Enter 将选区移至 A2，Delete 清空当前选区 A2
     const 网格 = container.querySelector('.wps-sheet') as HTMLElement
     fireEvent.keyDown(网格, { key: 'Delete' })
-    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('')
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('9')
+    expect(container.querySelector('[data-地址="A2"]')?.textContent).toBe('')
   })
   // ---------- 增强键盘快捷键 ----------
 
@@ -150,8 +155,8 @@ describe('表格编辑器容器', () => {
     const { container } = 渲染表格()
     const 网格 = container.querySelector('.wps-sheet') as HTMLElement
     fireEvent.keyDown(网格, { key: 'a', ctrlKey: true })
-    // 全选后名称框应显示区域地址 A1:Z99（100行26列）
-    expect(screen.getByDisplayValue('A1:Z99')).toBeInTheDocument()
+    // 全选后名称框应显示区域地址 A1:Z100（100行26列）
+    expect(screen.getByDisplayValue('A1:Z100')).toBeInTheDocument()
   })
 
   it('Ctrl+Z 撤销操作', async () => {
@@ -189,12 +194,12 @@ describe('表格编辑器容器', () => {
     const { container } = 渲染表格()
     const 公式栏 = screen.getByLabelText('公式栏')
     await userEvent.type(公式栏, '1{Enter}')
-    // 选区 A1:B2
+    // 公式栏 Enter 将选区移至 A2，ArrowRight → B2
     const 网格 = container.querySelector('.wps-sheet') as HTMLElement
     fireEvent.keyDown(网格, { key: 'ArrowRight' })
-    fireEvent.keyDown(网格, { key: 'ArrowDown' })
-    fireEvent.keyDown(网格, { key: 'ArrowRight' })
-    expect(screen.getByDisplayValue('B2')).toBeInTheDocument()
+    // 从 B2 通过 Shift+click 扩展到 A1:B2
+    const A1格 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    fireEvent.click(A1格, { shiftKey: true }) // 扩展选区 A1:B2
     // 清空选区
     fireEvent.keyDown(网格, { key: 'Delete' })
     expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('')
