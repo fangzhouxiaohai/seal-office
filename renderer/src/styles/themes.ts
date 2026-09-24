@@ -66,4 +66,17 @@ export function 应用主题(主题: 主题名) {
   root.style.setProperty('--seal-border', 样式.边框颜色)
   root.style.setProperty('--seal-primary', 样式.主色)
   root.style.setProperty('--seal-hover', 样式.悬停背景)
+  
+  // 同时更新基础CSS变量，确保深浅模式全局生效
+  root.style.setProperty('--brand', 样式.主色)
+  root.style.setProperty('--brand-hover', 样式.主色 === '#2B6CF6' ? '#1e5ae0' : '#3A7BC8')
+  root.style.setProperty('--brand-soft', 样式.主色 === '#2B6CF6' ? '#ebf1fe' : '#2A3A5A')
+  root.style.setProperty('--bg-app', 样式.背景)
+  root.style.setProperty('--bg-card', 样式.内容背景)
+  root.style.setProperty('--bg-hover', 样式.悬停背景)
+  root.style.setProperty('--border', 样式.边框颜色)
+  root.style.setProperty('--border-subtle', 样式.边框颜色)
+  root.style.setProperty('--text-1', 样式.文字颜色)
+  root.style.setProperty('--text-2', 样式.次要文字)
+  root.style.setProperty('--text-3', 样式.次要文字)
 }
