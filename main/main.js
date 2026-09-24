@@ -2,6 +2,9 @@
 const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')
 
+// 引入 IPC 处理器
+require('./ipcHandle')
+
 // Vite 开发服务器地址，需与 vite.config.js 中的 server 配置保持一致
 const DEV_SERVER_URL = 'http://localhost:5172'
 // 开发模式下等待 Vite 就绪的最大重试次数
