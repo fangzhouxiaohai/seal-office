@@ -25,7 +25,11 @@ const Sidebar = ({
   onShowSettings,
   onShowHelp
 }: Props) => {
-  if (mode === 'editor') {
+  // editor、settings、help 模式均显示返回首页按钮
+  if (mode === 'editor' || mode === 'settings' || mode === 'help') {
+    const 标题 = mode === 'settings' ? '设置' : mode === 'help' ? '帮助手册' : (moduleLabel ?? '文档')
+    const 图标 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : 'doc-empty'
+
     return React.createElement(
       'nav',
       { className: 'wps-sidebar' },
@@ -41,18 +45,20 @@ const Sidebar = ({
         React.createElement(
           'div',
           { className: 'wps-nav-item wps-nav-item--active' },
-          React.createElement(Icon, { name: 'doc-empty', size: 18, className: 'wps-nav-item__icon' }),
-          React.createElement('span', { className: 'wps-nav-item__label' }, moduleLabel ?? '文档')
-        ),
-        编辑器菜单.map((名称) =>
-          React.createElement(
-            'div',
-            { key: 名称, className: 'wps-nav-item wps-nav-item--disabled' },
-            React.createElement(Icon, { name: 'grid', size: 18, className: 'wps-nav-item__icon' }),
-            React.createElement('span', { className: 'wps-nav-item__label' }, 名称)
-          )
+          React.createElement(Icon, { name: 图标, size: 18, className: 'wps-nav-item__icon' }),
+          React.createElement('span', { className: 'wps-nav-item__label' }, 标题)
         )
-      )
+      ),
+      mode === 'editor'
+        ? 编辑器菜单.map((名称) =>
+            React.createElement(
+              'div',
+              { key: 名称, className: 'wps-nav-item wps-nav-item--disabled' },
+              React.createElement(Icon, { name: 'grid', size: 18, className: 'wps-nav-item__icon' }),
+              React.createElement('span', { className: 'wps-nav-item__label' }, 名称)
+            )
+          )
+        : null
     )
   }
 

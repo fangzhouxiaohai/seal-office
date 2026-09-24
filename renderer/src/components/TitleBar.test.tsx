@@ -15,9 +15,11 @@ describe('顶栏', () => {
     expect(screen.getByPlaceholderText('搜索文件、模板')).toBeInTheDocument()
   })
 
-  it('头像展示用户名首字', () => {
+  it('头像显示用户图标', () => {
     render(<TitleBar pageName="首页" userName="演示用户" />)
-    expect(screen.getByText('演')).toBeInTheDocument()
+    const avatar = screen.getByRole('button', { name: '设置' }).closest('header')?.querySelector('.wps-avatar')
+    expect(avatar).toBeInTheDocument()
+    expect(avatar?.getAttribute('title')).toBe('演示用户')
   })
 
   it('搜索输入触发回调', async () => {

@@ -113,7 +113,7 @@ const TitleBar = ({
       React.createElement(
         'span',
         { className: 'wps-avatar', title: userName },
-        userName.slice(0, 1)
+        React.createElement(Icon, { name: 'user', size: 16 })
       )
     )
   )
