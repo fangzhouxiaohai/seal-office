@@ -5,10 +5,14 @@ const fileOps = require('./fileOps')
 const pdfExport = require('./pdfExport')
 
 // 原有的 IPC 处理器
-ipcMain.handle('open-file', (event, args) => {
+ipcMain.handle('open-file', async (event, args) => {
   const { filePath } = args
   console.log('ipcHandle open-file:', filePath)
-  return filePath
+  if (!filePath) {
+    return { 成功: false, 错误: '未指定文件路径' }
+  }
+  const 结果 = await require('./fileOps').readFile(filePath)
+  return 结果
 })
 
 // ==================== 文件操作 IPC ====================

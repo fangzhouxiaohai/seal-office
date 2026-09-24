@@ -623,6 +623,27 @@ const 视图命令: EditorCommand[] = [
 
 /** 导出命令 */
 const 导出命令: EditorCommand[] = [
+  // 打开命令
+  生成回调命令('file.open', '打开文件', (上下文) => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      ;(window as any).electronAPI.showOpenDialog().then((文件路径: string | null) => {
+        if (文件路径) {
+          ;(window as any).electronAPI.readFile(文件路径).then((结果: any) => {
+            if (结果.成功) {
+              上下文.history.record({ html: 上下文.读取内容(), selection: null })
+              上下文.应用内容(结果.内容, null)
+              上下文.refresh()
+            } else {
+              上下文.notify(`打开文件失败：${结果.错误}`)
+            }
+          })
+        }
+      })
+    } else {
+      上下文.notify('当前环境不支持打开文件功能，请使用打包后的版本')
+    }
+  }),
+  
   生成回调命令('file.exportHtml', '导出为网页', (上下文) => 上下文.导出('html')),
   生成回调命令('file.exportText', '导出为文本', (上下文) => 上下文.导出('text')),
   

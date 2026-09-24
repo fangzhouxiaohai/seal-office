@@ -17,26 +17,46 @@ exports.exportToPdf = async (win, html内容, 默认文件名) => {
       return { 成功: false, 错误: '窗口对象无效' }
     }
 
-    // 生成 PDF 选项
-    const 打印选项 = {
-      默认页边距: { 上: '1in', 下: '1in', 左: '1in', 右: '1in' },
-      页面范围: [], // 空数组表示全部页面
-      打印背景: true,
-      偏好打印机: ''
-    }
-
-    // 使用 Electron 的 printToPDF API
-    const 结果 = await win.webContents.printToPDF(打印选项)
-
-    // 将结果转换为 Buffer
-    const 缓冲区 = Buffer.from(结果)
-
     // 确定保存路径
     const 基础名 = 默认文件名 ? 默认文件名.replace(/\.[^.]+$/, '') : '文档'
     const 保存路径 = path.join(os.homedir(), 'Documents', 基础名 + '.pdf')
 
-    // 保存 PDF 文件
+    // 创建临时窗口用于渲染 HTML
+    const 临时窗口 = new BrowserWindow({ 
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    })
+
+    // 创建临时 HTML 文件
+    const 临时文件 = path.join(os.tmpdir(), `seal-pdf-${Date.now()}.html`)
+    fs.writeFileSync(临时文件, html内容, 'utf-8')
+
+    // 加载临时文件
+    await 临时窗口.loadFile(临时文件)
+    
+    // 等待加载完成
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // 导出 PDF
+    const 结果 = await 临时窗口.webContents.printToPDF({
+      默认页边距: { 上: '1in', 下: '1in', 左: '1in', 右: '1in' },
+      打印背景: true
+    })
+
+    // 将结果转换为 Buffer 并保存
+    const 缓冲区 = Buffer.from(结果)
     fs.writeFileSync(保存路径, 缓冲区)
+
+    // 清理临时文件
+    try {
+      fs.unlinkSync(临时文件)
+    } catch {}
+
+    // 关闭临时窗口
+    临时窗口.close()
 
     return { 成功: true, 路径: 保存路径 }
   } catch (error) {

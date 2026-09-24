@@ -381,6 +381,7 @@ const 视图标签: RibbonTabSpec = {
     {
       name: '文件',
       items: [
+        大('file.open', '打开', 'open'),
         大('file.save', '保存', 'save'),
         大('file.saveAs', '另存为', 'save-as'),
       ],
