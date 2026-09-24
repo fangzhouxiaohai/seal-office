@@ -14,6 +14,8 @@ import HomePage from './pages/HomePage'
 import WordPage from './pages/WordPage'
 import TablePage from './pages/TablePage'
 import PptPage from './pages/PptPage'
+import SettingsPage from './pages/SettingsPage'
+import HelpManual from './components/HelpManual'
 
 export interface ModuleInfo {
   key: ModuleKey
@@ -26,6 +28,8 @@ export const MODULES: Record<ModuleKey, ModuleInfo> = {
   word: { key: 'word', label: '文档', page: WordPage },
   table: { key: 'table', label: '表格', page: TablePage },
   ppt: { key: 'ppt', label: '演示', page: PptPage },
+  settings: { key: 'settings', label: '设置', page: SettingsPage },
+  help: { key: 'help', label: '帮助', page: HelpManual },
 }
 
 // 统一对外出口：页面与测试沿用 routes 作为导入路径，无需关心数据实际所在文件

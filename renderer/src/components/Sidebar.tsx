@@ -4,17 +4,27 @@ import { NAV_GROUPS } from '../routes'
 import Icon from './Icon'
 
 interface Props {
-  mode?: 'home' | 'editor'
+  mode?: 'home' | 'editor' | 'settings' | 'help'
   activeKey?: string
   onSelect?: (键: string) => void
   moduleLabel?: string
   onBack?: () => void
+  onShowSettings?: () => void
+  onShowHelp?: () => void
 }
 
 /** 编辑器视图下的占位菜单项，功能尚未实现，仅作结构展示 */
 const 编辑器菜单 = ['开始', '插入', '页面布局', '引用', '审阅', '视图']
 
-const Sidebar = ({ mode = 'home', activeKey, onSelect, moduleLabel, onBack }: Props) => {
+const Sidebar = ({
+  mode = 'home',
+  activeKey,
+  onSelect,
+  moduleLabel,
+  onBack,
+  onShowSettings,
+  onShowHelp
+}: Props) => {
   if (mode === 'editor') {
     return React.createElement(
       'nav',
@@ -61,7 +71,15 @@ const Sidebar = ({ mode = 'home', activeKey, onSelect, moduleLabel, onBack }: Pr
               role: 'button',
               tabIndex: 0,
               className: `wps-nav-item${项.key === activeKey ? ' wps-nav-item--active' : ''}`,
-              onClick: () => onSelect && onSelect(项.key),
+              onClick: () => {
+                if (项.key === 'settings' && onShowSettings) {
+                  onShowSettings()
+                } else if (项.key === 'help' && onShowHelp) {
+                  onShowHelp()
+                } else if (onSelect) {
+                  onSelect(项.key)
+                }
+              },
               onKeyDown: (事件: React.KeyboardEvent) => {
                 if (事件.key === 'Enter' && onSelect) {
                   onSelect(项.key)

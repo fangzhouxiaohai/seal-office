@@ -13,6 +13,10 @@ interface Props {
   onSearch?: (关键词: string) => void
   onSetting?: () => void
   onHelp?: () => void
+  /** 切换到设置页面 */
+  onShowSettings?: () => void
+  /** 切换到帮助页面 */
+  onShowHelp?: () => void
 }
 
 const TitleBar = ({
@@ -22,6 +26,8 @@ const TitleBar = ({
   onSearch,
   onSetting,
   onHelp,
+  onShowSettings,
+  onShowHelp,
 }: Props) => {
   const [关键词, set关键词] = useState('')
 
@@ -69,16 +75,38 @@ const TitleBar = ({
         { title: '设置' },
         React.createElement(
           'button',
-          { type: 'button', className: 'wps-icon-button', onClick: onSetting, 'aria-label': '设置' },
+          { 
+            type: 'button', 
+            className: 'wps-icon-button', 
+            onClick: () => {
+              if (onShowSettings) {
+                onShowSettings()
+              } else if (onSetting) {
+                onSetting()
+              }
+            }, 
+            'aria-label': '设置' 
+          },
           React.createElement(Icon, { name: 'settings', size: 18 })
         )
       ),
       React.createElement(
         Tooltip,
-        { title: '帮助与反馈' },
+        { title: '帮助手册' },
         React.createElement(
           'button',
-          { type: 'button', className: 'wps-icon-button', onClick: onHelp, 'aria-label': '帮助与反馈' },
+          { 
+            type: 'button', 
+            className: 'wps-icon-button', 
+            onClick: () => {
+              if (onShowHelp) {
+                onShowHelp()
+              } else if (onHelp) {
+                onHelp()
+              }
+            }, 
+            'aria-label': '帮助手册' 
+          },
           React.createElement(Icon, { name: 'help', size: 18 })
         )
       ),

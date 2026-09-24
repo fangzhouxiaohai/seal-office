@@ -3,7 +3,7 @@
 
 import type { DocType } from './mock/recentDocs'
 
-export type ModuleKey = 'home' | 'word' | 'table' | 'ppt'
+export type ModuleKey = 'home' | 'word' | 'table' | 'ppt' | 'settings' | 'help'
 
 export interface NavItem {
   key: string
@@ -66,4 +66,6 @@ export const NEW_DOC_NAMES: Record<Exclude<ModuleKey, 'home'>, string> = {
   word: '未命名文档.docx',
   table: '未命名表格.xlsx',
   ppt: '未命名演示.pptx',
+  settings: '设置',
+  help: '帮助手册',
 }

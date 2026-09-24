@@ -25,9 +25,9 @@ describe('导航分组', () => {
 })
 
 describe('模块注册表', () => {
-  it('覆盖首页与三个编辑器模块', () => {
+  it('覆盖首页、三个编辑器、设置与帮助模块', () => {
     const 键集合 = Object.keys(MODULES).sort()
-    expect(键集合).toEqual(['home', 'ppt', 'table', 'word'])
+    expect(键集合).toEqual(['help', 'home', 'ppt', 'settings', 'table', 'word'])
   })
 
   it('每个模块都有中文名称', () => {

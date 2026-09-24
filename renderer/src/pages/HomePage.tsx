@@ -1,10 +1,11 @@
 // 首页：新建入口与最近文档区块的组合页。
-import React from 'react'
+import React, { useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
 import NewDocGrid from '../components/NewDocGrid'
 import RecentDocs from '../components/RecentDocs'
+import TemplateLibrary from '../components/TemplateLibrary'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -16,6 +17,7 @@ const 标题映射: Record<string, string> = {
 
 const HomePage = () => {
   const { message } = AntdApp.useApp()
+  const [显示模板库, 设显示模板库] = useState(false)
   const {
     navKey,
     setNavKey,
@@ -78,12 +80,40 @@ const HomePage = () => {
   return React.createElement(
     'div',
     { className: 'wps-home' },
+    // 新建区块（现有）
     React.createElement(
       'section',
       { className: 'wps-section' },
       React.createElement('h2', { className: 'wps-section__title' }, '新建'),
       React.createElement(NewDocGrid, { onSelect: 处理新建 })
     ),
+    // 工具区块（新增）
+    React.createElement(
+      'section',
+      { className: 'wps-section' },
+      React.createElement('h2', { className: 'wps-section__title' }, '工具'),
+      React.createElement(
+        'div',
+        { className: 'wps-tools-grid' },
+        React.createElement(
+          'button',
+          {
+            className: 'wps-tool-btn',
+            onClick: () => 设显示模板库(true),
+          },
+          React.createElement('span', { className: 'wps-tool-btn__label' }, '模板库')
+        ),
+        React.createElement(
+          'button',
+          {
+            className: 'wps-tool-btn',
+            onClick: () => message.info('PDF 工具功能开发中'),
+          },
+          React.createElement('span', { className: 'wps-tool-btn__label' }, 'PDF 工具')
+        )
+      )
+    ),
+    // 最近文档区块（现有）
     React.createElement(RecentDocs, {
       docs: visibleDocs,
       title: 标题映射[navKey] ?? '最近文档',
@@ -99,6 +129,11 @@ const HomePage = () => {
       onSortChange: setSortKey,
       onViewAll: () => setNavKey('recent'),
       onEmptyAction: () => createDoc('word'),
+    }),
+    // 模板库弹窗
+    React.createElement(TemplateLibrary, {
+      打开: 显示模板库,
+      关闭: () => 设显示模板库(false),
     })
   )
 }

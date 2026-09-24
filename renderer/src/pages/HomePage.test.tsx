@@ -33,7 +33,12 @@ describe('首页', () => {
 
   it('PDF 入口点击后不跳转并给出中文提示', async () => {
     渲染首页()
-    await userEvent.click(screen.getByText('PDF 工具'))
-    expect(await screen.findByText('PDF 编辑功能开发中')).toBeInTheDocument()
+    // 点击工具区块中的 PDF 工具按钮（使用类名区分）
+    const pdfButtons = screen.getAllByRole('button').filter(
+      (按钮) => 按钮.classList.contains('wps-tool-btn') && 按钮.textContent === 'PDF 工具'
+    )
+    expect(pdfButtons).toHaveLength(1)
+    await userEvent.click(pdfButtons[0])
+    expect(await screen.findByText('PDF 工具功能开发中')).toBeInTheDocument()
   })
 })

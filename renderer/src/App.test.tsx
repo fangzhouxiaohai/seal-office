@@ -75,4 +75,24 @@ describe('应用外壳', () => {
     render(<App />)
     expect(screen.getByText('共 12 个文档')).toBeInTheDocument()
   })
+
+  it('点击设置按钮切换到设置页面', async () => {
+    render(<App />)
+    // 验证初始状态在首页
+    expect(screen.getByText('Seal Office')).toBeInTheDocument()
+    // 点击设置导航项
+    await userEvent.click(screen.getByText('设置'))
+    // 验证设置页面已加载
+    expect(document.body).toHaveTextContent('设置')
+  })
+
+  it('点击帮助按钮切换到帮助页面', async () => {
+    render(<App />)
+    // 验证初始状态在首页
+    expect(screen.getByText('Seal Office')).toBeInTheDocument()
+    // 点击帮助手册导航项
+    await userEvent.click(screen.getByText('帮助手册'))
+    // 验证帮助页面已加载
+    expect(document.body).toHaveTextContent('帮助手册')
+  })
 })

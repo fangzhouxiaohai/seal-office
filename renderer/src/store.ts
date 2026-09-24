@@ -57,6 +57,12 @@ export interface AppState {
   closeEditorDoc: (标识: string) => void
   /** 在当前模块下新建一个编辑器标签 */
   createEditorDoc: () => void
+  /** 切换到设置页面 */
+  showSettings: () => void
+  /** 切换到帮助页面 */
+  showHelp: () => void
+  /** 返回首页 */
+  goHome: () => void
 }
 
 const AppContext = createContext<AppState | null>(null)
@@ -150,6 +156,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const showSettings = () => {
+    setModule('settings')
+    setNavKey('settings')
+  }
+
+  const showHelp = () => {
+    setModule('help')
+    setNavKey('help')
+  }
+
+  const goHome = () => {
+    setModule('home')
+    setNavKey('home')
+  }
+
   const renameDoc = (标识: string, 名称: string) => {
     const 规范名称 = 名称.trim()
     if (规范名称.length === 0) {
@@ -204,6 +225,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updateEditorHtml,
       closeEditorDoc,
       createEditorDoc,
+      showSettings,
+      showHelp,
+      goHome,
     }),
     [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId, documents, activeDocumentId]
   )

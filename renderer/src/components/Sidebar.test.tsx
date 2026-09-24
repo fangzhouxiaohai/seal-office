@@ -34,4 +34,12 @@ describe('左侧导航', () => {
     await userEvent.click(screen.getByText('返回首页'))
     expect(返回).toHaveBeenCalledTimes(1)
   })
+
+  it('导航包含设置和帮助菜单项', () => {
+    render(<Sidebar activeKey="home" onSelect={() => {}} />)
+    // 验证设置菜单项存在
+    expect(screen.getByText('设置')).toBeInTheDocument()
+    // 验证帮助手册菜单项存在
+    expect(screen.getByText('帮助手册')).toBeInTheDocument()
+  })
 })

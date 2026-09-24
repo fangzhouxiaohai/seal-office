@@ -9,6 +9,7 @@ import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import Footer from './components/Footer'
 import ErrorBoundary from './components/ErrorBoundary'
+import { SettingsProvider } from './store/settingsStore'
 
 const 主题 = {
   token: {
@@ -23,7 +24,7 @@ const 主题 = {
 const 外壳 = () => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message } = AntdApp.useApp()
-  const { module, setModule, navKey, handleNav, docs, documents, activeDocumentId } = useAppStore()
+  const { module, navKey, handleNav, docs, documents, activeDocumentId, showSettings, showHelp, goHome } = useAppStore()
 
   const 是首页 = module === 'home'
   const 当前模块 = MODULES[module]
@@ -40,6 +41,29 @@ const 外壳 = () => {
 
   const 页面组件 = 当前模块.page
 
+  // 特殊处理：设置和帮助页面的渲染（不需要editor布局）
+  let 主内容
+  if (module === 'settings') {
+    主内容 = React.createElement(
+      'main',
+      { className: 'wps-main wps-main--settings' },
+      React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
+    )
+  } else if (module === 'help') {
+    主内容 = React.createElement(
+      'main',
+      { className: 'wps-main wps-main--help' },
+      React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
+    )
+  } else {
+    主内容 = React.createElement(
+      'main',
+      { className: 是首页 ? 'wps-main' : 'wps-main wps-main--editor' },
+      // 页面级兜底：单个页面异常时仍保留顶栏与侧栏可用
+      React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
+    )
+  }
+
   return React.createElement(
     'div',
     { className: 'wps-app' },
@@ -48,23 +72,28 @@ const 外壳 = () => {
       documentName: 当前文档名,
       onSetting: () => message.info('设置功能开发中'),
       onHelp: () => message.info('帮助与反馈功能开发中'),
+      onShowSettings: showSettings,
+      onShowHelp: showHelp,
     }),
     React.createElement(
       'div',
       { className: 'wps-body' },
       React.createElement(Sidebar, {
-        mode: 是首页 ? 'home' : 'editor',
+        mode: 是首页 ? 'home' : (module === 'settings' ? 'settings' : module === 'help' ? 'help' : 'editor'),
         activeKey: navKey,
-        onSelect: (键: string) => handleNav(键, (文本: string) => message.info(文本)),
+        onSelect: (键: string) => {
+          if (键 === 'settings') {
+            showSettings()
+          } else if (键 === 'help') {
+            showHelp()
+          } else {
+            handleNav(键, (文本: string) => message.info(文本))
+          }
+        },
         moduleLabel: 当前模块.label,
-        onBack: () => setModule('home'),
+        onBack: goHome,
       }),
-      React.createElement(
-        'main',
-        { className: 是首页 ? 'wps-main' : 'wps-main wps-main--editor' },
-        // 页面级兜底：单个页面异常时仍保留顶栏与侧栏可用
-        React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
-      )
+      主内容
     ),
     React.createElement(Footer, { total: docs.length, starred: 星标数 })
   )
@@ -84,9 +113,13 @@ const App = () =>
       null,
       // 应用级兜底：顶栏、侧栏或状态栏异常时展示中文说明而非整窗白屏
       React.createElement(
-        ErrorBoundary,
+        SettingsProvider,
         null,
-        React.createElement(AppProvider, null, React.createElement(外壳, null))
+        React.createElement(
+          ErrorBoundary,
+          null,
+          React.createElement(AppProvider, null, React.createElement(外壳, null))
+        )
       )
     )
   )
