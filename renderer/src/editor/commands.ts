@@ -231,6 +231,10 @@ const 字体命令: EditorCommand[] = [
   }),
   生成格式化命令('font.highlight', '突出显示', 'hiliteColor'),
   生成回调命令('font.color', '字体颜色', (上下文, 参数) => {
+    if (参数 === undefined || 参数 === null || 参数.length === 0) {
+      上下文.notify('请先选择颜色')
+      return
+    }
     上下文.history.record({ html: 上下文.读取内容(), selection: null })
     上下文.执行格式化('foreColor', 参数)
     上下文.refresh()
@@ -621,6 +625,64 @@ const 视图命令: EditorCommand[] = [
 const 导出命令: EditorCommand[] = [
   生成回调命令('file.exportHtml', '导出为网页', (上下文) => 上下文.导出('html')),
   生成回调命令('file.exportText', '导出为文本', (上下文) => 上下文.导出('text')),
+  
+  // 保存命令
+  生成回调命令('file.save', '保存', (上下文) => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      const 文档名 = 上下文.当前文档名
+      (window as any).electronAPI.showSaveDialog(文档名).then((文件路径: string | null) => {
+        if (文件路径) {
+          const 内容 = 上下文.读取内容()
+          ;(window as any).electronAPI.saveToFile(文件路径, 内容).then((结果: any) => {
+            if (结果.成功) {
+              上下文.notify('文件已保存')
+            } else {
+              上下文.notify(`保存失败：${结果.错误}`)
+            }
+          })
+        }
+      })
+    } else {
+      上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
+    }
+  }),
+  
+  // 另存为命令
+  生成回调命令('file.saveAs', '另存为', (上下文) => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      (window as any).electronAPI.showSaveDialog('未命名文档.docx').then((文件路径: string | null) => {
+        if (文件路径) {
+          const 内容 = 上下文.读取内容()
+          ;(window as any).electronAPI.saveToFile(文件路径, 内容).then((结果: any) => {
+            if (结果.成功) {
+              上下文.notify('文件已另存为')
+            } else {
+              上下文.notify(`保存失败：${结果.错误}`)
+            }
+          })
+        }
+      })
+    } else {
+      上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
+    }
+  }),
+  
+  // PDF 导出命令
+  生成回调命令('file.exportPdf', '导出为PDF', (上下文) => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      const 文档名 = 上下文.当前文档名
+      const html = 上下文.读取内容()
+      ;(window as any).electronAPI.exportToPdf(html, 文档名).then((结果: any) => {
+        if (结果.成功) {
+          上下文.notify(`PDF 已导出到：${结果.路径}`)
+        } else {
+          上下文.notify(`PDF 导出失败：${结果.错误}`)
+        }
+      })
+    } else {
+      上下文.notify('当前环境不支持 PDF 导出功能，请使用打包后的版本')
+    }
+  }),
 ]
 
 /** 全部命令的合并结果 */
