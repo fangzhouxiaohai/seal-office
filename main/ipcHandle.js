@@ -67,7 +67,7 @@ ipcMain.handle('system.setDefaultApp', async (event) => {
       return { 
         成功: false, 
         需要管理员权限: true,
-        提示: '请在系统设置中手动关联文件类型，或右键文件选择"打开方式"->"选择其他应用"->选择海豹办公并勾选"始终使用此应用打开'.文件类型' '
+        提示: '请在系统设置中手动关联文件类型，或右键文件选择"打开方式" -> "选择其他应用" -> 选择海豹办公并勾选"始终使用此应用打开"'
       }
     } catch (error) {
       return { 成功: false, 错误: error.message }
