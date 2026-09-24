@@ -10,7 +10,13 @@ function 统计损失(html) {
   不支持元素.forEach(({ 选择器, 名称 }) => {
     const 标签 = 选择器.split(',').map((项) => 项.trim()).filter(Boolean)
     const 次数 = 标签.reduce((总数, 标签名) => {
-      const 匹配 = 内容.match(new RegExp(`<[^>]*?(?:${标签名.replace(/[.\[\]#]/g, '')})[^>]*>`, 'gi'))
+      // 从选择器提取匹配文本：剥离 CSS 前缀符号
+      const 匹配文本 = 标签名
+        .replace(/^[.#\[]/, '')   // 移除 . # [ 前缀
+        .replace(/\]$/, '')       // 移除 ] 后缀
+      // 匹配类名（空格/引号边界）或属性名（=号边界），避免子串误匹配
+      const 正则 = new RegExp(`<[^>]*?(?:^|\\s|")${匹配文本}(?:\\s|"|=)[^>]*>`, 'gi')
+      const 匹配 = 内容.match(正则)
       return 总数 + (匹配 ? 匹配.length : 0)
     }, 0)
     if (次数 > 0) 项目.push({ 名称, 次数 })

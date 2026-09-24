@@ -38,6 +38,18 @@ describe('pptxCodec', () => {
       const result = await 读取pptx(buffer)
       expect(result.幻灯片[0].文本).toContain('转义<测试>')
     })
+
+    it('应该解码数字字符引用', async () => {
+      const zip = new JSZip()
+      zip.file('ppt/presentation.xml', '<presentation><slides><slide><c:cs/></slide></slides></presentation>')
+      zip.file('ppt/slides/slide1.xml', '<slide><a:t>&#39;单引号&#x26;和号&#60;左尖括号&#62;右尖括号</a:t></slide>')
+      const buffer = await zip.generateAsync({ type: 'nodebuffer' })
+      const result = await 读取pptx(buffer)
+      const 文本 = result.幻灯片[0].文本[0]
+      expect(文本).not.toBeUndefined()
+      expect(文本).toContain('<')
+      expect(文本).toContain('>')
+    })
   })
 
   describe('写入pptx', () => {

@@ -76,11 +76,13 @@ function 渲染原始值(原始值: string, 格式: CellFormat): string {
 /**
  * 重算工作表：按依赖递归求值，公式引用另一公式时也能取到正确结果。
  * 求值过程中维护正在求值的地址集合，用于检出循环引用。
+ * 正在求值集合在所有单元格求值过程中共享，确保跨单元格循环引用可被检测。
  */
 export function 重算工作表(工作表: Sheet): Sheet {
   const 缓存 = new Map<string, string>()
+  const 正在求值 = new Set<string>()
 
-  const 求显示值 = (地址: string, 正在求值: Set<string>): string => {
+  const 求显示值 = (地址: string): string => {
     const 已缓存 = 缓存.get(地址)
     if (已缓存 !== undefined) {
       return 已缓存
@@ -101,7 +103,7 @@ export function 重算工作表(工作表: Sheet): Sheet {
     正在求值.add(地址)
     const 求值结果 = 求值公式(
       原始值,
-      (引用地址) => 求显示值(引用地址, 正在求值),
+      (引用地址) => 求显示值(引用地址),
       正在求值,
       地址
     )
@@ -114,7 +116,7 @@ export function 重算工作表(工作表: Sheet): Sheet {
   const 新单元格: Record<string, SheetCell> = {}
   Object.keys(工作表.单元格).forEach((地址) => {
     const 单元 = 工作表.单元格[地址]
-    新单元格[地址] = { ...单元, 显示值: 求显示值(地址, new Set<string>()) }
+    新单元格[地址] = { ...单元, 显示值: 求显示值(地址) }
   })
 
   return { ...工作表, 单元格: 新单元格 }
@@ -220,7 +222,6 @@ export interface 合并信息 {
  * 返回 null 表示该位置不属于任何合并区域。
  */
 export function 查询合并(工作表: Sheet, 位置: 单元格位置): 合并信息 | null {
-  const 地址 = 生成地址(位置.行, 位置.列)
   for (const 区域 of 工作表.合并区域) {
     const 位置列表 = 展开区域(区域)
     if (!位置列表.some((项) => 项.行 === 位置.行 && 项.列 === 位置.列)) {
@@ -235,7 +236,6 @@ export function 查询合并(工作表: Sheet, 位置: 单元格位置): 合并�
       跨度列: Math.max(...列集合) - Math.min(...列集合) + 1,
     }
   }
-  void 地址
   return null
 }
 

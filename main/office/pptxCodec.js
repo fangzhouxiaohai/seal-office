@@ -29,7 +29,17 @@ async function 写入pptx(模型) {
 }
 
 function 解码(文本) {
-  return 文本.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+  const 实体映射 = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&apos;': "'" }
+  // 单次正则匹配所有命名实体和数字实体（十进制/十六进制），避免顺序问题
+  return 文本.replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (匹配) => {
+    if (匹配 in 实体映射) {
+      return 实体映射[匹配]
+    }
+    if (匹配.startsWith('&#x')) {
+      return String.fromCharCode(parseInt(匹配.slice(3, -1), 16))
+    }
+    return String.fromCharCode(parseInt(匹配.slice(2, -1), 10))
+  })
 }
 
 module.exports = { 读取pptx, 写入pptx }
