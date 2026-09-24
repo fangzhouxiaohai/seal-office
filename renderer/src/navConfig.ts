@@ -35,13 +35,13 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'team', label: '团队文档', icon: 'users', implemented: false },
   ],
   [
-    { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: false },
-    { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: false },
-    { key: 'flow', label: '流程图', icon: 'flow', implemented: false },
+    { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
+    { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
+    { key: 'flow', label: '流程图', icon: 'flow', implemented: true },
   ],
   [
-    { key: 'settings', label: '设置', icon: 'settings', implemented: false },
-    { key: 'help', label: '帮助与反馈', icon: 'help', implemented: false },
+    { key: 'settings', label: '设置', icon: 'settings', implemented: true },
+    { key: 'help', label: '帮助手册', icon: 'help', implemented: true },
   ],
 ]
 
