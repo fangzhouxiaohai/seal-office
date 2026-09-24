@@ -1,6 +1,7 @@
 // 关于对话框
 import React from 'react'
 import { Modal, Button } from 'antd'
+import { 桥接 } from '../ipc/bridge'
 import SealLogo from './SealLogo'
 
 const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
@@ -8,29 +9,17 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
   关闭回调?: () => void
 }) => {
   // 获取应用信息（从 electronAPI 或默认值）
-  const 应用信息 = typeof window !== 'undefined' && (window as any).electronAPI
-    ? null // 会在运行时获取
-    : {
-        名称: '海豹办公',
-        英文名称: 'Seal Office',
-        版本: '1.1.0',
-        作者: '饮风一笑',
-        邮箱: '24519660@qq.com',
-        说明: '本程序永久免费开源',
-        开源地址: 'https://github.com/seal-office/seal-office',
-        专业服务: '专业AI开发定制小程序APP'
-      }
-
-  const 信息 = 应用信息 || {
+  const 信息 = {
     名称: '海豹办公',
     英文名称: 'Seal Office',
-    版本: '1.1.0',
+    版本: '1.2.0',
     作者: '饮风一笑',
     邮箱: '24519660@qq.com',
     说明: '本程序永久免费开源',
     开源地址: 'https://github.com/seal-office/seal-office',
-    专业服务: '专业AI开发定制小程序APP'
+    专业服务: '专业应用开发服务',
   }
+  void 桥接
 
   return React.createElement(Modal, {
     title: '关于海豹办公',
@@ -52,15 +41,8 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
       }
     },
       // Logo 和名称
-      React.createElement('div', { 
-        style: { 
-          marginBottom: '20px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }
-      },
-        React.createElement(SealLogo, { size: 72 }),
+      React.createElement('div', { style: { marginBottom: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' } },
+        React.createElement(SealLogo, { size: 72, withBackground: false })
       ),
       
       React.createElement('h2', { 

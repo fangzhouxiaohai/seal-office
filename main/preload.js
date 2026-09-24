@@ -1,41 +1,26 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-// Expose protected APIs to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
-  // 原有 API
-  openFile: (args) => ipcRenderer.invoke('open-file', args),
-  
-  // 文件操作 API
   showSaveDialog: (默认文件名) => ipcRenderer.invoke('file.showSaveDialog', 默认文件名),
   showOpenDialog: () => ipcRenderer.invoke('file.showOpenDialog'),
-  saveToFile: (filePath, 内容) => ipcRenderer.invoke('file.saveToFile', filePath, 内容),
-  readFile: (filePath) => ipcRenderer.invoke('file.readFile', filePath),
-  
-  // PDF 导出 API
-  exportToPdf: (html内容, 默认文件名) => ipcRenderer.invoke('pdf.export', html内容, 默认文件名),
-  
-  // 系统 API
+  saveToFile: (路径, 内容, 格式) => ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式),
+  readFile: (路径) => ipcRenderer.invoke('file.readFile', 路径),
+  exportToPdf: (html, 默认文件名) => ipcRenderer.invoke('pdf.export', html, 默认文件名),
   setDefaultApp: () => ipcRenderer.invoke('system.setDefaultApp'),
-  
-  // 帮助文档 API
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),
-  
-  // 获取应用信息
   getAppInfo: () => ipcRenderer.invoke('app.getInfo'),
-})
-
-// 监听来自主进程的消息
-contextBridge.exposeInMainWorld('electronListener', {
-  on: (channel, callback) => {
-    const subscriptions = {
-      'window-focus': () => ipcRenderer.on('window-focus', (_, ...args) => callback(...args)),
-      'window-blur': () => ipcRenderer.on('window-blur', (_, ...args) => callback(...args)),
-    }
-    if (subscriptions[channel]) {
-      return subscriptions[channel]()
-    }
+  office: {
+    writeDocx: (模型) => ipcRenderer.invoke('office.writeDocx', 模型),
+    readDocx: (数据) => ipcRenderer.invoke('office.readDocx', 数据),
+    readXlsx: (数据) => ipcRenderer.invoke('office.readXlsx', 数据),
+    writeXlsx: (模型) => ipcRenderer.invoke('office.writeXlsx', 模型),
+    readPptx: (数据) => ipcRenderer.invoke('office.readPptx', 数据),
+    writePptx: (模型) => ipcRenderer.invoke('office.writePptx', 模型),
   },
-  off: (channel, callback) => {
-    ipcRenderer.removeListener(channel, callback)
-  }
+  pdf: {
+    extract: (数据, 页码) => ipcRenderer.invoke('pdf.extract', 数据, 页码),
+    merge: (列表) => ipcRenderer.invoke('pdf.merge', 列表),
+    delete: (数据, 页码) => ipcRenderer.invoke('pdf.delete', 数据, 页码),
+    rotate: (数据, 页码, 角度) => ipcRenderer.invoke('pdf.rotate', 数据, 页码, 角度),
+  },
 })

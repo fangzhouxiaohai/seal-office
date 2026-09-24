@@ -20,6 +20,12 @@ interface Props {
   options?: Array<string | 下拉选项>
   onClick?: () => void
   onSelect?: (值: string) => void
+  /**
+   * 下拉浮层即将打开时回调。
+   * antd 浮层渲染在 body 下会抢走焦点并折叠编辑区选区，
+   * 需在此刻保存选区快照，等到菜单项 click 时选区已经丢失。
+   */
+  onDropdownOpen?: () => void
 }
 
 /**
@@ -45,6 +51,7 @@ const RibbonButton = ({
   options,
   onClick,
   onSelect,
+  onDropdownOpen,
 }: Props) => {
   const 类名 = [
     'wps-ribbon-button',
@@ -66,6 +73,12 @@ const RibbonButton = ({
         },
         trigger: ['click'],
         disabled,
+        // 浮层打开瞬间保存选区，此时编辑区选区尚未被浮层折叠
+        onOpenChange: (打开: boolean) => {
+          if (打开 && onDropdownOpen) {
+            onDropdownOpen()
+          }
+        },
       },
       React.createElement(
         'button',

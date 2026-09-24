@@ -70,8 +70,8 @@ const 外壳 = () => {
     React.createElement(TitleBar, {
       pageName: 当前模块.label,
       documentName: 当前文档名,
-      onSetting: () => message.info('设置功能开发中'),
-      onHelp: () => message.info('帮助与反馈功能开发中'),
+      onSetting: showSettings,
+      onHelp: showHelp,
       onShowSettings: showSettings,
       onShowHelp: showHelp,
     }),

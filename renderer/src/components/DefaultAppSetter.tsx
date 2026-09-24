@@ -1,6 +1,7 @@
 // 设为默认应用组件
 import React, { useState } from 'react'
 import { Button, Alert, message, Card } from 'antd'
+import { 桥接 } from '../ipc/bridge'
 
 const DefaultAppSetter = () => {
   const [设置中, set设置中] = useState(false)
@@ -8,11 +9,11 @@ const DefaultAppSetter = () => {
   const 设置为默认 = async () => {
     set设置中(true)
     try {
-      if (typeof window !== 'undefined' && (window as any).electronAPI) {
-        const 结果 = await (window as any).electronAPI.setDefaultApp()
+      if (桥接.可用) {
+        const 结果 = await 桥接.setDefaultApp()
         if (结果.成功) {
           message.success('已成功设为默认办公软件')
-        } else if (结果.需要管理员权限) {
+        } else if ('需要管理员权限' in 结果 && 结果.需要管理员权限) {
           message.info(结果.提示 || '需要管理员权限来设置默认应用')
         } else {
           message.info(结果.提示 || '请在系统设置中手动设置默认应用')

@@ -14,6 +14,7 @@ import CompareDialog from './CompareDialog'
 import { 比较文本, 抽取文本, 生成修订Html, 统计差异 } from './compare'
 import type { 文献 } from './citation'
 import RibbonTabs from './ribbon/RibbonTabs'
+import { 保存选区, 恢复选区, 选区覆盖的段落 } from './selection'
 import RibbonPanel from './ribbon/RibbonPanel'
 import DocumentTabs from './DocumentTabs'
 import EditorCanvas from './EditorCanvas'
@@ -124,6 +125,8 @@ const DocEditor = () => {
     closeEditorDoc,
     createEditorDoc,
     setActiveDocumentId,
+    文档路径,
+    set文档路径,
   } = useAppStore()
 
   const [当前标签, set当前标签] = useState('start')
@@ -140,6 +143,8 @@ const DocEditor = () => {
   const 输入计时器 = useRef<number | null>(null)
   /** 格式刷暂存；使用稳定对象以便命令读写同一份状态 */
   const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
+  /** 下拉浮层打开前的选区快照，供格式化命令恢复选区后再执行 */
+  const 选区快照 = useRef<Range | null>(null)
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
@@ -194,9 +199,16 @@ const DocEditor = () => {
     if (元素 === null) {
       return
     }
-    元素.focus()
+    // 先尝试恢复下拉浮层打开前保存的选区；未恢复成功时再退回普通聚焦。
+    // 缺少这一步时，浮层抢焦点已折叠选区，focus() 又把光标重置到起始位置，
+    // 导致 foreColor 等命令只影响后续输入而非选中文字。
+    if (!恢复选区(元素, 选区快照.current)) {
+      元素.focus()
+    }
     document.execCommand('styleWithCSS', false, 'true')
     document.execCommand(指令, false, 值)
+    // 快照已消费，避免后续命令误用过期选区
+    选区快照.current = null
   }
 
   const 插入内容 = (html: string): void => {
@@ -296,8 +308,17 @@ const DocEditor = () => {
     if (元素 === null) {
       return
     }
-    元素.querySelectorAll('p, div, h1, h2, h3').forEach((块) => {
-      Object.assign((块 as HTMLElement).style, 样式)
+    // 行距与底纹同样经下拉触发，需先恢复选区再定位目标段落
+    恢复选区(元素, 选区快照.current)
+    选区快照.current = null
+
+    const 目标 = 选区覆盖的段落(元素)
+    if (目标.length === 0) {
+      message.info('请先将光标置于段落中')
+      return
+    }
+    目标.forEach((块) => {
+      Object.assign(块.style, 样式)
     })
     记录历史()
     同步内容()
@@ -395,7 +416,11 @@ const DocEditor = () => {
     if (元素 === null) {
       return
     }
-    元素.focus()
+    // 与 执行格式化 同理：优先恢复选区，否则格式刷会作用到光标而非选中文字
+    if (!恢复选区(元素, 选区快照.current)) {
+      元素.focus()
+    }
+    选区快照.current = null
     document.execCommand('styleWithCSS', false, 'true')
     if (格式.加粗 !== 查询状态('bold')) {
       document.execCommand('bold')
@@ -458,6 +483,8 @@ const DocEditor = () => {
     应用选区格式,
     格式刷暂存: 格式刷容器.current,
     当前文档名: 当前文档?.name ?? '未命名文档',
+    当前文档路径: 文档路径[文档标识] ?? null,
+    设置文档路径: (路径: string) => set文档路径(文档标识, 路径),
     打开表格网格: () => set网格打开(true),
     打开文献管理: () => set文献面板打开(true),
     打开比较面板: () => set比较面板打开(true),
@@ -494,6 +521,11 @@ const DocEditor = () => {
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
       onCommand: 执行命令,
+      // 浮层打开瞬间抓取选区，此时尚未被浮层折叠
+      onDropdownOpen: () => {
+        const 元素 = 编辑区引用.current
+        选区快照.current = 元素 === null ? null : 保存选区(元素)
+      },
       获取激活态: (命令标识: string) => {
         if (命令标识 === 'track.enable') {
           return 视图.修订模式

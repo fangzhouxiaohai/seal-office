@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "seal-office",
@@ -12,7 +12,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "vitest run && vitest run --config vitest.main.config.js",
+    "test:main": "vitest run --config vitest.main.config.js",
     "typecheck": "tsc --noEmit",
     "pack": "npm run build && electron-builder --win --dir",
     "dist": "npm run build && electron-builder --win"
@@ -22,6 +23,10 @@
     "docx": "^8.5.0",
     "exceljs": "^4.4.0",
     "html-to-pdfmake": "^2.1.0",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.12.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289",
     "pdfmake": "^0.2.15",
     "pptxgenjs": "^3.12.0",
     "react": "^18.0.0",
@@ -57,11 +62,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "dir",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

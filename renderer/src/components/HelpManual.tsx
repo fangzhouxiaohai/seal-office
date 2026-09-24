@@ -4,7 +4,6 @@ import { Input, Collapse, Tag, Card } from 'antd'
 import { useSettings } from '../store/settingsStore'
 
 const { Search } = Input
-const { Panel } = Collapse
 
 interface 帮助项 {
   标题: string
@@ -107,22 +106,20 @@ const HelpManual = ({ 打开状态 = true, 关闭回调 }: {
 
       {/* 帮助内容 */}
       {过滤数据.length > 0 ? (
-        <Card bordered={false}>
-          <Collapse defaultActiveKey={['0']}>
-            {过滤数据.map((项, 索引) => (
-              <Panel 
-                key={索引.toString()} 
-                header={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Tag color={项.标签颜色}>{项.标签}</Tag>
-                    <span>{项.标题}</span>
-                  </div>
-                }
-              >
-                <p style={{ whiteSpace: 'pre-wrap' }}>{项.内容}</p>
-              </Panel>
-            ))}
-          </Collapse>
+        <Card variant="borderless">
+          <Collapse
+            defaultActiveKey={['0']}
+            items={过滤数据.map((项, 索引) => ({
+              key: 索引.toString(),
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Tag color={项.标签颜色}>{项.标签}</Tag>
+                  <span>{项.标题}</span>
+                </div>
+              ),
+              children: <p style={{ whiteSpace: 'pre-wrap' }}>{项.内容}</p>,
+            }))}
+          />
         </Card>
       ) : (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>

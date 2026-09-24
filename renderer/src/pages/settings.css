@@ -1,0 +1,33 @@
+:root {
+  --设置背景: #f7f8fa;
+  --设置面板: #ffffff;
+  --设置边框: #e8ebf0;
+  --设置主文: #1a1d24;
+  --设置次文: #697386;
+}
+
+[data-theme='dark'] {
+  --设置背景: #171a1f;
+  --设置面板: #22262d;
+  --设置边框: #373d47;
+  --设置主文: #f2f4f7;
+  --设置次文: #a9b1bf;
+}
+
+.settings-page {
+  min-height: 100%;
+  padding: 24px 28px;
+  color: var(--设置主文);
+}
+.settings-page__header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.settings-page__layout { display: grid; grid-template-columns: 190px minmax(0, 640px); gap: 24px; align-items: start; }
+.settings-page__nav { display: flex; flex-direction: column; gap: 4px; }
+.settings-page__nav button { border: 0; background: transparent; color: var(--设置次文); text-align: left; padding: 10px 12px; border-radius: 6px; cursor: pointer; }
+.settings-page__nav button[aria-selected='true'] { background: #eaf0ff; color: #2b6cf6; font-weight: 600; }
+.settings-page__content { min-width: 0; }
+.settings-panel { background: var(--设置面板); border: 1px solid var(--设置边框); border-radius: 6px; padding: 20px; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--设置边框); }
+.settings-row:last-child { border-bottom: 0; }
+.settings-row__title { font-weight: 600; }
+.settings-row__description { color: var(--设置次文); font-size: 13px; margin-top: 4px; }
+@media (max-width: 720px) { .settings-page__layout { grid-template-columns: 1fr; } .settings-page__nav { flex-direction: row; overflow-x: auto; } }

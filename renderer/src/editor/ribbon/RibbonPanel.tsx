@@ -17,9 +17,19 @@ interface Props {
   获取禁用态?: (命令标识: string) => boolean
   /** 查询下拉按钮当前应展示的值 */
   获取当前值?: (命令标识: string) => string | undefined
+  /** 下拉浮层打开前触发，用于保存编辑区选区快照 */
+  onDropdownOpen?: () => void
 }
 
-const RibbonPanel = ({ activeKey, tabs = RIBBON_TABS, onCommand, 获取激活态, 获取禁用态, 获取当前值 }: Props) => {
+const RibbonPanel = ({
+  activeKey,
+  tabs = RIBBON_TABS,
+  onCommand,
+  获取激活态,
+  获取禁用态,
+  获取当前值,
+  onDropdownOpen,
+}: Props) => {
   const 标签 = tabs.find((项) => 项.key === activeKey)
   if (标签 === undefined) {
     return null
@@ -44,6 +54,7 @@ const RibbonPanel = ({ activeKey, tabs = RIBBON_TABS, onCommand, 获取激活态
             options: 项.options,
             onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
             onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
+            onDropdownOpen,
           })
         )
       )

@@ -54,6 +54,8 @@ export interface AppState {
   activeDocumentId: string | null
   setActiveDocumentId: (标识: string | null) => void
   updateEditorHtml: (标识: string, html: string) => void
+  文档路径: Record<string, string | null>
+  set文档路径: (标识: string, 路径: string | null) => void
   closeEditorDoc: (标识: string) => void
   /** 在当前模块下新建一个编辑器标签 */
   createEditorDoc: () => void
@@ -86,6 +88,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const [documents, setDocuments] = useState<EditorDocument[]>([])
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null)
+  const [文档路径, set文档路径状态] = useState<Record<string, string | null>>({})
 
   const visibleDocs = useMemo(
     () => sortDocs(filterDocs(docs, navKey), sortKey),
@@ -140,6 +143,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateEditorHtml = (标识: string, html: string) => {
     setDocuments((当前) => 当前.map((项) => (项.id === 标识 ? { ...项, html } : 项)))
+  }
+
+  const set文档路径 = (标识: string, 路径: string | null) => {
+    set文档路径状态((当前) => ({ ...当前, [标识]: 路径 }))
   }
 
   const closeEditorDoc = (标识: string) => {
@@ -223,13 +230,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       activeDocumentId,
       setActiveDocumentId,
       updateEditorHtml,
+      文档路径,
+      set文档路径,
       closeEditorDoc,
       createEditorDoc,
       showSettings,
       showHelp,
       goHome,
     }),
-    [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId, documents, activeDocumentId]
+    [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId, documents, activeDocumentId, 文档路径]
   )
 
   return React.createElement(AppContext.Provider, { value: 值 }, children)

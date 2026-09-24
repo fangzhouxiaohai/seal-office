@@ -18,6 +18,7 @@ import {
 } from './graphics'
 import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 } from './citation'
 import { 解析字号, 磅值到档位 } from './fontOptions'
+import { 桥接 } from '../ipc/bridge'
 
 export interface ViewState {
   缩放: number
@@ -110,6 +111,8 @@ export interface CommandContext {
   格式刷暂存: { 值: 选区格式 | null }
   /** 当前文档名，供文档部件等命令使用 */
   当前文档名: string
+  当前文档路径?: string | null
+  设置文档路径?: (路径: string) => void
   /** 打开表格网格选择器 */
   打开表格网格: () => void
   /** 打开文献管理面板 */
@@ -625,13 +628,14 @@ const 视图命令: EditorCommand[] = [
 const 导出命令: EditorCommand[] = [
   // 打开命令
   生成回调命令('file.open', '打开文件', (上下文) => {
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
-      ;(window as any).electronAPI.showOpenDialog().then((文件路径: string | null) => {
+    if (桥接.可用) {
+      桥接.showOpenDialog().then((文件路径) => {
         if (文件路径) {
-          ;(window as any).electronAPI.readFile(文件路径).then((结果: any) => {
+          桥接.readFile(文件路径).then((结果) => {
             if (结果.成功) {
               上下文.history.record({ html: 上下文.读取内容(), selection: null })
-              上下文.应用内容(结果.内容, null)
+              上下文.应用内容(结果.内容 ?? '', null)
+              上下文.设置文档路径?.(文件路径)
               上下文.refresh()
               上下文.notify('文件已打开')
             } else {
@@ -654,13 +658,15 @@ const 导出命令: EditorCommand[] = [
   
   // 保存命令
   生成回调命令('file.save', '保存', (上下文) => {
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+    if (桥接.可用) {
       const 文档名: string = 上下文.当前文档名
-      ;(window as any).electronAPI.showSaveDialog(文档名).then((文件路径: string | null) => {
+      const 选择路径 = 上下文.当前文档路径 ?? 桥接.showSaveDialog(文档名)
+      Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          ;(window as any).electronAPI.saveToFile(文件路径, 内容).then((结果: any) => {
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
             if (结果.成功) {
+              上下文.设置文档路径?.(文件路径)
               上下文.notify('文件已保存')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
@@ -679,12 +685,13 @@ const 导出命令: EditorCommand[] = [
   
   // 另存为命令
   生成回调命令('file.saveAs', '另存为', (上下文) => {
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
-      (window as any).electronAPI.showSaveDialog('未命名文档.docx').then((文件路径: string | null) => {
+    if (桥接.可用) {
+      桥接.showSaveDialog(上下文.当前文档名).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          ;(window as any).electronAPI.saveToFile(文件路径, 内容).then((结果: any) => {
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
             if (结果.成功) {
+              上下文.设置文档路径?.(文件路径)
               上下文.notify('文件已另存为')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
@@ -703,12 +710,12 @@ const 导出命令: EditorCommand[] = [
   
   // PDF 导出命令
   生成回调命令('file.exportPdf', '导出为PDF', (上下文) => {
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+    if (桥接.可用) {
       const 文档名 = 上下文.当前文档名
       const html = 上下文.读取内容()
-      ;(window as any).electronAPI.exportToPdf(html, 文档名).then((结果: any) => {
+      桥接.exportToPdf(html, 文档名).then((结果) => {
         if (结果.成功) {
-          上下文.notify(`PDF 已导出到：${结果.路径}`)
+          上下文.notify(`PDF 已导出到：${'路径' in 结果 ? (结果.路径 ?? '指定位置') : '指定位置'}`)
         } else {
           上下文.notify(`PDF 导出失败：${结果.错误}`)
         }

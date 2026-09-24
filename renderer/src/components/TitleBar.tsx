@@ -1,4 +1,4 @@
-// 顶栏：品牌标识、搜索或当前文档名、设置与帮助入口、用户头像。
+// 顶栏：品牌标识、搜索或当前文档名、设置与帮助入口。
 // Electron 使用系统边框窗口，此处不自绘最小化与关闭按钮。
 import React, { useState } from 'react'
 import { Input, Tooltip } from 'antd'
@@ -7,7 +7,6 @@ import SealLogo from './SealLogo'
 
 interface Props {
   pageName: string
-  userName?: string
   /** 传入后顶栏中部展示文档名，替代搜索框，用于编辑器视图 */
   documentName?: string
   onSearch?: (关键词: string) => void
@@ -21,7 +20,6 @@ interface Props {
 
 const TitleBar = ({
   pageName,
-  userName = '演示用户',
   documentName,
   onSearch,
   onSetting,
@@ -110,11 +108,6 @@ const TitleBar = ({
           React.createElement(Icon, { name: 'help', size: 18 })
         )
       ),
-      React.createElement(
-        'span',
-        { className: 'wps-avatar', title: userName },
-        React.createElement(Icon, { name: 'user', size: 16 })
-      )
     )
   )
 }

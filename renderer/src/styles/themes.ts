@@ -58,6 +58,8 @@ export function 应用主题(主题: 主题名) {
 
   // 通过CSS变量应用到各个组件
   const root = document.documentElement
+  root.setAttribute('data-theme', 主题 === '深色' ? 'dark' : 'light')
+  root.setAttribute('data-theme', 主题 === '深色' ? 'dark' : 'light')
   root.style.setProperty('--seal-bg', 样式.背景)
   root.style.setProperty('--seal-sidebar-bg', 样式.侧栏背景)
   root.style.setProperty('--seal-content-bg', 样式.内容背景)
