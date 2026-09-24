@@ -1,6 +1,6 @@
 // 设置状态管理
 
-import { useState, createContext, useContext, useEffect } from 'react'
+import { useState, createContext, useContext, useEffect, type ReactNode } from 'react'
 import { 主题名, 应用主题 } from '../styles/themes'
 
 export interface SettingsState {
@@ -12,7 +12,7 @@ export interface SettingsState {
 
 const SettingsContext = createContext<SettingsState | null>(null)
 
-export function SettingsProvider({ children }: { children: React.ReactNode }) {
+export function SettingsProvider({ children }: { children: ReactNode }) {
   // 从 localStorage 读取保存的主题设置
   const [主题, set主题] = useState<主题名>(() => {
     try {
@@ -47,9 +47,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     应用主题(主题)
   }, [主题])
 
-  return React.createElement(SettingsContext.Provider, {
-    value: { 主题, 切换主题, 语言, 设置语言 }
-  }, children)
+  return (
+    <SettingsContext.Provider value={{ 主题, 切换主题, 语言, 设置语言 }}>
+      {children}
+    </SettingsContext.Provider>
+  )
 }
 
 export function useSettings() {

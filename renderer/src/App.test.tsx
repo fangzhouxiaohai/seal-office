@@ -13,8 +13,8 @@ describe('应用外壳', () => {
 
   it('点击未实现导航项给出中文提示且不切换内容', async () => {
     render(<App />)
-    await userEvent.click(screen.getByText('脑图'))
-    expect(await screen.findByText('「脑图」功能开发中')).toBeInTheDocument()
+    await userEvent.click(screen.getByText('我的云文档'))
+    expect(await screen.findByText('「我的云文档」功能开发中')).toBeInTheDocument()
     expect(screen.getByText('新建')).toBeInTheDocument()
   })
 

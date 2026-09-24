@@ -629,8 +629,8 @@ const 导出命令: EditorCommand[] = [
   // 保存命令
   生成回调命令('file.save', '保存', (上下文) => {
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
-      const 文档名 = 上下文.当前文档名
-      (window as any).electronAPI.showSaveDialog(文档名).then((文件路径: string | null) => {
+      const 文档名: string = 上下文.当前文档名
+      ;(window as any).electronAPI.showSaveDialog(文档名).then((文件路径: string | null) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
           ;(window as any).electronAPI.saveToFile(文件路径, 内容).then((结果: any) => {

@@ -1,6 +1,6 @@
 // 关于对话框
 import React from 'react'
-import { Modal, Descriptions, Button, Space } from 'antd'
+import { Modal, Button } from 'antd'
 
 const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
   打开状态?: boolean

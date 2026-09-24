@@ -30,8 +30,8 @@ export class 表格选择器 {
     this.清除高亮()
     
     // 计算选区范围
-    const 起始行 = this.起始单元格.parentElement
-    const 结束行 = this.结束单元格.parentElement
+    const 起始行 = this.起始单元格.parentElement as HTMLTableRowElement
+    const 结束行 = this.结束单元格.parentElement as HTMLTableRowElement
     if (!起始行 || !结束行) return
 
     const 起始行索引 = Array.from(this.表格.rows).indexOf(起始行)

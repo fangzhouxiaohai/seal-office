@@ -1,12 +1,19 @@
 // 帮助手册组件
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Input, Collapse, Tag, Card } from 'antd'
 import { useSettings } from '../store/settingsStore'
 
 const { Search } = Input
 const { Panel } = Collapse
 
-const 帮助数据 = [
+interface 帮助项 {
+  标题: string
+  内容: string
+  标签: string
+  标签颜色: string
+}
+
+const 帮助数据: 帮助项[] = [
   {
     标题: '入门指南',
     内容: '欢迎使用海豹办公！您可以通过首页快速创建新文档或打开最近文档。支持文字文档、电子表格和演示文稿的创建和编辑。',
@@ -61,6 +68,8 @@ const HelpManual = ({ 打开状态 = true, 关闭回调 }: {
   打开状态?: boolean
   关闭回调?: () => void
 }) => {
+  // 忽略打开状态，始终显示
+  void 打开状态
   const [搜索关键词, set搜索关键词] = useState('')
   const { 主题 } = useSettings()
 
@@ -69,61 +78,58 @@ const HelpManual = ({ 打开状态 = true, 关闭回调 }: {
     return 项.标题.includes(搜索关键词) || 项.内容.includes(搜索关键词)
   })
 
-  return React.createElement('div', { 
-    className: 'help-manual',
-    style: { 
+  return (
+    <div className="help-manual" style={{ 
       padding: '20px',
       backgroundColor: 主题 === '深色' ? '#2D333F' : '#FFFFFF',
       minHeight: '400px'
-    }
-  },
-    // 标题栏
-    React.createElement('div', { 
-      style: { 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '20px'
-      }
-    },
-      React.createElement('h2', { style: { margin: 0 } }, '帮助手册'),
-      关闭回调 ? React.createElement('button', {
-        onClick: 关闭回调,
-        style: { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }
-      }, '×') : null
-    ),
+    }}>
+      {/* 标题栏 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ margin: 0 }}>帮助手册</h2>
+        {关闭回调 && (
+          <button
+            onClick={关闭回调}
+            style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}
+          >
+            ×
+          </button>
+        )}
+      </div>
 
-    // 搜索框
-    React.createElement(Search, {
-      placeholder: '搜索帮助内容...',
-      value: 搜索关键词,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => set搜索关键词(e.target.value),
-      prefix: React.createElement('span', { 
-        style: { color: '#888', marginRight: '8px' }
-      }, '🔍'),
-      style: { marginBottom: '20px' }
-    }),
+      {/* 搜索框 */}
+      <Search
+        placeholder="搜索帮助内容..."
+        value={搜索关键词}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => set搜索关键词(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
 
-    // 帮助内容
-    过滤数据.length > 0 ? 
-      React.createElement(Card, { bordered: false },
-        React.createElement(Collapse, { defaultActiveKey: ['0'] },
-          过滤数据.map((项, 索引) => 
-            React.createElement(Panel, { 
-              key: 索引.toString(), 
-              header: React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                React.createElement(Tag, { color: 项.标签颜色 }, 项.标签),
-                React.createElement('span', null, 项.标题)
-              )
-            },
-              React.createElement('p', { style: { whiteSpace: 'pre-wrap' } }, 项.内容)
-            )
-          )
-        )
-      ) :
-      React.createElement('div', { style: { textAlign: 'center', padding: '40px', color: '#888' } },
-        '未找到匹配的帮助内容'
-      )
+      {/* 帮助内容 */}
+      {过滤数据.length > 0 ? (
+        <Card bordered={false}>
+          <Collapse defaultActiveKey={['0']}>
+            {过滤数据.map((项, 索引) => (
+              <Panel 
+                key={索引.toString()} 
+                header={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Tag color={项.标签颜色}>{项.标签}</Tag>
+                    <span>{项.标题}</span>
+                  </div>
+                }
+              >
+                <p style={{ whiteSpace: 'pre-wrap' }}>{项.内容}</p>
+              </Panel>
+            ))}
+          </Collapse>
+        </Card>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+          未找到匹配的帮助内容
+        </div>
+      )}
+    </div>
   )
 }
 

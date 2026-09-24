@@ -6,7 +6,7 @@ import Sidebar from './Sidebar'
 describe('左侧导航', () => {
   it('渲染四个分组中的全部导航项', () => {
     render(<Sidebar activeKey="home" onSelect={() => {}} />)
-    ;['首页', '最近', '星标', '共享', '我的云文档', '团队文档', 'PDF 工具', '脑图', '流程图', '设置', '帮助与反馈'].forEach(
+    ;['首页', '最近', '星标', '共享', '我的云文档', '团队文档', 'PDF 工具', '脑图', '流程图', '设置', '帮助手册'].forEach(
       (文字) => {
         expect(screen.getByText(文字)).toBeInTheDocument()
       }
