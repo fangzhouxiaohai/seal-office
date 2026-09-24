@@ -19,6 +19,11 @@
   },
   "dependencies": {
     "antd": "^5.0.0",
+    "docx": "^8.5.0",
+    "exceljs": "^4.4.0",
+    "html-to-pdfmake": "^2.1.0",
+    "pdfmake": "^0.2.15",
+    "pptxgenjs": "^3.12.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
