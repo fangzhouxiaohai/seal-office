@@ -29,7 +29,7 @@ const 探针 = ({ 提示文本 }: { 提示文本?: (文本: string) => void }) =
       <button onClick={() => 状态.setViewMode('list')}>切列表</button>
       <button onClick={() => 状态.setSortKey('size')}>切排序</button>
       <button onClick={() => 状态.toggleStar(状态.docs[0].id)}>切首个星标</button>
-      <button onClick={() => 状态.handleNav('cloud', 提示文本 ?? (() => {}))}>切云文档</button>
+      <button onClick={() => 状态.handleNav('pdf', 提示文本 ?? (() => {}))}>切PDF工具</button>
       <button onClick={() => 状态.renameDoc(状态.docs[0].id, '新名称.docx')}>重命名首篇</button>
       <button onClick={() => 状态.renameDoc(状态.docs[0].id, '  新名称.docx  ')}>重命名带空白</button>
       <button onClick={() => 状态.renameDoc(状态.docs[0].id, '   ')}>重命名空名</button>
@@ -98,12 +98,12 @@ describe('应用状态层', () => {
     expect(screen.getByTestId('star-count')).toHaveTextContent('4')
   })
 
-  it('未实现的导航项不切换内容并给出中文提示', async () => {
+  it('已实现的导航项切换后navKey更新', async () => {
     const 提示 = vi.fn()
     渲染探针(提示)
-    await userEvent.click(screen.getByText('切云文档'))
-    expect(提示).toHaveBeenCalledWith('「我的云文档」功能开发中')
-    expect(screen.getByTestId('nav')).toHaveTextContent('home')
+    await userEvent.click(screen.getByText('切PDF工具'))
+    expect(提示).not.toHaveBeenCalled()
+    expect(screen.getByTestId('nav')).toHaveTextContent('pdf')
   })
 
   it('重命名文档后名称更新', async () => {

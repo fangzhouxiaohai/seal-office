@@ -31,10 +31,6 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'shared', label: '共享', icon: 'share', implemented: true },
   ],
   [
-    { key: 'cloud', label: '我的云文档', icon: 'cloud', implemented: false },
-    { key: 'team', label: '团队文档', icon: 'users', implemented: false },
-  ],
-  [
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
     { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
     { key: 'flow', label: '流程图', icon: 'flow', implemented: true },

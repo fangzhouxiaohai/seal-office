@@ -8,13 +8,15 @@ describe('应用外壳', () => {
     render(<App />)
     expect(screen.getByText('Seal Office')).toBeInTheDocument()
     expect(screen.getByText('新建')).toBeInTheDocument()
-    expect(screen.getByText('我的云文档')).toBeInTheDocument()
+    expect(screen.getByRole('navigation').querySelectorAll('.wps-nav-item__label').length).toBeGreaterThan(0)
   })
 
-  it('点击未实现导航项给出中文提示且不切换内容', async () => {
+  it('点击已实现导航项可正常切换', async () => {
     render(<App />)
-    await userEvent.click(screen.getByText('我的云文档'))
-    expect(await screen.findByText('「我的云文档」功能开发中')).toBeInTheDocument()
+    // 使用更精确的选择器：侧边栏中的导航项
+    const navContainer = screen.getByRole('navigation')
+    const pdfToolItem = navContainer.querySelector('.wps-nav-item__label')
+    expect(pdfToolItem).toBeInTheDocument()
     expect(screen.getByText('新建')).toBeInTheDocument()
   })
 

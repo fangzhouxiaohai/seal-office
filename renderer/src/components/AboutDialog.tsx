@@ -1,6 +1,7 @@
 // 关于对话框
 import React from 'react'
 import { Modal, Button } from 'antd'
+import SealLogo from './SealLogo'
 
 const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
   打开状态?: boolean
@@ -54,11 +55,13 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
       React.createElement('div', { 
         style: { 
           marginBottom: '20px',
-          fontSize: '48px',
-          fontWeight: 'bold',
-          color: '#2B6CF6'
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
         }
-      }, '🐉'),
+      },
+        React.createElement(SealLogo, { size: 72 }),
+      ),
       
       React.createElement('h2', { 
         style: { 

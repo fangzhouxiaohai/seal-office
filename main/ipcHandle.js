@@ -28,7 +28,11 @@ ipcMain.handle('file.showSaveDialog', async (event, 默认文件名) => {
 ipcMain.handle('file.showOpenDialog', async (event) => {
   const win = event.sender.ownerWindow
   const result = await fileOps.showOpenDialog(win)
-  return result.canceled ? null : result.filePaths
+  if (result.canceled) {
+    return null
+  }
+  // 只返回第一个选中的文件路径
+  return result.filePaths && result.filePaths.length > 0 ? result.filePaths[0] : null
 })
 
 // 保存文件

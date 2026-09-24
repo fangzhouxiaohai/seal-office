@@ -633,11 +633,16 @@ const 导出命令: EditorCommand[] = [
               上下文.history.record({ html: 上下文.读取内容(), selection: null })
               上下文.应用内容(结果.内容, null)
               上下文.refresh()
+              上下文.notify('文件已打开')
             } else {
               上下文.notify(`打开文件失败：${结果.错误}`)
             }
+          }).catch((error: any) => {
+            上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
           })
         }
+      }).catch((error: any) => {
+        上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
       })
     } else {
       上下文.notify('当前环境不支持打开文件功能，请使用打包后的版本')
@@ -660,8 +665,12 @@ const 导出命令: EditorCommand[] = [
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
             }
+          }).catch((error: any) => {
+            上下文.notify(`保存失败：${error?.message || '未知错误'}`)
           })
         }
+      }).catch((error: any) => {
+        上下文.notify(`保存失败：${error?.message || '未知错误'}`)
       })
     } else {
       上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
@@ -680,8 +689,12 @@ const 导出命令: EditorCommand[] = [
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
             }
+          }).catch((error: any) => {
+            上下文.notify(`保存失败：${error?.message || '未知错误'}`)
           })
         }
+      }).catch((error: any) => {
+        上下文.notify(`保存失败：${error?.message || '未知错误'}`)
       })
     } else {
       上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
@@ -699,6 +712,8 @@ const 导出命令: EditorCommand[] = [
         } else {
           上下文.notify(`PDF 导出失败：${结果.错误}`)
         }
+      }).catch((error: any) => {
+        上下文.notify(`PDF 导出失败：${error?.message || '未知错误'}`)
       })
     } else {
       上下文.notify('当前环境不支持 PDF 导出功能，请使用打包后的版本')

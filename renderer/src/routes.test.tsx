@@ -8,8 +8,8 @@ import {
 } from './routes'
 
 describe('导航分组', () => {
-  it('包含四个分组', () => {
-    expect(NAV_GROUPS).toHaveLength(4)
+  it('包含三个分组', () => {
+    expect(NAV_GROUPS).toHaveLength(3)
   })
 
   it('第一组为首页、最近、星标、共享', () => {
