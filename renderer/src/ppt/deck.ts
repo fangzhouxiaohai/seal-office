@@ -242,7 +242,7 @@ export function 片段转文本(片段列表: 文本片段[]): string {
 }
 
 /** 检测选区与哪些片段重叠，返回重叠索引范围 */
-export function 检测选中片段(片段列表: 文本片段[], 选区起始: number, 选区结束: number): { 起始索引: number; 结束索引: number } | null {
+export function 检测选中片段(片段列表: 文本片段[], 选区起始: number | undefined, 选区结束: number | undefined): { 起始索引: number; 结束索引: number } | null {
   if (!片段列表 || 片段列表.length === 0) return null
   if (选区起始 == null || 选区结束 == null || 选区起始 === 选区结束) return null
   const 开始 = Math.min(选区起始, 选区结束)

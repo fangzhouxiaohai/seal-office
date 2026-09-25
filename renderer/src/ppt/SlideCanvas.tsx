@@ -18,19 +18,7 @@ interface Props {
   onContextMenu?: (x: number, y: number) => void
 }
 
-interface 拖动状态 {
-  标识: string
-  起始x: number
-  起始y: number
-  原x: number
-  原y: number
-}
-
-/** 将文本分割为字符片段用于独立渲染 */
-function 分割片段(文本: string): Array<{ 文本: string }> {
-  if (!文本) return []
-  return 文本.split('').map((字符) => ({ 文本: 字符 }))
-}
+const 拖拽阈值 = 5
 
 const SlideCanvas = ({
   幻灯片,
@@ -47,7 +35,7 @@ const SlideCanvas = ({
   on文本选择,
   onContextMenu,
 }: Props) => {
-  const 拖动 = useRef<拖动状态 | null>(null)
+  const 拖动 = useRef<{ 状态: 'idle' | 'dragging'; 标识: string; 起始x: number; 起始y: number; 原x: number; 原y: number } | null>(null)
   const 选择起始 = useRef<number | null>(null)
   const 当前框文本 = useRef<string>('')
 
@@ -57,6 +45,7 @@ const SlideCanvas = ({
     当前框文本.current = 框.text
     选择起始.current = null
     拖动.current = {
+      状态: 'idle',
       标识: 框.id,
       起始x: 事件.clientX,
       起始y: 事件.clientY,
@@ -67,7 +56,7 @@ const SlideCanvas = ({
 
   const 处理移动 = (事件: React.MouseEvent) => {
     const 状态 = 拖动.current
-    if (状态 === null) {
+    if (状态 === null || 状态.状态 === 'idle') {
       return
     }
     const 比例 = 缩放 <= 0 ? 1 : 缩放
@@ -83,19 +72,31 @@ const SlideCanvas = ({
   }
 
   const 处理文本框鼠标移动 = (事件: React.MouseEvent, 框: 文本框) => {
-    // 只有在文本框被选中且不是拖动操作时，才检测文本选择
-    if (选中框标识 !== 框.id || 拖动.current !== null) return
-    const 比例 = 缩放 <= 0 ? 1 : 缩放
-    const 相对x = (事件.clientX / 比例 - 框.x) / 框.width
-    const 相对y = (事件.clientY / 比例 - 框.y) / 框.height
-    // 估算光标位置：按字符比例计算
-    const 文本 = 框.text
-    const 估算位置 = Math.max(0, Math.min(文本.length, Math.floor(相对x * 文本.length + 相对y * 文本.length * 0.1)))
-    if (选择起始.current === null) {
-      选择起始.current = 估算位置
+    // 只有在文本框被选中时，才检测文本选择
+    if (选中框标识 !== 框.id) return
+    const 拖动状态 = 拖动.current
+    // 空闲状态：记录移动距离，不足阈值不激活拖拽，允许文本选择
+    if (拖动状态 !== null && 拖动状态.状态 === 'idle') {
+      const dx = Math.abs(事件.clientX - 拖动状态.起始x)
+      const dy = Math.abs(事件.clientY - 拖动状态.起始y)
+      if (dx > 拖拽阈值 || dy > 拖拽阈值) {
+        拖动.current = { ...拖动状态, 状态: 'dragging' }
+        return
+      }
+      const 比例 = 缩放 <= 0 ? 1 : 缩放
+      const 相对x = (事件.clientX / 比例 - 框.x) / 框.width
+      const 相对y = (事件.clientY / 比例 - 框.y) / 框.height
+      const 文本 = 框.text
+      const 估算位置 = Math.max(0, Math.min(文本.length, Math.floor(相对x * 文本.length + 相对y * 文本.length * 0.1)))
+      if (选择起始.current === null) {
+        选择起始.current = 估算位置
+        return
+      }
+      on文本选择(框.id, 选择起始.current, 估算位置)
       return
     }
-    on文本选择(框.id, 选择起始.current, 估算位置)
+    // 拖拽中或无拖动状态：不处理文本选择
+    if (拖动状态 !== null && 拖动状态.状态 === 'dragging') return
   }
 
   const 处理文本框鼠标离开 = () => {

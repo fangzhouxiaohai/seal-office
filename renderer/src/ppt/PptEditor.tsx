@@ -1,5 +1,5 @@
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
@@ -36,6 +36,8 @@ const PptEditor = () => {
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
   const [选中起始, set选中起始] = useState<number | undefined>(undefined)
   const [选中结束, set选中结束] = useState<number | undefined>(undefined)
+  /** 下拉框打开时保存的选区快照，防止焦点转移导致选区丢失 */
+  const 选区快照 = useRef<{ 起始?: number; 结束?: number } | null>(null)
   const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
@@ -82,6 +84,7 @@ const PptEditor = () => {
     选中框标识,
     选中起始,
     选中结束,
+    选区快照: 选区快照.current,
     更新文稿,
     notify: (文本: string) => message.info(文本),
     撤销,
@@ -92,6 +95,11 @@ const PptEditor = () => {
     if (选中框标识 !== 标识) return
     set选中起始(起始)
     set选中结束(结束)
+  }
+
+  /** 下拉框打开前保存选区快照 */
+  const 处理下拉框打开 = () => {
+    选区快照.current = { 起始: 选中起始, 结束: 选中结束 }
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
@@ -337,6 +345,7 @@ const PptEditor = () => {
       tabs: 演示标签,
       onCommand: 执行命令,
       获取激活态: 取激活态,
+      onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement(
       'div',
