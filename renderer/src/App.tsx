@@ -25,8 +25,6 @@ const 主题配置 = ({ 深色 }: { 深色: boolean }) => ({
 })
 
 const 外壳 = () => {
-  const { 主题 } = useSettings()
-  const 深色 = 主题 === '深色'
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message } = AntdApp.useApp()
   const { module, navKey, setModule, setNavKey, handleNav, docs, documents, activeDocumentId, showSettings, showHelp, goHome } = useAppStore()

@@ -736,6 +736,15 @@ button {
   overflow: hidden;
 }
 
+/* 帮助手册主区：填满可用空间，内容自然滚动 */
+.wps-main--help {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: auto;
+  background: var(--bg-app);
+}
+
 /* 文档标签栏 */
 .wps-doc-tabs {
   display: flex;
@@ -2024,4 +2033,88 @@ button {
   height: 1px;
   margin: 4px 8px;
   background: var(--border-subtle);
+}
+
+/* 帮助手册 - 瀑布流文章布局 */
+.help-manual {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.help-manual::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-manual::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-manual::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.help-manual::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.help-articles-stream {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.help-articles-stream::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-articles-stream::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-articles-stream::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.help-articles-stream::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.help-article-card {
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.help-article-card:hover {
+  border-color: var(--border);
+}
+
+.help-article-tag {
+  user-select: none;
+}
+
+.help-article-image {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.help-close-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+:where(.ant-dark) .help-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 帮助手册深色模式适配 */
+[data-theme="dark"] .help-manual {
+  background-color: #1A1F26;
+}
+
+[data-theme="dark"] .help-articles-stream {
+  scrollbar-color: #3D4450 transparent;
+}
+
+[data-theme="dark"] .help-article-card:hover {
+  border-color: #3D4450;
 }
