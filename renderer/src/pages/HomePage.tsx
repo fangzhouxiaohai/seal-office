@@ -13,6 +13,7 @@ const 标题映射: Record<string, string> = {
   recent: '最近',
   star: '星标文档',
   shared: '共享文档',
+  pdf: 'PDF 工具',
 }
 
 const HomePage = () => {
@@ -37,10 +38,6 @@ const HomePage = () => {
   } = useAppStore()
 
   const 处理新建 = (类型: DocType) => {
-    if (类型 === 'pdf') {
-      message.info('PDF 编辑功能开发中')
-      return
-    }
     createDoc(类型)
   }
 
@@ -48,10 +45,6 @@ const HomePage = () => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
       message.error('未找到该文档，可能已被移除')
-      return
-    }
-    if (目标.type === 'pdf') {
-      message.info('PDF 编辑功能开发中')
       return
     }
     openDoc(目标)
@@ -107,7 +100,7 @@ const HomePage = () => {
           'button',
           {
             className: 'wps-tool-btn',
-            onClick: () => message.info('PDF 工具功能开发中'),
+            onClick: () => createDoc('pdf'),
           },
           React.createElement('span', { className: 'wps-tool-btn__label' }, 'PDF 工具')
         )

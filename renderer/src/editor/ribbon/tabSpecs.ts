@@ -69,6 +69,22 @@ const 开始标签: RibbonTabSpec = {
   label: '开始',
   groups: [
     {
+      name: '文件',
+      items: [
+        大('file.open', '打开', 'open'),
+        大('file.save', '保存', 'save'),
+        大('file.saveAs', '另存为', 'save-as'),
+      ],
+    },
+    {
+      name: '导出',
+      items: [
+        大('file.exportHtml', '导出为网页', 'export-file'),
+        大('file.exportText', '导出为文本', 'export-file'),
+        大('file.exportPdf', '导出为 PDF', 'pdf'),
+      ],
+    },
+    {
       name: '剪贴板',
       items: [
         大('clipboard.paste', '粘贴', 'paste'),
@@ -376,22 +392,6 @@ const 视图标签: RibbonTabSpec = {
         大('view.zoomOut', '缩小', 'zoom-out'),
         大('view.zoomReset', '100%', 'zoom-reset'),
         大('view.zoomFitWidth', '适应页宽', 'fit-width'),
-      ],
-    },
-    {
-      name: '文件',
-      items: [
-        大('file.open', '打开', 'open'),
-        大('file.save', '保存', 'save'),
-        大('file.saveAs', '另存为', 'save-as'),
-      ],
-    },
-    {
-      name: '导出',
-      items: [
-        大('file.exportHtml', '导出为网页', 'export-file'),
-        大('file.exportText', '导出为文本', 'export-file'),
-        大('file.exportPdf', '导出为 PDF', 'pdf'),
       ],
     },
   ],

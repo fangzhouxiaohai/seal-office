@@ -24,7 +24,7 @@ const 主题 = {
 const 外壳 = () => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message } = AntdApp.useApp()
-  const { module, navKey, handleNav, docs, documents, activeDocumentId, showSettings, showHelp, goHome } = useAppStore()
+  const { module, navKey, setModule, setNavKey, handleNav, docs, documents, activeDocumentId, showSettings, showHelp, goHome } = useAppStore()
 
   const 是首页 = module === 'home'
   const 当前模块 = MODULES[module]
@@ -41,7 +41,7 @@ const 外壳 = () => {
 
   const 页面组件 = 当前模块.page
 
-  // 特殊处理：设置和帮助页面的渲染（不需要editor布局）
+  // 特殊处理：设置、帮助、PDF 页面的渲染（不需要 editor 布局）
   let 主内容
   if (module === 'settings') {
     主内容 = React.createElement(
@@ -53,6 +53,12 @@ const 外壳 = () => {
     主内容 = React.createElement(
       'main',
       { className: 'wps-main wps-main--help' },
+      React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
+    )
+  } else if (module === 'pdf') {
+    主内容 = React.createElement(
+      'main',
+      { className: 'wps-main wps-main--pdf' },
       React.createElement(ErrorBoundary, null, React.createElement(页面组件, null))
     )
   } else {
@@ -79,19 +85,25 @@ const 外壳 = () => {
       'div',
       { className: 'wps-body' },
       React.createElement(Sidebar, {
-        mode: 是首页 ? 'home' : (module === 'settings' ? 'settings' : module === 'help' ? 'help' : 'editor'),
+        mode: 是首页 ? 'home' : (module === 'settings' ? 'settings' : module === 'help' ? 'help' : module === 'pdf' ? 'pdf' : 'editor'),
         activeKey: navKey,
         onSelect: (键: string) => {
           if (键 === 'settings') {
             showSettings()
           } else if (键 === 'help') {
             showHelp()
+          } else if (键 === 'pdf') {
+            setModule('pdf')
+            setNavKey('pdf')
           } else {
             handleNav(键, (文本: string) => message.info(文本))
           }
         },
         moduleLabel: 当前模块.label,
         onBack: goHome,
+        onShowSettings: showSettings,
+        onShowHelp: showHelp,
+        onShowPdf: () => { setModule('pdf'); setNavKey('pdf') },
       }),
       主内容
     ),

@@ -5,13 +5,14 @@ import Icon from './Icon'
 import { 提取大纲, type 目录项 } from '../editor/toc'
 
 interface Props {
-  mode?: 'home' | 'editor' | 'settings' | 'help'
+  mode?: 'home' | 'editor' | 'settings' | 'help' | 'pdf'
   activeKey?: string
   onSelect?: (键: string) => void
   moduleLabel?: string
   onBack?: () => void
   onShowSettings?: () => void
   onShowHelp?: () => void
+  onShowPdf?: () => void
   outline?: 大纲导航属性
 }
 
@@ -25,6 +26,7 @@ const Sidebar = ({
   onBack,
   onShowSettings,
   onShowHelp,
+  onShowPdf,
   outline,
 }: Props) => {
   // 编辑器模式：显示返回首页按钮、当前模块名与文档大纲
@@ -66,8 +68,8 @@ const Sidebar = ({
     )
   }
 
-  // home、settings、help 模式：显示完整分组导航菜单
-  const 当前激活键 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : (activeKey ?? 'home')
+  // home、settings、help、pdf 模式：显示完整分组导航菜单
+  const 当前激活键 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : mode === 'pdf' ? 'pdf' : (activeKey ?? 'home')
 
   return React.createElement(
     'nav',
@@ -95,6 +97,8 @@ const Sidebar = ({
                   onShowSettings()
                 } else if (项.key === 'help' && onShowHelp) {
                   onShowHelp()
+                } else if (项.key === 'pdf' && onShowPdf) {
+                  onShowPdf()
                 } else if (onSelect) {
                   onSelect(项.key)
                 }
