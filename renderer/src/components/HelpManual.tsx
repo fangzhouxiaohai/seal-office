@@ -120,7 +120,7 @@ const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
           />
         </Card>
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 主题 === '深色' ? '#9AA0A6' : '#888' }}>
           未找到匹配的帮助内容
         </div>
       )}

@@ -9,19 +9,24 @@ import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import Footer from './components/Footer'
 import ErrorBoundary from './components/ErrorBoundary'
-import { SettingsProvider } from './store/settingsStore'
+import { SettingsProvider, useSettings } from './store/settingsStore'
 
-const 主题 = {
+/** 动态 Ant Design 主题配置 */
+const 主题配置 = ({ 深色 }: { 深色: boolean }) => ({
   token: {
-    colorPrimary: '#2B6CF6',
-    colorText: '#1A1D24',
-    colorTextSecondary: '#5C6472',
+    colorPrimary: 深色 ? '#4A90E2' : '#2B6CF6',
+    colorText: 深色 ? '#E8EAED' : '#1A1D24',
+    colorTextSecondary: 深色 ? '#9AA0A6' : '#5C6472',
+    colorBgContainer: 深色 ? '#252A33' : '#FFFFFF',
+    colorBgElevated: 深色 ? '#2D333F' : '#FFFFFF',
     borderRadius: 6,
     fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
   },
-}
+})
 
 const 外壳 = () => {
+  const { 主题 } = useSettings()
+  const 深色 = 主题 === '深色'
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message } = AntdApp.useApp()
   const { module, navKey, setModule, setNavKey, handleNav, docs, documents, activeDocumentId, showSettings, showHelp, goHome } = useAppStore()
@@ -116,24 +121,34 @@ const App = () =>
     ConfigProvider,
     {
       locale: zhCN,
-      theme: 主题,
+      theme: 主题配置({ 深色: false }),
       // 关闭两个汉字按钮的自动空格，保证界面文案与设计稿完全一致
       button: { autoInsertSpace: false },
     },
     React.createElement(
       AntdApp,
       null,
-      // 应用级兜底：顶栏、侧栏或状态栏异常时展示中文说明而非整窗白屏
       React.createElement(
         SettingsProvider,
         null,
         React.createElement(
-          ErrorBoundary,
+          ThemeAwareProvider,
           null,
-          React.createElement(AppProvider, null, React.createElement(外壳, null))
+          React.createElement(
+            ErrorBoundary,
+            null,
+            React.createElement(AppProvider, null, React.createElement(外壳, null))
+          )
         )
       )
     )
   )
+
+/** 监听深色模式，动态更新 Ant Design ConfigProvider 主题 */
+const ThemeAwareProvider = ({ children }: { children: React.ReactNode }) => {
+  const { 主题 } = useSettings()
+  const 深色 = 主题 === '深色'
+  return React.createElement(ConfigProvider, { theme: 主题配置({ 深色 }) }, children)
+}
 
 export default App

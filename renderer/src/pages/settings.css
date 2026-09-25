@@ -23,7 +23,7 @@
 .settings-page__layout { display: grid; grid-template-columns: 190px minmax(0, 640px); gap: 24px; align-items: start; }
 .settings-page__nav { display: flex; flex-direction: column; gap: 4px; }
 .settings-page__nav button { border: 0; background: transparent; color: var(--设置次文); text-align: left; padding: 10px 12px; border-radius: 6px; cursor: pointer; }
-.settings-page__nav button[aria-selected='true'] { background: #eaf0ff; color: #2b6cf6; font-weight: 600; }
+.settings-page__nav button[aria-selected='true'] { background: var(--设置面板); color: var(--设置主文); font-weight: 600; border: 1px solid var(--设置边框); }
 .settings-page__content { min-width: 0; }
 .settings-panel { background: var(--设置面板); border: 1px solid var(--设置边框); border-radius: 6px; padding: 20px; }
 .settings-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--设置边框); }

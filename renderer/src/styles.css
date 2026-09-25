@@ -1847,3 +1847,86 @@ button {
   background: var(--bg-hover);
   color: var(--brand);
 }
+
+/* ===== 深色模式覆盖 ===== */
+
+/* 编辑器画布背景 */
+[data-theme="dark"] .wps-editor-stage {
+  background: #121418;
+}
+
+/* PPT 演示舞台背景 */
+[data-theme="dark"] .wps-ppt-stage {
+  background: #121418;
+}
+
+/* 文档卡片缩略图背景 */
+[data-theme="dark"] .wps-doc-card__thumb {
+  background: #2D333F;
+}
+
+/* 文档卡片操作按钮半透明背景 */
+[data-theme="dark"] .wps-doc-card__more,
+[data-theme="dark"] .wps-doc-card__star {
+  background: rgba(45, 51, 63, 0.92);
+}
+
+/* 文档列表表头背景 */
+[data-theme="dark"] .wps-doc-list__head {
+  background: #2D333F;
+}
+
+/* 表格网格表头/行号背景 */
+[data-theme="dark"] .wps-sheet__corner,
+[data-theme="dark"] .wps-sheet__col,
+[data-theme="dark"] .wps-sheet__rownum {
+  background: #2D333F;
+}
+
+/* 表格工作表标签关闭按钮悬停 */
+[data-theme="dark"] .wps-sheet-tab__close:hover {
+  background: rgba(232, 234, 237, 0.08);
+}
+
+/* 目录区块背景 */
+[data-theme="dark"] .wps-toc {
+  background: #2D333F;
+}
+
+/* SmartArt 背景 */
+[data-theme="dark"] .wps-smartart {
+  background: #2D333F;
+}
+
+/* 文献书目背景 */
+[data-theme="dark"] .wps-bibliography {
+  background: #2D333F;
+}
+
+/* 批注背景 */
+[data-theme="dark"] .wps-comment {
+  background: #4A3F00;
+  color: #e8d48b;
+}
+
+/* 修订标记 - 插入 */
+[data-theme="dark"] .wps-insert {
+  background: #0D3B2A;
+  color: #6be8b4;
+}
+
+/* 修订标记 - 删除 */
+[data-theme="dark"] .wps-delete {
+  background: #3D1A1F;
+  color: #f48b91;
+}
+
+/* 网格线 */
+[data-theme="dark"] .wps-editor-canvas--gridlines .wps-editor-canvas__paper {
+  background-image: linear-gradient(to bottom, #3B4A63 1px, transparent 1px);
+}
+
+/* 分页符 */
+[data-theme="dark"] .wps-page-break {
+  border-top-color: #3C4043;
+}
