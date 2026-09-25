@@ -1,6 +1,6 @@
 // 模板库组件
 import { useState } from 'react'
-import { Drawer } from 'antd'
+import { Button, Drawer, Tag } from 'antd'
 import { ALL_TEMPLATES, type 模板项 } from '../data/templates'
 
 interface 模板库Props {
@@ -25,14 +25,14 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
     : ALL_TEMPLATES.filter(项 => 项.分类 === 当前分类)
 
   const 分类按钮 = Object.entries(分类映射).map(([键, 值]) => (
-    <button
+    <Button
       key={键}
-      className={`ant-btn ${当前分类 === 键 ? 'ant-btn-primary' : ''}`}
+      type={当前分类 === 键 ? 'primary' : 'default'}
       onClick={() => set当前分类(键)}
       style={{ margin: '0 8px 8px 0' }}
     >
       {值.标签}
-    </button>
+    </Button>
   ))
 
   return (
@@ -69,22 +69,21 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
               }}
             >
               <div style={{ marginBottom: '12px' }}>
-                <span className={`ant-tag ant-tag-${分类映射[模板.分类].颜色}`}>
+                <Tag color={分类映射[模板.分类].颜色}>
                   {分类映射[模板.分类].标签}
-                </span>
+                </Tag>
                 {(模板.标签 || []).map((标签) => (
-                  <span key={标签} className="ant-tag" style={{ marginLeft: '8px' }}>
+                  <Tag key={标签} color="default">
                     {标签}
-                  </span>
+                  </Tag>
                 ))}
               </div>
               <h3 style={{ margin: '0 0 8px' }}>{模板.名称}</h3>
               <p style={{ color: '#888', fontSize: '13px', margin: '0 0 16px', height: '40px', overflow: 'hidden' }}>
                 {模板.描述}
               </p>
-              <button
-                className="ant-btn ant-btn-primary"
-                style={{ width: '100%' }}
+              <Button
+                type="primary"
                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.stopPropagation()
                   if (onSelect) {
@@ -95,7 +94,7 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
                 }}
               >
                 使用模板
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -108,8 +107,8 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
           open={!!预览模板}
           onClose={() => set预览模板(null)}
           extra={
-            <button
-              className="ant-btn ant-btn-primary"
+            <Button
+              type="primary"
               onClick={() => {
                 if (预览模板 && onSelect) {
                   onSelect(预览模板)
@@ -118,7 +117,7 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
               }}
             >
               使用此模板
-            </button>
+            </Button>
           }
         >
           {预览模板 && (

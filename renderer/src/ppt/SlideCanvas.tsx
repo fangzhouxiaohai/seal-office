@@ -14,6 +14,7 @@ interface Props {
   on编辑值变化: (值: string) => void
   on提交编辑: () => void
   on拖动框: (标识: string, x: number, y: number) => void
+  onContextMenu?: (x: number, y: number) => void
 }
 
 interface 拖动状态 {
@@ -36,6 +37,7 @@ const SlideCanvas = ({
   on编辑值变化,
   on提交编辑,
   on拖动框,
+  onContextMenu,
 }: Props) => {
   const 拖动 = useRef<拖动状态 | null>(null)
 
@@ -82,6 +84,12 @@ const SlideCanvas = ({
           transform: `scale(${缩放})`,
         },
         onClick: () => on选中框(null),
+        onContextMenu: (事件: React.MouseEvent) => {
+          if (onContextMenu) {
+            事件.preventDefault()
+            onContextMenu(事件.clientX, 事件.clientY)
+          }
+        },
         onMouseMove: 处理移动,
         onMouseUp: 停止拖动,
         onMouseLeave: 停止拖动,

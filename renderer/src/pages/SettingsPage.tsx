@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Switch, Select, message, Button } from 'antd'
 import { useSettings } from '../store/settingsStore'
 import { useAppStore } from '../store'
-import AboutDialog from '../components/AboutDialog'
 import DefaultAppSetter from '../components/DefaultAppSetter'
 import HelpManual from '../components/HelpManual'
 import Icon from '../components/Icon'
@@ -12,7 +11,6 @@ import './settings.css'
 const SettingsPage = () => {
   const { 主题, 切换主题, 语言, 设置语言 } = useSettings()
   const { goHome } = useAppStore()
-  const [关于打开, set关于打开] = useState(false)
   const [帮助打开, set帮助打开] = useState(false)
   const [活动Tab, 设活动Tab] = useState('general')
   const 标签 = [
@@ -21,9 +19,53 @@ const SettingsPage = () => {
     { key: 'help', label: '帮助与支持', icon: 'help' },
     { key: 'about', label: '关于', icon: 'help' },
   ]
+
+  const 信息 = {
+    名称: '海豹办公',
+    英文名称: 'Seal Office',
+    版本: '1.2.0',
+    作者: '饮风一笑',
+    邮箱: '24519660@qq.com',
+    说明: '本程序永久免费开源',
+    开源地址: 'https://github.com/seal-office/seal-office',
+    专业服务: '专业应用开发服务',
+  }
+
   const 设置行 = (标题: string, 描述: string, 控件: React.ReactNode) => (
     <div className="settings-row"><div><div className="settings-row__title">{标题}</div><div className="settings-row__description">{描述}</div></div>{控件}</div>
   )
+
+  const 关于内容 = (
+    <div className="settings-panel" style={{ textAlign: 'center' }}>
+      <SealLogo size={80} />
+      <h2 style={{ margin: '16px 0 4px' }}>{信息.名称} {信息.英文名称}</h2>
+      <p style={{ color: '#888', margin: '0 0 20px' }}>版本 {信息.版本}</p>
+      <div style={{ background: '#F5F7FA', borderRadius: '8px', padding: '16px', textAlign: 'left' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E8EBF0' }}>
+          <span style={{ color: '#888' }}>作者</span>
+          <span>{信息.作者}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E8EBF0' }}>
+          <span style={{ color: '#888' }}>邮箱</span>
+          <a href="mailto:24519660@qq.com" style={{ color: '#2B6CF6' }}>{信息.邮箱}</a>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E8EBF0' }}>
+          <span style={{ color: '#888' }}>说明</span>
+          <span>{信息.说明}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E8EBF0' }}>
+          <span style={{ color: '#888' }}>开源地址</span>
+          <a href={信息.开源地址} target="_blank" rel="noopener noreferrer" style={{ color: '#2B6CF6', wordBreak: 'break-all' }}>{信息.开源地址}</a>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+          <span style={{ color: '#888' }}>专业服务</span>
+          <span>{信息.专业服务}</span>
+        </div>
+      </div>
+      <p style={{ color: '#888', fontSize: '12px', marginTop: '16px', marginBottom: 0 }}>© 2026 饮风一笑。本程序永久免费开源。</p>
+    </div>
+  )
+
   const 内容 = 活动Tab === 'general' ? (
     <div className="settings-panel">
       {设置行('深浅模式', '切换浅色或深色主题', <Switch checked={主题 === '深色'} onChange={切换主题} checkedChildren="深色" unCheckedChildren="浅色" />)}
@@ -32,12 +74,11 @@ const SettingsPage = () => {
   ) : 活动Tab === 'system' ? <DefaultAppSetter /> : 活动Tab === 'help' ? (
     <div className="settings-panel">
       {['使用手册', '常见问题', '反馈建议'].map((标题) => <div className="settings-row" key={标题}><div><div className="settings-row__title">{标题}</div><div className="settings-row__description">查看相关内容或提交反馈</div></div><Button type="primary" size="small" onClick={() => 标题 === '反馈建议' ? message.success('感谢反馈，请发送邮件至 24519660@qq.com') : set帮助打开(true)}>查看</Button></div>)}
-      {设置行('关于海豹办公', '查看版本信息和开源许可', <Button size="small" onClick={() => set关于打开(true)}>查看</Button>)}
     </div>
   ) : (
-    <div className="settings-panel" style={{ textAlign: 'center' }}><SealLogo size={80} /><h2>海豹办公 Seal Office</h2><p>版本 1.2.0</p><Button type="primary" onClick={() => set关于打开(true)}>查看详情</Button></div>
+    关于内容
   )
-  return <div className="settings-page"><div className="settings-page__header"><Button icon={<Icon name="arrow-left" size={16} />} onClick={goHome}>返回首页</Button><h1>设置</h1></div><div className="settings-page__layout"><nav className="settings-page__nav">{标签.map((项) => <button type="button" key={项.key} aria-selected={活动Tab === 项.key} onClick={() => 设活动Tab(项.key)}><Icon name={项.icon} size={16} /> {项.label}</button>)}</nav><main className="settings-page__content">{内容}</main></div><AboutDialog 打开状态={关于打开} 关闭回调={() => set关于打开(false)} /><HelpManual 打开状态={帮助打开} 关闭回调={() => set帮助打开(false)} /></div>
+  return <div className="settings-page"><div className="settings-page__header"><Button icon={<Icon name="arrow-left" size={16} />} onClick={goHome}>返回首页</Button><h1>设置</h1></div><div className="settings-page__layout"><nav className="settings-page__nav">{标签.map((项) => <button type="button" key={项.key} aria-selected={活动Tab === 项.key} onClick={() => 设活动Tab(项.key)}><Icon name={项.icon} size={16} /> {项.label}</button>)}</nav><main className="settings-page__content">{内容}</main></div><HelpManual 打开状态={帮助打开} 关闭回调={() => set帮助打开(false)} /></div>
 }
 
 export default SettingsPage

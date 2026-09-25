@@ -41,6 +41,11 @@ const HomePage = () => {
     createDoc(类型)
   }
 
+  const 处理模板选择 = (模板: import('../data/templates').模板项) => {
+    createDoc(模板.分类 as DocType)
+    设显示模板库(false)
+  }
+
   const 处理打开 = (标识: string) => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
@@ -127,6 +132,7 @@ const HomePage = () => {
     React.createElement(TemplateLibrary, {
       打开: 显示模板库,
       关闭: () => 设显示模板库(false),
+      onSelect: 处理模板选择,
     })
   )
 }

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
+import { 桥接 } from '../ipc/bridge'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 表格标签 } from './ribbonSpecs'
@@ -23,6 +24,8 @@ import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
 import SheetToolbar from './SheetToolbar'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
+import ContextMenu from '../components/ContextMenu'
+import type { 菜单节点 } from '../components/ContextMenu'
 
 const SheetEditor = () => {
   const { message } = AntdApp.useApp()
@@ -37,6 +40,45 @@ const SheetEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(true)
+  const [文档路径, set文档路径] = useState<string | null>(null)
+  /** 右键菜单状态 */
+  const [菜单可见, set菜单可见] = useState(false)
+  const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
+
+  /** 关闭右键菜单 */
+  const 关闭菜单 = (): void => {
+    set菜单可见(false)
+  }
+
+  /** 构建表格编辑器的右键菜单项 */
+  const 构建表格菜单 = (): 菜单节点[] => [
+    { type: 'item', commandId: 'clipboard.paste', label: '粘贴', shortcut: 'Ctrl+V' },
+    { type: 'item', commandId: 'clipboard.cut', label: '剪切', shortcut: 'Ctrl+X' },
+    { type: 'item', commandId: 'clipboard.copy', label: '复制', shortcut: 'Ctrl+C' },
+    { type: 'divider' },
+    { type: 'group', 标题: '单元格', 子项: [
+      { type: 'item', commandId: 'cell.insert', label: '插入...' },
+      { type: 'item', commandId: 'cell.delete', label: '删除...' },
+      { type: 'item', commandId: 'cell.format', label: '设置单元格格式' },
+    ]},
+    { type: 'divider' },
+    { type: 'group', 标题: '行与列', 子项: [
+      { type: 'item', commandId: 'row.insert', label: '插入行' },
+      { type: 'item', commandId: 'row.delete', label: '删除行' },
+      { type: 'item', commandId: 'col.insert', label: '插入列' },
+      { type: 'item', commandId: 'col.delete', label: '删除列' },
+    ]},
+    { type: 'divider' },
+    { type: 'group', 标题: '编辑', 子项: [
+      { type: 'item', commandId: 'edit.find', label: '查找', shortcut: 'Ctrl+F' },
+      { type: 'item', commandId: 'edit.selectAll', label: '全选', shortcut: 'Ctrl+A' },
+      { type: 'divider' },
+      { type: 'item', commandId: 'edit.undo', label: '撤销', shortcut: 'Ctrl+Z' },
+      { type: 'item', commandId: 'edit.redo', label: '重做', shortcut: 'Ctrl+Y' },
+    ]},
+    { type: 'divider' },
+    { type: 'item', commandId: 'view.gridlines', label: 显示网格线 ? '隐藏网格线' : '显示网格线' },
+  ]
   const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [])
   /** 列宽拖动状态；拖动过程中不逐帧记录历史，只在开始时记录一次 */
   const 列宽拖动 = useRef<{ 列: number; 起始横坐标: number; 原宽: number } | null>(null)
@@ -140,6 +182,87 @@ const SheetEditor = () => {
         是Csv ? 'text/csv' : 'text/html'
       )
       message.success(是Csv ? '已导出为 CSV 文件' : '已导出为网页文件')
+      return
+    }
+    // 文件操作命令
+    if (标识 === 'file.open') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持打开文件功能，请使用打包后的版本')
+        return
+      }
+      桥接.showOpenDialog().then((文件路径) => {
+        if (文件路径) {
+          桥接.readFile(文件路径).then((结果) => {
+            if (结果.成功 && 结果.内容) {
+              try {
+                const 数据 = JSON.parse(结果.内容) as Sheet[]
+                set工作表列表(数据)
+                set当前索引(0)
+                set文档路径(文件路径)
+                历史.record(数据)
+                message.success('文件已打开')
+              } catch {
+                message.error('文件格式不正确，无法打开')
+              }
+            } else {
+              message.error(`打开文件失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+      })
+      return
+    }
+    if (标识 === 'file.save') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持保存功能，请使用打包后的版本')
+        return
+      }
+      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${工作表.name}.json`)
+      Promise.resolve(选择路径).then((文件路径) => {
+        if (文件路径) {
+          const 内容 = JSON.stringify(工作表列表)
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+            if (结果.成功) {
+              set文档路径(文件路径)
+              message.success('文件已保存')
+            } else {
+              message.error(`保存失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+      })
+      return
+    }
+    if (标识 === 'file.saveAs') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持保存功能，请使用打包后的版本')
+        return
+      }
+      桥接.showSaveDialog(`${工作表.name}.json`).then((文件路径) => {
+        if (文件路径) {
+          const 内容 = JSON.stringify(工作表列表)
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+            if (结果.成功) {
+              set文档路径(文件路径)
+              message.success('文件已另存为')
+            } else {
+              message.error(`保存失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+      })
       return
     }
     const 命令 = 查找表格命令(标识)
@@ -395,8 +518,22 @@ const SheetEditor = () => {
             原宽: 工作表.列宽[列] ?? 默认列宽,
           }
         },
+        onContextMenu: (x: number, y: number) => {
+          set菜单坐标({ x, y })
+          set菜单可见(true)
+        },
       })
     ),
+    React.createElement(ContextMenu, {
+      open: 菜单可见,
+      x: 菜单坐标.x,
+      y: 菜单坐标.y,
+      items: 构建表格菜单(),
+      onCommand: (命令标识: string, 参数?: string) => {
+        执行命令(命令标识, 参数)
+        关闭菜单()
+      },
+    }),
     React.createElement(SheetTabs, {
       工作表列表: 工作表列表.map((项) => ({ id: 项.id, name: 项.name })),
       当前标识: 工作表.id,

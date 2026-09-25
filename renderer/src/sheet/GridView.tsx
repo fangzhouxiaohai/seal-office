@@ -28,6 +28,8 @@ interface Props {
   on按键?: (事件: React.KeyboardEvent) => void
   /** 开始拖动列宽 */
   on列宽拖动开始?: (列: number, 起始横坐标: number) => void
+  /** 右键点击回调，返回坐标 */
+  onContextMenu?: (x: number, y: number) => void
 }
 
 /** 判断位置是否落在选区内 */
@@ -56,6 +58,7 @@ const GridView = ({
   on全选,
   on按键,
   on列宽拖动开始,
+  onContextMenu,
 }: Props) => {
   const 列标 = Array.from({ length: 工作表.列数 }, (_, 列) => 列转字母(列))
   const 行号 = Array.from({ length: 工作表.行数 }, (_, 行) => 行 + 1)
@@ -185,6 +188,12 @@ const GridView = ({
       // 可聚焦以接收键盘操作；方向键、回车、Delete 等由容器处理
       tabIndex: 0,
       onKeyDown: on按键,
+      onContextMenu: (事件: React.MouseEvent) => {
+        if (onContextMenu !== undefined) {
+          事件.preventDefault()
+          onContextMenu(事件.clientX, 事件.clientY)
+        }
+      },
       style: {
         // 列宽与行高取自工作表数据，避免调整后网格与单元格错位
         gridTemplateColumns: `46px ${列宽模板}`,

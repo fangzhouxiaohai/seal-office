@@ -1930,3 +1930,79 @@ button {
 [data-theme="dark"] .wps-page-break {
   border-top-color: #3C4043;
 }
+
+/* ===== 右键菜单 ===== */
+
+.wps-context-menu {
+  min-width: 200px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  box-shadow: 0 6px 20px rgba(31, 41, 55, 0.16);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.wps-context-menu__group-title {
+  padding: 4px 12px 2px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.wps-context-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 12px;
+  color: var(--text-1);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.wps-context-menu__item:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.wps-context-menu__item:active {
+  background: var(--bg-hover);
+}
+
+.wps-context-menu__item--disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.wps-context-menu__item--disabled:hover {
+  background: transparent;
+  color: var(--text-3);
+}
+
+.wps-context-menu__item-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wps-context-menu__item-shortcut {
+  margin-left: 16px;
+  color: var(--text-3);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.wps-context-menu__item:hover .wps-context-menu__item-shortcut {
+  color: var(--text-2);
+}
+
+.wps-context-menu__divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border-subtle);
+}

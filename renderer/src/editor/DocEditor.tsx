@@ -21,6 +21,8 @@ import EditorCanvas from './EditorCanvas'
 import Ruler from './Ruler'
 import FindReplacePanel from './FindReplacePanel'
 import EditorStatusBar from './EditorStatusBar'
+import ContextMenu from '../components/ContextMenu'
+import type { 菜单节点 } from '../components/ContextMenu'
 
 const 默认视图: ViewState = {
   缩放: 1,
@@ -137,6 +139,46 @@ const DocEditor = () => {
   const [比较面板打开, set比较面板打开] = useState(false)
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
+  /** 右键菜单状态 */
+  const [菜单可见, set菜单可见] = useState(false)
+  const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
+
+  /** 关闭右键菜单 */
+  const 关闭菜单 = (): void => {
+    set菜单可见(false)
+  }
+
+  /** 构建文字编辑器的右键菜单项 */
+  const 构建文字菜单 = (): 菜单节点[] => [
+    { type: 'item', commandId: 'clipboard.paste', label: '粘贴', shortcut: 'Ctrl+V' },
+    { type: 'item', commandId: 'clipboard.cut', label: '剪切', shortcut: 'Ctrl+X' },
+    { type: 'item', commandId: 'clipboard.copy', label: '复制', shortcut: 'Ctrl+C' },
+    { type: 'divider' },
+    { type: 'group', 标题: '格式', 子项: [
+      { type: 'item', commandId: 'clipboard.formatPainter', label: '格式刷' },
+      { type: 'divider' },
+      { type: 'item', commandId: 'font.bold', label: '加粗', shortcut: 'Ctrl+B' },
+      { type: 'item', commandId: 'font.italic', label: '斜体', shortcut: 'Ctrl+I' },
+      { type: 'item', commandId: 'font.underline', label: '下划线', shortcut: 'Ctrl+U' },
+      { type: 'item', commandId: 'font.strike', label: '删除线' },
+      { type: 'divider' },
+      { type: 'item', commandId: 'para.bullet', label: '项目符号' },
+      { type: 'item', commandId: 'para.number', label: '编号' },
+      { type: 'item', commandId: 'para.indentDecrease', label: '减少缩进', shortcut: 'Shift+Tab' },
+      { type: 'item', commandId: 'para.indentIncrease', label: '增加缩进', shortcut: 'Tab' },
+    ]},
+    { type: 'divider' },
+    { type: 'group', 标题: '编辑', 子项: [
+      { type: 'item', commandId: 'edit.find', label: '查找', shortcut: 'Ctrl+F' },
+      { type: 'item', commandId: 'edit.selectAll', label: '全选', shortcut: 'Ctrl+A' },
+      { type: 'divider' },
+      { type: 'item', commandId: 'edit.undo', label: '撤销', shortcut: 'Ctrl+Z' },
+      { type: 'item', commandId: 'edit.redo', label: '重做', shortcut: 'Ctrl+Y' },
+    ]},
+    { type: 'divider' },
+    { type: 'item', commandId: 'comment.new', label: '插入批注' },
+    { type: 'item', commandId: 'link.insert', label: '超链接', shortcut: 'Ctrl+K' },
+  ]
 
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
   const 历史表 = useRef<Map<string, HistoryStack>>(new Map())
@@ -671,8 +713,22 @@ const DocEditor = () => {
           }, 300)
           set内容版本((值) => 值 + 1)
         },
+        onContextMenu: (x: number, y: number) => {
+          set菜单坐标({ x, y })
+          set菜单可见(true)
+        },
       })
     ),
+    React.createElement(ContextMenu, {
+      open: 菜单可见,
+      x: 菜单坐标.x,
+      y: 菜单坐标.y,
+      items: 构建文字菜单(),
+      onCommand: (命令标识: string, 参数?: string) => {
+        执行命令(命令标识, 参数)
+        关闭菜单()
+      },
+    }),
     React.createElement(EditorStatusBar, {
       页码: 1,
       总页数: 页数,

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
+import { 桥接 } from '../ipc/bridge'
 import { 下载文本 } from '../editor/exportDoc'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
@@ -19,6 +20,7 @@ import {
 import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { PptStatusBar, ThumbnailList } from './PptChrome'
 import SlideCanvas from './SlideCanvas'
+import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
 
 const PptEditor = () => {
   const { message } = AntdApp.useApp()
@@ -29,6 +31,9 @@ const PptEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
+  const [文档路径, set文档路径] = useState<string | null>(null)
+  const [菜单可见, set菜单可见] = useState(false)
+  const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
   const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
@@ -102,6 +107,98 @@ const PptEditor = () => {
       message.success('已导出为网页文件')
       return
     }
+    // 文件操作命令
+    if (标识 === 'file.open') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持打开文件功能，请使用打包后的版本')
+        return
+      }
+      桥接.showOpenDialog().then((文件路径) => {
+        if (文件路径) {
+          桥接.readFile(文件路径).then((结果) => {
+            if (结果.成功 && 结果.内容) {
+              try {
+                const 数据 = JSON.parse(结果.内容) as 演示文稿
+                set文稿(数据)
+                set文档路径(文件路径)
+                历史.record(数据)
+                message.success('文件已打开')
+              } catch {
+                message.error('文件格式不正确，无法打开')
+              }
+            } else {
+              message.error(`打开文件失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+      })
+      return
+    }
+    if (标识 === 'file.save') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持保存功能，请使用打包后的版本')
+        return
+      }
+      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${文稿.name}.json`)
+      Promise.resolve(选择路径).then((文件路径) => {
+        if (文件路径) {
+          const 内容 = JSON.stringify(文稿)
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+            if (结果.成功) {
+              set文档路径(文件路径)
+              message.success('文件已保存')
+            } else {
+              message.error(`保存失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+      })
+      return
+    }
+    if (标识 === 'file.saveAs') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持保存功能，请使用打包后的版本')
+        return
+      }
+      桥接.showSaveDialog(`${文稿.name}.json`).then((文件路径) => {
+        if (文件路径) {
+          const 内容 = JSON.stringify(文稿)
+          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+            if (结果.成功) {
+              set文档路径(文件路径)
+              message.success('文件已另存为')
+            } else {
+              message.error(`保存失败：${结果.错误}`)
+            }
+          }).catch((error: unknown) => {
+            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+          })
+        }
+      }).catch((error: unknown) => {
+        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+      })
+      return
+    }
+    if (标识 === 'edit.undo') {
+      撤销()
+      return
+    }
+    if (标识 === 'edit.redo') {
+      重做()
+      return
+    }
+    if (标识 === 'edit.cut' || 标识 === 'edit.copy' || 标识 === 'edit.paste') {
+      message.info('剪切、复制、粘贴功能待接入')
+      return
+    }
     const 命令 = 查找演示命令(标识)
     if (命令 === undefined) {
       message.error('该命令未注册')
@@ -137,6 +234,42 @@ const PptEditor = () => {
     if (标识 === 'para.alignCenter') return 框.对齐 === 'center'
     if (标识 === 'para.alignRight') return 框.对齐 === 'right'
     return false
+  }
+
+  const 关闭菜单 = () => {
+    set菜单可见(false)
+  }
+
+  const 构建演示菜单 = (): 菜单节点[] => {
+    return [
+      { type: 'group', 子项: [
+        { type: 'item', commandId: 'slide.new', label: '新建幻灯片' },
+        { type: 'item', commandId: 'slide.duplicate', label: '复制幻灯片' },
+        { type: 'item', commandId: 'slide.delete', label: '删除幻灯片' },
+      ]},
+      { type: 'divider' },
+      { type: 'group', 子项: [
+        { type: 'item', commandId: 'slide.moveUp', label: '上移' },
+        { type: 'item', commandId: 'slide.moveDown', label: '下移' },
+      ]},
+      { type: 'divider' },
+      { type: 'group', 子项: [
+        { type: 'item', commandId: 'edit.cut', label: '剪切' },
+        { type: 'item', commandId: 'edit.copy', label: '复制' },
+        { type: 'item', commandId: 'edit.paste', label: '粘贴' },
+      ]},
+      { type: 'divider' },
+      { type: 'group', 子项: [
+        { type: 'item', commandId: 'slide.layout', label: '版式' },
+        { type: 'item', commandId: 'slide.background', label: '设置背景' },
+        { type: 'item', commandId: 'view.gridlines', label: 显示网格线 ? '隐藏网格线' : '显示网格线' },
+      ]},
+      { type: 'divider' },
+      { type: 'group', 子项: [
+        { type: 'item', commandId: 'edit.undo', label: '撤销' },
+        { type: 'item', commandId: 'edit.redo', label: '重做' },
+      ]},
+    ]
   }
 
   return React.createElement(
@@ -190,9 +323,23 @@ const PptEditor = () => {
                 })
               )
             },
+            onContextMenu: (x: number, y: number) => {
+              set菜单坐标({ x, y })
+              set菜单可见(true)
+            },
           })
     ),
-    React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: set缩放 })
+    React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: set缩放 }),
+    React.createElement(ContextMenu, {
+      open: 菜单可见,
+      x: 菜单坐标.x,
+      y: 菜单坐标.y,
+      items: 构建演示菜单(),
+      onCommand: (命令标识: string, 参数?: string) => {
+        执行命令(命令标识, 参数)
+        关闭菜单()
+      },
+    })
   )
 }
 

@@ -28,6 +28,14 @@ const 开始标签: RibbonTabSpec = {
   label: '开始',
   groups: [
     {
+      name: '文件',
+      items: [
+        大('file.open', '打开', 'open'),
+        大('file.save', '保存', 'save'),
+        大('file.saveAs', '另存为', 'save-as'),
+      ],
+    },
+    {
       name: '剪贴板',
       items: [大('clipboard.paste', '粘贴', 'paste'), 小('clipboard.copy', '复制', 'copy')],
     },

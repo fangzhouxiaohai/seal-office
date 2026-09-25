@@ -14,6 +14,8 @@ interface Props {
   scale?: number
   onChange?: (html: string) => void
   onReady?: (元素: HTMLDivElement) => void
+  /** 右键点击回调，返回坐标 */
+  onContextMenu?: (x: number, y: number) => void
 }
 
 const EditorCanvas = ({
@@ -26,6 +28,7 @@ const EditorCanvas = ({
   scale = 1,
   onChange,
   onReady,
+  onContextMenu,
 }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
 
@@ -48,6 +51,13 @@ const EditorCanvas = ({
     const 元素 = 引用.current
     if (元素 !== null && onChange !== undefined) {
       onChange(元素.innerHTML)
+    }
+  }
+
+  const 处理右键 = (事件: React.MouseEvent) => {
+    if (onContextMenu !== undefined) {
+      事件.preventDefault()
+      onContextMenu(事件.clientX, 事件.clientY)
     }
   }
 
@@ -74,6 +84,7 @@ const EditorCanvas = ({
         suppressContentEditableWarning: true,
         spellCheck: false,
         onInput: 处理输入,
+        onContextMenu: 处理右键,
       })
     )
   )
