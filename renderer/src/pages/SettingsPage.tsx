@@ -35,7 +35,7 @@ const SettingsPage = () => {
       {设置行('关于海豹办公', '查看版本信息和开源许可', <Button size="small" onClick={() => set关于打开(true)}>查看</Button>)}
     </div>
   ) : (
-    <div className="settings-panel" style={{ textAlign: 'center' }}><SealLogo size={80} withBackground={false} /><h2>海豹办公 Seal Office</h2><p>版本 1.2.0</p><Button type="primary" onClick={() => set关于打开(true)}>查看详情</Button></div>
+    <div className="settings-panel" style={{ textAlign: 'center' }}><SealLogo size={80} /><h2>海豹办公 Seal Office</h2><p>版本 1.2.0</p><Button type="primary" onClick={() => set关于打开(true)}>查看详情</Button></div>
   )
   return <div className="settings-page"><div className="settings-page__header"><Button icon={<Icon name="arrow-left" size={16} />} onClick={goHome}>返回首页</Button><h1>设置</h1></div><div className="settings-page__layout"><nav className="settings-page__nav">{标签.map((项) => <button type="button" key={项.key} aria-selected={活动Tab === 项.key} onClick={() => 设活动Tab(项.key)}><Icon name={项.icon} size={16} /> {项.label}</button>)}</nav><main className="settings-page__content">{内容}</main></div><AboutDialog 打开状态={关于打开} 关闭回调={() => set关于打开(false)} /><HelpManual 打开状态={帮助打开} 关闭回调={() => set帮助打开(false)} /></div>
 }
