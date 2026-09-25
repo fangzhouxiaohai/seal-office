@@ -90,19 +90,11 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     // 计算菜单实际高度（受最大高度限制）
     const 原始高 = items.length * 项高 + 8
     const 面板高 = Math.min(原始高, 菜单最大高)
-    // 定位：优先显示在光标右下方；当光标距右侧不足时改显示在左下方
-    const 菜单宽 = 面板宽
-    const 菜单高 = 面板高
-    const 距右侧 = 视口宽 - x
-    const 显示在左侧 = 距右侧 < 菜单宽 + 16
-    const 左 = 显示在左侧
-      ? Math.max(8, x - 菜单宽 - 菜单横向偏移)
-      : Math.min(x + 菜单横向偏移, 视口宽 - 菜单宽 - 8)
+    // 定位：将菜单位于光标正下方，视口居中显示
+    const 左 = Math.max(8, Math.min(x + 菜单横向偏移 - Math.floor(面板宽 / 2), 视口宽 - 面板宽 - 8))
     const 上 = y + 菜单横向偏移
-    const 最终上 = 上 + 菜单高 > 视口高
-      ? Math.max(8, y - 菜单高)
-      : 上
-    set偏移({ top: 最终上, left: Math.min(左, 视口宽 - 菜单宽 - 8) })
+    const 最终上 = Math.max(8, Math.min(上, 视口高 - 面板高 - 8))
+    set偏移({ top: 最终上, left: 左 })
   }, [open, x, y, items.length])
 
   useEffect(() => {
@@ -111,12 +103,13 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     }
     const 处理点击 = () => {
       // 点击任意位置关闭菜单
+      onCommand('__close__')
     }
-    document.addEventListener('click', 处理点击)
+    document.addEventListener('click', 处理点击, { once: true })
     return () => {
       document.removeEventListener('click', 处理点击)
     }
-  }, [open])
+  }, [open, onCommand])
 
   if (!open) {
     return null
@@ -194,9 +187,10 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       ref: 引用,
       className: 'wps-context-menu',
       style: {
-        position: 'fixed',
-        top: `${偏移.top}px`,
-        left: `${偏移.left}px`,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        transform: `translate(${偏移.left}px, ${偏移.top}px)`,
         zIndex: 9999,
       },
       onMouseDown: (事件: React.MouseEvent) => 事件.stopPropagation(),

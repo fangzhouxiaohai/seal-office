@@ -664,28 +664,82 @@ const 导出命令: EditorCommand[] = [
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          // 自动修正扩展名：当路径为 .docx 但内容为 HTML 时改用 .html
-          const 修正路径 = (() => {
-            const 点索引 = 文件路径.lastIndexOf('.')
-            if (点索引 === -1) {
-              return 文件路径 + '.html'
-            }
-            const 扩展 = 文件路径.slice(点索引).toLowerCase()
-            if (扩展 === '.docx' || 扩展 === '.xlsx' || 扩展 === '.pptx') {
-              return 文件路径.slice(0, 点索引) + '.html'
-            }
-            return 文件路径
-          })()
-          桥接.saveToFile(修正路径, 内容, '文本').then((结果) => {
+          const 点索引 = 文件路径.lastIndexOf('.')
+          const 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
+          const 保存路径 = 文件路径
+          const 保存文本 = () => 桥接.saveToFile(保存路径, 内容, '文本' as const).then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(修正路径)
+              上下文.设置文档路径?.(保存路径)
               上下文.notify('文件已保存')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
             }
-          }).catch((error: any) => {
-            上下文.notify(`保存失败：${error?.message || '未知错误'}`)
           })
+
+          if (扩展 === '.docx') {
+            // HTML 转 docx 模型并写入二进制文件
+            const 模型 = htmlToDocxModel(内容)
+            桥接.office.writeDocx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已保存')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('文档格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else if (扩展 === '.xlsx') {
+            // HTML 转 xlsx 模型并写入二进制文件
+            const 模型 = htmlToXlsxModel(内容)
+            桥接.office.writeXlsx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已保存')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('表格格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else if (扩展 === '.pptx') {
+            // HTML 转 pptx 模型并写入二进制文件
+            const 模型 = htmlToPptxModel(内容)
+            桥接.office.writePptx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已保存')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('演示文稿格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else {
+            // 其他格式：保存为文本
+            保存文本()
+          }
         }
       }).catch((error: any) => {
         上下文.notify(`保存失败：${error?.message || '未知错误'}`)
@@ -701,28 +755,78 @@ const 导出命令: EditorCommand[] = [
       桥接.showSaveDialog(上下文.当前文档名).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          // 自动修正扩展名：当路径为 .docx 但内容为 HTML 时改用 .html
-          const 修正路径 = (() => {
-            const 点索引 = 文件路径.lastIndexOf('.')
-            if (点索引 === -1) {
-              return 文件路径 + '.html'
-            }
-            const 扩展 = 文件路径.slice(点索引).toLowerCase()
-            if (扩展 === '.docx' || 扩展 === '.xlsx' || 扩展 === '.pptx') {
-              return 文件路径.slice(0, 点索引) + '.html'
-            }
-            return 文件路径
-          })()
-          桥接.saveToFile(修正路径, 内容, '文本').then((结果) => {
+          const 点索引 = 文件路径.lastIndexOf('.')
+          const 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
+          const 保存路径 = 文件路径
+          const 保存文本 = () => 桥接.saveToFile(保存路径, 内容, '文本' as const).then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(修正路径)
+              上下文.设置文档路径?.(保存路径)
               上下文.notify('文件已另存为')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
             }
-          }).catch((error: any) => {
-            上下文.notify(`保存失败：${error?.message || '未知错误'}`)
           })
+
+          if (扩展 === '.docx') {
+            const 模型 = htmlToDocxModel(内容)
+            桥接.office.writeDocx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已另存为')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('文档格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else if (扩展 === '.xlsx') {
+            const 模型 = htmlToXlsxModel(内容)
+            桥接.office.writeXlsx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已另存为')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('表格格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else if (扩展 === '.pptx') {
+            const 模型 = htmlToPptxModel(内容)
+            桥接.office.writePptx(模型).then((结果: any) => {
+              if (结果 && 结果.成功 && 结果.数据) {
+                const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
+                return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
+                  if (保存结果.成功) {
+                    上下文.设置文档路径?.(保存路径)
+                    上下文.notify('文件已另存为')
+                  } else {
+                    上下文.notify(`保存失败：${保存结果.错误}`)
+                  }
+                })
+              }
+              上下文.notify('演示文稿格式转换失败，请检查内容后重试')
+              return Promise.resolve()
+            }).catch((error: any) => {
+              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+            })
+          } else {
+            保存文本()
+          }
         }
       }).catch((error: any) => {
         上下文.notify(`保存失败：${error?.message || '未知错误'}`)
@@ -775,3 +879,201 @@ export const 命令标识列表: string[] = Object.keys(命令表)
 export function 查找命令(id: string): EditorCommand | undefined {
   return 命令表[id]
 }
+
+// ==================== HTML 到 Office 文档模型转换 ====================
+
+/** 将一个 HTML 字符串转换为 docx 模型 */
+export function htmlToDocxModel(html: string): { 段落: Array<{
+  类型: '文字' | '表格';
+  文字?: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
+  级别?: number;
+  对齐?: '左' | '中' | '右' | '两端';
+}> } {
+  const 段落列表: Array<{
+    类型: '文字' | '表格';
+    文字?: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
+    级别?: number;
+    对齐?: '左' | '中' | '右' | '两端';
+  }> = []
+
+  const 临时容器 = document.createElement('div')
+  临时容器.innerHTML = html
+
+  const 处理元素 = (元素: Element) => {
+    const 标签名 = 元素.tagName.toLowerCase()
+
+    if (/^(p|div|h[1-6]|li)$/.test(标签名)) {
+      const 段落: {
+        类型: '文字';
+        文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
+        级别?: number;
+        对齐?: '左' | '中' | '右' | '两端';
+      } = { 类型: '文字', 文字: [] }
+
+      // 标题级别
+      if (/^h([1-6])$/.test(标签名)) {
+        段落.级别 = parseInt(标签名[1], 10)
+      }
+
+      // 对齐方式
+      const 样式 = (元素 as HTMLElement).style
+      if (样式) {
+        const textAlign = 样式.textAlign
+        if (textAlign === 'center') 段落.对齐 = '中'
+        else if (textAlign === 'right') 段落.对齐 = '右'
+        else if (textAlign === 'justify') 段落.对齐 = '两端'
+      }
+
+      // 递归解析子节点获取文字片段
+      const 收集文字 = (节点: Node) => {
+        if (节点.nodeType === Node.TEXT_NODE) {
+          const 文本 = (节点.textContent || '').replace(/\s+/g, ' ')
+          if (文本.trim().length > 0) {
+            段落.文字!.push({ 文本: 文本.trim() })
+          }
+          return
+        }
+        if (节点.nodeType !== Node.ELEMENT_NODE) return
+        const 子元素 = 节点 as Element
+        const 片段: { 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string } = { 文本: '' }
+
+        const 子样式 = (子元素 as HTMLElement).style
+        if (子样式) {
+          if (/bold|700|bolder/i.test(子样式.fontWeight || '')) 片段.加粗 = true
+          if (/italic|oblique/i.test(子样式.fontStyle || '')) 片段.倾斜 = true
+          if (子样式.textDecoration && /underline/i.test(子样式.textDecoration)) 片段.下划线 = true
+          if (子样式.textDecoration && /line-through/i.test(子样式.textDecoration)) 片段.删除线 = true
+          if (子样式.color) 片段.颜色 = 子样式.color
+          if (子样式.fontFamily) 片段.字体 = 子样式.fontFamily
+        }
+
+        // 递归处理子节点
+        子元素.childNodes.forEach(子节点 => 收集文字(子节点))
+        if (片段.文本.trim().length > 0 || 片段.加粗 || 片段.倾斜 || 片段.下划线 || 片段.删除线) {
+          段落.文字!.push(片段)
+        }
+      }
+
+      元素.childNodes.forEach(子节点 => 收集文字(子节点))
+      if (段落.文字.length > 0) {
+        段落列表.push(段落)
+      }
+    } else if (标签名 === 'table') {
+      // 简单处理：表格暂不转换，只提取文字
+      const 文字段落: typeof 段落列表[number] = {
+        类型: '文字',
+        文字: [{ 文本: 元素.textContent?.trim() || '' }],
+      }
+      段落列表.push(文字段落)
+    }
+
+    // 递归处理子元素（非表格类）
+    if (标签名 !== 'table') {
+      Array.from(元素.children).forEach(处理元素)
+    }
+  }
+
+  Array.from(临时容器.children).forEach(处理元素)
+
+  if (段落列表.length === 0) {
+    // 回退：将纯文本作为一段
+    段落列表.push({
+      类型: '文字',
+      文字: [{ 文本: 临时容器.textContent?.trim() || '' }],
+    })
+  }
+
+  return { 段落: 段落列表 }
+}
+
+/** 将一个 HTML 字符串转换为 xlsx 模型 */
+export function htmlToXlsxModel(html: string): { 工作表: Array<{
+  名称: string;
+  数据: Array<Array<{ 文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean }>; 表头?: boolean }>>;
+}> } {
+  const 临时容器 = document.createElement('div')
+  临时容器.innerHTML = html
+
+  // 尝试从 HTML 中提取表格
+  const 表格列表 = 临时容器.querySelectorAll('table')
+  const 数据行: Array<Array<{ 文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean }>; 表头?: boolean }>> = []
+
+  if (表格列表.length > 0) {
+    // 使用第一个表格
+    const 表格 = 表格列表[0] as HTMLTableElement
+    const 行列表 = 表格.querySelectorAll('tr')
+    行列表.forEach((行, 行索引) => {
+      const 单元格列表 = 行.querySelectorAll('td, th')
+      const 行数据: Array<{ 文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean }>; 表头?: boolean }> = []
+      单元格列表.forEach((单元格) => {
+        const 是表头 = (单元格 as HTMLElement).tagName.toLowerCase() === 'th'
+        行数据.push({
+          文字: [{ 文本: (单元格.textContent || '').trim(), 加粗: 是表头 }],
+          表头: 是表头,
+        })
+      })
+      if (行数据.length > 0) {
+        数据行.push(行数据)
+      }
+    })
+  } else {
+    // 无表格：将纯文本按行分割
+    const 文本内容 = 临时容器.textContent?.trim() || ''
+    const 行数组 = 文本内容.split(/\n+/).filter((行) => 行.trim().length > 0)
+    行数组.forEach((行) => {
+      数据行.push([{ 文字: [{ 文本: 行.trim() }] }])
+    })
+  }
+
+  return {
+    工作表: [{ 名称: 'Sheet1', 数据: 数据行 }],
+  }
+}
+
+/** 将一个 HTML 字符串转换为 pptx 模型 */
+export function htmlToPptxModel(html: string): { 幻灯片列表: Array<{
+  标题?: string;
+  内容: Array<{ 类型: '文字' | '形状'; 文字?: string; 加粗?: boolean; 标题?: string }>;
+}> } {
+  const 临时容器 = document.createElement('div')
+  临时容器.innerHTML = html
+
+  const 幻灯片: {
+    标题?: string;
+    内容: Array<{ 类型: '文字' | '形状'; 文字?: string; 加粗?: boolean; 标题?: string }>;
+  } = { 内容: [] }
+
+  // 尝试提取标题（第一个 h1）
+  const 标题元素 = 临时容器.querySelector('h1')
+  if (标题元素) {
+    幻灯片.标题 = (标题元素.textContent || '').trim()
+  }
+
+  // 提取其他文本内容
+  const 所有段落 = 临时容器.querySelectorAll('p, div, h2, h3, h4, h5, h6')
+  所有段落.forEach((元素) => {
+    const 文本 = (元素.textContent || '').trim()
+    if (文本.length > 0) {
+      const 标签 = 元素.tagName.toLowerCase()
+      幻灯片.内容.push({
+        类型: '文字',
+        文字: 文本,
+        加粗: /^h[1-6]$/.test(标签),
+        标题: /^h[1-6]$/.test(标签) ? 文本 : undefined,
+      })
+    }
+  })
+
+  // 如果没有内容，添加默认占位文字
+  if (幻灯片.内容.length === 0) {
+    const 纯文本 = 临时容器.textContent?.trim() || ''
+    if (纯文本.length > 0) {
+      幻灯片.内容.push({ 类型: '文字', 文字: 纯文本 })
+    } else {
+      幻灯片.内容.push({ 类型: '文字', 文字: '演示文稿内容' })
+    }
+  }
+
+  return { 幻灯片列表: [幻灯片] }
+}
+

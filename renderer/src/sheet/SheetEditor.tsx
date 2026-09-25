@@ -530,6 +530,10 @@ const SheetEditor = () => {
       y: 菜单坐标.y,
       items: 构建表格菜单(),
       onCommand: (命令标识: string, 参数?: string) => {
+        if (命令标识 === '__close__') {
+          关闭菜单()
+          return
+        }
         执行命令(命令标识, 参数)
         关闭菜单()
       },
