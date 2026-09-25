@@ -31,13 +31,53 @@
    - 弹窗模式：保持原有高度限制，内部滚动
    - 深色模式完整适配，所有元素均有对应主题颜色
 
+## 缺陷修复
+
+### 右键菜单位置偏移问题
+
+**问题现象**：右键点击编辑区时，弹出的右键菜单位置离光标过远，出现在屏幕右侧。
+
+**根因分析**：右键菜单位置计算逻辑未区分光标在视口左右两侧的情况。当点击位置距右侧不足菜单宽度时，菜单位置被约束到视口右边缘，导致与光标相距甚远。
+
+**修复方案**：重新设计定位算法。当光标距右侧不足菜单宽度加 16px 缓冲时，菜单改显示在光标左下方；否则正常显示在右下方。
+
+### 保存文档后打开显示 Base64 乱码
+
+**问题现象**：在 Word 界面编辑并保存文档（选择 .docx 格式），重新打开后文档内容显示为一串 Base64 编码字符串而非正常中文。
+
+**根因分析**：
+1. 保存命令将编辑器 `innerHTML`（HTML 文本）直接写入文件，未做格式转换。
+2. 当用户选择 `.docx` 扩展名保存时，文件实际内容为 HTML 文本。
+3. 重新打开时，`readFile` 将 `.docx` 文件以 Base64 读取，调用 `readDocx`（mammoth 库）解析失败，返回错误对象。
+4. 错误处理中 `createDoc` 接收了错误对象，导致编辑器显示 Base64 编码的错误信息。
+
+**修复方案**：
+1. 在保存命令中自动修正扩展名：当用户选择 `.docx`/`.xlsx`/`.pptx` 保存 HTML 内容时，自动将扩展名改为 `.html`，确保文件以文本格式保存和读取。
+2. 在首页打开文件时，归一化扩展名（去除前导点号），修正了 `.docx` 扩展名比较失败的问题（原代码比较 `'docx'`，但 `path.extname` 返回 `.docx`）。
+3. 修复 `readDocx` 返回值解析：mammoth 返回 `{ html: '...', 警告: [...] }`，直接使用 `数据.html` 作为编辑器内容，而非 `JSON.stringify(数据.内容)`。
+
+### 首页打开文件提示不支持文件类型
+
+**问题现象**：在首页点击"打开文件"，选择 `.docx` 文件后提示"暂不支持此文件格式"。
+
+**根因分析**：`fileChannel.js` 返回的 `扩展名` 带有点号（`.docx`），`HomePage.tsx` 中比较时不带点号（`'docx'`），条件 `扩展名 === 'docx'` 永远为 `false`，导致代码跳过 Office API 分支，最终走到"暂不支持此文件格式"提示。
+
+**修复方案**：
+1. 在 `HomePage.tsx` 中归一化扩展名：`(扩展名 ?? '').replace(/^\./, '').toLowerCase()`。
+2. 移除"二进制文件暂不支持在首页打开"提示，因为 `.docx`/`.xlsx`/`.pptx` 已通过 Office API 处理。
+3. 简化 Office API 返回值解析逻辑，直接读取 `数据.html`。
+
 ## 技术细节
 
 ### 修改文件
 - `renderer/src/components/HelpManual.tsx` - 组件完全重写
 - `renderer/src/styles.css` - 新增 `.wps-main--help` 样式类及深色模式覆盖
 - `renderer/src/App.tsx` - 移除未使用的变量，修复 TS 警告
+- `renderer/src/components/ContextMenu.tsx` - 重新设计右键菜单位置定位算法
+- `renderer/src/editor/commands.ts` - 保存命令自动修正扩展名
+- `renderer/src/pages/HomePage.tsx` - 归一化扩展名比较，修复 Office API 返回值解析
 
 ### 构建状态
 - 前端构建：成功
 - TypeScript 类型检查：帮助手册和 App.tsx 无新增错误
+- 打包产物：SealOffice 1.2.0.exe (便携版)、SealOffice Setup 1.2.0.exe (NSIS 安装版)

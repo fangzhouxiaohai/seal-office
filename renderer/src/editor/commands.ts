@@ -664,9 +664,21 @@ const 导出命令: EditorCommand[] = [
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+          // 自动修正扩展名：当路径为 .docx 但内容为 HTML 时改用 .html
+          const 修正路径 = (() => {
+            const 点索引 = 文件路径.lastIndexOf('.')
+            if (点索引 === -1) {
+              return 文件路径 + '.html'
+            }
+            const 扩展 = 文件路径.slice(点索引).toLowerCase()
+            if (扩展 === '.docx' || 扩展 === '.xlsx' || 扩展 === '.pptx') {
+              return 文件路径.slice(0, 点索引) + '.html'
+            }
+            return 文件路径
+          })()
+          桥接.saveToFile(修正路径, 内容, '文本').then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(文件路径)
+              上下文.设置文档路径?.(修正路径)
               上下文.notify('文件已保存')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)
@@ -689,9 +701,21 @@ const 导出命令: EditorCommand[] = [
       桥接.showSaveDialog(上下文.当前文档名).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
+          // 自动修正扩展名：当路径为 .docx 但内容为 HTML 时改用 .html
+          const 修正路径 = (() => {
+            const 点索引 = 文件路径.lastIndexOf('.')
+            if (点索引 === -1) {
+              return 文件路径 + '.html'
+            }
+            const 扩展 = 文件路径.slice(点索引).toLowerCase()
+            if (扩展 === '.docx' || 扩展 === '.xlsx' || 扩展 === '.pptx') {
+              return 文件路径.slice(0, 点索引) + '.html'
+            }
+            return 文件路径
+          })()
+          桥接.saveToFile(修正路径, 内容, '文本').then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(文件路径)
+              上下文.设置文档路径?.(修正路径)
               上下文.notify('文件已另存为')
             } else {
               上下文.notify(`保存失败：${结果.错误}`)

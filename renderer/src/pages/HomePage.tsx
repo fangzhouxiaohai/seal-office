@@ -65,52 +65,49 @@ const HomePage = () => {
       if (文件路径) {
         桥接.readFile(文件路径).then((结果) => {
           if (结果.成功 && 结果.内容) {
-            if (结果.二进制 && 结果.扩展名) {
+            // 归一化扩展名：去除开头的点
+            const 归一化扩展名 = (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase()
+            if (结果.二进制 && 归一化扩展名) {
               // 二进制文件（docx/xlsx/pptx）：通过 Office API 读取
-              const 扩展名 = 结果.扩展名
-              if (扩展名 === 'docx') {
+              if (归一化扩展名 === 'docx') {
                 桥接.office.readDocx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功) {
-                    createDoc('word', JSON.stringify(数据.内容))
+                  if (数据 && 数据.成功 && 数据.html) {
+                    createDoc('word', 数据.html)
                     message.success('文档已打开')
                   } else {
-                    message.error('打开文档失败：文件内容无法解析')
+                    message.info('文件内容无法识别，可能不是有效的文档格式')
                   }
                 }).catch(() => {
-                  message.error('打开文档失败：文件内容无法解析')
+                  message.info('文件内容无法识别，可能不是有效的文档格式')
                 })
-              } else if (扩展名 === 'xlsx') {
+              } else if (归一化扩展名 === 'xlsx') {
                 桥接.office.readXlsx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功) {
-                    createDoc('table', JSON.stringify(数据.内容))
+                  if (数据 && 数据.成功 && 数据.html) {
+                    createDoc('table', 数据.html)
                     message.success('表格已打开')
                   } else {
-                    message.error('打开表格失败：文件内容无法解析')
+                    message.info('文件内容无法识别，可能不是有效的表格格式')
                   }
                 }).catch(() => {
-                  message.error('打开表格失败：文件内容无法解析')
+                  message.info('文件内容无法识别，可能不是有效的表格格式')
                 })
-              } else if (扩展名 === 'pptx') {
+              } else if (归一化扩展名 === 'pptx') {
                 桥接.office.readPptx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功) {
-                    createDoc('ppt', JSON.stringify(数据.内容))
+                  if (数据 && 数据.成功 && 数据.html) {
+                    createDoc('ppt', 数据.html)
                     message.success('演示文稿已打开')
                   } else {
-                    message.error('打开演示文稿失败：文件内容无法解析')
+                    message.info('文件内容无法识别，可能不是有效的演示文稿格式')
                   }
                 }).catch(() => {
-                  message.error('打开演示文稿失败：文件内容无法解析')
+                  message.info('文件内容无法识别，可能不是有效的演示文稿格式')
                 })
               } else {
                 message.info('暂不支持此文件格式')
               }
               return
             }
-            if (结果.二进制) {
-              message.info('二进制文件暂不支持在首页打开')
-              return
-            }
-            const 扩展名 = 结果.扩展名 ?? ''
+            const 扩展名 = 归一化扩展名
             if (扩展名 === 'html' || 扩展名 === 'htm') {
               createDoc('word', 结果.内容)
             } else if (扩展名 === 'txt' || 扩展名 === 'md' || 扩展名 === 'csv') {

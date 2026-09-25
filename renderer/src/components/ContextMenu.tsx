@@ -90,11 +90,19 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     // 计算菜单实际高度（受最大高度限制）
     const 原始高 = items.length * 项高 + 8
     const 面板高 = Math.min(原始高, 菜单最大高)
-    // 定位：光标右侧稍偏，底部对齐视口边缘
-    const 左 = Math.min(x + 菜单横向偏移, 视口宽 - 面板宽 - 8)
-    const 下 = y + 面板高
-    const 上 = 下 <= 视口高 ? y : Math.max(8, y - 面板高)
-    set偏移({ top: 上, left: Math.max(8, 左) })
+    // 定位：优先显示在光标右下方；当光标距右侧不足时改显示在左下方
+    const 菜单宽 = 面板宽
+    const 菜单高 = 面板高
+    const 距右侧 = 视口宽 - x
+    const 显示在左侧 = 距右侧 < 菜单宽 + 16
+    const 左 = 显示在左侧
+      ? Math.max(8, x - 菜单宽 - 菜单横向偏移)
+      : Math.min(x + 菜单横向偏移, 视口宽 - 菜单宽 - 8)
+    const 上 = y + 菜单横向偏移
+    const 最终上 = 上 + 菜单高 > 视口高
+      ? Math.max(8, y - 菜单高)
+      : 上
+    set偏移({ top: 最终上, left: Math.min(左, 视口宽 - 菜单宽 - 8) })
   }, [open, x, y, items.length])
 
   useEffect(() => {
