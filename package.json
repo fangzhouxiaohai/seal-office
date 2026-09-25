@@ -80,6 +80,7 @@
         }
       ]
     },
+    "npmRebuild": false,
     "nsis": {
       "oneClick": false,
       "perMachine": false,
