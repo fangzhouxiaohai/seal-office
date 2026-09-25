@@ -1,11 +1,12 @@
 // 首页：新建入口与最近文档区块的组合页。
 import React, { useState } from 'react'
-import { App as AntdApp } from 'antd'
+import { App as AntdApp, Button } from 'antd'
 import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
 import NewDocGrid from '../components/NewDocGrid'
 import RecentDocs from '../components/RecentDocs'
 import TemplateLibrary from '../components/TemplateLibrary'
+import { 桥接 } from '../ipc/bridge'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -55,6 +56,52 @@ const HomePage = () => {
     openDoc(目标)
   }
 
+  const 处理打开文件 = () => {
+    if (!桥接.可用) {
+      message.info('当前环境不支持打开文件功能，请使用打包后的版本')
+      return
+    }
+    桥接.showOpenDialog().then((文件路径) => {
+      if (文件路径) {
+        桥接.readFile(文件路径).then((结果) => {
+          if (结果.成功 && 结果.内容) {
+            if (结果.二进制) {
+              message.info('二进制文件暂不支持在首页打开')
+              return
+            }
+            const 扩展名 = 结果.扩展名 ?? ''
+            if (扩展名 === 'html' || 扩展名 === 'htm') {
+              createDoc('word', 结果.内容)
+            } else if (扩展名 === 'txt' || 扩展名 === 'md' || 扩展名 === 'csv') {
+              createDoc('word', 结果.内容)
+            } else if (扩展名 === 'json') {
+              try {
+                const 数据 = JSON.parse(结果.内容)
+                if (数据.幻灯片列表) {
+                  // 演示文稿文件，在演示编辑器中打开
+                  setNavKey('home')
+                  message.info('请在演示文稿模块中打开此文件')
+                } else {
+                  createDoc('word', 结果.内容)
+                }
+              } catch {
+                message.error('文件格式不正确')
+              }
+            } else {
+              message.info('暂不支持此文件格式')
+            }
+          } else {
+            message.error(`打开文件失败：${结果.错误}`)
+          }
+        }).catch((error: unknown) => {
+          message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+        })
+      }
+    }).catch((error: unknown) => {
+      message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+    })
+  }
+
   const 处理重命名 = (标识: string, 名称: string) => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
@@ -94,20 +141,31 @@ const HomePage = () => {
         'div',
         { className: 'wps-tools-grid' },
         React.createElement(
-          'button',
+          Button,
           {
-            className: 'wps-tool-btn',
-            onClick: () => 设显示模板库(true),
+            size: 'large',
+            onClick: () => 处理打开文件(),
+            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
           },
-          React.createElement('span', { className: 'wps-tool-btn__label' }, '模板库')
+          '打开文件'
         ),
         React.createElement(
-          'button',
+          Button,
           {
-            className: 'wps-tool-btn',
-            onClick: () => createDoc('pdf'),
+            size: 'large',
+            onClick: () => 设显示模板库(true),
+            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
           },
-          React.createElement('span', { className: 'wps-tool-btn__label' }, 'PDF 工具')
+          '模板库'
+        ),
+        React.createElement(
+          Button,
+          {
+            size: 'large',
+            onClick: () => createDoc('pdf'),
+            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
+          },
+          'PDF 工具'
         )
       )
     ),

@@ -72,6 +72,8 @@ function 是菜单组(节点: 菜单节点): 节点 is 菜单组 {
 
 const 菜单面板宽 = 220
 const 项高 = 32
+const 菜单最大高 = 320
+const 菜单横向偏移 = 10
 
 const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
@@ -85,10 +87,14 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     const 视口宽 = window.innerWidth
     const 视口高 = window.innerHeight
     const 面板宽 = 菜单面板宽
-    const 面板高 = items.length * 项高 + 8
-    const 左 = Math.min(x, 视口宽 - 面板宽 - 8)
-    const 上 = Math.min(y, 视口高 - 面板高 - 8)
-    set偏移({ top: Math.max(0, 上), left: Math.max(0, 左) })
+    // 计算菜单实际高度（受最大高度限制）
+    const 原始高 = items.length * 项高 + 8
+    const 面板高 = Math.min(原始高, 菜单最大高)
+    // 定位：光标右侧稍偏，底部对齐视口边缘
+    const 左 = Math.min(x + 菜单横向偏移, 视口宽 - 面板宽 - 8)
+    const 下 = y + 面板高
+    const 上 = 下 <= 视口高 ? y : Math.max(8, y - 面板高)
+    set偏移({ top: 上, left: Math.max(8, 左) })
   }, [open, x, y, items.length])
 
   useEffect(() => {

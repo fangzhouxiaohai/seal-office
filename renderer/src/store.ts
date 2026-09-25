@@ -113,11 +113,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return 新文档
   }
 
-  const createDoc = (类型: DocItem['type']) => {
+  const createDoc = (类型: DocItem['type'], 初始内容?: string) => {
     setActiveDocId(null)
     const 目标模块 = DOC_TYPE_TO_MODULE[类型]
     setModule(目标模块)
     新建标签(模块默认文档名(目标模块))
+    // 如果有初始内容，写入编辑器
+    if (初始内容 !== undefined && 目标模块 === 'doc') {
+      setTimeout(() => {
+        const 编辑区 = document.querySelector('.wps-editor-content') as HTMLElement | null
+        if (编辑区 !== null) {
+          编辑区.innerHTML = 初始内容
+          编辑区.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+      }, 100)
+    }
   }
 
   const openDoc = (文档: DocItem) => {

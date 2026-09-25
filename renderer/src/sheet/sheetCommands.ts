@@ -179,6 +179,97 @@ const 命令列表: 表格命令[] = [
     label: '重做',
     run: (上下文) => 上下文.重做(),
   },
+  {
+    id: 'clipboard.cut',
+    label: '剪切',
+    run: (上下文) => {
+      const 地址列表 = 展开区域(选区区域(上下文))
+      const 内容: Record<string, string> = {}
+      地址列表.forEach((位置) => {
+        内容[生成地址(位置.行, 位置.列)] = 读取单元格(上下文.工作表, 生成地址(位置.行, 位置.列)).原始值
+      })
+      const 键列表 = Object.keys(内容)
+      if (键列表.length === 0) {
+        上下文.notify('所选区域为空')
+        return
+      }
+      // 尝试写入剪贴板
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(键列表.map((键) => 内容[键]).join('\t')).then(() => {
+          const 目标地址 = 键列表.map((键) => 键)
+          上下文.更新工作表(清空单元格(上下文.工作表, 目标地址))
+          上下文.notify(`已剪切 ${键列表.length} 个单元格`)
+        }).catch(() => {
+          上下文.notify('剪切功能需要浏览器剪贴板权限')
+        })
+      } else {
+        上下文.notify('当前环境不支持剪切功能')
+      }
+    },
+  },
+  {
+    id: 'clipboard.copy',
+    label: '复制',
+    run: (上下文) => {
+      const 地址列表 = 展开区域(选区区域(上下文))
+      const 内容 = 地址列表.map((位置) =>
+        读取单元格(上下文.工作表, 生成地址(位置.行, 位置.列)).原始值
+      )
+      if (内容.length === 0) {
+        上下文.notify('所选区域为空')
+        return
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(内容.join('\t')).then(() => {
+          上下文.notify(`已复制 ${内容.length} 个单元格`)
+        }).catch(() => {
+          上下文.notify('复制功能需要浏览器剪贴板权限')
+        })
+      } else {
+        上下文.notify('当前环境不支持复制功能')
+      }
+    },
+  },
+  {
+    id: 'clipboard.paste',
+    label: '粘贴',
+    run: (上下文) => {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        上下文.notify('当前环境不支持读取剪贴板')
+        return
+      }
+      navigator.clipboard.readText().then((文本) => {
+        const 行数据 = 文本.split('\n').filter((行) => 行.length > 0)
+        if (行数据.length === 0) {
+          上下文.notify('剪贴板为空')
+          return
+        }
+        const 列数 = 行数据[0].split('\t').length
+        const 目标地址: string[] = []
+        const 值列表: string[] = []
+        const { 起点, 终点 } = 裁剪选区(上下文.工作表, 上下文.选区)
+        for (let 行 = 起点.行; 行 < 起点.行 + 行数据.length && 行 <= 终点.行; 行 += 1) {
+          const 列数据 = 行数据[行 - 起点.行]?.split('\t') ?? ['']
+          for (let 列 = 起点.列; 列 < 起点.列 + 列数 && 列 <= 终点.列; 列 += 1) {
+            const 索引 = (行 - 起点.行) * 列数 + (列 - 起点.列)
+            const 值 = 列数据[列 - 起点.列] ?? ''
+            目标地址.push(生成地址(行, 列))
+            值列表.push(值)
+          }
+        }
+        if (目标地址.length > 0) {
+          上下文.更新工作表(
+            目标地址.reduce((表, 地址, 下标) =>
+              写入单元格(表, 地址, 值列表[下标] ?? ''), 上下文.工作表
+            )
+          )
+          上下文.notify(`已粘贴 ${目标地址.length} 个单元格`)
+        }
+      }).catch(() => {
+        上下文.notify('读取剪贴板失败，请检查权限设置')
+      })
+    },
+  },
   开关格式命令('cell.bold', '加粗', '加粗'),
   开关格式命令('cell.italic', '斜体', '斜体'),
   开关格式命令('cell.underline', '下划线', '下划线'),

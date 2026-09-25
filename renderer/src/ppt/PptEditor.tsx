@@ -143,7 +143,7 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${文稿.name}.json`)
+      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${文稿.name}.pptx.json`)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           const 内容 = JSON.stringify(文稿)

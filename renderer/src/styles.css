@@ -1934,7 +1934,8 @@ button {
 /* ===== 右键菜单 ===== */
 
 .wps-context-menu {
-  min-width: 200px;
+  width: 220px;
+  max-height: 320px;
   padding: 4px 0;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1942,6 +1943,24 @@ button {
   box-shadow: 0 6px 20px rgba(31, 41, 55, 0.16);
   user-select: none;
   -webkit-user-select: none;
+  overflow-y: auto;
+}
+
+.wps-context-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.wps-context-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wps-context-menu::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.wps-context-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
 }
 
 .wps-context-menu__group-title {

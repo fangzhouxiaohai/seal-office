@@ -11,7 +11,7 @@ function 注册文件通道(ipcMain) {
       title: '保存文件',
       defaultPath: 默认文件名,
       filters: [
-        { name: '文字文档', extensions: ['docx'] },
+        { name: '文字文档', extensions: ['docx', 'html', 'txt'] },
         { name: '表格文档', extensions: ['xlsx'] },
         { name: '演示文档', extensions: ['pptx'] },
         { name: '网页文件', extensions: ['html'] },
@@ -27,7 +27,7 @@ function 注册文件通道(ipcMain) {
     const 结果 = await dialog.showOpenDialog(窗口, {
       title: '打开文件',
       filters: [
-        { name: '办公文档', extensions: ['docx', 'xlsx', 'pptx', 'html', 'txt', 'pdf'] },
+        { name: '办公文档', extensions: ['docx', 'xlsx', 'pptx', 'html', 'htm', 'txt', 'md', 'csv', 'json', 'pdf'] },
         { name: '所有文件', extensions: ['*'] },
       ],
       properties: ['openFile'],
