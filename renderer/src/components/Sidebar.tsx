@@ -1,4 +1,4 @@
-// 左侧导航：首页视图渲染分组导航，编辑器视图渲染返回入口与模块名。
+// 左侧导航：首页、设置、帮助视图均渲染完整分组导航，编辑器视图渲染返回入口与模块名。
 import React from 'react'
 import { NAV_GROUPS } from '../navConfig'
 import Icon from './Icon'
@@ -27,10 +27,10 @@ const Sidebar = ({
   onShowHelp,
   outline,
 }: Props) => {
-  // editor、settings、help 模式均显示返回首页按钮
-  if (mode === 'editor' || mode === 'settings' || mode === 'help') {
-      const 标题 = mode === 'settings' ? '设置' : mode === 'help' ? '帮助手册' : (moduleLabel ?? '文档')
-    const 图标 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : 'doc-empty'
+  // 编辑器模式：显示返回首页按钮、当前模块名与文档大纲
+  if (mode === 'editor') {
+    const 标题 = moduleLabel ?? '文档'
+    const 图标 = 'doc-empty'
 
     return React.createElement(
       'nav',
@@ -51,7 +51,7 @@ const Sidebar = ({
           React.createElement('span', { className: 'wps-nav-item__label' }, 标题)
         )
       ),
-      mode === 'editor' && outline !== undefined
+      outline !== undefined
         ? React.createElement(
             'div',
             { className: 'wps-sidebar__outline' },
@@ -66,9 +66,18 @@ const Sidebar = ({
     )
   }
 
+  // home、settings、help 模式：显示完整分组导航菜单
+  const 当前激活键 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : (activeKey ?? 'home')
+
   return React.createElement(
     'nav',
     { className: 'wps-sidebar' },
+    React.createElement(
+      'button',
+      { type: 'button', className: 'wps-sidebar__back', onClick: onBack },
+      React.createElement(Icon, { name: 'arrow-left', size: 16 }),
+      React.createElement('span', null, '返回首页')
+    ),
     NAV_GROUPS.map((分组, 分组下标) =>
       React.createElement(
         'div',
@@ -80,7 +89,7 @@ const Sidebar = ({
               key: 项.key,
               role: 'button',
               tabIndex: 0,
-              className: `wps-nav-item${项.key === activeKey ? ' wps-nav-item--active' : ''}`,
+              className: `wps-nav-item${项.key === 当前激活键 ? ' wps-nav-item--active' : ''}`,
               onClick: () => {
                 if (项.key === 'settings' && onShowSettings) {
                   onShowSettings()
