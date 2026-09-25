@@ -33,6 +33,19 @@
 
 ## 缺陷修复
 
+### 保存文档支持真实 Word/Excel/PPT 格式
+
+**问题现象**：保存 `.docx` 或 `.xlsx` 文件时，应用自动将扩展名改为 `.html`，导致无法生成真实 Office 格式文件。
+
+**根因分析**：之前采用扩展名修正策略，将 HTML 内容以 `.html` 扩展名保存来避免 Base64 乱码。但这无法支持用户要求的常规 Office 格式。
+
+**修复方案**：
+1. 新增 `htmlToDocxModel` 函数：将编辑器 HTML 内容解析为 docx 文档模型（段落、标题级别、加粗/斜体/下划线等格式）
+2. 新增 `htmlToXlsxModel` 函数：提取 HTML 表格为 xlsx 工作表模型，无表格时按行分割文本
+3. 新增 `htmlToPptxModel` 函数：提取 HTML 标题和段落为 pptx 幻灯片模型
+4. 修改保存命令：当扩展名为 `.docx`/`.xlsx`/`.pptx` 时，转换 HTML 为对应模型，通过 IPC 调用 `office.writeDocx/Xlsx/Pptx` 生成二进制文件后写入磁盘
+5. 其他格式（txt/html等）仍保持文本保存
+
 ### 右键菜单位置偏移问题
 
 **问题现象**：右键点击编辑区时，弹出的右键菜单位置离光标过远，出现在屏幕右侧。
@@ -73,8 +86,11 @@
 - `renderer/src/components/HelpManual.tsx` - 组件完全重写
 - `renderer/src/styles.css` - 新增 `.wps-main--help` 样式类及深色模式覆盖
 - `renderer/src/App.tsx` - 移除未使用的变量，修复 TS 警告
-- `renderer/src/components/ContextMenu.tsx` - 重新设计右键菜单位置定位算法
-- `renderer/src/editor/commands.ts` - 保存命令自动修正扩展名
+- `renderer/src/components/ContextMenu.tsx` - 改用 position:absolute+transform 定位，新增点击关闭
+- `renderer/src/editor/commands.ts` - 新增 htmlToDocxModel/htmlToXlsxModel/htmlToPptxModel 转换器，保存命令支持真实 Office 格式
+- `renderer/src/editor/DocEditor.tsx` - 右键菜单增加 `__close__` 命令处理
+- `renderer/src/sheet/SheetEditor.tsx` - 右键菜单增加 `__close__` 命令处理
+- `renderer/src/ppt/PptEditor.tsx` - 右键菜单增加 `__close__` 命令处理
 - `renderer/src/pages/HomePage.tsx` - 归一化扩展名比较，修复 Office API 返回值解析
 
 ### 构建状态
