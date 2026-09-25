@@ -34,6 +34,8 @@ const PptEditor = () => {
   const [文档路径, set文档路径] = useState<string | null>(null)
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
+  const [选中起始, set选中起始] = useState<number | undefined>(undefined)
+  const [选中结束, set选中结束] = useState<number | undefined>(undefined)
   const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
@@ -78,10 +80,18 @@ const PptEditor = () => {
   const 上下文: 演示命令上下文 = {
     文稿,
     选中框标识,
+    选中起始,
+    选中结束,
     更新文稿,
     notify: (文本: string) => message.info(文本),
     撤销,
     重做,
+  }
+
+  const 处理文本选择 = (标识: string, 起始: number, 结束: number) => {
+    if (选中框标识 !== 标识) return
+    set选中起始(起始)
+    set选中结束(结束)
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
@@ -115,23 +125,50 @@ const PptEditor = () => {
       }
       桥接.showOpenDialog().then((文件路径) => {
         if (文件路径) {
-          桥接.readFile(文件路径).then((结果) => {
-            if (结果.成功 && 结果.内容) {
-              try {
-                const 数据 = JSON.parse(结果.内容) as 演示文稿
-                set文稿(数据)
-                set文档路径(文件路径)
-                历史.record(数据)
-                message.success('文件已打开')
-              } catch {
-                message.error('文件格式不正确，无法打开')
+          // 判断文件扩展名
+          const 扩展 = 文件路径.slice((文件路径.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase()
+          if (扩展 === 'pptx') {
+            // pptx 文件：读取为二进制，通过主进程解析为演示文稿模型
+            桥接.readFile(文件路径).then((读取结果) => {
+              if (读取结果.成功 && 读取结果.二进制 && 读取结果.内容) {
+                桥接.office.readPptx(读取结果.内容).then((解析结果) => {
+                  if (解析结果 && 解析结果.演示文稿) {
+                    set文稿(解析结果.演示文稿)
+                    set文档路径(文件路径)
+                    历史.record(解析结果.演示文稿)
+                    message.success('文件已打开')
+                  } else {
+                    message.error('演示文稿格式转换失败，请检查内容后重试')
+                  }
+                }).catch((error: unknown) => {
+                  message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+                })
+              } else {
+                message.error('文件读取失败')
               }
-            } else {
-              message.error(`打开文件失败：${结果.错误}`)
-            }
-          }).catch((error: unknown) => {
-            message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
-          })
+            }).catch((error: unknown) => {
+              message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+            })
+          } else {
+            // json 文件：直接解析
+            桥接.readFile(文件路径).then((结果) => {
+              if (结果.成功 && 结果.内容) {
+                try {
+                  const 数据 = JSON.parse(结果.内容) as 演示文稿
+                  set文稿(数据)
+                  set文档路径(文件路径)
+                  历史.record(数据)
+                  message.success('文件已打开')
+                } catch {
+                  message.error('文件格式不正确，无法打开')
+                }
+              } else {
+                message.error(`打开文件失败：${结果.错误}`)
+              }
+            }).catch((error: unknown) => {
+              message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+            })
+          }
         }
       }).catch((error: unknown) => {
         message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
@@ -226,6 +263,25 @@ const PptEditor = () => {
     const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 选中框标识)
     if (框 === undefined) {
       return false
+    }
+    // 如果有片段列表，检查选中片段中是否有对应格式
+    if (框.片段列表 && 框.片段列表.length > 0 && 选中起始 != null && 选中结束 != null) {
+      const { 检测选中片段, 应用格式到选中片段 } = require('./deck')
+      // 简化：有选区时检查选中片段
+      const 开始 = Math.min(选中起始, 选中结束)
+      const 结束 = Math.max(选中起始, 选中结束)
+      if (开始 !== 结束) {
+        let 偏移量 = 0
+        for (let i = 0; i < 框.片段列表.length; i++) {
+          const 片段结束 = 偏移量 + 框.片段列表[i].文本.length
+          if (偏移量 < 结束 && 片段结束 > 开始) {
+            if (标识 === 'text.bold' && 框.片段列表[i].加粗) return true
+            if (标识 === 'text.italic' && 框.片段列表[i].斜体) return true
+            if (标识 === 'text.underline' && 框.片段列表[i].下划线) return true
+          }
+          偏移量 = 片段结束
+        }
+      }
     }
     if (标识 === 'text.bold') return 框.加粗
     if (标识 === 'text.italic') return 框.斜体
@@ -323,6 +379,7 @@ const PptEditor = () => {
                 })
               )
             },
+            on文本选择: 处理文本选择,
             onContextMenu: (x: number, y: number) => {
               set菜单坐标({ x, y })
               set菜单可见(true)

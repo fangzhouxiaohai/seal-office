@@ -6,13 +6,81 @@ async function 读取pptx(数据) {
   const 文件名 = Object.keys(压缩包.files)
     .filter((名称) => /^ppt\/slides\/slide\d+\.xml$/.test(名称))
     .sort((甲, 乙) => 甲.localeCompare(乙, undefined, { numeric: true }))
-  const 幻灯片 = []
+  const 幻灯片列表 = []
   for (const 名称 of 文件名) {
     const xml = await 压缩包.file(名称).async('string')
     const 文本 = Array.from(xml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g), (匹配) => 解码(匹配[1]))
-    幻灯片.push({ 文本 })
+    const 幻灯片文本 = 文本.filter((项) => 项.trim().length > 0)
+    if (幻灯片文本.length > 0) {
+      // 第一个非空文本作为标题，其余作为正文
+      const 标题文本 = 幻灯片文本[0]
+      const 正文文本 = 幻灯片文本.slice(1)
+      const 文本框列表 = [
+        {
+          id: `box-${幻灯片列表.length}-title`,
+          x: 80,
+          y: 60,
+          width: 800,
+          height: 120,
+          text: 标题文本,
+          字号: 40,
+          加粗: true,
+          斜体: false,
+          下划线: false,
+          颜色: '#1A1D24',
+          对齐: 'center',
+        },
+      ]
+      if (正文文本.length > 0) {
+        文本框列表.push({
+          id: `box-${幻灯片列表.length}-content`,
+          x: 80,
+          y: 220,
+          width: 800,
+          height: 240,
+          text: 正文文本.join('\n'),
+          字号: 24,
+          加粗: false,
+          斜体: false,
+          下划线: false,
+          颜色: '#1A1D24',
+          对齐: 'left',
+        })
+      }
+      幻灯片列表.push({
+        id: `slide-${幻灯片列表.length}`,
+        title: 标题文本,
+        版式: 正文文本.length > 0 ? '标题和内容' : '标题幻灯片',
+        背景色: '#FFFFFF',
+        文本框列表,
+      })
+    }
   }
-  return { 幻灯片, 警告: ['复杂动画、媒体与母版版式暂不参与导入'] }
+  if (幻灯片列表.length === 0) {
+    幻灯片列表.push({
+      id: 'slide-0',
+      title: '新建幻灯片',
+      版式: '标题幻灯片',
+      背景色: '#FFFFFF',
+      文本框列表: [
+        {
+          id: 'box-0-title',
+          x: 80,
+          y: 60,
+          width: 800,
+          height: 120,
+          text: '单击此处添加标题',
+          字号: 40,
+          加粗: true,
+          斜体: false,
+          下划线: false,
+          颜色: '#1A1D24',
+          对齐: 'center',
+        },
+      ],
+    })
+  }
+  return { 演示文稿: { 幻灯片列表, 当前索引: 0 }, 警告: ['复杂动画、媒体与母版版式暂不参与导入'] }
 }
 
 async function 写入pptx(模型) {

@@ -1,6 +1,14 @@
 // 演示文稿数据模型：幻灯片与文本框的增删改。
 // 全部为纯函数，返回新对象，便于配合撤销重做使用。
 
+export interface 文本片段 {
+  文本: string
+  加粗?: boolean
+  斜体?: boolean
+  下划线?: boolean
+  颜色?: string
+}
+
 export interface 文本框 {
   id: string
   x: number
@@ -14,6 +22,8 @@ export interface 文本框 {
   下划线: boolean
   颜色: string
   对齐: 'left' | 'center' | 'right'
+  /** 富文本片段列表，为空时退化为统一样式渲染 */
+  片段列表?: 文本片段[]
 }
 
 export type 版式类型 = '标题幻灯片' | '标题和内容' | '空白'
@@ -209,5 +219,70 @@ export function 约束位置(
   return {
     x: Math.min(Math.max(0, x), 最大x),
     y: Math.min(Math.max(0, y), 最大y),
+  }
+}
+
+// ==================== 文本片段富文本支持 ====================
+
+/** 将纯文本转换为字符片段列表，每个字符一个片段，继承文本框的基础样式 */
+export function 文本转片段(文本: string, 字号: number, 加粗: boolean, 斜体: boolean, 下划线: boolean, 颜色: string): 文本片段[] {
+  if (!文本 || 文本.length === 0) return []
+  return 文本.split('').map((字符) => ({
+    文本: 字符,
+    加粗,
+    斜体,
+    下划线,
+    颜色,
+  }))
+}
+
+/** 将片段列表合并为纯文本 */
+export function 片段转文本(片段列表: 文本片段[]): string {
+  return 片段列表.map((片段) => 片段.文本).join('')
+}
+
+/** 检测选区与哪些片段重叠，返回重叠索引范围 */
+export function 检测选中片段(片段列表: 文本片段[], 选区起始: number, 选区结束: number): { 起始索引: number; 结束索引: number } | null {
+  if (!片段列表 || 片段列表.length === 0) return null
+  if (选区起始 == null || 选区结束 == null || 选区起始 === 选区结束) return null
+  const 开始 = Math.min(选区起始, 选区结束)
+  const 结束 = Math.max(选区起始, 选区结束)
+  let 偏移量 = 0
+  let 起始索引 = -1
+  let 结束索引 = -1
+  for (let i = 0; i < 片段列表.length; i++) {
+    const 片段起始 = 偏移量
+    const 片段结束 = 偏移量 + 片段列表[i].文本.length
+    偏移量 = 片段结束
+    if (片段起始 < 结束 && 片段结束 > 开始) {
+      if (起始索引 < 0) 起始索引 = i
+      结束索引 = i
+    }
+  }
+  if (起始索引 < 0) return null
+  return { 起始索引, 结束索引 }
+}
+
+/** 将格式应用到指定索引范围的片段，返回新文本框 */
+export function 应用格式到选中片段(
+  文本框: 文本框,
+  选中起始索引: number,
+  选中结束索引: number,
+  格式: { 加粗?: boolean; 斜体?: boolean; 下划线?: boolean; 颜色?: string }
+): 文本框 {
+  const 片段列表 = 文本框.片段列表 || 文本转片段(文本框.text, 文本框.字号, 文本框.加粗, 文本框.斜体, 文本框.下划线, 文本框.颜色)
+  const 新片段列表 = 片段列表.map((片段) => ({ ...片段 }))
+  for (let i = 0; i < 新片段列表.length; i++) {
+    if (i >= 选中起始索引 && i <= 选中结束索引) {
+      if (格式.颜色 != null) 新片段列表[i].颜色 = 格式.颜色
+      if (格式.加粗 != null) 新片段列表[i].加粗 = 格式.加粗
+      if (格式.斜体 != null) 新片段列表[i].斜体 = 格式.斜体
+      if (格式.下划线 != null) 新片段列表[i].下划线 = 格式.下划线
+    }
+  }
+  return {
+    ...文本框,
+    片段列表: 新片段列表,
+    text: 片段转文本(新片段列表),
   }
 }

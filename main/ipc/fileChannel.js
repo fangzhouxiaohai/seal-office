@@ -1,6 +1,9 @@
 const { dialog } = require('electron')
 const fs = require('fs')
 const path = require('path')
+const { 读取docx } = require('../office/docxReader')
+const { 读取xlsx } = require('../office/xlsxCodec')
+const { 读取pptx } = require('../office/pptxCodec')
 
 const 文本扩展名 = new Set(['.html', '.htm', '.txt', '.md', '.csv', '.json'])
 

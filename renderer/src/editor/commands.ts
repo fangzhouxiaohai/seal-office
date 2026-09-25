@@ -633,11 +633,45 @@ const 导出命令: EditorCommand[] = [
         if (文件路径) {
           桥接.readFile(文件路径).then((结果) => {
             if (结果.成功) {
-              上下文.history.record({ html: 上下文.读取内容(), selection: null })
-              上下文.应用内容(结果.内容 ?? '', null)
-              上下文.设置文档路径?.(文件路径)
-              上下文.refresh()
-              上下文.notify('文件已打开')
+              const 扩展 = (结果.扩展名 ?? '').toLowerCase()
+              if (结果.二进制 && (扩展 === '.docx')) {
+                // docx 文件：通过主进程解析为 HTML
+                桥接.office.readDocx(结果.内容).then((解析结果) => {
+                  if (解析结果 && 解析结果.html) {
+                    上下文.history.record({ html: 上下文.读取内容(), selection: null })
+                    上下文.应用内容(解析结果.html, null)
+                    上下文.设置文档路径?.(文件路径)
+                    上下文.refresh()
+                    上下文.notify('文件已打开')
+                  } else {
+                    上下文.notify('文档格式转换失败，请检查内容后重试')
+                  }
+                }).catch((error: any) => {
+                  上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
+                })
+              } else if (结果.二进制 && (扩展 === '.xlsx')) {
+                // xlsx 文件：通过主进程解析为 HTML 表格
+                桥接.office.readXlsx(结果.内容).then((解析结果) => {
+                  if (解析结果 && 解析结果.html) {
+                    上下文.history.record({ html: 上下文.读取内容(), selection: null })
+                    上下文.应用内容(解析结果.html, null)
+                    上下文.设置文档路径?.(文件路径)
+                    上下文.refresh()
+                    上下文.notify('文件已打开')
+                  } else {
+                    上下文.notify('表格格式转换失败，请检查内容后重试')
+                  }
+                }).catch((error: any) => {
+                  上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
+                })
+              } else {
+                // 文本文件或未知类型：直接作为内容显示
+                上下文.history.record({ html: 上下文.读取内容(), selection: null })
+                上下文.应用内容(结果.内容 ?? '', null)
+                上下文.设置文档路径?.(文件路径)
+                上下文.refresh()
+                上下文.notify('文件已打开')
+              }
             } else {
               上下文.notify(`打开文件失败：${结果.错误}`)
             }
