@@ -41,7 +41,7 @@ export interface AppState {
   /** 打开首页文档：进入对应模块并新建编辑器标签 */
   openDoc: (文档: DocItem) => void
   /** 新建文档：进入对应模块并创建编辑器标签 */
-  createDoc: (类型: DocItem['type']) => void
+  createDoc: (类型: DocItem['type'], 初始内容?: string) => void
   /** 重命名文档；传入纯空白名称时不生效，避免写入无效文件名 */
   renameDoc: (标识: string, 名称: string) => void
   /** 删除文档；若删除的是当前打开文档，同时清空选中标识 */
@@ -119,7 +119,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setModule(目标模块)
     新建标签(模块默认文档名(目标模块))
     // 如果有初始内容，写入编辑器
-    if (初始内容 !== undefined && 目标模块 === 'doc') {
+    if (初始内容 !== undefined && (目标模块 === 'word' || 目标模块 === 'table' || 目标模块 === 'ppt')) {
       setTimeout(() => {
         const 编辑区 = document.querySelector('.wps-editor-content') as HTMLElement | null
         if (编辑区 !== null) {

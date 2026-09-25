@@ -43,7 +43,7 @@ const HomePage = () => {
   }
 
   const 处理模板选择 = (模板: import('../data/templates').模板项) => {
-    createDoc(模板.分类 as DocType)
+    createDoc(模板.分类 as DocType, 模板.内容)
     设显示模板库(false)
   }
 
@@ -65,6 +65,47 @@ const HomePage = () => {
       if (文件路径) {
         桥接.readFile(文件路径).then((结果) => {
           if (结果.成功 && 结果.内容) {
+            if (结果.二进制 && 结果.扩展名) {
+              // 二进制文件（docx/xlsx/pptx）：通过 Office API 读取
+              const 扩展名 = 结果.扩展名
+              if (扩展名 === 'docx') {
+                桥接.office.readDocx(结果.内容).then((数据: any) => {
+                  if (数据 && 数据.成功) {
+                    createDoc('word', JSON.stringify(数据.内容))
+                    message.success('文档已打开')
+                  } else {
+                    message.error('打开文档失败：文件内容无法解析')
+                  }
+                }).catch(() => {
+                  message.error('打开文档失败：文件内容无法解析')
+                })
+              } else if (扩展名 === 'xlsx') {
+                桥接.office.readXlsx(结果.内容).then((数据: any) => {
+                  if (数据 && 数据.成功) {
+                    createDoc('table', JSON.stringify(数据.内容))
+                    message.success('表格已打开')
+                  } else {
+                    message.error('打开表格失败：文件内容无法解析')
+                  }
+                }).catch(() => {
+                  message.error('打开表格失败：文件内容无法解析')
+                })
+              } else if (扩展名 === 'pptx') {
+                桥接.office.readPptx(结果.内容).then((数据: any) => {
+                  if (数据 && 数据.成功) {
+                    createDoc('ppt', JSON.stringify(数据.内容))
+                    message.success('演示文稿已打开')
+                  } else {
+                    message.error('打开演示文稿失败：文件内容无法解析')
+                  }
+                }).catch(() => {
+                  message.error('打开演示文稿失败：文件内容无法解析')
+                })
+              } else {
+                message.info('暂不支持此文件格式')
+              }
+              return
+            }
             if (结果.二进制) {
               message.info('二进制文件暂不支持在首页打开')
               return
@@ -78,7 +119,6 @@ const HomePage = () => {
               try {
                 const 数据 = JSON.parse(结果.内容)
                 if (数据.幻灯片列表) {
-                  // 演示文稿文件，在演示编辑器中打开
                   setNavKey('home')
                   message.info('请在演示文稿模块中打开此文件')
                 } else {
