@@ -50,7 +50,7 @@ export function 未实现演示命令(id: string, label: string): 演示命令 {
   }
 }
 
-/** 读取当前选中的文本框；未选中时返回 null */
+/** 读取当前选中的文本框；未选中时回退到最近选中的文本框 */
 export function 取选中框(上下文: 演示命令上下文): 文本框 | null {
   const 当前 = 读取当前幻灯片(上下文.文稿)
   if (当前 === null || 上下文.选中框标识 === null) {

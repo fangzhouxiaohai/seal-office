@@ -38,6 +38,8 @@ const PptEditor = () => {
   const [选中结束, set选中结束] = useState<number | undefined>(undefined)
   /** 下拉框打开时保存的选区快照，防止焦点转移导致选区丢失 */
   const 选区快照 = useRef<{ 起始?: number; 结束?: number } | null>(null)
+  /** 记录最后一次选中的文本框标识，防止打开下拉框时画布点击清除选框后命令找不到目标 */
+  const 最近选中框标识 = useRef<string | null>(null)
   const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
@@ -81,7 +83,7 @@ const PptEditor = () => {
 
   const 上下文: 演示命令上下文 = {
     文稿,
-    选中框标识,
+    选中框标识: 选中框标识 ?? 最近选中框标识.current,
     选中起始,
     选中结束,
     选区快照: 选区快照.current,
@@ -93,8 +95,15 @@ const PptEditor = () => {
 
   const 处理文本选择 = (标识: string, 起始: number, 结束: number) => {
     if (选中框标识 !== 标识) return
+    最近选中框标识.current = 标识
     set选中起始(起始)
     set选中结束(结束)
+  }
+
+  /** 包装选框回调，同步更新最近选中框标识 */
+  const 处理选框 = (标识: string | null) => {
+    if (标识 !== null) 最近选中框标识.current = 标识
+    set选中框标识(标识)
   }
 
   /** 下拉框打开前保存选区快照 */
@@ -188,16 +197,28 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${文稿.name}.pptx.json`)
-      Promise.resolve(选择路径).then((文件路径) => {
+      const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
+      const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.pptx`
+      桥接.showSaveDialog(默认路径).then((文件路径: string | null) => {
         if (文件路径) {
-          const 内容 = JSON.stringify(文稿)
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
-            if (结果.成功) {
-              set文档路径(文件路径)
-              message.success('文件已保存')
+          const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
+            文本: 幻灯片.文本框列表.map((框) =>框.text).join('\n'),
+          }))
+          const 模型 = { 幻灯片: 幻灯片模型 }
+          桥接.office.writePptx(模型).then((结果: any) => {
+            if (结果 && 结果.成功 && 结果.数据) {
+              const 二进制内容 = 结果.数据
+              桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+                if (保存结果.成功) {
+                  set文档路径(文件路径)
+                  set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
+                  message.success('文件已保存')
+                } else {
+                  message.error(`保存失败：${保存结果.错误}`)
+                }
+              })
             } else {
-              message.error(`保存失败：${结果.错误}`)
+              message.error('生成演示文稿文件失败，请重试')
             }
           }).catch((error: unknown) => {
             message.error(`保存失败：${(error as Error).message || '未知错误'}`)
@@ -213,15 +234,27 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      桥接.showSaveDialog(`${文稿.name}.json`).then((文件路径) => {
+      const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
+      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`).then((文件路径: string | null) => {
         if (文件路径) {
-          const 内容 = JSON.stringify(文稿)
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
-            if (结果.成功) {
-              set文档路径(文件路径)
-              message.success('文件已另存为')
+          const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
+            文本: 幻灯片.文本框列表.map((框) =>框.text).join('\n'),
+          }))
+          const 模型 = { 幻灯片: 幻灯片模型 }
+          桥接.office.writePptx(模型).then((结果: any) => {
+            if (结果 && 结果.成功 && 结果.数据) {
+              const 二进制内容 = 结果.数据
+              桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+                if (保存结果.成功) {
+                  set文档路径(文件路径)
+                  set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
+                  message.success('文件已另存为')
+                } else {
+                  message.error(`保存失败：${保存结果.错误}`)
+                }
+              })
             } else {
-              message.error(`保存失败：${结果.错误}`)
+              message.error('生成演示文稿文件失败，请重试')
             }
           }).catch((error: unknown) => {
             message.error(`保存失败：${(error as Error).message || '未知错误'}`)
@@ -265,10 +298,11 @@ const PptEditor = () => {
   }
 
   const 取激活态 = (标识: string): boolean => {
-    if (当前幻灯片 === null || 选中框标识 === null) {
+    const 当前框标识 = 选中框标识 ?? 最近选中框标识.current
+    if (当前幻灯片 === null || 当前框标识 === null) {
       return false
     }
-    const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 选中框标识)
+    const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 当前框标识)
     if (框 === undefined) {
       return false
     }
@@ -367,7 +401,7 @@ const PptEditor = () => {
             编辑框标识,
             编辑值,
             显示网格线,
-            on选中框: set选中框标识,
+            on选中框: 处理选框,
             on双击框: (标识: string) => {
               const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 标识)
               set编辑框标识(标识)

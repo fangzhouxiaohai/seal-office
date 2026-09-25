@@ -93,8 +93,8 @@ const HomePage = () => {
                 })
               } else if (归一化扩展名 === 'pptx') {
                 桥接.office.readPptx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功 && 数据.html) {
-                    createDoc('ppt', 数据.html)
+                  if (数据 && 数据.成功 && 数据.演示文稿) {
+                    createDoc('ppt', 数据.演示文稿)
                     message.success('演示文稿已打开')
                   } else {
                     message.info('文件内容无法识别，可能不是有效的演示文稿格式')

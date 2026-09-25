@@ -86,13 +86,23 @@ async function 读取pptx(数据) {
 async function 写入pptx(模型) {
   const 文稿 = new pptxgen()
   文稿.layout = 'LAYOUT_WIDE'
-  const 幻灯片 = 模型 && Array.isArray(模型.幻灯片) ? 模型.幻灯片 : []
-  幻灯片.forEach((数据) => {
+  const 幻灯片列表 = 模型 && Array.isArray(模型.幻灯片) ? 模型.幻灯片 : []
+  if (幻灯片列表.length === 0) 幻灯片列表.push({ 文本: '' })
+  幻灯片列表.forEach((幻灯片数据) => {
     const 页面 = 文稿.addSlide()
-    const 文本列表 = Array.isArray(数据.文本) ? 数据.文本 : []
-    页面.addText(文本列表.join('\n'), { x: 0.8, y: 0.7, w: 11.7, h: 5.8, fontFace: 'Microsoft YaHei', fontSize: 24 })
+    const 文本内容 = 幻灯片数据.文本 || ''
+    const 行列表 = 文本内容.split('\n')
+    if (行列表.length === 0) {
+      页面.addText('', { x: 0.5, y: 0.5, w: 10, h: 0.5, fontFace: 'Microsoft YaHei', fontSize: 24 })
+    } else {
+      const 段落列表 = 行列表.map((行) => ({
+        text: 行,
+        options: { fontFace: 'Microsoft YaHei', fontSize: 24, color: '1A1D24', breakLine: true },
+      }))
+      if (段落列表.length > 0) 段落列表[段落列表.length - 1].options.breakLine = false
+      页面.addText(段落列表, { x: 0.5, y: 0.5, w: 11, h: 7 })
+    }
   })
-  if (幻灯片.length === 0) 文稿.addSlide()
   return Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
 }
 
