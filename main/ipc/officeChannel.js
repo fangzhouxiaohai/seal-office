@@ -1,8 +1,8 @@
-const { 生成docx } = require('./docxWriter')
-const { 读取docx } = require('./docxReader')
-const { 读取xlsx, 写入xlsx } = require('./xlsxCodec')
-const { 读取pptx, 写入pptx } = require('./pptxCodec')
-const { 生成说明 } = require('./lossReport')
+const { 生成docx } = require('../office/docxWriter')
+const { 读取docx } = require('../office/docxReader')
+const { 读取xlsx, 写入xlsx } = require('../office/xlsxCodec')
+const { 读取pptx, 写入pptx } = require('../office/pptxCodec')
+const { 生成说明 } = require('../office/lossReport')
 
 function 注册Office通道(ipcMain) {
   ipcMain.handle('office.writeDocx', async (_event, 模型) => {

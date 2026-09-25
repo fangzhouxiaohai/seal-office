@@ -1,6 +1,6 @@
 // 左侧导航：首页视图渲染分组导航，编辑器视图渲染返回入口与模块名。
 import React from 'react'
-import { NAV_GROUPS } from '../routes'
+import { NAV_GROUPS } from '../navConfig'
 import Icon from './Icon'
 import { 提取大纲, type 目录项 } from '../editor/toc'
 

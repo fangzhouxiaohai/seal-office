@@ -63,12 +63,10 @@ const 帮助数据: 帮助项[] = [
   }
 ]
 
-const HelpManual = ({ 打开状态 = true, 关闭回调 }: {
+const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
   打开状态?: boolean
   关闭回调?: () => void
 }) => {
-  // 忽略打开状态，始终显示
-  void 打开状态
   const [搜索关键词, set搜索关键词] = useState('')
   const { 主题 } = useSettings()
 

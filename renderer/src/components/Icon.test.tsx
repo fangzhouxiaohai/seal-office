@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import Icon, { ICON_NAMES } from './Icon'
+import { 演示标签 } from '../ppt/ribbonSpecs'
+import { 表格标签 } from '../sheet/ribbonSpecs'
 
 describe('图标集', () => {
   it('登记的每个图标都能渲染出图形内容', () => {
@@ -44,5 +46,23 @@ describe('图标集', () => {
     const 未知 = render(<Icon name="不存在的图标" />).container.innerHTML
     const 占位 = render(<Icon name="doc-empty" />).container.innerHTML
     expect(未知).toBe(占位)
+  })
+
+  it('所有 ribbonSpecs 声明的图标都在 ICON_NAMES 中', () => {
+    const 所有标签 = [...演示标签, ...表格标签]
+    const 未声明图标: string[] = []
+    所有标签.forEach((tab) => {
+      tab.groups.forEach((group) => {
+        group.items.forEach((item) => {
+          const 图标名 = item.icon
+          if (!ICON_NAMES.includes(图标名)) {
+            未声明图标.push(图标名)
+          }
+        })
+      })
+    })
+    if (未声明图标.length > 0) {
+      expect(未声明图标, `以下图标未声明: ${未声明图标.join(', ')}`).toEqual([])
+    }
   })
 })

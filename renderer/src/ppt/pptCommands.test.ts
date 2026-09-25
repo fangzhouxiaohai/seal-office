@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { 查找演示命令, 取选中框, type 演示命令上下文 } from './pptCommands'
+import { 查找演示命令, 取选中框, type 演示命令上下文, 演示未实现清单, 演示命令标识列表 } from './pptCommands'
 import { 创建演示文稿, 读取当前幻灯片 } from './deck'
 
 const 构造上下文 = () => {
@@ -74,5 +74,38 @@ describe('演示命令：未选中文本框', () => {
   it('取选中框在未选中时返回 null', () => {
     const { 上下文 } = 构造上下文()
     expect(取选中框({ ...上下文, 选中框标识: null })).toBeNull()
+  })
+})
+
+describe('演示命令：剪贴板按钮', () => {
+  it('clipboard.copy 命令已注册', () => {
+    expect(查找演示命令('clipboard.copy')).toBeDefined()
+  })
+
+  it('clipboard.paste 命令已注册', () => {
+    expect(查找演示命令('clipboard.paste')).toBeDefined()
+  })
+
+  it('clipboard.copy 点击时显示功能开发中提示', () => {
+    const { 上下文, 通知 } = 构造上下文()
+    查找演示命令('clipboard.copy')?.run(上下文)
+    expect(通知).toHaveBeenCalledWith('该功能开发中')
+  })
+
+  it('clipboard.paste 点击时显示功能开发中提示', () => {
+    const { 上下文, 通知 } = 构造上下文()
+    查找演示命令('clipboard.paste')?.run(上下文)
+    expect(通知).toHaveBeenCalledWith('该功能开发中')
+  })
+
+  it('ribbonSpecs 声明的 clipboard 命令都在未实现清单中', () => {
+    const 未实现集合 = new Set(演示未实现清单.map(([id]) => id))
+    expect(未实现集合.has('clipboard.copy')).toBe(true)
+    expect(未实现集合.has('clipboard.paste')).toBe(true)
+  })
+
+  it('ribbonSpecs 声明的 clipboard 命令都在命令标识列表中', () => {
+    expect(演示命令标识列表).toContain('clipboard.copy')
+    expect(演示命令标识列表).toContain('clipboard.paste')
   })
 })

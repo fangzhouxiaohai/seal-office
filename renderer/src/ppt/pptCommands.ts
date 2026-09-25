@@ -221,6 +221,8 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
 
 /** 尚未实现的演示命令 */
 export const 演示未实现清单: Array<[string, string]> = [
+  ['clipboard.copy', '复制'],
+  ['clipboard.paste', '粘贴'],
   ['transition.fade', '淡入淡出'],
   ['transition.push', '推进'],
   ['animation.appear', '出现'],

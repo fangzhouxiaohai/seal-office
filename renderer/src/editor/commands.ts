@@ -729,7 +729,7 @@ const 导出命令: EditorCommand[] = [
 ]
 
 /** 全部命令的合并结果 */
-export const 命令表: Record<string, EditorCommand> = [
+export const 命令表 = [
   ...格式化命令定义.map(([id, label, 指令]) => 生成格式化命令(id, label, 指令)),
   ...字体命令,
   ...段落命令,

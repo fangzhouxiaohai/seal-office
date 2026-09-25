@@ -11,11 +11,18 @@ export function 列转字母(列: number): string {
   if (!Number.isFinite(列) || 列 < 0) {
     return ''
   }
+  // 双基 26 进制转换（无零位，A=1...Z=26）
+  // 0 对应 bijective 1 → A，26 对应 bijective 27 → AA
+  if (列 === 0) {
+    return 'A'
+  }
   let 结果 = ''
-  let 余数 = Math.floor(列)
-  while (余数 >= 0) {
-    结果 = String.fromCharCode(65 + (余数 % 26)) + 结果
-    余数 = Math.floor(余数 / 26) - 1
+  let num = 列 + 1 // 转为双基 1-indexed
+  while (num > 0) {
+    num -= 1
+    const 余数 = num % 26
+    结果 = String.fromCharCode(65 + 余数) + 结果
+    num = Math.floor(num / 26)
   }
   return 结果
 }

@@ -14,6 +14,16 @@ const 边距 = { 上: 24, 右: 24, 下: 40, 左: 48 }
 /** 与设计令牌 --brand 保持一致的图表配色 */
 const 图表配色 = ['#2B6CF6', '#00A870', '#ED7B2F', '#7C4DFF', '#E34D59', '#00B8D9']
 
+/** HTML 实体编码：防止用户输入中包含恶意标签时注入到 SVG 或 HTML 中 */
+function 实体编码(文本: string): string {
+  return 文本
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /** 取有效的数据对，长度以较短者为准 */
 function 取有效数据(数据: 图表数据): Array<{ 类别: string; 数值: number }> {
   const 长度 = Math.min(数据.类别.length, 数据.数值.length)
@@ -198,15 +208,17 @@ export function 生成SmartArtHtml(类型: SmartArt类型, 节点文本: string[
   const 图形 = 节点
     .map((文本, 下标) => {
       const 颜色 = 图表配色[下标 % 图表配色.length]
+      // 对用户输入做 HTML 实体编码，防止 XSS 注入
+      const 安全文本 = 实体编码(文本)
       if (类型 === '层级') {
         return (
           `<div class="wps-smartart__node" style="margin-left:${下标 * 24}px;border-color:${颜色}">` +
-          `<span class="wps-smartart__label">${文本}</span></div>`
+          `<span class="wps-smartart__label">${安全文本}</span></div>`
         )
       }
       return (
         `<div class="wps-smartart__node" style="border-color:${颜色}">` +
-        `<span class="wps-smartart__label">${文本}</span></div>`
+        `<span class="wps-smartart__label">${安全文本}</span></div>`
       )
     })
     .join('')

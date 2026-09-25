@@ -1,7 +1,6 @@
 // 关于对话框
 import React from 'react'
 import { Modal, Button } from 'antd'
-import { 桥接 } from '../ipc/bridge'
 import SealLogo from './SealLogo'
 
 const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
@@ -19,7 +18,6 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
     开源地址: 'https://github.com/seal-office/seal-office',
     专业服务: '专业应用开发服务',
   }
-  void 桥接
 
   return React.createElement(Modal, {
     title: '关于海豹办公',

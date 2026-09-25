@@ -17,9 +17,9 @@ const SettingsPage = () => {
   const [活动Tab, 设活动Tab] = useState('general')
   const 标签 = [
     { key: 'general', label: '常规设置', icon: 'settings' },
-    { key: 'system', label: '系统设置', icon: 'cpu' },
-    { key: 'help', label: '帮助与支持', icon: 'help-circle' },
-    { key: 'about', label: '关于', icon: 'info' },
+    { key: 'system', label: '系统设置', icon: 'settings' },
+    { key: 'help', label: '帮助与支持', icon: 'help' },
+    { key: 'about', label: '关于', icon: 'help' },
   ]
   const 设置行 = (标题: string, 描述: string, 控件: React.ReactNode) => (
     <div className="settings-row"><div><div className="settings-row__title">{标题}</div><div className="settings-row__description">{描述}</div></div>{控件}</div>

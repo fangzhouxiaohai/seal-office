@@ -25,7 +25,6 @@ const ChartEditor = ({ 打开状态, 关闭回调, 确认回调 }: {
       title="插入图表"
       open={打开状态}
       onCancel={关闭回调}
-      onOk={() => 确认回调(预览Svg, 图表类型)}
       width={800}
       footer={[
         <Button key="cancel" onClick={关闭回调}>取消</Button>,
@@ -42,17 +41,13 @@ const ChartEditor = ({ 打开状态, 关闭回调, 确认回调 }: {
             style={{ width: '100%' }}
             options={[
               { label: '柱形图', value: '柱形图' },
-              { label: '条形图', value: '条形图' },
               { label: '折线图', value: '折线图' },
-              { label: '面积图', value: '面积图' },
-              { label: '饼图', value: '饼图' },
-              { label: '圆环图', value: '圆环图' },
-              { label: '散点图', value: '散点图' }
+              { label: '饼图', value: '饼图' }
             ]}
           />
           <div style={{ margin: '16px 0', borderTop: '1px solid #E8EBF0' }} />
           <h4>数据预览</h4>
-          <div style={{ 
+          <div style={{
             background: '#F5F7FA',
             padding: '12px',
             borderRadius: '4px',
@@ -68,7 +63,7 @@ const ChartEditor = ({ 打开状态, 关闭回调, 确认回调 }: {
         {/* 右侧：预览面板 */}
         <div style={{ flex: 1 }}>
           <h4>预览</h4>
-          <div style={{ 
+          <div style={{
             border: '1px solid #E8EBF0',
             borderRadius: '4px',
             padding: '20px',
