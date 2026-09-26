@@ -27,7 +27,7 @@ describe('导航分组', () => {
 describe('模块注册表', () => {
   it('覆盖首页、三个编辑器、设置与帮助模块', () => {
     const 键集合 = Object.keys(MODULES).sort()
-    expect(键集合).toEqual(['help', 'home', 'ppt', 'settings', 'table', 'word'])
+    expect(键集合).toEqual(['help', 'home', 'pdf', 'ppt', 'settings', 'table', 'word'])
   })
 
   it('每个模块都有中文名称', () => {
@@ -42,7 +42,7 @@ describe('文档类型到模块的映射', () => {
     expect(DOC_TYPE_TO_MODULE.word).toBe('word')
     expect(DOC_TYPE_TO_MODULE.table).toBe('table')
     expect(DOC_TYPE_TO_MODULE.ppt).toBe('ppt')
-    expect(DOC_TYPE_TO_MODULE.pdf).toBe('home')
+    expect(DOC_TYPE_TO_MODULE.pdf).toBe('pdf')
   })
 })
 
@@ -51,8 +51,8 @@ describe('新建入口', () => {
     expect(NEW_DOC_ENTRIES.map((项) => 项.key)).toEqual(['word', 'table', 'ppt', 'pdf'])
   })
 
-  it('前三项可跳转，PDF 标记为未实现', () => {
-    expect(NEW_DOC_ENTRIES.filter((项) => 项.implemented)).toHaveLength(3)
-    expect(NEW_DOC_ENTRIES.find((项) => 项.key === 'pdf')?.implemented).toBe(false)
+  it('四项均可跳转且全部标记为已实现', () => {
+    expect(NEW_DOC_ENTRIES.filter((项) => 项.implemented)).toHaveLength(4)
+    expect(NEW_DOC_ENTRIES.find((项) => 项.key === 'pdf')?.implemented).toBe(true)
   })
 })

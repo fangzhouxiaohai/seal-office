@@ -23,10 +23,9 @@ describe('新建四宫格', () => {
     expect(回调).toHaveBeenCalledWith('table')
   })
 
-  it('未实现的入口带禁用标记', () => {
+  it('四个入口均已实现，无禁用卡片', () => {
     const { container } = render(<NewDocGrid onSelect={() => {}} />)
     const 禁用项 = container.querySelectorAll('.wps-new-card--disabled')
-    expect(禁用项).toHaveLength(1)
-    expect(禁用项[0].textContent).toContain('PDF 工具')
+    expect(禁用项).toHaveLength(0)
   })
 })

@@ -225,7 +225,7 @@ export function 约束位置(
 // ==================== 文本片段富文本支持 ====================
 
 /** 将纯文本转换为字符片段列表，每个字符一个片段，继承文本框的基础样式 */
-export function 文本转片段(文本: string, 字号: number, 加粗: boolean, 斜体: boolean, 下划线: boolean, 颜色: string): 文本片段[] {
+export function 文本转片段(文本: string, _字号: number, 加粗: boolean, 斜体: boolean, 下划线: boolean, 颜色: string): 文本片段[] {
   if (!文本 || 文本.length === 0) return []
   return 文本.split('').map((字符) => ({
     文本: 字符,

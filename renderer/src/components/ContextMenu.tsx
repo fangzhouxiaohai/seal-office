@@ -83,7 +83,6 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     if (!open || 引用.current === null) {
       return
     }
-    const 面板 = 引用.current
     const 视口宽 = window.innerWidth
     const 视口高 = window.innerHeight
     const 面板宽 = 菜单面板宽

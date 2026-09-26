@@ -634,9 +634,10 @@ const 导出命令: EditorCommand[] = [
           桥接.readFile(文件路径).then((结果) => {
             if (结果.成功) {
               const 扩展 = (结果.扩展名 ?? '').toLowerCase()
+              const 文件内容 = 结果.内容 ?? ''
               if (结果.二进制 && (扩展 === '.docx')) {
                 // docx 文件：通过主进程解析为 HTML
-                桥接.office.readDocx(结果.内容).then((解析结果) => {
+                桥接.office.readDocx(文件内容).then((解析结果) => {
                   if (解析结果 && 解析结果.html) {
                     上下文.history.record({ html: 上下文.读取内容(), selection: null })
                     上下文.应用内容(解析结果.html, null)
@@ -651,7 +652,7 @@ const 导出命令: EditorCommand[] = [
                 })
               } else if (结果.二进制 && (扩展 === '.xlsx')) {
                 // xlsx 文件：通过主进程解析为 HTML 表格
-                桥接.office.readXlsx(结果.内容).then((解析结果) => {
+                桥接.office.readXlsx(文件内容).then((解析结果) => {
                   if (解析结果 && 解析结果.html) {
                     上下文.history.record({ html: 上下文.读取内容(), selection: null })
                     上下文.应用内容(解析结果.html, null)
@@ -667,7 +668,7 @@ const 导出命令: EditorCommand[] = [
               } else {
                 // 文本文件或未知类型：直接作为内容显示
                 上下文.history.record({ html: 上下文.读取内容(), selection: null })
-                上下文.应用内容(结果.内容 ?? '', null)
+                上下文.应用内容(文件内容, null)
                 上下文.设置文档路径?.(文件路径)
                 上下文.refresh()
                 上下文.notify('文件已打开')
@@ -1036,7 +1037,7 @@ export function htmlToXlsxModel(html: string): { 工作表: Array<{
     // 使用第一个表格
     const 表格 = 表格列表[0] as HTMLTableElement
     const 行列表 = 表格.querySelectorAll('tr')
-    行列表.forEach((行, 行索引) => {
+    行列表.forEach((行) => {
       const 单元格列表 = 行.querySelectorAll('td, th')
       const 行数据: Array<{ 文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean }>; 表头?: boolean }> = []
       单元格列表.forEach((单元格) => {

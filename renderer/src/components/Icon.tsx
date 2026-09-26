@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   'zoom-in', 'zoom-out', 'zoom-reset', 'fit-width',
   'watermark', 'page-border', 'page-color', 'columns', 'page-break',
   'margin', 'orientation', 'paper-size', 'line-numbers', 'export-file', 'close',
+  'open', 'save', 'save-as',
 ]
 
 interface IconProps {
@@ -455,6 +456,26 @@ const 线性路径: Record<string, React.ReactNode> = {
     </>
   ),
   close: <path d="M4 4l8 8M12 4l-8 8" />,
+
+  /* 文件操作 */
+  open: (
+    <>
+      <path d="M2.6 5.6H6l1.6-1.8 1.8 1.8h4.2V13.4H2.6z" />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M4 3.2h7.6l1.4 1.4V13.2H4z" />
+      <path d="M4.2 3.2V10.8h7.6V7.8" />
+    </>
+  ),
+  'save-as': (
+    <>
+      <path d="M4 3.2h7.6l1.4 1.4V13.2H4z" />
+      <path d="M4.2 3.2V10.8h7.6V7.8" />
+      <path d="M10.2 10v2.4M11.8 9.4l-1.4 1.4 1.4 1.4" />
+    </>
+  ),
 }
 
 /** 文档类型图标：填充风格，颜色由外部传入 */

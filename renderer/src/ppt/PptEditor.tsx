@@ -308,7 +308,6 @@ const PptEditor = () => {
     }
     // 如果有片段列表，检查选中片段中是否有对应格式
     if (框.片段列表 && 框.片段列表.length > 0 && 选中起始 != null && 选中结束 != null) {
-      const { 检测选中片段, 应用格式到选中片段 } = require('./deck')
       // 简化：有选区时检查选中片段
       const 开始 = Math.min(选中起始, 选中结束)
       const 结束 = Math.max(选中起始, 选中结束)
