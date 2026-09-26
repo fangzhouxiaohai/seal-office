@@ -227,6 +227,7 @@ const 视图标签: RibbonTabSpec = {
       items: [
         大('file.exportCsv', '导出为 CSV', 'export-file'),
         大('file.exportHtml', '导出为网页', 'export-file'),
+        大('file.exportXlsx', '导出为表格', 'export-file'),
       ],
     },
   ],

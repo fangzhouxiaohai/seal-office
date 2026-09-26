@@ -71,5 +71,26 @@ describe('xlsxCodec', () => {
       const sheet = workbook.worksheets[0]
       expect(sheet.getCell('A1').value).toBe('')
     })
+
+    it('应该支持渲染层 { 工作表 } 契约', async () => {
+      const 模型 = {
+        工作表: [
+          {
+            名称: 'Sheet1',
+            数据: [
+              [{ 文字: [{ 文本: '甲' }], 表头: true }, { 文字: [{ 文本: '乙' }], 表头: true }],
+              [{ 文字: [{ 文本: '丙' }] }, { 文字: [{ 文本: '丁' }] }],
+            ],
+          },
+        ],
+      }
+      const result = await 写入xlsx(模型)
+      expect(Buffer.isBuffer(result)).toBe(true)
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(result)
+      const sheet = workbook.worksheets[0]
+      expect(sheet.getCell('A1').value).toBe('甲')
+      expect(sheet.getCell('B2').value).toBe('丁')
+    })
   })
 })

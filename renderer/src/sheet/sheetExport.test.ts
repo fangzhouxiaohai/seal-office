@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { 导出为Csv, 导出为Html表格, 生成表格文件名, 转义Csv字段 } from './sheetExport'
+import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名, 转义Csv字段 } from './sheetExport'
 import { 创建工作表, 写入单元格 } from './model'
 
 const 构造表 = () => {
@@ -103,7 +103,37 @@ describe('导出文件名', () => {
     expect(生成表格文件名('Sheet1', 'html')).toBe('Sheet1.html')
   })
 
+  it('带点扩展名（xlsx）直接拼接', () => {
+    expect(生成表格文件名('Sheet1', '.xlsx')).toBe('Sheet1.xlsx')
+  })
+
   it('名称为空时回落默认值', () => {
     expect(生成表格文件名('   ', 'csv')).toBe('工作表.csv')
+    expect(生成表格文件名('   ', '.xlsx')).toBe('工作表.xlsx')
+  })
+})
+
+describe('Xlsx 导出模型', () => {
+  it('生成含名称与二维显示值的工作表模型', () => {
+    const 模型 = 导出为Xlsx(构造表())
+    expect(模型).not.toBeNull()
+    expect(模型!.工作表).toHaveLength(1)
+    expect(模型!.工作表[0].名称).toBe('测试表')
+    expect(模型!.工作表[0].数据).toEqual([
+      ['姓名', '金额'],
+      ['张三', '1200'],
+      ['李四', '2400'],
+    ])
+  })
+
+  it('公式导出计算结果而非公式原文', () => {
+    const 模型 = 导出为Xlsx(构造表())
+    const 平铺 = 模型!.工作表[0].数据.flat().join(',')
+    expect(平铺).toContain('2400')
+    expect(平铺).not.toContain('=B2*2')
+  })
+
+  it('空工作表返回 null', () => {
+    expect(导出为Xlsx(创建工作表('空表'))).toBeNull()
   })
 })

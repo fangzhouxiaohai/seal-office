@@ -19,7 +19,7 @@ import {
 } from './model'
 import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单元格位置 } from './address'
 import { 统计选区 } from './selectionStats'
-import { 导出为Csv, 导出为Html表格, 生成表格文件名 } from './sheetExport'
+import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名 } from './sheetExport'
 import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
 import SheetToolbar from './SheetToolbar'
@@ -183,6 +183,40 @@ const SheetEditor = () => {
         是Csv ? 'text/csv' : 'text/html'
       )
       message.success(是Csv ? '已导出为 CSV 文件' : '已导出为网页文件')
+      return
+    }
+    if (标识 === 'file.exportXlsx') {
+      if (!桥接.可用) {
+        message.info('当前环境不支持导出表格功能，请使用打包后的版本')
+        return
+      }
+      const 模型 = 导出为Xlsx(工作表)
+      if (模型 === null) {
+        message.warning('工作表为空，没有可导出的内容')
+        return
+      }
+      桥接.office.writeXlsx(模型).then((结果: any) => {
+        if (!(结果 && 结果.成功 && 结果.数据)) {
+          message.error('表格格式转换失败，请检查内容后重试')
+          return
+        }
+        return 桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx')).then((文件路径) => {
+          if (文件路径) {
+            return 桥接.saveToFile(文件路径, 结果.数据, '二进制').then((保存结果) => {
+              if (保存结果.成功) {
+                message.success('已导出为表格文件')
+              } else {
+                message.error(`导出失败：${保存结果.错误}`)
+              }
+            })
+          }
+          return Promise.resolve()
+        }).catch((error: unknown) => {
+          message.error(`导出失败：${(error as Error).message || '未知错误'}`)
+        })
+      }).catch((error: unknown) => {
+        message.error(`导出失败：${(error as Error).message || '未知错误'}`)
+      })
       return
     }
     // 文件操作命令
@@ -361,16 +395,25 @@ const SheetEditor = () => {
       case 'v':
         if (事件.ctrlKey || 事件.metaKey) {
           事件.preventDefault()
-          // 优先尝试系统剪贴板
-          let 粘贴值 = 剪贴板.current?.值 ?? ''
-          navigator.clipboard?.readText().then((系统值) => {
-            if (系统值) 粘贴值 = 系统值
-          }).catch(() => {
-            // 不可用时回退到本地缓存
-          })
           const 目标地址 = 生成地址(起点.行, 起点.列)
-          更新工作表(写入单元格(工作表, 目标地址, 粘贴值))
-          message.success(`已粘贴到 ${目标地址}`)
+          const 本地值 = 剪贴板.current?.值 ?? ''
+          const 执行粘贴 = (粘贴值: string) => {
+            更新工作表(写入单元格(工作表, 目标地址, 粘贴值))
+            message.success(`已粘贴到 ${目标地址}`)
+          }
+          const 系统读取 = navigator.clipboard?.readText
+          if (typeof 系统读取 === 'function') {
+            // 优先读取系统剪贴板，读取成功才覆盖本地值
+            系统读取.call(navigator.clipboard).then((系统值) => {
+              执行粘贴(系统值 || 本地值)
+            }).catch(() => {
+              // 系统剪贴板不可用时回退到本地缓存
+              执行粘贴(本地值)
+            })
+          } else {
+            // 无系统剪贴板接口，直接用本地缓存
+            执行粘贴(本地值)
+          }
           return
         }
         break

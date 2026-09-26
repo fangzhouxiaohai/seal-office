@@ -76,5 +76,22 @@ describe('pptxCodec', () => {
       const result = await 写入pptx(null)
       expect(Buffer.isBuffer(result)).toBe(true)
     })
+
+    it('应该支持渲染层 { 幻灯片列表 } 契约', async () => {
+      const 模型 = {
+        幻灯片列表: [
+          { 标题: '标题一', 内容: [{ 类型: '文字', 文字: '正文一' }] },
+          { 标题: '标题二', 内容: [{ 类型: '文字', 文字: '正文二' }] },
+        ],
+      }
+      const result = await 写入pptx(模型)
+      expect(Buffer.isBuffer(result)).toBe(true)
+      const zip = await JSZip.loadAsync(result)
+      const slideFiles = Object.keys(zip.files).filter((f) => /slide\d+\.xml$/.test(f))
+      expect(slideFiles.length).toBe(2)
+      const slide1 = await zip.file(slideFiles[0]).async('string')
+      expect(slide1).toContain('标题一')
+      expect(slide1).toContain('正文一')
+    })
   })
 })

@@ -75,8 +75,33 @@ export function 导出为Html表格(工作表: Sheet, 标题: string): string {
   )
 }
 
-/** 依据工作表名生成导出文件名 */
+/**
+ * 依据工作表名生成导出文件名。
+ * 扩展名带点时为 xlsx 等二进制格式，不带点时沿用 csv/html 的拼接方式。
+ */
 export function 生成表格文件名(工作表名: string, 扩展名: string): string {
   const 基准 = 工作表名.trim().length > 0 ? 工作表名.trim() : '工作表'
-  return `${基准}.${扩展名}`
+  return 扩展名.startsWith('.') ? `${基准}${扩展名}` : `${基准}.${扩展名}`
+}
+
+/**
+ * 导出为 xlsx 的写入模型。
+ * 主进程写入 xlsx 读 { 工作表: [{ 名称, 数据: 二维数组 }] }，单元格取显示值
+ * （公式导出的是计算结果而非公式原文，与 CSV/HTML 行为一致）。
+ * 无内容时返回 null。
+ */
+export function 导出为Xlsx(工作表: Sheet): { 工作表: Array<{ 名称: string; 数据: string[][] }> } | null {
+  const { 行数, 列数 } = 计算有效范围(工作表)
+  if (行数 === 0 || 列数 === 0) {
+    return null
+  }
+  const 数据: string[][] = []
+  for (let 行 = 0; 行 < 行数; 行 += 1) {
+    const 单元格列表: string[] = []
+    for (let 列 = 0; 列 < 列数; 列 += 1) {
+      单元格列表.push(读取单元格(工作表, 生成地址(行, 列)).显示值)
+    }
+    数据.push(单元格列表)
+  }
+  return { 工作表: [{ 名称: 工作表.name, 数据 }] }
 }

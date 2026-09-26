@@ -19,7 +19,26 @@ async function 读取xlsx(数据) {
 async function 写入xlsx(模型) {
   const 工作簿 = new ExcelJS.Workbook()
   const 工作表 = 工作簿.addWorksheet('工作表')
-  const 行 = 模型 && Array.isArray(模型.行) ? 模型.行 : []
+  // 渲染层契约为 { 工作表: [{ 名称, 数据: 二维数组[{ 文字:[{ 文本 }], 表头 }] }] }
+  // 旧契约为 { 行: 二维数组[原始值] }，此处两种结构均兼容。
+  let 行 = []
+  if (模型 && Array.isArray(模型.工作表)) {
+    const 首个表 = 模型.工作表[0]
+    if (首个表 && Array.isArray(首个表.数据)) {
+      行 = 首个表.数据.map((行数据) => {
+        if (!Array.isArray(行数据)) return [行数据 == null ? '' : String(行数据)]
+        return 行数据.map((单元) => {
+          if (单元 == null) return ''
+          if (typeof 单元 === 'object' && 单元.文字 && Array.isArray(单元.文字)) {
+            return 单元.文字.map((片段) => (片段 && 片段.文本) || '').join('')
+          }
+          return String(单元)
+        })
+      })
+    }
+  } else if (模型 && Array.isArray(模型.行)) {
+    行 = 模型.行.map((行数据) => (Array.isArray(行数据) ? 行数据.map((值) => (值 == null ? '' : String(值))) : [行数据 == null ? '' : String(行数据)]))
+  }
   行.forEach((项, 行号) => {
     项.forEach((值, 列号) => {
       工作表.getCell(行号 + 1, 列号 + 1).value = 值 == null ? '' : String(值)

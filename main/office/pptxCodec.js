@@ -94,11 +94,31 @@ async function 读取pptx(数据) {
 async function 写入pptx(模型) {
   const 文稿 = new pptxgen()
   文稿.layout = 'LAYOUT_WIDE'
-  const 幻灯片列表 = 模型 && Array.isArray(模型.幻灯片) ? 模型.幻灯片 : []
+  // 渲染层契约为 { 幻灯片列表: [{ 标题, 内容:[{ 类型, 文字, 加粗 }] }] }
+  // PptEditor 契约为 { 幻灯片: [{ 文本 }] }，此处两种结构均兼容。
+  let 幻灯片列表 = []
+  if (模型 && Array.isArray(模型.幻灯片列表)) {
+    幻灯片列表 = 模型.幻灯片列表
+  } else if (模型 && Array.isArray(模型.幻灯片)) {
+    幻灯片列表 = 模型.幻灯片
+  }
   if (幻灯片列表.length === 0) 幻灯片列表.push({ 文本: '' })
   幻灯片列表.forEach((幻灯片数据) => {
     const 页面 = 文稿.addSlide()
-    const 文本内容 = 幻灯片数据.文本 || ''
+    let 文本内容 = ''
+    if (typeof 幻灯片数据.文本 === 'string') {
+      文本内容 = 幻灯片数据.文本
+    } else {
+      // 渲染层结构：标题 + 内容文字
+      const 片段列表 = []
+      if (幻灯片数据.标题) 片段列表.push(幻灯片数据.标题)
+      if (Array.isArray(幻灯片数据.内容)) {
+        幻灯片数据.内容.forEach((项) => {
+          if (项 && typeof 项.文字 === 'string') 片段列表.push(项.文字)
+        })
+      }
+      文本内容 = 片段列表.join('\n')
+    }
     const 行列表 = 文本内容.split('\n')
     if (行列表.length === 0) {
       页面.addText('', { x: 0.5, y: 0.5, w: 10, h: 0.5, fontFace: 'Microsoft YaHei', fontSize: 24 })

@@ -84,8 +84,14 @@ const SlideCanvas = ({
         return
       }
       const 比例 = 缩放 <= 0 ? 1 : 缩放
-      const 相对x = (事件.clientX / 比例 - 框.x) / 框.width
-      const 相对y = (事件.clientY / 比例 - 框.y) / 框.height
+      // 画布使用 transform:scale 缩放，必须先用 getBoundingClientRect 把
+      // 视口坐标换算回画布逻辑坐标，再减去文本框位置得到相对坐标。
+      const 画布元素 = (事件.currentTarget as HTMLElement).closest('.wps-ppt-canvas') as HTMLElement | null
+      const 画布矩形 = 画布元素 ? 画布元素.getBoundingClientRect() : null
+      const 逻辑x = 画布矩形 ? (事件.clientX - 画布矩形.left) / 比例 : 事件.clientX / 比例
+      const 逻辑y = 画布矩形 ? (事件.clientY - 画布矩形.top) / 比例 : 事件.clientY / 比例
+      const 相对x = (逻辑x - 框.x) / 框.width
+      const 相对y = (逻辑y - 框.y) / 框.height
       const 文本 = 框.text
       const 估算位置 = Math.max(0, Math.min(文本.length, Math.floor(相对x * 文本.length + 相对y * 文本.length * 0.1)))
       if (选择起始.current === null) {

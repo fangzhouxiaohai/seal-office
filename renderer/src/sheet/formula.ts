@@ -428,6 +428,9 @@ class 解析器 {
   }
 
   private 求函数(名称: string): 值 {
+    if (名称.toUpperCase() === 'IF') {
+      return this.求函数IF()
+    }
     const 实现 = 函数表[名称.toUpperCase()]
     if (实现 === undefined) {
       throw new Error(`未知函数 ${名称}`)
@@ -453,6 +456,57 @@ class 解析器 {
       throw new Error('函数参数格式错误')
     }
     return 实现(参数列表)
+  }
+
+  /**
+   * 惰性求值 IF：三个参数按顶层逗号切分为 token 区间，条件立即求值，
+   * 仅对条件选中的分支求值，避免未选分支中的错误影响整体结果。
+   */
+  private 求函数IF(): 值 {
+    this.位置 += 1 // 跳过左括号
+    const 参数区间 = this.切分顶层参数()
+    if (参数区间.length !== 3) {
+      throw new Error('IF 需要三个参数')
+    }
+    const 条件 = this.求区间(参数区间[0])
+    return 条件为真(条件) ? this.求区间(参数区间[1]) : this.求区间(参数区间[2])
+  }
+
+  /** 求函数时按当前 位置 起扫描，返回以顶层逗号分隔的各参数 token 区间。 */
+  private 切分顶层参数(): Array<[number, number]> {
+    const 结果: Array<[number, number]> = []
+    const 列表 = this.单元列表
+    const 长度 = 列表.length
+    let 深度 = 0
+    let 开始 = this.位置
+    for (; this.位置 < 长度; this.位置 += 1) {
+      const 当前 = 列表[this.位置]
+      if (当前.类型 === '左括号') {
+        深度 += 1
+        continue
+      }
+      if (当前.类型 === '右括号') {
+        if (深度 === 0) {
+          结果.push([开始, this.位置])
+          this.位置 += 1
+          return 结果
+        }
+        深度 -= 1
+        continue
+      }
+      if (当前.类型 === '逗号' && 深度 === 0) {
+        结果.push([开始, this.位置])
+        开始 = this.位置 + 1
+      }
+    }
+    throw new Error('函数参数格式错误')
+  }
+
+  /** 在独立的子解析器上求值一段 token 区间，保持惰性分支彼此隔离。 */
+  private 求区间(区间: [number, number]): 值 {
+    const [开始, 结束] = 区间
+    const 子解析器 = new 解析器(this.单元列表.slice(开始, 结束), this.取值, this.正在求值)
+    return 子解析器.解析()
   }
 }
 
