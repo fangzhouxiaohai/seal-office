@@ -88,6 +88,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "海豹办公"
-    }
+    },
+    "electronDist": "node_modules/electron/dist"
   }
 }

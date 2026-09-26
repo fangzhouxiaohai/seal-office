@@ -4,6 +4,25 @@
 
 ## 本提交：修复潜在缺陷，测试全绿
 
+### 实现剩余功能（表格 / 演示 / 文字）
+
+#### 表格编辑器
+- 真实现 `row.insert/delete`、`col.insert/delete`、`cell.insert/delete`（插入/删除行列，含合并区域同步上移/右移/移除/缩短，边界保护与中文提示）。
+- 真实现 `data.textToColumns`（按逗号/空格分列）、`edit.selectAll`（全选）。
+- 为 `insert.pivot/chart/picture`、`formula.logical/lookup/financial`、`data.validation`、`review.comment/protect`、`view.freeze/split`、`view.normal/pageLayout`、`spell.check`、`symbol.insert`、`layout.*` 等 Ribbon 命令补齐注册，给出明确中文指引（不伪造结果）。
+- 修复 `model.ts` 中 `生成地址(位置.列, 目标行)` 参数颠倒的真实 bug（写入单元格 / 插入行）。
+
+#### 演示文稿编辑器
+- 真实现 `clipboard.copy/paste`（复制/粘贴文本框）、`slide.moveUp/moveDown`（上移/下移当前幻灯片）、`slide.layout/background`、`transition.fade/push`、`animation.appear/fade`。
+- 为 `slideshow.*`、`review.*`、`insert.chart/picture/table/media`、`view.slideSorter/notes` 给出明确中文指引。
+- PptEditor 右键菜单 `edit.cut/copy/paste` 映射到 `clipboard.*` 命令生效；`view.normal` 补普通视图提示。
+
+#### 文字翻译
+- 新增 `TranslateDialog` 翻译面板与 `translateSettings` 设置持久化（地址 + 密钥）。
+- `translate.start` 注册为打开翻译面板命令，接入 DocEditor 与审阅 Ribbon。
+- 设置页新增"翻译设置"区块（服务地址 + 密钥保存）。
+- 未配置服务地址时给出明确中文指引（不伪造结果）；`mailmerge.start` 给出邮件合并指引。
+
 ### 类型错误修复（typecheck 归零）
 - `renderer/src/components/ContextMenu.tsx`：移除未使用变量 `面板`（定位仅依赖 `菜单面板宽`）。
 - `renderer/src/editor/commands.ts`：读取结果加内容兜底 `文件内容 = 结果.内容 ?? ''`，修复 TS2345 类型错误；清理粘贴与表格提取中未使用的 `行索引`（TS6133）。
