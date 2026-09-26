@@ -153,6 +153,7 @@ const SheetEditor = () => {
     notify: (文本: string) => message.info(文本),
     撤销,
     重做,
+    更新选区: set选区,
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {

@@ -53,11 +53,11 @@ describe('表格编辑器容器', () => {
     expect(await screen.findByText('已应用加粗')).toBeInTheDocument()
   })
 
-  it('点击未实现的表格命令给出中文提示', async () => {
+  it('点击待实现的表格命令给出中文指引', async () => {
     渲染表格()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '数据透视表' }))
-    expect(await screen.findByText('该功能开发中')).toBeInTheDocument()
+    expect(await screen.findByText('数据透视表需要高级聚合功能，将在后续版本提供')).toBeInTheDocument()
   })
 
   it('新建工作表后标签数量增加', async () => {
