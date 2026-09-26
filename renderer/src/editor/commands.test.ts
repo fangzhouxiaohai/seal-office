@@ -65,10 +65,24 @@ describe('命令注册表', () => {
     expect(查找命令('不存在的命令')).toBeUndefined()
   })
 
-  it('包含规格要求的未实现命令', () => {
-    ;['chart.insert', 'formula.insert', 'smartart.insert', 'mailmerge.start'].forEach((标识) => {
+  it('包含规格要求的命令', () => {
+    ;['chart.insert', 'formula.insert', 'smartart.insert', 'translate.start', 'mailmerge.start'].forEach((标识) => {
       expect(查找命令(标识), `缺少命令 ${标识}`).toBeDefined()
     })
+  })
+
+  it('翻译命令触发打开翻译面板回调', () => {
+    const 打开面板 = vi.fn()
+    命令表['translate.start'].run(构造上下文({ 打开翻译面板: 打开面板 }))
+    expect(打开面板).toHaveBeenCalledTimes(1)
+  })
+
+  it('邮件合并命令给出明确中文指引', () => {
+    const 提示 = vi.fn()
+    命令表['mailmerge.start'].run(构造上下文({ notify: 提示 }))
+    expect(提示).toHaveBeenCalledWith(
+      '邮件合并需要先准备收件人数据源（如包含姓名与邮箱的名单），该功能开发中'
+    )
   })
 })
 

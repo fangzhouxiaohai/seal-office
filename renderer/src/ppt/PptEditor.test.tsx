@@ -47,11 +47,11 @@ describe('演示文稿编辑器容器', () => {
     expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
   })
 
-  it('点击插入标签下的未实现命令给出中文提示', async () => {
+  it('点击插入标签下的图表命令给出中文指引', async () => {
     渲染演示()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '图表' }))
-    expect(await screen.findByText('该功能开发中')).toBeInTheDocument()
+    expect(await screen.findByText('图表功能需要高级图表编辑能力，将在后续版本接入')).toBeInTheDocument()
   })
 
   it('点击缩略图切换当前幻灯片', async () => {

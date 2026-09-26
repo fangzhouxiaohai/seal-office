@@ -119,6 +119,8 @@ export interface CommandContext {
   打开文献管理: () => void
   /** 打开文档比较面板 */
   打开比较面板: () => void
+  /** 打开文字翻译面板 */
+  打开翻译面板: () => void
   /** 当前会话维护的文献列表 */
   文献列表: 文献[]
 }
@@ -185,10 +187,7 @@ const 格式化命令定义: Array<[string, string, string]> = [
   ['para.alignJustify', '两端对齐', 'justifyFull'],
 ]
 
-const 未实现命令定义: Array<[string, string]> = [
-  ['translate.start', '翻译'],
-  ['mailmerge.start', '邮件合并'],
-]
+const 未实现命令定义: Array<[string, string]> = []
 
 /** 带参数或需要读取当前状态的字体命令 */
 const 字体命令: EditorCommand[] = [
@@ -575,6 +574,12 @@ const 审阅命令: EditorCommand[] = [
   }),
   生成回调命令('compare.start', '比较', (上下文) => 上下文.打开比较面板()),
   生成回调命令('merge.start', '合并', (上下文) => 上下文.打开比较面板()),
+  /** 文字翻译：打开翻译面板，由容器负责具体调用链 */
+  生成回调命令('translate.start', '翻译', (上下文) => 上下文.打开翻译面板()),
+  /** 邮件合并：需要收件人数据源，当前仅给出明确指引 */
+  生成回调命令('mailmerge.start', '邮件合并', (上下文) =>
+    上下文.notify('邮件合并需要先准备收件人数据源（如包含姓名与邮箱的名单），该功能开发中')
+  ),
 ]
 
 /** 视图命令 */

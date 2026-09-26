@@ -112,10 +112,21 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
+    if (标识 === 'edit.cut' || 标识 === 'edit.copy') {
+      标识 = 'clipboard.copy'
+    } else if (标识 === 'edit.paste') {
+      标识 = 'clipboard.paste'
+    }
     if (标识 === 'view.gridlines') {
       const 目标 = !显示网格线
       set显示网格线(目标)
       message.info(目标 ? '已显示网格线' : '已隐藏网格线')
+      return
+    }
+    if (标识 === 'view.normal') {
+      // 当前即普通视图；此命令用于切换视图，普通视图为默认呈现
+      message.info('已切换到普通视图')
       return
     }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
@@ -271,10 +282,6 @@ const PptEditor = () => {
     }
     if (标识 === 'edit.redo') {
       重做()
-      return
-    }
-    if (标识 === 'edit.cut' || 标识 === 'edit.copy' || 标识 === 'edit.paste') {
-      message.info('剪切、复制、粘贴功能待接入')
       return
     }
     const 命令 = 查找演示命令(标识)

@@ -11,6 +11,7 @@ import { 检查文本 } from './spellCheck'
 import TableGridPicker from './TableGridPicker'
 import SourceManager from './SourceManager'
 import CompareDialog from './CompareDialog'
+import TranslateDialog from './TranslateDialog'
 import { 比较文本, 抽取文本, 生成修订Html, 统计差异 } from './compare'
 import type { 文献 } from './citation'
 import RibbonTabs from './ribbon/RibbonTabs'
@@ -137,6 +138,7 @@ const DocEditor = () => {
   const [网格打开, set网格打开] = useState(false)
   const [文献面板打开, set文献面板打开] = useState(false)
   const [比较面板打开, set比较面板打开] = useState(false)
+  const [翻译面板打开, set翻译面板打开] = useState(false)
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
   /** 右键菜单状态 */
@@ -530,6 +532,7 @@ const DocEditor = () => {
     打开表格网格: () => set网格打开(true),
     打开文献管理: () => set文献面板打开(true),
     打开比较面板: () => set比较面板打开(true),
+    打开翻译面板: () => set翻译面板打开(true),
     文献列表,
   }
 
@@ -682,6 +685,10 @@ const DocEditor = () => {
         set比较面板打开(false)
         message.success('已合并为修订标记，可用接受修订或拒绝修订收敛')
       },
+    }),
+    React.createElement(TranslateDialog, {
+      open: 翻译面板打开,
+      onClose: () => set翻译面板打开(false),
     }),
     视图.标尺 ? React.createElement(Ruler, null) : null,
     React.createElement(

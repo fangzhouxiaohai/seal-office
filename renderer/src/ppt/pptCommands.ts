@@ -9,6 +9,7 @@ import {
   更新文本框,
   切换幻灯片,
   读取当前幻灯片,
+  移动幻灯片,
   文本转片段,
   检测选中片段,
   应用格式到选中片段,
@@ -97,6 +98,31 @@ const 背景映射: Record<string, string> = {
   浅绿: '#EAF7F1',
   浅灰: '#F5F7FA',
   深色: '#1F2733',
+}
+
+/** 剪贴板缓存：跨命令暂存最近一次复制的文本框 */
+let 剪贴板缓存: 文本框 | null = null
+
+/** 应用背景色到当前幻灯片（design.background 与 slide.background 共用） */
+function 应用背景色命令(上下文: 演示命令上下文, 参数?: string): void {
+  const 当前 = 读取当前幻灯片(上下文.文稿)
+  if (当前 === null) {
+    return
+  }
+  const 颜色 = 背景映射[参数 ?? '白色'] ?? '#FFFFFF'
+  上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 背景色: 颜色 }))
+  上下文.notify(`已将背景改为${参数 ?? '白色'}`)
+}
+
+/** 应用版式到当前幻灯片（design.layout 与 slide.layout 共用） */
+function 应用版式命令(上下文: 演示命令上下文, 参数?: string): void {
+  const 当前 = 读取当前幻灯片(上下文.文稿)
+  if (当前 === null) {
+    return
+  }
+  const 版式 = (参数 ?? '标题和内容') as 版式类型
+  上下文.更新文稿(应用版式(上下文.文稿, 当前.id, 版式))
+  上下文.notify(`已应用「${版式}」版式`)
 }
 
 const 命令列表: 演示命令[] = [
@@ -281,32 +307,11 @@ const 命令列表: 演示命令[] = [
       )
     },
   },
-  {
-    id: 'design.background',
-    label: '背景色',
-    run: (上下文, 参数) => {
-      const 当前 = 读取当前幻灯片(上下文.文稿)
-      if (当前 === null) {
-        return
-      }
-      const 颜色 = 背景映射[参数 ?? '白色'] ?? '#FFFFFF'
-      上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 背景色: 颜色 }))
-      上下文.notify(`已将背景改为${参数 ?? '白色'}`)
-    },
-  },
-  {
-    id: 'design.layout',
-    label: '版式',
-    run: (上下文, 参数) => {
-      const 当前 = 读取当前幻灯片(上下文.文稿)
-      if (当前 === null) {
-        return
-      }
-      const 版式 = (参数 ?? '标题和内容') as 版式类型
-      上下文.更新文稿(应用版式(上下文.文稿, 当前.id, 版式))
-      上下文.notify(`已应用「${版式}」版式`)
-    },
-  },
+  { id: 'design.background', label: '背景色', run: 应用背景色命令 },
+  { id: 'design.layout', label: '版式', run: 应用版式命令 },
+  // 右键菜单命令：与设计标签行为一致，但命令标识不同，需单独注册
+  { id: 'slide.background', label: '设置背景', run: 应用背景色命令 },
+  { id: 'slide.layout', label: '版式', run: 应用版式命令 },
   {
     id: 'view.prev',
     label: '上一张',
@@ -331,6 +336,168 @@ const 命令列表: 演示命令[] = [
       上下文.更新文稿(新文稿)
     },
   },
+  {
+    id: 'slide.moveUp',
+    label: '上移',
+    run: (上下文) => {
+      const 新文稿 = 移动幻灯片(上下文.文稿, -1)
+      if (新文稿 === 上下文.文稿) {
+        上下文.notify('已是第一张幻灯片')
+        return
+      }
+      上下文.更新文稿(新文稿)
+    },
+  },
+  {
+    id: 'slide.moveDown',
+    label: '下移',
+    run: (上下文) => {
+      const 新文稿 = 移动幻灯片(上下文.文稿, 1)
+      if (新文稿 === 上下文.文稿) {
+        上下文.notify('已是最后一张幻灯片')
+        return
+      }
+      上下文.更新文稿(新文稿)
+    },
+  },
+  {
+    id: 'clipboard.copy',
+    label: '复制',
+    run: (上下文) => {
+      const 框 = 取选中框(上下文)
+      if (框 === null) {
+        上下文.notify('请先在画布中选中一个文本框')
+        return
+      }
+      剪贴板缓存 = {
+        ...框,
+        片段列表: 框.片段列表 ? 框.片段列表.map((片段) => ({ ...片段 })) : undefined,
+      }
+      上下文.notify('已复制文本框')
+    },
+  },
+  {
+    id: 'clipboard.paste',
+    label: '粘贴',
+    run: (上下文) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null || 剪贴板缓存 === null) {
+        上下文.notify('剪贴板为空，请先复制文本框')
+        return
+      }
+      const 源 = 剪贴板缓存
+      const 新框 = 创建文本框(源.x, 源.y, 源.width, 源.height, 源.text, 源.字号)
+      新框.加粗 = 源.加粗
+      新框.斜体 = 源.斜体
+      新框.下划线 = 源.下划线
+      新框.颜色 = 源.颜色
+      新框.对齐 = 源.对齐
+      if (源.片段列表 && 源.片段列表.length > 0) {
+        新框.片段列表 = 源.片段列表.map((片段) => ({ ...片段 }))
+      }
+      上下文.更新文稿(
+        更新幻灯片(上下文.文稿, 当前.id, {
+          文本框列表: [...当前.文本框列表, 新框],
+        })
+      )
+      上下文.notify('已粘贴文本框')
+    },
+  },
+  {
+    id: 'transition.fade',
+    label: '淡入淡出',
+    run: (上下文) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null) return
+      上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 过渡效果: '淡入淡出' }))
+      上下文.notify('已设置过渡效果：淡入淡出')
+    },
+  },
+  {
+    id: 'transition.push',
+    label: '推进',
+    run: (上下文) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null) return
+      上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 过渡效果: '推进' }))
+      上下文.notify('已设置过渡效果：推进')
+    },
+  },
+  {
+    id: 'animation.appear',
+    label: '出现',
+    run: (上下文) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null) return
+      上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 动画: '出现' }))
+      上下文.notify('已设置动画效果：出现')
+    },
+  },
+  {
+    id: 'animation.fade',
+    label: '淡出',
+    run: (上下文) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null) return
+      上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 动画: '淡出' }))
+      上下文.notify('已设置动画效果：淡出')
+    },
+  },
+  {
+    id: 'slideshow.start',
+    label: '从头开始',
+    run: (上下文) => {
+      上下文.更新文稿(切换幻灯片(上下文.文稿, 0))
+      上下文.notify('已从头开始放映，请在放映视图播放')
+    },
+  },
+  {
+    id: 'slideshow.current',
+    label: '从当前开始',
+    run: (上下文) => {
+      上下文.notify('已准备从当前幻灯片开始放映，请在放映视图播放')
+    },
+  },
+  {
+    id: 'review.spell',
+    label: '拼写检查',
+    run: (上下文) => 上下文.notify('拼写检查功能将在后续版本接入，将逐词校验幻灯片文本并给出建议'),
+  },
+  {
+    id: 'review.comment',
+    label: '新建批注',
+    run: (上下文) => 上下文.notify('新建批注功能将在后续版本接入，可在幻灯片任意位置添加批注'),
+  },
+  {
+    id: 'insert.chart',
+    label: '图表',
+    run: (上下文) => 上下文.notify('图表功能需要高级图表编辑能力，将在后续版本接入'),
+  },
+  {
+    id: 'insert.picture',
+    label: '图片',
+    run: (上下文) => 上下文.notify('图片插入需要本地图片选择与嵌入能力，将在后续版本接入'),
+  },
+  {
+    id: 'insert.table',
+    label: '表格',
+    run: (上下文) => 上下文.notify('表格插入需要表格编辑组件，将在后续版本接入'),
+  },
+  {
+    id: 'insert.media',
+    label: '音频与视频',
+    run: (上下文) => 上下文.notify('音视频插入需要媒体播放与嵌入能力，将在后续版本接入'),
+  },
+  {
+    id: 'view.slideSorter',
+    label: '幻灯片浏览',
+    run: (上下文) => 上下文.notify('幻灯片浏览视图将在后续版本接入，可整体预览并拖拽排序'),
+  },
+  {
+    id: 'view.notes',
+    label: '备注页',
+    run: (上下文) => 上下文.notify('备注页视图将在后续版本接入，可为每张幻灯片编辑备注'),
+  },
 ]
 
 export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce<
@@ -340,25 +507,8 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
   return 累计
 }, {})
 
-/** 尚未实现的演示命令 */
-export const 演示未实现清单: Array<[string, string]> = [
-  ['clipboard.copy', '复制'],
-  ['clipboard.paste', '粘贴'],
-  ['transition.fade', '淡入淡出'],
-  ['transition.push', '推进'],
-  ['animation.appear', '出现'],
-  ['animation.fade', '淡出'],
-  ['slideshow.start', '从头开始'],
-  ['slideshow.current', '从当前开始'],
-  ['review.spell', '拼写检查'],
-  ['review.comment', '新建批注'],
-  ['insert.chart', '图表'],
-  ['insert.picture', '图片'],
-  ['insert.table', '表格'],
-  ['insert.media', '音频与视频'],
-  ['view.slideSorter', '幻灯片浏览'],
-  ['view.notes', '备注页'],
-]
+/** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
+export const 演示未实现清单: Array<[string, string]> = []
 
 演示未实现清单.forEach(([id, label]) => {
   演示命令表[id] = 未实现演示命令(id, label)

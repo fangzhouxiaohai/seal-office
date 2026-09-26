@@ -40,12 +40,11 @@ describe('编辑器容器', () => {
     expect(within(功能区).getByText('插图')).toBeInTheDocument()
   })
 
-  it('点击未实现命令给出中文提示', async () => {
+  it('点击翻译命令打开翻译面板', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
-    // 翻译属于尚未实现的功能（需要外部服务），用于验证未实现提示
     await userEvent.click(screen.getByRole('button', { name: '翻译' }))
-    expect(await screen.findByText('该功能开发中')).toBeInTheDocument()
+    expect(await screen.findByPlaceholderText('在此输入要翻译的内容')).toBeInTheDocument()
   })
 
   // jsdom 不支持 execCommand 的真实插入，因此这里只验证命令被正确派发并给出中文提示，

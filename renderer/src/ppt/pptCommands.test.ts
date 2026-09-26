@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { 查找演示命令, 取选中框, type 演示命令上下文, 演示未实现清单, 演示命令标识列表 } from './pptCommands'
-import { 创建演示文稿, 读取当前幻灯片 } from './deck'
+import { 查找演示命令, 取选中框, type 演示命令上下文, 演示命令标识列表 } from './pptCommands'
+import { 创建演示文稿, 添加幻灯片, 读取当前幻灯片 } from './deck'
 
 const 构造上下文 = () => {
   const 文稿 = 创建演示文稿()
@@ -77,7 +77,7 @@ describe('演示命令：未选中文本框', () => {
   })
 })
 
-describe('演示命令：剪贴板按钮', () => {
+describe('演示命令：剪贴板', () => {
   it('clipboard.copy 命令已注册', () => {
     expect(查找演示命令('clipboard.copy')).toBeDefined()
   })
@@ -86,26 +86,94 @@ describe('演示命令：剪贴板按钮', () => {
     expect(查找演示命令('clipboard.paste')).toBeDefined()
   })
 
-  it('clipboard.copy 点击时显示功能开发中提示', () => {
-    const { 上下文, 通知 } = 构造上下文()
-    查找演示命令('clipboard.copy')?.run(上下文)
-    expect(通知).toHaveBeenCalledWith('该功能开发中')
-  })
-
-  it('clipboard.paste 点击时显示功能开发中提示', () => {
+  it('clipboard.paste 在空剪贴板时提示先复制', () => {
     const { 上下文, 通知 } = 构造上下文()
     查找演示命令('clipboard.paste')?.run(上下文)
-    expect(通知).toHaveBeenCalledWith('该功能开发中')
+    expect(通知).toHaveBeenCalledWith('剪贴板为空，请先复制文本框')
   })
 
-  it('ribbonSpecs 声明的 clipboard 命令都在未实现清单中', () => {
-    const 未实现集合 = new Set(演示未实现清单.map(([id]) => id))
-    expect(未实现集合.has('clipboard.copy')).toBe(true)
-    expect(未实现集合.has('clipboard.paste')).toBe(true)
+  it('clipboard.copy 复制选中文本框并给出中文提示', () => {
+    const { 上下文, 通知 } = 构造上下文()
+    查找演示命令('clipboard.copy')?.run(上下文)
+    expect(通知).toHaveBeenCalledWith('已复制文本框')
   })
 
-  it('ribbonSpecs 声明的 clipboard 命令都在命令标识列表中', () => {
+  it('clipboard.copy 未选中时提示先选中文本框', () => {
+    const { 上下文, 通知 } = 构造上下文()
+    查找演示命令('clipboard.copy')?.run({ ...上下文, 选中框标识: null })
+    expect(通知).toHaveBeenCalledWith('请先在画布中选中一个文本框')
+  })
+
+  it('clipboard.copy 后 paste 在画布复制一份文本框', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找演示命令('clipboard.copy')?.run(上下文)
+    查找演示命令('clipboard.paste')?.run(上下文)
+    const 当前 = 读取当前幻灯片(取最新())
+    expect(当前?.文本框列表).toHaveLength(2)
+    const 原框 = 当前!.文本框列表[0]
+    const 新框 = 当前!.文本框列表[1]
+    expect(新框.text).toBe(原框.text)
+    expect(新框.加粗).toBe(原框.加粗)
+    expect(新框.对齐).toBe(原框.对齐)
+    expect(新框.id).not.toBe(原框.id)
+  })
+
+  it('ribbonSpecs 声明的 clipboard 命令在命令标识列表中', () => {
     expect(演示命令标识列表).toContain('clipboard.copy')
     expect(演示命令标识列表).toContain('clipboard.paste')
+  })
+})
+
+describe('演示命令：幻灯片上移下移', () => {
+  it('slide.moveUp 把当前幻灯片上移一位', () => {
+    const { 上下文 } = 构造上下文()
+    let 文稿 = 创建演示文稿()
+    文稿 = 添加幻灯片(文稿)
+    文稿 = 添加幻灯片(文稿)
+    文稿 = { ...文稿, 当前索引: 1 }
+    const 中间标识 = 文稿.幻灯片列表[1].id
+    查找演示命令('slide.moveUp')?.run({ ...上下文, 文稿, 更新文稿: (w) => { 文稿 = w } })
+    expect(文稿.幻灯片列表[0].id).toBe(中间标识)
+    expect(文稿.当前索引).toBe(0)
+  })
+
+  it('slide.moveDown 把当前幻灯片下移一位', () => {
+    const { 上下文 } = 构造上下文()
+    let 文稿 = 创建演示文稿()
+    文稿 = 添加幻灯片(文稿)
+    文稿 = 添加幻灯片(文稿)
+    文稿 = { ...文稿, 当前索引: 1 }
+    const 中间标识 = 文稿.幻灯片列表[1].id
+    查找演示命令('slide.moveDown')?.run({ ...上下文, 文稿, 更新文稿: (w) => { 文稿 = w } })
+    expect(文稿.幻灯片列表[2].id).toBe(中间标识)
+    expect(文稿.当前索引).toBe(2)
+  })
+
+  it('slide.moveUp 在第一张时保持不变并提示', () => {
+    const { 上下文, 通知 } = 构造上下文()
+    const 文稿 = { ...添加幻灯片(创建演示文稿()), 当前索引: 0 }
+    查找演示命令('slide.moveUp')?.run({ ...上下文, 文稿 })
+    expect(通知).toHaveBeenCalledWith('已是第一张幻灯片')
+  })
+})
+
+describe('演示命令：右键菜单版式与背景', () => {
+  it('slide.layout 应用版式', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找演示命令('slide.layout')?.run(上下文, '空白')
+    const 当前 = 读取当前幻灯片(取最新())
+    expect(当前?.版式).toBe('空白')
+    expect(当前?.文本框列表).toHaveLength(0)
+  })
+
+  it('slide.background 应用背景色', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找演示命令('slide.background')?.run(上下文, '浅蓝')
+    expect(读取当前幻灯片(取最新())?.背景色).toBe('#EEF3FF')
+  })
+
+  it('slide.moveUp 与 slide.moveDown 均已注册', () => {
+    expect(查找演示命令('slide.moveUp')).toBeDefined()
+    expect(查找演示命令('slide.moveDown')).toBeDefined()
   })
 })
