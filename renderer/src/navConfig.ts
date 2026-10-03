@@ -34,8 +34,13 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
     { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
     { key: 'flow', label: '流程图', icon: 'flow', implemented: true },
+    { key: 'calendar', label: '日历', icon: 'calendar', implemented: true },
+    { key: 'apps', label: '应用', icon: 'apps', implemented: true },
   ],
   [
+    { key: 'desktop', label: '桌面', icon: 'desktop', implemented: true },
+    { key: 'document', label: '文档', icon: 'doc-word', implemented: true },
+    { key: 'download', label: '下载', icon: 'download-file', implemented: true },
     { key: 'settings', label: '设置', icon: 'settings', implemented: true },
     { key: 'help', label: '帮助手册', icon: 'help', implemented: true },
   ],

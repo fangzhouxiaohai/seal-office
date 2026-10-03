@@ -28,6 +28,13 @@ describe('最近文档区块', () => {
     expect(screen.getByText('大小')).toBeInTheDocument()
   })
 
+  it('列表视图把星标操作传递给对应文档', async () => {
+    const 切换星标 = vi.fn()
+    render(<RecentDocs docs={文档集} title="最近文档" viewMode="list" onToggleStar={切换星标} />)
+    await userEvent.click(screen.getByRole('button', { name: '添加星标' }))
+    expect(切换星标).toHaveBeenCalledWith('d01')
+  })
+
   it('点击列表视图按钮回传 list', async () => {
     const 回调 = vi.fn()
     render(<RecentDocs docs={文档集} title="最近文档" viewMode="grid" onViewModeChange={回调} />)

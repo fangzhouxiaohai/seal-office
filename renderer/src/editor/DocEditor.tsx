@@ -9,22 +9,25 @@ import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
 import { 检查文本 } from './spellCheck'
+import { 提取大纲 } from './toc'
+import NavigationPane from './NavigationPane'
 import TableGridPicker from './TableGridPicker'
 import SourceManager from './SourceManager'
 import CompareDialog from './CompareDialog'
 import TranslateDialog from './TranslateDialog'
+import MailMergeDialog from './MailMergeDialog'
 import { 比较文本, 抽取文本, 生成修订Html, 统计差异 } from './compare'
 import type { 文献 } from './citation'
 import RibbonTabs from './ribbon/RibbonTabs'
 import { 保存选区, 恢复选区, 选区覆盖的段落 } from './selection'
 import RibbonPanel from './ribbon/RibbonPanel'
-import DocumentTabs from './DocumentTabs'
 import EditorCanvas from './EditorCanvas'
 import Ruler from './Ruler'
 import FindReplacePanel from './FindReplacePanel'
 import EditorStatusBar from './EditorStatusBar'
 import ContextMenu from '../components/ContextMenu'
 import type { 菜单节点 } from '../components/ContextMenu'
+import type { 文字页面设置 } from '../office/docModel'
 
 const 默认视图: ViewState = {
   缩放: 1,
@@ -43,6 +46,12 @@ const 默认视图: ViewState = {
   显示批注: true,
   修订模式: false,
   文档保护: false,
+}
+
+const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距'] as const
+
+function 提取页面设置(视图: ViewState): 文字页面设置 {
+  return Object.fromEntries(布局字段.map((字段) => [字段, 视图[字段]])) as unknown as 文字页面设置
 }
 
 /** 转义正则元字符，供查找替换使用 */
@@ -115,11 +124,10 @@ const 表格模板 = (): string => {
 }
 
 const 封面模板 = (): string =>
-  '<div style="text-align:center;padding:80px 0">' +
-  '<p style="font-size:32px;font-weight:600;margin:0 0 24px">文档标题</p>' +
-  '<p style="font-size:14px;color:#5C6472;margin:0 0 8px">作者名称</p>' +
-  '<p style="font-size:14px;color:#5C6472;margin:0">2026 年 9 月</p>' +
-  '</div><div class="wps-page-break"></div>'
+  '<p style="text-align:center"><span style="font-size:32px;font-weight:600">文档标题</span></p>' +
+  '<p style="text-align:center"><span style="font-size:14px;color:#5C6472">作者名称</span></p>' +
+  '<p style="text-align:center"><span style="font-size:14px;color:#5C6472">2026 年 9 月</span></p>' +
+  '<div class="wps-page-break"></div>'
 
 const DocEditor = () => {
   const { message, modal } = AntdApp.useApp()
@@ -127,22 +135,24 @@ const DocEditor = () => {
     documents,
     activeDocumentId,
     updateEditorHtml,
+    更新文字页面设置,
     markDocumentSaved,
-    closeEditorDoc,
-    createEditorDoc,
-    setActiveDocumentId,
     文档路径,
     set文档路径,
+    查找保存路径占用,
+    更新文件指纹,
     createDoc,
   } = useAppStore()
 
   const [当前标签, set当前标签] = useState('start')
   const [视图, set视图] = useState<ViewState>(默认视图)
   const [查找打开, set查找打开] = useState(false)
+  const [导航打开, set导航打开] = useState(false)
   const [网格打开, set网格打开] = useState(false)
   const [文献面板打开, set文献面板打开] = useState(false)
   const [比较面板打开, set比较面板打开] = useState(false)
   const [翻译面板打开, set翻译面板打开] = useState(false)
+  const [邮件合并面板打开, set邮件合并面板打开] = useState(false)
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
   /** 右键菜单状态 */
@@ -188,6 +198,7 @@ const DocEditor = () => {
 
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
   const 历史表 = useRef<Map<string, HistoryStack>>(new Map())
+  const 内部写入内容 = useRef<Map<string, string>>(new Map())
   const 输入计时器 = useRef<number | null>(null)
   const 已提示导入警告 = useRef<Set<string>>(new Set())
   /** 格式刷暂存；使用稳定对象以便命令读写同一份状态 */
@@ -197,6 +208,28 @@ const DocEditor = () => {
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+
+  useEffect(() => {
+    set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, ...(当前文档?.页面设置 ?? {}) }))
+  }, [文档标识])
+
+  // 助手等外部更新直接写入状态层；把新内容加入当前文档历史，保留撤销入口。
+  useEffect(() => {
+    if (!当前文档 || !文档标识) return
+    const 已由编辑器写入 = 内部写入内容.current.get(文档标识)
+    if (已由编辑器写入 === 当前文档.html) return
+    const 历史 = 历史表.current.get(文档标识) ?? new HistoryStack()
+    if (!历史表.current.has(文档标识)) 历史表.current.set(文档标识, 历史)
+    if (输入计时器.current !== null) {
+      window.clearTimeout(输入计时器.current)
+      输入计时器.current = null
+    }
+    if (已由编辑器写入 !== undefined && 历史.current()?.html !== 已由编辑器写入) {
+      历史.record({ html: 已由编辑器写入, selection: null })
+    }
+    if (历史.current()?.html !== 当前文档.html) 历史.record({ html: 当前文档.html, selection: null })
+    内部写入内容.current.set(文档标识, 当前文档.html)
+  }, [当前文档?.html, 文档标识])
 
   useEffect(() => {
     const 现有标识 = new Set(documents.map((项) => 项.id))
@@ -228,23 +261,6 @@ const DocEditor = () => {
   const 当前保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
     ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
     : null
-
-  const 处理关闭文档 = (标识: string): void => {
-    const 文档 = documents.find((项) => 项.id === 标识)
-    if (文档 === undefined) return
-    const 当前内容 = 标识 === 文档标识 ? (编辑区引用.current?.innerHTML ?? 文档.html) : 文档.html
-    if (当前内容 === 文档.已保存Html) {
-      closeEditorDoc(标识)
-      return
-    }
-    modal.confirm({
-      title: '文档有未保存的修改',
-      content: `关闭「${文档.name}」将放弃上次保存后的修改。`,
-      okText: '放弃修改',
-      cancelText: '取消',
-      onOk: () => closeEditorDoc(标识),
-    })
-  }
 
   /** 查询格式化指令的开关状态，jsdom 等环境不支持时返回 false */
   const 查询状态 = (指令: string): boolean => {
@@ -287,6 +303,7 @@ const DocEditor = () => {
   const 同步内容 = (): void => {
     const 元素 = 编辑区引用.current
     if (元素 !== null && 文档标识.length > 0) {
+      内部写入内容.current.set(文档标识, 元素.innerHTML)
       updateEditorHtml(文档标识, 元素.innerHTML)
     }
   }
@@ -336,10 +353,28 @@ const DocEditor = () => {
           `<img src="${String(读取器.result)}" alt="${文件.name}" style="max-width:100%" /><p><br></p>`
         )
       }
-      读取器.onerror = () => message.error('图片读取失败，请重新选择')
+      读取器.onerror = () => modal.error({ title: '图片读取失败', content: '请检查图片文件后重新选择。', okText: '确定' })
       读取器.readAsDataURL(文件)
     }
     输入.click()
+  }
+
+  const 仅供网页或Pdf = (名称: string, 继续插入: () => void): void => {
+    modal.confirm({
+      title: `${名称}无法保存为 DOCX`,
+      content: `当前版本可在编辑区预览${名称}并导出网页或 PDF，但无法把它写入 DOCX。插入后，保存 DOCX 会被阻止以避免内容丢失。`,
+      okText: '仍要插入',
+      cancelText: '取消',
+      onOk: 继续插入,
+    })
+  }
+
+  const 提示不可用插入项 = (名称: string): void => {
+    modal.warning({
+      title: `${名称}暂不可用`,
+      content: `当前版本尚无法创建并完整保存${名称}。文档内容未修改。`,
+      okText: '确定',
+    })
   }
 
   const 插入资源 = (类型: InsertableKind): void => {
@@ -357,13 +392,13 @@ const DocEditor = () => {
         插入内容(表格模板())
         break
       case '图片':
-        选择图片()
+        仅供网页或Pdf('图片', 选择图片)
         break
       case '形状':
-        插入内容('<div style="width:160px;height:80px;border:1.6px solid #2B6CF6;border-radius:6px"></div><p><br></p>')
+        仅供网页或Pdf('形状', () => 插入内容('<div style="width:160px;height:80px;border:1.6px solid #2B6CF6;border-radius:6px"></div><p><br></p>'))
         break
       case '文本框':
-        插入内容('<div style="border:1px solid #E8EBF0;padding:8px 10px;border-radius:6px">文本框内容</div><p><br></p>')
+        仅供网页或Pdf('文本框', () => 插入内容('<div style="border:1px solid #E8EBF0;padding:8px 10px;border-radius:6px">文本框内容</div><p><br></p>'))
         break
       case '艺术字':
         插入内容('<p style="font-size:28px;font-weight:700;color:#2B6CF6">艺术字</p>')
@@ -378,20 +413,19 @@ const DocEditor = () => {
         插入内容('※')
         break
       case '超链接':
-        插入内容('<a href="https://www.wps.cn" style="color:#2B6CF6">链接文字</a>')
+        提示不可用插入项('超链接')
         break
       case '书签':
-        插入内容('<span style="background:#FFF3B0">书签</span>')
+        提示不可用插入项('书签')
         break
       case '脚注':
-        插入内容('<sup>[1]</sup>')
+        提示不可用插入项('脚注')
         break
       case '尾注':
-        插入内容('<sup>[i]</sup>')
+        提示不可用插入项('尾注')
         break
       default:
-        // 页眉、页脚与页码需要分节与页面模型，本轮不提供简化替代
-        message.info('该功能开发中')
+        提示不可用插入项(类型)
         break
     }
   }
@@ -546,7 +580,13 @@ const DocEditor = () => {
     notify: (文本: string) => message.info(文本),
     view: 视图,
     setView: (部分) => {
-      set视图((当前) => ({ ...当前, ...部分 }))
+      const 下一个 = { ...视图, ...部分 }
+      if (部分.纸张 !== undefined) 下一个.原始纸张 = undefined
+      if (部分.页边距 !== undefined) 下一个.原始页边距 = undefined
+      set视图(下一个)
+      if (文档标识 && 布局字段.some((字段) => Object.prototype.hasOwnProperty.call(部分, 字段))) {
+        更新文字页面设置(文档标识, 提取页面设置(下一个))
+      }
       set内容版本((值) => 值 + 1)
     },
     执行格式化,
@@ -573,6 +613,7 @@ const DocEditor = () => {
     检查拼写,
     切换全选,
     插入资源,
+    确认仅供网页或Pdf: 仅供网页或Pdf,
     设置段落样式,
     应用样式,
     切换段落类名,
@@ -581,8 +622,19 @@ const DocEditor = () => {
     格式刷暂存: 格式刷容器.current,
     当前文档名: 当前文档?.name ?? '未命名文档',
     当前文档路径: 文档路径[文档标识] ?? null,
-    打开新文档: (类型, 内容, 路径, 警告) => createDoc(类型, 内容, { 路径, 警告 }),
+    当前文件指纹: 当前文档?.文件指纹,
+    打开新文档: (类型, 内容, 路径, 警告, 页面设置, 文件指纹) => createDoc(类型, 内容, { 路径, 警告, 页面设置, 文件指纹 }),
     显示文件错误: (标题, 内容) => modal.error({ title: 标题, content: 内容 }),
+    检查保存路径: (路径) => {
+      const 占用 = 查找保存路径占用(文档标识, 路径)
+      if (!占用) return true
+      modal.warning({
+        title: '目标文件已在其他标签打开',
+        content: `「${占用.name}」正在使用该路径。请先关闭对应标签，或选择其他保存位置。`,
+        okText: '确定',
+      })
+      return false
+    },
     保真风险: 当前保真风险,
     提示保真风险: (警告: string[]) => {
       modal.warning({
@@ -607,8 +659,9 @@ const DocEditor = () => {
         onCancel: () => 完成(false),
       })
     }),
-    设置文档路径: (路径: string, 已保存内容?: string) => {
-      markDocumentSaved(文档标识, 已保存内容 ?? 编辑区引用.current?.innerHTML ?? '')
+    设置文档路径: (路径: string, 已保存内容?: string, 文件指纹?: string, 页面设置快照?: 文字页面设置) => {
+      markDocumentSaved(文档标识, 已保存内容 ?? 编辑区引用.current?.innerHTML ?? '', undefined, { 页面设置: 页面设置快照 })
+      if (文件指纹) 更新文件指纹(文档标识, 文件指纹)
       set文档路径(文档标识, 路径)
       // 保存成功后计入最近文档，按扩展名归类。
       记录最近文档(路径, 基准文件名(路径), 扩展转类型(路径))
@@ -617,13 +670,15 @@ const DocEditor = () => {
     打开文献管理: () => set文献面板打开(true),
     打开比较面板: () => set比较面板打开(true),
     打开翻译面板: () => set翻译面板打开(true),
+    打开邮件合并面板: () => set邮件合并面板打开(true),
+    切换导航窗格: () => set导航打开((当前) => !当前),
     文献列表,
   }
 
   const 执行命令 = (命令标识: string, 参数?: string): void => {
     const 命令 = 命令表[命令标识]
     if (命令 === undefined) {
-      message.error('该命令未注册')
+      modal.error({ title: '操作失败', content: '该功能未正确加载，请重新打开文档后重试。', okText: '确定' })
       return
     }
     命令.run(上下文, 参数)
@@ -728,13 +783,6 @@ const DocEditor = () => {
   return React.createElement(
     React.Fragment,
     null,
-    React.createElement(DocumentTabs, {
-      documents: documents.map((项) => ({ id: 项.id, name: 项.name })),
-      activeId: activeDocumentId,
-      onSelect: (标识: string) => setActiveDocumentId(标识),
-      onClose: 处理关闭文档,
-      onCreate: createEditorDoc,
-    }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
@@ -762,6 +810,9 @@ const DocEditor = () => {
         }
         if (命令标识 === 'view.paragraphMark') {
           return 视图.段落标记
+        }
+        if (命令标识 === 'view.navigation') {
+          return 导航打开
         }
         return false
       },
@@ -863,11 +914,31 @@ const DocEditor = () => {
       open: 翻译面板打开,
       onClose: () => set翻译面板打开(false),
     }),
+    React.createElement(MailMergeDialog, {
+      open: 邮件合并面板打开,
+      templateHtml: 编辑区引用.current?.innerHTML ?? 当前文档?.html ?? '',
+      onClose: () => set邮件合并面板打开(false),
+      onGenerate: (html: string) => createDoc('word', html, { 名称: '邮件合并结果.docx' }),
+    }),
     视图.标尺 ? React.createElement(Ruler, null) : null,
     React.createElement(
       'div',
-      { className: 'wps-editor-stage' },
-      React.createElement(EditorCanvas, {
+      { className: 'wps-editor-workspace' },
+      导航打开
+        ? React.createElement(NavigationPane, {
+            标题: 提取大纲(当前文档?.html ?? ''),
+            onClose: () => set导航打开(false),
+            onSelect: (序号: number) => {
+              const 标题 = Array.from(编辑区引用.current?.querySelectorAll('h1, h2, h3, h4, h5, h6') ?? [])
+                .filter((节点) => (节点.textContent ?? '').trim().length > 0)
+              标题[序号]?.scrollIntoView({ block: 'start' })
+            },
+          })
+        : null,
+      React.createElement(
+        'div',
+        { className: 'wps-editor-stage' },
+        React.createElement(EditorCanvas, {
         html: 当前文档?.html ?? '<p><br></p>',
         editable: !视图.文档保护,
         showParagraphMark: 视图.段落标记,
@@ -882,12 +953,16 @@ const DocEditor = () => {
         watermark: 视图.水印,
         pageBorder: 视图.页面边框,
         pageColor: 视图.页面颜色,
+        customPaper: 视图.原始纸张,
+        customMargin: 视图.原始页边距,
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素
           取历史().record({ html: 元素.innerHTML, selection: null })
+          if (文档标识) 内部写入内容.current.set(文档标识, 元素.innerHTML)
         },
         onChange: (html: string) => {
           if (文档标识.length > 0) {
+            内部写入内容.current.set(文档标识, html)
             updateEditorHtml(文档标识, html)
           }
           // 输入停止 300 毫秒后记录一次历史，使撤销能回到输入前的状态
@@ -904,7 +979,8 @@ const DocEditor = () => {
           set菜单坐标({ x, y })
           set菜单可见(true)
         },
-      })
+        })
+      )
     ),
     React.createElement(ContextMenu, {
       open: 菜单可见,

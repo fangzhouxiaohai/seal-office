@@ -3,6 +3,37 @@ import { 从Html表格构建工作表 } from './sheetImport'
 import { 读取单元格 } from './model'
 
 describe('表格 HTML 导入', () => {
+  it('CSV 文本标记避免公式计算并保留前导零', () => {
+    const 表 = 从Html表格构建工作表('<table><tr><td data-value-type="text">0012</td><td data-value-type="text">=1+1</td></tr></table>')!
+    expect(读取单元格(表, 'A1')).toMatchObject({ 原始值: '0012', 显示值: '0012', 值类型: '文本' })
+    expect(读取单元格(表, 'B1')).toMatchObject({ 原始值: '=1+1', 显示值: '=1+1', 值类型: '文本' })
+  })
+
+  it('空白单元格的数据验证与工作表保护从元数据恢复', () => {
+    const 表 = 从Html表格构建工作表('<table><tr><td></td></tr></table>', '受控表', undefined, {
+      单元格验证: { C3: { 类型: '列表', 选项: ['待办', '完成'], 允许空白: false } },
+      保护: '本机',
+    })!
+    expect(读取单元格(表, 'C3').数据验证).toEqual({ 类型: '列表', 选项: ['待办', '完成'], 允许空白: false })
+    expect(表.保护).toBe('本机')
+  })
+  it('导入基础格式、合并、行列尺寸与视图设置', () => {
+    const 表 = 从Html表格构建工作表('<table><tr><td>标题</td><td></td></tr></table>', '保真', undefined, {
+      单元格格式: { A1: { 加粗: true, 字体颜色: '#336699' } },
+      合并区域: ['A1:B1'], 列宽: { 0: 120 }, 行高: { 0: 32 },
+      冻结: { 行: 1, 列: 0 }, 筛选: { 列: 0, 值: '甲' },
+    })
+    expect(读取单元格(表!, 'A1').格式).toMatchObject({ 加粗: true, 字体颜色: '#336699' })
+    expect(表!.合并区域).toEqual(['A1:B1'])
+    expect(表!.列宽[0]).toBe(120)
+    expect(表!.行高[0]).toBe(32)
+    expect(表!.冻结).toEqual({ 行: 1, 列: 0 })
+    expect(表!.筛选).toEqual({ 列: 0, 值: '甲' })
+  })
+  it('导入工作表时带入页面设置', () => {
+    const 表 = 从Html表格构建工作表('<table><tr><td>内容</td></tr></table>', '页面', { 页边距: '宽', 方向: '横向', 纸张大小: 'B5' })
+    expect(表?.页面设置).toEqual({ 页边距: '宽', 方向: '横向', 纸张大小: 'B5' })
+  })
   it('解析行列并写入对应单元格', () => {
     const html = '<table><tbody><tr><td>甲</td><td>1</td></tr><tr><td>乙</td><td>2</td></tr></tbody></table>'
     const 表 = 从Html表格构建工作表(html)
@@ -31,6 +62,13 @@ describe('表格 HTML 导入', () => {
     const 表 = 从Html表格构建工作表(html)
     expect(读取单元格(表!, 'C1').原始值).toBe('=A1*B1')
     expect(读取单元格(表!, 'C1').显示值).toBe('6')
+  })
+
+  it('从 XLSX 表格标记恢复批注，包括空白单元格上的批注', () => {
+    const html = '<table><tbody><tr><td data-comment="请核对">10</td><td data-comment="空白批注"></td></tr></tbody></table>'
+    const 表 = 从Html表格构建工作表(html)
+    expect(读取单元格(表!, 'A1').批注).toBe('请核对')
+    expect(读取单元格(表!, 'B1').批注).toBe('空白批注')
   })
 
   it('无表格标记返回 null，空工作簿仍可重新打开', () => {

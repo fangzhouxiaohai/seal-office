@@ -35,6 +35,7 @@ describe('渲染异常兜底', () => {
       </ErrorBoundary>
     )
     expect(screen.getByText('界面渲染出现异常')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '页面加载失败' })).toBeInTheDocument()
     expect(screen.getByText('模拟渲染异常')).toBeInTheDocument()
     // Ant Design 默认会在两个汉字的按钮文案中插入空格，此处以角色查询匹配
     expect(screen.getByRole('button', { name: /重\s*试/ })).toBeInTheDocument()

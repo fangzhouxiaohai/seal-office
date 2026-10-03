@@ -36,6 +36,18 @@ describe('文件通道的数据完整性', () => {
     目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-file-channel-'))
   })
 
+  it('本机文件夹只列出可打开的办公文件并按修改时间排序', async () => {
+    fs.writeFileSync(path.join(目录, '较早.docx'), '甲')
+    fs.writeFileSync(path.join(目录, '较新.pdf'), '乙')
+    fs.writeFileSync(path.join(目录, '快捷方式.lnk'), '丙')
+    const 较早时间 = new Date('2020-01-01T00:00:00Z')
+    fs.utimesSync(path.join(目录, '较早.docx'), 较早时间, 较早时间)
+    const 结果 = await 创建通道(目录)('file.listKnownFolder', 'desktop')
+    expect(结果).toMatchObject({ 成功: true, 路径: 目录 })
+    expect(结果.文件.map((文件) => 文件.名称)).toEqual(['较新.pdf', '较早.docx'])
+    expect(await 创建通道(目录)('file.listKnownFolder', '../secret')).toMatchObject({ 成功: false })
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
     for (const 文件名 of fs.readdirSync(目录)) fs.unlinkSync(path.join(目录, 文件名))
@@ -45,13 +57,15 @@ describe('文件通道的数据完整性', () => {
   it('保存写入中断时保留原文件且清理临时文件', async () => {
     const 文件 = path.join(目录, '文档.txt')
     fs.writeFileSync(文件, '原内容')
+    const 调用 = 创建通道(目录)
+    const { 文件指纹 } = await 调用('file.readFile', 文件)
     const 原写入 = fs.writeFileSync
     vi.spyOn(fs, 'writeFileSync').mockImplementation((写入路径, ...参数) => {
       原写入(写入路径, '残缺内容')
       throw new Error('模拟写入中断')
     })
 
-    const 结果 = await 创建通道(目录)('file.saveToFile', 文件, '新内容', '文本')
+    const 结果 = await 调用('file.saveToFile', 文件, '新内容', '文本', 文件指纹)
 
     expect(结果).toMatchObject({ 成功: false, 错误: '模拟写入中断' })
     expect(fs.readFileSync(文件, 'utf8')).toBe('原内容')
@@ -61,9 +75,11 @@ describe('文件通道的数据完整性', () => {
   it('替换文件失败时保留原文件且报告失败', async () => {
     const 文件 = path.join(目录, '文档.txt')
     fs.writeFileSync(文件, '原内容')
+    const 调用 = 创建通道(目录)
+    const { 文件指纹 } = await 调用('file.readFile', 文件)
     vi.spyOn(fs, 'renameSync').mockImplementation(() => { throw new Error('模拟替换失败') })
 
-    const 结果 = await 创建通道(目录)('file.saveToFile', 文件, '新内容', '文本')
+    const 结果 = await 调用('file.saveToFile', 文件, '新内容', '文本', 文件指纹)
 
     expect(结果).toMatchObject({ 成功: false, 错误: '模拟替换失败' })
     expect(fs.readFileSync(文件, 'utf8')).toBe('原内容')
@@ -73,8 +89,10 @@ describe('文件通道的数据完整性', () => {
   it('正常保存时替换已有文件且不留下临时文件', async () => {
     const 文件 = path.join(目录, '文档.txt')
     fs.writeFileSync(文件, '原内容')
+    const 调用 = 创建通道(目录)
+    const { 文件指纹 } = await 调用('file.readFile', 文件)
 
-    const 结果 = await 创建通道(目录)('file.saveToFile', 文件, '新内容', '文本')
+    const 结果 = await 调用('file.saveToFile', 文件, '新内容', '文本', 文件指纹)
 
     expect(结果).toMatchObject({ 成功: true, 路径: 文件 })
     expect(fs.readFileSync(文件, 'utf8')).toBe('新内容')
@@ -181,6 +199,31 @@ describe('文件通道的磁盘重命名', () => {
     expect(JSON.parse(fs.readFileSync(记录路径, 'utf8'))).toEqual([
       { ...原记录[0], 路径: 新路径, 名称: '新报告.docx' },
     ])
+  })
+
+  it('已打开文件改名后返回新路径的指纹供后续保存校验', async () => {
+    const 调用 = 创建通道(目录)
+    const 原指纹 = (await 调用('file.readFile', 原路径)).文件指纹
+    const 新路径 = path.join(目录, '新报告.docx')
+
+    const 结果 = await 调用('file.rename', 原路径, '新报告', 原指纹)
+
+    expect(结果).toMatchObject({ 成功: true, 路径: 新路径, 文件指纹: expect.any(String) })
+    expect(结果.文件指纹).toBe((await 调用('file.readFile', 新路径)).文件指纹)
+    expect(结果.文件指纹).not.toBe(原指纹)
+  })
+
+  it('已打开文件在应用外变化后拒绝重命名并保留原文件', async () => {
+    const 调用 = 创建通道(目录)
+    const 原指纹 = (await 调用('file.readFile', 原路径)).文件指纹
+    fs.writeFileSync(原路径, '外部修改后的正文')
+
+    const 结果 = await 调用('file.rename', 原路径, '新报告', 原指纹)
+
+    expect(结果.成功).toBe(false)
+    expect(结果.错误).toMatch(/应用外发生变化/)
+    expect(fs.readFileSync(原路径, 'utf8')).toBe('外部修改后的正文')
+    expect(fs.existsSync(path.join(目录, '新报告.docx'))).toBe(false)
   })
 
   it('输入原扩展名时不会重复追加扩展名', async () => {

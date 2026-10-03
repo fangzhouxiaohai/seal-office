@@ -147,6 +147,10 @@ function 数值列表(参数列表: 值[]): number[] {
   return 结果
 }
 
+function 精确相等(左: 单元值, 右: 单元值): boolean {
+  return String(左).toLocaleLowerCase() === String(右).toLocaleLowerCase()
+}
+
 function 条件为真(值: 值): boolean {
   const 单元 = 取首个(值)
   if (typeof 单元 === 'boolean') {
@@ -285,6 +289,53 @@ const 函数表: Record<string, 函数实现> = {
     return Math.abs(数值)
   },
   CONCAT: (参数列表) => 参数列表.flatMap((项) => 展平(项)).map((项) => String(项)).join(''),
+  MATCH: (参数列表) => {
+    if (参数列表.length !== 3 || 转数值(参数列表[2]) !== 0) {
+      throw new Error('MATCH 需要查找值、区域和精确匹配参数 0')
+    }
+    const 查找值 = 取首个(参数列表[0])
+    const 位置 = 展平(参数列表[1]).findIndex((项) => 精确相等(项, 查找值))
+    if (位置 < 0) throw new Error('未找到匹配值')
+    return 位置 + 1
+  },
+  INDEX: (参数列表) => {
+    if (参数列表.length !== 2) throw new Error('INDEX 需要一维区域和位置')
+    const 位置 = 转数值(参数列表[1])
+    const 区域 = 展平(参数列表[0])
+    if (位置 === null || !Number.isInteger(位置) || 位置 < 1 || 位置 > 区域.length) {
+      throw new Error('INDEX 位置超出区域')
+    }
+    return 区域[位置 - 1]
+  },
+  XLOOKUP: (参数列表) => {
+    if (参数列表.length < 3 || 参数列表.length > 4) {
+      throw new Error('XLOOKUP 需要查找值、查找区域和返回区域')
+    }
+    const 查找区域 = 展平(参数列表[1])
+    const 返回区域 = 展平(参数列表[2])
+    if (查找区域.length !== 返回区域.length || 查找区域.length === 0) {
+      throw new Error('XLOOKUP 的两个区域长度必须相同')
+    }
+    const 查找值 = 取首个(参数列表[0])
+    const 位置 = 查找区域.findIndex((项) => 精确相等(项, 查找值))
+    if (位置 >= 0) return 返回区域[位置]
+    if (参数列表.length === 4) return 取首个(参数列表[3])
+    throw new Error('未找到匹配值')
+  },
+  PMT: (参数列表) => {
+    if (参数列表.length !== 3) throw new Error('PMT 需要每期利率、期数和现值')
+    const 利率 = 转数值(参数列表[0])
+    const 期数 = 转数值(参数列表[1])
+    const 现值 = 转数值(参数列表[2])
+    if (利率 === null || 期数 === null || 现值 === null || 期数 <= 0 || 利率 <= -1) {
+      throw new Error('PMT 参数无效')
+    }
+    if (利率 === 0) return -现值 / 期数
+    const 增长 = Math.pow(1 + 利率, 期数)
+    const 结果 = -现值 * 利率 * 增长 / (增长 - 1)
+    if (!Number.isFinite(结果)) throw new Error('PMT 计算结果无效')
+    return 结果
+  },
 }
 
 // ===== 递归下降解析 =====

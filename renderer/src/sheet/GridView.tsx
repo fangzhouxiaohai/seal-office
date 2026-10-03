@@ -16,6 +16,10 @@ interface Props {
   编辑值: string
   /** 缩放比例，使用 zoom 实现，避免 transform 影响滚动与命中区域 */
   scale?: number
+  /** 冻结前若干行与列；零表示该方向不冻结 */
+  冻结?: { 行: number; 列: number }
+  /** 筛选隐藏的数据行，地址与原始行号保持不变 */
+  隐藏行?: Set<number>
   on选中: (位置: 单元格位置, 扩展选区: boolean) => void
   on双击: (地址: string) => void
   on编辑值变化: (值: string) => void
@@ -32,6 +36,7 @@ interface Props {
   on列宽拖动开始?: (列: number, 起始横坐标: number) => void
   /** 右键点击回调，返回坐标 */
   onContextMenu?: (x: number, y: number) => void
+  on删除图片?: (标识: string) => void
 }
 
 /** 判断位置是否落在选区内 */
@@ -68,6 +73,8 @@ const GridView = ({
   编辑地址,
   编辑值,
   scale = 1,
+  冻结,
+  隐藏行,
   on选中,
   on双击,
   on编辑值变化,
@@ -80,6 +87,7 @@ const GridView = ({
   on拖选扩展,
   on列宽拖动开始,
   onContextMenu,
+  on删除图片,
 }: Props) => {
   /** 拖选进行中标记：左键按下时置位，document mouseup 时复位 */
   const 拖选中 = useRef(false)
@@ -93,13 +101,19 @@ const GridView = ({
   }, [])
   const 列标 = Array.from({ length: 工作表.列数 }, (_, 列) => 列转字母(列))
   const 行号 = Array.from({ length: 工作表.行数 }, (_, 行) => 行 + 1)
+  const 冻结行 = Math.max(0, Math.min(冻结?.行 ?? 0, 工作表.行数))
+  const 冻结列 = Math.max(0, Math.min(冻结?.列 ?? 0, 工作表.列数))
+  const 列左偏移 = [46]
+  for (let 列 = 0; 列 < 工作表.列数; 列 += 1) 列左偏移.push(列左偏移[列] + (工作表.列宽[列] ?? 默认列宽))
+  const 行顶偏移 = [24]
+  for (let 行 = 0; 行 < 工作表.行数; 行 += 1) 行顶偏移.push(行顶偏移[行] + (隐藏行?.has(行) ? 0 : 工作表.行高[行] ?? 默认行高))
 
   // 第一行为角落与列标，其余每行为行号加该行单元格；全部显式定位以支持合并单元格
   const 网格子元素: React.ReactNode[] = [
     React.createElement('div', {
       key: 'corner',
       className: 'wps-sheet__corner',
-      style: { gridColumn: 1, gridRow: 1 },
+      style: { gridColumn: 1, gridRow: 1, zIndex: 8 },
       onClick: on全选,
       title: '全选',
     }),
@@ -109,7 +123,7 @@ const GridView = ({
         {
           key: `col-${字母}`,
           className: 'wps-sheet__col',
-          style: { gridColumn: 列 + 2, gridRow: 1 },
+          style: { gridColumn: 列 + 2, gridRow: 1, zIndex: 6, ...(列 < 冻结列 ? { left: 列左偏移[列] } : {}) },
           onClick: () => on选中整列(列),
         },
         字母,
@@ -131,13 +145,14 @@ const GridView = ({
   ]
 
   行号.forEach((号, 行) => {
+    if (隐藏行?.has(行)) return
     网格子元素.push(
       React.createElement(
         'div',
         {
           key: `row-${号}`,
           className: 'wps-sheet__rownum',
-          style: { gridColumn: 1, gridRow: 行 + 2 },
+          style: { gridColumn: 1, gridRow: 行 + 2, zIndex: 6, ...(行 < 冻结行 ? { top: 行顶偏移[行] } : {}) },
           onClick: () => on选中整行(行),
         },
         号
@@ -158,6 +173,7 @@ const GridView = ({
         'wps-sheet__cell',
         选中 ? 'wps-sheet__cell--selected' : '',
         编辑中 ? 'wps-sheet__cell--editing' : '',
+        单元.批注 ? 'wps-sheet__cell--commented' : '',
       ]
         .filter((项) => 项.length > 0)
         .join(' ')
@@ -169,12 +185,17 @@ const GridView = ({
             key: 地址,
             className: 类名,
             'data-地址': 地址,
+            title: 单元.批注 ? `批注：${单元.批注}` : undefined,
             style: {
               gridColumn: 合并 !== null && 合并.是左上角 ? `${列 + 2} / span ${合并.跨度列}` : 列 + 2,
               gridRow: 合并 !== null && 合并.是左上角 ? `${行 + 2} / span ${合并.跨度行}` : 行 + 2,
               width: `${工作表.列宽[列] ?? 默认列宽}px`,
               height: `${工作表.行高[行] ?? 默认行高}px`,
               textAlign: 单元.格式.水平对齐 ?? 'left',
+              justifyContent: 单元.格式.水平对齐 === 'right' ? 'flex-end' : 单元.格式.水平对齐 === 'center' ? 'center' : 'flex-start',
+              alignItems: 单元.格式.垂直对齐 === 'top' ? 'flex-start' : 单元.格式.垂直对齐 === 'bottom' ? 'flex-end' : 'center',
+              fontFamily: 单元.格式.字体,
+              fontSize: 单元.格式.字号 === undefined ? undefined : `${单元.格式.字号}px`,
               fontWeight: 单元.格式.加粗 === true ? 600 : 400,
               fontStyle: 单元.格式.斜体 === true ? 'italic' : 'normal',
               textDecoration: 单元.格式.下划线 === true ? 'underline' : 'none',
@@ -183,6 +204,14 @@ const GridView = ({
               boxShadow: 边框阴影(单元.格式.边框),
               // 自动换行必须由渲染层消费，否则命令写了格式而界面无变化
               whiteSpace: 单元.格式.自动换行 === true ? 'pre-wrap' : 'nowrap',
+              position: 单元.批注 ? 'relative' : undefined,
+              ...(行 < 冻结行 || 列 < 冻结列 ? {
+                position: 'sticky',
+                ...(行 < 冻结行 ? { top: 行顶偏移[行] } : {}),
+                ...(列 < 冻结列 ? { left: 列左偏移[列] } : {}),
+                zIndex: 行 < 冻结行 && 列 < 冻结列 ? 5 : 3,
+                background: 单元.格式.填充颜色 ?? (选中 ? 'var(--brand-soft)' : 'var(--bg-card)'),
+              } as React.CSSProperties : {}),
             },
             onMouseDown: (事件: React.MouseEvent) => {
               if (事件.button === 2) {
@@ -205,7 +234,24 @@ const GridView = ({
             },
             onDoubleClick: () => on双击(地址),
           },
-          编辑中
+          编辑中 && 单元.数据验证?.类型 === '列表'
+            ? React.createElement('select', {
+                className: 'wps-sheet__editor',
+                'aria-label': `${地址} 选项`,
+                value: 编辑值,
+                autoFocus: true,
+                onChange: (事件: React.ChangeEvent<HTMLSelectElement>) => on编辑值变化(事件.target.value),
+                onKeyDown: (事件: React.KeyboardEvent) => {
+                  if (事件.key === 'Enter') on提交编辑()
+                  if (事件.key === 'Escape') on取消编辑()
+                },
+                onBlur: on提交编辑,
+              }, [
+                ...(单元.数据验证.允许空白 ? [React.createElement('option', { key: '', value: '' }, '空白')] : []),
+                ...(!单元.数据验证.选项.includes(编辑值) && 编辑值 !== '' ? [React.createElement('option', { key: 编辑值, value: 编辑值 }, `${编辑值}（原值）`)] : []),
+                ...单元.数据验证.选项.map((选项) => React.createElement('option', { key: 选项, value: 选项 }, 选项)),
+              ])
+            : 编辑中
             ? React.createElement('input', {
                 className: 'wps-sheet__editor',
                 value: 编辑值,
@@ -228,8 +274,45 @@ const GridView = ({
     }
   })
 
+  ;(工作表.图片 ?? []).forEach((图片) => {
+    if (图片.格式 !== 'png' && 图片.格式 !== 'jpeg') return
+    if (!Number.isInteger(图片.行) || !Number.isInteger(图片.列) ||
+      图片.行 < 0 || 图片.行 >= 工作表.行数 || 图片.列 < 0 || 图片.列 >= 工作表.列数) return
+    网格子元素.push(React.createElement('div', {
+      key: `image-${图片.id}`,
+      className: 'wps-sheet__image',
+      style: {
+        gridColumn: 图片.列 + 2,
+        gridRow: 图片.行 + 2,
+        width: 图片.宽,
+        height: 图片.高,
+        zIndex: 2,
+        ...(图片.行 < 冻结行 || 图片.列 < 冻结列 ? {
+          position: 'sticky',
+          ...(图片.行 < 冻结行 ? { top: 行顶偏移[图片.行] } : {}),
+          ...(图片.列 < 冻结列 ? { left: 列左偏移[图片.列] } : {}),
+        } as React.CSSProperties : {}),
+      },
+      onMouseDown: (事件: React.MouseEvent) => 事件.stopPropagation(),
+    },
+    React.createElement('img', {
+      src: `data:image/${图片.格式};base64,${图片.数据}`,
+      alt: '工作表图片',
+      draggable: false,
+    }),
+    on删除图片 ? React.createElement('button', {
+      type: 'button',
+      'aria-label': `删除 ${生成地址(图片.行, 图片.列)} 的图片`,
+      title: '删除图片',
+      onClick: (事件: React.MouseEvent) => {
+        事件.stopPropagation()
+        on删除图片(图片.id)
+      },
+    }, '删除') : null))
+  })
+
   const 列宽模板 = 工作表.列宽.map((宽) => `${宽}px`).join(' ')
-  const 行高模板 = 工作表.行高.map((高) => `${高}px`).join(' ')
+  const 行高模板 = 工作表.行高.map((高, 行) => `${隐藏行?.has(行) ? 0 : 高}px`).join(' ')
 
   return React.createElement(
     'div',

@@ -1,6 +1,7 @@
-export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 扩展名?: string; 错误?: string }
-export interface 文件保存结果 { 成功: boolean; 路径?: string; 错误?: string }
-export interface 文件重命名结果 { 成功: boolean; 路径?: string; 名称?: string; 错误?: string }
+export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 扩展名?: string; 文件指纹?: string; 错误?: string }
+export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string }
+export interface 文件重命名结果 { 成功: boolean; 路径?: string; 名称?: string; 文件指纹?: string; 错误?: string }
+export interface 完整性检查结果 { 成功: boolean; 完整?: boolean; 检查文件数?: number; 异常?: Array<{ 路径: string; 原因: string }>; 错误?: string }
 /** 最近文档的持久化记录（主进程 recent.json） */
 export interface 最近文档记录 {
   路径: string
@@ -10,14 +11,26 @@ export interface 最近文档记录 {
   时间?: number
 }
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
+export interface 助手配置 { 名称: string; 地址: string; 模型: string; 已配置密钥: boolean }
+export interface 助手配置输入 { 名称: string; 地址: string; 模型: string; 密钥?: string; 清除密钥?: boolean }
+export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string }
+export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string }
+export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
+export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
+export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
-  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制') => Promise<文件保存结果>
+  showOpenDialogMany: (打开类型: 'pdf') => Promise<string[]>
+  takePendingAssociatedFiles: () => Promise<关联文件领取结果>
+  onAssociatedFilesAvailable: (回调: () => void) => () => void
+  listKnownFolder: (位置: 'desktop' | 'document' | 'download') => Promise<本机文件夹结果>
+  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null) => Promise<文件保存结果>
   readFile: (路径: string) => Promise<文件读取结果>
-  renameFile: (旧路径: string, 新名称: string) => Promise<文件重命名结果>
+  renameFile: (旧路径: string, 新名称: string, 预期文件指纹?: string) => Promise<文件重命名结果>
   backupSave: (内容: string) => Promise<{ 成功: boolean; 错误?: string }>
   backupLoad: () => Promise<{ 成功: boolean; 内容?: string | null; 错误?: string }>
+  backupPreserve: (已读取内容?: string) => Promise<{ 成功: boolean; 路径?: string; 错误?: string }>
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -25,9 +38,18 @@ export interface 电子接口 {
   revealInFolder: (路径: string) => Promise<{ 成功: boolean; 错误?: string }>
   exportToPdf: (html: string, 默认文件名: string) => Promise<文件保存结果 & { 已取消?: boolean }>
   reportUnsavedCount: (数量: number) => Promise<{ 成功: boolean; 错误?: string }>
+  onCloseStateRequested: (回调: (标识: string) => void) => () => void
+  respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
   setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
+  checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
+  ai: {
+    getConfig: () => Promise<助手结果<助手配置>>
+    saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>
+    clearConfig: () => Promise<助手结果<助手配置>>
+    chat: (对话: 助手对话输入) => Promise<助手结果<{ 内容: string }>>
+  }
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
@@ -36,13 +58,31 @@ const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? win
 const 失败 = (提示: string) => Promise.resolve({ 成功: false, 错误: 提示 })
 export const 桥接 = {
   get 可用() { return 取后端() !== null },
+  get 关联文件可用() { return typeof 取后端()?.takePendingAssociatedFiles === 'function' && typeof 取后端()?.onAssociatedFilesAvailable === 'function' },
   showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showOpenDialog(打开类型) ?? Promise.resolve(null),
-  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制') => 取后端()?.saveToFile(路径, 内容, 格式) ?? 失败('当前环境不支持文件保存'),
+  showOpenDialogMany: (打开类型: 'pdf') => 取后端()?.showOpenDialogMany(打开类型) ?? Promise.resolve([]),
+  takePendingAssociatedFiles: (): Promise<关联文件领取结果> => 取后端()?.takePendingAssociatedFiles?.() ?? 失败('当前环境不支持从系统文件关联打开文件'),
+  onAssociatedFilesAvailable: (回调: () => void): (() => void) => 取后端()?.onAssociatedFilesAvailable?.(回调) ?? (() => {}),
+  listKnownFolder: (位置: 'desktop' | 'document' | 'download'): Promise<本机文件夹结果> => 取后端()?.listKnownFolder(位置) ?? 失败('请使用 Windows 桌面版浏览本机文件夹'),
+  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null): Promise<文件保存结果> => {
+    const 后端 = 取后端()
+    if (!后端) return 失败('当前环境不支持文件保存')
+    return 预期文件指纹 === undefined
+      ? 后端.saveToFile(路径, 内容, 格式)
+      : 后端.saveToFile(路径, 内容, 格式, 预期文件指纹)
+  },
   readFile: (路径: string) => 取后端()?.readFile(路径) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持文件读取' }),
-  renameFile: (旧路径: string, 新名称: string): Promise<文件重命名结果> => 取后端()?.renameFile(旧路径, 新名称) ?? 失败('当前环境不支持文件重命名'),
+  renameFile: (旧路径: string, 新名称: string, 预期文件指纹?: string): Promise<文件重命名结果> => {
+    const 后端 = 取后端()
+    if (!后端) return 失败('当前环境不支持文件重命名')
+    return 预期文件指纹 === undefined
+      ? 后端.renameFile(旧路径, 新名称)
+      : 后端.renameFile(旧路径, 新名称, 预期文件指纹)
+  },
   backupSave: (内容: string) => 取后端()?.backupSave?.(内容) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持备份' }),
   backupLoad: (): Promise<{ 成功: boolean; 内容?: string | null; 错误?: string }> => 取后端()?.backupLoad?.() ?? 失败('当前环境不支持备份读取'),
+  backupPreserve: (已读取内容?: string): Promise<{ 成功: boolean; 路径?: string; 错误?: string }> => 取后端()?.backupPreserve?.(已读取内容) ?? 失败('当前环境不支持保留原始备份'),
   backupClear: () => 取后端()?.backupClear?.() ?? 失败('当前环境不支持备份清理'),
   recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
   recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
@@ -50,9 +90,19 @@ export const 桥接 = {
   revealInFolder: (路径: string) => 取后端()?.revealInFolder?.(路径) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持该操作' }),
   exportToPdf: (html: string, 名称: string) => 取后端()?.exportToPdf(html, 名称) ?? 失败('当前环境不支持 PDF 导出'),
   reportUnsavedCount: (数量: number) => 取后端()?.reportUnsavedCount(数量) ?? 失败('当前环境不支持关闭保护'),
+  onCloseStateRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onCloseStateRequested?.(回调) ?? (() => {}),
+  respondCloseState: (标识: string, 状态: 关闭状态) => 取后端()?.respondCloseState?.(标识, 状态) ?? 失败('当前环境不支持关闭前核验'),
   setDefaultApp: () => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 提示: '请使用打包后的应用设置默认程序' }),
+  checkIntegrity: (): Promise<完整性检查结果> => 取后端()?.checkIntegrity() ?? 失败('请使用 Windows 打包版本检查安装目录'),
   getHelpContent: () => 取后端()?.getHelpContent() ?? Promise.resolve({}),
   getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/seal-office/seal-office', 专业服务: '专业应用开发服务' }),
+  ai: {
+    get 可用() { return typeof 取后端()?.ai?.getConfig === 'function' && typeof 取后端()?.ai?.chat === 'function' },
+    getConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.getConfig() ?? 失败('当前环境不支持智能助手'),
+    saveConfig: (配置: 助手配置输入): Promise<助手结果<助手配置>> => 取后端()?.ai?.saveConfig(配置) ?? 失败('当前环境不支持智能助手设置'),
+    clearConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.clearConfig() ?? 失败('当前环境不支持智能助手设置'),
+    chat: (对话: 助手对话输入): Promise<助手结果<{ 内容: string }>> => 取后端()?.ai?.chat(对话) ?? 失败('当前环境不支持智能助手对话'),
+  },
   office: {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
   },

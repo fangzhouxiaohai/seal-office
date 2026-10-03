@@ -25,7 +25,7 @@ const DocCard = ({
   onRename,
   onRemove,
 }: Props) => {
-  const { message, modal } = AntdApp.useApp()
+  const { modal } = AntdApp.useApp()
   const [重命名中, set重命名中] = useState(false)
   const [草稿名称, set草稿名称] = useState(doc.name)
 
@@ -48,7 +48,7 @@ const DocCard = ({
   const 确认重命名 = async () => {
     const 规范名称 = 草稿名称.trim()
     if (规范名称.length === 0) {
-      message.warning('文档名称不能为空')
+      modal.warning({ title: '文档名称无效', content: '请输入文件名称后再保存。', okText: '确定' })
       return
     }
     try {
@@ -64,6 +64,7 @@ const DocCard = ({
       title: '从最近列表移除',
       content: `确定从最近列表移除「${doc.name}」吗？磁盘中的文件不会删除。`,
       okText: '移除',
+      okType: 'danger',
       cancelText: '取消',
       onOk: () => {
         if (onRemove !== undefined) {
@@ -71,6 +72,15 @@ const DocCard = ({
         }
       },
     })
+  }
+
+  const 打开所在文件夹 = async () => {
+    try {
+      const 结果 = await 桥接.revealInFolder(doc.路径 ?? '')
+      if (!结果.成功) throw new Error(结果.错误 || '无法定位文件')
+    } catch (错误) {
+      modal.error({ title: '打开所在文件夹失败', content: 错误 instanceof Error ? 错误.message : '无法定位文件', okText: '确定' })
+    }
   }
 
   const 菜单项 = [
@@ -91,7 +101,7 @@ const DocCard = ({
         }
         break
       case 'reveal':
-        void 桥接.revealInFolder(doc.路径 ?? '')
+        void 打开所在文件夹()
         break
       case 'rename':
         打开重命名()
@@ -116,8 +126,16 @@ const DocCard = ({
       'div',
       {
         className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}`,
+        role: 'group',
+        tabIndex: 0,
+        'aria-label': `文档 ${doc.name}，按回车打开`,
         onClick: () => onSelect && onSelect(doc.id),
         onDoubleClick: () => onOpen && onOpen(doc.id),
+        onKeyDown: (事件: React.KeyboardEvent<HTMLDivElement>) => {
+          if (事件.target !== 事件.currentTarget) return
+          if (事件.key === 'Enter') { 事件.preventDefault(); onOpen?.(doc.id) }
+          if (事件.key === ' ') { 事件.preventDefault(); onSelect?.(doc.id) }
+        },
       },
       React.createElement(
         'div',

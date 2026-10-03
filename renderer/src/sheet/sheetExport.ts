@@ -2,7 +2,7 @@
 // 导出内容取自单元格的显示值，因此公式导出的是计算结果而非公式原文。
 
 import { 生成地址, 解析地址 } from './address'
-import { 读取单元格, type Sheet } from './model'
+import { 读取单元格, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
 
 /** 计算实际有内容的范围，避免导出整张空表 */
 function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number } {
@@ -10,7 +10,7 @@ function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number 
   let 最大列 = -1
   Object.keys(工作表.单元格).forEach((地址) => {
     const 单元 = 工作表.单元格[地址]
-    if (单元.原始值.length === 0 && 单元.显示值.length === 0) {
+    if (单元.原始值.length === 0 && 单元.显示值.length === 0 && !单元.批注 && !单元.数据验证 && Object.keys(单元.格式).length === 0) {
       return
     }
     const 位置 = 解析地址(地址)
@@ -90,13 +90,25 @@ export function 生成表格文件名(工作表名: string, 扩展名: string): 
  * 公式携带表达式与计算结果；普通单元格保留原始输入。
  * 全部工作表均无内容时返回 null。
  */
-type Xlsx单元格 = string | { 公式: string; 结果: string | number }
+type Xlsx单元格 = string | { 公式: string; 结果: string | number; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证 } | { 文字: Array<{ 文本: string }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证 }
+type Xlsx工作表 = {
+  名称: string
+  数据: Xlsx单元格[][]
+  页面设置: 页面设置
+  合并区域: string[]
+  列宽: number[]
+  行高: number[]
+  冻结?: { 行: number; 列: number }
+  筛选?: { 列: number; 值: string }
+  保护?: boolean
+  图片?: SheetImage[]
+}
 
-export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Array<{ 名称: string; 数据: Xlsx单元格[][] }> } | null {
+export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Xlsx工作表[] } | null {
   const 列表 = Array.isArray(工作表或列表) ? 工作表或列表 : [工作表或列表]
   const 表定义列表 = 列表
     .map((工作表) => 构建单表模型(工作表))
-    .filter((表): 表 is { 名称: string; 数据: Xlsx单元格[][] } => 表 !== null)
+    .filter((表): 表 is Xlsx工作表 => 表 !== null)
   if (表定义列表.length === 0) {
     return null
   }
@@ -104,25 +116,38 @@ export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表:
 }
 
 /** 构建单张工作表的写入模型；空表返回 null */
-function 构建单表模型(工作表: Sheet): { 名称: string; 数据: Xlsx单元格[][] } | null {
+function 构建单表模型(工作表: Sheet): Xlsx工作表 | null {
   const { 行数, 列数 } = 计算有效范围(工作表)
-  if (行数 === 0 || 列数 === 0) {
+  const 有布局 = 工作表.合并区域.length > 0 || 工作表.冻结 !== undefined || 工作表.筛选 !== undefined || 工作表.保护 !== undefined ||
+    工作表.列宽.some((宽) => 宽 !== 默认列宽) || 工作表.行高.some((高) => 高 !== 默认行高) || (工作表.图片?.length ?? 0) > 0
+  if ((行数 === 0 || 列数 === 0) && !有布局) {
     return null
   }
   const 数据: Xlsx单元格[][] = []
-  for (let 行 = 0; 行 < 行数; 行 += 1) {
+  for (let 行 = 0; 行 < Math.max(行数, 1); 行 += 1) {
     const 单元格列表: Xlsx单元格[] = []
-    for (let 列 = 0; 列 < 列数; 列 += 1) {
+    for (let 列 = 0; 列 < Math.max(列数, 1); 列 += 1) {
       const 单元 = 读取单元格(工作表, 生成地址(行, 列))
+      const 格式 = Object.keys(单元.格式).length > 0 ? { 格式: 单元.格式 } : {}
+      const 验证 = 单元.数据验证 ? { 数据验证: 单元.数据验证 } : {}
       if (单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
         const 数值 = Number(单元.显示值)
         const 结果 = 单元.显示值.trim() !== '' && Number.isFinite(数值) ? 数值 : 单元.显示值
-        单元格列表.push({ 公式: 单元.原始值.slice(1), 结果 })
+        单元格列表.push({ 公式: 单元.原始值.slice(1), 结果, ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证 })
+      } else if (单元.批注 || Object.keys(格式).length > 0 || 单元.值类型 || 单元.数据验证) {
+        单元格列表.push({ 文字: [{ 文本: 单元.原始值 }], ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...(单元.值类型 ? { 类型: 单元.值类型 } : {}), ...格式, ...验证 })
       } else {
         单元格列表.push(单元.原始值)
       }
     }
     数据.push(单元格列表)
   }
-  return { 名称: 工作表.name, 数据 }
+  return {
+    名称: 工作表.name, 数据, 页面设置: { ...默认页面设置, ...工作表.页面设置 },
+    合并区域: [...工作表.合并区域], 列宽: [...工作表.列宽], 行高: [...工作表.行高],
+    图片: [...(工作表.图片 ?? [])],
+    ...(工作表.冻结 ? { 冻结: 工作表.冻结 } : {}),
+    ...(工作表.筛选 ? { 筛选: 工作表.筛选 } : {}),
+    ...(工作表.保护 ? { 保护: true } : {}),
+  }
 }

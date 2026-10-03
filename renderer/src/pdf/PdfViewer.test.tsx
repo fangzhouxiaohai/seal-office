@@ -34,6 +34,23 @@ describe('PDF 阅读预览', () => {
     expect(screen.getByText('125%')).toBeInTheDocument()
   })
 
+  it('窄阅读区先适配页面宽度，放大后允许横向滚动', async () => {
+    const 渲染 = vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() }))
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({ numPages: 1, getPage: vi.fn(async () => ({ getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }), render: 渲染 })) }),
+      destroy: vi.fn(),
+    })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={vi.fn()} />)
+    const 舞台 = container.querySelector('.pdf-viewer__stage') as HTMLDivElement
+    Object.defineProperty(舞台, 'clientWidth', { configurable: true, value: 400 })
+    舞台.style.padding = '24px'
+    fireEvent(window, new Event('resize'))
+    const 画布 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
+    await waitFor(() => expect(画布.style.width).toBe('352px'))
+    fireEvent.click(screen.getByRole('button', { name: '放大' }))
+    await waitFor(() => expect(画布.style.width).toBe('440px'))
+  })
+
   it('解析失败时通知工作台并显示失败状态', async () => {
     const 报错 = vi.fn()
     const 失败 = Promise.reject(new Error('文件结构损坏'))

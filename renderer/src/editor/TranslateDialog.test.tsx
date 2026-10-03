@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ConfigProvider } from 'antd'
+import { App as AntdApp, ConfigProvider } from 'antd'
 import TranslateDialog from './TranslateDialog'
 import { 读取翻译配置 } from './translateSettings'
 import { 翻译文本 } from './translate'
@@ -26,7 +26,7 @@ const 渲染面板 = (覆盖: Partial<Parameters<typeof TranslateDialog>[0]> = {
   const 回调 = { onClose: vi.fn() }
   const 结果 = render(
     <ConfigProvider button={{ autoInsertSpace: false }}>
-      <TranslateDialog open {...回调} {...覆盖} />
+      <AntdApp><TranslateDialog open {...回调} {...覆盖} /></AntdApp>
     </ConfigProvider>
   )
   return { ...结果, 回调 }
@@ -42,7 +42,7 @@ describe('文字翻译面板', () => {
   it('未打开时不渲染内容', () => {
     const { container } = render(
       <ConfigProvider button={{ autoInsertSpace: false }}>
-        <TranslateDialog open={false} onClose={() => {}} />
+        <AntdApp><TranslateDialog open={false} onClose={() => {}} /></AntdApp>
       </ConfigProvider>
     )
     expect(container.querySelector('.wps-translate')).toBeNull()

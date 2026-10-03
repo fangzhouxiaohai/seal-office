@@ -70,6 +70,12 @@ const Sidebar = ({
 
   // home、settings、help、pdf 模式：显示完整分组导航菜单
   const 当前激活键 = mode === 'settings' ? 'settings' : mode === 'help' ? 'help' : mode === 'pdf' ? 'pdf' : (activeKey ?? 'home')
+  const 处理导航 = (键: string) => {
+    if (键 === 'settings' && onShowSettings) onShowSettings()
+    else if (键 === 'help' && onShowHelp) onShowHelp()
+    else if (键 === 'pdf' && onShowPdf) onShowPdf()
+    else onSelect?.(键)
+  }
 
   return React.createElement(
     'nav',
@@ -92,20 +98,11 @@ const Sidebar = ({
               role: 'button',
               tabIndex: 0,
               className: `wps-nav-item${项.key === 当前激活键 ? ' wps-nav-item--active' : ''}`,
-              onClick: () => {
-                if (项.key === 'settings' && onShowSettings) {
-                  onShowSettings()
-                } else if (项.key === 'help' && onShowHelp) {
-                  onShowHelp()
-                } else if (项.key === 'pdf' && onShowPdf) {
-                  onShowPdf()
-                } else if (onSelect) {
-                  onSelect(项.key)
-                }
-              },
+              onClick: () => 处理导航(项.key),
               onKeyDown: (事件: React.KeyboardEvent) => {
-                if (事件.key === 'Enter' && onSelect) {
-                  onSelect(项.key)
+                if (事件.key === 'Enter' || 事件.key === ' ') {
+                  事件.preventDefault()
+                  处理导航(项.key)
                 }
               },
             },

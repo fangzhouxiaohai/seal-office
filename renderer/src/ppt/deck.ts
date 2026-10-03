@@ -17,6 +17,7 @@ export interface 文本框 {
   height: number
   text: string
   字号: number
+  字体?: string
   加粗: boolean
   斜体: boolean
   下划线: boolean
@@ -37,6 +38,8 @@ export interface 幻灯片 {
   过渡效果?: string
   /** 文本框入场动画，如「出现」「淡出」 */
   动画?: string
+  /** 当前页的演讲备注，随演示文稿保存 */
+  备注?: string
   文本框列表: 文本框[]
 }
 
@@ -165,6 +168,21 @@ export function 移动幻灯片(文稿: 演示文稿, 方向: -1 | 1): 演示文
   const [项] = 列表.splice(当前索引, 1)
   列表.splice(目标索引, 0, 项)
   return { ...文稿, 幻灯片列表: 列表, 当前索引: 目标索引 }
+}
+
+/** 将一页移动到目标位置，同时保持当前正在查看的页面。 */
+export function 重排幻灯片(文稿: 演示文稿, 来源索引: number, 目标索引: number): 演示文稿 {
+  const 数量 = 文稿.幻灯片列表.length
+  if (!Number.isInteger(来源索引) || !Number.isInteger(目标索引) ||
+      来源索引 < 0 || 目标索引 < 0 || 来源索引 >= 数量 || 目标索引 >= 数量 || 来源索引 === 目标索引) {
+    return 文稿
+  }
+  const 当前标识 = 文稿.幻灯片列表[文稿.当前索引]?.id
+  const 列表 = [...文稿.幻灯片列表]
+  const [移动项] = 列表.splice(来源索引, 1)
+  列表.splice(目标索引, 0, 移动项)
+  const 当前索引 = Math.max(0, 列表.findIndex((项) => 项.id === 当前标识))
+  return { ...文稿, 幻灯片列表: 列表, 当前索引 }
 }
 
 /** 删除指定幻灯片；仅剩一张时保持不变并返回原对象 */

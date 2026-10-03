@@ -1,6 +1,13 @@
 // 文件命令测试：打开、保存、导出
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { 命令表 } from './commands'
+import { 读取本地文件内容 } from '../fileOpen'
+import { 净化富文本 } from './sanitizeHtml'
+
+const 页面视图 = {
+  纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无',
+  页面边框: '无', 页面颜色: '无', 文字方向: '横排',
+}
 
 describe('文件命令', () => {
   beforeEach(() => {
@@ -36,7 +43,7 @@ describe('文件命令', () => {
         notify: vi.fn(),
         history: { record: vi.fn() },
       } as any)
-      await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入']))
+      await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入'], undefined))
       expect(应用内容).not.toHaveBeenCalled()
     })
 
@@ -147,12 +154,60 @@ describe('文件命令', () => {
       命令表['file.save'].run({
         当前文档名: '报告.docx',
         当前文档路径: 'C:\\资料\\报告.docx',
+        view: 页面视图,
         读取内容: () => '<p>正文</p>',
         显示文件错误,
         设置文档路径: vi.fn(),
         notify: vi.fn(),
       } as any)
       await vi.waitFor(() => expect(显示文件错误).toHaveBeenCalledWith('保存失败', '磁盘已满'))
+    })
+
+    it('保存纯文本文件时写入正文而非编辑器 HTML，并保留空行', async () => {
+      const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+      ;(window as any).electronAPI = { saveToFile: 写入 }
+      命令表['file.save'].run({
+        当前文档名: '笔记.txt', 当前文档路径: 'C:\\资料\\笔记.txt',
+        读取内容: () => '<p>第一行</p><p><br></p><p>第三行</p><p><br></p>',
+        设置文档路径: vi.fn(), notify: vi.fn(),
+      } as any)
+      await vi.waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\笔记.txt', '第一行\n\n第三行\n', '文本'))
+    })
+
+    it('打开后编辑 TXT、MD、JSON 再保存时保留原文件换行方式', async () => {
+      for (const [扩展, 原文, 原值, 新值, 预期] of [
+        ['txt', '甲\r\n乙\r\n', '乙', '新乙', '甲\r\n新乙\r\n'],
+        ['md', '甲\r乙\r', '乙', '新乙', '甲\r新乙\r'],
+        ['json', '{\r\n"值":1\r\n}', '1', '2', '{\r\n"值":2\r\n}'],
+      ]) {
+        const 路径 = `C:\\资料\\内容.${扩展}`
+        const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+        Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+          readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 原文, 二进制: false, 扩展名: `.${扩展}` }),
+          saveToFile: 写入,
+        } })
+        const 读取 = await 读取本地文件内容(路径)
+        const 修改后Html = 净化富文本((读取.内容 ?? '').replace(原值, 新值))
+        命令表['file.save'].run({
+          当前文档名: `内容.${扩展}`, 当前文档路径: 路径,
+          读取内容: () => 修改后Html,
+          设置文档路径: vi.fn(), notify: vi.fn(),
+        } as any)
+        await vi.waitFor(() => expect(写入).toHaveBeenCalledWith(路径, 预期, '文本'))
+      }
+    })
+
+    it('纯文本包含格式时阻止覆盖原文件', async () => {
+      const 写入 = vi.fn()
+      const 错误 = vi.fn()
+      ;(window as any).electronAPI = { saveToFile: 写入 }
+      命令表['file.save'].run({
+        当前文档名: '笔记.txt', 当前文档路径: 'C:\\资料\\笔记.txt',
+        读取内容: () => '<p><strong>加粗内容</strong></p>',
+        显示文件错误: 错误, notify: vi.fn(),
+      } as any)
+      await vi.waitFor(() => expect(错误).toHaveBeenCalledWith('保存失败', expect.stringContaining('纯文本格式无法保存')))
+      expect(写入).not.toHaveBeenCalled()
     })
 
     it('导入有未保真内容时禁止直接覆盖来源文件', async () => {
@@ -162,6 +217,7 @@ describe('文件命令', () => {
       命令表['file.save'].run({
         当前文档名: '报告.docx',
         当前文档路径: 'C:\\资料\\报告.docx',
+        view: 页面视图,
         保真风险: { 来源路径: 'C:\\资料\\报告.docx', 警告: ['图片尚未导入'] },
         提示保真风险: 提示,
         读取内容: () => '<p>已修改</p>',
@@ -185,6 +241,7 @@ describe('文件命令', () => {
       const 上下文 = {
         当前文档名: '报告.docx',
         当前文档路径: 'C:\\资料\\报告.docx',
+        view: 页面视图,
         保真风险: { 来源路径: 'C:\\资料\\报告.docx', 警告: ['图片尚未导入'] },
         提示保真风险: 提示,
         确认保真另存: 确认,
@@ -205,7 +262,12 @@ describe('文件命令', () => {
 
       命令表['file.saveAs'].run(上下文)
       await vi.waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\副本.docx', expect.any(Uint8Array), '二进制'))
-      expect(上下文.设置文档路径).toHaveBeenCalledWith('C:\\资料\\副本.docx', '<p>已修改</p>')
+      await vi.waitFor(() => expect(上下文.设置文档路径).toHaveBeenCalledWith(
+        'C:\\资料\\副本.docx',
+        '<p>已修改</p>',
+        undefined,
+        expect.objectContaining({ 纸张: 页面视图.纸张, 纸张方向: 页面视图.纸张方向 }),
+      ))
     })
 
     it('应该在 Electron 环境中调用保存对话框', () => {
@@ -325,7 +387,8 @@ describe('文件命令', () => {
       expect(mockExportToPath).toHaveBeenCalledWith('<p>测试内容</p>', 'C:\\test\\doc.pdf')
       // 不允许把 HTML 文本写进 .pdf 扩展名文件
       expect(mockSaveToFile).not.toHaveBeenCalled()
-      expect(mock设置路径).toHaveBeenCalledWith('C:\\test\\doc.pdf', '<p>测试内容</p>')
+      expect(mock设置路径).not.toHaveBeenCalled()
+      expect(mock通知).toHaveBeenCalledWith('PDF 已保存到：C:\\test\\doc.pdf')
     })
   })
 
@@ -418,6 +481,22 @@ describe('文件命令', () => {
 
       // 验证调用了PDF导出
       expect(mockExportToPdf).toHaveBeenCalled()
+    })
+
+    it('导出 PDF 后打开实际文件标签且不改写文字标签的路径', async () => {
+      const 打开新文档 = vi.fn()
+      const 设置文档路径 = vi.fn()
+      ;(window as any).electronAPI = {
+        exportToPdf: vi.fn().mockResolvedValue({ 成功: true, 路径: 'C:\\资料\\结果.pdf' }),
+        readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'JVBERi0=', 二进制: true, 扩展名: '.pdf' }),
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      }
+      命令表['file.exportPdf'].run({
+        当前文档名: '报告.docx', 读取内容: () => '<p>正文</p>',
+        打开新文档, 设置文档路径, notify: vi.fn(),
+      } as any)
+      await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('pdf', 'JVBERi0=', 'C:\\资料\\结果.pdf'))
+      expect(设置文档路径).not.toHaveBeenCalled()
     })
   })
 })

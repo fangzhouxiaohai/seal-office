@@ -1,0 +1,17 @@
+.template-library { display: grid; gap: var(--space-6); }
+.template-library__filters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.template-library__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-3); }
+.template-library__card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); transition: border-color 180ms ease, background-color 180ms ease; }
+.template-library__card:hover { border-color: var(--brand); background: var(--bg-hover); }
+.template-library__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.template-library__tags .ant-tag { margin: 0; }
+.template-library__preview-trigger { display: grid; gap: var(--space-2); width: 100%; padding: 0; border: 0; background: transparent; color: var(--text-1); text-align: left; cursor: pointer; font: inherit; }
+.template-library__preview-trigger strong { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.template-library__preview-trigger span { display: -webkit-box; min-height: 39px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--text-2); font-size: 13px; line-height: 1.5; }
+.template-library__preview-trigger:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: var(--radius-control); }
+.template-library__card > .ant-btn { margin-top: auto; }
+.template-library__detail > .ant-btn { height: 32px; padding: 0; margin-bottom: var(--space-3); }
+.template-library__detail h3 { margin: 0; font: 600 20px/1.3 var(--font-heading); }
+.template-library__detail > p { margin: var(--space-2) 0 var(--space-4); color: var(--text-2); line-height: 1.5; }
+.template-library__document { --template-paper-bg: #ffffff; --template-paper-text: #1a1d24; max-height: 68vh; padding: var(--space-4); overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--template-paper-bg); color: var(--template-paper-text); }
+@media (max-width: 480px) { .template-library { gap: var(--space-4); } .template-library__card { padding: var(--space-3); } .template-library__document { padding: var(--space-2); } }

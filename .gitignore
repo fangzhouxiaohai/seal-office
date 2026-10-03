@@ -8,3 +8,4 @@ renderer/tmp-test/
 *.log
 __app_run.log
 design/
+main/integrity-manifest.json

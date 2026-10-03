@@ -10,6 +10,23 @@ const 取首段文字 = (html: string) => {
 }
 
 describe('htmlToDocxModel 样式保真', () => {
+  it('无法写回的图形、链接和段落布局进入明确损失清单', () => {
+    const 模型 = htmlToDocxModel('<div class="wps-chart" contenteditable="false"><svg></svg></div><p style="margin-left:24px"><a href="https://example.com">官网</a></p>')
+    expect(模型.未覆盖).toContain('图表')
+    expect(模型.未覆盖).toContain('段落缩进或间距')
+    expect(模型.未覆盖).toContain('超链接目标')
+  })
+
+  it('文本框内边距也进入保存前损失清单', () => {
+    const 模型 = htmlToDocxModel('<div style="padding:12px">文本框</div>')
+    expect(模型.未覆盖).toContain('图形或文本框布局')
+  })
+
+  it('分页符成为独立文档节点，而非丢失的空段落', () => {
+    const 模型 = htmlToDocxModel('<p>第一页</p><div class="wps-page-break"></div><p>第二页</p>')
+    expect(模型.段落.map((项) => 项.类型)).toEqual(['段落', '分页符', '段落'])
+    expect(模型.未覆盖).not.toContain('分页符')
+  })
   it('紫色大字（用户场景）的颜色与字号进入模型', () => {
     const { 片段 } = 取首段文字('<p><span style="color:#8A2BE2;font-size:36pt">威锋威锋威锋威锋网</span></p>')
     expect(片段.颜色).toBe('8A2BE2')
@@ -26,6 +43,15 @@ describe('htmlToDocxModel 样式保真', () => {
     expect(片段.加粗).toBe(true)
     expect(片段.倾斜).toBe(true)
     expect(片段.下划线).toBe(true)
+  })
+
+  it('显式普通格式覆盖父级的加粗、斜体和删除线', () => {
+    const { 片段 } = 取首段文字(
+      '<p><strong><em><del><span style="font-weight:normal;font-style:normal;text-decoration:none">普通文字</span></del></em></strong></p>'
+    )
+    expect(片段.加粗).toBe(false)
+    expect(片段.倾斜).toBe(false)
+    expect(片段.删除线).toBe(false)
   })
 
   it('对齐与标题级别保留', () => {

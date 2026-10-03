@@ -9,11 +9,12 @@
     "start": "concurrently -k \"npm run dev\" \"npm run electron:dev\"",
     "dev": "vite",
     "electron:dev": "electron .",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-integrity.cjs",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run && vitest run --config vitest.main.config.js",
+    "test:run": "vitest run && vitest run --config vitest.main.config.js && npm run test:packaging",
     "test:main": "vitest run --config vitest.main.config.js",
+    "test:packaging": "node --test scripts/generate-integrity.test.cjs",
     "typecheck": "tsc --noEmit",
     "pack": "npm run build && electron-builder --win --dir",
     "dist": "npm run build && electron-builder --win"
@@ -56,7 +57,12 @@
     "files": [
       "main/**/*",
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "!main/**/*.test.js",
+      "!main/**/*.spec.js",
+      "!main/main-test.js",
+      "!main/**/node_modules/**",
+      "!main/**/.vitest/**"
     ],
     "win": {
       "icon": "build/icon.ico",
@@ -81,6 +87,12 @@
         }
       ]
     },
+    "fileAssociations": [
+      { "ext": "docx", "name": "SealOffice.docx", "description": "海豹办公文字文档" },
+      { "ext": "xlsx", "name": "SealOffice.xlsx", "description": "海豹办公表格文档" },
+      { "ext": "pptx", "name": "SealOffice.pptx", "description": "海豹办公演示文档" },
+      { "ext": "pdf", "name": "SealOffice.pdf", "description": "海豹办公 PDF 文档" }
+    ],
     "npmRebuild": false,
     "nsis": {
       "oneClick": false,

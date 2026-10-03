@@ -1,368 +1,154 @@
-// 帮助手册组件 - 瀑布流文章布局
-import React from 'react'
-import { useState } from 'react'
-import { Input } from 'antd'
-import { useSettings } from '../store/settingsStore'
+import { useMemo, useState } from 'react'
+import Icon from './Icon'
+import './helpManual.css'
 
-const { Search } = Input
-
-interface 帮助文章 {
+interface 帮助主题 {
+  标识: string
+  分类: string
   标题: string
-  正文: string[]
-  标签: string
-  标签颜色: string
-  配图: string
-  配图说明: string
+  摘要: string
+  步骤: string[]
+  提醒?: string
+  关键词?: string
 }
 
-const 配图占位符 = (索引: number): string => {
-  const 颜色方案 = [
-    ['#4A90D9', '#357ABD'],
-    ['#52C41A', '#389E0D'],
-    ['#FA8C16', '#D46B08'],
-    ['#722ED1', '#531DAB'],
-    ['#13C2C2', '#08979C'],
-    ['#EB2F96', '#C41D7F'],
-    ['#2F54EB', '#1D39C4'],
-    ['#A12F96', '#C41D7F']
-  ]
-  const 方案 = 颜色方案[索引 % 颜色方案.length]
-  return `data:image/svg+xml,${encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="600" height="320" viewBox="0 0 600 320">
-      <defs>
-        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:${方案 [0]};stop-opacity:1" />
-          <stop offset="100%" style="stop-color:${方案 [1]};stop-opacity:1" />
-        </linearGradient>
-      </defs>
-      <rect width="600" height="320" fill="url(#g)" rx="8"/>
-      <text x="300" y="160" font-family="Arial,sans-serif" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle" opacity="0.9">海豹办公 · ${索引 + 1}</text>
-    </svg>
-  `)}`
-}
-
-const 帮助数据: 帮助文章[] = [
+const 帮助主题列表: 帮助主题[] = [
   {
-    标题: '欢迎使用海豹办公',
-    正文: [
-      '海豹办公是一款功能完整的本地办公软件套件，包含文字文档、电子表格和演示文稿三大核心模块。所有数据处理均在本地完成，保障您的隐私安全。',
-      '您可以通过首页快速创建新文档，或打开最近使用的文档。支持导入导出 Word、Excel、PPT、PDF 等多种常见格式。',
-      '界面简洁直观，操作符合办公习惯，无需复杂学习即可上手使用。'
-    ],
-    标签: '入门',
-    标签颜色: 'blue',
-    配图: 配图占位符(0),
-    配图说明: '海豹办公首页界面，展示新建文档和最近文档列表'
+    标识: 'start', 分类: '开始使用', 标题: '从首页开始', 摘要: '新建、打开和最近文件都在首页；打开后的文件在窗口底部切换。',
+    步骤: ['点击左侧“新建”，选择文字、表格或演示文稿。', '点击“打开”选择本机文件，也可以在“最近”列表中重新打开。', '使用窗口底部的标签切换已打开的文件；关闭标签前请留意未保存提示。'],
+    提醒: '云文档和共享空间需要服务器支持，当前版本以本机文件为主。',
+    关键词: '首页 标签 新建 最近'
   },
   {
-    标题: '快速创建文档',
-    正文: [
-      '在首页点击"文字文档"、"电子表格"或"演示文稿"按钮，即可快速创建对应类型的新文档。',
-      '创建后的文档会自动保存到"我的文档"文件夹，您也可以随时更改保存位置。',
-      '文档采用 JSON 格式本地存储，支持版本管理和数据恢复。'
-    ],
-    标签: '入门',
-    标签颜色: 'blue',
-    配图: 配图占位符(1),
-    配图说明: '新建文档选择界面，提供三种文档类型选项'
+    标识: 'save', 分类: '文件管理', 标题: '保存与另存为', 摘要: '首次保存选择路径，后续保存写入同一路径。',
+    步骤: ['在编辑器顶部“文件”功能区点击“保存”，文字和表格也可按 Ctrl+S。', '首次保存时，在系统对话框中选择文件夹与文件名。保存成功后底部标签显示实际文件名。', '需要保留原文件时使用“另存为”，选择另一文件名或路径。'],
+    提醒: '导入时若出现格式兼容警告，请先另存为副本并核对内容，不要直接覆盖原文件。',
+    关键词: '保存 路径 文件名 副本 导出'
   },
   {
-    标题: '文字文档编辑',
-    正文: [
-      '文字编辑器提供完整的文档编辑功能。顶部功能栏包含字体、字号、颜色、粗体、斜体、下划线等常用格式设置。',
-      '支持段落对齐方式设置（左对齐、居中、右对齐、两端对齐），以及项目符号和编号列表。',
-      '可插入表格、图片、形状等对象，并设置对象的环绕方式和层叠顺序。右键点击编辑区域可快速访问常用命令。'
-    ],
-    标签: '文档',
-    标签颜色: 'blue',
-    配图: 配图占位符(2),
-    配图说明: '文字编辑器界面，展示工具栏和编辑区域'
+    标识: 'fidelity', 分类: '文件管理', 标题: '检查格式兼容提示', 摘要: '导入复杂文件后，先看清未导入内容，再决定是否另存副本。',
+    步骤: ['打开 DOCX、XLSX 或 PPTX 后，若出现兼容提示，请查看列出的未导入对象。', '继续编辑时保留来源文件；点击“另存为”，选择与来源文件不同的路径。', '保存的副本可能仍缺少未导入的内容，请重新打开副本并核对文字、数字、页面与排版。'],
+    提醒: '图片、图表、复杂动画等对象并非都能往返。部分在编辑区临时显示的对象也可能无法写入 DOCX；保存前若出现阻止提示，请按提示处理。',
+    关键词: '格式 保真 兼容 原文件 另存 副本 图片 图表 动画'
   },
   {
-    标题: '表格数据处理',
-    正文: [
-      '表格编辑器支持单元格数据输入、格式设置和公式计算。点击任意单元格即可编辑内容。',
-      '右键表格单元格可快速执行剪切、复制、粘贴、插入行列等操作。支持拖拽调整行高和列宽。',
-      '提供丰富的单元格边框样式、背景色填充和对齐方式设置，满足各类报表制作需求。'
-    ],
-    标签: '表格',
-    标签颜色: 'green',
-    配图: 配图占位符(3),
-    配图说明: '表格编辑器界面，展示单元格编辑和格式设置'
+    标识: 'local-files', 分类: '文件管理', 标题: '浏览本机文件夹', 摘要: '从首页直接查看常用目录中的办公文件。',
+    步骤: ['在首页左侧“本地”栏目选择桌面、文档或下载。', '列表显示文件名、大小和修改时间；点击“刷新”读取最新内容。', '点击文件右侧“打开”，文件会进入底部标签，并加入最近列表。'],
+    提醒: '这里只显示该目录第一层中当前支持的办公文件；其他位置可使用首页“打开”按钮选择。',
+    关键词: '本机 文件夹 桌面 文档 下载 打开 刷新'
   },
   {
-    标题: '演示文稿制作',
-    正文: [
-      '演示文稿模块支持多页幻灯片编辑。左侧缩略图面板可快速切换和排序幻灯片。',
-      '每页幻灯片支持添加文本框、图片、形状等元素，并可设置动画过渡效果。',
-      '提供多种预设版式模板，快速搭建专业级演示文稿。支持全屏放映（F5 从头开始、Shift+F5 从当前页开始，Esc 退出）。'
-    ],
-    标签: '演示',
-    标签颜色: 'purple',
-    配图: 配图占位符(4),
-    配图说明: '演示文稿编辑界面，展示幻灯片缩略图和编辑区'
+    标识: 'word', 分类: '编辑文档', 标题: '文字文档', 摘要: '编辑正文、段落与简单表格，使用标题导航和查找替换。',
+    步骤: ['在首页新建文字文档，或打开本机 DOCX、HTML、TXT 文件。', '选中文字后，使用“开始”功能区调整字体、加粗、对齐和列表。', '在“页面布局”调整纸张、方向、页边距、分栏、页面边框、底色及文字方向；自定义纸张和边距会按原始数值显示。', '按 Ctrl+F 打开查找；“分隔符”可插入保存后仍在原位置的分页符。', '保存前检查页面排版；出现兼容警告时另存副本，若提示存在无法写回的对象，请先处理这些对象。'],
+    提醒: '文字水印、图片、页眉页脚和脚注等内容不能保证写回 DOCX。出现保存提示时请先处理对象，并保留来源文件。',
+    关键词: '文字 段落 DOCX 格式 查找 替换 页面布局 分页符'
   },
   {
-    标题: '文件保存与导出',
-    正文: [
-      '按 Ctrl+S 快捷键可快速保存当前文档，F12 为另存为；也可通过 Ribbon 上的文件组执行保存和另存为操作。',
-      '支持保存为多种格式：文字文档（.docx、.txt）、电子表格（.xlsx、.csv）、演示文稿（.pptx）。',
-      '使用"导出为 PDF"功能可将文档转换为 PDF 格式，便于分享和打印。PDF 导出保持原文档版式和样式。'
-    ],
-    标签: '文件',
-    标签颜色: 'orange',
-    配图: 配图占位符(5),
-    配图说明: '文件菜单界面，展示保存和导出选项'
+    标识: 'navigation', 分类: '编辑文档', 标题: '标题导航', 摘要: '利用文档标题快速定位较长的正文。',
+    步骤: ['选中段落，在文字编辑器中为段落应用标题样式。', '打开“视图”功能区，点击“导航窗格”。', '点击导航窗格中的标题，正文会滚动到对应位置。', '再次点击“导航窗格”或窗格中的“关闭”，可收起导航。'],
+    提醒: '导航窗格只列出已经应用标题样式的段落。',
+    关键词: '标题 导航 视图 目录 定位'
   },
   {
-    标题: '模板快速开始',
-    正文: [
-      '海豹办公内置多种实用模板，包括简历、合同、报告、财务报表、会议记录等常用文档类型。',
-      '使用模板可大幅减少重复劳动。选择模板后，只需填入您的具体内容即可完成文档制作。',
-      '模板位于首页的模板区域，也可在创建新文档时从模板列表中选择。新模板会定期更新。'
-    ],
-    标签: '模板',
-    标签颜色: 'purple',
-    配图: 配图占位符(6),
-    配图说明: '模板选择界面，展示各类预置模板缩略图'
+    标识: 'mail-merge', 分类: '编辑文档', 标题: '邮件合并', 摘要: '用本机名单批量生成独立文字文档。',
+    步骤: ['在模板正文中输入 {{字段名}}，字段名应与名单列名完全一致。', '点击“邮件合并”，粘贴名单或选择本机逗号分隔文件；第一行为字段名，之后每行一条记录。', '点击“预览”核对首条记录和记录总数，再点击“生成新文档”。', '结果在新的底部标签打开，每条记录独占一页；确认内容后保存到本机。'],
+    提醒: '原模板不会被修改。名单中包含逗号或换行的内容，需要用双引号包裹。',
+    关键词: '批量 名单 收件人 模板 字段 逗号分隔 生成新文档'
   },
   {
-    标题: '界面主题切换',
-    正文: [
-      '在设置页面中可以切换浅色和深色两种界面主题。浅色模式适合明亮环境，深色模式适合夜间或暗光环境。',
-      '主题设置会自动保存，下次启动时恢复上次选择的主题，无需重复设置。',
-      '主题切换仅影响界面外观，不影响文档内容和功能使用。所有模块共享同一主题设置。'
-    ],
-    标签: '界面',
-    标签颜色: 'default',
-    配图: 配图占位符(7),
-    配图说明: '设置页面中的主题切换选项'
-  }
+    标识: 'sheet', 分类: '编辑文档', 标题: '电子表格', 摘要: '输入数据、设置单元格格式和使用已支持的公式。',
+    步骤: ['新建表格，或从首页和表格功能区打开本机 XLSX、CSV 文件；CSV 中的前导零和等号开头文本会按原文导入。', '选择单元格输入文本或数值；以等号开头输入公式。', '在顶部功能区设置边框、对齐和数字格式；“数据验证”可限制列表选项或整数、小数区间。', '需要插图时点击“插入”中的“图片”，选择本机 PNG 或 JPEG 文件；可在网格中查看或删除，保存后随 XLSX 重新打开。', '需要防止误改时点击“保护工作表”；解除本机设置的保护后才可继续编辑。', '“拼写检查”可检查选区中的重复虚词和中文语境半角标点，确认建议后批量修正。', '保存为 XLSX；CSV 来源会提示改存 XLSX，导入出现不兼容警告时请先另存副本。'],
+    提醒: '当前工作表保护不设置密码；拼写检查不包含词典校对。图片限 PNG、JPEG 且单张不超过 5 MB；复杂公式、图表、数据透视表和外部保护的工作簿请核对保真提示。',
+    关键词: '表格 XLSX CSV 单元格 公式 图片 插图'
+  },
+  {
+    标识: 'slides', 分类: '编辑文档', 标题: '演示文稿', 摘要: '编辑幻灯片，调整元素并放映。',
+    步骤: ['新建演示文稿或打开本机 PPTX 文件。', '在左侧缩略图选择幻灯片，使用顶部功能区增删或复制页面。', '打开“幻灯片浏览”可整体预览并调整顺序；在“备注页”为当前页填写讲稿备注。', '编辑页面上的文字；可设置淡入淡出或推进切换，按 F5 从头放映，按 Shift+F5 从当前页放映。', '保存为 PPTX；重新打开后可继续编辑备注与已支持的切换效果。含不兼容内容的导入文件请先另存副本。'],
+    关键词: '演示 PPTX 幻灯片 放映'
+  },
+  {
+    标识: 'pdf', 分类: '阅读与处理', 标题: '阅读和处理 PDF', 摘要: '阅读区保持居中，处理工具位于右侧，可随时收起。',
+    步骤: ['从首页打开 PDF 文件，或进入“PDF 工具”后点击右侧添加图标。', '在阅读区翻页和调整缩放；点击右侧图标选择提取、合并、删除或旋转。', '展开工具区，按提示填写页码；执行后选择路径保存处理结果。', '保存成功后，处理结果会在底部新标签中打开。'],
+    提醒: '页面处理会生成新的 PDF 文件；当前不提供 PDF 文字编辑、批注或文字识别。',
+    关键词: 'PDF 提取 合并 删除 旋转 页码'
+  },
+  {
+    标识: 'calendar', 分类: '本地工具', 标题: '本机日历', 摘要: '安排只保存在本机的日程。',
+    步骤: ['从首页左侧打开“日历”，选择日期并点击“新增日程”。', '填写标题、开始和结束时间，保存后可在该日期查看、编辑或删除日程。', '点击“导出日历”生成日历文件，以便在其他日历程序中导入。'],
+    提醒: '日程保存在当前设备的应用数据中，迁移设备前请导出日历文件。',
+    关键词: '日历 日程 日期 时间 导出'
+  },
+  {
+    标识: 'diagrams', 分类: '本地工具', 标题: '脑图与流程图', 摘要: '编辑节点与连线，并保存可再次编辑的数据。',
+    步骤: ['从首页左侧选择“脑图”或“流程图”，在画布上选择节点。', '添加节点，编辑文字，拖动节点调整位置；流程图可在右侧连接步骤。', '使用“导出数据”保存可编辑备份，或使用“导出图片”生成图形文件。', '需要继续编辑时点击“导入数据”，确认后替换当前画布。'],
+    提醒: '导入与新建会替换当前画布，操作前请先导出可编辑数据。',
+    关键词: '脑图 流程图 节点 连线 导入 导出'
+  },
+  {
+    标识: 'assistant', 分类: '智能工具', 标题: '使用内置助手', 摘要: '配置模型服务商后，可讨论当前文件并审阅修改建议。',
+    步骤: ['在设置中心填写兼容聊天补全接口的完整模型地址、模型名称，以及服务要求的密钥；无密钥的本机服务可留空。', '打开文字、表格或演示文件，在智能工具中描述需要修改的内容。', '查看助手给出的候选内容和差异，确认无误后再应用到文档。', '应用后使用保存命令写入文件。'],
+    提醒: '软件不内置模型。点击发送后，当前文件名称和内容才会交给所配置的服务商；助手仅支持文字替换、单元格写入和演示文本替换。模型设置在桌面版加密保存，界面不会回显密钥。',
+    关键词: 'AI 智能 模型 对话 文件修改 服务商'
+  },
+  {
+    标识: 'settings', 分类: '设置与排障', 标题: '设置与恢复', 摘要: '主题、翻译服务和本地工作偏好在设置中心管理。',
+    步骤: ['在设置中心切换浅色或深色主题，并按需要设置退出时恢复工作区、双击关闭标签和新文件提醒。', '如需使用文字翻译功能，填写翻译服务地址和密钥并保存。', '异常退出后重新打开程序时，如提示恢复编辑内容，请检查并及时保存。', '需要清除外观等本机设置时，使用“恢复初始默认设置”。'],
+    提醒: '恢复默认设置不会删除你保存的文档文件。',
+    关键词: '设置 主题 翻译 备份 恢复'
+  },
+  {
+    标识: 'associations', 分类: '设置与排障', 标题: 'Windows 文件关联', 摘要: '从资源管理器双击办公文件，直接进入现有工作区。',
+    步骤: ['安装 Windows 安装版，安装程序会注册 DOCX、XLSX、PPTX 和 PDF 文件类型。', '如需将海豹办公设为默认程序，进入设置中心的“组件管理”，点击“打开系统设置”，在 Windows 系统设置中选择对应文件的默认打开程序。', '从资源管理器双击已关联文件；若程序正在运行，文件进入底部标签，并保留当前已打开的标签。'],
+    提醒: '便携版不会写入系统文件关联；需使用安装版注册后再由系统设置选择默认程序。',
+    关键词: '文件关联 默认程序 双击 资源管理器 安装版 DOCX XLSX PPTX PDF'
+  },
+  {
+    标识: 'alerts', 分类: '设置与排障', 标题: '新文件提醒', 摘要: '运行桌面版时检测常用目录中新增的办公文件。',
+    步骤: ['打开设置中心，在“消息提醒”中启用“新文件接收提醒”。', '选择桌面、文档或下载作为提醒目录；首次检测只记录已有文件，不弹出旧文件提醒。', '有新文件进入所选目录时，程序显示文件名；可回到首页对应目录打开。', '不再需要提醒时关闭开关，程序停止检测。'],
+    提醒: '提醒只在 Windows 桌面版运行期间工作，检测目录第一层中受支持的办公文件。',
+    关键词: '提醒 新文件 桌面 文档 下载 通知'
+  },
 ]
 
-const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string, 紧凑 = false) => {
-  const isDark = 主题 === '深色'
-  const 卡片背景 = isDark ? '#2D333F' : '#FFFFFF'
-  const 文字颜色 = isDark ? '#E0E0E0' : '#262626'
-  const 次要文字颜色 = isDark ? '#9AA0A6' : '#595959'
+const 分类列表 = [...new Set(帮助主题列表.map((主题) => 主题.分类))]
 
-  return React.createElement('div', {
-    className: 'help-article-card',
-    style: {
-      background: 卡片背景,
-      borderRadius: '10px',
-      overflow: 'hidden',
-      border: isDark ? '1px solid #3D4450' : '1px solid #EBEEF3',
-      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-      cursor: 'default'
-    },
-    onMouseEnter: (e: React.MouseEvent) => {
-      const el = e.currentTarget as HTMLElement
-      el.style.transform = 'translateY(-2px)'
-      el.style.boxShadow = isDark
-        ? '0 4px 16px rgba(0,0,0,0.4)'
-        : '0 4px 16px rgba(0,0,0,0.15)'
-    },
-    onMouseLeave: (e: React.MouseEvent) => {
-      const el = e.currentTarget as HTMLElement
-      el.style.transform = 'translateY(0)'
-      el.style.boxShadow = isDark
-        ? '0 2px 8px rgba(0,0,0,0.3)'
-        : '0 2px 8px rgba(0,0,0,0.1)'
-    }
-  },
-    // 标签和标题区域
-    React.createElement('div', {
-      className: 'help-article-header',
-      style: {
-        padding: '16px 20px 12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        borderBottom: isDark ? '1px solid #3D4450' : '1px solid #F0F0F0'
-      }
-    },
-      React.createElement('span', {
-        className: 'help-article-tag',
-        style: {
-          display: 'inline-block',
-          padding: '2px 10px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontWeight: 500,
-          color: 文章.标签颜色 === 'blue' ? (isDark ? '#7CB9E8' : '#1890FF') :
-            文章.标签颜色 === 'green' ? (isDark ? '#73D13D' : '#52C41A') :
-              文章.标签颜色 === 'orange' ? (isDark ? '#FFB347' : '#FA8C16') :
-                文章.标签颜色 === 'purple' ? (isDark ? '#B37FEB' : '#722ED1') :
-                  文章.标签颜色 === 'red' ? (isDark ? '#FF7875' : '#FF4D4F') :
-                    文章.标签颜色 === 'cyan' ? (isDark ? '#5CD1D3' : '#13C2C2') :
-                      (isDark ? '#8C8C8C' : '#8C8C8C'),
-          background: 文章.标签颜色 === 'blue' ? (isDark ? 'rgba(124,185,232,0.15)' : 'rgba(24,144,255,0.08)') :
-            文章.标签颜色 === 'green' ? (isDark ? 'rgba(115,209,61,0.15)' : 'rgba(82,196,26,0.08)') :
-              文章.标签颜色 === 'orange' ? (isDark ? 'rgba(255,179,71,0.15)' : 'rgba(250,140,22,0.08)') :
-                文章.标签颜色 === 'purple' ? (isDark ? 'rgba(179,127,235,0.15)' : 'rgba(114,46,209,0.08)') :
-                  文章.标签颜色 === 'red' ? (isDark ? 'rgba(255,120,117,0.15)' : 'rgba(255,77,79,0.08)') :
-                    文章.标签颜色 === 'cyan' ? (isDark ? 'rgba(92,209,211,0.15)' : 'rgba(19,194,194,0.08)') :
-                      (isDark ? 'rgba(140,140,140,0.15)' : 'rgba(140,140,140,0.08)'),
-          border: `1px solid ${文章.标签颜色 === 'blue' ? (isDark ? '#7CB9E8' : '#91D5FF') :
-              文章.标签颜色 === 'green' ? (isDark ? '#73D13D' : '#B7EB8F') :
-                文章.标签颜色 === 'orange' ? (isDark ? '#FFB347' : '#FFD591') :
-                  文章.标签颜色 === 'purple' ? (isDark ? '#B37FEB' : '#D3ADF7') :
-                    文章.标签颜色 === 'red' ? (isDark ? '#FF7875' : '#FFA39E') :
-                      文章.标签颜色 === 'cyan' ? (isDark ? '#5CD1D3' : '#87E8DE') :
-                        (isDark ? '#595959' : '#D9D9D9')}`
-        }
-      }, 文章.标签),
-      React.createElement('h3', {
-        style: {
-          margin: 0,
-          fontSize: 紧凑 ? '15.5px' : '17px',
-          fontWeight: 600,
-          color: 文字颜色,
-          flex: 1
-        }
-      }, 文章.标题)
-    ),
-    // 配图区域
-    React.createElement('div', {
-      className: 'help-article-image',
-      style: {
-        width: '100%',
-        height: 紧凑 ? '150px' : '200px',
-        overflow: 'hidden',
-        position: 'relative'
-      }
-    },
-      React.createElement('img', {
-        src: 文章.配图,
-        alt: 文章.配图说明,
-        style: {
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block'
-        }
-      }),
-      React.createElement('div', {
-        style: {
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '8px 16px',
-          background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
-          fontSize: '12px',
-          color: 'rgba(255,255,255,0.9)'
-        }
-      }, 文章.配图说明)
-    ),
-    // 正文内容
-    React.createElement('div', {
-      className: 'help-article-content',
-      style: {
-        padding: '16px 20px 20px'
-      }
-    },
-      ...文章.正文.map((段落,索引) =>
-        React.createElement('p', {
-          key: 索引,
-          style: {
-            margin: '0 0 10px',
-            fontSize: 紧凑 ? '13.5px' : '14px',
-            lineHeight: 1.85,
-            color: 次要文字颜色,
-            textAlign: 'justify',
-            ...(索引 === 文章.正文.length - 1 ? { marginBottom: 0 } : {})
-          }
-        }, 段落)
-      )
-    )
-  )
-}
+const HelpManual = ({ 关闭回调 }: { 打开状态?: boolean; 关闭回调?: () => void }) => {
+  const [搜索词, set搜索词] = useState('')
+  const [选中标识, set选中标识] = useState('start')
+  const 匹配主题 = useMemo(() => {
+    const 查询 = 搜索词.trim().toLocaleLowerCase()
+    if (!查询) return 帮助主题列表
+    return 帮助主题列表.filter((主题) => [主题.标题, 主题.分类, 主题.摘要, 主题.关键词 ?? '', ...主题.步骤].join(' ').toLocaleLowerCase().includes(查询))
+  }, [搜索词])
+  const 当前主题 = 匹配主题.find((主题) => 主题.标识 === 选中标识) ?? 匹配主题[0]
 
-const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
-  打开状态?: boolean
-  关闭回调?: () => void
-}) => {
-  const [搜索关键词, set搜索关键词] = useState('')
-  const { 主题 } = useSettings()
-
-  const 过滤数据 = 帮助数据.filter(项 => {
-    if (!搜索关键词) return true
-    return 项.标题.includes(搜索关键词) || 项.正文.some(段落 => 段落.includes(搜索关键词))
-  })
-
-  const isDark = 主题 === '深色'
-  // 是否作为全页面使用（无关闭回调即为全页面模式）；弹窗模式由 Modal 提供标题与关闭按钮
-  const 全页面模式 = !关闭回调
-
-  return React.createElement('div', {
-    className: 'help-manual',
-    style: {
-      padding: 全页面模式 ? '24px 32px' : '0 4px',
-      backgroundColor: 'transparent',
-      minHeight: 全页面模式 ? '0' : '320px',
-      maxHeight: 全页面模式 ? 'none' : 'none',
-      overflowY: 'visible',
-      height: 全页面模式 ? '100%' : 'auto',
-      boxSizing: 'border-box'
-    }
-  },
-    // 标题栏（仅全页面模式显示；弹窗模式由 Modal 承担标题与关闭）
-    全页面模式 ? React.createElement('div', {
-      style: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '32px',
-        paddingBottom: '16px',
-        borderBottom: isDark ? '1px solid #3D4450' : '1px solid #E8E8E8'
-      }
-    },
-      React.createElement('h2', {
-        style: {
-          margin: 0,
-          fontSize: '26px',
-          fontWeight: 600,
-          color: isDark ? '#E0E0E0' : '#262626'
-        }
-      }, '帮助手册')
-    ) : null,
-    // 搜索框
-    React.createElement(Search, {
-      placeholder: '搜索帮助内容，如：保存、模板、快捷键...',
-      value: 搜索关键词,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => set搜索关键词(e.target.value),
-      allowClear: true,
-      style: {
-        marginBottom: '20px',
-        maxWidth: '100%'
-      }
-    }),
-    // 文章列表（瀑布流布局）
-    React.createElement('div', {
-      className: 'help-articles-stream',
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        paddingBottom: 全页面模式 ? '24px' : '0'
-      }
-    },
-      ...过滤数据.map((文章, 索引) =>
-        帮助卡片(文章, 索引, 主题, !全页面模式)
-      )
-    ),
-    // 空状态
-    过滤数据.length === 0 ? React.createElement('div', {
-      style: {
-        textAlign: 'center',
-        padding: '60px 20px',
-        color: isDark ? '#9AA0A6' : '#8C8C8C',
-        fontSize: '14px'
-      }
-    }, '未找到匹配的帮助内容') : null
+  return (
+    <div className={关闭回调 ? 'help-manual help-manual--dialog' : 'help-manual'}>
+      {!关闭回调 && <header className="help-manual__header"><h1>帮助手册</h1><p>按任务查找操作方法，完成后回到文档继续工作。</p></header>}
+      <label className="help-manual__search">
+        <Icon name="search" size={17} />
+        <input type="search" aria-label="搜索帮助内容" placeholder="搜索保存、PDF、快捷键等" value={搜索词} onChange={(事件) => set搜索词(事件.target.value)} />
+      </label>
+      <div className="help-manual__layout">
+        <nav className="help-manual__nav" aria-label="帮助主题">
+          {分类列表.map((分类) => {
+            const 分类主题 = 匹配主题.filter((主题) => 主题.分类 === 分类)
+            return 分类主题.length > 0 && <div className="help-manual__group" key={分类}>
+              <h2>{分类}</h2>
+              {分类主题.map((主题) => <button key={主题.标识} type="button" className={当前主题?.标识 === 主题.标识 ? 'help-manual__topic help-manual__topic--active' : 'help-manual__topic'} aria-current={当前主题?.标识 === 主题.标识 ? 'page' : undefined} onClick={() => set选中标识(主题.标识)}>{主题.标题}</button>)}
+            </div>
+          })}
+        </nav>
+        {当前主题 ? <article className="help-manual__article" key={当前主题.标识}>
+          <span className="help-manual__eyebrow">{当前主题.分类}</span>
+          <h2>{当前主题.标题}</h2>
+          <p className="help-manual__summary">{当前主题.摘要}</p>
+          <h3>操作步骤</h3>
+          <ol>{当前主题.步骤.map((步骤) => <li key={步骤}>{步骤}</li>)}</ol>
+          {当前主题.提醒 && <div className="help-manual__note"><strong>注意</strong><p>{当前主题.提醒}</p></div>}
+        </article> : <div className="help-manual__empty" role="status">没有找到相关内容，请换个关键词。</div>}
+      </div>
+    </div>
   )
 }
 

@@ -1,0 +1,81 @@
+.wps-mailmerge {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--text-1);
+  line-height: 1.55;
+}
+
+.wps-mailmerge__help,
+.wps-mailmerge__source,
+.wps-mailmerge__note {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.wps-mailmerge__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-weight: 600;
+}
+
+.wps-mailmerge__head input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.wps-mailmerge__file {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.wps-mailmerge__file:hover,
+.wps-mailmerge__head:focus-within .wps-mailmerge__file {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.wps-mailmerge__preview {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.wps-mailmerge__summary {
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.wps-mailmerge__preview-title {
+  font-weight: 600;
+}
+
+.wps-mailmerge__page {
+  min-width: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+}
+
+.wps-mailmerge__page > :first-child { margin-top: 0; }
+.wps-mailmerge__page > :last-child { margin-bottom: 0; }
+
+@media (max-width: 768px) {
+  .wps-mailmerge__head { align-items: flex-start; flex-direction: column; }
+  .wps-mailmerge__file { width: 100%; text-align: center; }
+}

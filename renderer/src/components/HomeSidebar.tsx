@@ -18,7 +18,7 @@ interface Props {
   onOpenHelp: () => void
 }
 
-/** 云盘与本地两组占位导航项 */
+/** 云盘与本地导航项 */
 const 云盘项 = [
   { key: 'my-cloud', label: '我的云文档', icon: 'folder' },
   { key: 'knowledge', label: '知识库', icon: 'knowledge' },
@@ -31,7 +31,6 @@ const 本地项 = [
   { key: 'desktop', label: '桌面', icon: 'desktop' },
   { key: 'document', label: '文档', icon: 'doc-word' },
   { key: 'download', label: '下载', icon: 'download-file' },
-  { key: 'wechat', label: '微信文件', icon: 'wechat' },
 ]
 
 const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile, onNotify, onOpenPdf, onOpenHelp }: Props) => {
@@ -118,12 +117,12 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
       渲染组标题('云盘'),
       云盘项.map((项) => 渲染导航项(项, true))
     ),
-    // 本地（占位）
+    // 本机文件夹
     React.createElement(
       'div',
       { className: 'wps-homenav' },
       渲染组标题('本地'),
-      本地项.map((项) => 渲染导航项(项, true)),
+      本地项.map((项) => 渲染导航项(项, false)),
       React.createElement(
         'button',
         {
@@ -150,6 +149,10 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
         React.createElement(Icon, { name: 'pdf', size: 16 }),
         React.createElement('span', null, 'PDF 工具')
       ),
+      渲染导航项({ key: 'mindmap', label: '脑图', icon: 'mindmap' }, false),
+      渲染导航项({ key: 'flow', label: '流程图', icon: 'flow' }, false),
+      渲染导航项({ key: 'calendar', label: '日历', icon: 'calendar' }, false),
+      渲染导航项({ key: 'apps', label: '应用', icon: 'apps' }, false),
       React.createElement(
         'button',
         {

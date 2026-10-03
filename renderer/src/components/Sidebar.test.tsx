@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Sidebar from './Sidebar'
 
@@ -41,5 +41,14 @@ describe('左侧导航', () => {
     expect(screen.getByText('设置')).toBeInTheDocument()
     // 验证帮助手册菜单项存在
     expect(screen.getByText('帮助手册')).toBeInTheDocument()
+  })
+
+  it('按回车激活设置项时与点击走同一设置回调', () => {
+    const 选择 = vi.fn()
+    const 打开设置 = vi.fn()
+    render(<Sidebar mode="pdf" onSelect={选择} onShowSettings={打开设置} />)
+    fireEvent.keyDown(screen.getByText('设置'), { key: 'Enter' })
+    expect(打开设置).toHaveBeenCalledTimes(1)
+    expect(选择).not.toHaveBeenCalled()
   })
 })

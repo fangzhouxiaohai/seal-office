@@ -2,7 +2,8 @@ const { app, BrowserWindow, Menu, dialog } = require('electron')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { 注册全部通道 } = require('./ipc')
-const { 获取未保存风险数量 } = require('./ipc/systemChannel')
+const { 获取未保存风险数量, 查询实时关闭状态 } = require('./ipc/systemChannel')
+const { 创建关联文件入口 } = require('./fileAssociation')
 
 const DEV_SERVER_URL = 'http://localhost:5172'
 const MAX_LOAD_RETRY = 30
@@ -11,6 +12,8 @@ const RETRY_INTERVAL = 500
 // 单实例锁：二次启动唤起已有窗口，避免同一文档被两个实例并发打开
 const 获得单实例锁 = app.requestSingleInstanceLock()
 let 主窗口 = null
+const 关联文件入口 = 创建关联文件入口(() => 主窗口)
+if (process.platform === 'win32') 关联文件入口.加入命令行(process.argv)
 
 function 加载开发服务(窗口, 次数) {
   窗口.loadURL(DEV_SERVER_URL).catch(() => {
@@ -24,24 +27,75 @@ function 加载开发服务(窗口, 次数) {
 
 function 安装关闭保护(窗口) {
   let 已确认退出 = false
-  窗口.on('close', (事件) => {
-    if (已确认退出) return
-    const 数量 = 获取未保存风险数量(窗口)
-    if (数量 === 0) return
-    事件.preventDefault()
+  let 正在核验 = false
+  const 询问是否仍然退出 = (选项) => {
+    if (窗口.isDestroyed?.()) return
     const 选择 = dialog.showMessageBoxSync(窗口, {
-      type: 'warning',
-      title: '确认退出',
-      message: `还有 ${数量} 个文档可能包含未保存的修改`,
-      detail: '放弃修改并退出后，未保存的内容可能丢失。',
-      buttons: ['取消', '放弃修改并退出'],
+      ...选项,
+      buttons: ['保留窗口', '仍然退出'],
       defaultId: 0,
       cancelId: 0,
       noLink: true,
     })
-    if (选择 !== 1) return
+    if (选择 !== 1 || 窗口.isDestroyed?.()) return
     已确认退出 = true
     窗口.close()
+  }
+  窗口.on('close', (事件) => {
+    if (已确认退出) return
+    事件.preventDefault()
+    if (正在核验) return
+    正在核验 = true
+    void 查询实时关闭状态(窗口).then((状态) => {
+      if (窗口.isDestroyed?.()) return
+      if (状态 === null) {
+        const 已上报数量 = 获取未保存风险数量(窗口)
+        询问是否仍然退出({
+          type: 'warning',
+          title: '无法确认保存状态',
+          message: '关闭前未能完成文档与工作状态检查',
+          detail: `${已上报数量 > 0 ? `先前记录有 ${已上报数量} 个未保存文档` : '未保存数量无法确认'}。退出后未保存内容及工作区状态可能无法恢复。请先保存文件；确需退出时手动选择“仍然退出”。`,
+        })
+        return
+      }
+      if (!状态.备份成功) {
+        询问是否仍然退出({
+          type: 'error',
+          title: '工作状态保存失败',
+          message: `工作状态保存失败：${状态.备份错误 || '无法写入当前工作区备份'}`,
+          detail: `当前有 ${状态.未保存数量} 个未保存文档。退出后未保存内容及工作区状态可能无法恢复。请先检查存储空间并保存文件；确需退出时手动选择“仍然退出”。`,
+        })
+        return
+      }
+      const 数量 = 状态.未保存数量
+      if (数量 === 0) {
+        已确认退出 = true
+        窗口.close()
+        return
+      }
+      const 选择 = dialog.showMessageBoxSync(窗口, {
+        type: 'warning',
+        title: '确认退出',
+        message: `还有 ${数量} 个文档可能包含未保存的修改`,
+        detail: '放弃修改并退出后，原文件中的内容可能丢失。请先保存文档，或确认放弃修改。',
+        buttons: ['取消', '放弃修改并退出'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      })
+      if (选择 !== 1) return
+      已确认退出 = true
+      窗口.close()
+    }).catch((错误) => {
+      console.error('关闭前状态核验失败：', 错误)
+      const 已上报数量 = 获取未保存风险数量(窗口)
+      询问是否仍然退出({
+        type: 'error',
+        title: '无法确认保存状态',
+        message: '关闭前检查文档状态失败',
+        detail: `${已上报数量 > 0 ? `先前记录有 ${已上报数量} 个未保存文档` : '未保存数量无法确认'}。退出后未保存内容及工作区状态可能无法恢复。请检查并保存文件；确需退出时手动选择“仍然退出”。`,
+      })
+    }).finally(() => { 正在核验 = false })
   })
 }
 
@@ -90,22 +144,25 @@ function 创建窗口() {
   })
 }
 
-app.on('second-instance', () => {
-  if (主窗口 !== null) {
-    if (主窗口.isMinimized()) 主窗口.restore()
-    主窗口.focus()
-  }
-})
-
-app.on('activate', () => { if (app.isWindowClosed) 创建窗口() })
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
-app.whenReady().then(() => {
-  注册全部通道(require('electron').ipcMain)
-  创建窗口()
-})
-
 if (!获得单实例锁) {
   app.quit()
+} else {
+  app.on('second-instance', (_事件, 命令行) => {
+    if (process.platform === 'win32') 关联文件入口.加入命令行(命令行)
+    if (主窗口 !== null) {
+      if (主窗口.isMinimized()) 主窗口.restore()
+      主窗口.focus()
+    }
+  })
+
+  app.on('activate', () => { if (app.isWindowClosed) 创建窗口() })
+  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
+  app.whenReady().then(() => {
+    const 主进程通道 = require('electron').ipcMain
+    注册全部通道(主进程通道)
+    关联文件入口.注册读取通道(主进程通道)
+    创建窗口()
+  })
 }
 
 module.exports = { 安装关闭保护, 安装导航保护 }

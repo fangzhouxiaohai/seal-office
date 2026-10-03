@@ -177,3 +177,13 @@ describe('演示命令：右键菜单版式与背景', () => {
     expect(查找演示命令('slide.moveDown')).toBeDefined()
   })
 })
+
+describe('演示命令：动画限制', () => {
+  it.each(['animation.appear', 'animation.fade'])('%s 不写入无法保存的动画模型并提示限制', (标识) => {
+    const { 上下文, 取最新 } = 构造上下文()
+    const 提示限制 = vi.fn()
+    查找演示命令(标识)?.run({ ...上下文, 提示功能限制: 提示限制 })
+    expect(取最新()).toBe(上下文.文稿)
+    expect(提示限制).toHaveBeenCalledWith('动画功能受限', expect.stringContaining('无法可靠保存'))
+  })
+})

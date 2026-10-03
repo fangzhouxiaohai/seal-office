@@ -1,0 +1,151 @@
+.wps-global-tabs {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 36px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--space-2);
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-global-tabs__home,
+.wps-global-tabs__create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  min-width: 40px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  margin: 3px 0;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.wps-global-tabs__home {
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  margin-right: var(--space-2);
+}
+
+.wps-global-tabs__home:hover,
+.wps-global-tabs__create:hover,
+.wps-global-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.wps-global-tabs__home--active {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.wps-global-tabs__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.wps-global-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 1 200px;
+  min-width: 110px;
+  max-width: 200px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  background: var(--bg-app);
+  color: var(--text-2);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.wps-global-tab--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.wps-global-tab__select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wps-global-tab__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wps-global-tab__dirty {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.wps-global-tab__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  margin-right: 2px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: .72;
+}
+
+.wps-global-tab__close:hover {
+  background: var(--border);
+  opacity: 1;
+}
+
+.wps-global-tabs button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.wps-global-tabs button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .wps-global-tabs__home {
+    min-width: 34px;
+    padding: 0 var(--space-2);
+  }
+
+  .wps-global-tab {
+    min-width: 100px;
+  }
+}

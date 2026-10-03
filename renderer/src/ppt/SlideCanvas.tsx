@@ -161,6 +161,7 @@ const SlideCanvas = ({
               width: `${框.width}px`,
               height: `${框.height}px`,
               fontSize: `${框.字号}px`,
+              fontFamily: 框.字体,
               fontWeight: 框.加粗 ? 600 : 400,
               fontStyle: 框.斜体 ? 'italic' : 'normal',
               textDecoration: 框.下划线 ? 'underline' : 'none',

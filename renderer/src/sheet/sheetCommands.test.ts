@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { 查找表格命令, type 表格命令上下文 } from './sheetCommands'
 import { 创建工作表, 写入单元格, 读取单元格, type Sheet } from './model'
 import { 解析地址 } from './address'
@@ -32,6 +32,75 @@ const 构造上下文 = (选区 = { 起点: { 行: 0, 列: 0 }, 终点: { 行: 2
   }
   return { 上下文, 通知, 撤销, 重做, 取最新: () => 最新表 }
 }
+
+const 设置测试剪贴板 = (文本 = '') => {
+  const 读取 = vi.fn().mockResolvedValue(文本)
+  const 写入 = vi.fn().mockResolvedValue(undefined)
+  vi.stubGlobal('navigator', { clipboard: { readText: 读取, writeText: 写入 } })
+  return { 读取, 写入 }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('表格命令：剪贴板二维区域', () => {
+  it('复制多行选区时按行列生成制表符分隔文本', async () => {
+    const { 写入 } = 设置测试剪贴板()
+    const { 上下文, 通知 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 1, 列: 1 } })
+    查找表格命令('clipboard.copy')?.run(上下文)
+    expect(写入).toHaveBeenCalledWith('3\t丙\n1\t甲')
+    await vi.waitFor(() => expect(通知).toHaveBeenCalledWith('已复制 4 个单元格'))
+  })
+
+  it('剪切多行选区时保留二维结构并在写入剪贴板成功后清空原区域', async () => {
+    const { 写入 } = 设置测试剪贴板()
+    const { 上下文, 取最新 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 1, 列: 1 } })
+    查找表格命令('clipboard.cut')?.run(上下文)
+    expect(写入).toHaveBeenCalledWith('3\t丙\n1\t甲')
+    await vi.waitFor(() => expect(读取单元格(取最新(), 'B2').原始值).toBe(''))
+    expect(读取单元格(取最新(), 'A1').原始值).toBe('')
+    expect(读取单元格(取最新(), 'B1').原始值).toBe('')
+    expect(读取单元格(取最新(), 'A2').原始值).toBe('')
+  })
+
+  it('以单个目标格为左上角粘贴完整二维区域', async () => {
+    设置测试剪贴板('新甲\t新乙\n新丙\t新丁')
+    const { 上下文, 取最新, 通知 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
+    查找表格命令('clipboard.paste')?.run(上下文)
+    await vi.waitFor(() => expect(通知).toHaveBeenCalledWith('已粘贴 4 个单元格'))
+    expect(读取单元格(取最新(), 'A1').原始值).toBe('新甲')
+    expect(读取单元格(取最新(), 'B1').原始值).toBe('新乙')
+    expect(读取单元格(取最新(), 'A2').原始值).toBe('新丙')
+    expect(读取单元格(取最新(), 'B2').原始值).toBe('新丁')
+  })
+
+  it('粘贴保留中间空白行并兼容回车换行和末尾换行', async () => {
+    设置测试剪贴板('第一\t首行\r\n\r\n第三\t末行\r\n')
+    const { 上下文, 取最新, 通知 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
+    查找表格命令('clipboard.paste')?.run(上下文)
+    await vi.waitFor(() => expect(通知).toHaveBeenCalledWith('已粘贴 6 个单元格'))
+    expect(读取单元格(取最新(), 'A1').原始值).toBe('第一')
+    expect(读取单元格(取最新(), 'B1').原始值).toBe('首行')
+    expect(读取单元格(取最新(), 'A2').原始值).toBe('')
+    expect(读取单元格(取最新(), 'B2').原始值).toBe('')
+    expect(读取单元格(取最新(), 'A3').原始值).toBe('第三')
+    expect(读取单元格(取最新(), 'B3').原始值).toBe('末行')
+  })
+
+  it('反向选区以左上格粘贴并将超出工作表的部分裁剪', async () => {
+    设置测试剪贴板('甲\t乙\t丙\n丁\t戊\t己')
+    const { 上下文, 取最新, 通知 } = 构造上下文({ 起点: { 行: 3, 列: 1 }, 终点: { 行: 2, 列: 0 } })
+    查找表格命令('clipboard.paste')?.run(上下文)
+    await vi.waitFor(() => expect(通知).toHaveBeenCalledWith('已粘贴 4 个单元格'))
+    expect(读取单元格(取最新(), 'A3').原始值).toBe('甲')
+    expect(读取单元格(取最新(), 'B3').原始值).toBe('乙')
+    expect(读取单元格(取最新(), 'A4').原始值).toBe('丁')
+    expect(读取单元格(取最新(), 'B4').原始值).toBe('戊')
+    expect(Object.keys(取最新().单元格)).not.toContain('C3')
+    expect(Object.keys(取最新().单元格)).not.toContain('C4')
+  })
+})
 
 describe('表格命令：撤销与重做', () => {
   it('撤销命令派发到上下文的撤销', () => {
@@ -157,10 +226,71 @@ describe('表格命令：格式与清除', () => {
     expect(读取单元格(表, 'A1').格式.加粗).toBe(true)
   })
 
-  it('未实现的表格命令给出中文提示', () => {
-    const { 上下文, 通知 } = 构造上下文()
-    查找表格命令('data.filter')?.run(上下文)
-    expect(通知).toHaveBeenCalledWith('该功能开发中')
+})
+
+describe('表格命令：本地工具入口', () => {
+  it('查找命令打开已有查找栏', () => {
+    const { 上下文 } = 构造上下文()
+    const 打开查找 = vi.fn()
+    查找表格命令('edit.find')?.run({ ...上下文, 打开查找 })
+    expect(打开查找).toHaveBeenCalledTimes(1)
+  })
+
+  it('函数库命令在当前单元格开始编辑可执行的函数', () => {
+    const { 上下文 } = 构造上下文()
+    const 开始编辑公式 = vi.fn()
+    查找表格命令('formula.lookup')?.run({ ...上下文, 开始编辑公式 })
+    查找表格命令('formula.financial')?.run({ ...上下文, 开始编辑公式 })
+    expect(开始编辑公式).toHaveBeenNthCalledWith(1, '=XLOOKUP(')
+    expect(开始编辑公式).toHaveBeenNthCalledWith(2, '=PMT(')
+  })
+
+  it('冻结和拆分命令派发到当前视图', () => {
+    const { 上下文 } = 构造上下文()
+    const 切换冻结 = vi.fn()
+    const 切换拆分 = vi.fn()
+    查找表格命令('view.freeze')?.run({ ...上下文, 切换冻结, 切换拆分 })
+    查找表格命令('view.split')?.run({ ...上下文, 切换冻结, 切换拆分 })
+    expect(切换冻结).toHaveBeenCalledTimes(1)
+    expect(切换拆分).toHaveBeenCalledTimes(1)
+  })
+
+  it('批注命令打开当前单元格批注编辑', () => {
+    const { 上下文 } = 构造上下文()
+    const 编辑批注 = vi.fn()
+    查找表格命令('review.comment')?.run({ ...上下文, 编辑批注 })
+    expect(编辑批注).toHaveBeenCalledTimes(1)
+  })
+
+  it('筛选命令打开筛选设置', () => {
+    const { 上下文 } = 构造上下文()
+    const 切换筛选 = vi.fn()
+    查找表格命令('data.filter')?.run({ ...上下文, 切换筛选 })
+    expect(切换筛选).toHaveBeenCalledTimes(1)
+  })
+
+  it('符号命令打开本地符号选择', () => {
+    const { 上下文 } = 构造上下文()
+    const 选择符号 = vi.fn()
+    查找表格命令('symbol.insert')?.run({ ...上下文, 选择符号 })
+    expect(选择符号).toHaveBeenCalledTimes(1)
+  })
+
+  it('页面设置命令将选项写入工作表', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('layout.margin')?.run(上下文, '窄')
+    查找表格命令('layout.orientation')?.run({ ...上下文, 工作表: 取最新() }, '横向')
+    查找表格命令('layout.paperSize')?.run({ ...上下文, 工作表: 取最新() }, 'A5')
+    expect(取最新().页面设置).toEqual({ 页边距: '窄', 方向: '横向', 纸张大小: 'A5' })
+  })
+
+  it('工作簿视图命令切换普通与页面布局', () => {
+    const { 上下文 } = 构造上下文()
+    const 切换视图 = vi.fn()
+    查找表格命令('view.pageLayout')?.run({ ...上下文, 切换视图 })
+    查找表格命令('view.normal')?.run({ ...上下文, 切换视图 })
+    expect(切换视图).toHaveBeenNthCalledWith(1, '页面布局')
+    expect(切换视图).toHaveBeenNthCalledWith(2, '普通')
   })
 })
 

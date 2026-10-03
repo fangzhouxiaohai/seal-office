@@ -1,4 +1,5 @@
 // 模板库数据
+import { 创建演示文稿, 创建文本框, type 演示文稿 } from '../ppt/deck'
 
 export interface 模板项 {
   id: string
@@ -7,6 +8,7 @@ export interface 模板项 {
   描述: string
   内容: string
   标签?: string[]
+  演示设置?: { 背景色: string; 标题: string; 副标题: string; 页脚: string }
 }
 
 export const WORD_TEMPLATES: 模板项[] = [
@@ -140,7 +142,8 @@ export const PPT_TEMPLATES: 模板项[] = [
     分类: 'ppt',
     描述: '商务会议演示模板',
     标签: ['商务', '会议'],
-    内容: `<div style="text-align:center;padding:80px;background:linear-gradient(135deg, #2B6CF6, #4A90E2);color:white;border-radius:8px">
+    演示设置: { 背景色: '#214FAD', 标题: '商务演示', 副标题: '汇报人：__________', 页脚: '__________年__月__日' },
+    内容: `<div style="text-align:center;padding:80px;background:#214FAD;color:white;border-radius:8px">
       <h1 style="font-size:48px;margin:0">商务演示</h1>
       <p style="font-size:24px;margin:20px 0">汇报人：__________</p>
       <p style="font-size:18px;margin:0">__________年__月__日</p>
@@ -152,7 +155,8 @@ export const PPT_TEMPLATES: 模板项[] = [
     分类: 'ppt',
     描述: '培训课件模板',
     标签: ['教育', '培训'],
-    内容: `<div style="text-align:center;padding:80px;background:linear-gradient(135deg, #00A870, #48C9A6);color:white;border-radius:8px">
+    演示设置: { 背景色: '#17694D', 标题: '培训课程', 副标题: '讲师：__________', 页脚: '__________部门' },
+    内容: `<div style="text-align:center;padding:80px;background:#17694D;color:white;border-radius:8px">
       <h1 style="font-size:48px;margin:0">培训课程</h1>
       <p style="font-size:24px;margin:20px 0">讲师：__________</p>
       <p style="font-size:18px;margin:0">__________部门</p>
@@ -164,7 +168,8 @@ export const PPT_TEMPLATES: 模板项[] = [
     分类: 'ppt',
     描述: '新产品发布演示模板',
     标签: ['产品', '发布'],
-    内容: `<div style="text-align:center;padding:80px;background:linear-gradient(135deg, #ED7B2F, #F5A623);color:white;border-radius:8px">
+    演示设置: { 背景色: '#A44A17', 标题: '产品介绍', 副标题: '__________产品', 页脚: '版本 1.0' },
+    内容: `<div style="text-align:center;padding:80px;background:#A44A17;color:white;border-radius:8px">
       <h1 style="font-size:48px;margin:0">产品介绍</h1>
       <p style="font-size:24px;margin:20px 0">__________产品</p>
       <p style="font-size:18px;margin:0">版本 1.0</p>
@@ -177,6 +182,26 @@ export const ALL_TEMPLATES: 模板项[] = [
   ...TABLE_TEMPLATES,
   ...PPT_TEMPLATES
 ]
+
+/** 将演示模板生成编辑器可直接修改的幻灯片模型。 */
+export function 生成演示模板文稿(模板: 模板项): 演示文稿 {
+  if (模板.分类 !== 'ppt' || !模板.演示设置) throw new Error('演示模板缺少幻灯片设置')
+  const { 背景色, 标题, 副标题, 页脚 } = 模板.演示设置
+  const 文稿 = 创建演示文稿(`${模板.名称}.pptx`)
+  const 标题框 = { ...创建文本框(80, 135, 800, 85, 标题, 48), 加粗: true, 颜色: '#FFFFFF', 对齐: 'center' as const }
+  const 副标题框 = { ...创建文本框(80, 255, 800, 55, 副标题, 28), 颜色: '#FFFFFF', 对齐: 'center' as const }
+  const 页脚框 = { ...创建文本框(80, 365, 800, 40, 页脚, 19), 颜色: '#FFFFFF', 对齐: 'center' as const }
+  return {
+    ...文稿,
+    幻灯片列表: [{
+      ...文稿.幻灯片列表[0],
+      title: 模板.名称,
+      版式: '空白',
+      背景色,
+      文本框列表: [标题框, 副标题框, 页脚框],
+    }],
+  }
+}
 
 /**
  * 根据分类获取模板列表

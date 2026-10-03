@@ -4,7 +4,6 @@ import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
 import { 下载文本 } from '../editor/exportDoc'
-import DocumentTabs from '../editor/DocumentTabs'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 演示标签 } from './ribbonSpecs'
@@ -15,6 +14,7 @@ import {
   约束位置,
   读取当前幻灯片,
   更新幻灯片,
+  重排幻灯片,
   更新文本框,
   type 演示文稿,
 } from './deck'
@@ -22,6 +22,7 @@ import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { PptStatusBar, ThumbnailList } from './PptChrome'
 import SlideCanvas from './SlideCanvas'
 import SlideshowView from './SlideshowView'
+import { NotesView, SlideSorterView } from './PptViews'
 import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 记录最近文档 } from '../fileOpen'
@@ -36,9 +37,14 @@ const 基准名 = (路径: string): string => {
 const 是同一路径 = (左: string, 右: string): boolean =>
   左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
 
+const 规范演示保存路径 = (路径: string): string | null => {
+  const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
+  return 扩展 === undefined ? `${路径}.pptx` : 扩展 === '.pptx' ? 路径 : null
+}
+
 const PptEditor = () => {
   const { message, modal } = AntdApp.useApp()
-  const { documents, createDoc, createEditorDoc, closeEditorDoc, setActiveDocumentId, 演示文档模型, 更新演示文档模型, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径 } = useAppStore()
+  const { documents, createDoc, markDocumentSaved, 演示文档模型, 更新演示文档模型, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径, 查找保存路径占用, 更新文件指纹 } = useAppStore()
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
   const [独立文稿, set独立文稿] = useState<演示文稿>(() => 创建演示文稿())
   const 文稿 = activeDocumentId === null ? 独立文稿 : 演示文档模型[activeDocumentId]
@@ -51,6 +57,7 @@ const PptEditor = () => {
   const [编辑框标识, set编辑框标识] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
+  const [当前视图, set当前视图] = useState<'普通' | '浏览' | '备注'>('普通')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
   const [文档路径, set文档路径] = useState<string | null>(() => 已知文档路径[activeDocumentId ?? ''] ?? null)
@@ -59,9 +66,16 @@ const PptEditor = () => {
     set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)
   }, [activeDocumentId, 已知文档路径])
 
-  const 记录当前路径 = (路径: string) => {
+  const 记录当前路径 = (路径: string, 文件指纹?: string) => {
     set文档路径(路径)
-    if (activeDocumentId !== null) 设置全局文档路径(activeDocumentId, 路径)
+    const 新名称 = 基准名(路径).replace(/\.(pptx|json)$/i, '')
+    const 已保存文稿 = { ...文稿, name: 新名称 }
+    set文稿((当前) => ({ ...当前, name: 新名称 }))
+    if (activeDocumentId !== null) {
+      设置全局文档路径(activeDocumentId, 路径)
+      if (文件指纹) 更新文件指纹(activeDocumentId, 文件指纹)
+      markDocumentSaved(activeDocumentId, '', JSON.stringify(已保存文稿))
+    }
   }
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
@@ -88,6 +102,17 @@ const PptEditor = () => {
 
   const 显示文件错误 = (标题: string, 原因: string) => {
     modal.error({ title: 标题, content: 原因 })
+  }
+
+  const 路径被其他标签占用 = (路径: string): boolean => {
+    const 标签 = 查找保存路径占用(activeDocumentId, 路径)
+    if (标签 === null) return false
+    modal.warning({
+      title: '保存路径已被其他标签占用',
+      content: `“${标签.name}”标签正在使用该路径。请切换到该标签保存，或选择其他路径。`,
+      okText: '我知道了',
+    })
+    return true
   }
 
   const 展示导入警告 = (警告: string[]) => {
@@ -135,6 +160,7 @@ const PptEditor = () => {
     set菜单可见(false)
     set放映中(false)
     set放映索引(0)
+    set当前视图('普通')
     选区快照.current = null
     最近选中框标识.current = null
   }, [activeDocumentId])
@@ -152,6 +178,14 @@ const PptEditor = () => {
     // 新建历史栈或切换文档时记录该文档的初始状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [历史])
+
+  // 外部内容修改进入撤销栈；只改变当前浏览页码时无需生成编辑历史。
+  useEffect(() => {
+    const 已记录 = 历史.current()
+    if (已记录 === 文稿) return
+    if (已记录 && JSON.stringify({ ...已记录, 当前索引: 0 }) === JSON.stringify({ ...文稿, 当前索引: 0 })) return
+    历史.record(文稿)
+  }, [历史, 文稿])
 
   // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
   const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
@@ -220,6 +254,8 @@ const PptEditor = () => {
     选区快照: 选区快照.current,
     更新文稿,
     notify: (文本: string) => message.info(文本),
+    提示功能限制: (标题: string, 内容: string) => modal.warning({ title: 标题, content: 内容, okText: '我知道了' }),
+    切换视图: set当前视图,
     撤销,
     重做,
   }
@@ -253,11 +289,6 @@ const PptEditor = () => {
       const 目标 = !显示网格线
       set显示网格线(目标)
       message.info(目标 ? '已显示网格线' : '已隐藏网格线')
-      return
-    }
-    if (标识 === 'view.normal') {
-      // 当前即普通视图；此命令用于切换视图，普通视图为默认呈现
-      message.info('已切换到普通视图')
       return
     }
     if (标识 === 'slideshow.start' || 标识 === 'slideshow.current') {
@@ -299,7 +330,7 @@ const PptEditor = () => {
                 桥接.office.readPptx(读取结果.内容).then((解析结果) => {
                   if (解析结果 && 解析结果.演示文稿) {
                     const 警告 = Array.isArray(解析结果.警告) ? 解析结果.警告 as string[] : []
-                    createDoc('ppt', 解析结果.演示文稿, { 路径: 文件路径, 警告 })
+                    createDoc('ppt', 解析结果.演示文稿, { 路径: 文件路径, 警告, 文件指纹: 读取结果.文件指纹 })
                     void 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
                     message.success('文件已打开')
                   } else {
@@ -349,8 +380,14 @@ const PptEditor = () => {
       }
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
       const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.pptx`
-      Promise.resolve(文档路径 ?? 桥接.showSaveDialog(默认路径, 'ppt' as const)).then((文件路径: string | null) => {
-        if (文件路径) {
+      Promise.resolve(文档路径 ?? 桥接.showSaveDialog(默认路径, 'ppt' as const)).then((原始文件路径: string | null) => {
+        if (原始文件路径) {
+          const 文件路径 = 规范演示保存路径(原始文件路径)
+          if (!文件路径) {
+            显示文件错误('保存失败', '请选择 PPTX 格式的文件路径；当前路径不能保存为演示文稿。')
+            return
+          }
+          if (路径被其他标签占用(文件路径)) return
           if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径)) {
             提示禁止覆盖(保真风险.警告)
             return
@@ -359,6 +396,9 @@ const PptEditor = () => {
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
             背景色: 幻灯片.背景色,
+            过渡效果: 幻灯片.过渡效果,
+            动画: 幻灯片.动画,
+            备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
               x: 框.x,
               y: 框.y,
@@ -366,8 +406,10 @@ const PptEditor = () => {
               height: 框.height,
               text: 框.text,
               字号: 框.字号,
+              字体: 框.字体,
               加粗: 框.加粗,
               斜体: 框.斜体,
+              下划线: 框.下划线,
               颜色: 框.颜色,
               对齐: 框.对齐,
               片段: (框.片段列表 ?? []).map((片段) => ({
@@ -380,13 +422,15 @@ const PptEditor = () => {
             })),
           }))
           const 模型 = { 幻灯片: 幻灯片模型 }
+          const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
+            ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
+              if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
-              return 桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+              return 桥接.saveToFile(文件路径, 二进制内容, '二进制', 预期文件指纹).then((保存结果: any) => {
                 if (保存结果.成功) {
-                  记录当前路径(文件路径)
-                  set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
+                  记录当前路径(文件路径, 保存结果.文件指纹)
                   message.success('文件已保存')
                 } else {
                   显示文件错误('保存失败', 保存结果.错误 || '未知错误')
@@ -410,8 +454,14 @@ const PptEditor = () => {
         return
       }
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
-      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (文件路径: string | null) => {
-        if (文件路径) {
+      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (原始文件路径: string | null) => {
+        if (原始文件路径) {
+          const 文件路径 = 规范演示保存路径(原始文件路径)
+          if (!文件路径) {
+            显示文件错误('保存失败', '请选择 PPTX 格式的文件路径；当前路径不能保存为演示文稿。')
+            return
+          }
+          if (路径被其他标签占用(文件路径)) return
           if (保真风险) {
             if (是同一路径(文件路径, 保真风险.来源路径)) {
               提示禁止覆盖(保真风险.警告)
@@ -423,6 +473,9 @@ const PptEditor = () => {
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
             背景色: 幻灯片.背景色,
+            过渡效果: 幻灯片.过渡效果,
+            动画: 幻灯片.动画,
+            备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
               x: 框.x,
               y: 框.y,
@@ -430,8 +483,10 @@ const PptEditor = () => {
               height: 框.height,
               text: 框.text,
               字号: 框.字号,
+              字体: 框.字体,
               加粗: 框.加粗,
               斜体: 框.斜体,
+              下划线: 框.下划线,
               颜色: 框.颜色,
               对齐: 框.对齐,
               片段: (框.片段列表 ?? []).map((片段) => ({
@@ -444,13 +499,15 @@ const PptEditor = () => {
             })),
           }))
           const 模型 = { 幻灯片: 幻灯片模型 }
+          const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
+            ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
+              if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
-              return 桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+              return 桥接.saveToFile(文件路径, 二进制内容, '二进制', 预期文件指纹).then((保存结果: any) => {
                 if (保存结果.成功) {
-                  记录当前路径(文件路径)
-                  set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
+                  记录当前路径(文件路径, 保存结果.文件指纹)
                   message.success('文件已另存为')
                 } else {
                   显示文件错误('保存失败', 保存结果.错误 || '未知错误')
@@ -478,10 +535,14 @@ const PptEditor = () => {
     }
     const 命令 = 查找演示命令(标识)
     if (命令 === undefined) {
-      message.error('该命令未注册')
+      显示文件错误('演示操作失败', '该命令未注册')
       return
     }
-    命令.run(上下文, 参数)
+    try {
+      命令.run(上下文, 参数)
+    } catch (错误) {
+      显示文件错误('演示操作失败', 错误 instanceof Error ? 错误.message : '请检查所选内容后重试')
+    }
   }
 
   const 提交编辑 = () => {
@@ -571,23 +632,6 @@ const PptEditor = () => {
   return React.createElement(
     React.Fragment,
     null,
-    React.createElement(DocumentTabs, {
-      documents: documents.filter((项) => 项.type === 'ppt').map((项) => ({ id: 项.id, name: 项.name })),
-      activeId: activeDocumentId,
-      onSelect: setActiveDocumentId,
-      onCreate: createEditorDoc,
-      onClose: (标识: string) => {
-        const 文档 = documents.find((项) => 项.id === 标识)
-        if (!文档) return
-        modal.confirm({
-          title: '关闭演示文稿',
-          content: `关闭「${文档.name}」将放弃未保存的修改。`,
-          okText: '关闭文档',
-          cancelText: '取消',
-          onOk: () => closeEditorDoc(标识),
-        })
-      },
-    }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
@@ -599,6 +643,17 @@ const PptEditor = () => {
     React.createElement(
       'div',
       { className: 'wps-ppt-body' },
+      当前视图 === '浏览'
+        ? React.createElement(SlideSorterView, {
+            文稿,
+            on选中: (索引: number) => set文稿(切换幻灯片(文稿, 索引)),
+            on重排: (来源索引: number, 目标索引: number) => {
+              const 结果 = 重排幻灯片(文稿, 来源索引, 目标索引)
+              if (结果 !== 文稿) 更新文稿(结果)
+            },
+            on打开: () => set当前视图('普通'),
+          })
+        : React.createElement(React.Fragment, null,
       React.createElement(ThumbnailList, {
         文稿,
         on选中: (索引: number) => {
@@ -607,7 +662,13 @@ const PptEditor = () => {
         },
         on新建: () => 执行命令('slide.new'),
       }),
-      当前幻灯片 === null
+      当前视图 === '备注' && 当前幻灯片 !== null
+        ? React.createElement(NotesView, {
+            幻灯片: 当前幻灯片,
+            索引: 文稿.当前索引,
+            on编辑: (内容: string) => 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 备注: 内容 })),
+          })
+        : 当前幻灯片 === null
         ? React.createElement('div', { className: 'wps-ppt-empty' }, '暂无幻灯片')
         : React.createElement(SlideCanvas, {
             key: 历史标识,
@@ -644,6 +705,7 @@ const PptEditor = () => {
               set菜单可见(true)
             },
           })
+        )
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: set缩放 }),
     React.createElement(ContextMenu, {

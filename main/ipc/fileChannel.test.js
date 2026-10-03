@@ -41,9 +41,44 @@ describe('保存/打开对话框过滤器映射', () => {
     expect(保存过滤器映射.pdf).toEqual([{ name: 'PDF 文件', extensions: ['pdf'] }])
   })
 
-  it('打开过滤器与保存类型对应，表格支持旧版 json 兼容', () => {
-    expect(打开过滤器映射.table).toEqual([{ name: '表格文档', extensions: ['xlsx', 'json'] }])
+  it('表格打开过滤器支持 XLSX、CSV 和旧版 JSON', () => {
+    expect(打开过滤器映射.table).toEqual([{ name: '表格文档', extensions: ['xlsx', 'csv', 'json'] }])
     expect(打开过滤器映射.word[0].extensions).toContain('docx')
     expect(打开过滤器映射.ppt[0].extensions).toContain('pptx')
+  })
+})
+
+describe('损坏自动备份保留', () => {
+  const fs = require('fs')
+  const path = require('path')
+  const os = require('os')
+  const { 保留损坏自动备份 } = require('./fileChannel')
+
+  it('用原文件移动保留完整字节，且原始位置可供新会话写入', () => {
+    const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-backup-test-'))
+    try {
+      const 原始内容 = Buffer.from('{无效\r\n', 'utf8')
+      fs.writeFileSync(path.join(目录, 'autosave.json'), 原始内容)
+      const 保留路径 = 保留损坏自动备份(目录, 原始内容.toString('utf8'))
+      expect(path.dirname(保留路径)).toBe(目录)
+      expect(path.basename(保留路径)).toMatch(/^autosave-invalid-.+\.json$/)
+      expect(fs.readFileSync(保留路径)).toEqual(原始内容)
+      expect(fs.existsSync(path.join(目录, 'autosave.json'))).toBe(false)
+    } finally {
+      fs.rmSync(目录, { recursive: true, force: true })
+    }
+  })
+
+  it('原文件在读取后被修改时拒绝移动，保留当前文件', () => {
+    const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-backup-test-'))
+    try {
+      const 目标 = path.join(目录, 'autosave.json')
+      fs.writeFileSync(目标, '后来修改的内容', 'utf8')
+      expect(() => 保留损坏自动备份(目录, '先前读取的内容')).toThrow('备份内容已变化')
+      expect(fs.readFileSync(目标, 'utf8')).toBe('后来修改的内容')
+      expect(fs.readdirSync(目录)).toEqual(['autosave.json'])
+    } finally {
+      fs.rmSync(目录, { recursive: true, force: true })
+    }
   })
 })

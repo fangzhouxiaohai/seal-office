@@ -1,11 +1,13 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import SheetEditor from './SheetEditor'
+import GlobalTabs from '../components/GlobalTabs'
 import { AppProvider, useAppStore } from '../store'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
+import { 设置数据验证 } from './model'
 
 const 渲染表格 = () =>
   render(
@@ -22,6 +24,152 @@ const 渲染表格 = () =>
   )
 
 describe('表格编辑器容器', () => {
+  it('数据验证弹窗设置列表后拒绝公式栏非法输入，撤销可移除规则', async () => {
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 容器 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>待办</td></tr></table>')}>打开验证表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开验证表格'))
+    await userEvent.click(screen.getByRole('tab', { name: '数据' }))
+    await userEvent.click(screen.getByRole('button', { name: '数据验证' }))
+    const 选项 = await screen.findByLabelText('选项（每行一项）')
+    await userEvent.type(选项, '待办{Enter}完成')
+    const 对话框 = 选项.closest('[role="dialog"]') as HTMLElement
+    await userEvent.click(within(对话框).getByRole('button', { name: '应用规则' }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.数据验证).toMatchObject({ 类型: '列表', 选项: ['待办', '完成'] })
+    const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
+    fireEvent.change(公式栏, { target: { value: '错误状态' } })
+    fireEvent.keyDown(公式栏, { key: 'Enter' })
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.原始值).toBe('待办')
+    await waitFor(() => expect(screen.getAllByText('输入不符合数据验证').length).toBeGreaterThan(0))
+    await userEvent.click(screen.getByRole('tab', { name: '开始' }))
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.数据验证).toBeUndefined()
+  })
+
+  it('批量粘贴中任一单元格不符合验证时整批不写入', async () => {
+    const 读取 = vi.fn(async () => '新值\t错误状态')
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { readText: 读取 } })
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 容器 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>旧值</td><td>允许</td></tr></table>')}>打开批量验证表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开批量验证表格'))
+    act(() => 状态!.更新表格文档模型(状态!.activeDocumentId!, (当前) => [
+      设置数据验证(当前[0], 'B1', { 类型: '列表', 选项: ['允许'], 允许空白: false }),
+    ]))
+    fireEvent.keyDown(container.querySelector('.wps-sheet') as HTMLElement, { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(读取).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getAllByText('输入不符合数据验证').length).toBeGreaterThan(0))
+    const 表 = 状态!.表格文档模型[状态!.activeDocumentId!][0]
+    expect(表.单元格.A1.原始值).toBe('旧值')
+    expect(表.单元格.B1.原始值).toBe('允许')
+  })
+
+  it('拼写检查列出选区问题并在确认后修正单元格', async () => {
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 容器 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>我们的的团队,已经完成</td></tr></table>')}>打开拼写表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开拼写表格'))
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '拼写检查' }))
+    expect(await screen.findByText('当前选区发现 2 处可修正的文字问题')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '全部修正' }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.原始值).toBe('我们的团队，已经完成')
+  })
+
+  it('保护工作表阻止键盘清空与格式修改，解除后恢复编辑', async () => {
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 容器 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>原值</td></tr></table>')}>打开保护表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开保护表格'))
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '保护工作表' }))
+    await waitFor(() => expect(screen.getAllByText('确认保护工作表').length).toBeGreaterThan(0))
+    await userEvent.click(screen.getByRole('button', { name: /^保\s*护$/ }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].保护).toBe('本机')
+    fireEvent.keyDown(container.querySelector('.wps-sheet') as HTMLElement, { key: 'Delete' })
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.原始值).toBe('原值')
+    await userEvent.click(screen.getByRole('tab', { name: '开始' }))
+    await userEvent.click(screen.getByRole('button', { name: '加粗' }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.格式.加粗).toBeUndefined()
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '保护工作表' }))
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].保护).toBeUndefined()
+    const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
+    fireEvent.change(公式栏, { target: { value: '已修改' } })
+    fireEvent.keyDown(公式栏, { key: 'Enter' })
+    expect(状态!.表格文档模型[状态!.activeDocumentId!][0].单元格.A1.原始值).toBe('已修改')
+  })
+  it('键盘复制和粘贴多行区域与功能区命令一致', async () => {
+    let 剪贴内容 = ''
+    const 写入 = vi.fn(async (文本: string) => { 剪贴内容 = 文本 })
+    const 读取 = vi.fn(async () => 剪贴内容)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: 写入, readText: 读取 } })
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>甲</td><td>乙</td></tr><tr><td>丙</td><td>丁</td></tr></table>')}>打开剪贴板表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开剪贴板表格' }))
+    const 网格 = container.querySelector('.wps-sheet') as HTMLElement
+    fireEvent.keyDown(网格, { key: 'ArrowDown', shiftKey: true })
+    fireEvent.keyDown(网格, { key: 'ArrowRight', shiftKey: true })
+    fireEvent.keyDown(网格, { key: 'c', ctrlKey: true })
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('甲\t乙\n丙\t丁'))
+    await userEvent.click(container.querySelector('[data-地址="C3"]') as HTMLElement)
+    fireEvent.keyDown(网格, { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(container.querySelector('[data-地址="D4"]')?.textContent).toBe('丁'))
+  })
+  it('冻结与筛选写入工作表模型，供文件保存使用', async () => {
+    const 容器 = () => {
+      const 状态 = useAppStore()
+      const 表 = 状态.表格文档模型[状态.activeDocumentId ?? '']?.[0]
+      return <>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>类别</td></tr><tr><td>甲</td></tr><tr><td>乙</td></tr></table>')}>打开测试表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+        <output data-testid="工作表模型">{JSON.stringify(表)}</output>
+      </>
+    }
+    render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开测试表格' }))
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '冻结窗格' }))
+    await userEvent.click(screen.getByRole('tab', { name: '数据' }))
+    await userEvent.click(screen.getByRole('button', { name: '筛选' }))
+    const 输入 = await screen.findByLabelText('仅显示该列中与输入值完全相同的行')
+    await userEvent.type(输入, '甲')
+    const 对话框 = 输入.closest('[role="dialog"]') as HTMLElement
+    await userEvent.click(within(对话框).getByRole('button', { name: '应用筛选' }))
+    const 模型 = JSON.parse(screen.getByTestId('工作表模型').textContent ?? '{}')
+    expect(模型.冻结).toEqual({ 行: 1, 列: 0 })
+    expect(模型.筛选).toEqual({ 列: 0, 值: '甲' })
+  })
   it('返回首页后重新打开同一文件仍显示未保存的表格内容', async () => {
     const 路径 = 'C:\\资料\\预算.xlsx'
     const 最近记录 = { id: 'recent-budget', name: '预算.xlsx', type: 'table' as const, size: 0, updatedAt: '2026-10-03', starred: false, shared: false, 路径 }
@@ -120,7 +268,7 @@ describe('表格编辑器容器', () => {
         {状态.module === 'table' ? <SheetEditor /> : null}
       </>
     }
-    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    const { container } = render(<AntdApp><AppProvider><导航 /><GlobalTabs /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByText('打开甲表'))
     const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
     fireEvent.change(公式栏, { target: { value: '甲表未保存' } })
@@ -141,15 +289,18 @@ describe('表格编辑器容器', () => {
         {状态.module === 'table' ? <SheetEditor /> : null}
       </>
     }
-    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    const { container } = render(<AntdApp><AppProvider><导航 /><GlobalTabs /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开表格' }))
+    const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
+    fireEvent.change(公式栏, { target: { value: '修改后' } })
+    fireEvent.keyDown(公式栏, { key: 'Enter' })
     await userEvent.click(screen.getByRole('button', { name: '关闭 待办.xlsx' }))
-    expect((await screen.findAllByText('关闭表格')).length).toBeGreaterThan(0)
-    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('未保存')
+    expect((await screen.findAllByText('文档有未保存的修改')).length).toBeGreaterThan(0)
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('修改后')
     const 取消 = await screen.findAllByRole('button', { name: /取\s*消/ })
     await userEvent.click(取消[取消.length - 1])
-    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('未保存')
-    await waitFor(() => expect(screen.queryByText('关闭「待办.xlsx」后，该表格未保存的修改将丢失。')).not.toBeInTheDocument())
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('修改后')
+    await waitFor(() => expect(screen.queryByText('关闭「待办.xlsx」将放弃尚未保存的内容。')).not.toBeInTheDocument())
   })
 
   it('从首页打开多工作表文件时显示全部工作表', async () => {
@@ -170,6 +321,61 @@ describe('表格编辑器容器', () => {
     ;['开始', '插入', '页面布局', '公式', '数据', '审阅', '视图'].forEach((名称) => {
       expect(screen.getByRole('tab', { name: 名称 })).toBeInTheDocument()
     })
+  })
+
+  it('视图命令冻结首行并拆分为两个独立滚动网格，再次点击可恢复', async () => {
+    const { container } = 渲染表格()
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '冻结窗格' }))
+    expect((container.querySelector('[data-地址="A1"]') as HTMLElement).style.position).toBe('sticky')
+    await userEvent.click(screen.getByRole('button', { name: '拆分' }))
+    expect(container.querySelectorAll('.wps-sheet')).toHaveLength(2)
+    await userEvent.click(screen.getByRole('button', { name: '拆分' }))
+    expect(container.querySelectorAll('.wps-sheet')).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: '冻结窗格' }))
+    expect((container.querySelector('[data-地址="A1"]') as HTMLElement).style.position).toBe('')
+  })
+
+  it('页面布局视图展示纸张预览并可返回普通网格', async () => {
+    const { container } = 渲染表格()
+    fireEvent.change(screen.getByLabelText('公式栏'), { target: { value: '打印内容' } })
+    fireEvent.keyDown(screen.getByLabelText('公式栏'), { key: 'Enter' })
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '页面布局' }))
+    expect(screen.getByRole('region', { name: '页面布局预览' })).toHaveTextContent('打印内容')
+    expect(container.querySelector('.wps-sheet')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '普通' }))
+    expect(container.querySelector('.wps-sheet')).not.toBeNull()
+  })
+
+  it('审阅批注可保存到选中单元格并在网格中查看', async () => {
+    const { container } = 渲染表格()
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '批注' }))
+    const 批注输入 = await screen.findByLabelText('批注内容')
+    const 对话框 = 批注输入.closest('[role="dialog"]') as HTMLElement
+    fireEvent.change(批注输入, { target: { value: '请复核' } })
+    await userEvent.click(within(对话框).getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(container.querySelector('[data-地址="A1"]')).toHaveAttribute('title', '批注：请复核'))
+  })
+
+  it('数据筛选只隐藏不匹配的行且可清除', async () => {
+    const { container } = 渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
+    for (const 值 of ['类别', '甲', '乙']) {
+      fireEvent.change(公式栏, { target: { value: 值 } })
+      fireEvent.keyDown(公式栏, { key: 'Enter' })
+    }
+    await userEvent.click(container.querySelector('[data-地址="A2"]') as HTMLElement)
+    await userEvent.click(screen.getByRole('tab', { name: '数据' }))
+    await userEvent.click(screen.getByRole('button', { name: '筛选' }))
+    const 筛选输入 = await screen.findByLabelText('仅显示该列中与输入值完全相同的行')
+    const 对话框 = 筛选输入.closest('[role="dialog"]') as HTMLElement
+    expect((within(对话框).getByRole('textbox') as HTMLInputElement).value).toBe('甲')
+    await userEvent.click(within(对话框).getByRole('button', { name: '应用筛选' }))
+    await waitFor(() => expect(container.querySelector('[data-地址="A3"]')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: '清除筛选' }))
+    expect(container.querySelector('[data-地址="A3"]')).not.toBeNull()
   })
 
   it('渲染网格、名称框与工作表标签', () => {
@@ -204,6 +410,24 @@ describe('表格编辑器容器', () => {
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '数据透视表' }))
     expect(await screen.findByText('数据透视表需要高级聚合功能，将在后续版本提供')).toBeInTheDocument()
+  })
+
+  it('插入符号追加到当前单元格并可撤销', async () => {
+    const { container } = 渲染表格()
+    fireEvent.change(screen.getByLabelText('公式栏'), { target: { value: '面积' } })
+    fireEvent.keyDown(screen.getByLabelText('公式栏'), { key: 'Enter' })
+    await userEvent.click(container.querySelector('[data-地址="A1"]') as HTMLElement)
+    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
+    await userEvent.click(screen.getByRole('button', { name: '符号' }))
+    const 输入 = await screen.findByRole('textbox', { name: '要插入的符号' })
+    const 对话框 = 输入.closest('[role="dialog"]') as HTMLElement
+    await userEvent.clear(输入)
+    await userEvent.type(输入, '㎡')
+    await userEvent.click(within(对话框).getByRole('button', { name: '插入' }))
+    await waitFor(() => expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('面积㎡'))
+    await userEvent.click(screen.getByRole('tab', { name: '开始' }))
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('面积')
   })
 
   it('新建工作表后标签数量增加', async () => {
@@ -473,6 +697,186 @@ describe('表格快捷键增强', () => {
 
 
 describe('表格保存为 xlsx', () => {
+  it('功能区打开 CSV 时保留文本、文件指纹并提示后续另存 XLSX', async () => {
+    const 记录最近 = vi.fn().mockResolvedValue({ 成功: true })
+    const 读取 = vi.fn().mockResolvedValue({ 成功: true, 内容: '编号,公式\r\n0012,=1+1', 二进制: false, 扩展名: '.csv', 文件指纹: '原指纹' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\数据.csv'),
+      readFile: 读取,
+      recentAdd: 记录最近,
+    } })
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 入口 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table')}>启动表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('启动表格'))
+    await userEvent.click(screen.getByRole('button', { name: '打开' }))
+    await waitFor(() => expect(状态!.文档路径[状态!.activeDocumentId!]).toBe('C:\\资料\\数据.csv'))
+    const 表 = 状态!.表格文档模型[状态!.activeDocumentId!][0]
+    expect(表.单元格.A2).toMatchObject({ 原始值: '0012', 显示值: '0012', 值类型: '文本' })
+    expect(表.单元格.B2).toMatchObject({ 原始值: '=1+1', 显示值: '=1+1', 值类型: '文本' })
+    expect(状态!.documents.find((项) => 项.id === 状态!.activeDocumentId)?.文件指纹).toBe('原指纹')
+    expect(读取).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(记录最近).toHaveBeenCalledWith(expect.objectContaining({ 路径: 'C:\\资料\\数据.csv', 类型: 'table' })))
+    expect((await screen.findAllByText('CSV 已按文本导入')).length).toBeGreaterThan(0)
+  })
+
+  it('功能区打开格式错误的 CSV 时弹窗说明并保留原标签', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\错误.csv'),
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'a,"未闭合', 二进制: false, 扩展名: '.csv' }),
+    } })
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 入口 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table')}>启动表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('启动表格'))
+    const 原标识 = 状态!.activeDocumentId
+    await userEvent.click(screen.getByRole('button', { name: '打开' }))
+    expect((await screen.findAllByText('CSV 文件引号未闭合')).length).toBeGreaterThan(0)
+    expect(状态!.activeDocumentId).toBe(原标识)
+    expect(状态!.documents).toHaveLength(1)
+  })
+
+  it('CSV 来源点击保存先选择 XLSX 路径，不把二进制写回 CSV', async () => {
+    const 选择路径 = vi.fn().mockResolvedValue('C:\\资料\\数据.xlsx')
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showSaveDialog: 选择路径,
+      saveToFile: 写入,
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      office: { writeXlsx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+    } })
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 入口 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\数据.csv' })}>打开 CSV</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开 CSV'))
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(选择路径).toHaveBeenCalledWith('数据.xlsx', 'table'))
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\数据.xlsx', 'UEsDBAo=', '二进制'))
+    expect(写入).not.toHaveBeenCalledWith('C:\\资料\\数据.csv', expect.anything(), expect.anything())
+    expect(状态!.文档路径[状态!.activeDocumentId!]).toBe('C:\\资料\\数据.xlsx')
+  })
+
+  it('另存为目标已被其他标签占用时在编码和写盘前阻止', async () => {
+    const 编码 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' })
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showSaveDialog: vi.fn().mockResolvedValue('c:/资料/已有.xlsx'),
+      saveToFile: 写入,
+      office: { writeXlsx: 编码 },
+    } })
+    const 入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>原文件</td></tr></table>', { 路径: 'C:\\资料\\已有.xlsx' })}>打开已有表格</button>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>副本</td></tr></table>')}>新建副本</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开已有表格'))
+    await userEvent.click(screen.getByText('新建副本'))
+    await userEvent.click(screen.getByRole('button', { name: '另存为' }))
+    expect((await screen.findAllByText('保存路径已被其他标签占用')).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText(/已有\.xlsx/)).length).toBeGreaterThan(0)
+    expect(编码).not.toHaveBeenCalled()
+    expect(写入).not.toHaveBeenCalled()
+  })
+
+  it('直接打开 XLSX 后用读取指纹保存并记录新的文件指纹', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '新指纹' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\预算.xlsx'),
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'UEsDBAo=', 二进制: true, 文件指纹: '原指纹' }),
+      saveToFile: 写入,
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      office: {
+        readXlsx: vi.fn().mockResolvedValue({ 成功: true, 工作表列表: [{ 名称: '预算', html: '<table><tr><td>42</td></tr></table>' }] }),
+        writeXlsx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }),
+      },
+    } })
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 入口 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table')}>启动表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('启动表格'))
+    await userEvent.click(screen.getByRole('button', { name: '打开' }))
+    await waitFor(() => expect(状态!.documents.find((项) => 项.id === 状态!.activeDocumentId)?.文件指纹).toBe('原指纹'))
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\预算.xlsx', 'UEsDBAo=', '二进制', '原指纹'))
+    await waitFor(() => expect(状态!.documents.find((项) => 项.id === 状态!.activeDocumentId)?.文件指纹).toBe('新指纹'))
+  })
+
+  it('导出单张工作表时不覆盖工作区中已打开的整个工作簿', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\工作簿.xlsx'),
+      saveToFile: 写入,
+      office: { writeXlsx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+    } })
+    const 入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('table', [
+          { 名称: '首页', html: '<table><tr><td>一</td></tr></table>' },
+          { 名称: '明细', html: '<table><tr><td>二</td></tr></table>' },
+        ], { 路径: 'C:\\资料\\工作簿.xlsx' })}>打开工作簿</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开工作簿'))
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '导出为表格' }))
+    expect((await screen.findAllByText('导出路径已被打开的标签占用')).length).toBeGreaterThan(0)
+    expect(写入).not.toHaveBeenCalled()
+  })
+
+  it('导出表格的目标扩展名不是 XLSX 时拒绝写入二进制', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\误选.csv'),
+      saveToFile: 写入,
+      office: { writeXlsx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+    } })
+    渲染表格()
+    const 公式栏 = screen.getByLabelText('公式栏') as HTMLInputElement
+    fireEvent.change(公式栏, { target: { value: '42' } })
+    fireEvent.keyDown(公式栏, { key: 'Enter' })
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '导出为表格' }))
+    expect((await screen.findAllByText('导出表格失败')).length).toBeGreaterThan(0)
+    expect(写入).not.toHaveBeenCalled()
+  })
+
   it('导入警告弹窗说明风险，保存命令不覆盖来源文件', async () => {
     const 写入 = vi.fn()
     const 编码 = vi.fn()

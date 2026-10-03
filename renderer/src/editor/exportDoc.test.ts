@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
+import { 保存为纯文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
 
 describe('导出文档', () => {
   it('HTML 输出包含中文标题、语言声明与 utf-8 编码', () => {
@@ -16,6 +16,10 @@ describe('导出文档', () => {
 
   it('br 标签转换为换行', () => {
     expect(导出为文本('第一行<br>第二行')).toBe('第一行\n第二行')
+  })
+
+  it('纯文本编辑区内的手动换行按来源风格保存，空段落占位符不多写换行', () => {
+    expect(保存为纯文本('<p data-seal-line-ending="crlf">甲<br>乙</p><p><br></p>')).toBe('甲\r\n乙\r\n')
   })
 
   it('解码常见实体', () => {

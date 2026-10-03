@@ -12,10 +12,12 @@ interface Props {
 
 /** 单页幻灯片的只读渲染；缩放比由容器按窗口计算后传入 */
 function 放映页({ 幻灯片, 缩放 }: { 幻灯片: 幻灯片; 缩放: number }) {
+  const 过渡类名 = 幻灯片.过渡效果 === '淡入淡出' ? ' wps-slideshow__page--fade'
+    : 幻灯片.过渡效果 === '推进' ? ' wps-slideshow__page--push' : ''
   return React.createElement(
     'div',
     {
-      className: 'wps-slideshow__page',
+      className: `wps-slideshow__page${过渡类名}`,
       style: {
         width: `${画布宽}px`,
         height: `${画布高}px`,
@@ -53,6 +55,7 @@ function 放映页({ 幻灯片, 缩放 }: { 幻灯片: 幻灯片; 缩放: number
             width: `${框.width}px`,
             height: `${框.height}px`,
             fontSize: `${框.字号}px`,
+            fontFamily: 框.字体,
             fontWeight: 框.加粗 ? 600 : 400,
             fontStyle: 框.斜体 ? 'italic' : 'normal',
             textDecoration: 框.下划线 ? 'underline' : 'none',
@@ -129,7 +132,7 @@ const SlideshowView = ({ 文稿, 当前索引, on翻页, on退出 }: Props) => {
       onClick: 前进,
       onContextMenu: (事件: React.MouseEvent) => 事件.preventDefault(),
     },
-    React.createElement(放映页, { 幻灯片: 文稿.幻灯片列表[安全索引], 缩放 }),
+    React.createElement(放映页, { key: 文稿.幻灯片列表[安全索引].id, 幻灯片: 文稿.幻灯片列表[安全索引], 缩放 }),
     React.createElement(
       'div',
       { className: 'wps-slideshow__indicator' },

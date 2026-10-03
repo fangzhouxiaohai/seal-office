@@ -1,7 +1,7 @@
 // 翻译面板：输入源文本，选择目标语言，调用外部翻译服务完成翻译。
 // 未配置服务地址时给出明确中文指引，不伪造结果。
 import React, { useState } from 'react'
-import { Button, Input, Modal, Select, Spin } from 'antd'
+import { App as AntdApp, Button, Input, Modal, Select, Spin } from 'antd'
 import { 翻译文本 } from './translate'
 import { 读取翻译配置, 已配置翻译服务 } from './translateSettings'
 
@@ -22,6 +22,7 @@ const 目标语言选项 = [
 ]
 
 const TranslateDialog = ({ open, onClose }: Props) => {
+  const { modal } = AntdApp.useApp()
   const [源文本, set源文本] = useState('')
   const [目标语言, set目标语言] = useState<string>('zh')
   const [结果, set结果] = useState('')
@@ -44,7 +45,7 @@ const TranslateDialog = ({ open, onClose }: Props) => {
       配置 = 读取翻译配置()
     } catch (错误) {
       set结果('')
-      Modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
+      modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
       return
     }
     if (!已配置翻译服务(配置)) {
@@ -60,7 +61,7 @@ const TranslateDialog = ({ open, onClose }: Props) => {
     } catch (错误) {
       const 消息 = 错误 instanceof Error ? 错误.message : '翻译失败，请稍后重试'
       set结果('')
-      Modal.error({ title: '翻译失败', content: 消息, okText: '确定' })
+      modal.error({ title: '翻译失败', content: 消息, okText: '确定' })
     } finally {
       set翻译中(false)
     }

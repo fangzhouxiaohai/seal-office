@@ -6,7 +6,12 @@ import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
 import RecentDocs from '../components/RecentDocs'
 import TemplateLibrary from '../components/TemplateLibrary'
+import { 生成演示模板文稿, type 模板项 } from '../data/templates'
 import { 通过对话框打开文件 } from '../fileOpen'
+import CalendarPage from '../localTools/CalendarPage'
+import DiagramPage from '../localTools/DiagramPage'
+import AppsPage from '../localTools/AppsPage'
+import LocalFilesPage, { type 本机位置 } from '../localTools/LocalFilesPage'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -65,9 +70,15 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     onClick: ({ key }: { key: string }) => 设类型筛选(key as 'all' | DocType),
   }
 
-  const 处理模板选择 = (模板: import('../data/templates').模板项) => {
-    createDoc(模板.分类 as DocType, 模板.内容)
-    关闭模板库?.()
+  const 处理模板选择 = (模板: 模板项) => {
+    try {
+      const 扩展名 = { word: 'docx', table: 'xlsx', ppt: 'pptx' }[模板.分类]
+      const 初始内容 = 模板.分类 === 'ppt' ? 生成演示模板文稿(模板) : 模板.内容
+      createDoc(模板.分类 as DocType, 初始内容, { 名称: `${模板.名称}.${扩展名}` })
+      关闭模板库?.()
+    } catch (错误) {
+      modal.error({ title: '使用模板失败', content: 错误 instanceof Error ? 错误.message : '无法创建模板文档' })
+    }
   }
 
   const 处理打开 = (标识: string) => {
@@ -82,7 +93,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
   }
 
   const 处理打开文件 = () => {
-    void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告) => createDoc(类型, 内容, { 路径, 警告 }))
+    void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告, 页面设置, 文件指纹) => createDoc(类型, 内容, { 路径, 警告, 页面设置, 文件指纹 }))
       .then((成功) => { if (成功) refreshRecents() })
   }
 
@@ -106,6 +117,26 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     }).catch((错误: unknown) => {
       modal.error({ title: '移除最近文档失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })
     })
+  }
+
+  const 本地工具页面 = navKey === 'calendar' ? React.createElement(CalendarPage)
+    : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })
+      : navKey === 'flow' ? React.createElement(DiagramPage, { 类型: '流程图' })
+        : navKey === 'apps' ? React.createElement(AppsPage)
+          : ['desktop', 'document', 'download'].includes(navKey)
+            ? React.createElement(LocalFilesPage, { 位置: navKey as 本机位置 }) : null
+
+  if (本地工具页面 !== null) {
+    return React.createElement(
+      React.Fragment,
+      null,
+      本地工具页面,
+      React.createElement(TemplateLibrary, {
+        打开: 模板库打开,
+        关闭: 关闭模板库,
+        onSelect: 处理模板选择,
+      })
+    )
   }
 
   return React.createElement(
@@ -132,14 +163,14 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
         )
       ),
       React.createElement(
-        'button',
+        'span',
         {
-          type: 'button',
           className: 'wps-home__cloud-sync',
-          onClick: () => message.info('文档云同步即将开放，当前文档均保存在本机'),
+          role: 'status',
+          'aria-label': '云端同步暂未开放',
         },
         React.createElement(Icon, { name: 'cloud-off', size: 14 }),
-        React.createElement('span', null, '未开启文档云同步')
+        React.createElement('span', null, '云端同步暂未开放')
       )
     ),
     // 工具行：类型筛选（左）

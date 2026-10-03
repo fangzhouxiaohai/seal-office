@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import DocEditor from './DocEditor'
+import GlobalTabs from '../components/GlobalTabs'
 import { AppProvider, useAppStore } from '../store'
 
 const 渲染编辑器 = () =>
@@ -11,6 +12,7 @@ const 渲染编辑器 = () =>
       <AntdApp>
         <AppProvider>
           <DocEditor />
+          <GlobalTabs />
         </AppProvider>
       </AntdApp>
     </ConfigProvider>
@@ -27,6 +29,7 @@ const 渲染带创建入口的编辑器 = () => {
         <AppProvider>
           <创建入口 />
           <DocEditor />
+          <GlobalTabs />
         </AppProvider>
       </AntdApp>
     </ConfigProvider>
@@ -38,6 +41,28 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
+  it('导航窗格列出文档标题并定位对应段落', async () => {
+    const 创建入口 = () => {
+      const { createDoc } = useAppStore()
+      return <button onClick={() => createDoc('word', '<h1>项目计划</h1><p>正文</p><h2>交付安排</h2>')}>打开大纲文档</button>
+    }
+    const { container } = render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开大纲文档' }))
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+    const 标题 = 编辑区.querySelectorAll('h1, h2')
+    const 定位 = vi.fn()
+    标题[1].scrollIntoView = 定位
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '导航窗格' }))
+    const 窗格 = screen.getByRole('complementary', { name: '文档导航' })
+    expect(container.querySelector('.wps-editor-canvas__content')).toBe(编辑区)
+    expect(within(窗格).getByRole('button', { name: '交付安排' })).toBeInTheDocument()
+    await userEvent.click(within(窗格).getByRole('button', { name: '交付安排' }))
+    expect(定位).toHaveBeenCalled()
+    await userEvent.click(within(窗格).getByRole('button', { name: '关闭导航窗格' }))
+    expect(screen.queryByRole('complementary', { name: '文档导航' })).toBeNull()
+  })
+
   it('导入未保真内容时显示警告弹窗', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()
@@ -145,7 +170,7 @@ describe('编辑器容器', () => {
         {状态.module === 'word' ? <DocEditor /> : null}
       </>
     }
-    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    const { container } = render(<AntdApp><AppProvider><导航 /><GlobalTabs /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByText('首次打开'))
     const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
     编辑区.innerHTML = '<p>未保存的正文</p>'
@@ -156,9 +181,10 @@ describe('编辑器容器', () => {
     await userEvent.click(screen.getByRole('button', { name: '关闭 报告.docx' }))
     expect((await screen.findAllByText('文档有未保存的修改')).length).toBeGreaterThan(0)
   })
-  it('同时渲染标签栏、Ribbon、编辑区与状态栏', () => {
+  it('全局底部标签栏与 Ribbon、编辑区、状态栏共同渲染', () => {
     const { container } = 渲染编辑器()
-    expect(container.querySelector('.wps-doc-tabs')).not.toBeNull()
+    expect(container.querySelector('.wps-global-tabs')).not.toBeNull()
+    expect(container.querySelector('.wps-doc-tabs')).toBeNull()
     expect(container.querySelector('.wps-ribbon-tabs')).not.toBeNull()
     expect(container.querySelector('.wps-ribbon-panel')).not.toBeNull()
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
@@ -186,22 +212,55 @@ describe('编辑器容器', () => {
     expect(await screen.findByPlaceholderText('在此输入要翻译的内容')).toBeInTheDocument()
   })
 
-  // jsdom 不支持 execCommand 的真实插入，因此这里只验证命令被正确派发并给出中文提示，
-  // 图形与公式是否真正写入文档由运行窗口验证。
-  it('插入图表命令给出中文提示', async () => {
+  it('邮件合并先预览再生成独立标签，原模板保留字段', async () => {
+    const 创建入口 = () => {
+      const { createDoc } = useAppStore()
+      return <button onClick={() => createDoc('word', '<p><strong>您好，{{姓名}}</strong>：请到{{城市}}报到。</p>', { 路径: 'C:\\资料\\通知模板.docx' })}>打开邮件模板</button>
+    }
+    const { container } = render(<AntdApp><AppProvider><创建入口 /><DocEditor /><GlobalTabs /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开邮件模板' }))
+    await userEvent.click(screen.getByRole('tab', { name: '审阅' }))
+    await userEvent.click(screen.getByRole('button', { name: '邮件合并' }))
+    expect(screen.getByRole('button', { name: '生成新文档' })).toBeDisabled()
+    await userEvent.type(screen.getByRole('textbox', { name: '收件人数据' }), '姓名,城市{enter}张三,上海{enter}李四,北京')
+    await userEvent.click(screen.getByRole('button', { name: /预\s*览/ }))
+    const 预览 = screen.getByRole('region', { name: '合并预览' })
+    expect(预览.textContent).toContain('您好，张三：请到上海报到')
+    await userEvent.click(screen.getByRole('button', { name: '生成新文档' }))
+    expect(container.querySelectorAll('.wps-global-tab')).toHaveLength(2)
+    expect(container.querySelector('.wps-editor-canvas__content')?.textContent).toContain('您好，李四：请到北京报到')
+    await userEvent.click(screen.getByRole('tab', { name: '通知模板.docx' }))
+    expect(container.querySelector('.wps-editor-canvas__content')?.textContent).toContain('{{姓名}}')
+  })
+
+  // 文档写入器无法保存图形，插入前先说明适用格式并要求确认。
+  it('图表插入前明确提示 DOCX 限制', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '图表' }))
     await userEvent.click(await screen.findByText('折线图'))
+    expect((await screen.findAllByText('图表无法保存为 DOCX')).length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByRole('button', { name: '仍要插入' }))
     expect(await screen.findByText(/已插入折线图/)).toBeInTheDocument()
   })
 
-  it('插入公式命令给出中文提示', async () => {
+  it('公式插入前明确提示 DOCX 限制', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '公式' }))
     await userEvent.click(await screen.findByText('分数'))
+    expect((await screen.findAllByText('公式无法保存为 DOCX')).length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByRole('button', { name: '仍要插入' }))
     expect(await screen.findByText(/已插入「分数」公式/)).toBeInTheDocument()
+  })
+
+  it('脚注入口不插入假的注释标记', async () => {
+    const { container } = 渲染编辑器()
+    const 原文 = container.querySelector('.wps-editor-canvas__content')?.innerHTML
+    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
+    await userEvent.click(screen.getByRole('button', { name: '脚注' }))
+    expect((await screen.findAllByText('脚注暂不可用')).length).toBeGreaterThan(0)
+    expect(container.querySelector('.wps-editor-canvas__content')?.innerHTML).toBe(原文)
   })
 
   it('保护文档后编辑区转为只读', async () => {
@@ -219,16 +278,17 @@ describe('编辑器容器', () => {
     expect(await screen.findByPlaceholderText('查找内容')).toBeInTheDocument()
   })
 
-  it('标签栏在无文档时仍渲染新建入口', () => {
+  it('全局标签栏在无文档时仍渲染新建入口', () => {
     渲染编辑器()
-    expect(screen.getByRole('button', { name: '新建文档' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '新建标签' })).toBeInTheDocument()
   })
 
-  it('点击新建文档后出现一个文档标签', async () => {
+  it('点击新建标签后出现一个底部文档标签', async () => {
     const { container } = 渲染编辑器()
-    expect(container.querySelectorAll('.wps-doc-tab')).toHaveLength(0)
-    await userEvent.click(screen.getByRole('button', { name: '新建文档' }))
-    expect(container.querySelectorAll('.wps-doc-tab')).toHaveLength(1)
+    expect(container.querySelectorAll('.wps-global-tab')).toHaveLength(0)
+    await userEvent.click(screen.getByRole('button', { name: '新建标签' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: '新建文字' }))
+    expect(container.querySelectorAll('.wps-global-tab')).toHaveLength(1)
   })
 
   it('状态栏展示字数统计', () => {

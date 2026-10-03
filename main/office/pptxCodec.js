@@ -24,7 +24,65 @@ function 收集幻灯片警告(xml, 警告) {
   if (有标签('p:graphicFrame')) 警告.add('图表或表格未导入')
   if (有标签('p:video') || 有标签('p:audio') || 有标签('a:videoFile') || 有标签('a:audioFile')) 警告.add('媒体未导入')
   if (有标签('p:timing')) 警告.add('动画未导入')
-  if (有标签('p:transition')) 警告.add('幻灯片切换效果未导入')
+  const 过渡 = 解析过渡效果(xml)
+  if (过渡.存在 && 过渡.风险) 警告.add('幻灯片切换效果未完整导入')
+  for (const 匹配 of xml.matchAll(/<p:sp\b[^>]*>([\s\S]*?)<\/p:sp>/gi)) {
+    const 形状 = 匹配[1]
+    if (存在混合文字样式(形状)) 警告.add('混合文字样式未完整导入')
+    if (!/<a:t\b/i.test(形状)) continue
+    const 外观 = 形状.match(/<p:spPr\b[^>]*>([\s\S]*?)<\/p:spPr>/i)?.[1] ?? ''
+    if (/<a:(?:solidFill|gradFill|blipFill|effectLst|effectDag)\b/i.test(外观) ||
+        /<a:prstGeom\b[^>]*prst="(?!rect")[^"]+"/i.test(外观) ||
+        /<a:ln\b[^>]*(?:\bw\s*=|>\s*<(?!\/a:ln>))/i.test(外观)) {
+      警告.add('文本框外观未完整导入')
+    }
+    if (/<a:(?:buChar|buAutoNum|buBlip|lnSpc|spcBef|spcAft|tabLst)\b/i.test(形状) ||
+        /<a:pPr\b[^>]*(?:\blvl\s*=|\bmarL\s*=\s*"(?!0")|\bindent\s*=\s*"(?!0"))/i.test(形状)) {
+      警告.add('段落格式未完整导入')
+    }
+    const 段落对齐 = Array.from(形状.matchAll(/<a:pPr\b[^>]*\balgn="([^"]+)"/gi), (项) => 项[1])
+    if (new Set(段落对齐).size > 1) 警告.add('段落格式未完整导入')
+    if (/<a:(?:ea|latin)\b[^>]*typeface="\+/i.test(形状)) 警告.add('主题字体未完整导入')
+  }
+  const 背景 = xml.match(/<p:bg\b[^>]*>([\s\S]*?)<\/p:bg>/i)?.[1] ?? ''
+  if (/<a:(?:gradFill|blipFill|schemeClr)\b/i.test(背景)) {
+    警告.add('背景样式未完整导入')
+  }
+}
+
+function 解析过渡效果(xml) {
+  const 匹配 = xml.match(/<p:transition\b[^>]*(?:\/>|>([\s\S]*?)<\/p:transition>)/i)
+  if (!匹配) return { 存在: false, 效果: null, 风险: false }
+  const 起始标签 = 匹配[0].match(/^<p:transition\b[^>]*>/i)?.[0] ?? ''
+  const 属性可保留 = Array.from(起始标签.matchAll(/\b([\w:]+)\s*=\s*(["'])(.*?)\2/g))
+    .every((属性) => (属性[1] === 'spd' && 属性[3] === 'med') || (属性[1] === 'advClick' && 属性[3] === '1'))
+  const 内文 = (匹配[1] ?? '').trim()
+  if (!属性可保留) return { 存在: true, 效果: null, 风险: true }
+  if (/^<p:fade\s*\/>$/i.test(内文)) return { 存在: true, 效果: '淡入淡出', 风险: false }
+  if (/^<p:push\s+dir\s*=\s*(["'])l\1\s*\/>$/i.test(内文)) return { 存在: true, 效果: '推进', 风险: false }
+  return { 存在: true, 效果: null, 风险: true }
+}
+
+/** 同一文本框仅能保存一套字符样式，片段之间的差异需要显式报告。 */
+function 存在混合文字样式(形状Xml) {
+  const 样式列表 = []
+  for (const 匹配 of 形状Xml.matchAll(/<a:r\b[^>]*>([\s\S]*?)<\/a:r>/gi)) {
+    const 片段Xml = 匹配[1]
+    if (!/<a:t\b[^>]*>/i.test(片段Xml)) continue
+    const 属性 = 片段Xml.match(/<a:rPr\b([^>]*)(?:\/>|>([\s\S]*?)<\/a:rPr>)/i)
+    const 属性文本 = 属性?.[1] ?? ''
+    const 颜色Xml = 属性?.[2] ?? ''
+    const 取属性 = (名称) => 属性文本.match(new RegExp(`\\b${名称}="([^"]*)"`, 'i'))?.[1] ?? null
+    样式列表.push(JSON.stringify({
+      字号: 取属性('sz'),
+      加粗: 取属性('b') === '1',
+      斜体: 取属性('i') === '1',
+      下划线: 取属性('u') ?? 'none',
+      颜色: 颜色Xml.match(/<a:(?:srgbClr|schemeClr)\b[^>]*val="([^"]+)"/i)?.[1] ?? null,
+      字体: 颜色Xml.match(/<a:latin\b[^>]*typeface="([^"]+)"/i)?.[1] ?? null,
+    }))
+  }
+  return new Set(样式列表).size > 1
 }
 
 /** 按部件关系寻找实际关联的版式和母版，忽略压缩包中的孤立资源。 */
@@ -61,43 +119,103 @@ async function 收集母版警告(压缩包, 幻灯片文件名, 警告) {
   }
 }
 
+/** 从该页实际关联的备注部件读取演讲备注，不把页码等占位符当作备注。 */
+async function 读取幻灯片备注(压缩包, 幻灯片路径, 警告) {
+  const 备注路径列表 = await 关联目标(压缩包, 幻灯片路径, 'notesSlide')
+  if (备注路径列表.length === 0) return null
+  if (备注路径列表.length !== 1) throw new Error('演示文件无效：幻灯片备注关系重复')
+  const 文件 = 压缩包.file(备注路径列表[0])
+  if (!文件) throw new Error('演示文件无效：幻灯片备注部件缺失')
+  const xml = await 文件.async('string')
+  if (!/<p:notes\b[^>]*>[\s\S]*<\/p:notes>\s*$/i.test(xml)) {
+    throw new Error('演示文件无效：幻灯片备注内容损坏')
+  }
+  const 备注形状 = Array.from(xml.matchAll(/<p:sp\b[^>]*>([\s\S]*?)<\/p:sp>/gi), (匹配) => 匹配[1])
+    .find((形状) => /<p:ph\b[^>]*\btype\s*=\s*(["'])body\1/i.test(形状))
+  if (!备注形状) return null
+  if (/<p:(?:pic|graphicFrame|cxnSp)\b/i.test(xml) ||
+      /<a:rPr\b[^>]*\b(?:sz|b|i|u)\s*=/i.test(备注形状) ||
+      /<a:(?:srgbClr|schemeClr|latin)\b/i.test(备注形状)) {
+    警告.add('备注样式未完整导入')
+  }
+  const 段落 = Array.from(备注形状.matchAll(/<a:p\b[^>]*>([\s\S]*?)<\/a:p>/gi), (匹配) =>
+    Array.from(匹配[1].matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>|<a:br\b[^>]*\/?\s*>/gi), (片段) =>
+      片段[1] === undefined ? '\n' : 解码(片段[1])).join(''))
+  return 段落.join('\n').replace(/\r\n?/g, '\n')
+}
+
+function 读取Xml属性(标签, 名称) {
+  return 标签.match(new RegExp(`\\b${名称}\\s*=\\s*(["'])(.*?)\\1`, 'i'))?.[2] ?? null
+}
+
+/** 依据演示清单和关系文件确认实际幻灯片，不能从包内孤立文件推断。 */
+async function 读取幻灯片路径(压缩包) {
+  const 类型文件 = 压缩包.file('[Content_Types].xml')
+  const 清单文件 = 压缩包.file('ppt/presentation.xml')
+  const 关系文件 = 压缩包.file('ppt/_rels/presentation.xml.rels')
+  if (!类型文件 || !清单文件 || !关系文件) throw new Error('演示文件无效：缺少演示清单或关系文件')
+  const [类型Xml, 清单Xml, 关系Xml] = await Promise.all([
+    类型文件.async('string'), 清单文件.async('string'), 关系文件.async('string'),
+  ])
+  if (!/<Types\b/i.test(类型Xml) || !/presentationml\.presentation\.main\+xml/i.test(类型Xml) ||
+      !/<p:presentation\b/i.test(清单Xml) || !/<Relationships\b/i.test(关系Xml)) {
+    throw new Error('演示文件无效：文件结构不是有效的 PPTX 演示文稿')
+  }
+  const 关系 = new Map()
+  for (const 匹配 of 关系Xml.matchAll(/<Relationship\b[^>]*\/?\s*>/gi)) {
+    const 标签 = 匹配[0]
+    const 标识 = 读取Xml属性(标签, 'Id')
+    const 类型 = 读取Xml属性(标签, 'Type')
+    const 目标 = 读取Xml属性(标签, 'Target')
+    if (标识 && 类型?.endsWith('/slide') && 目标 && 读取Xml属性(标签, 'TargetMode') !== 'External') {
+      关系.set(标识, 目标.startsWith('/') ? 目标.slice(1) : path.posix.normalize(path.posix.join('ppt', 目标)))
+    }
+  }
+  const 幻灯片路径 = []
+  for (const 匹配 of 清单Xml.matchAll(/<p:sldId\b[^>]*\/?\s*>/gi)) {
+    const 标识 = 读取Xml属性(匹配[0], 'r:id')
+    const 路径 = 关系.get(标识)
+    if (!路径 || !/^ppt\/slides\/[^/]+\.xml$/i.test(路径) || !压缩包.file(路径)) {
+      throw new Error('演示文件无效：幻灯片关系缺失或目标不存在')
+    }
+    幻灯片路径.push(路径)
+  }
+  if (幻灯片路径.length === 0) throw new Error('演示文件无效：没有真实幻灯片')
+  return { 幻灯片路径, 清单Xml }
+}
+
 async function 读取pptx(数据) {
-  const 压缩包 = await JSZip.loadAsync(Buffer.from(数据))
-  const 文件名 = Object.keys(压缩包.files)
-    .filter((名称) => /^ppt\/slides\/slide\d+\.xml$/.test(名称))
-    .sort((甲, 乙) => 甲.localeCompare(乙, undefined, { numeric: true }))
+  let 压缩包
+  try {
+    压缩包 = await JSZip.loadAsync(Buffer.from(数据))
+  } catch {
+    throw new Error('演示文件无效：不是有效的 PPTX 压缩包')
+  }
+  const { 幻灯片路径: 文件名, 清单Xml } = await 读取幻灯片路径(压缩包)
   const 幻灯片列表 = []
   const 警告 = new Set()
+  const 尺寸标签 = 清单Xml.match(/<p:sldSz\b[^>]*\/?>/i)?.[0]
+  if (尺寸标签) {
+    const 宽 = Number(读取Xml属性(尺寸标签, 'cx'))
+    const 高 = Number(读取Xml属性(尺寸标签, 'cy'))
+    if (宽 > 0 && 高 > 0 && (Math.abs(宽 - 12192000) > 12700 || Math.abs(高 - 6858000) > 12700)) {
+      警告.add('页面尺寸未完整导入')
+    }
+  }
   for (const 名称 of 文件名) {
     const xml = await 压缩包.file(名称).async('string')
+    if (!/<p:sld\b[^>]*>[\s\S]*<\/p:sld>\s*$/i.test(xml) ||
+        !/<p:cSld\b[^>]*>[\s\S]*<\/p:cSld>/i.test(xml) ||
+        !/(?:<p:spTree\b[^>]*\/>|<p:spTree\b[^>]*>[\s\S]*<\/p:spTree>)/i.test(xml)) {
+      throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
+    }
     收集幻灯片警告(xml, 警告)
-    幻灯片列表.push(解析幻灯片Xml(xml, 幻灯片列表.length))
+    const 幻灯片 = 解析幻灯片Xml(xml, 幻灯片列表.length)
+    const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
+    if (备注 !== null) 幻灯片.备注 = 备注
+    幻灯片列表.push(幻灯片)
   }
   await 收集母版警告(压缩包, 文件名, 警告)
-  if (幻灯片列表.length === 0) {
-    幻灯片列表.push({
-      id: 'slide-0',
-      title: '新建幻灯片',
-      版式: '标题幻灯片',
-      背景色: '#FFFFFF',
-      文本框列表: [
-        {
-          id: 'box-0-title',
-          x: 80,
-          y: 60,
-          width: 800,
-          height: 120,
-          text: '单击此处添加标题',
-          字号: 40,
-          加粗: true,
-          斜体: false,
-          下划线: false,
-          颜色: '#1A1D24',
-          对齐: 'center',
-        },
-      ],
-    })
-  }
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -118,67 +236,34 @@ function 解析幻灯片Xml(xml, 序号) {
     背景色 = `#${背景匹配[1].toUpperCase()}`
   }
   const 文本框列表 = []
-  const 形状正则 = /<p:sp>([\s\S]*?)<\/p:sp>/g
+  const 形状正则 = /<p:sp\b[^>]*>([\s\S]*?)<\/p:sp>/gi
   let 形状匹配
   while ((形状匹配 = 形状正则.exec(xml)) !== null) {
     const 解析 = 解析形状Xml(形状匹配[1], 序号, 文本框列表.length)
     if (解析 !== null) 文本框列表.push(解析)
   }
-  // 宽松回退：形状级解析无结果时（如手工构造的最小 XML），按裸 <a:t> 提取
-  if (文本框列表.length === 0) {
-    const 文本列表 = Array.from(xml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g), (匹配) => 解码(匹配[1]))
-      .filter((项) => 项.trim().length > 0)
-    if (文本列表.length > 0) {
-      const 标题文本 = 文本列表[0]
-      const 正文文本 = 文本列表.slice(1)
-      文本框列表.push({
-        id: `box-${序号}-title`,
-        x: 80,
-        y: 60,
-        width: 800,
-        height: 120,
-        text: 标题文本,
-        字号: 40,
-        加粗: true,
-        斜体: false,
-        下划线: false,
-        颜色: '#1A1D24',
-        对齐: 'center',
-      })
-      if (正文文本.length > 0) {
-        文本框列表.push({
-          id: `box-${序号}-content`,
-          x: 80,
-          y: 220,
-          width: 800,
-          height: 240,
-          text: 正文文本.join('\n'),
-          字号: 24,
-          加粗: false,
-          斜体: false,
-          下划线: false,
-          颜色: '#1A1D24',
-          对齐: 'left',
-        })
-      }
-    }
-  }
   const 首框 = 文本框列表[0]
   const 标题文本 = 首框 !== undefined ? 首框.text.split('\n')[0] : '幻灯片'
+  const 过渡效果 = 解析过渡效果(xml).效果
   return {
     id: `slide-${序号}`,
     title: 标题文本,
     版式: 文本框列表.length > 1 ? '标题和内容' : '标题幻灯片',
     背景色,
+    ...(过渡效果 ? { 过渡效果 } : {}),
     文本框列表,
   }
 }
 
 /** 解析单个 <p:sp> 形状；无文字时返回 null */
 function 解析形状Xml(形状Xml, 序号, 框序号) {
-  const 文本列表 = Array.from(形状Xml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g), (匹配) => 解码(匹配[1]))
+  const 段落列表 = Array.from(形状Xml.matchAll(/<a:p\b[^>]*>([\s\S]*?)<\/a:p>/gi), (匹配) => 匹配[1])
   // 无文字的装饰形状不导入为文本框
-  const 合并文本 = 文本列表.filter((项) => 项.trim().length > 0).join('\n')
+  const 合并文本 = 段落列表.map((段落) => {
+    const 片段 = Array.from(段落.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>|<a:br\b[^>]*\/?\s*>/gi), (匹配) =>
+      匹配[1] === undefined ? '\n' : 解码(匹配[1]))
+    return 片段.join('')
+  }).join('\n')
   if (合并文本.length === 0) {
     return null
   }
@@ -188,6 +273,9 @@ function 解析形状Xml(形状Xml, 序号, 框序号) {
   // 字符样式取首个带样式的 rPr；对齐取首个 pPr
   const 首个rPr = 形状Xml.match(/<a:rPr([^>]*)\/?>/)
   const 字号 = 首个rPr !== null && /sz="(\d+)"/.test(首个rPr[1]) ? Number(RegExp.$1) / 100 : 24
+  const 字体 = 形状Xml.match(/<a:ea\b[^>]*typeface="([^"]+)"/i)?.[1]
+    ?? 形状Xml.match(/<a:latin\b[^>]*typeface="([^"]+)"/i)?.[1]
+  const 下划线 = 首个rPr?.[1].match(/\bu="([^"]+)"/i)?.[1]
   const 颜色匹配 = 形状Xml.match(/<a:rPr[^>]*>[\s\S]{0,400}?<a:srgbClr val="([0-9A-Fa-f]{6})"/)
   const 对齐匹配 = 形状Xml.match(/<a:pPr[^>]*algn="(\w+)"/)
   return {
@@ -198,9 +286,10 @@ function 解析形状Xml(形状Xml, 序号, 框序号) {
     height: 尺寸 !== null ? EMU转像素(尺寸[2]) : 120,
     text: 合并文本,
     字号: Math.min(Math.max(Math.round(字号), 8), 96),
+    ...(字体 && !字体.startsWith('+') ? { 字体 } : {}),
     加粗: 首个rPr !== null && /b="1"/.test(首个rPr[1]),
     斜体: 首个rPr !== null && /i="1"/.test(首个rPr[1]),
-    下划线: false,
+    下划线: Boolean(下划线 && 下划线 !== 'none'),
     颜色: 颜色匹配 !== null ? `#${颜色匹配[1].toUpperCase()}` : '#1A1D24',
     对齐: 对齐匹配 !== null ? 对齐映射(对齐匹配[1]) : 'left',
   }
@@ -224,8 +313,14 @@ async function 写入pptx(模型) {
     幻灯片列表 = 模型.幻灯片列表
   }
   if (幻灯片列表.length === 0) 幻灯片列表.push({ 文本: '' })
+  if (幻灯片列表.some((项) => 项.动画)) {
+    throw new Error('动画无法可靠保存为 PPTX，请先移除动画效果')
+  }
   幻灯片列表.forEach((幻灯片数据) => {
     const 页面 = 文稿.addSlide()
+    if (typeof 幻灯片数据.备注 === 'string' && 幻灯片数据.备注.length > 0) {
+      页面.addNotes(幻灯片数据.备注)
+    }
     const 背景 = 规整颜色(幻灯片数据.背景色, 'FFFFFF')
     页面.background = { color: 背景 }
     if (Array.isArray(幻灯片数据.文本框)) {
@@ -241,7 +336,8 @@ async function 写入pptx(模型) {
           italic: 框.斜体 === true,
           color: 规整颜色(框.颜色, '1A1D24'),
           align: 框.对齐 === 'center' ? 'center' : 框.对齐 === 'right' ? 'right' : 'left',
-          fontFace: 'Microsoft YaHei',
+          fontFace: typeof 框.字体 === 'string' && 框.字体.trim() ? 框.字体 : 'Microsoft YaHei',
+          underline: 框.下划线 === true ? { style: 'sng' } : undefined,
           valign: 'top',
         }
         if (Array.isArray(框.片段) && 框.片段.length > 0) {
@@ -253,7 +349,7 @@ async function 写入pptx(模型) {
                 bold: 片段.加粗 === true || 公共样式.bold,
                 italic: 片段.斜体 === true || 公共样式.italic,
                 color: 规整颜色(片段.颜色, 公共样式.color),
-                underline: 片段.下划线 === true ? { style: 'sng' } : undefined,
+                underline: 片段.下划线 === true || 公共样式.underline ? { style: 'sng' } : undefined,
               },
             }))
           if (运行列表.length > 0) {
@@ -291,7 +387,35 @@ async function 写入pptx(模型) {
       页面.addText(段落列表, { x: 0.5, y: 0.5, w: 11, h: 7 })
     }
   })
-  return Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
+  const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
+  if (!幻灯片列表.some((项) => 项.过渡效果)) return 原文件
+  const 压缩包 = await JSZip.loadAsync(原文件)
+  for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
+    const 效果 = 幻灯片列表[索引].过渡效果
+    if (!效果) continue
+    const 过渡Xml = 效果 === '淡入淡出'
+      ? '<p:transition spd="med"><p:fade/></p:transition>'
+      : 效果 === '推进'
+        ? '<p:transition spd="med"><p:push dir="l"/></p:transition>'
+        : null
+    if (!过渡Xml) throw new Error(`不支持的幻灯片切换效果：${效果}`)
+    const 名称 = `ppt/slides/slide${索引 + 1}.xml`
+    const 文件 = 压缩包.file(名称)
+    if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
+    const xml = await 文件.async('string')
+    const 覆盖结束 = xml.lastIndexOf('</p:clrMapOvr>')
+    const 覆盖自闭合 = xml.match(/<p:clrMapOvr\b[^>]*\/>/i)
+    const 内容结束 = xml.lastIndexOf('</p:cSld>')
+    const 插入位置 = 覆盖结束 >= 0
+      ? 覆盖结束 + '</p:clrMapOvr>'.length
+      : 覆盖自闭合
+        ? 覆盖自闭合.index + 覆盖自闭合[0].length
+        : 内容结束 >= 0 ? 内容结束 + '</p:cSld>'.length : -1
+    if (插入位置 < 0 || !/<\/p:sld>/i.test(xml)) throw new Error(`生成幻灯片失败：第 ${索引 + 1} 张结构无效`)
+    const 更新 = xml.slice(0, 插入位置) + 过渡Xml + xml.slice(插入位置)
+    压缩包.file(名称, 更新)
+  }
+  return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }
 
 function 解码(文本) {

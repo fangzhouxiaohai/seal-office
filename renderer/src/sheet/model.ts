@@ -27,13 +27,42 @@ export interface CellFormat {
   边框?: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean }
 }
 
+export type 单元格数据验证 =
+  | { 类型: '列表'; 选项: string[]; 允许空白: boolean }
+  | { 类型: '整数' | '小数'; 最小值: number; 最大值: number; 允许空白: boolean }
+
 export interface SheetCell {
   /** 用户输入的原始值，公式以 = 开头 */
   原始值: string
   /** 计算或格式化后的展示值 */
   显示值: string
   格式: CellFormat
+  /** 从表格文件导入的文本单元格类型，未编辑时保持原始类型 */
+  值类型?: '文本'
+  /** 输入约束，附着于单元格以便行列移动时同步迁移 */
+  数据验证?: 单元格数据验证
+  /** 本地批注；空白单元格也可以附带批注 */
+  批注?: string
 }
+
+export interface SheetImage {
+  id: string
+  格式: 'png' | 'jpeg'
+  /** 不含数据网址前缀的 Base64 图片字节。 */
+  数据: string
+  行: number
+  列: number
+  宽: number
+  高: number
+}
+
+export interface 页面设置 {
+  页边距: '常规' | '窄' | '适中' | '宽'
+  方向: '纵向' | '横向'
+  纸张大小: 'A4' | 'A5' | 'B5' | 'Letter' | '跟随打印机'
+}
+
+export const 默认页面设置: 页面设置 = { 页边距: '常规', 方向: '纵向', 纸张大小: 'A4' }
 
 export interface Sheet {
   id: string
@@ -46,6 +75,13 @@ export interface Sheet {
   行高: number[]
   /** 已合并的区域地址列表 */
   合并区域: string[]
+  /** 图片以左上角单元格为锚点，旧版工作表可能缺少该字段。 */
+  图片?: SheetImage[]
+  页面设置: 页面设置
+  冻结?: { 行: number; 列: number }
+  筛选?: { 列: number; 值: string }
+  /** 本机保护可直接解除；外部复杂保护只读且需在来源软件解除 */
+  保护?: '本机' | '外部'
 }
 
 export const 默认行数 = 100
@@ -61,6 +97,85 @@ const 空单元格: SheetCell = { 原始值: '', 显示值: '', 格式: {} }
 /** 读取单元格；不存在时返回空单元格，不写入工作表 */
 export function 读取单元格(工作表: Sheet, 地址: string): SheetCell {
   return 工作表.单元格[地址] ?? 空单元格
+}
+
+/** 在指定区域设置或清除可写回表格文件的验证规则。 */
+export function 设置数据验证(工作表: Sheet, 区域: string, 规则: 单元格数据验证 | null): Sheet {
+  const 位置列表 = 展开区域(区域)
+  if (位置列表.length === 0 || 位置列表.length > 10000 || 位置列表.some((位置) => 位置.行 >= 工作表.行数 || 位置.列 >= 工作表.列数)) {
+    throw new Error('数据验证区域无效或过大')
+  }
+  if (规则?.类型 === '列表' && (规则.选项.length === 0 || 规则.选项.some((值) => !值.trim() || 值.includes(',')) || `"${规则.选项.join(',')}"`.length > 255)) {
+    throw new Error('列表选项不能为空、包含逗号或超过表格文件限制')
+  }
+  if (规则 && 规则.类型 !== '列表' && (!Number.isFinite(规则.最小值) || !Number.isFinite(规则.最大值) || 规则.最小值 > 规则.最大值 || (规则.类型 === '整数' && (!Number.isInteger(规则.最小值) || !Number.isInteger(规则.最大值))))) {
+    throw new Error('数据验证数值范围无效')
+  }
+  const 单元格 = { ...工作表.单元格 }
+  位置列表.forEach((位置) => {
+    const 地址 = 生成地址(位置.行, 位置.列)
+    const 原单元 = 读取单元格(工作表, 地址)
+    if (规则) 单元格[地址] = { ...原单元, 数据验证: 规则 }
+    else if (单元格[地址]) {
+      const { 数据验证: _已清除, ...剩余 } = 单元格[地址]
+      if (!剩余.原始值 && !剩余.批注 && Object.keys(剩余.格式).length === 0) delete 单元格[地址]
+      else 单元格[地址] = 剩余
+    }
+  })
+  return { ...工作表, 单元格 }
+}
+
+function 验证输入(值: string, 规则: 单元格数据验证): boolean {
+  if (值 === '') return 规则.允许空白
+  if (规则.类型 === '列表') return 规则.选项.includes(值)
+  if (!/^-?\d+(?:\.\d+)?$/.test(值)) return false
+  const 数值 = Number(值)
+  return Number.isFinite(数值) && (规则.类型 !== '整数' || Number.isInteger(数值)) && 数值 >= 规则.最小值 && 数值 <= 规则.最大值
+}
+
+/** 提交前统一检查，覆盖功能区、公式栏、网格、剪贴板和批量命令。 */
+export function 检查工作表更新(原表: Sheet, 新表: Sheet, 允许解除保护 = false): string | null {
+  if (原表.保护 === '外部' && 新表 !== 原表) return '原文件的工作表保护不能在此解除或修改'
+  if (原表.保护 === '本机' && 新表 !== 原表) {
+    if (!(允许解除保护 && 新表.保护 === undefined)) return '工作表已保护，请先解除保护'
+  }
+  for (const 地址 of new Set([...Object.keys(原表.单元格), ...Object.keys(新表.单元格)])) {
+    const 原值 = 原表.单元格[地址]?.原始值 ?? ''
+    const 新值 = 新表.单元格[地址]?.原始值 ?? ''
+    if (原值 === 新值) continue
+    const 规则 = 新表.单元格[地址]?.数据验证 ?? 原表.单元格[地址]?.数据验证
+    const 待验证值 = 新值.startsWith('=') ? (新表.单元格[地址]?.显示值 ?? '') : 新值
+    if (规则 && !验证输入(待验证值, 规则)) return `${地址} 不符合数据验证规则`
+  }
+  return null
+}
+
+/** 检查整个工作簿的更新，避免外部入口绕过保护或单元格验证。 */
+export function 检查工作簿更新(原值: readonly Sheet[], 新值: readonly Sheet[]): string | null {
+  if (!Array.isArray(新值) || 新值.length === 0) return '工作表数据无效'
+  if (new Set(新值.map((表) => 表?.id)).size !== 新值.length) return '工作表标识重复，无法应用修改'
+  for (const 原表 of 原值) {
+    const 新表 = 新值.find((项) => 项?.id === 原表.id)
+    if (!新表) {
+      if (原表.保护) return `工作表“${原表.name}”已保护，不能删除`
+      continue
+    }
+    if (原表.保护 === '外部') {
+      if (新表 !== 原表) return '原文件的工作表保护不能在此解除或修改'
+      continue
+    }
+    if (原表.保护 === '本机' && 新表 !== 原表) {
+      const { 保护: _原保护, ...原内容 } = 原表
+      const { 保护: _新保护, ...新内容 } = 新表
+      if (新表.保护 !== undefined || JSON.stringify(原内容) !== JSON.stringify(新内容)) {
+        return '工作表已保护，请先解除保护'
+      }
+      continue
+    }
+    const 错误 = 检查工作表更新(原表, 新表)
+    if (错误) return 错误
+  }
+  return null
 }
 
 /** 把原始值按格式渲染为展示值 */
@@ -101,8 +216,8 @@ export function 重算工作表(工作表: Sheet): Sheet {
       return '#错误'
     }
     const 原始值 = 单元.原始值
-    if (!原始值.startsWith('=')) {
-      const 结果 = 渲染原始值(原始值, 单元.格式)
+    if (单元.值类型 === '文本' || !原始值.startsWith('=')) {
+      const 结果 = 单元.值类型 === '文本' ? 原始值 : 渲染原始值(原始值, 单元.格式)
       缓存.set(地址, 结果)
       return 结果
     }
@@ -142,18 +257,52 @@ export function 创建工作表(名称: string, 行数 = 默认行数, 列数 = 
     列宽: Array.from({ length: 列数 }, () => 默认列宽),
     行高: Array.from({ length: 行数 }, () => 默认行高),
     合并区域: [],
+    图片: [],
+    页面设置: { ...默认页面设置 },
   }
   return 工作表
+}
+
+/** 图片字节和锚点需在进入工作表模型前校验，防止备份与导出膨胀。 */
+export function 添加图片(工作表: Sheet, 图片: SheetImage): Sheet {
+  const 已有 = 工作表.图片 ?? []
+  const 字节数 = (数据: string): number => Math.floor(数据.length * 3 / 4) - (数据.endsWith('==') ? 2 : 数据.endsWith('=') ? 1 : 0)
+  if (!图片.id || 已有.some((项) => 项.id === 图片.id) || !['png', 'jpeg'].includes(图片.格式) ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(图片.数据) || 图片.数据.length % 4 !== 0 ||
+    字节数(图片.数据) > 5 * 1024 * 1024 ||
+    !Number.isInteger(图片.行) || 图片.行 < 0 || 图片.行 >= 工作表.行数 || 图片.行 >= 500 ||
+    !Number.isInteger(图片.列) || 图片.列 < 0 || 图片.列 >= 工作表.列数 || 图片.列 >= 50 ||
+    !Number.isInteger(图片.宽) || 图片.宽 < 1 || 图片.宽 > 4096 ||
+    !Number.isInteger(图片.高) || 图片.高 < 1 || 图片.高 > 4096) {
+    throw new Error('图片格式、大小或位置无效')
+  }
+  if (已有.reduce((总数, 项) => 总数 + 字节数(项.数据), 字节数(图片.数据)) > 20 * 1024 * 1024) {
+    throw new Error('当前工作表图片总大小不能超过 20 MB')
+  }
+  return { ...工作表, 图片: [...已有, 图片] }
+}
+
+export function 删除图片(工作表: Sheet, 标识: string): Sheet {
+  const 已有 = 工作表.图片 ?? []
+  return 已有.some((项) => 项.id === 标识)
+    ? { ...工作表, 图片: 已有.filter((项) => 项.id !== 标识) }
+    : 工作表
+}
+
+/** 更新工作表页面设置，兼容旧版文件中没有页面设置的模型。 */
+export function 设置页面设置(工作表: Sheet, 更新: Partial<页面设置>): Sheet {
+  return { ...工作表, 页面设置: { ...默认页面设置, ...工作表.页面设置, ...更新 } }
 }
 
 /** 写入单元格原始值并重算 */
 export function 写入单元格(工作表: Sheet, 地址: string, 原始值: string): Sheet {
   const 原单元 = 读取单元格(工作表, 地址)
+  const { 值类型: _导入值类型, ...更新前单元 } = 原单元
   const 新单元格 = { ...工作表.单元格 }
-  if (原始值.length === 0 && Object.keys(原单元.格式).length === 0) {
+  if (原始值.length === 0 && Object.keys(原单元.格式).length === 0 && !原单元.批注 && !原单元.数据验证) {
     delete 新单元格[地址]
   } else {
-    新单元格[地址] = { ...原单元, 原始值, 显示值: 原始值 }
+    新单元格[地址] = { ...更新前单元, 原始值, 显示值: 原始值 }
   }
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
 }
@@ -166,13 +315,36 @@ export function 清空单元格(工作表: Sheet, 地址列表: string[]): Sheet
     if (单元 === undefined) {
       return
     }
-    if (Object.keys(单元.格式).length === 0) {
+    if (Object.keys(单元.格式).length === 0 && !单元.批注 && !单元.数据验证) {
       delete 新单元格[地址]
     } else {
-      新单元格[地址] = { ...单元, 原始值: '', 显示值: '' }
+      const { 值类型: _导入值类型, ...保留属性 } = 单元
+      新单元格[地址] = { ...保留属性, 原始值: '', 显示值: '' }
     }
   })
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
+}
+
+/** 新增、更新或删除单元格批注；删除后空白单元格不残留。 */
+export function 设置批注(工作表: Sheet, 地址: string, 批注: string): Sheet {
+  const 位置 = 解析地址(地址)
+  if (位置 === null || 位置.行 >= 工作表.行数 || 位置.列 >= 工作表.列数) {
+    throw new Error('批注单元格地址无效')
+  }
+  const 文本 = 批注.trim()
+  const 原单元 = 读取单元格(工作表, 地址)
+  const 新单元格 = { ...工作表.单元格 }
+  if (文本 === '') {
+    if (原单元.原始值 === '' && Object.keys(原单元.格式).length === 0 && !原单元.数据验证) {
+      delete 新单元格[地址]
+    } else {
+      const { 批注: _已删除, ...余下 } = 原单元
+      新单元格[地址] = 余下
+    }
+  } else {
+    新单元格[地址] = { ...原单元, 批注: 文本 }
+  }
+  return { ...工作表, 单元格: 新单元格 }
 }
 
 /** 对区域内的单元格批量设置格式 */
@@ -278,6 +450,9 @@ export function 切换合并(工作表: Sheet, 区域: string): Sheet {
  */
 export function 插入行(工作表: Sheet, 行: number): Sheet {
   const 有效行 = Math.max(0, Math.min(行, 工作表.行数))
+  if ((工作表.图片 ?? []).some((图片) => 图片.行 >= 有效行 && 图片.行 >= 499)) {
+    throw new Error('图片已位于可编辑区域边缘，无法在其上方插入行')
+  }
   const 新单元格: Record<string, SheetCell> = {}
   Object.keys(工作表.单元格).forEach((地址) => {
     const 位置 = 解析地址(地址)
@@ -317,6 +492,7 @@ export function 插入行(工作表: Sheet, 行: number): Sheet {
     行数: 工作表.行数 + 1,
     行高: 新行高,
     合并区域: 新合并区域,
+    图片: (工作表.图片 ?? []).map((图片) => 图片.行 >= 有效行 ? { ...图片, 行: 图片.行 + 1 } : 图片),
   }
 }
 
@@ -327,6 +503,9 @@ export function 插入行(工作表: Sheet, 行: number): Sheet {
  */
 export function 插入列(工作表: Sheet, 列: number): Sheet {
   const 有效列 = Math.max(0, Math.min(列, 工作表.列数))
+  if ((工作表.图片 ?? []).some((图片) => 图片.列 >= 有效列 && 图片.列 >= 49)) {
+    throw new Error('图片已位于可编辑区域边缘，无法在其左侧插入列')
+  }
   const 新单元格: Record<string, SheetCell> = {}
   Object.keys(工作表.单元格).forEach((地址) => {
     const 位置 = 解析地址(地址)
@@ -362,6 +541,7 @@ export function 插入列(工作表: Sheet, 列: number): Sheet {
     列数: 工作表.列数 + 1,
     列宽: 新列宽,
     合并区域: 新合并区域,
+    图片: (工作表.图片 ?? []).map((图片) => 图片.列 >= 有效列 ? { ...图片, 列: 图片.列 + 1 } : 图片),
   }
 }
 
@@ -433,6 +613,7 @@ export function 删除行(工作表: Sheet, 行: number): Sheet {
     行数: 工作表.行数 - 1,
     行高: 新行高,
     合并区域: 新合并区域,
+    图片: (工作表.图片 ?? []).filter((图片) => 图片.行 !== 行).map((图片) => 图片.行 > 行 ? { ...图片, 行: 图片.行 - 1 } : 图片),
   }
 }
 
@@ -504,5 +685,6 @@ export function 删除列(工作表: Sheet, 列: number): Sheet {
     列数: 工作表.列数 - 1,
     列宽: 新列宽,
     合并区域: 新合并区域,
+    图片: (工作表.图片 ?? []).filter((图片) => 图片.列 !== 列).map((图片) => 图片.列 > 列 ? { ...图片, 列: 图片.列 - 1 } : 图片),
   }
 }

@@ -32,7 +32,7 @@ const 排序文案: Record<SortKey, string> = {
 }
 
 /** 列表视图列标题，顺序与 .wps-doc-list 的栅格模板一致 */
-const 列表列标题 = ['名称', '类型', '修改时间', '大小', '星标']
+const 列表列标题 = ['名称', '类型', '修改时间', '大小', '操作']
 
 const RecentDocs = ({
   docs,
@@ -154,7 +154,14 @@ const RecentDocs = ({
                 React.createElement('span', { key: 列名, className: 'wps-doc-list__col' }, 列名)
               )
             ),
-            docs.map((文档) => React.createElement(DocRow, { key: 文档.id, doc: 文档, onOpen }))
+            docs.map((文档) => React.createElement(DocRow, {
+              key: 文档.id,
+              doc: 文档,
+              onOpen,
+              onToggleStar,
+              onRename,
+              onRemove,
+            }))
           )
 
   return React.createElement('section', { className: 'wps-section' }, 标题行, 内容)

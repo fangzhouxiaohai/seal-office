@@ -1,0 +1,203 @@
+.help-manual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  height: 100%;
+  padding: var(--space-6);
+  color: var(--text-1);
+}
+
+.help-manual--dialog {
+  height: min(62vh, 600px);
+  padding: var(--space-2) 0;
+}
+
+.help-manual__header h1 {
+  margin: 0;
+  font: 600 24px/1.3 var(--font-heading);
+}
+
+.help-manual__header p {
+  margin: var(--space-2) 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.help-manual__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(100%, 460px);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-2);
+}
+
+.help-manual__search:focus-within {
+  border-color: var(--brand);
+  outline: 2px solid var(--brand-soft);
+}
+
+.help-manual__search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+}
+
+.help-manual__layout {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: var(--space-6);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.help-manual__nav,
+.help-manual__article {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.help-manual__nav {
+  padding-right: var(--space-3);
+  border-right: 1px solid var(--border);
+  scrollbar-gutter: stable;
+}
+
+.help-manual__group + .help-manual__group {
+  margin-top: var(--space-4);
+}
+
+.help-manual__group h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.help-manual__topic {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin: 2px 0;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 180ms, color 180ms;
+}
+
+.help-manual__topic:hover,
+.help-manual__topic--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.help-manual__topic--active {
+  box-shadow: inset 2px 0 0 var(--brand);
+}
+
+.help-manual__topic:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.help-manual__article {
+  max-width: 640px;
+  padding: var(--space-3) var(--space-4) var(--space-6) 0;
+}
+
+.help-manual__eyebrow {
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.help-manual__article h2 {
+  margin: var(--space-2) 0;
+  font: 600 24px/1.3 var(--font-heading);
+}
+
+.help-manual__summary {
+  margin: 0 0 var(--space-6);
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.help-manual__article h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.help-manual__article ol {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-6);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.help-manual__article li {
+  padding-left: var(--space-1);
+}
+
+.help-manual__article li::marker {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.help-manual__note {
+  margin-top: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--brand);
+  background: var(--brand-soft);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.help-manual__note p {
+  margin: var(--space-1) 0 0;
+}
+
+.help-manual__empty {
+  align-self: start;
+  padding: var(--space-6);
+  color: var(--text-2);
+}
+
+@media (max-width: 768px) {
+  .help-manual { padding: var(--space-4); }
+  .help-manual__layout { grid-template-columns: 1fr; gap: var(--space-3); }
+  .help-manual__nav { display: flex; gap: var(--space-2); overflow: auto hidden; padding: 0 0 var(--space-2); border-right: 0; border-bottom: 1px solid var(--border); }
+  .help-manual__group { display: flex; align-items: center; gap: var(--space-1); flex: 0 0 auto; }
+  .help-manual__group + .help-manual__group { margin-top: 0; }
+  .help-manual__group h2 { flex: 0 0 auto; margin: 0 var(--space-1) 0 0; white-space: nowrap; }
+  .help-manual__topic { white-space: nowrap; width: auto; }
+  .help-manual__article { padding: var(--space-2) 0 var(--space-4); }
+}
+
+@media (max-width: 480px) {
+  .help-manual { padding: var(--space-3); }
+  .help-manual__article h2 { font-size: 20px; }
+}

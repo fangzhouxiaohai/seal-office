@@ -2,12 +2,13 @@
 // 下载通过浏览器原生 Blob 触发，不依赖主进程。
 
 export function 导出为Html(标题: string, 正文Html: string): string {
+  const 安全标题 = 标题.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="generator" content="海豹办公 Seal Office">
-<title>${标题}</title>
+<title>${安全标题}</title>
 </head>
 <body>
 ${正文Html}
@@ -30,6 +31,46 @@ export function 导出为文本(正文Html: string): string {
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{2,}/g, '\n')
     .trim()
+}
+
+/** 将由纯文本打开链路生成的逐行段落还原为文本，保留空行和末尾换行。 */
+export function 保存为纯文本(正文Html: string): string {
+  const 容器 = document.createElement('div')
+  容器.innerHTML = 正文Html
+  const 子元素 = Array.from(容器.children)
+  if (子元素.length > 0 && 子元素.every((元素) => 元素.tagName === 'P' || 元素.tagName === 'DIV')) {
+    const 换行映射: Record<string, string> = { crlf: '\r\n', cr: '\r', lf: '\n' }
+    const 来源换行 = 子元素.map((元素) => 元素.getAttribute('data-seal-line-ending')).find((值) => 值 && 换行映射[值])
+    const 默认换行 = 来源换行 ? 换行映射[来源换行] : '\n'
+    const 读取段落文字 = (元素: Element): string => {
+      if (元素.childNodes.length === 1 && 元素.firstChild?.nodeName === 'BR') return ''
+      const 读取节点 = (节点: Node): string => {
+        if (节点.nodeType === 3) return 节点.textContent ?? ''
+        if (节点.nodeType !== 1) return ''
+        if ((节点 as Element).tagName === 'BR') return 默认换行
+        return Array.from(节点.childNodes).map(读取节点).join('')
+      }
+      return Array.from(元素.childNodes).map(读取节点).join('')
+    }
+    return 子元素.map((元素, 索引) => {
+      const 内容 = 读取段落文字(元素)
+      if (索引 === 子元素.length - 1) return 内容
+      return 内容 + (换行映射[元素.getAttribute('data-seal-break') ?? ''] ?? 默认换行)
+    }).join('')
+  }
+  return 导出为文本(正文Html)
+}
+
+/** 纯文本无法表达的结构和格式必须在覆盖源文件前拦下。 */
+export function 纯文本损失项(正文Html: string): string[] {
+  const 容器 = document.createElement('div')
+  容器.innerHTML = 正文Html
+  const 结果: string[] = []
+  if (容器.querySelector('table, img, svg, audio, video, .wps-page-break')) 结果.push('表格、图片或分页对象')
+  if (容器.querySelector('a[href], h1, h2, h3, h4, h5, h6, strong, b, em, i, u, s, sub, sup, font, [style], [class]')) {
+    结果.push('文字格式或链接')
+  }
+  return 结果
 }
 
 /** 依据文档名生成导出文件名，扩展名按目标格式替换 */

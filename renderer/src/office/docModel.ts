@@ -48,11 +48,29 @@ export interface 表格段落 {
   行: 表格单元[][]
 }
 
-export type 段落模型 = 文本段落 | 表格段落
+export interface 分页符段落 { 类型: '分页符' }
+
+export type 段落模型 = 文本段落 | 表格段落 | 分页符段落
+
+/** 整篇文字文档可由当前编辑器完整显示并写回的页面设置。 */
+export interface 文字页面设置 {
+  纸张: string
+  纸张方向: '纵向' | '横向'
+  页边距: string
+  分栏: string
+  水印: string
+  页面边框: string
+  页面颜色: string
+  文字方向: '横排' | '竖排'
+  /** 来源文档的原始 OOXML 尺寸，单位为缇，预设之外用于精确往返。 */
+  原始纸张?: { 宽: number; 高: number }
+  原始页边距?: { 上: number; 右: number; 下: number; 左: number }
+}
 
 /** 文档模型 */
 export interface 文档模型 {
   段落: 段落模型[]
+  页面设置?: 文字页面设置
   /** 本次转换未能覆盖的内容种类，用于如实告知用户而非静默丢弃 */
   未覆盖: string[]
 }
@@ -189,24 +207,26 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
   const 标签 = 元素.tagName
   const 样式 = 元素.style
   const 字重 = 样式.fontWeight
+  const 显式字重 = 字重 === 'normal' || (/^\d+$/.test(字重) && Number(字重) < 600)
+    ? false
+    : 字重 === 'bold' || 字重 === 'bolder' || (/^\d+$/.test(字重) && Number(字重) >= 600)
+      ? true
+      : undefined
+  const 显式字形 = 样式.fontStyle === 'normal'
+    ? false
+    : 样式.fontStyle === 'italic' || 样式.fontStyle === 'oblique'
+      ? true
+      : undefined
+  const 装饰 = 样式.textDecorationLine || 样式.textDecoration
+  const 明确无装饰 = 装饰 === 'none'
 
   const 新格式: 格式状态 = {
     加粗:
-      父格式.加粗 ||
-      标签 === 'B' ||
-      标签 === 'STRONG' ||
-      字重 === 'bold' ||
-      字重 === 'bolder' ||
-      (/^\d+$/.test(字重) && Number(字重) >= 600),
-    倾斜: 父格式.倾斜 || 标签 === 'I' || 标签 === 'EM' || 样式.fontStyle === 'italic',
-    下划线: 父格式.下划线 || 标签 === 'U' || 样式.textDecorationLine.includes('underline') || 样式.textDecoration.includes('underline'),
+      显式字重 ?? (父格式.加粗 || 标签 === 'B' || 标签 === 'STRONG'),
+    倾斜: 显式字形 ?? (父格式.倾斜 || 标签 === 'I' || 标签 === 'EM'),
+    下划线: 明确无装饰 ? false : 父格式.下划线 || 标签 === 'U' || 装饰.includes('underline'),
     删除线:
-      父格式.删除线 ||
-      标签 === 'S' ||
-      标签 === 'STRIKE' ||
-      标签 === 'DEL' ||
-      样式.textDecorationLine.includes('line-through') ||
-      样式.textDecoration.includes('line-through'),
+      明确无装饰 ? false : 父格式.删除线 || 标签 === 'S' || 标签 === 'STRIKE' || 标签 === 'DEL' || 装饰.includes('line-through'),
     颜色:
       颜色转十六进制(样式.color) ??
       // 旧式 <font color="..."> 标签把颜色放在属性上，同样要保真
@@ -376,6 +396,12 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     return
   }
 
+  if (节点.classList.contains('wps-page-break')) {
+    结算段落(上下文)
+    上下文.段落.push({ 类型: '分页符' })
+    return
+  }
+
   if (标签 === 'TABLE') {
     结算段落(上下文)
     const 表 = 解析表格(节点 as HTMLTableElement, 上下文.未覆盖)
@@ -428,6 +454,26 @@ export function 解析文档(正文Html: string): 文档模型 {
   容器.innerHTML = 正文Html
 
   const 上下文: 解析上下文 = { 段落: [], 未覆盖: new Set<string>(), 当前: null }
+  if (容器.querySelector('.wps-chart')) 上下文.未覆盖.add('图表')
+  if (容器.querySelector('.wps-smartart')) 上下文.未覆盖.add('智能图形')
+  if (容器.querySelector('.wps-toc')) 上下文.未覆盖.add('自动目录')
+  if (容器.querySelector('.wps-drop-cap')) 上下文.未覆盖.add('首字下沉')
+  if (容器.querySelector('.wps-insert, .wps-delete')) 上下文.未覆盖.add('修订标记')
+  if (容器.querySelector('a[href]')) 上下文.未覆盖.add('超链接目标')
+  if (容器.querySelector('sup, sub')) 上下文.未覆盖.add('上标、下标或注释标记')
+  if (容器.querySelector('svg')) 上下文.未覆盖.add('矢量图形')
+  if (容器.querySelector('video, audio, canvas, iframe, object, embed')) 上下文.未覆盖.add('媒体或嵌入对象')
+  for (const 元素 of 容器.querySelectorAll<HTMLElement>('p, div, h1, h2, h3, h4, h5, h6, li')) {
+    const 样式 = 元素.style
+    if (样式.marginLeft || 样式.marginRight || 样式.textIndent || 样式.marginTop || 样式.marginBottom || 样式.lineHeight) {
+      上下文.未覆盖.add('段落缩进或间距')
+    }
+    if (样式.border || 样式.borderWidth || 样式.padding || 样式.paddingTop || 样式.paddingBottom ||
+        样式.boxShadow || 样式.transform || 样式.position || 样式.float ||
+        (样式.width && 元素.tagName === 'DIV')) {
+      上下文.未覆盖.add('图形或文本框布局')
+    }
+  }
   容器.childNodes.forEach((子) => 遍历节点(子, 初始格式, 上下文))
 
   // 空文档也要给出一个空段落，否则生成的文件结构非法

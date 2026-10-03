@@ -4,6 +4,7 @@ import {
   读取单元格,
   写入单元格,
   设置格式,
+  设置页面设置,
   清空单元格,
   切换合并,
   插入行,
@@ -30,6 +31,18 @@ export interface 表格命令上下文 {
   重做: () => void
   /** 可选：由容器提供的选区更新能力，用于全选等命令 */
   更新选区?: (选区: 选区范围) => void
+  打开查找?: () => void
+  开始编辑公式?: (模板: string) => void
+  切换冻结?: () => void
+  切换拆分?: () => void
+  编辑批注?: () => void
+  切换筛选?: () => void
+  选择符号?: () => void
+  切换视图?: (视图: '普通' | '页面布局') => void
+  编辑数据验证?: () => void
+  切换保护?: () => void
+  检查拼写?: () => void
+  选择图片?: () => void
 }
 
 export interface 表格命令 {
@@ -210,6 +223,24 @@ function 行列命令(
   }
 }
 
+/** 将选区编码为可与其他表格软件互通的二维制表符文本。 */
+function 选区剪贴板内容(上下文: 表格命令上下文): { 地址列表: string[]; 文本: string } {
+  const 位置列表 = 展开区域(选区区域(上下文))
+  const 地址列表: string[] = []
+  const 各行: string[][] = []
+  let 当前行 = -1
+  位置列表.forEach((位置) => {
+    if (位置.行 !== 当前行) {
+      各行.push([])
+      当前行 = 位置.行
+    }
+    const 地址 = 生成地址(位置.行, 位置.列)
+    地址列表.push(地址)
+    各行[各行.length - 1].push(读取单元格(上下文.工作表, 地址).原始值)
+  })
+  return { 地址列表, 文本: 各行.map((行) => 行.join('\t')).join('\n') }
+}
+
 const 命令列表: 表格命令[] = [
   {
     id: 'edit.undo',
@@ -225,22 +256,15 @@ const 命令列表: 表格命令[] = [
     id: 'clipboard.cut',
     label: '剪切',
     run: (上下文) => {
-      const 地址列表 = 展开区域(选区区域(上下文))
-      const 内容: Record<string, string> = {}
-      地址列表.forEach((位置) => {
-        内容[生成地址(位置.行, 位置.列)] = 读取单元格(上下文.工作表, 生成地址(位置.行, 位置.列)).原始值
-      })
-      const 键列表 = Object.keys(内容)
-      if (键列表.length === 0) {
+      const { 地址列表, 文本 } = 选区剪贴板内容(上下文)
+      if (地址列表.length === 0) {
         上下文.notify('所选区域为空')
         return
       }
-      // 尝试写入剪贴板
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(键列表.map((键) => 内容[键]).join('\t')).then(() => {
-          const 目标地址 = 键列表.map((键) => 键)
-          上下文.更新工作表(清空单元格(上下文.工作表, 目标地址))
-          上下文.notify(`已剪切 ${键列表.length} 个单元格`)
+        navigator.clipboard.writeText(文本).then(() => {
+          上下文.更新工作表(清空单元格(上下文.工作表, 地址列表))
+          上下文.notify(`已剪切 ${地址列表.length} 个单元格`)
         }).catch(() => {
           上下文.notify('剪切功能需要浏览器剪贴板权限')
         })
@@ -253,17 +277,14 @@ const 命令列表: 表格命令[] = [
     id: 'clipboard.copy',
     label: '复制',
     run: (上下文) => {
-      const 地址列表 = 展开区域(选区区域(上下文))
-      const 内容 = 地址列表.map((位置) =>
-        读取单元格(上下文.工作表, 生成地址(位置.行, 位置.列)).原始值
-      )
-      if (内容.length === 0) {
+      const { 地址列表, 文本 } = 选区剪贴板内容(上下文)
+      if (地址列表.length === 0) {
         上下文.notify('所选区域为空')
         return
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(内容.join('\t')).then(() => {
-          上下文.notify(`已复制 ${内容.length} 个单元格`)
+        navigator.clipboard.writeText(文本).then(() => {
+          上下文.notify(`已复制 ${地址列表.length} 个单元格`)
         }).catch(() => {
           上下文.notify('复制功能需要浏览器剪贴板权限')
         })
@@ -281,18 +302,23 @@ const 命令列表: 表格命令[] = [
         return
       }
       navigator.clipboard.readText().then((文本) => {
-        const 行数据 = 文本.split('\n').filter((行) => 行.length > 0)
-        if (行数据.length === 0) {
+        if (文本.length === 0) {
           上下文.notify('剪贴板为空')
           return
         }
-        const 列数 = 行数据[0].split('\t').length
+        const 行数据 = 文本.replace(/\r\n?/g, '\n').split('\n')
+        if (行数据[行数据.length - 1] === '') 行数据.pop()
+        const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.split('\t').length), 0)
         const 目标地址: string[] = []
         const 值列表: string[] = []
-        const { 起点, 终点 } = 裁剪选区(上下文.工作表, 上下文.选区)
-        for (let 行 = 起点.行; 行 < 起点.行 + 行数据.length && 行 <= 终点.行; 行 += 1) {
-          const 列数据 = 行数据[行 - 起点.行]?.split('\t') ?? ['']
-          for (let 列 = 起点.列; 列 < 起点.列 + 列数 && 列 <= 终点.列; 列 += 1) {
+        const 起点 = 展开区域(选区区域(上下文))[0]
+        if (!起点) {
+          上下文.notify('粘贴位置无效')
+          return
+        }
+        for (let 行 = 起点.行; 行 < 起点.行 + 行数据.length && 行 < 上下文.工作表.行数; 行 += 1) {
+          const 列数据 = 行数据[行 - 起点.行].split('\t')
+          for (let 列 = 起点.列; 列 < 起点.列 + 列数 && 列 < 上下文.工作表.列数; 列 += 1) {
             const 值 = 列数据[列 - 起点.列] ?? ''
             目标地址.push(生成地址(行, 列))
             值列表.push(值)
@@ -523,7 +549,8 @@ const 命令列表: 表格命令[] = [
     id: 'edit.find',
     label: '查找',
     run: (上下文) => {
-      上下文.notify('查找功能开发中，将在后续版本提供')
+      if (上下文.打开查找) 上下文.打开查找()
+      else 上下文.notify('当前界面无法打开查找栏')
     },
   },
   {
@@ -578,42 +605,114 @@ const 命令列表: 表格命令[] = [
     id: 'symbol.insert',
     label: '插入符号',
     run: (上下文) => {
-      上下文.notify('符号插入需要弹出符号面板，后续版本将提供该功能')
+      if (上下文.选择符号) 上下文.选择符号()
+      else 上下文.notify('当前界面无法打开符号选择')
     },
   },
   指引命令('insert.pivot', '数据透视表', '数据透视表需要高级聚合功能，将在后续版本提供'),
   指引命令('insert.chart', '图表', '图表需要基于数据绘制图形，将在后续版本提供'),
-  指引命令('insert.picture', '图片', '图片插入需要本地文件选择，将在后续版本提供'),
-  指引命令('formula.logical', '逻辑函数', '当前支持 IF 逻辑函数，可直接在单元格输入 =IF(条件,真值,假值)'),
-  指引命令('formula.lookup', '查找与引用', '当前查找与引用函数尚未实现，支持 SUM、AVERAGE、MAX、MIN、IF 等常规函数'),
-  指引命令('formula.financial', '财务函数', '当前财务函数尚未实现，支持 SUM、AVERAGE、ROUND、ABS、CONCAT 等常用函数'),
-  指引命令('data.validation', '数据验证', '数据验证需要下拉规则设置，将在后续版本提供'),
-  指引命令('review.comment', '批注', '批注功能开发中，将在后续版本提供'),
-  指引命令('review.protect', '保护工作表', '保护工作表需要密码与权限机制，将在后续版本提供'),
-  指引命令('view.freeze', '冻结窗格', '冻结窗格功能开发中，将在后续版本提供'),
-  指引命令('view.split', '拆分', '拆分窗格功能开发中，将在后续版本提供'),
-  指引命令('view.normal', '普通视图', '已切换到普通视图'),
-  指引命令('view.pageLayout', '页面布局视图', '已切换到页面布局视图'),
-  指引命令('spell.check', '拼写检查', '拼写检查功能开发中，将在后续版本提供'),
+  {
+    id: 'insert.picture',
+    label: '图片',
+    run: (上下文) => {
+      if (上下文.选择图片) 上下文.选择图片()
+      else 上下文.notify('当前界面无法选择图片文件')
+    },
+  },
+  {
+    id: 'formula.logical', label: '逻辑函数',
+    run: (上下文) => 上下文.开始编辑公式?.('=IF('),
+  },
+  {
+    id: 'formula.lookup', label: '查找与引用',
+    run: (上下文) => 上下文.开始编辑公式?.('=XLOOKUP('),
+  },
+  {
+    id: 'formula.financial', label: '财务函数',
+    run: (上下文) => 上下文.开始编辑公式?.('=PMT('),
+  },
+  {
+    id: 'data.validation', label: '数据验证',
+    run: (上下文) => 上下文.编辑数据验证?.(),
+  },
+  {
+    id: 'data.filter', label: '筛选',
+    run: (上下文) => {
+      if (上下文.切换筛选) 上下文.切换筛选()
+      else 上下文.notify('当前界面无法设置筛选')
+    },
+  },
+  {
+    id: 'review.comment', label: '批注',
+    run: (上下文) => {
+      if (上下文.编辑批注) 上下文.编辑批注()
+      else 上下文.notify('当前界面无法编辑批注')
+    },
+  },
+  {
+    id: 'review.protect', label: '保护工作表',
+    run: (上下文) => 上下文.切换保护?.(),
+  },
+  {
+    id: 'view.freeze', label: '冻结窗格',
+    run: (上下文) => {
+      if (上下文.切换冻结) 上下文.切换冻结()
+      else 上下文.notify('当前界面无法设置冻结窗格')
+    },
+  },
+  {
+    id: 'view.split', label: '拆分',
+    run: (上下文) => {
+      if (上下文.切换拆分) 上下文.切换拆分()
+      else 上下文.notify('当前界面无法拆分窗格')
+    },
+  },
+  {
+    id: 'view.normal', label: '普通视图',
+    run: (上下文) => 上下文.切换视图?.('普通'),
+  },
+  {
+    id: 'view.pageLayout', label: '页面布局视图',
+    run: (上下文) => 上下文.切换视图?.('页面布局'),
+  },
+  {
+    id: 'spell.check', label: '拼写检查',
+    run: (上下文) => 上下文.检查拼写?.(),
+  },
   {
     id: 'layout.margin',
     label: '页边距',
     run: (上下文, 参数) => {
-      上下文.notify(参数 ? `已设置页边距：${参数}` : '请选择页边距方案')
+      if (参数 !== '常规' && 参数 !== '窄' && 参数 !== '适中' && 参数 !== '宽') {
+        上下文.notify('请选择有效的页边距方案')
+        return
+      }
+      上下文.更新工作表(设置页面设置(上下文.工作表, { 页边距: 参数 }))
+      上下文.notify(`已设置页边距：${参数}`)
     },
   },
   {
     id: 'layout.orientation',
     label: '纸张方向',
     run: (上下文, 参数) => {
-      上下文.notify(参数 ? `已设置纸张方向：${参数}` : '请选择纸张方向')
+      if (参数 !== '纵向' && 参数 !== '横向') {
+        上下文.notify('请选择有效的纸张方向')
+        return
+      }
+      上下文.更新工作表(设置页面设置(上下文.工作表, { 方向: 参数 }))
+      上下文.notify(`已设置纸张方向：${参数}`)
     },
   },
   {
     id: 'layout.paperSize',
     label: '纸张大小',
     run: (上下文, 参数) => {
-      上下文.notify(参数 ? `已设置纸张大小：${参数}` : '请选择纸张大小')
+      if (参数 !== '跟随打印机' && 参数 !== 'A4' && 参数 !== 'A5' && 参数 !== 'B5' && 参数 !== 'Letter') {
+        上下文.notify('请选择有效的纸张大小')
+        return
+      }
+      上下文.更新工作表(设置页面设置(上下文.工作表, { 纸张大小: 参数 }))
+      上下文.notify(`已设置纸张大小：${参数}`)
     },
   },
 ]
@@ -627,9 +726,7 @@ export const 表格命令表: Record<string, 表格命令> = 命令列表.reduce
 )
 
 /** 尚未实现的表格命令，按钮仍会渲染并给出中文提示 */
-export const 表格未实现清单: Array<[string, string]> = [
-  ['data.filter', '筛选'],
-]
+export const 表格未实现清单: Array<[string, string]> = []
 
 表格未实现清单.forEach(([id, label]) => {
   表格命令表[id] = 未实现表格命令(id, label)

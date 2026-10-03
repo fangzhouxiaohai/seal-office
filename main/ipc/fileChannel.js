@@ -1,12 +1,39 @@
-const { dialog, app, shell } = require('electron')
+const { dialog, app, shell, BrowserWindow } = require('electron')
 const fs = require('fs')
 const path = require('path')
-const { randomUUID } = require('crypto')
+const { createHash, randomUUID } = require('crypto')
 const { 读取docx } = require('../office/docxReader')
 const { 读取xlsx } = require('../office/xlsxCodec')
 const { 读取pptx } = require('../office/pptxCodec')
 
 const 文本扩展名 = new Set(['.html', '.htm', '.txt', '.md', '.csv', '.json'])
+const 可浏览扩展名 = new Set([...文本扩展名, '.docx', '.xlsx', '.pptx', '.pdf'])
+const 已知文件夹 = { desktop: 'desktop', document: 'documents', download: 'downloads' }
+const 保存对话框授权 = new WeakMap()
+
+function 规范路径(目标) {
+  const 绝对路径 = path.resolve(目标)
+  return process.platform === 'win32' ? 绝对路径.toLowerCase() : 绝对路径
+}
+
+function 计算文件指纹(目标, 内容) {
+  return createHash('sha256').update(规范路径(目标)).update('\0').update(内容).digest('hex')
+}
+
+function 读取目标指纹(目标) {
+  try {
+    return 计算文件指纹(目标, fs.readFileSync(目标))
+  } catch (错误) {
+    if (错误.code === 'ENOENT') return null
+    throw 错误
+  }
+}
+
+function 文件冲突错误(原因) {
+  const 错误 = new Error(`${原因}，已阻止覆盖。请重新打开文件或另存为其他名称。`)
+  错误.code = 'FILE_CONFLICT'
+  return 错误
+}
 
 /**
  * 把渲染进程传入的文件内容统一转成 Buffer。
@@ -39,6 +66,54 @@ function 原子写入文件(目标, 内容) {
     fs.renameSync(临时, 目标)
   } catch (错误) {
     if (fs.existsSync(临时)) fs.unlinkSync(临时)
+    throw 错误
+  }
+}
+
+function 保留损坏自动备份(备份目录, 已读取内容) {
+  const 原路径 = path.join(备份目录, 'autosave.json')
+  if (!fs.existsSync(原路径)) throw new Error('原始备份文件已不存在，请重试恢复')
+  if (已读取内容 !== undefined && fs.readFileSync(原路径, 'utf8') !== 已读取内容) {
+    throw new Error('备份内容已变化，请重试恢复后再继续')
+  }
+  const 保留路径 = path.join(备份目录, `autosave-invalid-${Date.now()}-${randomUUID()}.json`)
+  fs.renameSync(原路径, 保留路径)
+  return 保留路径
+}
+
+/**
+ * 新文件使用排他硬链接创建；现有文件在写入临时文件后、替换前再次按内容比较。
+ * 常规文件系统不提供跨进程原子比较并替换，校验紧贴 rename 以缩小竞态窗口。
+ */
+function 带版本校验写入文件(目标, 内容, 预期文件指纹, 缺少原始版本 = false) {
+  const 临时 = path.join(path.dirname(目标), `.${path.basename(目标)}.${process.pid}.${randomUUID()}.tmp`)
+  try {
+    fs.writeFileSync(临时, 内容, { flag: 'wx' })
+    const 当前文件指纹 = 读取目标指纹(目标)
+    if (当前文件指纹 !== 预期文件指纹) {
+      if (缺少原始版本 && 当前文件指纹 !== null) {
+        throw 文件冲突错误('缺少打开文件时的版本信息，无法确认目标文件是否被修改')
+      }
+      throw 文件冲突错误(当前文件指纹 === null ? '目标文件已在应用外删除或移动' : '目标文件已在应用外发生变化')
+    }
+    if (当前文件指纹 === null) {
+      try {
+        fs.linkSync(临时, 目标)
+      } catch (错误) {
+        if (!new Set(['EPERM', 'EACCES', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EINVAL', 'EXDEV']).has(错误.code)) {
+          throw 错误
+        }
+        // 不支持硬链接的文件系统仍须排他创建，绝不能退回可覆盖的 rename。
+        fs.copyFileSync(临时, 目标, fs.constants.COPYFILE_EXCL)
+      }
+      fs.unlinkSync(临时)
+    } else {
+      fs.renameSync(临时, 目标)
+    }
+    return 计算文件指纹(目标, 内容)
+  } catch (错误) {
+    if (fs.existsSync(临时)) fs.unlinkSync(临时)
+    if (错误.code === 'EEXIST') throw 文件冲突错误('目标文件已被其他程序创建')
     throw 错误
   }
 }
@@ -87,7 +162,7 @@ const 保存过滤器映射 = {
 
 const 打开过滤器映射 = {
   word: [{ name: '文字文档', extensions: ['docx', 'html', 'htm', 'txt', 'md'] }],
-  table: [{ name: '表格文档', extensions: ['xlsx', 'json'] }],
+  table: [{ name: '表格文档', extensions: ['xlsx', 'csv', 'json'] }],
   ppt: [{ name: '演示文档', extensions: ['pptx', 'json'] }],
   pdf: [{ name: 'PDF 文件', extensions: ['pdf'] }],
 }
@@ -106,14 +181,36 @@ const 兜底打开过滤器 = [
 ]
 
 function 注册文件通道(ipcMain) {
+  ipcMain.handle('file.listKnownFolder', async (_event, 位置) => {
+    if (!Object.prototype.hasOwnProperty.call(已知文件夹, 位置)) return { 成功: false, 错误: '不支持的本机文件夹位置' }
+    try {
+      const 文件夹路径 = app.getPath(已知文件夹[位置])
+      const 文件 = fs.readdirSync(文件夹路径, { withFileTypes: true })
+        .filter((条目) => 条目.isFile() && 可浏览扩展名.has(path.extname(条目.name).toLowerCase()))
+        .map((条目) => {
+          const 路径 = path.join(文件夹路径, 条目.name)
+          const 状态 = fs.statSync(路径)
+          return { 名称: 条目.name, 路径, 扩展名: path.extname(条目.name).toLowerCase(), 大小: 状态.size, 修改时间: 状态.mtimeMs }
+        })
+        .sort((左, 右) => 右.修改时间 - 左.修改时间)
+      return { 成功: true, 路径: 文件夹路径, 文件 }
+    } catch (错误) {
+      return { 成功: false, 错误: `读取本机文件夹失败：${错误 instanceof Error ? 错误.message : '无法访问目录'}` }
+    }
+  })
   ipcMain.handle('file.showSaveDialog', async (event, 默认文件名, 保存类型) => {
-    const 窗口 = require('electron').BrowserWindow.fromWebContents(event.sender)
+    const 窗口 = BrowserWindow.fromWebContents(event.sender)
+    if (event.sender && typeof event.sender === 'object') 保存对话框授权.delete(event.sender)
     const 结果 = await dialog.showSaveDialog(窗口, {
       title: '保存文件',
       defaultPath: 默认文件名,
       filters: 保存过滤器映射[保存类型] ?? 兜底保存过滤器,
     })
-    return 结果.canceled ? null : 结果.filePath || null
+    const 保存路径 = 结果.canceled ? null : 结果.filePath || null
+    if (保存路径 && event.sender && typeof event.sender === 'object') {
+      保存对话框授权.set(event.sender, { 路径: 规范路径(保存路径), 文件指纹: 读取目标指纹(保存路径) })
+    }
+    return 保存路径
   })
 
   ipcMain.handle('file.showOpenDialog', async (event, 打开类型) => {
@@ -126,11 +223,30 @@ function 注册文件通道(ipcMain) {
     return 结果.canceled ? null : 结果.filePaths[0] || null
   })
 
-  ipcMain.handle('file.saveToFile', async (_event, filePath, 内容, 格式) => {
+  ipcMain.handle('file.showOpenDialogMany', async (event, 打开类型) => {
+    if (打开类型 !== 'pdf') throw new Error('当前仅支持批量打开 PDF 文件')
+    const 窗口 = require('electron').BrowserWindow.fromWebContents(event.sender)
+    const 结果 = await dialog.showOpenDialog(窗口, {
+      title: '添加 PDF 文件',
+      filters: 打开过滤器映射.pdf,
+      properties: ['openFile', 'multiSelections'],
+    })
+    return 结果.canceled ? [] : 结果.filePaths
+  })
+
+  ipcMain.handle('file.saveToFile', async (event, filePath, 内容, 格式, 预期文件指纹) => {
     try {
       if (!filePath) return { 成功: false, 错误: '未指定保存路径' }
-      原子写入文件(filePath, 内容转缓冲(内容, 格式))
-      return { 成功: true, 路径: filePath }
+      const 授权 = event?.sender && typeof event.sender === 'object' ? 保存对话框授权.get(event.sender) : undefined
+      const 使用对话框授权 = 预期文件指纹 === undefined && 授权?.路径 === 规范路径(filePath)
+      const 缺少原始版本 = 预期文件指纹 === undefined && !使用对话框授权
+      const 有效预期指纹 = 使用对话框授权 ? 授权.文件指纹 : 预期文件指纹 === undefined ? null : 预期文件指纹
+      if (有效预期指纹 !== null && (typeof 有效预期指纹 !== 'string' || !/^[a-f0-9]{64}$/.test(有效预期指纹))) {
+        return { 成功: false, 错误: '文件版本信息无效，已阻止覆盖。请重新打开文件后重试。' }
+      }
+      const 文件指纹 = 带版本校验写入文件(filePath, 内容转缓冲(内容, 格式), 有效预期指纹, 缺少原始版本)
+      if (使用对话框授权) 保存对话框授权.delete(event.sender)
+      return { 成功: true, 路径: filePath, 文件指纹 }
     } catch (错误) {
       return { 成功: false, 错误: 错误.message || '保存文件失败' }
     }
@@ -165,6 +281,18 @@ function 注册文件通道(ipcMain) {
       return { 成功: true, 内容: fs.readFileSync(目标, 'utf-8') }
     } catch (错误) {
       return { 成功: false, 错误: 错误.message || '备份读取失败' }
+    }
+  })
+
+  ipcMain.handle('file.backup.preserve', async (_event, 已读取内容) => {
+    try {
+      if (已读取内容 !== undefined && typeof 已读取内容 !== 'string') {
+        return { 成功: false, 错误: '备份内容校验参数无效' }
+      }
+      const 备份目录 = path.join(app.getPath('userData'), 'backup')
+      return { 成功: true, 路径: 保留损坏自动备份(备份目录, 已读取内容) }
+    } catch (错误) {
+      return { 成功: false, 错误: 错误.message || '无法保留原始备份' }
     }
   })
 
@@ -228,7 +356,7 @@ function 注册文件通道(ipcMain) {
     }
   })
 
-  ipcMain.handle('file.rename', async (_event, 旧路径, 新名称) => {
+  ipcMain.handle('file.rename', async (_event, 旧路径, 新名称, 预期文件指纹) => {
     try {
       if (typeof 旧路径 !== 'string' || !path.isAbsolute(旧路径)) {
         return { 成功: false, 错误: '原文件路径无效' }
@@ -238,6 +366,9 @@ function 注册文件通道(ipcMain) {
       if (新路径 === 旧路径) return { 成功: false, 错误: '文件名称未变化' }
       if (!fs.existsSync(旧路径) || !fs.lstatSync(旧路径).isFile()) {
         return { 成功: false, 错误: '原文件不存在或不是普通文件' }
+      }
+      if (预期文件指纹 !== undefined && 读取目标指纹(旧路径) !== 预期文件指纹) {
+        throw 文件冲突错误('原文件已在应用外发生变化')
       }
       if (fs.existsSync(新路径)) return { 成功: false, 错误: '目标文件已存在' }
 
@@ -260,6 +391,10 @@ function 注册文件通道(ipcMain) {
       }
       let 记录已更新 = false
       try {
+        const 新文件内容 = fs.readFileSync(新路径)
+        if (预期文件指纹 !== undefined && 计算文件指纹(旧路径, 新文件内容) !== 预期文件指纹) {
+          throw 文件冲突错误('原文件已在应用外发生变化')
+        }
         原子写入文件(记录路径, JSON.stringify(更新记录, null, 2))
         记录已更新 = true
         fs.unlinkSync(旧路径)
@@ -272,7 +407,7 @@ function 注册文件通道(ipcMain) {
         }
         throw 操作错误
       }
-      return { 成功: true, 路径: 新路径, 名称: 新文件名 }
+      return { 成功: true, 路径: 新路径, 名称: 新文件名, 文件指纹: 读取目标指纹(新路径) }
     } catch (错误) {
       if (错误.code === 'EEXIST') return { 成功: false, 错误: '目标文件已存在' }
       return { 成功: false, 错误: 错误.message || '文件重命名失败' }
@@ -293,13 +428,14 @@ function 注册文件通道(ipcMain) {
       if (!filePath) return { 成功: false, 错误: '未指定文件路径' }
       const 缓冲 = fs.readFileSync(filePath)
       const 扩展名 = path.extname(filePath).toLowerCase()
+      const 文件指纹 = 计算文件指纹(filePath, 缓冲)
       return 文本扩展名.has(扩展名)
-        ? { 成功: true, 内容: 缓冲.toString('utf8'), 二进制: false, 扩展名 }
-        : { 成功: true, 内容: 缓冲.toString('base64'), 二进制: true, 扩展名 }
+        ? { 成功: true, 内容: 缓冲.toString('utf8'), 二进制: false, 扩展名, 文件指纹 }
+        : { 成功: true, 内容: 缓冲.toString('base64'), 二进制: true, 扩展名, 文件指纹 }
     } catch (错误) {
       return { 成功: false, 错误: 错误.message || '读取文件失败' }
     }
   })
 }
 
-module.exports = { 注册文件通道, 内容转缓冲, 文本扩展名, 保存过滤器映射, 打开过滤器映射 }
+module.exports = { 注册文件通道, 内容转缓冲, 保留损坏自动备份, 文本扩展名, 保存过滤器映射, 打开过滤器映射 }

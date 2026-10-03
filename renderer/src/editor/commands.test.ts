@@ -22,6 +22,58 @@ const 构造上下文 = (部分: Partial<CommandContext> = {}): CommandContext =
   }) as CommandContext
 
 describe('命令注册表', () => {
+  it('含无法写回的图表时阻止保存并说明损失内容', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\图表.docx'),
+        saveToFile: vi.fn().mockResolvedValue({ 成功: true }),
+        office: { writeDocx: 写入 },
+      },
+    })
+    const 错误 = vi.fn()
+    命令表['file.save'].run(构造上下文({
+      当前文档名: '图表.docx', 当前文档路径: null,
+      读取内容: () => '<div class="wps-chart"><svg></svg></div>',
+      显示文件错误: 错误,
+    }))
+    await vi.waitFor(() => expect(错误).toHaveBeenCalledWith('保存失败', expect.stringContaining('图表')))
+    expect(写入).not.toHaveBeenCalled()
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
+  it('保存文字文件时把当前页面设置传给文档写入器', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        saveToFile: vi.fn().mockResolvedValue({ 成功: true }),
+        office: { writeDocx: 写入 },
+      },
+    })
+    命令表['file.save'].run(构造上下文({
+      当前文档名: '页面.docx', 当前文档路径: 'C:\\资料\\页面.docx',
+      view: {
+        缩放: 1, 标尺: true, 网格线: false, 段落标记: false, 视图模式: '页面视图',
+        纸张: 'A5', 纸张方向: '横向', 页边距: '窄', 分栏: '两栏', 水印: '无',
+        页面边框: '方框', 页面颜色: '#FFF2CC', 文字方向: '竖排',
+        显示批注: true, 修订模式: false, 文档保护: false,
+      },
+    }))
+    await vi.waitFor(() => expect(写入).toHaveBeenCalledWith(expect.objectContaining({
+      页面设置: expect.objectContaining({ 纸张: 'A5', 纸张方向: '横向', 页边距: '窄', 分栏: '两栏' }),
+    })))
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
+  it('无法写入文档的水印选项不更改页面设置', () => {
+    const 设置 = vi.fn()
+    const 提示 = vi.fn()
+    命令表['layout.watermark'].run(构造上下文({ setView: 设置, 显示文件错误: 提示 }), '草稿')
+    expect(设置).not.toHaveBeenCalled()
+    expect(提示).toHaveBeenCalledWith('水印暂不可用', expect.stringContaining('DOCX'))
+  })
   it('未实现命令执行后给出中文提示', () => {
     const 提示 = vi.fn()
     const 命令 = 未实现命令('chart.insert', '图表')
@@ -77,12 +129,10 @@ describe('命令注册表', () => {
     expect(打开面板).toHaveBeenCalledTimes(1)
   })
 
-  it('邮件合并命令给出明确中文指引', () => {
-    const 提示 = vi.fn()
-    命令表['mailmerge.start'].run(构造上下文({ notify: 提示 }))
-    expect(提示).toHaveBeenCalledWith(
-      '邮件合并需要先准备收件人数据源（如包含姓名与邮箱的名单），该功能开发中'
-    )
+  it('邮件合并命令打开数据源与预览面板', () => {
+    const 打开面板 = vi.fn()
+    命令表['mailmerge.start'].run(构造上下文({ 打开邮件合并面板: 打开面板 }))
+    expect(打开面板).toHaveBeenCalledTimes(1)
   })
 })
 

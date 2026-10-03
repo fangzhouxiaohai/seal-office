@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GridView, { type 选区范围 } from './GridView'
 import SheetToolbar from './SheetToolbar'
-import { 创建工作表, 写入单元格 } from './model'
+import { 创建工作表, 写入单元格, 设置批注, 设置格式, 设置数据验证 } from './model'
 
 const 构造工作表 = () => {
   const 表 = 创建工作表('测试', 3, 3)
@@ -33,6 +33,24 @@ const 渲染网格 = (覆盖: Partial<React.ComponentProps<typeof GridView>> = {
   )
 
 describe('表格网格', () => {
+  it('列表验证单元格编辑时提供可选择的有效选项', async () => {
+    const 表 = 设置数据验证(构造工作表(), 'A1', { 类型: '列表', 选项: ['待办', '完成'], 允许空白: false })
+    const 变化 = vi.fn()
+    渲染网格({ 工作表: 表, 编辑地址: 'A1', 编辑值: '待办', on编辑值变化: 变化 })
+    const 选择 = screen.getByRole('combobox', { name: 'A1 选项' })
+    expect(screen.getByRole('option', { name: '完成' })).toBeInTheDocument()
+    await userEvent.selectOptions(选择, '完成')
+    expect(变化).toHaveBeenCalledWith('完成')
+  })
+  it('字体、字号和对齐设置在网格中可见', () => {
+    const 表 = 设置格式(构造工作表(), 'A1', { 字体: '宋体', 字号: 16, 水平对齐: 'right', 垂直对齐: 'top' })
+    const { container } = 渲染网格({ 工作表: 表 })
+    const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    expect(单元.style.fontFamily).toBe('宋体')
+    expect(单元.style.fontSize).toBe('16px')
+    expect(单元.style.justifyContent).toBe('flex-end')
+    expect(单元.style.alignItems).toBe('flex-start')
+  })
   it('渲染列标与行号', () => {
     渲染网格()
     expect(screen.getByText('A')).toBeInTheDocument()
@@ -47,11 +65,37 @@ describe('表格网格', () => {
     expect(container.querySelectorAll('.wps-sheet__cell')).toHaveLength(9)
   })
 
+  it('冻结首行首列后对应单元格与表头固定在滚动区域', () => {
+    const { container } = 渲染网格({ 冻结: { 行: 1, 列: 1 } })
+    const 左上 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    const 后续 = container.querySelector('[data-地址="B2"]') as HTMLElement
+    expect(左上.style.position).toBe('sticky')
+    expect(左上.style.top).toBe('24px')
+    expect(左上.style.left).toBe('46px')
+    expect(后续.style.position).toBe('')
+    expect(screen.getByText('A').style.left).toBe('46px')
+  })
+
+  it('筛选隐藏数据行时保留原始行号与单元格地址', () => {
+    const { container } = 渲染网格({ 隐藏行: new Set([1]) })
+    expect(container.querySelector('[data-地址="A2"]')).toBeNull()
+    expect(container.querySelector('[data-地址="A3"]')).not.toBeNull()
+    expect((container.querySelector('.wps-sheet') as HTMLElement).style.gridTemplateRows).toContain('0px')
+  })
+
   it('展示单元格的显示值', () => {
     渲染网格()
     expect(screen.getByText('10')).toBeInTheDocument()
     // B2 为公式 =A1*2，重算后显示 20
     expect(screen.getByText('20')).toBeInTheDocument()
+  })
+
+  it('带批注的单元格提供可见标记与悬浮内容', () => {
+    const 表 = 设置批注(构造工作表(), 'A1', '请核对金额')
+    const { container } = 渲染网格({ 工作表: 表 })
+    const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    expect(单元).toHaveClass('wps-sheet__cell--commented')
+    expect(单元.title).toBe('批注：请核对金额')
   })
 
   it('选中单元格带选中样式', () => {

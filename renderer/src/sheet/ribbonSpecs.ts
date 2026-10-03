@@ -138,7 +138,7 @@ const 布局标签: RibbonTabSpec = {
       items: [
         下拉('layout.margin', '页边距', 'margin', ['常规', '窄', '适中', '宽'], '常规'),
         下拉('layout.orientation', '纸张方向', 'orientation', ['纵向', '横向'], '纵向'),
-        下拉('layout.paperSize', '纸张大小', 'paper-size', ['A4', 'A5', 'B5', 'Letter'], 'A4'),
+        下拉('layout.paperSize', '纸张大小', 'paper-size', ['跟随打印机', 'A4', 'A5', 'B5', 'Letter'], 'A4'),
       ],
     },
     {

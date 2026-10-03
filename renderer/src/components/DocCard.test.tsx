@@ -6,6 +6,7 @@ import { App as AntdApp, ConfigProvider } from 'antd'
 import DocCard from './DocCard'
 import DocRow from './DocRow'
 import type { DocItem } from '../mock/recentDocs'
+import { 桥接 } from '../ipc/bridge'
 
 const 文档: DocItem = {
   id: 'd01',
@@ -47,6 +48,14 @@ describe('文档卡片', () => {
     expect(打开).toHaveBeenCalledWith(文档.id)
   })
 
+  it('键盘回车可打开文档卡片', async () => {
+    const 打开 = vi.fn()
+    渲染(<DocCard doc={文档} onOpen={打开} />)
+    screen.getByRole('group', { name: /经营分析报告.*回车打开/ }).focus()
+    await userEvent.keyboard('{Enter}')
+    expect(打开).toHaveBeenCalledWith(文档.id)
+  })
+
   it('点击星标只触发星标切换，不触发选中', async () => {
     const 星标 = vi.fn()
     const 选中 = vi.fn()
@@ -80,6 +89,19 @@ describe('文档卡片', () => {
     await userEvent.click(screen.getByRole('button', { name: '确定' }))
     expect(重命名).toHaveBeenCalledWith(文档.id, '新报告.docx')
   })
+
+  it('打开所在文件夹失败时显示错误弹窗', async () => {
+    const 定位 = vi.spyOn(桥接, 'revealInFolder').mockResolvedValue({ 成功: false, 错误: '源文件已移走' })
+    try {
+      渲染(<DocCard doc={{ ...文档, 路径: 'C:\\资料\\经营分析报告.docx' }} />)
+      await userEvent.click(screen.getByRole('button', { name: '更多操作' }))
+      await userEvent.click(await screen.findByText('打开所在文件夹'))
+      expect(await screen.findByRole('dialog', { name: '打开所在文件夹失败' })).toBeInTheDocument()
+      expect(screen.getByText('源文件已移走')).toBeInTheDocument()
+    } finally {
+      定位.mockRestore()
+    }
+  })
 })
 
 describe('文档行', () => {
@@ -95,5 +117,39 @@ describe('文档行', () => {
     渲染(<DocRow doc={文档} onOpen={打开} />)
     await userEvent.click(screen.getByText('经营分析报告.docx'))
     expect(打开).toHaveBeenCalledWith(文档.id)
+  })
+
+  it('列表行可通过键盘回车打开', async () => {
+    const 打开 = vi.fn()
+    渲染(<DocRow doc={文档} onOpen={打开} />)
+    screen.getByRole('button', { name: '打开 经营分析报告.docx' }).focus()
+    await userEvent.keyboard('{Enter}')
+    expect(打开).toHaveBeenCalledWith(文档.id)
+  })
+
+  it('星标与更多操作不会误打开文件，重命名和移除有明确确认链路', async () => {
+    const 打开 = vi.fn()
+    const 星标 = vi.fn()
+    const 重命名 = vi.fn()
+    const 移除 = vi.fn()
+    渲染(<DocRow doc={文档} onOpen={打开} onToggleStar={星标} onRename={重命名} onRemove={移除} />)
+    await userEvent.click(screen.getByRole('button', { name: '取消星标' }))
+    expect(星标).toHaveBeenCalledWith(文档.id)
+    expect(打开).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: '更多操作' }))
+    await userEvent.click(await screen.findByText('重命名'))
+    const 输入框 = await screen.findByRole('textbox')
+    await userEvent.clear(输入框)
+    await userEvent.type(输入框, '新名称.docx')
+    await userEvent.click(screen.getByRole('button', { name: '确定' }))
+    expect(重命名).toHaveBeenCalledWith(文档.id, '新名称.docx')
+
+    await userEvent.click(screen.getByRole('button', { name: '更多操作' }))
+    await userEvent.click(await screen.findByText('从最近列表移除'))
+    expect(await screen.findByText('磁盘中的文件不会删除。', { exact: false })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '移除' }))
+    expect(移除).toHaveBeenCalledWith(文档.id)
+    expect(打开).not.toHaveBeenCalled()
   })
 })

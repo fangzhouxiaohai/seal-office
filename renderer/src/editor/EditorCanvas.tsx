@@ -60,6 +60,8 @@ interface Props {
   watermark?: string
   pageBorder?: string
   pageColor?: string
+  customPaper?: { 宽: number; 高: number }
+  customMargin?: { 上: number; 右: number; 下: number; 左: number }
   onChange?: (html: string) => void
   onReady?: (元素: HTMLDivElement) => void
   /** 右键点击回调，返回坐标 */
@@ -81,6 +83,8 @@ const EditorCanvas = ({
   watermark = '无',
   pageBorder = '无',
   pageColor = '无',
+  customPaper,
+  customMargin,
   onChange,
   onReady,
   onContextMenu,
@@ -120,15 +124,23 @@ const EditorCanvas = ({
   }
 
   // 纸张尺寸与边距：横向时宽高互换
-  const [宽, 高] = 纸张尺寸[paper] ?? 纸张尺寸.A4
+  const 自定义纸张 = paper === '自定义' && customPaper !== undefined
+  const [宽, 高] = 自定义纸张
+    ? [customPaper.宽 / 15, customPaper.高 / 15]
+    : (纸张尺寸[paper] ?? 纸张尺寸.A4)
   const 横向 = orientation === '横向'
   const [边距上下, 边距左右] = 页边距映射[margin] ?? 页边距映射.常规
+  const 页面宽 = 自定义纸张 ? 宽 : 横向 ? 高 : 宽
+  const 页面高 = 自定义纸张 ? 高 : 横向 ? 宽 : 高
+  const 内边距 = margin === '自定义' && customMargin
+    ? `${customMargin.上 / 15}px ${customMargin.右 / 15}px ${customMargin.下 / 15}px ${customMargin.左 / 15}px`
+    : `${边距上下}px ${边距左右}px`
   const 栏数 = 分栏映射[columns] ?? 1
   const 纸张样式: React.CSSProperties = {
     transform: `scale(${scale})`,
-    width: 横向 ? 高 : 宽,
-    minHeight: 横向 ? 宽 : 高,
-    padding: `${边距上下}px ${边距左右}px`,
+    width: 页面宽,
+    minHeight: 页面高,
+    padding: 内边距,
     ...(pageColor !== '无' && pageColor !== '' ? { background: pageColor } : {}),
     ...(页面边框样式[pageBorder] ?? {}),
     position: 'relative',
