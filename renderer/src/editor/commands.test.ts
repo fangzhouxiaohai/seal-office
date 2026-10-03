@@ -22,6 +22,31 @@ const 构造上下文 = (部分: Partial<CommandContext> = {}): CommandContext =
   }) as CommandContext
 
 describe('命令注册表', () => {
+  it.each(['file.save', 'file.saveAs'])('常规段落排版通过 %s 正常写入，不再触发不支持格式弹窗', async (标识) => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
+    const 保存 = vi.fn().mockResolvedValue({ 成功: true })
+    const 错误 = vi.fn()
+    const 更新路径 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\段落排版.docx'),
+      saveToFile: 保存,
+      office: { writeDocx: 写入 },
+    } })
+    try {
+      命令表[标识].run(构造上下文({
+        当前文档名: '段落排版.docx', 当前文档路径: 'C:\\资料\\段落排版.docx',
+        读取内容: () => '<p style="text-indent:24pt;margin-top:6pt;margin-bottom:12pt;line-height:1.5">正文</p>',
+        显示文件错误: 错误, 设置文档路径: 更新路径,
+      }))
+      await vi.waitFor(() => expect(保存).toHaveBeenCalledOnce())
+      expect(写入).toHaveBeenCalledWith(expect.objectContaining({ 未覆盖: [], 段落: [expect.objectContaining({
+        缩进: { 首行: 480 }, 间距: { 段前: 120, 段后: 240, 行距: 360, 行距规则: 'auto' },
+      })] }))
+      expect(更新路径).toHaveBeenCalled()
+      expect(错误).not.toHaveBeenCalled()
+    } finally { Reflect.deleteProperty(window, 'electronAPI') }
+  })
+
   it('含无法写回的图表时阻止保存并说明损失内容', async () => {
     const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
     Object.defineProperty(window, 'electronAPI', {

@@ -22,6 +22,66 @@ const 构造模型 = () => ({
 })
 
 describe('docx 往返保真', () => {
+  it('文档默认段落格式与样式继承按属性叠加，直接格式覆盖相同字段', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr><w:pStyle w:val="正文"/><w:ind w:left="720"/></w:pPr><w:r><w:t>继承段落格式</w:t></w:r></w:p></w:body></w:document>')
+    压缩包.file('word/styles.xml', '<w:styles><w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="360" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+      '<w:style w:type="paragraph" w:styleId="基准"><w:pPr><w:ind w:left="240" w:right="360"/></w:pPr></w:style>' +
+      '<w:style w:type="paragraph" w:styleId="正文"><w:basedOn w:val="基准"/><w:pPr><w:spacing w:before="240"/></w:pPr></w:style></w:styles>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.html).toContain('margin-left:36pt')
+    expect(结果.html).toContain('margin-right:18pt')
+    expect(结果.html).toContain('margin-top:12pt')
+    expect(结果.html).toContain('margin-bottom:6pt')
+    expect(结果.html).toContain('line-height:1.5')
+    expect(结果.警告).toEqual([])
+  })
+
+  it.each([{ 缩进: { 首行: -1 } }, { 间距: { 行距: 0, 行距规则: 'auto' } }, { 间距: { 段前: -1 } }, { 间距: { 行距: 360, 行距规则: '未知' } }])('无效段落参数明确报错，不静默丢弃：%j', async (格式) => {
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '正文' }], ...格式 }] })).rejects.toThrow('段落')
+  })
+
+  it('段落缩进、悬挂、段距与倍数行距写入真实 DOCX 后完整读回', async () => {
+    const 数据 = await 生成docx({ 段落: [{ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无',
+      文字: [{ 文本: '段落排版正文' }], 缩进: { 左: 720, 右: 240, 悬挂: 360 },
+      间距: { 段前: 0, 段后: 120, 行距: 360, 行距规则: 'auto' },
+    }] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    expect(xml).toMatch(/<w:ind[^>]*w:left="720"/)
+    expect(xml).toMatch(/<w:ind[^>]*w:hanging="360"/)
+    const 结果 = await 读取docx(数据)
+    expect(结果.html).toContain('margin-left:36pt')
+    expect(结果.html).toContain('margin-right:12pt')
+    expect(结果.html).toContain('text-indent:-18pt')
+    expect(结果.html).toContain('margin-top:0pt')
+    expect(结果.html).toContain('margin-bottom:6pt')
+    expect(结果.html).toContain('line-height:1.5')
+    expect(结果.警告).toEqual([])
+  })
+
+  it.each(['exact', 'atLeast'])('固定或最小行距 %s 保留规则，不扁平化为倍数行距', async (规则) => {
+    const 数据 = await 生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '正文' }],
+      缩进: { 首行: 480 }, 间距: { 行距: 360, 行距规则: 规则 },
+    }] })
+    const 结果 = await 读取docx(数据)
+    expect(结果.html).toContain('text-indent:24pt')
+    expect(结果.html).toContain('line-height:18pt')
+    expect(结果.html).toContain(`data-seal-line-rule="${规则}"`)
+    expect(结果.警告).toEqual([])
+  })
+
+  it('列表项与空段落的缩进和间距不因渲染分支丢失', async () => {
+    const 数据 = await 生成docx({ 段落: [
+      { 类型: '段落', 列表: '项目符号', 文字: [{ 文本: '条目' }], 间距: { 段后: 160 } },
+      { 类型: '段落', 文字: [], 缩进: { 首行: 480 }, 间距: { 段前: 240 } },
+    ] })
+    const 结果 = await 读取docx(数据)
+    expect(结果.html).toMatch(/<li[^>]*style="[^"]*margin-bottom:8pt/)
+    expect(结果.html).toMatch(/<p[^>]*style="[^"]*text-indent:24pt;[^\"]*margin-top:12pt;[^\"]*"><br><\/p>/)
+    expect(结果.警告).toEqual([])
+  })
+
   it('独立分页符在保存重开后保留位置', async () => {
     const buffer = await 生成docx({ 段落: [
       { 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字: [{ 文本: '第一页' }] },
@@ -88,7 +148,7 @@ describe('docx 往返保真', () => {
     expect(结果.页面设置.纸张方向).toBe('横向')
   })
 
-  it('未能保留段落缩进与跨列表格单元格时发出保真警告', async () => {
+  it('普通段落缩进不再误报，未覆盖的表格合并仍提示风险', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body>' +
       '<w:p><w:pPr><w:ind w:left="720"/></w:pPr><w:r><w:t>缩进文字</w:t></w:r></w:p>' +
@@ -97,11 +157,11 @@ describe('docx 往返保真', () => {
     const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
     expect(结果.html).toContain('margin-left:36pt')
     expect(结果.html).toContain('colspan="2"')
-    expect(结果.警告).toContain('段落缩进未完整导入')
+    expect(结果.警告).not.toContain('段落缩进未完整导入')
     expect(结果.警告).toContain('表格合并单元格未导入')
   })
 
-  it('段落间距与超链接目标不会被静默丢弃', async () => {
+  it('普通段落间距不再误报，未覆盖的超链接目标仍提示风险', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:p>' +
       '<w:pPr><w:spacing w:before="240" w:after="120" w:line="360" w:lineRule="auto"/></w:pPr>' +
@@ -111,8 +171,70 @@ describe('docx 往返保真', () => {
     expect(结果.html).toContain('margin-top:12pt')
     expect(结果.html).toContain('margin-bottom:6pt')
     expect(结果.html).toContain('line-height:1.5')
-    expect(结果.警告).toContain('段落间距未完整导入')
+    expect(结果.警告).not.toContain('段落间距未完整导入')
     expect(结果.警告).toContain('超链接目标未导入')
+  })
+
+  it('上标、下标、段内换行与表格内多段格式写入真实 DOCX', async () => {
+    const 数据 = await 生成docx({ 段落: [
+      { 类型: '段落', 文字: [{ 文本: '上标', 基线: '上标' }, { 文本: '', 换行: true }, { 文本: '下标', 基线: '下标' }] },
+      { 类型: '表格', 行: [[{ 表头: false, 文字: [], 段落: [
+        { 类型: '段落', 对齐: '右', 文字: [{ 文本: '表内第一段' }], 缩进: { 首行: 480 }, 间距: { 行距: 360, 行距规则: 'auto' } },
+        { 类型: '段落', 文字: [{ 文本: '表内第二段' }], 间距: { 段前: 240 } },
+      ] }]] },
+    ] })
+    const 结果 = await 读取docx(数据)
+    expect(结果.html).toContain('vertical-align:super')
+    expect(结果.html).toContain('vertical-align:sub')
+    expect(结果.html).toContain('<br>')
+    expect(结果.html).toContain('text-align:right')
+    expect(结果.html).toContain('text-indent:24pt')
+    expect(结果.html).toContain('margin-top:12pt')
+    expect(结果.警告).toEqual([])
+  })
+
+  it('未知缩进字段与无效自动段距开关仍提示导入风险', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr><w:ind w:unknownIndent="200"/><w:spacing w:beforeAutospacing="invalid"/></w:pPr><w:r><w:t>复杂段落设置</w:t></w:r></w:p></w:body></w:document>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.警告).toContain('段落缩进未完整导入')
+    expect(结果.警告).toContain('段落间距未完整导入')
+  })
+
+  it.each([
+    { 缩进: { 首行字符: -1 } }, { 缩进: { 左字符: '100' } },
+    { 间距: { 段前行: -1 } }, { 间距: { 自动段前: 1 } },
+    { 间距: { 自动段后: '1\"/><w:p/>' } }, { 缩进: { 首行字符: 200, 悬挂: 240 } },
+  ])('非法原生段落排版不能写入文件：%j', async (格式) => {
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [], ...格式 }] })).rejects.toThrow('段落')
+  })
+
+  it('原生扩展属性按真实段落顺序写入表格、空行和分页符后的正文', async () => {
+    const 数据 = await 生成docx({ 段落: [
+      { 类型: '段落', 文字: [], 缩进: { 首行字符: 0 }, 间距: { 自动段前: false } },
+      { 类型: '表格', 行: [[{ 段落: [
+        { 类型: '段落', 文字: [{ 文本: '表内首段' }], 缩进: { 左字符: -100, 悬挂字符: 50 } },
+        { 类型: '段落', 文字: [{ 文本: '表内第二段' }], 间距: { 段后行: 100 } },
+      ] }, { 文字: [] }]] },
+      { 类型: '分页符' },
+      { 类型: '段落', 文字: [{ 文本: '最后正文' }], 缩进: { 右字符: 200 }, 间距: { 自动段后: true } },
+    ] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    const 段列表 = [...xml.matchAll(/<w:p(?=[\s/>])[^>]*\/>|<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/g)].map((项) => 项[0])
+    expect(段列表).toHaveLength(7)
+    expect(段列表[0]).toContain('w:firstLineChars="0"')
+    expect(段列表[1]).toContain('w:hangingChars="50"')
+    expect(段列表[2]).toContain('w:afterLines="100"')
+    expect(段列表[3]).not.toContain('Chars=')
+    expect(段列表[4]).not.toContain('Chars=')
+    expect(段列表[5]).toContain('w:type="page"')
+    expect(段列表[6]).toContain('w:rightChars="200"')
+    expect(段列表[6]).toContain('w:afterAutospacing="1"')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.html).toContain('margin-left:-1em')
+    expect(结果.html).toContain('text-indent:-0.5em')
   })
 
   it('写入器明确关闭的加粗、斜体和删除线在打开时保持关闭', async () => {

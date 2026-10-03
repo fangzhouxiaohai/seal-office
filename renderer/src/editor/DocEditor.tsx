@@ -449,6 +449,7 @@ const DocEditor = () => {
       return
     }
     目标.forEach((块) => {
+      if (样式.lineHeight !== undefined) delete 块.dataset.sealLineRule
       Object.assign(块.style, 样式)
     })
     记录历史()

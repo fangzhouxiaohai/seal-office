@@ -19,6 +19,8 @@ const {
   PageTextDirectionType,
   PageBreak,
 } = require('docx')
+const JSZip = require('jszip')
+const { 验证段落属性 } = require('./paragraphProperties')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 页边距 = {
@@ -113,6 +115,9 @@ function 建文字(片段) {
     italics: 片段.倾斜 === true,
     strike: 片段.删除线 === true,
   }
+  if (片段.换行 === true) 配置.break = 1
+  if (片段.基线 === '上标') 配置.superScript = true
+  else if (片段.基线 === '下标') 配置.subScript = true
   if (片段.下划线 === true) {
     配置.underline = {}
   }
@@ -134,10 +139,33 @@ function 建文字(片段) {
 }
 
 /** 把一个文本段落转为 docx 的 Paragraph */
-function 建段落(段) {
+function 建段落(段, 原生排版列表) {
+  const 原生排版 = 验证段落属性(段)
+  原生排版列表.push(原生排版)
   const 配置 = {
     children: (段.文字 || []).map(建文字),
     alignment: 对齐映射[段.对齐] || AlignmentType.LEFT,
+  }
+  const 验证尺寸 = (值, 名称, 最小值) => {
+    if (!Number.isSafeInteger(值) || 值 < 最小值 || 值 > 2147483647) throw new Error(`段落${名称}数值无效，无法保存`)
+    return 值
+  }
+  if (段.缩进) {
+    配置.indent = {}
+    for (const [字段, 属性] of [['左', 'left'], ['右', 'right'], ['首行', 'firstLine'], ['悬挂', 'hanging']]) {
+      if (段.缩进[字段] !== undefined) 配置.indent[属性] = 验证尺寸(段.缩进[字段], 字段 + '缩进', 字段 === '左' || 字段 === '右' ? -2147483648 : 0)
+    }
+    if (段.缩进.首行 !== undefined && 段.缩进.悬挂 !== undefined) throw new Error('段落首行与悬挂缩进不能同时设置')
+  }
+  if (段.间距) {
+    配置.spacing = {}
+    for (const [字段, 属性] of [['段前', 'before'], ['段后', 'after'], ['行距', 'line']]) {
+      if (段.间距[字段] !== undefined) 配置.spacing[属性] = 验证尺寸(段.间距[字段], 字段, 字段 === '行距' ? 1 : 0)
+    }
+    if (段.间距.行距规则 !== undefined) {
+      if (!['auto', 'exact', 'atLeast'].includes(段.间距.行距规则)) throw new Error('段落行距规则无效，无法保存')
+      配置.spacing.lineRule = 段.间距.行距规则
+    }
   }
 
   const 样式 = 标题样式[段.级别]
@@ -155,7 +183,7 @@ function 建段落(段) {
 }
 
 /** 把一个表格模型转为 docx 的 Table，行列数不齐时按最宽行补齐 */
-function 建表格(表) {
+function 建表格(表, 原生排版列表) {
   const 行数据 = 表.行 || []
   const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.length), 0)
 
@@ -165,14 +193,10 @@ function 建表格(表) {
       const 单元 = 行单元[序号]
       单元列表.push(
         new TableCell({
-          children: [
-            new Paragraph({
-              children: (单元 && 单元.文字 ? 单元.文字 : []).map((片段) =>
-                // 表头文字统一加粗，与常见排版习惯一致
-                建文字(单元 && 单元.表头 ? { ...片段, 加粗: true } : 片段)
-              ),
-            }),
-          ],
+          children: (单元?.段落?.length ? 单元.段落 : [{ 文字: 单元?.文字 || [] }]).map((段) => 建段落({
+            ...段,
+            文字: (段.文字 || []).map((片段) => 单元?.表头 ? { ...片段, 加粗: true } : 片段),
+          }, 原生排版列表)),
         })
       )
     }
@@ -180,6 +204,36 @@ function 建表格(表) {
   })
 
   return new Table({ rows: 行, width: { size: 100, type: WidthType.PERCENTAGE } })
+}
+
+/** 当前 docx 库未暴露字符缩进和行单位段距选项，按实际正文段落顺序补入受控属性。 */
+async function 补充原生排版(数据, 原生排版列表) {
+  if (!原生排版列表.some((项) => Object.keys(项?.ind || {}).length || Object.keys(项?.spacing || {}).length)) return 数据
+  const 压缩包 = await JSZip.loadAsync(数据)
+  const 文件 = 压缩包.file('word/document.xml')
+  if (!文件) throw new Error('保存文档缺少正文，无法写入段落格式')
+  const xml = await 文件.async('string')
+  let 序号 = 0
+  const 正文 = xml.replace(/<w:p(?=[\s/>])[^>]*\/>|<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/g, (段落Xml) => {
+    const 格式 = 原生排版列表[序号++]
+    if (!格式) return 段落Xml
+    let 属性 = 段落Xml.match(/<w:pPr(?=[\s>])[^>]*>([\s\S]*?)<\/w:pPr>/)?.[1] || ''
+    for (const 标签 of ['ind', 'spacing']) {
+      const 扩展 = Object.entries(格式[标签]).map(([键, 值]) => ` w:${键}="${值}"`).join('')
+      if (!扩展) continue
+      const 正则 = new RegExp(`<w:${标签}(?=[\\s/>])[^>]*\\/>`)
+      属性 = 正则.test(属性) ? 属性.replace(正则, (片段) => 片段.replace(/\/>$/, `${扩展}/>`)) : 属性 + `<w:${标签}${扩展}/>`
+    }
+    if (!Object.keys(格式.ind).length && !Object.keys(格式.spacing).length) return 段落Xml
+    const 段属性 = `<w:pPr>${属性}</w:pPr>`
+    if (/<w:pPr\s*\/>/.test(段落Xml)) return 段落Xml.replace(/<w:pPr\s*\/>/, 段属性)
+    if (/<w:pPr(?=[\s>])/.test(段落Xml)) return 段落Xml.replace(/<w:pPr(?=[\s>])[^>]*>[\s\S]*?<\/w:pPr>/, 段属性)
+    if (/\/>$/.test(段落Xml)) return 段落Xml.replace(/\/>$/, `>${段属性}</w:p>`)
+    return 段落Xml.replace(/^(<w:p(?=[\s>])[^>]*>)/, `$1${段属性}`)
+  })
+  if (序号 !== 原生排版列表.length) throw new Error('保存文档段落顺序不一致，无法写入段落格式')
+  压缩包.file('word/document.xml', 正文)
+  return 压缩包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
 }
 
 /** 编号列表的定义，docx 要求显式声明编号格式 */
@@ -209,21 +263,25 @@ exports.生成docx = async (文档模型) => {
   const 段落列表 = (文档模型 && 文档模型.段落) || []
 
   const 子元素 = []
+  const 原生排版列表 = []
   段落列表.forEach((项) => {
     if (项.类型 === '表格') {
-      子元素.push(建表格(项))
+      子元素.push(建表格(项, 原生排版列表))
       // Word 要求表格之后跟随段落，否则相邻表格会被合并
       子元素.push(new Paragraph({ children: [] }))
+      原生排版列表.push({ ind: {}, spacing: {} })
     } else if (项.类型 === '分页符') {
       子元素.push(new Paragraph({ children: [new PageBreak()] }))
+      原生排版列表.push({ ind: {}, spacing: {} })
     } else {
-      子元素.push(建段落(项))
+      子元素.push(建段落(项, 原生排版列表))
     }
   })
 
   // 完全没有内容时补一个空段落，否则生成的文件结构非法
   if (子元素.length === 0) {
     子元素.push(new Paragraph({ children: [] }))
+    原生排版列表.push({ ind: {}, spacing: {} })
   }
 
   const 文档 = new Document({
@@ -232,5 +290,5 @@ exports.生成docx = async (文档模型) => {
     sections: [{ properties: 构建页面属性(文档模型?.页面设置), children: 子元素 }],
   })
 
-  return await Packer.toBuffer(文档)
+  return 补充原生排版(await Packer.toBuffer(文档), 原生排版列表)
 }

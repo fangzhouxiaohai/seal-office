@@ -3,6 +3,7 @@
 // 转换放在渲染进程而非主进程，原因是渲染进程有完整 DOM，
 // 可以直接用浏览器解析 HTML，无需额外引入解析库，结果也更贴近用户所见。
 // 主进程只负责把模型写成 docx 等二进制格式。
+import { 读取段落排版, type 段落排版 } from './paragraphFormat'
 
 /** 段落对齐方式 */
 export type 对齐方式 = '左' | '中' | '右' | '两端'
@@ -24,10 +25,12 @@ export interface 文字片段 {
   /** 字号，单位磅 */
   字号?: number
   字体?: string
+  基线?: '上标' | '下标' | '正常'
+  换行?: boolean
 }
 
 /** 文本段落，含标题与列表项 */
-export interface 文本段落 {
+export interface 文本段落 extends 段落排版 {
   类型: '段落'
   /** 0 表示正文，1 至 6 表示对应级别的标题 */
   级别: number
@@ -40,6 +43,7 @@ export interface 文本段落 {
 export interface 表格单元 {
   表头: boolean
   文字: 文字片段[]
+  段落?: 文本段落[]
 }
 
 /** 表格段落 */
@@ -98,6 +102,7 @@ interface 格式状态 {
   底纹?: string
   字号?: number
   字体?: string
+  基线?: '上标' | '下标' | '正常'
 }
 
 const 初始格式: 格式状态 = {
@@ -251,6 +256,9 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
       (标签 === 'FONT' ? 字号档位磅值[元素.getAttribute('size') ?? ''] : undefined) ??
       父格式.字号,
     字体: 规整字体(样式.fontFamily) ?? 规整字体(元素.getAttribute('face') ?? undefined) ?? 父格式.字体,
+    基线: 样式.verticalAlign === 'baseline' ? '正常'
+      : 样式.verticalAlign === 'super' || 标签 === 'SUP' ? '上标'
+        : 样式.verticalAlign === 'sub' || 标签 === 'SUB' ? '下标' : 父格式.基线,
   }
   return 新格式
 }
@@ -267,6 +275,7 @@ function 建片段(文本: string, 格式: 格式状态): 文字片段 {
     底纹: 格式.底纹,
     字号: 格式.字号,
     字体: 格式.字体,
+    ...(格式.基线 ? { 基线: 格式.基线 } : {}),
   }
 }
 
@@ -343,6 +352,10 @@ function 收集片段(节点: Node, 格式: 格式状态, 未覆盖: Set<string>
       未覆盖.add('图片')
       return
     }
+    if (当前.tagName === 'BR') {
+      结果.push({ ...建片段('', 当前格式), 换行: true })
+      return
+    }
     const 子格式 = 叠加格式(当前, 当前格式)
     当前.childNodes.forEach((子) => 遍历(子, 子格式))
   }
@@ -368,9 +381,14 @@ function 解析表格(表: HTMLTableElement, 未覆盖: Set<string>): 表格段�
         if (元素.getAttribute('colspan') !== null || 元素.getAttribute('rowspan') !== null) {
           未覆盖.add('合并单元格')
         }
+        const 单元上下文: 解析上下文 = { 段落: [], 当前: null, 未覆盖 }
+        const 单元格式 = 叠加格式(元素, 初始格式)
+        元素.childNodes.forEach((子) => 遍历节点(子, 单元格式, 单元上下文))
+        if (单元上下文.段落.some((段) => 段.类型 !== '段落')) 未覆盖.add('表格内嵌对象')
         return {
           表头: 元素.tagName === 'TH',
-          文字: 收集片段(元素, 叠加格式(元素, 初始格式), 未覆盖),
+          文字: 收集片段(元素, 单元格式, 未覆盖),
+          段落: 单元上下文.段落.filter((段): 段 is 文本段落 => 段.类型 === '段落'),
         }
       })
     )
@@ -398,9 +416,11 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
   const 标签 = 节点.tagName
 
   if (标签 === 'BR') {
-    // 换行等同于开启新段落，docx 中没有段内软回车的对等概念
-    取当前段落(上下文, 0, '左', '无')
-    结算段落(上下文)
+    // 空段落的占位 br 不表示额外换行；其他 br 保留为段内软回车。
+    const 是空行占位 = 节点.parentElement && 块级标签.has(节点.parentElement.tagName) &&
+      Array.from(节点.parentElement.childNodes).every((子) => 子 === 节点 || 子.nodeType === Node.TEXT_NODE && !子.textContent?.trim())
+    const 段 = 取当前段落(上下文, 0, '左', '无')
+    if (!是空行占位) 段.文字.push({ ...建片段('', 格式), 换行: true })
     return
   }
 
@@ -424,6 +444,44 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     return
   }
 
+  // 浏览器缩进和粘贴产生的外层容器没有独立正文；将其布局应用到实际段落。
+  const 是段落容器 = 块级标签.has(标签) || 标签 === 'UL' || 标签 === 'OL'
+  const 子节点 = Array.from(节点.childNodes)
+  const 只含块级内容 = 子节点.some((子) => 子 instanceof HTMLElement) && 子节点.every((子) =>
+    子.nodeType === Node.TEXT_NODE ? !子.textContent?.trim() : 子 instanceof HTMLElement &&
+      (块级标签.has(子.tagName) || ['UL', 'OL', 'TABLE'].includes(子.tagName)))
+  if (是段落容器 && 只含块级内容) {
+    结算段落(上下文)
+    const 子格式 = 叠加格式(节点, 格式)
+    const 排版 = 读取段落排版(节点, 子格式.字号, 上下文.未覆盖)
+    const 起点 = 上下文.段落.length
+    子节点.forEach((子) => 遍历节点(子, 子格式, 上下文))
+    const 段落 = 上下文.段落.slice(起点).filter((段): 段 is 文本段落 => 段.类型 === '段落')
+    if (排版.缩进 && 段落.length !== 上下文.段落.length - 起点) 上下文.未覆盖.add('表格外层容器排版')
+    段落.forEach((段) => {
+      if (排版.缩进) {
+        段.缩进 ??= {}
+        for (const 字段 of ['左', '右'] as const) {
+          if (排版.缩进[字段] !== undefined) 段.缩进[字段] = (段.缩进[字段] ?? 0) + 排版.缩进[字段]!
+        }
+        if (段.缩进.首行 === undefined && 段.缩进.悬挂 === undefined) {
+          if (排版.缩进.首行 !== undefined) 段.缩进.首行 = 排版.缩进.首行
+          if (排版.缩进.悬挂 !== undefined) 段.缩进.悬挂 = 排版.缩进.悬挂
+        }
+      }
+      if (排版.间距?.行距 !== undefined && 段.间距?.行距 === undefined) {
+        段.间距 = { ...段.间距, 行距: 排版.间距.行距, 行距规则: 排版.间距.行距规则 }
+      }
+    })
+    if (段落.length && 排版.间距) {
+      for (const [段, 字段] of [[段落[0], '段前'], [段落[段落.length - 1], '段后']] as const) {
+        if (排版.间距[字段] !== undefined) 段.间距 = { ...段.间距, [字段]: Math.max(段.间距?.[字段] ?? 0, 排版.间距[字段]!) }
+      }
+    }
+    结算段落(上下文)
+    return
+  }
+
   if (标签 === 'UL' || 标签 === 'OL' || 标签 === 'TBODY' || 标签 === 'THEAD') {
     结算段落(上下文)
     节点.childNodes.forEach((子) => 遍历节点(子, 格式, 上下文))
@@ -438,6 +496,7 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     const 列表 = 标签 === 'LI' ? 读列表(节点) : '无'
     const 段 = 取当前段落(上下文, 级别, 对齐, 列表)
     const 子格式 = 叠加格式(节点, 格式)
+    Object.assign(段, 读取段落排版(节点, 子格式.字号, 上下文.未覆盖))
 
     节点.childNodes.forEach((子) => {
       // 块级元素内若再嵌套块级元素，由递归自行结算
@@ -473,16 +532,15 @@ export function 解析文档(正文Html: string): 文档模型 {
   if (容器.querySelector('.wps-drop-cap')) 上下文.未覆盖.add('首字下沉')
   if (容器.querySelector('.wps-insert, .wps-delete')) 上下文.未覆盖.add('修订标记')
   if (容器.querySelector('a[href]')) 上下文.未覆盖.add('超链接目标')
-  if (容器.querySelector('sup, sub')) 上下文.未覆盖.add('上标、下标或注释标记')
   if (容器.querySelector('svg')) 上下文.未覆盖.add('矢量图形')
   if (容器.querySelector('video, audio, canvas, iframe, object, embed')) 上下文.未覆盖.add('媒体或嵌入对象')
-  for (const 元素 of 容器.querySelectorAll<HTMLElement>('p, div, h1, h2, h3, h4, h5, h6, li')) {
+  for (const 元素 of 容器.querySelectorAll<HTMLElement>('p, div, h1, h2, h3, h4, h5, h6, li, blockquote, section, article')) {
     const 样式 = 元素.style
-    if (样式.marginLeft || 样式.marginRight || 样式.textIndent || 样式.marginTop || 样式.marginBottom || 样式.lineHeight) {
-      上下文.未覆盖.add('段落缩进或间距')
-    }
-    if (样式.border || 样式.borderWidth || 样式.padding || 样式.paddingTop || 样式.paddingBottom ||
-        样式.boxShadow || 样式.transform || 样式.position || 样式.float ||
+    const 有实际尺寸 = (值: string) => 值 !== '' && !/^(?:0(?:px|pt|em|rem|cm|mm|in|pc)?\s*)+$/.test(值)
+    if (样式.border && 样式.border !== 'none' && (!样式.borderWidth || 有实际尺寸(样式.borderWidth)) || 有实际尺寸(样式.borderWidth) ||
+        有实际尺寸(样式.padding) || 有实际尺寸(样式.paddingTop) || 有实际尺寸(样式.paddingBottom) ||
+        样式.boxShadow && 样式.boxShadow !== 'none' || 样式.transform && 样式.transform !== 'none' ||
+        样式.position && 样式.position !== 'static' || 样式.float && 样式.float !== 'none' ||
         (样式.width && 元素.tagName === 'DIV')) {
       上下文.未覆盖.add('图形或文本框布局')
     }
