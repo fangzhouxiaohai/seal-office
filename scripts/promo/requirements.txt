@@ -1,0 +1,6 @@
+edge-tts==7.2.8
+imageio-ffmpeg==0.6.0
+numpy>=1.26
+Pillow>=10
+opencv-python>=4.8
+qrcode==8.2
