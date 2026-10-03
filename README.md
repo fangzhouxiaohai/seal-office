@@ -10,8 +10,8 @@
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice 1.6.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.6.4/SealOffice%201.6.4.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice Setup 1.6.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.6.4/SealOffice%20Setup%201.6.4.exe)，安装向导可选择目录并创建快捷方式。 |
+| 便携版 | [SealOffice.1.6.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.6.4/SealOffice.1.6.4.exe)，下载后直接运行。 |
+| 安装版 | [SealOffice.Setup.1.6.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.6.4/SealOffice.Setup.1.6.4.exe)，安装向导可选择目录并创建快捷方式。 |
 | 发布说明 | [v1.6.4 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.6.4)，包含修复记录与文件校验值。 |
 
 如正在使用 1.6.3，请先保存并关闭旧版，再启动 1.6.4。安装包目前未签名。
