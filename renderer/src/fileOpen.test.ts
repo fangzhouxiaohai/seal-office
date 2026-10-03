@@ -282,7 +282,7 @@ describe('本地文件打开', () => {
     expect(已打开).toBe(false)
   })
 
-  it('最近记录落盘结束后才报告打开成功', async () => {
+  it('最近记录落盘结束后完成打开且不显示成功提示', async () => {
     let 完成记录!: (结果: { 成功: boolean }) => void
     const 记录请求 = new Promise<{ 成功: boolean }>((完成) => { 完成记录 = 完成 })
     Object.defineProperty(window, 'electronAPI', {
@@ -295,7 +295,9 @@ describe('本地文件打开', () => {
     })
     const 打开 = vi.fn()
     let 已完成 = false
-    const 打开过程 = 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开).then((结果) => {
+    const 消息 = { info: vi.fn(), success: vi.fn() }
+    const 弹窗 = { error: vi.fn() }
+    const 打开过程 = 通过对话框打开文件(消息, 弹窗, 打开).then((结果) => {
       已完成 = true
       return 结果
     })
@@ -303,6 +305,9 @@ describe('本地文件打开', () => {
     expect(已完成).toBe(false)
     完成记录({ 成功: true })
     await expect(打开过程).resolves.toBe(true)
+    expect(消息.info).not.toHaveBeenCalled()
+    expect(消息.success).not.toHaveBeenCalled()
+    expect(弹窗.error).not.toHaveBeenCalled()
   })
 
   it('最近记录写入失败时展示错误弹窗', async () => {

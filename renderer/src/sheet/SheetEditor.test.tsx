@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { App as AntdApp, ConfigProvider } from 'antd'
+import { App as AntdApp, ConfigProvider, Modal } from 'antd'
 import SheetEditor from './SheetEditor'
 import GlobalTabs from '../components/GlobalTabs'
 import { AppProvider, useAppStore } from '../store'
@@ -697,7 +697,10 @@ describe('表格快捷键增强', () => {
 
 
 describe('表格保存为 xlsx', () => {
-  it('功能区打开 CSV 时保留文本、文件指纹并提示后续另存 XLSX', async () => {
+  it('功能区静默打开 CSV 并保留文本和文件指纹', async () => {
+    // 静态错误弹窗不随测试容器卸载，先清理前一用例的弹窗。
+    Modal.destroyAll()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     const 记录最近 = vi.fn().mockResolvedValue({ 成功: true })
     const 读取 = vi.fn().mockResolvedValue({ 成功: true, 内容: '编号,公式\r\n0012,=1+1', 二进制: false, 扩展名: '.csv', 文件指纹: '原指纹' })
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
@@ -724,7 +727,8 @@ describe('表格保存为 xlsx', () => {
     expect(状态!.documents.find((项) => 项.id === 状态!.activeDocumentId)?.文件指纹).toBe('原指纹')
     expect(读取).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(记录最近).toHaveBeenCalledWith(expect.objectContaining({ 路径: 'C:\\资料\\数据.csv', 类型: 'table' })))
-    expect((await screen.findAllByText('CSV 已按文本导入')).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.querySelector('.ant-message')).toBeNull()
   })
 
   it('功能区打开格式错误的 CSV 时弹窗说明并保留原标签', async () => {

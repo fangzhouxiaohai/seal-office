@@ -332,7 +332,6 @@ const PptEditor = () => {
                     const 警告 = Array.isArray(解析结果.警告) ? 解析结果.警告 as string[] : []
                     createDoc('ppt', 解析结果.演示文稿, { 路径: 文件路径, 警告, 文件指纹: 读取结果.文件指纹 })
                     void 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
-                    message.success('文件已打开')
                   } else {
                     显示文件错误('打开文件失败', 解析结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
                   }
@@ -352,7 +351,6 @@ const PptEditor = () => {
                 try {
                   const 数据 = JSON.parse(结果.内容) as 演示文稿
                   createDoc('ppt', 数据)
-                  message.success('已导入演示文稿，请另存为 PPTX 文件')
                 } catch (错误) {
                   显示文件错误('打开文件失败', 错误 instanceof SyntaxError ? '文件格式不正确，无法打开' : 错误 instanceof Error ? 错误.message : '未知错误')
                 }

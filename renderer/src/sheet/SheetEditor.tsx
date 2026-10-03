@@ -638,11 +638,6 @@ const SheetEditor = () => {
               void 记录最近文档(文件路径, 基准名(文件路径), 'table').catch((错误: unknown) => {
                 提示文件错误('最近文档记录失败', 错误 instanceof Error ? 错误.message : '无法记录最近文档')
               })
-              modal.info({
-                title: 'CSV 已按文本导入',
-                content: 'CSV 只有单张表的文本数据。单元格中的前导零及以等号开头的内容已保留为文本；保存时请选择 XLSX 路径，原 CSV 不会被覆盖。',
-                okText: '我知道了',
-              })
             }).catch((错误: unknown) => {
               提示文件错误('打开表格失败', 错误 instanceof Error ? 错误.message : 'CSV 文件读取失败')
             })
@@ -664,7 +659,6 @@ const SheetEditor = () => {
                 }
                 createDoc('table', 数据, { 路径: 文件路径, 文件指纹: 结果.文件指纹 })
                 记录最近文档(文件路径, 基准名(文件路径), 'table')
-                message.success('文件已打开')
               } catch {
                 提示文件错误('打开表格失败', '文件格式不正确，无法打开')
               }
@@ -686,7 +680,6 @@ const SheetEditor = () => {
                 const 新表 = 解析表 as Sheet[]
                 createDoc('table', 新表, { 路径: 文件路径, 警告: Array.isArray(解析.警告) ? 解析.警告 : [], 文件指纹: 结果.文件指纹 })
                 记录最近文档(文件路径, 基准名(文件路径), 'table')
-                message.success('文件已打开')
               }).catch(() => {
                 提示文件错误('打开表格失败', '表格内容解析失败')
               })

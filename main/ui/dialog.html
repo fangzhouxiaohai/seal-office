@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN" class="seal-dialog-root">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="dialog.css">
+  <title>海豹办公</title>
+</head>
+<body class="seal-system-dialog">
+  <main class="seal-dialog-panel" role="alertdialog" aria-labelledby="标题" aria-describedby="原因 说明">
+    <header class="seal-dialog-header">
+      <h1 id="标题">确认退出</h1>
+      <button id="关闭" class="seal-dialog-close" aria-label="取消退出"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+    </header>
+    <section class="seal-dialog-body"><p id="原因"></p><p id="说明" class="seal-dialog-detail"></p></section>
+    <footer id="按钮" class="seal-dialog-footer"></footer>
+  </main>
+  <script src="dialogRenderer.js"></script>
+</body>
+</html>

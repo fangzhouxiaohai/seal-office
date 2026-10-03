@@ -257,7 +257,7 @@ export async function 通过对话框打开文件(
   打开: (类型: 打开类型, 内容: unknown, 路径: string, 警告?: string[], 页面设置?: 文字页面设置, 文件指纹?: string) => void
 ): Promise<boolean> {
   if (!桥接.可用) {
-    message.info('当前环境不支持打开文件功能，请使用打包后的版本')
+    modal.error({ title: '打开文件失败', content: '当前环境不支持打开文件功能，请使用打包后的版本' })
     return false
   }
   try {
@@ -273,30 +273,25 @@ export async function 通过对话框打开文件(
 /** 系统文件关联与打开对话框共用解析、标签创建和最近记录链路。 */
 export async function 通过路径打开文件(
   文件路径: string,
-  message: 消息接口,
+  _消息: 消息接口,
   modal: 弹窗接口,
   打开: (类型: 打开类型, 内容: unknown, 路径: string, 警告?: string[], 页面设置?: 文字页面设置, 文件指纹?: string) => void
 ): Promise<boolean> {
   try {
     if (typeof 文件路径 !== 'string' || 文件路径.trim() === '') throw new Error('未提供有效的文件路径')
     const 内容 = await 读取本地文件内容(文件路径)
-    let 成功提示: string
     if (内容.类型 === 'ppt') {
       if (内容.文件指纹) 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告, undefined, 内容.文件指纹)
       else 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告)
-      成功提示 = '演示文稿已打开'
     } else if (内容.类型 === 'pdf') {
       打开('pdf', 内容.内容, 文件路径, 内容.警告)
-      成功提示 = 'PDF 文件已打开'
     } else {
       const 初始内容 = 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容
       if (内容.文件指纹) 打开(内容.类型, 初始内容, 文件路径, 内容.警告, 内容.页面设置, 内容.文件指纹)
       else if (内容.类型 === 'word' && 内容.页面设置) 打开('word', 内容.内容, 文件路径, 内容.警告, 内容.页面设置)
       else 打开(内容.类型, 初始内容, 文件路径, 内容.警告)
-      成功提示 = 内容.类型 === 'word' ? '文档已打开' : '表格已打开'
     }
-    const 已记录 = await 记录最近文档(文件路径, 基准文件名(文件路径), 内容.类型)
-    if (已记录) message.success(成功提示)
+    await 记录最近文档(文件路径, 基准文件名(文件路径), 内容.类型)
     return true
   } catch (错误) {
     modal.error({ title: '打开文件失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })

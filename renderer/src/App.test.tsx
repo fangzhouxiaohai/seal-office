@@ -14,6 +14,42 @@ const 通过新建菜单创建 = async (名称: string) => {
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
+  it('自动恢复未保存工作区时保留正文和标记，不显示恢复提示', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    localStorage.setItem('seal-session-restore', 'true')
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: JSON.stringify({
+        documents: [{ id: '恢复文字', name: '恢复.docx', html: '<p>待保存正文</p>', 已保存Html: '<p>旧正文</p>', type: 'word' }],
+        activeDocumentId: '恢复文字', activeModule: 'word',
+      }) }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      render(<App 初始最近文档={[]} />)
+      const 标签 = await screen.findByRole('tab', { name: /恢复.docx/ })
+      expect(标签.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+      expect(screen.getByText('待保存正文')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(document.querySelector('.ant-message')).toBeNull()
+      expect(screen.queryByText('已恢复编辑内容')).toBeNull()
+    } finally {
+      localStorage.removeItem('seal-session-restore')
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
+  it('联系客服使用固定弹窗展示邮箱，关闭后回到当前页面', async () => {
+    render(<App 初始最近文档={[]} />)
+    await userEvent.click(screen.getByRole('button', { name: '联系客服' }))
+    const 弹窗 = await screen.findByRole('dialog', { name: '联系客服' })
+    expect(弹窗).toHaveTextContent('24519660@qq.com')
+    expect(document.querySelector('.ant-message')).toBeNull()
+    await userEvent.click([...弹窗.querySelectorAll('button')].find((按钮) => 按钮.textContent === '关闭')!)
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '联系客服' })).toBeNull())
+  })
+
   it('导入文档修改并保存后，关闭程序核验报告零个未保存文件', async () => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     let 请求关闭: ((标识: string) => void) | undefined

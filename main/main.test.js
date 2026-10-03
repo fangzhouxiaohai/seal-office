@@ -2,12 +2,15 @@ function 加载关闭保护(打包状态 = false, 关闭状态查询 = null) {
   const 电子路径 = require.resolve('electron')
   const 主进程路径 = require.resolve('./main')
   const 系统通道路径 = require.resolve('./ipc/systemChannel')
+  const 弹窗路径 = require.resolve('./appDialog')
   require('electron')
   const 原电子导出 = require.cache[电子路径].exports
   const 原主进程缓存 = require.cache[主进程路径]
   const 原系统通道缓存 = require.cache[系统通道路径]
+  const 原弹窗缓存 = require.cache[弹窗路径]
   const 窗口映射 = new Map()
   const 显示确认框 = vi.fn()
+  const 系统默认弹窗 = vi.fn(() => { throw new Error('退出保护不得使用系统默认消息框') })
   require.cache[电子路径].exports = {
     app: {
       isPackaged: 打包状态,
@@ -18,8 +21,9 @@ function 加载关闭保护(打包状态 = false, 关闭状态查询 = null) {
     },
     BrowserWindow: { fromWebContents: (网页) => 窗口映射.get(网页) ?? null },
     Menu: { setApplicationMenu: vi.fn() },
-    dialog: { showMessageBoxSync: 显示确认框 },
+    dialog: { showMessageBoxSync: 系统默认弹窗 },
   }
+  require.cache[弹窗路径] = { id: 弹窗路径, filename: 弹窗路径, loaded: true, exports: { 显示应用确认: 显示确认框 } }
   delete require.cache[主进程路径]
   delete require.cache[系统通道路径]
   if (关闭状态查询) {
@@ -39,6 +43,8 @@ function 加载关闭保护(打包状态 = false, 关闭状态查询 = null) {
     else delete require.cache[主进程路径]
     if (原系统通道缓存) require.cache[系统通道路径] = 原系统通道缓存
     else delete require.cache[系统通道路径]
+    if (原弹窗缓存) require.cache[弹窗路径] = 原弹窗缓存
+    else delete require.cache[弹窗路径]
   }
 }
 
@@ -66,6 +72,27 @@ function 创建测试窗口(窗口映射) {
 }
 
 describe('主进程窗口关闭保护', () => {
+  it('自定义确认仍在等待时连续关闭不重复核验或弹窗，取消后可再次检查', async () => {
+    const 查询 = vi.fn().mockResolvedValue({ 未保存数量: 1, 备份成功: true })
+    const { 主进程, 窗口映射, 显示确认框 } = 加载关闭保护(false, 查询)
+    const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
+    let 完成选择
+    显示确认框.mockImplementation(() => new Promise((完成) => { 完成选择 = 完成 }))
+    主进程.安装关闭保护(窗口)
+    触发关闭()
+    await vi.waitFor(() => expect(显示确认框).toHaveBeenCalledOnce())
+    触发关闭()
+    expect(查询).toHaveBeenCalledOnce()
+    expect(窗口.close).not.toHaveBeenCalled()
+    完成选择(0)
+    await new Promise((完成) => setImmediate(完成))
+    触发关闭()
+    await vi.waitFor(() => expect(显示确认框).toHaveBeenCalledTimes(2))
+    完成选择(0)
+    await new Promise((完成) => setImmediate(完成))
+    expect(窗口.close).not.toHaveBeenCalled()
+  })
+
   it('工作区备份失败时即使文档均已保存也保留窗口并说明原因', async () => {
     const { 主进程, 系统通道, 窗口映射, 显示确认框 } = 加载关闭保护()
     const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
@@ -293,7 +320,7 @@ describe('主进程窗口关闭保护', () => {
       buttons: ['保留窗口', '仍然退出'],
       detail: expect.stringContaining('3 个未保存文档'),
     }))
-    expect(窗口.close).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(窗口.close).toHaveBeenCalledOnce())
   })
 
   it('关闭状态查询抛错时同样由用户决定是否退出', async () => {

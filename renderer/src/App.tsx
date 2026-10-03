@@ -51,6 +51,7 @@ const 外壳 = () => {
   // 关于我们弹窗
   const [关于弹窗打开, set关于弹窗打开] = useState(false)
   const [通知弹窗打开, set通知弹窗打开] = useState(false)
+  const [客服弹窗打开, set客服弹窗打开] = useState(false)
   const [本次通知, set本次通知] = useState<Array<本机通知 & { 标识: number; 时间: string }>>([])
   const 通知序号 = React.useRef(0)
   const [模板库打开, set模板库打开] = useState(false)
@@ -71,9 +72,8 @@ const 外壳 = () => {
 
   useEffect(() => {
     if (!备份恢复提示) return
-    modal.info({ title: '已恢复编辑内容', content: `${备份恢复提示}。请检查内容并及时保存。` })
     清除备份提示()
-  }, [备份恢复提示, modal, 清除备份提示])
+  }, [备份恢复提示, 清除备份提示])
 
   useEffect(() => {
     const 记录通知 = (事件: Event) => {
@@ -170,7 +170,7 @@ const 外壳 = () => {
       搜索词,
       on搜索变化: set搜索词,
       on通知: () => set通知弹窗打开(true),
-      on客服: () => message.info('在线客服即将开放，可发送邮件至 24519660@qq.com'),
+      on客服: () => set客服弹窗打开(true),
       on关于: () => set关于弹窗打开(true),
       主题深色: 主题 === '深色',
       on切换主题: 切换主题,
@@ -235,6 +235,15 @@ const 外壳 = () => {
     ),
     React.createElement(GlobalTabs, null),
     React.createElement(Footer, { total: docs.length, starred: 星标数 }),
+    React.createElement(Modal, {
+      open: 客服弹窗打开, onCancel: () => set客服弹窗打开(false),
+      onOk: () => set客服弹窗打开(false), centered: true, width: 480,
+      title: '联系客服', okText: '关闭', cancelButtonProps: { style: { display: 'none' } },
+    }, React.createElement('div', { className: 'seal-contact' },
+      React.createElement('p', null, '如需反馈问题或咨询，请联系：'),
+      React.createElement('dl', null,
+        React.createElement('dt', null, '联系邮箱'), React.createElement('dd', null, '24519660@qq.com')),
+      React.createElement('p', { className: 'seal-contact__hint' }, '反馈问题时请附上软件版本、操作步骤和相关截图，方便定位。'))),
     React.createElement(
       Modal,
       {

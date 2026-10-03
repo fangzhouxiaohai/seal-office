@@ -1,0 +1,51 @@
+:root {
+  --dialog-bg: var(--bg-card, #ffffff);
+  --dialog-text: var(--text-1, #1a1d24);
+  --dialog-muted: var(--text-2, #5c6472);
+  --dialog-border: var(--border, #e8ebf0);
+  --dialog-hover: var(--bg-hover, #f2f5fa);
+  --dialog-brand: var(--brand, #2b6cf6);
+  --dialog-danger: var(--danger, #e34d59);
+  --dialog-radius: var(--radius-card, 8px);
+  --dialog-control-radius: var(--radius-control, 6px);
+  --dialog-gap: var(--space-4, 16px);
+  --dialog-padding: var(--space-6, 24px);
+  --dialog-font: var(--font-body, "Microsoft YaHei", "PingFang SC", Arial, sans-serif);
+  --dialog-title-size: 18px;
+  --dialog-body-size: 14px;
+  --dialog-shadow: var(--shadow-card, 0 4px 16px rgba(31, 41, 55, 0.1));
+}
+.seal-dialog-root { height: 100%; overflow: hidden; }
+.seal-system-dialog { position: fixed; inset: 0; display: flex; margin: 0; overflow: hidden; font-family: var(--dialog-font); color: var(--dialog-text); background: var(--dialog-bg); }
+.seal-system-dialog * { box-sizing: border-box; }
+.seal-dialog-panel { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: var(--dialog-padding); border: 1px solid var(--dialog-border); border-radius: var(--dialog-radius); }
+.seal-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: var(--dialog-gap); padding-bottom: var(--dialog-gap); border-bottom: 1px solid var(--dialog-border); }
+.seal-dialog-header h1 { margin: 0; font-size: var(--dialog-title-size); font-weight: 600; line-height: 1.3; }
+.seal-dialog-close { display: grid; place-items: center; width: 28px; height: 28px; padding: 4px; background: transparent; border: none; border-radius: var(--dialog-control-radius); color: var(--dialog-muted); cursor: pointer; }
+.seal-dialog-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.seal-dialog-close:hover { background: var(--dialog-hover); color: var(--dialog-text); }
+.seal-dialog-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--dialog-gap) 0; font-size: var(--dialog-body-size); line-height: 1.6; overflow-wrap: anywhere; }
+.seal-dialog-body p { margin: 0; white-space: pre-wrap; }
+.seal-dialog-detail { color: var(--dialog-muted); margin-top: var(--dialog-gap) !important; }
+.seal-dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: var(--dialog-gap); border-top: 1px solid var(--dialog-border); }
+.seal-dialog-button { min-width: 96px; min-height: 34px; padding: 6px 16px; border: 1px solid var(--dialog-border); border-radius: var(--dialog-control-radius); color: var(--dialog-text); background: var(--dialog-bg); font: 400 var(--dialog-body-size)/1.5 var(--dialog-font); cursor: pointer; }
+.seal-dialog-button:hover { background: var(--dialog-hover); }
+.seal-dialog-button--danger { color: var(--dialog-danger); border-color: var(--dialog-danger); }
+.seal-dialog-button--danger:hover { background: var(--dialog-danger); color: var(--dialog-bg); }
+.seal-dialog-button:focus-visible, .seal-dialog-close:focus-visible { outline: 2px solid var(--dialog-brand); outline-offset: 2px; }
+.seal-dialog-button:disabled, .seal-dialog-close:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 应用内弹窗与独立退出弹窗共用颜色、圆角、文字和按钮区域令牌。 */
+.ant-modal-wrap { display: flex; align-items: center; }
+.ant-modal-wrap .ant-modal { top: 0; padding-bottom: 0; margin: var(--dialog-padding) auto; }
+.ant-modal .ant-modal-content { padding: var(--dialog-padding); border: 1px solid var(--dialog-border); border-radius: var(--dialog-radius); box-shadow: var(--dialog-shadow); background: var(--dialog-bg); color: var(--dialog-text); }
+.ant-modal .ant-modal-header { padding-bottom: var(--dialog-gap); margin-bottom: var(--dialog-gap); border-bottom: 1px solid var(--dialog-border); background: transparent; }
+.ant-modal .ant-modal-title, .ant-modal-confirm .ant-modal-confirm-title { color: var(--dialog-text); font: 600 var(--dialog-title-size)/1.3 var(--dialog-font); }
+.ant-modal .ant-modal-body, .ant-modal-confirm .ant-modal-confirm-content { color: var(--dialog-text); font: 400 var(--dialog-body-size)/1.6 var(--dialog-font); overflow-wrap: anywhere; }
+.ant-modal .ant-modal-footer, .ant-modal-confirm .ant-modal-confirm-btns { margin-top: var(--dialog-padding); padding-top: var(--dialog-gap); border-top: 1px solid var(--dialog-border); }
+.ant-modal .ant-modal-footer .ant-btn, .ant-modal-confirm .ant-modal-confirm-btns .ant-btn { min-width: 80px; border-radius: var(--dialog-control-radius); }
+.seal-contact p { margin: 0 0 var(--dialog-gap); }
+.seal-contact dl { display: grid; grid-template-columns: auto 1fr; gap: var(--dialog-gap); margin: var(--dialog-padding) 0; }
+.seal-contact dt, .seal-contact__hint { color: var(--dialog-muted); }
+.seal-contact dd { margin: 0; overflow-wrap: anywhere; user-select: text; }
+@media (max-width: 480px) { .ant-modal .ant-modal-content { padding: var(--dialog-gap); } .seal-contact dl { grid-template-columns: 1fr; gap: 8px; } }

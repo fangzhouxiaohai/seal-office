@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron')
+const { app, BrowserWindow, Menu } = require('electron')
+const { 显示应用确认 } = require('./appDialog')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { 注册全部通道 } = require('./ipc')
@@ -28,9 +29,9 @@ function 加载开发服务(窗口, 次数) {
 function 安装关闭保护(窗口) {
   let 已确认退出 = false
   let 正在核验 = false
-  const 询问是否仍然退出 = (选项) => {
+  const 询问是否仍然退出 = async (选项) => {
     if (窗口.isDestroyed?.()) return
-    const 选择 = dialog.showMessageBoxSync(窗口, {
+    const 选择 = await 显示应用确认(窗口, {
       ...选项,
       buttons: ['保留窗口', '仍然退出'],
       defaultId: 0,
@@ -46,26 +47,24 @@ function 安装关闭保护(窗口) {
     事件.preventDefault()
     if (正在核验) return
     正在核验 = true
-    void 查询实时关闭状态(窗口).then((状态) => {
+    void 查询实时关闭状态(窗口).then(async (状态) => {
       if (窗口.isDestroyed?.()) return
       if (状态 === null) {
         const 已上报数量 = 获取未保存风险数量(窗口)
-        询问是否仍然退出({
+        return 询问是否仍然退出({
           type: 'warning',
           title: '无法确认保存状态',
           message: '关闭前未能完成文档与工作状态检查',
           detail: `${已上报数量 > 0 ? `先前记录有 ${已上报数量} 个未保存文档` : '未保存数量无法确认'}。退出后未保存内容及工作区状态可能无法恢复。请先保存文件；确需退出时手动选择“仍然退出”。`,
         })
-        return
       }
       if (!状态.备份成功) {
-        询问是否仍然退出({
+        return 询问是否仍然退出({
           type: 'error',
           title: '工作状态保存失败',
           message: `工作状态保存失败：${状态.备份错误 || '无法写入当前工作区备份'}`,
           detail: `当前有 ${状态.未保存数量} 个未保存文档。退出后未保存内容及工作区状态可能无法恢复。请先检查存储空间并保存文件；确需退出时手动选择“仍然退出”。`,
         })
-        return
       }
       const 数量 = 状态.未保存数量
       if (数量 === 0) {
@@ -73,7 +72,7 @@ function 安装关闭保护(窗口) {
         窗口.close()
         return
       }
-      const 选择 = dialog.showMessageBoxSync(窗口, {
+      const 选择 = await 显示应用确认(窗口, {
         type: 'warning',
         title: '确认退出',
         message: `还有 ${数量} 个文档可能包含未保存的修改`,
@@ -83,13 +82,13 @@ function 安装关闭保护(窗口) {
         cancelId: 0,
         noLink: true,
       })
-      if (选择 !== 1) return
+      if (选择 !== 1 || 窗口.isDestroyed?.()) return
       已确认退出 = true
       窗口.close()
     }).catch((错误) => {
       console.error('关闭前状态核验失败：', 错误)
       const 已上报数量 = 获取未保存风险数量(窗口)
-      询问是否仍然退出({
+      return 询问是否仍然退出({
         type: 'error',
         title: '无法确认保存状态',
         message: '关闭前检查文档状态失败',

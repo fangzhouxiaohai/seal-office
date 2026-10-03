@@ -11,7 +11,7 @@ const 位置标题: Record<本机位置, string> = { desktop: '桌面', document
 const 格式化大小 = (大小: number) => 大小 < 1024 ? `${大小} 字节` : 大小 < 1024 * 1024 ? `${(大小 / 1024).toFixed(1)} KB` : `${(大小 / 1024 / 1024).toFixed(1)} MB`
 
 export default function LocalFilesPage({ 位置 }: { 位置: 本机位置 }) {
-  const { message, modal } = AntdApp.useApp()
+  const { modal } = AntdApp.useApp()
   const { createDoc, refreshRecents } = useAppStore()
   const [文件, 设文件] = useState<本机文件[]>([])
   const [目录, 设目录] = useState('')
@@ -49,7 +49,6 @@ export default function LocalFilesPage({ 位置 }: { 位置: 本机位置 }) {
       const 已记录 = await 记录最近文档(目标.路径, 基准文件名(目标.路径), 内容.类型)
       if (已记录) {
         refreshRecents()
-        message.success(`已打开「${目标.名称}」`)
       }
     } catch (错误) {
       modal.error({ title: '打开文件失败', content: 错误 instanceof Error ? 错误.message : '无法打开该文件' })
