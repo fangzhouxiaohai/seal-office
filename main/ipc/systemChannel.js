@@ -85,7 +85,7 @@ function 注册系统通道(ipcMain) {
   ipcMain.handle('app.getInfo', async () => ({
     名称: '海豹办公', 英文名称: 'Seal Office', 版本: app.getVersion(), 作者: '饮风一笑',
     邮箱: '24519660@qq.com', 说明: '本程序永久免费开源',
-    开源地址: 'https://github.com/seal-office/seal-office', 专业服务: '专业应用开发服务',
+    开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务',
   }))
 }
 

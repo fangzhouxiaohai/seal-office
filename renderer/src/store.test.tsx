@@ -102,6 +102,19 @@ describe('应用状态层', () => {
     expect(状态!.workspaceTabs.find((项) => 项.id === 标识)?.dirty).toBe(false)
   })
 
+  it('导入与保存页面设置的属性顺序不同不会误判为未保存', () => {
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    const 导入设置 = { 纸张: 'A4', 纸张方向: '纵向' as const, 页边距: '常规', 分栏: '一栏', 页面边框: '无', 页面颜色: '无', 文字方向: '横排' as const, 水印: '无' }
+    const 保存设置 = { 纸张: 'A4', 纸张方向: '纵向' as const, 页边距: '常规', 分栏: '一栏', 水印: '无', 页面边框: '无', 页面颜色: '无', 文字方向: '横排' as const }
+    render(<AppProvider><读取 /></AppProvider>)
+    act(() => 状态!.createDoc('word', '<p>正文</p>', { 路径: 'C:\\资料\\报告.docx', 页面设置: 导入设置 }))
+    act(() => 状态!.markDocumentSaved(状态!.activeDocumentId!, '<p>正文</p>', undefined, { 页面设置: 保存设置 }))
+    expect(状态!.workspaceTabs[0].dirty).toBe(false)
+    act(() => 状态!.更新文字页面设置(状态!.activeDocumentId!, { ...导入设置, 页边距: '窄' }))
+    expect(状态!.workspaceTabs[0].dirty).toBe(true)
+  })
+
   it('最近文件星标写盘失败时不改变界面状态', async () => {
     const 文档 = { ...RECENT_DOCS[0], 路径: 'C:\\资料\\报告.docx' }
     const recentAdd = vi.fn().mockResolvedValue({ 成功: false, 错误: '记录文件只读' })

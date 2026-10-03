@@ -14,7 +14,7 @@ import { 基准文件名, 记录最近文档, 读取本地文件内容 } from '.
 import { 创建工作表, 检查工作簿更新, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
-import type { 文字页面设置 } from './office/docModel'
+import { 页面设置相同, type 文字页面设置 } from './office/docModel'
 
 export type ViewMode = 'grid' | 'list'
 
@@ -225,7 +225,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         type: 类型,
         path: 路径,
         dirty: 路径 === null || (类型 === 'word'
-          ? 文档.html !== 文档.已保存Html || JSON.stringify(文档.页面设置) !== JSON.stringify(文档.已保存页面设置)
+          ? 文档.html !== 文档.已保存Html || !页面设置相同(文档.页面设置, 文档.已保存页面设置)
           : 模型有修改),
       })
     }

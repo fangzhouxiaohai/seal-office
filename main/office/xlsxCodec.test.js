@@ -256,6 +256,17 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(结果.警告).toEqual([])
   })
 
+  it('本程序创建的带边框和数值表格保存重开不误报默认主题颜色', async () => {
+    const 数据 = await 写入xlsx({ 工作表: [{ 名称: '桌面表格', 数据: [
+      [{ 文字: [{ 文本: '正文' }], 格式: { 边框: { 上: true, 下: true, 左: true, 右: true } } }, { 文字: [{ 文本: '1' }] }],
+      [{ 文字: [{ 文本: '合计' }], 格式: { 水平对齐: 'center' } }, { 文字: [{ 文本: '2' }] }],
+    ] }] })
+    const 重开 = await 读取xlsx(数据)
+    expect(重开.警告).toEqual([])
+    expect(重开.工作表列表[0].元数据.单元格格式.A1.边框).toEqual({ 上: true, 下: true, 左: true, 右: true })
+    expect(重开.html).toContain('正文')
+  })
+
   it('文本型数字保留原始类型与前导零', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('编号')
@@ -269,15 +280,46 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(验证簿.worksheets[0].getCell('A1').value).toBe('00123')
   })
 
-  it('主题色和自定义数字格式无法保留时给出具体警告', async () => {
+  it('主题颜色按文件实际主题导入，自定义数字格式仍给出具体警告', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('高级格式')
     表.getCell('A1').value = 1234
     表.getCell('A1').font = { color: { theme: 2 } }
     表.getCell('A1').numFmt = '000000'
     const 结果 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
-    expect(结果.警告).toContain('部分主题色或透明颜色未导入')
+    expect(结果.工作表列表[0].元数据.单元格格式.A1.字体颜色).toBe('#EEECE1')
+    expect(结果.警告).not.toContain('部分主题色或透明颜色未导入')
     expect(结果.警告).toContain('部分数字格式未导入')
+  })
+
+  it('自定义主题色从文件解析并可保存为相同的显式颜色', async () => {
+    const 工作簿 = new ExcelJS.Workbook()
+    const 表 = 工作簿.addWorksheet('自定义主题')
+    表.getCell('A1').value = '主题文字'
+    表.getCell('A1').font = { color: { theme: 2 } }
+    表.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { theme: 4 } }
+    const 压缩包 = await JSZip.loadAsync(await 工作簿.xlsx.writeBuffer())
+    const 主题 = await 压缩包.file('xl/theme/theme1.xml').async('string')
+    压缩包.file('xl/theme/theme1.xml', 主题.replace('EEECE1', '123456').replace('4F81BD', 'ABCDEF'))
+    const 读取 = await 读取xlsx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    const 格式 = 读取.工作表列表[0].元数据.单元格格式.A1
+    expect(格式).toMatchObject({ 字体颜色: '#123456', 填充颜色: '#ABCDEF' })
+    expect(读取.警告).toEqual([])
+    const 重开 = await 读取xlsx(await 写入xlsx({ 工作表: [{ 名称: '主题副本', 数据: [[{ 文字: [{ 文本: '主题文字' }], 格式 }]] }] }))
+    expect(重开.工作表列表[0].元数据.单元格格式.A1).toMatchObject({ 字体颜色: '#123456', 填充颜色: '#ABCDEF' })
+    expect(重开.警告).toEqual([])
+  })
+
+  it('未知主题索引、透明色与尚未支持的主题色调仍提示保真风险', async () => {
+    const 工作簿 = new ExcelJS.Workbook()
+    const 表 = 工作簿.addWorksheet('未覆盖颜色')
+    for (const [地址, 颜色] of [['A1', { theme: 99 }], ['B1', { argb: '00336699' }], ['C1', { theme: 4, tint: 0.5 }]]) {
+      表.getCell(地址).value = '颜色'
+      表.getCell(地址).font = { color: 颜色 }
+    }
+    const 读取 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
+    expect(读取.警告).toContain('部分主题色或透明颜色未导入')
+    for (const 地址 of ['A1', 'B1', 'C1']) expect(读取.工作表列表[0].元数据.单元格格式[地址]?.字体颜色).toBeUndefined()
   })
 
   it('显式彩色边框无法保留时提示保真风险', async () => {

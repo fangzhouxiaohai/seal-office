@@ -15,7 +15,7 @@ const 信息 = {
   作者: '饮风一笑',
   邮箱: '24519660@qq.com',
   说明: '本程序永久免费开源',
-  开源地址: 'https://github.com/seal-office/seal-office',
+  开源地址: 'https://github.com/fangzhouxiaohai/seal-office',
   专业服务: '专业应用开发服务',
 }
 

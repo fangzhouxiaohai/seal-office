@@ -148,9 +148,30 @@ function 转写颜色(颜色) {
   return { argb: `FF${颜色.slice(1).toUpperCase()}` }
 }
 
-function 读取颜色(颜色, 警告) {
+async function 读取主题颜色(压缩包) {
+  const 文件 = 压缩包.file('xl/theme/theme1.xml')
+  if (!文件) return []
+  const xml = await 文件.async('string')
+  const 命名空间 = '(?:[\\w.-]+:)?'
+  const 方案 = xml.match(new RegExp(`<${命名空间}clrScheme\\b[^>]*>([\\s\\S]*?)<\\/${命名空间}clrScheme>`))?.[1]
+  if (!方案) return []
+  // 主题索引的顺序与颜色方案 XML 中的深浅色排列不同。
+  return ['lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'].map((名称) => {
+    const 内容 = 方案.match(new RegExp(`<${命名空间}${名称}\\b[^>]*>([\\s\\S]*?)<\\/${命名空间}${名称}>`))?.[1]
+    if (!内容) return undefined
+    const rgb = 内容.match(new RegExp(`<${命名空间}srgbClr\\b[^>]*>`))?.[0]
+    const 系统色 = 内容.match(new RegExp(`<${命名空间}sysClr\\b[^>]*>`))?.[0]
+    const 色值 = rgb ? 读取Xml属性(rgb, 'val') : 系统色 ? 读取Xml属性(系统色, 'lastClr') : undefined
+    return typeof 色值 === 'string' && /^[0-9a-f]{6}$/i.test(色值) ? 色值.toUpperCase() : undefined
+  })
+}
+
+function 读取颜色(颜色, 警告, 主题颜色) {
   const 值 = 颜色?.argb
-  if (typeof 值 === 'string' && /^FF[0-9a-fA-F]{6}$/.test(值)) return `#${值.slice(2).toUpperCase()}`
+  if (typeof 值 === 'string' && /^FF[0-9a-f]{6}$/i.test(值)) return `#${值.slice(2).toUpperCase()}`
+  if (Number.isInteger(颜色?.theme) && (颜色.tint === undefined || 颜色.tint === 0) && 主题颜色?.[颜色.theme]) {
+    return `#${主题颜色[颜色.theme]}`
+  }
   if (颜色) 警告.add('部分主题色或透明颜色未导入')
   return undefined
 }
@@ -184,7 +205,7 @@ function 写入基础格式(单元格, 格式) {
   }
 }
 
-function 读取基础格式(单元格, 警告) {
+function 读取基础格式(单元格, 警告, 主题颜色) {
   const 原格式 = 单元格.style ?? {}
   const 格式 = {}
   const 字体 = 原格式.font
@@ -197,11 +218,11 @@ function 读取基础格式(单元格, 警告) {
       格式.下划线 = !!字体.underline
       if (字体.underline !== true && 字体.underline !== false && 字体.underline !== 'single') 警告.add('部分下划线样式未导入')
     }
-    if (字体.color) 格式.字体颜色 = 读取颜色(字体.color, 警告)
+    if (字体.color) 格式.字体颜色 = 读取颜色(字体.color, 警告, 主题颜色)
     if (Object.keys(字体).some((字段) => !['name', 'size', 'bold', 'italic', 'underline', 'color', 'family', 'scheme'].includes(字段))) 警告.add('部分字体样式未导入')
   }
   if (原格式.fill) {
-    if (原格式.fill.type === 'pattern' && 原格式.fill.pattern === 'solid') 格式.填充颜色 = 读取颜色(原格式.fill.fgColor, 警告)
+    if (原格式.fill.type === 'pattern' && 原格式.fill.pattern === 'solid') 格式.填充颜色 = 读取颜色(原格式.fill.fgColor, 警告, 主题颜色)
     else if (原格式.fill.type !== 'pattern' || 原格式.fill.pattern !== 'none') 警告.add('部分单元格填充样式未导入')
   }
   const 对齐 = 原格式.alignment
@@ -313,11 +334,11 @@ function 读取工作表验证(工作表, 警告) {
   return 单元格验证
 }
 
-function 读取工作表元数据(工作表, 警告, 筛选, 保护) {
+function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜色) {
   const 单元格格式 = {}
   工作表.eachRow({ includeEmpty: true }, (行) => {
     行.eachCell({ includeEmpty: true }, (单元格) => {
-      const 格式 = 读取基础格式(单元格, 警告)
+      const 格式 = 读取基础格式(单元格, 警告, 主题颜色)
       if (Object.keys(格式).length > 0) 单元格格式[单元格.address] = 格式
     })
   })
@@ -565,6 +586,7 @@ async function 读取xlsx(数据) {
   const 压缩包 = await JSZip.loadAsync(原始数据)
   const 工作簿 = new ExcelJS.Workbook()
   await 工作簿.xlsx.load(原始数据)
+  const 主题颜色 = await 读取主题颜色(压缩包)
   const 筛选列表 = await 读取筛选列表(压缩包, 工作簿.worksheets.length)
   const 保护列表 = await 读取保护列表(压缩包, 工作簿.worksheets.length)
   const 图片状态 = { 总字节: 0, 已导入图片数: 0, 已导入媒体: new Set(), 无名媒体: [], 警告: new Set() }
@@ -579,7 +601,7 @@ async function 读取xlsx(数据) {
     名称: 工作表.name || 'Sheet1',
     html: 工作表转Html(工作表),
     页面设置: 读取页面设置(工作表, 页面警告),
-    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引]), 图片: 图片列表[索引] },
+    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引], 主题颜色), 图片: 图片列表[索引] },
   }))
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }
 }

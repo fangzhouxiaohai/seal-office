@@ -577,7 +577,10 @@ const DocEditor = () => {
     root: 编辑区引用.current ?? document.createElement('div'),
     history: 取历史(),
     refresh: 刷新,
-    notify: (文本: string) => message.info(文本),
+    notify: (文本: string) => {
+      if (文本 === '文件已保存' || 文本 === '文件已另存为') message.info({ content: 文本, key: `document-save-${文档标识}` })
+      else message.info(文本)
+    },
     view: 视图,
     setView: (部分) => {
       const 下一个 = { ...视图, ...部分 }
@@ -681,6 +684,7 @@ const DocEditor = () => {
       modal.error({ title: '操作失败', content: '该功能未正确加载，请重新打开文档后重试。', okText: '确定' })
       return
     }
+    if (命令标识 === 'file.save' || 命令标识 === 'file.saveAs') 同步内容()
     命令.run(上下文, 参数)
   }
 

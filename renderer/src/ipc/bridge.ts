@@ -95,7 +95,7 @@ export const 桥接 = {
   setDefaultApp: () => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 提示: '请使用打包后的应用设置默认程序' }),
   checkIntegrity: (): Promise<完整性检查结果> => 取后端()?.checkIntegrity() ?? 失败('请使用 Windows 打包版本检查安装目录'),
   getHelpContent: () => 取后端()?.getHelpContent() ?? Promise.resolve({}),
-  getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/seal-office/seal-office', 专业服务: '专业应用开发服务' }),
+  getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务' }),
   ai: {
     get 可用() { return typeof 取后端()?.ai?.getConfig === 'function' && typeof 取后端()?.ai?.chat === 'function' },
     getConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.getConfig() ?? 失败('当前环境不支持智能助手'),

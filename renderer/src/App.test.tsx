@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { theme } from 'antd'
 import App, { 动态主题容器 } from './App'
@@ -14,6 +14,47 @@ const 通过新建菜单创建 = async (名称: string) => {
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
+  it('导入文档修改并保存后，关闭程序核验报告零个未保存文件', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    let 请求关闭: ((标识: string) => void) | undefined
+    const 回复 = vi.fn().mockResolvedValue({ 成功: true })
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\导入.docx'),
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'YQ==', 二进制: true, 扩展名: 'docx' }),
+      saveToFile: 写入,
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      office: {
+        readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>导入正文</p>', 页面设置: {
+          纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 页面边框: '无', 页面颜色: '无', 文字方向: '横排', 水印: '无',
+        } }),
+        writeDocx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'YQ==' }),
+      },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn(() => new Promise(() => {})),
+      onCloseStateRequested: (回调: (标识: string) => void) => { 请求关闭 = 回调; return () => { 请求关闭 = undefined } },
+      respondCloseState: 回复,
+    } })
+    try {
+      const { container } = render(<App 初始最近文档={[]} />)
+      await userEvent.click(screen.getByRole('button', { name: '打开' }))
+      await screen.findByRole('tab', { name: '导入.docx' })
+      const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+      编辑区.innerHTML = '<p>修改并保存的正文</p>'
+      fireEvent.input(编辑区)
+      await userEvent.click(screen.getByRole('button', { name: '保存' }))
+      await screen.findByText('文件已保存')
+      expect(写入).toHaveBeenCalledOnce()
+      await act(async () => { 请求关闭?.('保存后退出') })
+      await waitFor(() => expect(回复).toHaveBeenCalledWith('保存后退出', { 未保存数量: 0, 备份成功: true }))
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
   it('关闭前核验读取当前未保存标签，即使异步上报仍未完成', async () => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     let 请求关闭: ((标识: string) => void) | undefined

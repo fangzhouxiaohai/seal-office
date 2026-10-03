@@ -139,6 +139,52 @@ describe('编辑器容器', () => {
     expect((await screen.findAllByText('文档有未保存的修改')).length).toBeGreaterThan(0)
   })
 
+  it('导入文档保存后底部标签清除修改标记并可直接关闭', async () => {
+    ;(window as any).electronAPI = {
+      saveToFile: vi.fn().mockResolvedValue({ 成功: true }),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      office: { writeDocx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'YQ==' }) },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+    }
+    const 创建入口 = () => {
+      const { createDoc, workspaceTabs } = useAppStore()
+      return <><button onClick={() => createDoc('word', '<p>导入正文</p>', {
+        路径: 'C:\\资料\\导入.docx',
+        页面设置: { 纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 页面边框: '无', 页面颜色: '无', 文字方向: '横排', 水印: '无' },
+      })}>打开导入文档</button><span data-testid="修改状态">{workspaceTabs.some((项) => 项.dirty) ? '未保存' : '已保存'}</span></>
+    }
+    render(<AntdApp><AppProvider><创建入口 /><DocEditor /><GlobalTabs /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开导入文档' }))
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await screen.findByText('文件已保存')
+    expect(screen.getByTestId('修改状态')).toHaveTextContent('已保存')
+    await userEvent.click(screen.getByRole('button', { name: '关闭 导入.docx' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: '关闭 导入.docx' })).toBeNull())
+    expect(screen.queryAllByText('文档有未保存的修改')).toHaveLength(0)
+  })
+
+  it('保存读取实际编辑内容并同步尚未触发输入事件的内容', async () => {
+    ;(window as any).electronAPI = {
+      saveToFile: vi.fn().mockResolvedValue({ 成功: true }),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      office: { writeDocx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'YQ==' }) },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+    }
+    const { container } = 渲染带创建入口的编辑器()
+    await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+    编辑区.innerHTML = '<p>保存时的实际正文</p>'
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await screen.findByText('文件已保存')
+    await userEvent.click(screen.getByRole('button', { name: '关闭 报告.docx' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: '关闭 报告.docx' })).toBeNull())
+    expect(screen.queryAllByText('文档有未保存的修改')).toHaveLength(0)
+  })
+
   it('保存失败后仍将修改视为未保存', async () => {
     ;(window as any).electronAPI = {
       saveToFile: vi.fn().mockResolvedValue({ 成功: false, 错误: '磁盘已满' }),
