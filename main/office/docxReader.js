@@ -3,6 +3,7 @@
 // 下划线、删除线、对齐、标题与列表，使「保存后再次打开」的格式不丢失。
 const JSZip = require('jszip')
 const { 缩进字段, 间距字段, 扩展字段, 属性有效 } = require('./paragraphProperties')
+const { 读取正文图片 } = require('./docxImages')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 预设边距 = { 常规: [1440, 1350], 窄: [540, 540], 适中: [1440, 1080], 宽: [1440, 2160] }
@@ -352,10 +353,12 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     const rPr = rPr匹配 === null ? null : rPr匹配[1]
     const 字符样式 = rPr === null || 样式定义 === undefined ? {} : 解析继承字符(样式定义, 取属性(rPr, 'w:rStyle', 'w:val'))
     const { 样式 } = 解析字符属性(rPr, { ...继承配置, ...字符样式 })
-    const 文本正则 = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?=[\s/>])[^>]*>/gi
+    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?=[\s/>])[^>]*>/gi
     let 文本匹配
     while ((文本匹配 = 文本正则.exec(runXml)) !== null) {
-      if (/^<w:(?:br|cr)/i.test(文本匹配[0])) {
+      if (/^<w:(?:drawing|pict)/i.test(文本匹配[0])) {
+        片段列表.push(样式定义?.图片?.get(文本匹配[0]) || '')
+      } else if (/^<w:(?:br|cr)/i.test(文本匹配[0])) {
         片段列表.push('<br>')
       } else if (文本匹配[1] !== undefined) {
         const 内容 = 转义(文本匹配[1])
@@ -428,7 +431,7 @@ function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
       if (表格Html !== '') 输出.push(表格Html)
       continue
     }
-    if (/<w:br(?=[\s/>])[^>]*w:type="page"/i.test(块Xml) && !/<w:t(?=[\s/>])/i.test(块Xml)) {
+    if (/<w:br(?=[\s/>])[^>]*w:type="page"/i.test(块Xml) && !/<w:(?:t|drawing|pict)(?=[\s/>])/i.test(块Xml)) {
       结束列表()
       输出.push('<div class="wps-page-break"></div>')
       continue
@@ -495,11 +498,12 @@ function 解析编号映射(numberingXml) {
 }
 
 /** 只依据正文里真实存在的、当前解析器未保留的对象生成警告。 */
-function 收集未导入警告(bodyXml) {
+function 收集未导入警告(bodyXml, 图片) {
   const 警告 = []
   const 有标签 = (标签) => new RegExp(`<${标签}[\\s/>]`, 'i').test(bodyXml)
   const 绘图块 = Array.from(bodyXml.matchAll(/<w:(drawing|pict)(?:\s[^>]*)?>[\s\S]*?<\/w:\1>/gi), (匹配) => 匹配[0])
-  if (有标签('a:blip') || 有标签('v:imagedata')) 警告.push('图片未导入')
+  const 孤立引用 = bodyXml.replace(/<w:(drawing|pict)(?:\s[^>]*)?>[\s\S]*?<\/w:\1>/gi, '')
+  if (/<(?:a:blip|v:imagedata)[\s/>]/i.test(孤立引用) || 绘图块.some((片段) => /<(?:a:blip|v:imagedata)[\s/>]/i.test(片段) && !图片?.has(片段))) 警告.push('图片未导入')
   if (绘图块.some((片段) => !/<(?:a:blip|v:imagedata|a:videoFile|a:audioFile)[\s/>]/i.test(片段)) || 有标签('w:object')) {
     警告.push('图形未导入')
   }
@@ -512,7 +516,7 @@ function 收集未导入警告(bodyXml) {
   if (有标签('w:ins') || 有标签('w:del')) 警告.push('修订信息未导入')
   警告.push(...收集段落格式警告(bodyXml))
   if (/<w:br(?=[\s/>])[^>]*w:(?:type="column"|clear=)/i.test(bodyXml) ||
-      [...bodyXml.matchAll(/<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/gi)].some((项) => /<w:t(?=[\s/>])/.test(项[0]) && /<w:br(?=[\s/>])[^>]*w:type="page"/.test(项[0]))) {
+      [...bodyXml.matchAll(/<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/gi)].some((项) => /<w:(?:t|drawing|pict)(?=[\s/>])/.test(项[0]) && /<w:br(?=[\s/>])[^>]*w:type="page"/.test(项[0]))) {
     警告.push('段内分页或分栏换行未完整导入')
   }
   if (有标签('w:hyperlink')) 警告.push('超链接目标未导入')
@@ -546,9 +550,11 @@ async function 读取docx(数据) {
   const 样式文件 = 压缩包.file('word/styles.xml')
   const 样式定义 = 解析样式定义(样式文件 !== null && 样式文件 !== undefined ? await 样式文件.async('string') : null)
   样式定义.警告 = 警告
-  const bodyXml = 取Body(documentXml)
+  const 图片读取 = await 读取正文图片(压缩包, 取Body(documentXml), 警告)
+  const bodyXml = 图片读取.正文
+  样式定义.图片 = 图片读取.图片
   const 页面设置 = 解析页面设置(documentXml, 警告)
-  警告.push(...收集未导入警告(bodyXml))
+  警告.push(...收集未导入警告(bodyXml, 样式定义.图片))
   const html = 渲染Body(bodyXml, 编号映射, 样式定义)
   if (html.trim() === '') {
     if (/<w:(?:p|tbl)[\s/>]/i.test(bodyXml)) throw new Error('文字文档正文结构损坏，无法读取')

@@ -95,6 +95,8 @@ export interface CommandContext {
   插入内容: (html: string) => void
   /** 读取编辑区当前 HTML */
   读取内容: () => string
+  /** 保存前记录旧版自适应图片的实际尺寸，并返回同步后的正文快照 */
+  准备保存内容?: () => string
   /** 触发文件下载 */
   下载: (内容: string, 文件名: string, 类型: string) => void
   打开查找: () => void
@@ -762,7 +764,7 @@ const 导出命令: EditorCommand[] = [
       const 选择路径 = 上下文.当前文档路径 ?? 桥接.showSaveDialog(文档名, 'word' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
-          const 内容 = 上下文.读取内容()
+          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容() : 上下文.读取内容()
           const 点索引 = 文件路径.lastIndexOf('.')
           let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
           // 文字文档的保存类型就是 docx：未带扩展名时补 .docx，不再落文本分支
@@ -838,7 +840,7 @@ const 导出命令: EditorCommand[] = [
     if (桥接.可用) {
       桥接.showSaveDialog(上下文.当前文档名, 'word' as const).then(async (文件路径) => {
         if (文件路径) {
-          const 内容 = 上下文.读取内容()
+          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容() : 上下文.读取内容()
           const 点索引 = 文件路径.lastIndexOf('.')
           let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
           // 文字文档的另存为类型就是 docx：未带扩展名时补 .docx

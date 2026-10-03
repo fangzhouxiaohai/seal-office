@@ -18,9 +18,12 @@ const {
   PageOrientation,
   PageTextDirectionType,
   PageBreak,
+  ImageRun,
 } = require('docx')
 const JSZip = require('jszip')
 const { 验证段落属性 } = require('./paragraphProperties')
+const { 解码图片数据, 文档最大图片字节 } = require('./imageData')
+const { 修正图片媒体 } = require('./docxImages')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 页边距 = {
@@ -108,7 +111,17 @@ const 对齐映射 = {
 const 编号标识 = '海豹编号'
 
 /** 把一个文字片段转为 docx 的 TextRun */
-function 建文字(片段) {
+function 建文字(片段, 图片预算) {
+  if (片段.图片) {
+    const 图片 = 片段.图片
+    const 信息 = 解码图片数据(图片.数据)
+    if (信息.格式 !== 图片.格式 || ![图片.宽, 图片.高].every((值) => typeof 值 === 'number' && Number.isFinite(值) && 值 > 0 && 值 <= 32768) ||
+        typeof 图片.说明 !== 'string' || 图片.说明.length > 32768) throw new Error('图片格式、尺寸或说明无效，无法保存')
+    图片预算.字节数 += 信息.字节.length
+    if (图片预算.字节数 > 文档最大图片字节) throw new Error('文档图片累计超过 100 MB，无法保存')
+    return new ImageRun({ data: 信息.字节, transformation: { width: 图片.宽, height: 图片.高 },
+      altText: { title: 图片.说明, description: 图片.说明, name: 图片.说明 || '图片' } })
+  }
   const 配置 = {
     text: 片段.文本 || '',
     bold: 片段.加粗 === true,
@@ -139,11 +152,11 @@ function 建文字(片段) {
 }
 
 /** 把一个文本段落转为 docx 的 Paragraph */
-function 建段落(段, 原生排版列表) {
+function 建段落(段, 原生排版列表, 图片预算) {
   const 原生排版 = 验证段落属性(段)
   原生排版列表.push(原生排版)
   const 配置 = {
-    children: (段.文字 || []).map(建文字),
+    children: (段.文字 || []).map((片段) => 建文字(片段, 图片预算)),
     alignment: 对齐映射[段.对齐] || AlignmentType.LEFT,
   }
   const 验证尺寸 = (值, 名称, 最小值) => {
@@ -183,7 +196,7 @@ function 建段落(段, 原生排版列表) {
 }
 
 /** 把一个表格模型转为 docx 的 Table，行列数不齐时按最宽行补齐 */
-function 建表格(表, 原生排版列表) {
+function 建表格(表, 原生排版列表, 图片预算) {
   const 行数据 = 表.行 || []
   const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.length), 0)
 
@@ -196,7 +209,7 @@ function 建表格(表, 原生排版列表) {
           children: (单元?.段落?.length ? 单元.段落 : [{ 文字: 单元?.文字 || [] }]).map((段) => 建段落({
             ...段,
             文字: (段.文字 || []).map((片段) => 单元?.表头 ? { ...片段, 加粗: true } : 片段),
-          }, 原生排版列表)),
+          }, 原生排版列表, 图片预算)),
         })
       )
     }
@@ -207,8 +220,8 @@ function 建表格(表, 原生排版列表) {
 }
 
 /** 当前 docx 库未暴露字符缩进和行单位段距选项，按实际正文段落顺序补入受控属性。 */
-async function 补充原生排版(数据, 原生排版列表) {
-  if (!原生排版列表.some((项) => Object.keys(项?.ind || {}).length || Object.keys(项?.spacing || {}).length)) return 数据
+async function 补充原生排版(数据, 原生排版列表, 有图片) {
+  if (!有图片 && !原生排版列表.some((项) => Object.keys(项?.ind || {}).length || Object.keys(项?.spacing || {}).length)) return 数据
   const 压缩包 = await JSZip.loadAsync(数据)
   const 文件 = 压缩包.file('word/document.xml')
   if (!文件) throw new Error('保存文档缺少正文，无法写入段落格式')
@@ -233,6 +246,7 @@ async function 补充原生排版(数据, 原生排版列表) {
   })
   if (序号 !== 原生排版列表.length) throw new Error('保存文档段落顺序不一致，无法写入段落格式')
   压缩包.file('word/document.xml', 正文)
+  if (有图片) await 修正图片媒体(压缩包)
   return 压缩包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
 }
 
@@ -264,9 +278,10 @@ exports.生成docx = async (文档模型) => {
 
   const 子元素 = []
   const 原生排版列表 = []
+  const 图片预算 = { 字节数: 0 }
   段落列表.forEach((项) => {
     if (项.类型 === '表格') {
-      子元素.push(建表格(项, 原生排版列表))
+      子元素.push(建表格(项, 原生排版列表, 图片预算))
       // Word 要求表格之后跟随段落，否则相邻表格会被合并
       子元素.push(new Paragraph({ children: [] }))
       原生排版列表.push({ ind: {}, spacing: {} })
@@ -274,7 +289,7 @@ exports.生成docx = async (文档模型) => {
       子元素.push(new Paragraph({ children: [new PageBreak()] }))
       原生排版列表.push({ ind: {}, spacing: {} })
     } else {
-      子元素.push(建段落(项, 原生排版列表))
+      子元素.push(建段落(项, 原生排版列表, 图片预算))
     }
   })
 
@@ -290,5 +305,5 @@ exports.生成docx = async (文档模型) => {
     sections: [{ properties: 构建页面属性(文档模型?.页面设置), children: 子元素 }],
   })
 
-  return 补充原生排版(await Packer.toBuffer(文档), 原生排版列表)
+  return 补充原生排版(await Packer.toBuffer(文档), 原生排版列表, 图片预算.字节数 > 0)
 }

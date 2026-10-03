@@ -4,6 +4,7 @@
 // 可以直接用浏览器解析 HTML，无需额外引入解析库，结果也更贴近用户所见。
 // 主进程只负责把模型写成 docx 等二进制格式。
 import { 读取段落排版, type 段落排版 } from './paragraphFormat'
+import { 读取文档图片, type 文档图片 } from './docImages'
 
 /** 段落对齐方式 */
 export type 对齐方式 = '左' | '中' | '右' | '两端'
@@ -27,6 +28,7 @@ export interface 文字片段 {
   字体?: string
   基线?: '上标' | '下标' | '正常'
   换行?: boolean
+  图片?: 文档图片
 }
 
 /** 文本段落，含标题与列表项 */
@@ -349,7 +351,8 @@ function 收集片段(节点: Node, 格式: 格式状态, 未覆盖: Set<string>
       return
     }
     if (当前.tagName === 'IMG') {
-      未覆盖.add('图片')
+      const 图片 = 读取文档图片(当前 as HTMLImageElement, 未覆盖)
+      if (图片) 结果.push({ ...建片段('', 当前格式), 图片 })
       return
     }
     if (当前.tagName === 'BR') {
@@ -425,7 +428,8 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
   }
 
   if (标签 === 'IMG') {
-    上下文.未覆盖.add('图片')
+    const 图片 = 读取文档图片(节点 as HTMLImageElement, 上下文.未覆盖)
+    if (图片) 取当前段落(上下文, 0, '左', '无').文字.push({ ...建片段('', 格式), 图片 })
     return
   }
 

@@ -28,6 +28,7 @@ import EditorStatusBar from './EditorStatusBar'
 import ContextMenu from '../components/ContextMenu'
 import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
+import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
 
 const 默认视图: ViewState = {
   缩放: 1,
@@ -208,6 +209,8 @@ const DocEditor = () => {
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+  const 当前文档标识引用 = useRef(文档标识)
+  当前文档标识引用.current = 文档标识
 
   useEffect(() => {
     set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, ...(当前文档?.页面设置 ?? {}) }))
@@ -339,22 +342,40 @@ const DocEditor = () => {
   }
 
   const 选择图片 = (): void => {
+    const 目标文档标识 = 文档标识
+    const 原编辑区 = 编辑区引用.current
+    const 插入位置 = 原编辑区 ? 保存选区(原编辑区) : null
     const 输入 = document.createElement('input')
     输入.type = 'file'
-    输入.accept = 'image/*'
+    输入.accept = 'image/png,image/jpeg,image/gif,image/bmp,.png,.jpg,.jpeg,.gif,.bmp'
     输入.onchange = () => {
       const 文件 = 输入.files?.[0]
       if (文件 === undefined) {
         return
       }
-      const 读取器 = new FileReader()
-      读取器.onload = () => {
-        插入内容(
-          `<img src="${String(读取器.result)}" alt="${文件.name}" style="max-width:100%" /><p><br></p>`
-        )
+      const 目标编辑区 = 编辑区引用.current
+      const 正文样式 = 目标编辑区 ? window.getComputedStyle(目标编辑区) : null
+      const 栏数 = 正文样式 ? Math.max(1, parseInt(正文样式.columnCount) || 1) : 1
+      const 栏间距 = 正文样式 && 栏数 > 1 ? parseFloat(正文样式.columnGap) : 0
+      const 可用宽 = 目标编辑区 ? (目标编辑区.clientWidth - 栏间距 * (栏数 - 1)) / 栏数 : 0
+      if (!可用宽) {
+        modal.error({ title: '图片插入失败', content: '未能获取正文可用宽度，请返回文档后重新插入。', okText: '确定' })
+        return
       }
-      读取器.onerror = () => modal.error({ title: '图片读取失败', content: '请检查图片文件后重新选择。', okText: '确定' })
-      读取器.readAsDataURL(文件)
+      void 读取插入图片(文件, 可用宽).then((html) => {
+        const 编辑区 = 编辑区引用.current
+        if (当前文档标识引用.current !== 目标文档标识 || !编辑区?.isConnected || 编辑区 !== 原编辑区) throw new Error('当前文档已经切换，请在目标文档中重新插入图片')
+        if (编辑区.contentEditable === 'false') throw new Error('当前文档处于只读状态，无法插入图片')
+        if (插入位置 && !恢复选区(编辑区, 插入位置)) throw new Error('原插入位置已改变，请重新选择插入位置')
+        if (!插入位置) {
+          const 范围 = document.createRange()
+          范围.selectNodeContents(编辑区)
+          范围.collapse(false)
+          window.getSelection()?.removeAllRanges()
+          window.getSelection()?.addRange(范围)
+        }
+        插入内容(html)
+      }).catch((错误) => { modal.error({ title: '图片插入失败', content: 错误 instanceof Error ? 错误.message : '图片读取失败', okText: '确定' }) })
     }
     输入.click()
   }
@@ -392,7 +413,7 @@ const DocEditor = () => {
         插入内容(表格模板())
         break
       case '图片':
-        仅供网页或Pdf('图片', 选择图片)
+        选择图片()
         break
       case '形状':
         仅供网页或Pdf('形状', () => 插入内容('<div style="width:160px;height:80px;border:1.6px solid #2B6CF6;border-radius:6px"></div><p><br></p>'))
@@ -611,6 +632,13 @@ const DocEditor = () => {
     },
     插入内容,
     读取内容: () => 编辑区引用.current?.innerHTML ?? '',
+    准备保存内容: () => {
+      const 根 = 编辑区引用.current
+      if (!根 || 当前文档标识引用.current !== 文档标识) throw new Error('当前文档已切换，请在目标文档中重新保存')
+      const 内容 = 准备图片保存内容(根)
+      同步内容()
+      return 内容
+    },
     下载: (内容: string, 文件名: string, 类型: string) => 下载文本(内容, 文件名, 类型),
     打开查找: () => set查找打开(true),
     导出,

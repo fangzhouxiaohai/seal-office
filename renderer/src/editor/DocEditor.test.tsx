@@ -41,6 +41,16 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
+  it('图片入口直接选择本机文件，不再弹出无法保存 DOCX 的确认框', async () => {
+    const 点击 = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    try {
+      渲染编辑器()
+      await userEvent.click(screen.getByRole('tab', { name: '插入' }))
+      await userEvent.click(screen.getByRole('button', { name: '图片' }))
+      expect(点击).toHaveBeenCalledOnce()
+      expect(screen.queryByText('图片无法保存为 DOCX')).toBeNull()
+    } finally { 点击.mockRestore() }
+  })
   it('导航窗格列出文档标题并定位对应段落', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()

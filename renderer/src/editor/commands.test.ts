@@ -22,6 +22,40 @@ const 构造上下文 = (部分: Partial<CommandContext> = {}): CommandContext =
   }) as CommandContext
 
 describe('命令注册表', () => {
+  it.each(['file.save', 'file.saveAs'])('%s 写入准备后的图片尺寸快照，成功后按同一份正文标记保存', async (标识) => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
+    const 保存 = vi.fn().mockResolvedValue({ 成功: true })
+    const 更新路径 = vi.fn()
+    const 准备 = vi.fn(() => '<p>已准备正文</p>')
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\图片.docx'), saveToFile: 保存, office: { writeDocx: 写入 },
+    } })
+    try {
+      命令表[标识].run(构造上下文({
+        当前文档名: '图片.docx', 当前文档路径: 'C:\\资料\\图片.docx',
+        准备保存内容: 准备, 设置文档路径: 更新路径,
+      }))
+      await vi.waitFor(() => expect(保存).toHaveBeenCalledOnce())
+      expect(准备).toHaveBeenCalledOnce()
+      expect(写入.mock.calls[0][0].段落[0].文字[0].文本).toBe('已准备正文')
+      expect(更新路径.mock.calls[0][1]).toBe('<p>已准备正文</p>')
+    } finally { Reflect.deleteProperty(window, 'electronAPI') }
+  })
+
+  it('图片保存准备失败时显示错误，不写入文件', async () => {
+    const 写入 = vi.fn()
+    const 错误 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { office: { writeDocx: 写入 } } })
+    try {
+      命令表['file.save'].run(构造上下文({
+        当前文档名: '图片.docx', 当前文档路径: 'C:\\资料\\图片.docx',
+        准备保存内容: () => { throw new Error('图片尚未加载完成') }, 显示文件错误: 错误,
+      }))
+      await vi.waitFor(() => expect(错误).toHaveBeenCalledWith('保存失败', '图片尚未加载完成'))
+      expect(写入).not.toHaveBeenCalled()
+    } finally { Reflect.deleteProperty(window, 'electronAPI') }
+  })
+
   it.each(['file.save', 'file.saveAs'])('常规段落排版通过 %s 正常写入，不再触发不支持格式弹窗', async (标识) => {
     const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'AA==' })
     const 保存 = vi.fn().mockResolvedValue({ 成功: true })
