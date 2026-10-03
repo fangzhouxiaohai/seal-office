@@ -190,7 +190,6 @@ const TitleBar = ({
         { className: 'wps-logo' },
         React.createElement(SealLogo, { size: 28 })
       ),
-      React.createElement('span', { className: 'wps-titlebar__name' }, 'Seal Office'),
       React.createElement('span', { className: 'wps-titlebar__divider' }),
       React.createElement('span', { className: 'wps-titlebar__page' }, pageName)
     ),

@@ -165,7 +165,8 @@ describe('应用外壳（WPS 版式首页）', () => {
   })
   it('渲染顶栏、图标栏、导航栏与推荐面板', () => {
     const { container } = render(<App 初始最近文档={RECENT_DOCS} />)
-    expect(screen.getByText('Seal Office')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '海豹办公' })).toBeInTheDocument()
+    expect(screen.queryByText('Seal Office')).toBeNull()
     expect(screen.getByText('新建')).toBeInTheDocument()
     expect(screen.getByText('打开')).toBeInTheDocument()
     // 图标栏、左侧导航、右侧推荐面板

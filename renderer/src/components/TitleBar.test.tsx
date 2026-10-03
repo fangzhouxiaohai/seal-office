@@ -4,9 +4,10 @@ import userEvent from '@testing-library/user-event'
 import TitleBar from './TitleBar'
 
 describe('顶栏', () => {
-  it('展示品牌名与当前页名', () => {
+  it('展示品牌图标与当前页名，隐藏英文名称', () => {
     render(<TitleBar pageName="首页" />)
-    expect(screen.getByText('Seal Office')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '海豹办公' })).toBeInTheDocument()
+    expect(screen.queryByText('Seal Office')).toBeNull()
     expect(screen.getByText('首页')).toBeInTheDocument()
   })
 

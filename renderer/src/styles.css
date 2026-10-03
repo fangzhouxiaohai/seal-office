@@ -110,12 +110,6 @@ button {
   height: 28px;
 }
 
-.wps-titlebar__name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-1);
-}
-
 .wps-titlebar__divider {
   width: 1px;
   height: 14px;
@@ -3157,7 +3151,6 @@ button {
   .wps-titlebar__brand {
     flex: 0 0 28px;
   }
-  .wps-titlebar__name,
   .wps-titlebar__divider,
   .wps-titlebar__page {
     display: none;

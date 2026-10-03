@@ -30,7 +30,7 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: Props) => (
   >
     <div className="about-dialog">
       <div className="about-dialog__intro">
-        <SealLogo size={60} withBackground={false} />
+        <SealLogo size={60} />
         <h2>{信息.名称}</h2>
         <p>{信息.英文名称} v{信息.版本}</p>
       </div>
