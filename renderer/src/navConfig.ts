@@ -28,7 +28,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'home', label: '首页', icon: 'home', implemented: true },
     { key: 'recent', label: '最近', icon: 'clock', implemented: true },
     { key: 'star', label: '星标', icon: 'star', implemented: true },
-    { key: 'shared', label: '共享', icon: 'share', implemented: true },
+    { key: 'shared', label: '共享', icon: 'share', implemented: false },
   ],
   [
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },

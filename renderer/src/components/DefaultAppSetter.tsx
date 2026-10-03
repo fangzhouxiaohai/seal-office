@@ -1,6 +1,6 @@
 // 设为默认应用组件
 import React, { useState } from 'react'
-import { Button, Alert, message, Card } from 'antd'
+import { Button, Alert, message, Card, Modal } from 'antd'
 import { 桥接 } from '../ipc/bridge'
 
 const DefaultAppSetter = () => {
@@ -13,16 +13,18 @@ const DefaultAppSetter = () => {
         const 结果 = await 桥接.setDefaultApp()
         if (结果.成功) {
           message.success('已成功设为默认办公软件')
+        } else if ('错误' in 结果 && 结果.错误) {
+          Modal.error({ title: '设置默认应用失败', content: 结果.错误 })
         } else if ('需要管理员权限' in 结果 && 结果.需要管理员权限) {
-          message.info(结果.提示 || '需要管理员权限来设置默认应用')
+          Modal.warning({ title: '需要系统授权', content: 结果.提示 || '请在系统设置中手动选择默认应用' })
         } else {
-          message.info(结果.提示 || '请在系统设置中手动设置默认应用')
+          Modal.info({ title: '需要手动设置', content: 结果.提示 || '请在系统设置中手动设置默认应用' })
         }
       } else {
-        message.warning('当前环境不支持设置默认应用，请使用打包后的版本')
+        Modal.warning({ title: '当前环境不可用', content: '请使用打包后的版本设置默认应用' })
       }
     } catch (error) {
-      message.error('设置默认应用时发生错误')
+      Modal.error({ title: '设置默认应用失败', content: error instanceof Error ? error.message : '请在系统设置中手动设置默认应用' })
     } finally {
       set设置中(false)
     }

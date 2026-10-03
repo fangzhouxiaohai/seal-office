@@ -238,3 +238,26 @@ describe('解析文档 - 丢失内容报告', () => {
     expect(模型.未覆盖.filter((项) => 项 === '图片')).toHaveLength(1)
   })
 })
+
+describe('格式保真：font 标签与 CSS 尺寸关键字', () => {
+  it('旧式 <font> 标签的颜色、字号档位与 face 属性被解析', () => {
+    const 模型 = 解析('<p><font color="#FF0000" size="5" face="黑体">红字</font></p>')
+    const 段 = 取文本段(模型, 0)
+    expect(段.文字[0].颜色).toBe('FF0000')
+    expect(段.文字[0].字号).toBe(18)
+    expect(段.文字[0].字体).toBe('黑体')
+  })
+
+  it('CSS 绝对尺寸关键字映射为磅值', () => {
+    expect(长度转磅('x-large')).toBe(24)
+    expect(长度转磅('large')).toBe(18)
+    expect(长度转磅('xx-large')).toBe(36)
+  })
+
+  it('内联样式 span 的颜色字号在模型中保留', () => {
+    const 模型 = 解析('<p><span style="color:#2B6CF6;font-size:20px">蓝色</span></p>')
+    const 段 = 取文本段(模型, 0)
+    expect(段.文字[0].颜色).toBe('2B6CF6')
+    expect(段.文字[0].字号).toBe(15)
+  })
+})

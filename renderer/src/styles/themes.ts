@@ -6,6 +6,7 @@ export interface 主题样式 {
   内容背景: string
   文字颜色: string
   次要文字: string
+  弱化文字: string
   边框颜色: string
   主色: string
   悬停背景: string
@@ -19,6 +20,7 @@ export const 浅色主题: 主题样式 = {
   内容背景: '#FFFFFF',
   文字颜色: '#1A1D24',
   次要文字: '#5C6472',
+  弱化文字: '#667085',
   边框颜色: '#E8EBF0',
   主色: '#2B6CF6',
   悬停背景: '#F0F5FF',
@@ -32,6 +34,7 @@ export const 深色主题: 主题样式 = {
   内容背景: '#2D333F',
   文字颜色: '#E8EAED',
   次要文字: '#9AA0A6',
+  弱化文字: '#9AA0A6',
   边框颜色: '#3C4043',
   主色: '#4A90E2',
   悬停背景: '#353B47',
@@ -79,5 +82,5 @@ export function 应用主题(主题: 主题名) {
   root.style.setProperty('--border-subtle', 样式.边框颜色)
   root.style.setProperty('--text-1', 样式.文字颜色)
   root.style.setProperty('--text-2', 样式.次要文字)
-  root.style.setProperty('--text-3', 样式.次要文字)
+  root.style.setProperty('--text-3', 样式.弱化文字)
 }

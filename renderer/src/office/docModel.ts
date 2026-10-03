@@ -122,12 +122,38 @@ export function 颜色转十六进制(颜色: string | undefined | null): string
   return undefined
 }
 
-/** 把 CSS 长度转换为磅值，Office 字号以磅为单位 */
+/** CSS 绝对尺寸关键字到磅值的映射（medium 以 16px 为基准） */
+const 尺寸关键字磅值: Record<string, number> = {
+  'xx-small': 9,
+  'x-small': 10,
+  small: 13,
+  medium: 16,
+  large: 18,
+  'x-large': 24,
+  'xx-large': 36,
+  'xxx-large': 48,
+}
+
+/** 旧式 <font size> 档位（1-7）到磅值的映射，与浏览器默认渲染一致 */
+const 字号档位磅值: Record<string, number> = {
+  '1': 8,
+  '2': 10,
+  '3': 12,
+  '4': 14,
+  '5': 18,
+  '6': 24,
+  '7': 36,
+}
+
+/** 把 CSS 长度或尺寸关键字转换为磅值，Office 字号以磅为单位 */
 export function 长度转磅(长度: string | undefined | null): number | undefined {
   if (!长度) {
     return undefined
   }
   const 值 = 长度.trim().toLowerCase()
+  if (尺寸关键字磅值[值] !== undefined) {
+    return 尺寸关键字磅值[值]
+  }
   const 匹配 = 值.match(/^([\d.]+)\s*(px|pt|em|rem)?$/)
   if (匹配 === null) {
     return undefined
@@ -181,10 +207,17 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
       标签 === 'DEL' ||
       样式.textDecorationLine.includes('line-through') ||
       样式.textDecoration.includes('line-through'),
-    颜色: 颜色转十六进制(样式.color) ?? 父格式.颜色,
+    颜色:
+      颜色转十六进制(样式.color) ??
+      // 旧式 <font color="..."> 标签把颜色放在属性上，同样要保真
+      颜色转十六进制(元素.getAttribute('color') ?? undefined) ??
+      父格式.颜色,
     底纹: 颜色转十六进制(样式.backgroundColor) ?? 父格式.底纹,
-    字号: 长度转磅(样式.fontSize) ?? 父格式.字号,
-    字体: 规整字体(样式.fontFamily) ?? 父格式.字体,
+    字号:
+      长度转磅(样式.fontSize) ??
+      (标签 === 'FONT' ? 字号档位磅值[元素.getAttribute('size') ?? ''] : undefined) ??
+      父格式.字号,
+    字体: 规整字体(样式.fontFamily) ?? 规整字体(元素.getAttribute('face') ?? undefined) ?? 父格式.字体,
   }
   return 新格式
 }

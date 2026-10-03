@@ -1,11 +1,20 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  showSaveDialog: (默认文件名) => ipcRenderer.invoke('file.showSaveDialog', 默认文件名),
-  showOpenDialog: () => ipcRenderer.invoke('file.showOpenDialog'),
+  showSaveDialog: (默认文件名, 保存类型) => ipcRenderer.invoke('file.showSaveDialog', 默认文件名, 保存类型),
+  showOpenDialog: (打开类型) => ipcRenderer.invoke('file.showOpenDialog', 打开类型),
   saveToFile: (路径, 内容, 格式) => ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式),
   readFile: (路径) => ipcRenderer.invoke('file.readFile', 路径),
+  renameFile: (旧路径, 新名称) => ipcRenderer.invoke('file.rename', 旧路径, 新名称),
+  backupSave: (内容) => ipcRenderer.invoke('file.backup.save', 内容),
+  backupLoad: () => ipcRenderer.invoke('file.backup.load'),
+  backupClear: () => ipcRenderer.invoke('file.backup.clear'),
+  recentList: () => ipcRenderer.invoke('file.recent.list'),
+  recentAdd: (条目) => ipcRenderer.invoke('file.recent.add', 条目),
+  recentRemove: (路径) => ipcRenderer.invoke('file.recent.remove', 路径),
+  revealInFolder: (路径) => ipcRenderer.invoke('file.revealInFolder', 路径),
   exportToPdf: (html, 默认文件名) => ipcRenderer.invoke('pdf.export', html, 默认文件名),
+  reportUnsavedCount: (数量) => ipcRenderer.invoke('system.reportUnsavedCount', 数量),
   setDefaultApp: () => ipcRenderer.invoke('system.setDefaultApp'),
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),
   getAppInfo: () => ipcRenderer.invoke('app.getInfo'),
@@ -18,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     writePptx: (模型) => ipcRenderer.invoke('office.writePptx', 模型),
   },
   pdf: {
+    exportToPath: (html, 保存路径) => ipcRenderer.invoke('pdf.exportToPath', html, 保存路径),
     extract: (数据, 页码) => ipcRenderer.invoke('pdf.extract', 数据, 页码),
     merge: (列表) => ipcRenderer.invoke('pdf.merge', 列表),
     delete: (数据, 页码) => ipcRenderer.invoke('pdf.delete', 数据, 页码),

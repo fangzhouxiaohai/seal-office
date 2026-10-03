@@ -61,12 +61,12 @@ describe('文档卡片', () => {
     expect(container.querySelector('.wps-doc-card--active')).not.toBeNull()
   })
 
-  it('更多菜单可展开并含打开、重命名、删除三项', async () => {
+  it('更多菜单可展开并说明只从最近列表移除', async () => {
     渲染(<DocCard doc={文档} />)
     await userEvent.click(screen.getByRole('button', { name: '更多操作' }))
     expect(await screen.findByText('打开')).toBeInTheDocument()
     expect(screen.getByText('重命名')).toBeInTheDocument()
-    expect(screen.getByText('删除')).toBeInTheDocument()
+    expect(screen.getByText('从最近列表移除')).toBeInTheDocument()
   })
 
   it('重命名确认后回传新名称', async () => {

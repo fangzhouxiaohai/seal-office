@@ -39,7 +39,14 @@ const TranslateDialog = ({ open, onClose }: Props) => {
       set结果('')
       return
     }
-    const 配置 = 读取翻译配置()
+    let 配置: ReturnType<typeof 读取翻译配置>
+    try {
+      配置 = 读取翻译配置()
+    } catch (错误) {
+      set结果('')
+      Modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
+      return
+    }
     if (!已配置翻译服务(配置)) {
       set提示('尚未配置翻译服务，请先到 设置 → 翻译设置 填写服务地址与密钥')
       set结果('')
@@ -53,7 +60,7 @@ const TranslateDialog = ({ open, onClose }: Props) => {
     } catch (错误) {
       const 消息 = 错误 instanceof Error ? 错误.message : '翻译失败，请稍后重试'
       set结果('')
-      set提示(`翻译失败：${消息}`)
+      Modal.error({ title: '翻译失败', content: 消息, okText: '确定' })
     } finally {
       set翻译中(false)
     }

@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.5.0",
+  "version": "1.6.3",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "seal-office",
@@ -21,6 +21,7 @@
   "dependencies": {
     "antd": "^5.0.0",
     "docx": "^8.5.0",
+    "dompurify": "^3.4.16",
     "exceljs": "^4.4.0",
     "html-to-pdfmake": "^2.1.0",
     "jszip": "^3.10.2",
@@ -46,7 +47,7 @@
     "vitest": "^0.34.6"
   },
   "build": {
-    "appId": "com.example.wpsoffice",
+    "appId": "com.sealoffice.desktop",
     "productName": "SealOffice",
     "directories": {
       "output": "release",

@@ -64,10 +64,10 @@ describe('最近文档区块', () => {
     expect(container.querySelectorAll('.wps-doc-card')).toHaveLength(0)
   })
 
-  it('空状态的新建按钮触发回调', async () => {
+  it('空状态的打开文件按钮触发回调', async () => {
     const 回调 = vi.fn()
     render(<RecentDocs docs={[]} title="最近文档" onEmptyAction={回调} />)
-    await userEvent.click(screen.getByRole('button', { name: '新建文档' }))
+    await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     expect(回调).toHaveBeenCalledTimes(1)
   })
 })

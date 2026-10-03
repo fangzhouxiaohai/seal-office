@@ -1,6 +1,6 @@
 // 表格网格视图：列标、行号与单元格。
-// 单元格为受控组件，编辑状态由上层维护。
-import React from 'react'
+// 单元格为受控组件，编辑状态由上层维护。支持鼠标左键按下拖动框选区域。
+import React, { useEffect, useRef } from 'react'
 import { 列转字母, 生成地址, type 单元格位置 } from './address'
 import { 读取单元格, 查询合并, 默认列宽, 默认行高, type Sheet } from './model'
 
@@ -26,6 +26,8 @@ interface Props {
   on全选: () => void
   /** 键盘操作，由容器实现具体行为 */
   on按键?: (事件: React.KeyboardEvent) => void
+  /** 鼠标拖选过程中经过新单元格时回调（起点保持按下时的锚点） */
+  on拖选扩展?: (位置: 单元格位置) => void
   /** 开始拖动列宽 */
   on列宽拖动开始?: (列: number, 起始横坐标: number) => void
   /** 右键点击回调，返回坐标 */
@@ -33,13 +35,31 @@ interface Props {
 }
 
 /** 判断位置是否落在选区内 */
+/** 判断位置是否落在选区内（选区起点/终点支持任意方向的反向扩展） */
 function 在选区内(位置: 单元格位置, 选区: 选区范围): boolean {
+  const 行最小 = Math.min(选区.起点.行, 选区.终点.行)
+  const 行最大 = Math.max(选区.起点.行, 选区.终点.行)
+  const 列最小 = Math.min(选区.起点.列, 选区.终点.列)
+  const 列最大 = Math.max(选区.起点.列, 选区.终点.列)
   return (
-    位置.行 >= 选区.起点.行 &&
-    位置.行 <= 选区.终点.行 &&
-    位置.列 >= 选区.起点.列 &&
-    位置.列 <= 选区.终点.列
+    位置.行 >= 行最小 &&
+    位置.行 <= 行最大 &&
+    位置.列 >= 列最小 &&
+    位置.列 <= 列最大
   )
+}
+
+/** 把单元格边框配置转换为内阴影，避免与网格基础边框叠加引起布局位移 */
+function 边框阴影(边框: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean } | undefined): string | undefined {
+  if (边框 === undefined) {
+    return undefined
+  }
+  const 层: string[] = []
+  if (边框.上 === true) 层.push('inset 0 1px 0 0 #4A5568')
+  if (边框.下 === true) 层.push('inset 0 -1px 0 0 #4A5568')
+  if (边框.左 === true) 层.push('inset 1px 0 0 0 #4A5568')
+  if (边框.右 === true) 层.push('inset -1px 0 0 0 #4A5568')
+  return 层.length > 0 ? 层.join(', ') : undefined
 }
 
 const GridView = ({
@@ -57,9 +77,20 @@ const GridView = ({
   on选中整行,
   on全选,
   on按键,
+  on拖选扩展,
   on列宽拖动开始,
   onContextMenu,
 }: Props) => {
+  /** 拖选进行中标记：左键按下时置位，document mouseup 时复位 */
+  const 拖选中 = useRef(false)
+
+  useEffect(() => {
+    const 结束拖选 = () => {
+      拖选中.current = false
+    }
+    document.addEventListener('mouseup', 结束拖选)
+    return () => document.removeEventListener('mouseup', 结束拖选)
+  }, [])
   const 列标 = Array.from({ length: 工作表.列数 }, (_, 列) => 列转字母(列))
   const 行号 = Array.from({ length: 工作表.行数 }, (_, 行) => 行 + 1)
 
@@ -149,10 +180,29 @@ const GridView = ({
               textDecoration: 单元.格式.下划线 === true ? 'underline' : 'none',
               color: 单元.格式.字体颜色,
               background: 单元.格式.填充颜色,
+              boxShadow: 边框阴影(单元.格式.边框),
               // 自动换行必须由渲染层消费，否则命令写了格式而界面无变化
               whiteSpace: 单元.格式.自动换行 === true ? 'pre-wrap' : 'nowrap',
             },
-            onClick: (事件: React.MouseEvent) => on选中(位置, 事件.shiftKey),
+            onMouseDown: (事件: React.MouseEvent) => {
+              if (事件.button === 2) {
+                // 右键落在选区外时先把选区移到该格（WPS 习惯），落在选区内则保持不变
+                if (!在选区内(位置, 选区)) {
+                  on选中(位置, false)
+                }
+                return
+              }
+              if (事件.button !== 0) {
+                return
+              }
+              拖选中.current = true
+              on选中(位置, 事件.shiftKey)
+            },
+            onMouseMove: () => {
+              if (拖选中.current && on拖选扩展 !== undefined) {
+                on拖选扩展(位置)
+              }
+            },
             onDoubleClick: () => on双击(地址),
           },
           编辑中

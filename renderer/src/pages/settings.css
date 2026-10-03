@@ -31,3 +31,104 @@
 .settings-row__title { font-weight: 600; }
 .settings-row__description { color: var(--设置次文); font-size: 13px; margin-top: 4px; }
 @media (max-width: 720px) { .settings-page__layout { grid-template-columns: 1fr; } .settings-page__nav { flex-direction: row; overflow-x: auto; } }
+
+/* WPS 式设置：分组标题 + 卡片行 */
+.settings-wps {
+  max-width: 860px;
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+.settings-group__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3, #5c6472);
+  margin: 20px 0 8px;
+}
+.settings-wps-card {
+  background: var(--bg-card, #fff);
+  border-radius: 10px;
+  border: 1px solid var(--border, #e8ebf0);
+  padding: 4px 0;
+}
+.settings-wps-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+}
+.settings-wps-row + .settings-wps-row {
+  border-top: 1px solid var(--border, #f0f2f5);
+}
+.settings-wps-row__text {
+  min-width: 0;
+}
+.settings-wps-row__input {
+  width: min(260px, 100%);
+}
+.settings-wps-row--link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.settings-wps-row--link:hover {
+  background: var(--bg-hover, #f0f5ff);
+}
+.settings-wps-row--link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.settings-wps-row__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1, #1a1d24);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.settings-wps-row__badge {
+  font-style: normal;
+  font-size: 10px;
+  color: #d48806;
+  border: 1px solid #d48806;
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 1.5;
+}
+.settings-wps-row__desc {
+  font-size: 12px;
+  color: var(--text-3, #9aa0a6);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.settings-wps-row__chevron {
+  transform: rotate(180deg);
+  color: var(--text-3, #9aa0a6);
+  flex: 0 0 auto;
+}
+
+[data-theme="dark"] .settings-wps-card {
+  background: var(--bg-card);
+  border-color: #3d4450;
+}
+[data-theme="dark"] .settings-wps-row + .settings-wps-row {
+  border-top-color: #3d4450;
+}
+
+@media (max-width: 768px) {
+  .settings-page {
+    padding: var(--space-4);
+  }
+  .settings-wps-row {
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+  }
+  .settings-wps-row__text,
+  .settings-wps-row__input {
+    flex: 1 1 220px;
+  }
+}

@@ -11,7 +11,7 @@ const AboutDialog = ({ 打开状态 = true, 关闭回调 }: {
   const 信息 = {
     名称: '海豹办公',
     英文名称: 'Seal Office',
-    版本: '1.2.0',
+    版本: __APP_VERSION__,
     作者: '饮风一笑',
     邮箱: '24519660@qq.com',
     说明: '本程序永久免费开源',

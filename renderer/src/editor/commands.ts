@@ -18,7 +18,9 @@ import {
 } from './graphics'
 import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 } from './citation'
 import { 解析字号, 磅值到档位 } from './fontOptions'
+import { 解析文档 } from '../office/docModel'
 import { 桥接 } from '../ipc/bridge'
+import { 基准文件名, 记录最近文档, 读取本地文件内容, type 打开类型 } from '../fileOpen'
 
 export interface ViewState {
   缩放: number
@@ -27,6 +29,7 @@ export interface ViewState {
   段落标记: boolean
   视图模式: '页面视图' | '阅读版式' | 'Web 版式' | '大纲视图' | '草稿'
   纸张: string
+  纸张方向: '纵向' | '横向'
   页边距: string
   分栏: string
   水印: string
@@ -112,7 +115,12 @@ export interface CommandContext {
   /** 当前文档名，供文档部件等命令使用 */
   当前文档名: string
   当前文档路径?: string | null
-  设置文档路径?: (路径: string) => void
+  打开新文档?: (类型: 打开类型, 内容: unknown, 路径: string, 警告?: string[]) => void
+  显示文件错误?: (标题: string, 内容: string) => void
+  设置文档路径?: (路径: string, 已保存内容?: string) => void
+  保真风险?: { 来源路径: string; 警告: string[] } | null
+  提示保真风险?: (警告: string[]) => void
+  确认保真另存?: (警告: string[]) => Promise<boolean>
   /** 打开表格网格选择器 */
   打开表格网格: () => void
   /** 打开文献管理面板 */
@@ -374,7 +382,6 @@ const 布局命令: EditorCommand[] = [
       ['layout.watermark', '水印', '水印'],
       ['layout.pageBorder', '页面边框', '页面边框'],
       ['layout.pageColor', '页面颜色', '页面颜色'],
-      ['layout.lineNumbers', '行号', '行号'],
     ] as Array<[string, string, keyof ViewState]>
   ).map(([id, label, 字段]) =>
     生成回调命令(id, label, (上下文, 参数) => {
@@ -386,6 +393,10 @@ const 布局命令: EditorCommand[] = [
       上下文.refresh()
     })
   ),
+  // 行号依赖分页排版引擎，暂以提示告知进度，避免写入 ViewState 不存在的键
+  生成回调命令('layout.lineNumbers', '行号', (上下文) => {
+    上下文.notify('行号功能将在后续版本提供')
+  }),
   生成回调命令('layout.break', '分隔符', (上下文) => 上下文.插入资源('分页符')),
   生成回调命令('layout.dropCap', '首字下沉', (上下文) => {
     const 已启用 = 上下文.读取内容().includes('wps-drop-cap')
@@ -629,68 +640,43 @@ const 视图命令: EditorCommand[] = [
   }),
 ]
 
+function 是同一路径(左: string, 右: string): boolean {
+  return 左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
+}
+
+function 报告文件错误(上下文: CommandContext, 标题: string, 原因: string): void {
+  if (上下文.显示文件错误) 上下文.显示文件错误(标题, 原因)
+  else 上下文.notify(`${标题}：${原因}`)
+}
+
 /** 导出命令 */
 const 导出命令: EditorCommand[] = [
   // 打开命令
   生成回调命令('file.open', '打开文件', (上下文) => {
-    if (桥接.可用) {
-      桥接.showOpenDialog().then((文件路径) => {
-        if (文件路径) {
-          桥接.readFile(文件路径).then((结果) => {
-            if (结果.成功) {
-              const 扩展 = (结果.扩展名 ?? '').toLowerCase()
-              const 文件内容 = 结果.内容 ?? ''
-              if (结果.二进制 && (扩展 === '.docx')) {
-                // docx 文件：通过主进程解析为 HTML
-                桥接.office.readDocx(文件内容).then((解析结果) => {
-                  if (解析结果 && 解析结果.html) {
-                    上下文.history.record({ html: 上下文.读取内容(), selection: null })
-                    上下文.应用内容(解析结果.html, null)
-                    上下文.设置文档路径?.(文件路径)
-                    上下文.refresh()
-                    上下文.notify('文件已打开')
-                  } else {
-                    上下文.notify('文档格式转换失败，请检查内容后重试')
-                  }
-                }).catch((error: any) => {
-                  上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
-                })
-              } else if (结果.二进制 && (扩展 === '.xlsx')) {
-                // xlsx 文件：通过主进程解析为 HTML 表格
-                桥接.office.readXlsx(文件内容).then((解析结果) => {
-                  if (解析结果 && 解析结果.html) {
-                    上下文.history.record({ html: 上下文.读取内容(), selection: null })
-                    上下文.应用内容(解析结果.html, null)
-                    上下文.设置文档路径?.(文件路径)
-                    上下文.refresh()
-                    上下文.notify('文件已打开')
-                  } else {
-                    上下文.notify('表格格式转换失败，请检查内容后重试')
-                  }
-                }).catch((error: any) => {
-                  上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
-                })
-              } else {
-                // 文本文件或未知类型：直接作为内容显示
-                上下文.history.record({ html: 上下文.读取内容(), selection: null })
-                上下文.应用内容(文件内容, null)
-                上下文.设置文档路径?.(文件路径)
-                上下文.refresh()
-                上下文.notify('文件已打开')
-              }
-            } else {
-              上下文.notify(`打开文件失败：${结果.错误}`)
-            }
-          }).catch((error: any) => {
-            上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
-          })
-        }
-      }).catch((error: any) => {
-        上下文.notify(`打开文件失败：${error?.message || '未知错误'}`)
-      })
-    } else {
+    if (!桥接.可用) {
       上下文.notify('当前环境不支持打开文件功能，请使用打包后的版本')
+      return
     }
+    if (!上下文.打开新文档) {
+      上下文.显示文件错误?.('打开文件失败', '无法创建新文档标签，当前文档未被修改')
+      return
+    }
+    void 桥接.showOpenDialog().then(async (文件路径) => {
+      if (!文件路径) return
+      const 内容 = await 读取本地文件内容(文件路径)
+      上下文.打开新文档?.(
+        内容.类型,
+        内容.类型 === 'ppt' ? 内容.演示文稿 : 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容,
+        文件路径,
+        内容.警告
+      )
+      await 记录最近文档(文件路径, 基准文件名(文件路径), 内容.类型)
+      上下文.notify('文件已打开')
+    }).catch((错误: unknown) => {
+      const 文案 = 错误 instanceof Error ? 错误.message : '未知错误'
+      if (上下文.显示文件错误) 上下文.显示文件错误('打开文件失败', 文案)
+      else 上下文.notify(`打开文件失败：${文案}`)
+    })
   }),
   
   生成回调命令('file.exportHtml', '导出为网页', (上下文) => 上下文.导出('html')),
@@ -699,20 +685,33 @@ const 导出命令: EditorCommand[] = [
   // 保存命令
   生成回调命令('file.save', '保存', (上下文) => {
     if (桥接.可用) {
+      if (上下文.保真风险 && 上下文.当前文档路径 && 是同一路径(上下文.当前文档路径, 上下文.保真风险.来源路径)) {
+        上下文.提示保真风险?.(上下文.保真风险.警告)
+        return
+      }
       const 文档名: string = 上下文.当前文档名
-      const 选择路径 = 上下文.当前文档路径 ?? 桥接.showSaveDialog(文档名)
+      const 选择路径 = 上下文.当前文档路径 ?? 桥接.showSaveDialog(文档名, 'word' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
           const 点索引 = 文件路径.lastIndexOf('.')
-          const 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
-          const 保存路径 = 文件路径
+          let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
+          // 文字文档的保存类型就是 docx：未带扩展名时补 .docx，不再落文本分支
+          let 保存路径 = 文件路径
+          if (扩展 === '') {
+            保存路径 = `${文件路径}.docx`
+            扩展 = '.docx'
+          }
+          if (上下文.保真风险 && 是同一路径(保存路径, 上下文.保真风险.来源路径)) {
+            上下文.提示保真风险?.(上下文.保真风险.警告)
+            return
+          }
           const 保存文本 = () => 桥接.saveToFile(保存路径, 内容, '文本' as const).then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(保存路径)
+              上下文.设置文档路径?.(保存路径, 内容)
               上下文.notify('文件已保存')
             } else {
-              上下文.notify(`保存失败：${结果.错误}`)
+              报告文件错误(上下文, '保存失败', 结果.错误 || '未知错误')
             }
           })
 
@@ -724,17 +723,17 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已保存')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('文档格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '文档格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else if (扩展 === '.xlsx') {
             // HTML 转 xlsx 模型并写入二进制文件
@@ -744,17 +743,17 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已保存')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('表格格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '表格格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else if (扩展 === '.pptx') {
             // HTML 转 pptx 模型并写入二进制文件
@@ -764,25 +763,39 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已保存')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('演示文稿格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
+            })
+          } else if (扩展 === '.pdf') {
+            // PDF 必须走真实导出链路；按文本写盘会产出扩展名为 .pdf 的损坏文件
+            桥接.pdf.exportToPath(内容, 保存路径).then((结果: any) => {
+              if (结果 && 结果.成功) {
+                上下文.设置文档路径?.(保存路径, 内容)
+                上下文.notify('文件已保存')
+              } else if (结果 && 结果.已取消) {
+                // 用户取消导出，不作提示
+              } else {
+                报告文件错误(上下文, '保存失败', 结果?.错误 || '未知错误')
+              }
+            }).catch((error: any) => {
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else {
             // 其他格式：保存为文本
-            保存文本()
+            return 保存文本()
           }
         }
       }).catch((error: any) => {
-        上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+        报告文件错误(上下文, '保存失败', error?.message || '未知错误')
       })
     } else {
       上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
@@ -792,18 +805,30 @@ const 导出命令: EditorCommand[] = [
   // 另存为命令
   生成回调命令('file.saveAs', '另存为', (上下文) => {
     if (桥接.可用) {
-      桥接.showSaveDialog(上下文.当前文档名).then((文件路径) => {
+      桥接.showSaveDialog(上下文.当前文档名, 'word' as const).then(async (文件路径) => {
         if (文件路径) {
           const 内容 = 上下文.读取内容()
           const 点索引 = 文件路径.lastIndexOf('.')
-          const 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
-          const 保存路径 = 文件路径
+          let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
+          // 文字文档的另存为类型就是 docx：未带扩展名时补 .docx
+          let 保存路径 = 文件路径
+          if (扩展 === '') {
+            保存路径 = `${文件路径}.docx`
+            扩展 = '.docx'
+          }
+          if (上下文.保真风险) {
+            if (是同一路径(保存路径, 上下文.保真风险.来源路径)) {
+              上下文.提示保真风险?.(上下文.保真风险.警告)
+              return
+            }
+            if (!上下文.确认保真另存 || !await 上下文.确认保真另存(上下文.保真风险.警告)) return
+          }
           const 保存文本 = () => 桥接.saveToFile(保存路径, 内容, '文本' as const).then((结果) => {
             if (结果.成功) {
-              上下文.设置文档路径?.(保存路径)
+              上下文.设置文档路径?.(保存路径, 内容)
               上下文.notify('文件已另存为')
             } else {
-              上下文.notify(`保存失败：${结果.错误}`)
+              报告文件错误(上下文, '保存失败', 结果.错误 || '未知错误')
             }
           })
 
@@ -814,17 +839,17 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已另存为')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('文档格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '文档格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else if (扩展 === '.xlsx') {
             const 模型 = htmlToXlsxModel(内容)
@@ -833,17 +858,17 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已另存为')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('表格格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '表格格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else if (扩展 === '.pptx') {
             const 模型 = htmlToPptxModel(内容)
@@ -852,24 +877,38 @@ const 导出命令: EditorCommand[] = [
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const).then((保存结果) => {
                   if (保存结果.成功) {
-                    上下文.设置文档路径?.(保存路径)
+                    上下文.设置文档路径?.(保存路径, 内容)
                     上下文.notify('文件已另存为')
                   } else {
-                    上下文.notify(`保存失败：${保存结果.错误}`)
+                    报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
               }
-              上下文.notify('演示文稿格式转换失败，请检查内容后重试')
+              报告文件错误(上下文, '保存失败', 结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
               return Promise.resolve()
             }).catch((error: any) => {
-              上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
+            })
+          } else if (扩展 === '.pdf') {
+            // PDF 必须走真实导出链路；按文本写盘会产出扩展名为 .pdf 的损坏文件
+            桥接.pdf.exportToPath(内容, 保存路径).then((结果: any) => {
+              if (结果 && 结果.成功) {
+                上下文.设置文档路径?.(保存路径, 内容)
+                上下文.notify('文件已另存为')
+              } else if (结果 && 结果.已取消) {
+                // 用户取消导出，不作提示
+              } else {
+                报告文件错误(上下文, '保存失败', 结果?.错误 || '未知错误')
+              }
+            }).catch((error: any) => {
+              报告文件错误(上下文, '保存失败', error?.message || '未知错误')
             })
           } else {
-            保存文本()
+            return 保存文本()
           }
         }
       }).catch((error: any) => {
-        上下文.notify(`保存失败：${error?.message || '未知错误'}`)
+        报告文件错误(上下文, '保存失败', error?.message || '未知错误')
       })
     } else {
       上下文.notify('当前环境不支持保存功能，请使用打包后的版本')
@@ -922,108 +961,34 @@ export function 查找命令(id: string): EditorCommand | undefined {
 
 // ==================== HTML 到 Office 文档模型转换 ====================
 
-/** 将一个 HTML 字符串转换为 docx 模型 */
-export function htmlToDocxModel(html: string): { 段落: Array<{
-  类型: '文字' | '表格';
-  文字?: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
-  级别?: number;
-  对齐?: '左' | '中' | '右' | '两端';
-}> } {
-  const 段落列表: Array<{
-    类型: '文字' | '表格';
-    文字?: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
-    级别?: number;
-    对齐?: '左' | '中' | '右' | '两端';
-  }> = []
-
-  const 临时容器 = document.createElement('div')
-  临时容器.innerHTML = html
-
-  const 处理元素 = (元素: Element) => {
-    const 标签名 = 元素.tagName.toLowerCase()
-
-    if (/^(p|div|h[1-6]|li)$/.test(标签名)) {
-      const 段落: {
-        类型: '文字';
-        文字: Array<{ 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string }>;
-        级别?: number;
-        对齐?: '左' | '中' | '右' | '两端';
-      } = { 类型: '文字', 文字: [] }
-
-      // 标题级别
-      if (/^h([1-6])$/.test(标签名)) {
-        段落.级别 = parseInt(标签名[1], 10)
-      }
-
-      // 对齐方式
-      const 样式 = (元素 as HTMLElement).style
-      if (样式) {
-        const textAlign = 样式.textAlign
-        if (textAlign === 'center') 段落.对齐 = '中'
-        else if (textAlign === 'right') 段落.对齐 = '右'
-        else if (textAlign === 'justify') 段落.对齐 = '两端'
-      }
-
-      // 递归解析子节点获取文字片段
-      const 收集文字 = (节点: Node) => {
-        if (节点.nodeType === Node.TEXT_NODE) {
-          const 文本 = (节点.textContent || '').replace(/\s+/g, ' ')
-          if (文本.trim().length > 0) {
-            段落.文字!.push({ 文本: 文本.trim() })
-          }
-          return
-        }
-        if (节点.nodeType !== Node.ELEMENT_NODE) return
-        const 子元素 = 节点 as Element
-        const 片段: { 文本: string; 加粗?: boolean; 倾斜?: boolean; 下划线?: boolean; 删除线?: boolean; 字号?: number; 颜色?: string; 字体?: string } = { 文本: '' }
-
-        const 子样式 = (子元素 as HTMLElement).style
-        if (子样式) {
-          if (/bold|700|bolder/i.test(子样式.fontWeight || '')) 片段.加粗 = true
-          if (/italic|oblique/i.test(子样式.fontStyle || '')) 片段.倾斜 = true
-          if (子样式.textDecoration && /underline/i.test(子样式.textDecoration)) 片段.下划线 = true
-          if (子样式.textDecoration && /line-through/i.test(子样式.textDecoration)) 片段.删除线 = true
-          if (子样式.color) 片段.颜色 = 子样式.color
-          if (子样式.fontFamily) 片段.字体 = 子样式.fontFamily
-        }
-
-        // 递归处理子节点
-        子元素.childNodes.forEach(子节点 => 收集文字(子节点))
-        if (片段.文本.trim().length > 0 || 片段.加粗 || 片段.倾斜 || 片段.下划线 || 片段.删除线) {
-          段落.文字!.push(片段)
-        }
-      }
-
-      元素.childNodes.forEach(子节点 => 收集文字(子节点))
-      if (段落.文字.length > 0) {
-        段落列表.push(段落)
-      }
-    } else if (标签名 === 'table') {
-      // 简单处理：表格暂不转换，只提取文字
-      const 文字段落: typeof 段落列表[number] = {
-        类型: '文字',
-        文字: [{ 文本: 元素.textContent?.trim() || '' }],
-      }
-      段落列表.push(文字段落)
-    }
-
-    // 递归处理子元素（非表格类）
-    if (标签名 !== 'table') {
-      Array.from(元素.children).forEach(处理元素)
-    }
-  }
-
-  Array.from(临时容器.children).forEach(处理元素)
-
-  if (段落列表.length === 0) {
-    // 回退：将纯文本作为一段
-    段落列表.push({
-      类型: '文字',
-      文字: [{ 文本: 临时容器.textContent?.trim() || '' }],
-    })
-  }
-
-  return { 段落: 段落列表 }
+/**
+ * 将一个 HTML 字符串转换为 docx 模型。
+ * 统一委托给 office/docModel 的解析器（内联样式、<font> 标签、标题、列表、
+ * 表格、对齐、颜色、字号、字体的完整解析都在那里实现），
+ * 避免此处再维护一份丢失样式的重复实现——此前正是这份重复实现导致保存后格式全丢。
+ */
+export function htmlToDocxModel(html: string): {
+  段落: Array<{
+    类型: '段落' | '表格'
+    文字?: Array<{
+      文本: string
+      加粗?: boolean
+      倾斜?: boolean
+      下划线?: boolean
+      删除线?: boolean
+      字号?: number
+      颜色?: string
+      字体?: string
+      底纹?: string
+    }>
+    级别?: number
+    对齐?: '左' | '中' | '右' | '两端'
+    列表?: '无' | '项目符号' | '编号'
+    行?: Array<Array<{ 表头: boolean; 文字: Array<{ 文本: string }> }>>
+  }>
+  未覆盖: string[]
+} {
+  return 解析文档(html)
 }
 
 /** 将一个 HTML 字符串转换为 xlsx 模型 */

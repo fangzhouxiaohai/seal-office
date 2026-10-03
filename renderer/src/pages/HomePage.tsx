@@ -1,28 +1,36 @@
 // 首页：新建入口与最近文档区块的组合页。
-import React, { useState } from 'react'
-import { App as AntdApp, Button } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { App as AntdApp, Dropdown } from 'antd'
+import Icon from '../components/Icon'
 import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
-import NewDocGrid from '../components/NewDocGrid'
 import RecentDocs from '../components/RecentDocs'
 import TemplateLibrary from '../components/TemplateLibrary'
-import { 桥接 } from '../ipc/bridge'
+import { 通过对话框打开文件 } from '../fileOpen'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
-  home: '最近文档',
+  home: '最近',
   recent: '最近',
   star: '星标文档',
   shared: '共享文档',
   pdf: 'PDF 工具',
 }
 
-const HomePage = () => {
-  const { message } = AntdApp.useApp()
-  const [显示模板库, 设显示模板库] = useState(false)
+interface HomePageProps {
+  模板库打开?: boolean
+  关闭模板库?: () => void
+}
+
+const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) => {
+  const { message, modal } = AntdApp.useApp()
+  const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
   const {
     navKey,
     setNavKey,
+    refreshRecents,
+    最近读取错误,
+    清除最近读取错误,
     viewMode,
     setViewMode,
     sortKey,
@@ -38,178 +46,120 @@ const HomePage = () => {
     removeDoc,
   } = useAppStore()
 
-  const 处理新建 = (类型: DocType) => {
-    createDoc(类型)
+  useEffect(() => {
+    if (最近读取错误 === null) return
+    modal.error({ title: '读取最近文档失败', content: 最近读取错误 })
+    清除最近读取错误()
+  }, [最近读取错误])
+
+  /** 「全部类型」下拉筛选：全部/文字/表格/演示 */
+  const 筛选后文档 = 类型筛选 === 'all' ? visibleDocs : visibleDocs.filter((文档) => 文档.type === 类型筛选)
+  const 类型菜单 = {
+    items: [
+      { key: 'all', label: '全部类型' },
+      { key: 'word', label: '文字' },
+      { key: 'table', label: '表格' },
+      { key: 'ppt', label: '演示' },
+      { key: 'pdf', label: 'PDF' },
+    ],
+    onClick: ({ key }: { key: string }) => 设类型筛选(key as 'all' | DocType),
   }
 
   const 处理模板选择 = (模板: import('../data/templates').模板项) => {
     createDoc(模板.分类 as DocType, 模板.内容)
-    设显示模板库(false)
+    关闭模板库?.()
   }
 
   const 处理打开 = (标识: string) => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
-      message.error('未找到该文档，可能已被移除')
+      modal.error({ title: '打开文件失败', content: '未找到该文档，可能已被移除' })
       return
     }
-    openDoc(目标)
-  }
-
-  const 处理打开文件 = () => {
-    if (!桥接.可用) {
-      message.info('当前环境不支持打开文件功能，请使用打包后的版本')
-      return
-    }
-    桥接.showOpenDialog().then((文件路径) => {
-      if (文件路径) {
-        桥接.readFile(文件路径).then((结果) => {
-          if (结果.成功 && 结果.内容) {
-            // 归一化扩展名：去除开头的点
-            const 归一化扩展名 = (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase()
-            if (结果.二进制 && 归一化扩展名) {
-              // 二进制文件（docx/xlsx/pptx）：通过 Office API 读取
-              if (归一化扩展名 === 'docx') {
-                桥接.office.readDocx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功 && 数据.html) {
-                    createDoc('word', 数据.html)
-                    message.success('文档已打开')
-                  } else {
-                    message.info('文件内容无法识别，可能不是有效的文档格式')
-                  }
-                }).catch(() => {
-                  message.info('文件内容无法识别，可能不是有效的文档格式')
-                })
-              } else if (归一化扩展名 === 'xlsx') {
-                桥接.office.readXlsx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功 && 数据.html) {
-                    createDoc('table', 数据.html)
-                    message.success('表格已打开')
-                  } else {
-                    message.info('文件内容无法识别，可能不是有效的表格格式')
-                  }
-                }).catch(() => {
-                  message.info('文件内容无法识别，可能不是有效的表格格式')
-                })
-              } else if (归一化扩展名 === 'pptx') {
-                桥接.office.readPptx(结果.内容).then((数据: any) => {
-                  if (数据 && 数据.成功 && 数据.演示文稿) {
-                    createDoc('ppt', 数据.演示文稿)
-                    message.success('演示文稿已打开')
-                  } else {
-                    message.info('文件内容无法识别，可能不是有效的演示文稿格式')
-                  }
-                }).catch(() => {
-                  message.info('文件内容无法识别，可能不是有效的演示文稿格式')
-                })
-              } else {
-                message.info('暂不支持此文件格式')
-              }
-              return
-            }
-            const 扩展名 = 归一化扩展名
-            if (扩展名 === 'html' || 扩展名 === 'htm') {
-              createDoc('word', 结果.内容)
-            } else if (扩展名 === 'txt' || 扩展名 === 'md' || 扩展名 === 'csv') {
-              createDoc('word', 结果.内容)
-            } else if (扩展名 === 'json') {
-              try {
-                const 数据 = JSON.parse(结果.内容)
-                if (数据.幻灯片列表) {
-                  setNavKey('home')
-                  message.info('请在演示文稿模块中打开此文件')
-                } else {
-                  createDoc('word', 结果.内容)
-                }
-              } catch {
-                message.error('文件格式不正确')
-              }
-            } else {
-              message.info('暂不支持此文件格式')
-            }
-          } else {
-            message.error(`打开文件失败：${结果.错误}`)
-          }
-        }).catch((error: unknown) => {
-          message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
-        })
-      }
-    }).catch((error: unknown) => {
-      message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+    void openDoc(目标).catch((错误: unknown) => {
+      modal.error({ title: '打开文件失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })
     })
   }
 
-  const 处理重命名 = (标识: string, 名称: string) => {
+  const 处理打开文件 = () => {
+    void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告) => createDoc(类型, 内容, { 路径, 警告 }))
+      .then((成功) => { if (成功) refreshRecents() })
+  }
+
+  const 处理重命名 = async (标识: string, 名称: string) => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
-      message.error('未找到该文档，可能已被移除')
-      return
+      throw new Error('未找到该文档，可能已被移除')
     }
-    renameDoc(标识, 名称)
-    message.success(`已重命名为「${名称}」`)
+    await renameDoc(标识, 名称)
+    message.success('文件已重命名')
   }
 
   const 处理删除 = (标识: string) => {
     const 目标 = docs.find((文档) => 文档.id === 标识)
     if (目标 === undefined) {
-      message.error('未找到该文档，可能已被移除')
+      modal.error({ title: '移除最近文档失败', content: '未找到该文档，可能已被移除' })
       return
     }
-    removeDoc(标识)
-    message.success(`已删除「${目标.name}」`)
+    void removeDoc(标识).then(() => {
+      message.success(`已从最近列表移除「${目标.name}」`)
+    }).catch((错误: unknown) => {
+      modal.error({ title: '移除最近文档失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })
+    })
   }
 
   return React.createElement(
     'div',
     { className: 'wps-home' },
-    // 新建区块（现有）
+    // 最近头部：标题 + 刷新；右侧云同步占位
     React.createElement(
-      'section',
-      { className: 'wps-section' },
-      React.createElement('h2', { className: 'wps-section__title' }, '新建'),
-      React.createElement(NewDocGrid, { onSelect: 处理新建 })
-    ),
-    // 工具区块（新增）
-    React.createElement(
-      'section',
-      { className: 'wps-section' },
-      React.createElement('h2', { className: 'wps-section__title' }, '工具'),
+      'div',
+      { className: 'wps-home__header' },
       React.createElement(
         'div',
-        { className: 'wps-tools-grid' },
+        { className: 'wps-home__title-row' },
+        React.createElement('h1', { className: 'wps-home__title' }, 标题映射[navKey] ?? '最近'),
         React.createElement(
-          Button,
+          'button',
           {
-            size: 'large',
-            onClick: () => 处理打开文件(),
-            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
+            type: 'button',
+            className: 'wps-home__refresh',
+            title: '刷新最近列表',
+            'aria-label': '刷新最近列表',
+            onClick: refreshRecents,
           },
-          '打开文件'
-        ),
+          React.createElement(Icon, { name: 'retry', size: 14 })
+        )
+      ),
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-home__cloud-sync',
+          onClick: () => message.info('文档云同步即将开放，当前文档均保存在本机'),
+        },
+        React.createElement(Icon, { name: 'cloud-off', size: 14 }),
+        React.createElement('span', null, '未开启文档云同步')
+      )
+    ),
+    // 工具行：类型筛选（左）
+    React.createElement(
+      'div',
+      { className: 'wps-home__toolbar' },
+      React.createElement(
+        Dropdown,
+        { menu: 类型菜单, trigger: ['click'] },
         React.createElement(
-          Button,
-          {
-            size: 'large',
-            onClick: () => 设显示模板库(true),
-            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
-          },
-          '模板库'
-        ),
-        React.createElement(
-          Button,
-          {
-            size: 'large',
-            onClick: () => createDoc('pdf'),
-            style: { fontSize: '16px', padding: '16px 32px', height: 'auto' },
-          },
-          'PDF 工具'
+          'button',
+          { type: 'button', className: 'wps-home__type-filter' },
+          类型筛选 === 'all' ? '全部类型' : (类型筛选 === 'word' ? '文字' : 类型筛选 === 'table' ? '表格' : 类型筛选 === 'ppt' ? '演示' : 'PDF')
         )
       )
     ),
     // 最近文档区块（现有）
     React.createElement(RecentDocs, {
-      docs: visibleDocs,
-      title: 标题映射[navKey] ?? '最近文档',
+      docs: 筛选后文档,
+      title: ' ',
       viewMode,
       sortKey,
       activeDocId,
@@ -221,12 +171,12 @@ const HomePage = () => {
       onViewModeChange: setViewMode,
       onSortChange: setSortKey,
       onViewAll: () => setNavKey('recent'),
-      onEmptyAction: () => createDoc('word'),
+      onEmptyAction: 处理打开文件,
     }),
     // 模板库弹窗
     React.createElement(TemplateLibrary, {
-      打开: 显示模板库,
-      关闭: () => 设显示模板库(false),
+      打开: 模板库打开,
+      关闭: 关闭模板库,
       onSelect: 处理模板选择,
     })
   )

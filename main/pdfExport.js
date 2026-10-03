@@ -80,6 +80,23 @@ exports.exportToPdf = async (win, html内容, 默认文件名) => {
 }
 
 /**
+ * 将 HTML 渲染为 PDF 并写入指定路径（不弹保存对话框，供「保存」链路复用）
+ * @param html内容 - 完整的 HTML 文档字符串
+ * @param 保存路径 - 目标 PDF 文件路径
+ * @returns 操作结果
+ */
+exports.exportToPdfToPath = async (html内容, 保存路径) => {
+  try {
+    const 数据 = await exports.createPdfFromHtml(html内容)
+    fs.writeFileSync(保存路径, 数据)
+    return { 成功: true, 路径: 保存路径 }
+  } catch (error) {
+    console.error('PDF 导出失败:', error)
+    return { 成功: false, 错误: error.message || 'PDF 导出失败' }
+  }
+}
+
+/**
  * 将 HTML 渲染为 PDF 数据，不落盘，供 PDF 工具模块组合使用
  * @param html内容 - 完整的 HTML 文档字符串
  * @returns PDF 内容的 Buffer

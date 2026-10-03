@@ -1,8 +1,9 @@
 // 编辑器容器：装配文档标签栏、Ribbon、标尺、编辑区、查找面板与状态栏。
 // 全部编辑行为通过 commands.ts 的命令注册表派发，此文件只负责上下文实现与区域编排。
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { useAppStore } from '../store'
+import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
 import { 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { HistoryStack } from './history'
 import { countWords } from './wordCount'
@@ -32,6 +33,7 @@ const 默认视图: ViewState = {
   段落标记: false,
   视图模式: '页面视图',
   纸张: 'A4',
+  纸张方向: '纵向',
   页边距: '常规',
   分栏: '一栏',
   水印: '无',
@@ -120,16 +122,18 @@ const 封面模板 = (): string =>
   '</div><div class="wps-page-break"></div>'
 
 const DocEditor = () => {
-  const { message } = AntdApp.useApp()
+  const { message, modal } = AntdApp.useApp()
   const {
     documents,
     activeDocumentId,
     updateEditorHtml,
+    markDocumentSaved,
     closeEditorDoc,
     createEditorDoc,
     setActiveDocumentId,
     文档路径,
     set文档路径,
+    createDoc,
   } = useAppStore()
 
   const [当前标签, set当前标签] = useState('start')
@@ -185,6 +189,7 @@ const DocEditor = () => {
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
   const 历史表 = useRef<Map<string, HistoryStack>>(new Map())
   const 输入计时器 = useRef<number | null>(null)
+  const 已提示导入警告 = useRef<Set<string>>(new Set())
   /** 格式刷暂存；使用稳定对象以便命令读写同一份状态 */
   const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
   /** 下拉浮层打开前的选区快照，供格式化命令恢复选区后再执行 */
@@ -192,6 +197,54 @@ const DocEditor = () => {
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+
+  useEffect(() => {
+    const 现有标识 = new Set(documents.map((项) => 项.id))
+    for (const 标识 of 已提示导入警告.current) {
+      if (!现有标识.has(标识)) {
+        已提示导入警告.current.delete(标识)
+      }
+    }
+  }, [documents])
+
+  const 展示导入警告 = (警告: string[]) => {
+    modal.warning({
+      title: '文档内容可能未完整导入',
+      content: React.createElement('div', null,
+        React.createElement('p', null, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
+        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+      ),
+      okText: '我知道了',
+    })
+  }
+
+  useEffect(() => {
+    if (当前文档?.警告?.length && !已提示导入警告.current.has(当前文档.id)) {
+      已提示导入警告.current.add(当前文档.id)
+      展示导入警告(当前文档.警告)
+    }
+  }, [当前文档?.id, 当前文档?.警告])
+
+  const 当前保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
+    ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
+    : null
+
+  const 处理关闭文档 = (标识: string): void => {
+    const 文档 = documents.find((项) => 项.id === 标识)
+    if (文档 === undefined) return
+    const 当前内容 = 标识 === 文档标识 ? (编辑区引用.current?.innerHTML ?? 文档.html) : 文档.html
+    if (当前内容 === 文档.已保存Html) {
+      closeEditorDoc(标识)
+      return
+    }
+    modal.confirm({
+      title: '文档有未保存的修改',
+      content: `关闭「${文档.name}」将放弃上次保存后的修改。`,
+      okText: '放弃修改',
+      cancelText: '取消',
+      onOk: () => closeEditorDoc(标识),
+    })
+  }
 
   /** 查询格式化指令的开关状态，jsdom 等环境不支持时返回 false */
   const 查询状态 = (指令: string): boolean => {
@@ -528,7 +581,38 @@ const DocEditor = () => {
     格式刷暂存: 格式刷容器.current,
     当前文档名: 当前文档?.name ?? '未命名文档',
     当前文档路径: 文档路径[文档标识] ?? null,
-    设置文档路径: (路径: string) => set文档路径(文档标识, 路径),
+    打开新文档: (类型, 内容, 路径, 警告) => createDoc(类型, 内容, { 路径, 警告 }),
+    显示文件错误: (标题, 内容) => modal.error({ title: 标题, content: 内容 }),
+    保真风险: 当前保真风险,
+    提示保真风险: (警告: string[]) => {
+      modal.warning({
+        title: '已阻止覆盖来源文件',
+        content: React.createElement('div', null,
+          React.createElement('p', null, '当前版本无法完整保留此文件的内容。请通过另存为保存到不同路径。'),
+          React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        ),
+        okText: '我知道了',
+      })
+    },
+    确认保真另存: (警告: string[]) => new Promise<boolean>((完成) => {
+      modal.confirm({
+        title: '确认保存副本',
+        content: React.createElement('div', null,
+          React.createElement('p', null, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
+          React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        ),
+        okText: '保存副本',
+        cancelText: '取消',
+        onOk: () => 完成(true),
+        onCancel: () => 完成(false),
+      })
+    }),
+    设置文档路径: (路径: string, 已保存内容?: string) => {
+      markDocumentSaved(文档标识, 已保存内容 ?? 编辑区引用.current?.innerHTML ?? '')
+      set文档路径(文档标识, 路径)
+      // 保存成功后计入最近文档，按扩展名归类。
+      记录最近文档(路径, 基准文件名(路径), 扩展转类型(路径))
+    },
     打开表格网格: () => set网格打开(true),
     打开文献管理: () => set文献面板打开(true),
     打开比较面板: () => set比较面板打开(true),
@@ -545,6 +629,95 @@ const DocEditor = () => {
     命令.run(上下文, 参数)
   }
 
+  // 键盘快捷键层：补齐 WPS 文字标准快捷键（右键菜单与帮助手册中均已标注）。
+  // 处理器经引用间接调用，确保监听器只挂载一次的同时始终使用最新闭包状态。
+  const 快捷键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
+  快捷键处理引用.current = (事件: KeyboardEvent) => {
+    if (!(事件.ctrlKey || 事件.metaKey)) {
+      return
+    }
+    const 目标 = 事件.target as HTMLElement | null
+    const 在输入框 = 目标 !== null && (目标.tagName === 'INPUT' || 目标.tagName === 'TEXTAREA')
+    const 小写键 = 事件.key.toLowerCase()
+    // 查找面板等输入框内只放行保存，格式类快捷键不作用于输入文字
+    if (在输入框 && 小写键 !== 's') {
+      return
+    }
+    switch (小写键) {
+      case 'b':
+        事件.preventDefault()
+        执行格式化('bold')
+        break
+      case 'i':
+        事件.preventDefault()
+        执行格式化('italic')
+        break
+      case 'u':
+        事件.preventDefault()
+        执行格式化('underline')
+        break
+      case 'z':
+        事件.preventDefault()
+        执行命令('edit.undo')
+        break
+      case 'y':
+        事件.preventDefault()
+        执行命令('edit.redo')
+        break
+      case 'a':
+        事件.preventDefault()
+        执行命令('edit.selectAll')
+        break
+      case 'f':
+      case 'h':
+        事件.preventDefault()
+        set查找打开(true)
+        break
+      case 'e':
+        事件.preventDefault()
+        执行格式化('justifyCenter')
+        break
+      case 'l':
+        事件.preventDefault()
+        执行格式化('justifyLeft')
+        break
+      case 'r':
+        事件.preventDefault()
+        执行格式化('justifyRight')
+        break
+      case 'j':
+        事件.preventDefault()
+        执行格式化('justifyFull')
+        break
+      case 's':
+        事件.preventDefault()
+        执行命令('file.save')
+        break
+      default:
+        if (事件.key === 'Enter' && !在输入框) {
+          // Ctrl+Enter 插入分页符
+          事件.preventDefault()
+          执行命令('layout.break')
+        } else if (事件.key === 'Home' && !在输入框) {
+          事件.preventDefault()
+          编辑区引用.current?.scrollIntoView({ block: 'start' })
+        } else if (事件.key === 'End' && !在输入框) {
+          事件.preventDefault()
+          const 元素 = 编辑区引用.current
+          if (元素 !== null) {
+            const 末段 = 元素.lastElementChild
+            if (末段 !== null) 末段.scrollIntoView({ block: 'end' })
+            else 元素.scrollIntoView({ block: 'end' })
+          }
+        }
+    }
+  }
+  useEffect(() => {
+    const 监听 = (事件: KeyboardEvent) => 快捷键处理引用.current(事件)
+    document.addEventListener('keydown', 监听)
+    return () => document.removeEventListener('keydown', 监听)
+  }, [])
+
   const 文本内容 = (() => {
     void 内容版本
     return 编辑区引用.current?.textContent ?? ''
@@ -559,7 +732,7 @@ const DocEditor = () => {
       documents: documents.map((项) => ({ id: 项.id, name: 项.name })),
       activeId: activeDocumentId,
       onSelect: (标识: string) => setActiveDocumentId(标识),
-      onClose: closeEditorDoc,
+      onClose: 处理关闭文档,
       onCreate: createEditorDoc,
     }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
@@ -702,6 +875,13 @@ const DocEditor = () => {
         vertical: 视图.文字方向 === '竖排',
         showComments: 视图.显示批注,
         scale: 视图.缩放,
+        paper: 视图.纸张,
+        orientation: 视图.纸张方向,
+        margin: 视图.页边距,
+        columns: 视图.分栏,
+        watermark: 视图.水印,
+        pageBorder: 视图.页面边框,
+        pageColor: 视图.页面颜色,
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素
           取历史().record({ html: 元素.innerHTML, selection: null })

@@ -24,6 +24,23 @@ describe('编辑区', () => {
     expect(回调).toHaveBeenCalledWith('<p>改后</p>')
   })
 
+  it('恢复的富文本进入编辑区前移除脚本与危险属性', () => {
+    const { container } = render(<EditorCanvas html={'<p><em>正文</em></p><img src="x" onerror="window.electronAPI.readFile(\'C:/secret\')"><a href="javascript:alert(1)">链接</a>'} />)
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+    expect(编辑区.innerHTML).toContain('<em>正文</em>')
+    expect(编辑区.innerHTML).not.toMatch(/onerror|javascript:/i)
+  })
+
+  it('外部片段经输入事件进入编辑区后立即移除危险属性', () => {
+    const 回调 = vi.fn()
+    const { container } = render(<EditorCanvas html="<p>正文</p>" onChange={回调} />)
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+    编辑区.innerHTML = '<p>正文</p><img src="x" onerror="window.electronAPI.readFile(\'C:/secret\')">'
+    fireEvent.input(编辑区)
+    expect(编辑区.innerHTML).not.toContain('onerror')
+    expect(回调).toHaveBeenCalledWith(expect.not.stringContaining('onerror'))
+  })
+
   it('显示段落标记时带对应类名', () => {
     const { container } = render(<EditorCanvas html="<p>内容</p>" showParagraphMark />)
     expect(container.querySelector('.wps-editor-canvas--marks')).not.toBeNull()

@@ -10,21 +10,27 @@ interface 存储结构 {
   目标语言?: string
 }
 
-/** 从 localStorage 读取翻译配置；未保存或无可用存储时返回空配置 */
+/** 从 localStorage 读取翻译配置；仅未保存时返回空配置，损坏或读取失败由调用方报告。 */
 export function 读取翻译配置(): 翻译配置 {
-  try {
-    const 原文 = localStorage.getItem(存储键)
-    if (原文 === null) {
-      return { 地址: '', 密钥: '', 目标语言: 'zh' }
-    }
-    const 数据 = JSON.parse(原文) as 存储结构
-    return {
-      地址: 数据.地址 ?? '',
-      密钥: 数据.密钥 ?? '',
-      目标语言: 数据.目标语言 ?? 'zh',
-    }
-  } catch {
+  const 原文 = localStorage.getItem(存储键)
+  if (原文 === null) {
     return { 地址: '', 密钥: '', 目标语言: 'zh' }
+  }
+  let 数据: 存储结构
+  try {
+    数据 = JSON.parse(原文) as 存储结构
+  } catch {
+    throw new Error('翻译设置内容已损坏，请在设置中心恢复默认后重新配置')
+  }
+  if (!数据 || typeof 数据 !== 'object' || typeof 数据.地址 !== 'string' ||
+    (数据.密钥 !== undefined && typeof 数据.密钥 !== 'string') ||
+    (数据.目标语言 !== undefined && typeof 数据.目标语言 !== 'string')) {
+    throw new Error('翻译设置格式无效，请在设置中心恢复默认后重新配置')
+  }
+  return {
+    地址: 数据.地址,
+    密钥: 数据.密钥 ?? '',
+    目标语言: 数据.目标语言 ?? 'zh',
   }
 }
 
@@ -35,11 +41,12 @@ export function 保存翻译配置(配置: 翻译配置): void {
     密钥: 配置.密钥,
     目标语言: 配置.目标语言,
   }
-  try {
-    localStorage.setItem(存储键, JSON.stringify(数据))
-  } catch {
-    // 存储不可用（如隐私模式）时静默失败，不阻断使用
-  }
+  localStorage.setItem(存储键, JSON.stringify(数据))
+}
+
+/** 清除本机保存的翻译服务配置。 */
+export function 清除翻译配置(): void {
+  localStorage.removeItem(存储键)
 }
 
 /** 判断翻译服务是否已配置可用的服务地址 */

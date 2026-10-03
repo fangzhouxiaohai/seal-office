@@ -1,6 +1,7 @@
 // 文档卡片：最近文档网格视图的单元，承载缩略图、名称、类型标签与操作入口。
 import React, { useState } from 'react'
 import { App as AntdApp, Dropdown, Input, Modal, Tooltip } from 'antd'
+import { 桥接 } from '../ipc/bridge'
 import { formatSize, formatTime, type DocItem } from '../mock/recentDocs'
 import { DOC_TYPE_COLOR, DOC_TYPE_ICON, DOC_TYPE_LABEL } from '../docMeta'
 import Icon from './Icon'
@@ -11,7 +12,7 @@ interface Props {
   onSelect?: (标识: string) => void
   onOpen?: (标识: string) => void
   onToggleStar?: (标识: string) => void
-  onRename?: (标识: string, 名称: string) => void
+  onRename?: (标识: string, 名称: string) => Promise<void> | void
   onRemove?: (标识: string) => void
 }
 
@@ -44,24 +45,25 @@ const DocCard = ({
     set重命名中(true)
   }
 
-  const 确认重命名 = () => {
+  const 确认重命名 = async () => {
     const 规范名称 = 草稿名称.trim()
     if (规范名称.length === 0) {
       message.warning('文档名称不能为空')
       return
     }
-    if (onRename !== undefined) {
-      onRename(doc.id, 规范名称)
+    try {
+      await onRename?.(doc.id, 规范名称)
+      set重命名中(false)
+    } catch (错误) {
+      modal.error({ title: '重命名失败', content: 错误 instanceof Error ? 错误.message : '无法重命名文件' })
     }
-    set重命名中(false)
   }
 
   const 确认删除 = () => {
     modal.confirm({
-      title: '删除文档',
-      content: `确定删除「${doc.name}」吗？该操作不可撤销。`,
-      okText: '删除',
-      okButtonProps: { danger: true },
+      title: '从最近列表移除',
+      content: `确定从最近列表移除「${doc.name}」吗？磁盘中的文件不会删除。`,
+      okText: '移除',
       cancelText: '取消',
       onOk: () => {
         if (onRemove !== undefined) {
@@ -73,10 +75,12 @@ const DocCard = ({
 
   const 菜单项 = [
     { key: 'open', label: '打开' },
+    // 真实文件才提供「打开所在文件夹」（WPS 标准右键项）；演示数据无路径时隐藏
+    ...(doc.路径 !== undefined ? [{ key: 'reveal', label: '打开所在文件夹' }] : []),
     { key: 'rename', label: '重命名' },
     { key: 'star', label: doc.starred ? '取消星标' : '添加星标' },
     { type: 'divider' as const },
-    { key: 'remove', label: '删除', danger: true },
+    { key: 'remove', label: '从最近列表移除' },
   ]
 
   const 处理菜单点击 = ({ key }: { key: string }) => {
@@ -85,6 +89,9 @@ const DocCard = ({
         if (onOpen !== undefined) {
           onOpen(doc.id)
         }
+        break
+      case 'reveal':
+        void 桥接.revealInFolder(doc.路径 ?? '')
         break
       case 'rename':
         打开重命名()

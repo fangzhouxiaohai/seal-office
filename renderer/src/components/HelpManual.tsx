@@ -95,7 +95,7 @@ const 帮助数据: 帮助文章[] = [
     正文: [
       '演示文稿模块支持多页幻灯片编辑。左侧缩略图面板可快速切换和排序幻灯片。',
       '每页幻灯片支持添加文本框、图片、形状等元素，并可设置动画过渡效果。',
-      '提供多种预设版式模板，快速搭建专业级演示文稿。支持全屏播放和排练计时功能。'
+      '提供多种预设版式模板，快速搭建专业级演示文稿。支持全屏放映（F5 从头开始、Shift+F5 从当前页开始，Esc 退出）。'
     ],
     标签: '演示',
     标签颜色: 'purple',
@@ -105,7 +105,7 @@ const 帮助数据: 帮助文章[] = [
   {
     标题: '文件保存与导出',
     正文: [
-      '按 Ctrl+S 快捷键可快速保存当前文档。也可通过顶部菜单的"文件"选项卡执行保存和另存为操作。',
+      '按 Ctrl+S 快捷键可快速保存当前文档，F12 为另存为；也可通过 Ribbon 上的文件组执行保存和另存为操作。',
       '支持保存为多种格式：文字文档（.docx、.txt）、电子表格（.xlsx、.csv）、演示文稿（.pptx）。',
       '使用"导出为 PDF"功能可将文档转换为 PDF 格式，便于分享和打印。PDF 导出保持原文档版式和样式。'
     ],
@@ -140,7 +140,7 @@ const 帮助数据: 帮助文章[] = [
   }
 ]
 
-const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string) => {
+const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string, 紧凑 = false) => {
   const isDark = 主题 === '深色'
   const 卡片背景 = isDark ? '#2D333F' : '#FFFFFF'
   const 文字颜色 = isDark ? '#E0E0E0' : '#262626'
@@ -150,8 +150,9 @@ const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string) => 
     className: 'help-article-card',
     style: {
       background: 卡片背景,
-      borderRadius: '8px',
+      borderRadius: '10px',
       overflow: 'hidden',
+      border: isDark ? '1px solid #3D4450' : '1px solid #EBEEF3',
       boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       cursor: 'default'
@@ -216,7 +217,7 @@ const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string) => 
       React.createElement('h3', {
         style: {
           margin: 0,
-          fontSize: '17px',
+          fontSize: 紧凑 ? '15.5px' : '17px',
           fontWeight: 600,
           color: 文字颜色,
           flex: 1
@@ -228,7 +229,7 @@ const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string) => 
       className: 'help-article-image',
       style: {
         width: '100%',
-        height: '200px',
+        height: 紧凑 ? '150px' : '200px',
         overflow: 'hidden',
         position: 'relative'
       }
@@ -268,8 +269,8 @@ const 帮助卡片 = (文章: 帮助文章, _索引: number, 主题: string) => 
           key: 索引,
           style: {
             margin: '0 0 10px',
-            fontSize: '14px',
-            lineHeight: 1.75,
+            fontSize: 紧凑 ? '13.5px' : '14px',
+            lineHeight: 1.85,
             color: 次要文字颜色,
             textAlign: 'justify',
             ...(索引 === 文章.正文.length - 1 ? { marginBottom: 0 } : {})
@@ -293,28 +294,28 @@ const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
   })
 
   const isDark = 主题 === '深色'
-  // 是否作为全页面使用（无关闭回调即为全页面模式）
+  // 是否作为全页面使用（无关闭回调即为全页面模式）；弹窗模式由 Modal 提供标题与关闭按钮
   const 全页面模式 = !关闭回调
 
   return React.createElement('div', {
     className: 'help-manual',
     style: {
-      padding: 全页面模式 ? '24px 32px' : '20px',
-      backgroundColor: isDark ? '#1A1F26' : '#F5F5F5',
-      minHeight: 全页面模式 ? '0' : '400px',
-      maxHeight: 全页面模式 ? 'none' : '600px',
-      overflowY: 全页面模式 ? 'visible' : 'auto',
+      padding: 全页面模式 ? '24px 32px' : '0 4px',
+      backgroundColor: 'transparent',
+      minHeight: 全页面模式 ? '0' : '320px',
+      maxHeight: 全页面模式 ? 'none' : 'none',
+      overflowY: 'visible',
       height: 全页面模式 ? '100%' : 'auto',
       boxSizing: 'border-box'
     }
   },
-    // 标题栏
-    React.createElement('div', {
+    // 标题栏（仅全页面模式显示；弹窗模式由 Modal 承担标题与关闭）
+    全页面模式 ? React.createElement('div', {
       style: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 全页面模式 ? '32px' : '20px',
+        marginBottom: '32px',
         paddingBottom: '16px',
         borderBottom: isDark ? '1px solid #3D4450' : '1px solid #E8E8E8'
       }
@@ -322,44 +323,20 @@ const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
       React.createElement('h2', {
         style: {
           margin: 0,
-          fontSize: 全页面模式 ? '26px' : '22px',
+          fontSize: '26px',
           fontWeight: 600,
           color: isDark ? '#E0E0E0' : '#262626'
         }
-      }, '帮助手册'),
-      关闭回调 ? React.createElement('button', {
-        onClick: 关闭回调,
-        className: 'help-close-btn',
-        style: {
-          background: 'none',
-          border: 'none',
-          fontSize: '22px',
-          color: isDark ? '#9AA0A6' : '#8C8C8C',
-          cursor: 'pointer',
-          width: '32px',
-          height: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '4px',
-          transition: 'background 0.2s'
-        },
-        onMouseEnter: (e: React.MouseEvent) => {
-          (e.currentTarget as HTMLButtonElement).style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
-        },
-        onMouseLeave: (e: React.MouseEvent) => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'none'
-        }
-      }, '×') : null
-    ),
+      }, '帮助手册')
+    ) : null,
     // 搜索框
     React.createElement(Search, {
-      placeholder: '搜索帮助内容...',
+      placeholder: '搜索帮助内容，如：保存、模板、快捷键...',
       value: 搜索关键词,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => set搜索关键词(e.target.value),
       allowClear: true,
       style: {
-        marginBottom: '24px',
+        marginBottom: '20px',
         maxWidth: '100%'
       }
     }),
@@ -374,7 +351,7 @@ const HelpManual = ({ 打开状态: _打开状态 = true, 关闭回调 }: {
       }
     },
       ...过滤数据.map((文章, 索引) =>
-        帮助卡片(文章, 索引, 主题)
+        帮助卡片(文章, 索引, 主题, !全页面模式)
       )
     ),
     // 空状态

@@ -85,23 +85,44 @@ export function 生成表格文件名(工作表名: string, 扩展名: string): 
 }
 
 /**
- * 导出为 xlsx 的写入模型。
- * 主进程写入 xlsx 读 { 工作表: [{ 名称, 数据: 二维数组 }] }，单元格取显示值
- * （公式导出的是计算结果而非公式原文，与 CSV/HTML 行为一致）。
- * 无内容时返回 null。
+ * 导出为 xlsx 的写入模型，支持单表或整本多工作表。
+ * 主进程写入 xlsx 读 { 工作表: [{ 名称, 数据: 二维数组 }] }。
+ * 公式携带表达式与计算结果；普通单元格保留原始输入。
+ * 全部工作表均无内容时返回 null。
  */
-export function 导出为Xlsx(工作表: Sheet): { 工作表: Array<{ 名称: string; 数据: string[][] }> } | null {
+type Xlsx单元格 = string | { 公式: string; 结果: string | number }
+
+export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Array<{ 名称: string; 数据: Xlsx单元格[][] }> } | null {
+  const 列表 = Array.isArray(工作表或列表) ? 工作表或列表 : [工作表或列表]
+  const 表定义列表 = 列表
+    .map((工作表) => 构建单表模型(工作表))
+    .filter((表): 表 is { 名称: string; 数据: Xlsx单元格[][] } => 表 !== null)
+  if (表定义列表.length === 0) {
+    return null
+  }
+  return { 工作表: 表定义列表 }
+}
+
+/** 构建单张工作表的写入模型；空表返回 null */
+function 构建单表模型(工作表: Sheet): { 名称: string; 数据: Xlsx单元格[][] } | null {
   const { 行数, 列数 } = 计算有效范围(工作表)
   if (行数 === 0 || 列数 === 0) {
     return null
   }
-  const 数据: string[][] = []
+  const 数据: Xlsx单元格[][] = []
   for (let 行 = 0; 行 < 行数; 行 += 1) {
-    const 单元格列表: string[] = []
+    const 单元格列表: Xlsx单元格[] = []
     for (let 列 = 0; 列 < 列数; 列 += 1) {
-      单元格列表.push(读取单元格(工作表, 生成地址(行, 列)).显示值)
+      const 单元 = 读取单元格(工作表, 生成地址(行, 列))
+      if (单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
+        const 数值 = Number(单元.显示值)
+        const 结果 = 单元.显示值.trim() !== '' && Number.isFinite(数值) ? 数值 : 单元.显示值
+        单元格列表.push({ 公式: 单元.原始值.slice(1), 结果 })
+      } else {
+        单元格列表.push(单元.原始值)
+      }
     }
     数据.push(单元格列表)
   }
-  return { 工作表: [{ 名称: 工作表.name, 数据 }] }
+  return { 名称: 工作表.name, 数据 }
 }

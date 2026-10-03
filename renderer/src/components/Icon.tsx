@@ -7,6 +7,10 @@ export const ICON_NAMES = [
   'pdf', 'mindmap', 'flow', 'settings', 'help',
   'search', 'grid', 'list', 'sort', 'more', 'arrow-left', 'plus', 'retry',
   'doc-word', 'doc-table', 'doc-ppt', 'doc-pdf', 'doc-empty',
+  /* 首页图标 */
+  'bell', 'headset', 'member', 'apps', 'ai', 'aippt', 'wps365', 'folder', 'trash',
+  'sun', 'moon', 'sliders',
+  'desktop', 'download-file', 'globe', 'tag', 'device', 'cloud-off', 'wechat', 'knowledge', 'export-file',
   /* 编辑器图标 */
   'paste', 'cut', 'copy', 'format-painter',
   'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
@@ -512,6 +516,127 @@ const 文档图标: Record<string, React.ReactNode> = {
     <>
       <path d="M3.4 1.6h5.4l3.8 3.8v9H3.4z" />
       <path d="M8.8 1.6v3.8h3.8M6 8h4M6 10.6h2.6" />
+    </>
+  ),
+  /* 首页图标 */
+  bell: (
+    <>
+      <path d="M3.2 11.6h9.6c-1-1-1.6-2-1.6-3.8V6.4a3.2 3.2 0 0 0-6.4 0v1.4c0 1.8-.6 2.8-1.6 3.8z" />
+      <path d="M6.6 13.4a1.5 1.5 0 0 0 2.8 0" />
+    </>
+  ),
+  sun: (
+    <>
+      <circle cx="8" cy="8" r="3.2" />
+      <path d="M8 1.4v1.8M8 12.8v1.8M1.4 8h1.8M12.8 8h1.8M3.3 3.3l1.3 1.3M11.4 11.4l1.3 1.3M12.7 3.3l-1.3 1.3M4.6 11.4l-1.3 1.3" />
+    </>
+  ),
+  moon: (
+    <>
+      <path d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7z" />
+    </>
+  ),
+  sliders: (
+    <>
+      <path d="M2.6 4.6h10.8M2.6 11.4h10.8" />
+      <circle cx="6" cy="4.6" r="1.6" />
+      <circle cx="10" cy="11.4" r="1.6" />
+    </>
+  ),
+  headset: (
+    <>
+      <path d="M2.8 9.6v-1a5.2 5.2 0 0 1 10.4 0v1" />
+      <path d="M2.8 9.2h1.6a.8.8 0 0 1 .8.8v2.4a.8.8 0 0 1-.8.8H2.8zM13.2 9.2h-1.6a.8.8 0 0 0-.8.8v2.4a.8.8 0 0 0 .8.8h1.6z" />
+    </>
+  ),
+  member: (
+    <>
+      <path d="M8 1.6l5.4 3.2v6.4L8 14.4 2.6 11.2V4.8z" />
+      <path d="M8 1.6v6.2m0 0l5.4-3.2M8 7.8L2.6 4.8" />
+    </>
+  ),
+  apps: (
+    <>
+      <path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" />
+    </>
+  ),
+  ai: (
+    <>
+      <path d="M8 2.4l1.3 3.4 3.4 1.3-3.4 1.3L8 11.8 6.7 8.4 3.3 7.1l3.4-1.3z" />
+      <path d="M12.6 11.4l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" />
+    </>
+  ),
+  aippt: (
+    <>
+      <path d="M2.6 2.6h10.8v8H2.6z" />
+      <path d="M5.4 13.4h5.2M6.4 5.4h3.2M6.4 7.8h4.4" />
+    </>
+  ),
+  wps365: (
+    <>
+      <path d="M8 1.8l5.6 3.2v6L8 14.2 2.4 11V5z" />
+      <path d="M5.6 6l2.4 4 2.4-4" />
+    </>
+  ),
+  folder: (
+    <>
+      <path d="M2.2 3.6h4l1.4 1.6h6.2v7.4H2.2z" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3.4 4.6h9.2M6.4 4.6V3h3.2v1.6M4.6 4.6l.6 8h5.6l.6-8M6.8 6.8v3.8M9.2 6.8v3.8" />
+    </>
+  ),
+  desktop: (
+    <>
+      <path d="M2.4 3h11.2v7H2.4zM6 12.4h4M8 10v2.4" />
+    </>
+  ),
+  'download-file': (
+    <>
+      <path d="M8 2.6v7M5.2 7l2.8 2.8L10.8 7M3.4 12.4h9.2" />
+    </>
+  ),
+  globe: (
+    <>
+      <circle cx="8" cy="8" r="5.4" />
+      <path d="M2.6 8h10.8M8 2.6c1.6 1.5 2.4 3.3 2.4 5.4S9.6 11.9 8 13.4C6.4 11.9 5.6 10.1 5.6 8S6.4 4.1 8 2.6z" />
+    </>
+  ),
+  tag: (
+    <>
+      <path d="M2.6 2.6h5l5.8 5.8-5 5-5.8-5.8z" />
+      <circle cx="5.4" cy="5.4" r="0.9" />
+    </>
+  ),
+  device: (
+    <>
+      <path d="M4.6 2.2h6.8v11.6H4.6zM7 12.2h2" />
+    </>
+  ),
+  'cloud-off': (
+    <>
+      <path d="M4.6 12h6.8a2.6 2.6 0 0 0 .2-5.2 3.4 3.4 0 0 0-6.5-.6A2.6 2.6 0 0 0 4.6 12z" />
+      <path d="M2.6 2.6l10.8 10.8" />
+    </>
+  ),
+  wechat: (
+    <>
+      <path d="M6.4 2.8a4.4 4.4 0 0 0-4 4.4c0 1 .3 1.9.9 2.7L2.6 12l2.2-.7c.7.4 1.5.6 2.4.6" />
+      <path d="M13.4 9.8a3.6 3.6 0 0 0-3.6-3.4 3.6 3.6 0 0 0-3.6 3.4 3.6 3.6 0 0 0 3.6 3.4c.7 0 1.4-.2 2-.5l1.9.6-.5-1.7c.2-.5.2-1.1.2-1.8z" />
+    </>
+  ),
+  knowledge: (
+    <>
+      <path d="M8 2.2l5.4 2.4v3.6c0 3-2.2 5-5.4 6-3.2-1-5.4-3-5.4-6V4.6z" />
+      <path d="M5.8 7.9l1.6 1.6 3-3" />
+    </>
+  ),
+  'export-file': (
+    <>
+      <path d="M3.4 1.6h5.4l3.8 3.8v9H3.4z" />
+      <path d="M8.8 1.6v3.8h3.8M10 9.4l2.4-2.4 2.4 2.4M12.4 7v6" />
     </>
   ),
 }

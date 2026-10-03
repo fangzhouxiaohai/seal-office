@@ -128,10 +128,13 @@ export function 重算工作表(工作表: Sheet): Sheet {
   return { ...工作表, 单元格: 新单元格 }
 }
 
+let 工作表标识序号 = 0
+
 /** 创建空白工作表 */
 export function 创建工作表(名称: string, 行数 = 默认行数, 列数 = 默认列数): Sheet {
+  工作表标识序号 += 1
   const 工作表: Sheet = {
-    id: `sheet-${Date.now()}`,
+    id: `sheet-${Date.now()}-${工作表标识序号}`,
     name: 名称,
     单元格: {},
     行数,

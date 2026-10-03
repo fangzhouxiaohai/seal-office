@@ -3,6 +3,8 @@ dist/
 .vite/
 .npm-cache/
 release/
+release-final/
+renderer/tmp-test/
 *.log
 __app_run.log
 design/

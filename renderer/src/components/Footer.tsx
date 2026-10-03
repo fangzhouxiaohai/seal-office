@@ -7,7 +7,7 @@ interface Props {
   version?: string
 }
 
-const Footer = ({ total, starred, version = 'v1.0.0' }: Props) =>
+const Footer = ({ total, starred, version = `v${__APP_VERSION__}` }: Props) =>
   React.createElement(
     'footer',
     { className: 'wps-footer' },

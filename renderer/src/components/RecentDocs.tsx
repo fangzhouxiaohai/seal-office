@@ -17,7 +17,7 @@ interface Props {
   onSelect?: (标识: string) => void
   onOpen?: (标识: string) => void
   onToggleStar?: (标识: string) => void
-  onRename?: (标识: string, 名称: string) => void
+  onRename?: (标识: string, 名称: string) => Promise<void> | void
   onRemove?: (标识: string) => void
   onViewModeChange?: (模式: ViewMode) => void
   onSortChange?: (键: SortKey) => void
@@ -123,8 +123,8 @@ const RecentDocs = ({
     docs.length === 0
       ? React.createElement(EmptyState, {
           title: '暂无最近文档',
-          description: '新建一个文档，这里会显示最近打开过的文件',
-          actionText: '新建文档',
+          description: '打开本地文件后，最近使用的文档会显示在这里',
+          actionText: '打开文件',
           onAction: onEmptyAction,
         })
       : viewMode === 'grid'

@@ -1,19 +1,276 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import PptEditor from './PptEditor'
+import { AppProvider, useAppStore } from '../store'
+import { 创建演示文稿 } from './deck'
 
 const 渲染演示 = () =>
   render(
     <ConfigProvider button={{ autoInsertSpace: false }}>
       <AntdApp>
-        <PptEditor />
+        <AppProvider>
+          <PptEditor />
+        </AppProvider>
       </AntdApp>
     </ConfigProvider>
   )
 
+afterEach(() => {
+  Reflect.deleteProperty(window, 'electronAPI')
+})
+
 describe('演示文稿编辑器容器', () => {
+  it('保存失败时弹窗展示磁盘错误', async () => {
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+        backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+        saveToFile: vi.fn().mockResolvedValue({ 成功: false, 错误: '磁盘已满' }),
+        office: { writePptx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+      },
+    })
+    const 创建入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx' })}>打开演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开演示' }))
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    expect((await screen.findAllByText('保存失败')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('磁盘已满').length).toBeGreaterThan(0)
+  })
+
+  it('每份演示保留独立撤销历史', async () => {
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿('甲'), { 路径: 'C:\\资料\\甲.pptx' })}>打开甲</button>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿('乙'), { 路径: 'C:\\资料\\乙.pptx' })}>打开乙</button>
+        <button onClick={() => 状态.setActiveDocumentId(状态.documents.find((项) => 项.name === '甲.pptx')?.id ?? null)}>切回甲</button>
+        <button onClick={() => 状态.setActiveDocumentId(状态.documents.find((项) => 项.name === '乙.pptx')?.id ?? null)}>切回乙</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开甲'))
+    await userEvent.click(container.querySelector('.wps-ppt-thumbs__create') as HTMLElement)
+    expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
+    await userEvent.click(screen.getByText('打开乙'))
+    await userEvent.click(container.querySelector('.wps-ppt-thumbs__create') as HTMLElement)
+    expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
+    await userEvent.click(screen.getByText('切回甲'))
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    await waitFor(() => expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(1))
+    await userEvent.click(screen.getByText('切回乙'))
+    expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    await waitFor(() => expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(1))
+  })
+  it('工具栏打开另一份演示时新建标签并保留当前未保存内容', async () => {
+    const 第二份 = 创建演示文稿('第二份演示')
+    第二份.幻灯片列表[0].文本框列表[0].text = '第二份正文'
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+        backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+        showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\第二份.pptx'),
+        readFile: vi.fn().mockResolvedValue({ 成功: true, 二进制: true, 内容: 'AA==', 扩展名: '.pptx' }),
+        office: { readPptx: vi.fn().mockResolvedValue({ 成功: true, 演示文稿: 第二份, 警告: [] }) },
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      },
+    })
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿('第一份演示'), { 路径: 'C:\\资料\\第一份.pptx' })}>打开第一份</button>
+        <span data-testid="文档数量">{状态.documents.length}</span>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开第一份'))
+    await userEvent.click(container.querySelector('.wps-ppt-thumbs__create') as HTMLElement)
+    expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
+    await userEvent.click(screen.getByRole('button', { name: '打开' }))
+    await waitFor(() => expect(screen.getByTestId('文档数量')).toHaveTextContent('2'))
+    expect(container.querySelector('.wps-ppt-canvas')?.textContent).toContain('第二份正文')
+    await userEvent.click(screen.getByRole('tab', { name: '第一份.pptx' }))
+    await waitFor(() => expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2))
+  })
+
+  it('关闭演示标签前要求确认并可取消', async () => {
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx' })}>打开演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开演示' }))
+    await userEvent.click(screen.getByRole('button', { name: '关闭 汇报.pptx' }))
+    expect((await screen.findAllByText('关闭演示文稿')).length).toBeGreaterThan(0)
+    const 取消按钮 = await screen.findAllByRole('button', { name: /取\s*消/ })
+    await userEvent.click(取消按钮[取消按钮.length - 1])
+    expect(screen.getByRole('tab', { name: '汇报.pptx' })).toBeInTheDocument()
+  })
+  it('导入警告会弹窗提示，并禁止保存覆盖演示源文件', async () => {
+    const 写入 = vi.fn()
+    const 编码 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+        backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+        saveToFile: 写入,
+        office: { writePptx: 编码 },
+      },
+    })
+    const 创建入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx', 警告: ['图片尚未导入'] })}>打开带警告演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
+    expect((await screen.findAllByText('演示文稿内容可能未完整导入')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('图片尚未导入').length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    expect((await screen.findAllByText('已阻止覆盖来源文件')).length).toBeGreaterThan(0)
+    expect(编码).not.toHaveBeenCalled()
+    expect(写入).not.toHaveBeenCalled()
+  })
+
+  it('有保真风险的演示只能在确认后另存到不同路径', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    const 选择路径 = vi.fn().mockResolvedValueOnce('C:\\资料\\汇报.pptx').mockResolvedValueOnce('C:\\资料\\副本.pptx')
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+        backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+        showSaveDialog: 选择路径,
+        saveToFile: 写入,
+        office: { writePptx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+      },
+    })
+    const 创建入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx', 警告: ['图片尚未导入'] })}>打开带警告演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
+    await screen.findAllByText('演示文稿内容可能未完整导入')
+    await userEvent.click(screen.getByRole('button', { name: '另存为' }))
+    await waitFor(() => expect(选择路径).toHaveBeenCalledTimes(1))
+    expect(写入).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: '另存为' }))
+    expect((await screen.findAllByText('确认保存副本')).length).toBeGreaterThan(0)
+    const 确认按钮 = await screen.findAllByRole('button', { name: '保存副本' })
+    await userEvent.click(确认按钮[确认按钮.length - 1])
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\副本.pptx', 'UEsDBAo=', '二进制'))
+  })
+
+  it('切换演示时清除前一份文稿的选框与编辑状态', async () => {
+    const 共用标识 = '相同文本框标识'
+    const 创建内容 = (名称: string) => {
+      const 模型 = 创建演示文稿(名称)
+      模型.幻灯片列表[0].文本框列表[0].id = 共用标识
+      模型.幻灯片列表[0].文本框列表[0].text = 名称
+      return 模型
+    }
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建内容('甲演示'))}>打开甲演示</button>
+        <button onClick={() => 状态.createDoc('ppt', 创建内容('乙演示'))}>打开乙演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开甲演示'))
+    fireEvent.mouseDown(container.querySelector('.wps-ppt-box') as HTMLElement)
+    expect(container.querySelector('.wps-ppt-box--selected')).not.toBeNull()
+    await userEvent.click(screen.getByText('打开乙演示'))
+    await waitFor(() => expect(container.querySelector('.wps-ppt-canvas')?.textContent).toContain('乙演示'))
+    expect(container.querySelector('.wps-ppt-box--selected')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '加粗' }))
+    expect(await screen.findByText('请先在画布中选中一个文本框')).toBeInTheDocument()
+  })
+  it('返回首页后重新打开同一文件仍显示未保存的幻灯片', async () => {
+    const 路径 = 'C:\\资料\\汇报.pptx'
+    const 最近记录 = { id: 'recent-report', name: '汇报.pptx', type: 'ppt' as const, size: 0, updatedAt: '2026-10-03', starred: false, shared: false, 路径 }
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径 })}>首次打开演示</button>
+        <button onClick={状态.goHome}>返回首页</button>
+        <button onClick={() => void 状态.openDoc(最近记录)}>再次打开演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('首次打开演示'))
+    await userEvent.click(container.querySelector('.wps-ppt-thumbs__create') as HTMLElement)
+    expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
+    await userEvent.click(screen.getByText('返回首页'))
+    await userEvent.click(screen.getByText('再次打开演示'))
+    await waitFor(() => expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2))
+  })
+
+  it('打开第二份演示后保存仅写入第二份内容和路径', async () => {
+    const writePptx = vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' })
+    const saveToFile = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        office: { writePptx },
+        saveToFile,
+      },
+    })
+    const 创建内容 = (名称: string) => {
+      const 模型 = 创建演示文稿(名称)
+      模型.幻灯片列表[0].文本框列表[0].text = 名称
+      return 模型
+    }
+    const 导航 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建内容('甲演示'), { 路径: 'C:\\资料\\甲.pptx' })}>打开甲演示</button>
+        <button onClick={() => 状态.createDoc('ppt', 创建内容('乙演示'), { 路径: 'C:\\资料\\乙.pptx' })}>打开乙演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><导航 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开甲演示'))
+    await waitFor(() => expect(container.querySelector('.wps-ppt-canvas')?.textContent).toContain('甲演示'))
+    await userEvent.click(screen.getByText('打开乙演示'))
+    await waitFor(() => expect(container.querySelector('.wps-ppt-canvas')?.textContent).toContain('乙演示'))
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(saveToFile).toHaveBeenCalledWith('C:\\资料\\乙.pptx', 'UEsDBAo=', '二进制'))
+    const 导出模型 = JSON.stringify(writePptx.mock.calls[writePptx.mock.calls.length - 1]?.[0])
+    expect(导出模型).toContain('乙演示')
+    expect(导出模型).not.toContain('甲演示')
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
   it('渲染 Ribbon 八标签', () => {
     渲染演示()
     ;['开始', '插入', '设计', '切换', '动画', '幻灯片放映', '审阅', '视图'].forEach((名称) => {

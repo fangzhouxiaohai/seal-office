@@ -101,12 +101,22 @@ function 开关格式命令(
 }
 
 /** 直接设置型格式命令 */
-function 设置格式命令(id: string, label: string, 格式: Partial<CellFormat>): 表格命令 {
+function 设置格式命令(
+  id: string,
+  label: string,
+  格式: Partial<CellFormat>,
+  /** 下拉命令的可覆盖字段：下拉选中的值作为参数传入时覆盖该字段 */
+  参数字段?: keyof CellFormat
+): 表格命令 {
   return {
     id,
     label,
-    run: (上下文) => {
-      上下文.更新工作表(设置格式(上下文.工作表, 选区区域(上下文), 格式))
+    run: (上下文, 参数) => {
+      const 最终格式 =
+        参数字段 !== undefined && typeof 参数 === 'string' && 参数.trim() !== ''
+          ? { ...格式, [参数字段]: 参数 }
+          : 格式
+      上下文.更新工作表(设置格式(上下文.工作表, 选区区域(上下文), 最终格式))
       上下文.notify(`已应用${label}`)
     },
   }
@@ -307,9 +317,60 @@ const 命令列表: 表格命令[] = [
   设置格式命令('cell.alignLeft', '左对齐', { 水平对齐: 'left' }),
   设置格式命令('cell.alignCenter', '居中', { 水平对齐: 'center' }),
   设置格式命令('cell.alignRight', '右对齐', { 水平对齐: 'right' }),
-  设置格式命令('cell.fill', '填充颜色', { 填充颜色: '#EBF1FE' }),
-  设置格式命令('cell.fontColor', '字体颜色', { 字体颜色: '#E34D59' }),
+  设置格式命令('cell.fill', '填充颜色', { 填充颜色: '#EBF1FE' }, '填充颜色'),
+  设置格式命令('cell.fontColor', '字体颜色', { 字体颜色: '#E34D59' }, '字体颜色'),
   设置格式命令('cell.wrap', '自动换行', { 自动换行: true }),
+  {
+    id: 'cell.border',
+    label: '边框',
+    run: (上下文, 参数) => {
+      // all=所有框线 outer=外侧框线 top/bottom/left/right=单边 none=清除；逐格写边框配置
+      const 样式 = 参数 ?? 'all'
+      const 裁剪后 = 裁剪选区(上下文.工作表, 上下文.选区)
+      const 位置列表 = 展开区域(生成区域地址(裁剪后.起点, 裁剪后.终点))
+      if (位置列表.length === 0) {
+        return
+      }
+      const 最小行 = Math.min(...位置列表.map((位置) => 位置.行))
+      const 最大行 = Math.max(...位置列表.map((位置) => 位置.行))
+      const 最小列 = Math.min(...位置列表.map((位置) => 位置.列))
+      const 最大列 = Math.max(...位置列表.map((位置) => 位置.列))
+      let 表 = 上下文.工作表
+      位置列表.forEach((位置) => {
+        let 边框: CellFormat['边框']
+        switch (样式) {
+          case 'none':
+            边框 = { 上: false, 下: false, 左: false, 右: false }
+            break
+          case 'top':
+            边框 = { 上: true, 下: false, 左: false, 右: false }
+            break
+          case 'bottom':
+            边框 = { 上: false, 下: true, 左: false, 右: false }
+            break
+          case 'left':
+            边框 = { 上: false, 下: false, 左: true, 右: false }
+            break
+          case 'right':
+            边框 = { 上: false, 下: false, 左: false, 右: true }
+            break
+          case 'outer':
+            边框 = {
+              上: 位置.行 === 最小行,
+              下: 位置.行 === 最大行,
+              左: 位置.列 === 最小列,
+              右: 位置.列 === 最大列,
+            }
+            break
+          default:
+            边框 = { 上: true, 下: true, 左: true, 右: true }
+        }
+        表 = 设置格式(表, 生成地址(位置.行, 位置.列), { 边框 })
+      })
+      上下文.更新工作表(表)
+      上下文.notify('边框已更新')
+    },
+  },
   {
     id: 'cell.mergeCenter',
     label: '合并后居中',

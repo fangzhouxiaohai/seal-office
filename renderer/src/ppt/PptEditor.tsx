@@ -1,9 +1,10 @@
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
 import { 下载文本 } from '../editor/exportDoc'
+import DocumentTabs from '../editor/DocumentTabs'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 演示标签 } from './ribbonSpecs'
@@ -20,34 +21,164 @@ import {
 import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { PptStatusBar, ThumbnailList } from './PptChrome'
 import SlideCanvas from './SlideCanvas'
+import SlideshowView from './SlideshowView'
 import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
+import { useAppStore } from '../store'
+import { 记录最近文档 } from '../fileOpen'
+
+/** 取路径中的文件名，供最近文档记录使用 */
+const 基准名 = (路径: string): string => {
+  const 规整 = 路径.split('\\').join('/')
+  const 部件 = 规整.split('/').filter((项) => 项.length > 0)
+  return 部件.length > 0 ? 部件[部件.length - 1] : 路径
+}
+
+const 是同一路径 = (左: string, 右: string): boolean =>
+  左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
 
 const PptEditor = () => {
-  const { message } = AntdApp.useApp()
-  const [文稿, set文稿] = useState<演示文稿>(() => 创建演示文稿())
+  const { message, modal } = AntdApp.useApp()
+  const { documents, createDoc, createEditorDoc, closeEditorDoc, setActiveDocumentId, 演示文档模型, 更新演示文档模型, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径 } = useAppStore()
+  const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
+  const [独立文稿, set独立文稿] = useState<演示文稿>(() => 创建演示文稿())
+  const 文稿 = activeDocumentId === null ? 独立文稿 : 演示文档模型[activeDocumentId]
+  if (!文稿) throw new Error('演示编辑状态缺失，已阻止覆盖文件')
+  const set文稿: React.Dispatch<React.SetStateAction<演示文稿>> = (更新) => {
+    if (activeDocumentId === null) set独立文稿(更新)
+    else 更新演示文档模型(activeDocumentId, 更新)
+  }
   const [选中框标识, set选中框标识] = useState<string | null>(null)
   const [编辑框标识, set编辑框标识] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
-  const [文档路径, set文档路径] = useState<string | null>(null)
+  const [文档路径, set文档路径] = useState<string | null>(() => 已知文档路径[activeDocumentId ?? ''] ?? null)
+
+  useEffect(() => {
+    set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)
+  }, [activeDocumentId, 已知文档路径])
+
+  const 记录当前路径 = (路径: string) => {
+    set文档路径(路径)
+    if (activeDocumentId !== null) 设置全局文档路径(activeDocumentId, 路径)
+  }
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
   const [选中起始, set选中起始] = useState<number | undefined>(undefined)
   const [选中结束, set选中结束] = useState<number | undefined>(undefined)
+  /** 放映状态：放映中显示全屏视图，索引独立于编辑器的当前页 */
+  const [放映中, set放映中] = useState(false)
+  const [放映索引, set放映索引] = useState(0)
   /** 下拉框打开时保存的选区快照，防止焦点转移导致选区丢失 */
   const 选区快照 = useRef<{ 起始?: number; 结束?: number } | null>(null)
   /** 记录最后一次选中的文本框标识，防止打开下拉框时画布点击清除选框后命令找不到目标 */
   const 最近选中框标识 = useRef<string | null>(null)
-  const 历史 = useMemo(() => new HistoryStack<演示文稿>(), [])
+  const 历史表 = useRef<Map<string, HistoryStack<演示文稿>>>(new Map())
+  const 历史标识 = activeDocumentId ?? '独立文稿'
+  let 历史 = 历史表.current.get(历史标识)
+  if (历史 === undefined) {
+    历史 = new HistoryStack<演示文稿>()
+    历史表.current.set(历史标识, 历史)
+  }
+  const 已提示警告 = useRef<Set<string>>(new Set())
+  const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
+    ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
+    : null
+
+  const 显示文件错误 = (标题: string, 原因: string) => {
+    modal.error({ title: 标题, content: 原因 })
+  }
+
+  const 展示导入警告 = (警告: string[]) => {
+    modal.warning({
+      title: '演示文稿内容可能未完整导入',
+      content: React.createElement('div', null,
+        React.createElement('p', null, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
+        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+      ),
+      okText: '我知道了',
+    })
+  }
+
+  const 提示禁止覆盖 = (警告: string[]) => {
+    modal.warning({
+      title: '已阻止覆盖来源文件',
+      content: React.createElement('div', null,
+        React.createElement('p', null, '当前版本无法完整保留此演示文稿的内容。请通过另存为保存到不同路径。'),
+        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+      ),
+      okText: '我知道了',
+    })
+  }
+
+  const 确认保存副本 = (警告: string[]): Promise<boolean> => new Promise((完成) => {
+    modal.confirm({
+      title: '确认保存副本',
+      content: React.createElement('div', null,
+        React.createElement('p', null, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
+        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+      ),
+      okText: '保存副本',
+      cancelText: '取消',
+      onOk: () => 完成(true),
+      onCancel: () => 完成(false),
+    })
+  })
+
+  useEffect(() => {
+    set选中框标识(null)
+    set编辑框标识(null)
+    set编辑值('')
+    set选中起始(undefined)
+    set选中结束(undefined)
+    set菜单可见(false)
+    set放映中(false)
+    set放映索引(0)
+    选区快照.current = null
+    最近选中框标识.current = null
+  }, [activeDocumentId])
+
+  useEffect(() => {
+    if (当前文档?.警告?.length && !已提示警告.current.has(当前文档.id)) {
+      已提示警告.current.add(当前文档.id)
+      展示导入警告(当前文档.警告)
+    }
+  }, [当前文档?.id, 当前文档?.警告])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
   useEffect(() => {
-    历史.record(文稿)
-    // 仅在挂载时记录一次初始快照
+    if (历史.current() === null) 历史.record(文稿)
+    // 新建历史栈或切换文档时记录该文档的初始状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [历史])
+
+  // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
+  const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
+  放映键处理引用.current = (事件: KeyboardEvent) => {
+    if (事件.key !== 'F5') {
+      return
+    }
+    事件.preventDefault()
+    set放映索引(事件.shiftKey ? 文稿.当前索引 : 0)
+    set放映中(true)
+  }
+  useEffect(() => {
+    const 监听 = (事件: KeyboardEvent) => 放映键处理引用.current(事件)
+    document.addEventListener('keydown', 监听)
+    return () => document.removeEventListener('keydown', 监听)
   }, [])
+
+  /** 放映中翻页：直接同步当前页，不写入撤销历史 */
+  const 放映翻页 = (目标索引: number) => {
+    set放映索引(目标索引)
+    set文稿((当前) => ({ ...当前, 当前索引: 目标索引 }))
+  }
+
+  /** 退出放映：停留于最后浏览的页面 */
+  const 退出放映 = () => {
+    set放映中(false)
+  }
 
   const 当前幻灯片 = 读取当前幻灯片(文稿)
 
@@ -129,6 +260,12 @@ const PptEditor = () => {
       message.info('已切换到普通视图')
       return
     }
+    if (标识 === 'slideshow.start' || 标识 === 'slideshow.current') {
+      // F5 从头放映，Shift+F5 从当前页放映
+      set放映索引(标识 === 'slideshow.start' ? 0 : 文稿.当前索引)
+      set放映中(true)
+      return
+    }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
       set缩放((当前) =>
         Math.min(2, Math.max(0.5, Number((当前 + (标识 === 'view.zoomIn' ? 0.1 : -0.1)).toFixed(2))))
@@ -151,7 +288,7 @@ const PptEditor = () => {
         message.info('当前环境不支持打开文件功能，请使用打包后的版本')
         return
       }
-      桥接.showOpenDialog().then((文件路径) => {
+      桥接.showOpenDialog('ppt' as const).then((文件路径) => {
         if (文件路径) {
           // 判断文件扩展名
           const 扩展 = 文件路径.slice((文件路径.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase()
@@ -161,21 +298,21 @@ const PptEditor = () => {
               if (读取结果.成功 && 读取结果.二进制 && 读取结果.内容) {
                 桥接.office.readPptx(读取结果.内容).then((解析结果) => {
                   if (解析结果 && 解析结果.演示文稿) {
-                    set文稿(解析结果.演示文稿)
-                    set文档路径(文件路径)
-                    历史.record(解析结果.演示文稿)
+                    const 警告 = Array.isArray(解析结果.警告) ? 解析结果.警告 as string[] : []
+                    createDoc('ppt', 解析结果.演示文稿, { 路径: 文件路径, 警告 })
+                    void 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
                     message.success('文件已打开')
                   } else {
-                    message.error('演示文稿格式转换失败，请检查内容后重试')
+                    显示文件错误('打开文件失败', 解析结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
                   }
                 }).catch((error: unknown) => {
-                  message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+                  显示文件错误('打开文件失败', (error as Error).message || '未知错误')
                 })
               } else {
-                message.error('文件读取失败')
+                显示文件错误('打开文件失败', 读取结果.错误 || '文件读取失败')
               }
             }).catch((error: unknown) => {
-              message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+              显示文件错误('打开文件失败', (error as Error).message || '未知错误')
             })
           } else {
             // json 文件：直接解析
@@ -183,23 +320,21 @@ const PptEditor = () => {
               if (结果.成功 && 结果.内容) {
                 try {
                   const 数据 = JSON.parse(结果.内容) as 演示文稿
-                  set文稿(数据)
-                  set文档路径(文件路径)
-                  历史.record(数据)
-                  message.success('文件已打开')
-                } catch {
-                  message.error('文件格式不正确，无法打开')
+                  createDoc('ppt', 数据)
+                  message.success('已导入演示文稿，请另存为 PPTX 文件')
+                } catch (错误) {
+                  显示文件错误('打开文件失败', 错误 instanceof SyntaxError ? '文件格式不正确，无法打开' : 错误 instanceof Error ? 错误.message : '未知错误')
                 }
               } else {
-                message.error(`打开文件失败：${结果.错误}`)
+                显示文件错误('打开文件失败', 结果.错误 || '未知错误')
               }
             }).catch((error: unknown) => {
-              message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+              显示文件错误('打开文件失败', (error as Error).message || '未知错误')
             })
           }
         }
       }).catch((error: unknown) => {
-        message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+        显示文件错误('打开文件失败', (error as Error).message || '未知错误')
       })
       return
     }
@@ -208,35 +343,64 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
+      if (保真风险 && 文档路径 && 是同一路径(文档路径, 保真风险.来源路径)) {
+        提示禁止覆盖(保真风险.警告)
+        return
+      }
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
       const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.pptx`
-      桥接.showSaveDialog(默认路径).then((文件路径: string | null) => {
+      Promise.resolve(文档路径 ?? 桥接.showSaveDialog(默认路径, 'ppt' as const)).then((文件路径: string | null) => {
         if (文件路径) {
+          if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径)) {
+            提示禁止覆盖(保真风险.警告)
+            return
+          }
+          // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
+          // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
-            文本: 幻灯片.文本框列表.map((框) =>框.text).join('\n'),
+            背景色: 幻灯片.背景色,
+            文本框: 幻灯片.文本框列表.map((框) => ({
+              x: 框.x,
+              y: 框.y,
+              width: 框.width,
+              height: 框.height,
+              text: 框.text,
+              字号: 框.字号,
+              加粗: 框.加粗,
+              斜体: 框.斜体,
+              颜色: 框.颜色,
+              对齐: 框.对齐,
+              片段: (框.片段列表 ?? []).map((片段) => ({
+                文本: 片段.文本,
+                加粗: 片段.加粗 === true,
+                斜体: 片段.斜体 === true,
+                下划线: 片段.下划线 === true,
+                颜色: 片段.颜色,
+              })),
+            })),
           }))
           const 模型 = { 幻灯片: 幻灯片模型 }
           桥接.office.writePptx(模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               const 二进制内容 = 结果.数据
-              桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+              return 桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
                 if (保存结果.成功) {
-                  set文档路径(文件路径)
+                  记录当前路径(文件路径)
                   set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
                   message.success('文件已保存')
                 } else {
-                  message.error(`保存失败：${保存结果.错误}`)
+                  显示文件错误('保存失败', 保存结果.错误 || '未知错误')
                 }
               })
             } else {
-              message.error('生成演示文稿文件失败，请重试')
+              显示文件错误('保存失败', 结果?.错误 || '生成演示文稿文件失败，请重试')
             }
           }).catch((error: unknown) => {
-            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+            显示文件错误('保存失败', (error as Error).message || '未知错误')
           })
         }
       }).catch((error: unknown) => {
-        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+        显示文件错误('保存失败', (error as Error).message || '未知错误')
       })
       return
     }
@@ -246,33 +410,61 @@ const PptEditor = () => {
         return
       }
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
-      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`).then((文件路径: string | null) => {
+      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (文件路径: string | null) => {
         if (文件路径) {
+          if (保真风险) {
+            if (是同一路径(文件路径, 保真风险.来源路径)) {
+              提示禁止覆盖(保真风险.警告)
+              return
+            }
+            if (!await 确认保存副本(保真风险.警告)) return
+          }
+          // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
+          // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
-            文本: 幻灯片.文本框列表.map((框) =>框.text).join('\n'),
+            背景色: 幻灯片.背景色,
+            文本框: 幻灯片.文本框列表.map((框) => ({
+              x: 框.x,
+              y: 框.y,
+              width: 框.width,
+              height: 框.height,
+              text: 框.text,
+              字号: 框.字号,
+              加粗: 框.加粗,
+              斜体: 框.斜体,
+              颜色: 框.颜色,
+              对齐: 框.对齐,
+              片段: (框.片段列表 ?? []).map((片段) => ({
+                文本: 片段.文本,
+                加粗: 片段.加粗 === true,
+                斜体: 片段.斜体 === true,
+                下划线: 片段.下划线 === true,
+                颜色: 片段.颜色,
+              })),
+            })),
           }))
           const 模型 = { 幻灯片: 幻灯片模型 }
           桥接.office.writePptx(模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               const 二进制内容 = 结果.数据
-              桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
+              return 桥接.saveToFile(文件路径, 二进制内容, '二进制').then((保存结果: any) => {
                 if (保存结果.成功) {
-                  set文档路径(文件路径)
+                  记录当前路径(文件路径)
                   set文稿((prev: any) => ({ ...prev, name: 基准名 || '未命名演示' }))
                   message.success('文件已另存为')
                 } else {
-                  message.error(`保存失败：${保存结果.错误}`)
+                  显示文件错误('保存失败', 保存结果.错误 || '未知错误')
                 }
               })
             } else {
-              message.error('生成演示文稿文件失败，请重试')
+              显示文件错误('保存失败', 结果?.错误 || '生成演示文稿文件失败，请重试')
             }
           }).catch((error: unknown) => {
-            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+            显示文件错误('保存失败', (error as Error).message || '未知错误')
           })
         }
       }).catch((error: unknown) => {
-        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+        显示文件错误('保存失败', (error as Error).message || '未知错误')
       })
       return
     }
@@ -379,6 +571,23 @@ const PptEditor = () => {
   return React.createElement(
     React.Fragment,
     null,
+    React.createElement(DocumentTabs, {
+      documents: documents.filter((项) => 项.type === 'ppt').map((项) => ({ id: 项.id, name: 项.name })),
+      activeId: activeDocumentId,
+      onSelect: setActiveDocumentId,
+      onCreate: createEditorDoc,
+      onClose: (标识: string) => {
+        const 文档 = documents.find((项) => 项.id === 标识)
+        if (!文档) return
+        modal.confirm({
+          title: '关闭演示文稿',
+          content: `关闭「${文档.name}」将放弃未保存的修改。`,
+          okText: '关闭文档',
+          cancelText: '取消',
+          onOk: () => closeEditorDoc(标识),
+        })
+      },
+    }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
@@ -401,6 +610,7 @@ const PptEditor = () => {
       当前幻灯片 === null
         ? React.createElement('div', { className: 'wps-ppt-empty' }, '暂无幻灯片')
         : React.createElement(SlideCanvas, {
+            key: 历史标识,
             幻灯片: 当前幻灯片,
             选中框标识,
             缩放,
@@ -449,7 +659,15 @@ const PptEditor = () => {
         执行命令(命令标识, 参数)
         关闭菜单()
       },
-    })
+    }),
+    放映中
+      ? React.createElement(SlideshowView, {
+          文稿,
+          当前索引: 放映索引,
+          on翻页: 放映翻页,
+          on退出: 退出放映,
+        })
+      : null
   )
 }
 

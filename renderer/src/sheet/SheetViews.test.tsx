@@ -73,7 +73,7 @@ describe('表格网格', () => {
     const 选中 = vi.fn()
     const { container } = 渲染网格({ on选中: 选中 })
     const 单元格 = container.querySelector('[data-地址="C3"]') as HTMLElement
-    fireEvent.click(单元格, { shiftKey: true })
+    fireEvent.mouseDown(单元格, { button: 0, shiftKey: true })
     expect(选中).toHaveBeenCalledWith({ 行: 2, 列: 2 }, true)
   })
 
@@ -152,5 +152,43 @@ describe('名称框与公式栏', () => {
     )
     rerender(<SheetToolbar 地址文本="D4" 公式值="" on地址提交={() => {}} on公式提交={() => {}} />)
     expect(screen.getByDisplayValue('D4')).toBeInTheDocument()
+  })
+})
+
+describe('表格选区反向扩展', () => {
+  it('反向选区（终点在起点上方）仍高亮全部覆盖的单元格', () => {
+    const { container } = 渲染网格({
+      选区: { 起点: { 行: 2, 列: 2 }, 终点: { 行: 0, 列: 0 } },
+    })
+    expect(container.querySelectorAll('.wps-sheet__cell--selected')).toHaveLength(9)
+  })
+
+  it('反向选区（终点在起点左侧）仍高亮覆盖单元格', () => {
+    const { container } = 渲染网格({
+      选区: { 起点: { 行: 1, 列: 2 }, 终点: { 行: 1, 列: 0 } },
+    })
+    expect(container.querySelectorAll('.wps-sheet__cell--selected')).toHaveLength(3)
+  })
+})
+
+describe('表格边框渲染', () => {
+  it('带边框配置的单元格渲染内阴影', () => {
+    const 表 = 写入单元格(构造工作表(), 'A1', '带框')
+    const 带框表 = {
+      ...表,
+      单元格: {
+        ...表.单元格,
+        A1: { ...表.单元格.A1, 格式: { ...表.单元格.A1.格式, 边框: { 上: true, 下: true, 左: true, 右: true } } },
+      },
+    }
+    const { container } = 渲染网格({ 工作表: 带框表 })
+    const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    expect(单元.style.boxShadow).toContain('inset')
+  })
+
+  it('无边框配置的单元格无内阴影', () => {
+    const { container } = 渲染网格()
+    const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    expect((单元.style.boxShadow ?? '') === '').toBe(true)
   })
 })

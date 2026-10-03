@@ -289,3 +289,57 @@ describe('表格命令：全选', () => {
     })
   })
 })
+
+describe('表格命令：颜色下拉参数', () => {
+  it('字体颜色下拉选中的颜色值作为参数生效，而非固定默认色', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.fontColor')?.run(上下文, '#2B6CF6')
+    expect(读取单元格(取最新(), 'A1').格式.字体颜色).toBe('#2B6CF6')
+  })
+
+  it('填充颜色下拉选中的颜色值作为参数生效', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.fill')?.run(上下文, '#E8F7F1')
+    expect(读取单元格(取最新(), 'A1').格式.填充颜色).toBe('#E8F7F1')
+  })
+
+  it('不带参数时回落到默认颜色', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.fontColor')?.run(上下文)
+    expect(读取单元格(取最新(), 'A1').格式.字体颜色).toBe('#E34D59')
+  })
+})
+
+describe('表格命令：边框', () => {
+  it('所有框线为四边全开', () => {
+    const { 上下文, 取最新 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 1, 列: 1 } })
+    查找表格命令('cell.border')?.run(上下文, 'all')
+    const 表 = 取最新()
+    expect(读取单元格(表, 'A1').格式.边框).toEqual({ 上: true, 下: true, 左: true, 右: true })
+    expect(读取单元格(表, 'B2').格式.边框).toEqual({ 上: true, 下: true, 左: true, 右: true })
+  })
+
+  it('外侧框线只在区域周圈，内部格无边框', () => {
+    const { 上下文, 取最新 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 1, 列: 1 } })
+    查找表格命令('cell.border')?.run(上下文, 'outer')
+    const 表 = 取最新()
+    expect(读取单元格(表, 'A1').格式.边框).toEqual({ 上: true, 下: false, 左: true, 右: false })
+    expect(读取单元格(表, 'B2').格式.边框).toEqual({ 上: false, 下: true, 左: false, 右: true })
+    expect(读取单元格(表, 'A2').格式.边框).toEqual({ 上: false, 下: true, 左: true, 右: false })
+    expect(读取单元格(表, 'B1').格式.边框).toEqual({ 上: true, 下: false, 左: false, 右: true })
+  })
+
+  it('单边与清除', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.border')?.run(上下文, 'top')
+    expect(读取单元格(取最新(), 'A1').格式.边框).toEqual({ 上: true, 下: false, 左: false, 右: false })
+    查找表格命令('cell.border')?.run(上下文, 'none')
+    expect(读取单元格(取最新(), 'A1').格式.边框).toEqual({ 上: false, 下: false, 左: false, 右: false })
+  })
+
+  it('不带参数时默认所有框线', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.border')?.run(上下文)
+    expect(读取单元格(取最新(), 'A1').格式.边框).toEqual({ 上: true, 下: true, 左: true, 右: true })
+  })
+})

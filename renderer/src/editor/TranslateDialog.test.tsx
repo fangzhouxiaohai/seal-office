@@ -74,6 +74,16 @@ describe('文字翻译面板', () => {
     expect(翻译文本).toHaveBeenCalledTimes(1)
   })
 
+  it('翻译配置损坏时通过弹窗报告且不调用服务', async () => {
+    vi.mocked(读取翻译配置).mockImplementation(() => { throw new Error('配置损坏') })
+    渲染面板()
+    await userEvent.type(screen.getByPlaceholderText('在此输入要翻译的内容'), '你好')
+    await userEvent.click(screen.getByRole('button', { name: '翻译' }))
+    expect((await screen.findAllByText('读取翻译设置失败')).length).toBeGreaterThan(0)
+    expect(await screen.findByText('配置损坏')).toBeInTheDocument()
+    expect(翻译文本).not.toHaveBeenCalled()
+  })
+
   it('点击关闭回传关闭事件', async () => {
     const { 回调 } = 渲染面板()
     await userEvent.click(screen.getByRole('button', { name: '关闭' }))

@@ -1,6 +1,23 @@
-const { app } = require('electron')
+const { app, BrowserWindow } = require('electron')
+
+const 未保存风险数量 = new WeakMap()
+
+function 获取未保存风险数量(窗口) {
+  return 未保存风险数量.get(窗口) ?? 0
+}
 
 function 注册系统通道(ipcMain) {
+  ipcMain.handle('system.reportUnsavedCount', async (事件, 数量) => {
+    if (!Number.isSafeInteger(数量) || 数量 < 0) {
+      return { 成功: false, 错误: '未保存文档数量无效' }
+    }
+    const 窗口 = BrowserWindow.fromWebContents(事件?.sender)
+    if (!窗口 || 窗口.isDestroyed?.()) {
+      return { 成功: false, 错误: '无法确定当前窗口' }
+    }
+    未保存风险数量.set(窗口, 数量)
+    return { 成功: true }
+  })
   ipcMain.handle('system.setDefaultApp', async () => ({
     成功: false,
     需要管理员权限: true,
@@ -19,4 +36,4 @@ function 注册系统通道(ipcMain) {
   }))
 }
 
-module.exports = { 注册系统通道 }
+module.exports = { 注册系统通道, 获取未保存风险数量 }

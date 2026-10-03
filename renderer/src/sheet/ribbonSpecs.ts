@@ -63,6 +63,15 @@ const 开始标签: RibbonTabSpec = {
           { label: '浅绿', value: '#E8F7F1' },
           { label: '浅黄', value: '#FFF3B0' },
         ], '填充颜色'),
+        下拉('cell.border', '边框', 'table', [
+          { label: '所有框线', value: 'all' },
+          { label: '外侧框线', value: 'outer' },
+          { label: '上框线', value: 'top' },
+          { label: '下框线', value: 'bottom' },
+          { label: '左框线', value: 'left' },
+          { label: '右框线', value: 'right' },
+          { label: '无框线', value: 'none' },
+        ], '边框'),
       ],
     },
     {

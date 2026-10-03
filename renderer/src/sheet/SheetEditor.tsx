@@ -26,11 +26,45 @@ import SheetToolbar from './SheetToolbar'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
 import ContextMenu from '../components/ContextMenu'
 import type { 菜单节点 } from '../components/ContextMenu'
+import { useAppStore } from '../store'
+import { 记录最近文档 } from '../fileOpen'
+import { 从Html表格构建工作表 } from './sheetImport'
+import DocumentTabs from '../editor/DocumentTabs'
+
+/** 取路径中的文件名，供最近文档记录使用 */
+const 基准名 = (路径: string): string => {
+  const 规整 = 路径.split('\\').join('/')
+  const 部件 = 规整.split('/').filter((项) => 项.length > 0)
+  return 部件.length > 0 ? 部件[部件.length - 1] : 路径
+}
+
+const 规范表格路径 = (路径: string): string => /\.[^\\/]+$/.test(路径) ? 路径 : `${路径}.xlsx`
+const 是同一路径 = (左: string, 右: string): boolean =>
+  左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
 
 const SheetEditor = () => {
-  const { message } = AntdApp.useApp()
-  const [工作表列表, set工作表列表] = useState<Sheet[]>(() => [创建工作表('Sheet1')])
+  const { message, modal } = AntdApp.useApp()
+  const 提示文件错误 = (标题: string, 内容: string) => modal.error({ title: 标题, content: 内容 })
+  const {
+    documents, 表格文档模型, 更新表格文档模型, createDoc, createEditorDoc,
+    closeEditorDoc, setActiveDocumentId, activeDocumentId,
+    文档路径: 已知文档路径, set文档路径: 设置全局文档路径,
+  } = useAppStore()
+  const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
+  const 已开表格文档 = documents.filter((项) => 项.type === 'table')
+  const 已提示导入警告 = useRef<Set<string>>(new Set())
+  const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
+    ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
+    : null
+  const [独立工作表列表, set独立工作表列表] = useState<Sheet[]>(() => [创建工作表('Sheet1')])
+  const 工作表列表 = activeDocumentId === null ? 独立工作表列表 : 表格文档模型[activeDocumentId]
+  if (!工作表列表 || 工作表列表.length === 0) throw new Error('表格编辑状态缺失，已阻止覆盖文件')
+  const set工作表列表: React.Dispatch<React.SetStateAction<Sheet[]>> = (更新) => {
+    if (activeDocumentId === null) set独立工作表列表(更新)
+    else 更新表格文档模型(activeDocumentId, 更新)
+  }
   const [当前索引, set当前索引] = useState(0)
+  const 有效当前索引 = Math.min(Math.max(当前索引, 0), 工作表列表.length - 1)
   const [选区, set选区] = useState<选区范围>({
     起点: { 行: 0, 列: 0 },
     终点: { 行: 0, 列: 0 },
@@ -40,10 +74,51 @@ const SheetEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(true)
-  const [文档路径, set文档路径] = useState<string | null>(null)
+  const [文档路径, set文档路径] = useState<string | null>(() => 已知文档路径[activeDocumentId ?? ''] ?? null)
+
+  useEffect(() => {
+    set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)
+  }, [activeDocumentId, 已知文档路径])
+
+  const 记录当前路径 = (路径: string) => {
+    set文档路径(路径)
+    if (activeDocumentId !== null) 设置全局文档路径(activeDocumentId, 路径)
+  }
+  const 风险内容 = (警告: string[], 说明: string) => React.createElement('div', null,
+    React.createElement('p', null, 说明),
+    React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+  )
+  const 提示禁止覆盖 = (警告: string[]) => modal.warning({
+    title: '已阻止覆盖来源文件',
+    content: 风险内容(警告, '当前版本无法完整保留此表格的内容。请通过另存为保存到不同路径。'),
+    okText: '我知道了',
+  })
+  const 确认保存副本 = (警告: string[]): Promise<boolean> => new Promise((完成) => {
+    modal.confirm({
+      title: '确认保存副本',
+      content: 风险内容(警告, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
+      okText: '保存副本',
+      cancelText: '取消',
+      onOk: () => 完成(true),
+      onCancel: () => 完成(false),
+    })
+  })
+  useEffect(() => {
+    if (当前文档?.警告?.length && !已提示导入警告.current.has(当前文档.id)) {
+      已提示导入警告.current.add(当前文档.id)
+      modal.warning({
+        title: '表格内容可能未完整导入',
+        content: 风险内容(当前文档.警告, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
+        okText: '我知道了',
+      })
+    }
+  }, [当前文档?.id, 当前文档?.警告])
   /** 右键菜单状态 */
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
+  /** 查找栏状态（Ctrl+F） */
+  const [查找可见, set查找可见] = useState(false)
+  const [查找词, set查找词] = useState('')
 
   /** 关闭右键菜单 */
   const 关闭菜单 = (): void => {
@@ -79,12 +154,13 @@ const SheetEditor = () => {
     { type: 'divider' },
     { type: 'item', commandId: 'view.gridlines', label: 显示网格线 ? '隐藏网格线' : '显示网格线' },
   ]
-  const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [])
+  const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [activeDocumentId])
   /** 列宽拖动状态；拖动过程中不逐帧记录历史，只在开始时记录一次 */
   const 列宽拖动 = useRef<{ 列: number; 起始横坐标: number; 原宽: number } | null>(null)
 
   // 列宽拖动：监听文档级鼠标移动与松开，避免鼠标移出网格后卡住
   useEffect(() => {
+    列宽拖动.current = null
     const 处理移动 = (事件: MouseEvent) => {
       const 状态 = 列宽拖动.current
       if (状态 === null) {
@@ -92,7 +168,7 @@ const SheetEditor = () => {
       }
       const 新宽 = Math.max(40, 状态.原宽 + (事件.clientX - 状态.起始横坐标))
       set工作表列表((当前) =>
-        当前.map((项, 下标) => (下标 === 当前索引 ? 设置列宽(项, 状态.列, 新宽) : 项))
+        当前.map((项, 下标) => (下标 === 有效当前索引 ? 设置列宽(项, 状态.列, 新宽) : 项))
       )
     }
     const 处理松开 = () => {
@@ -104,20 +180,25 @@ const SheetEditor = () => {
       document.removeEventListener('mousemove', 处理移动)
       document.removeEventListener('mouseup', 处理松开)
     }
-  }, [当前索引])
+  }, [有效当前索引, activeDocumentId])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
   useEffect(() => {
     历史.record(工作表列表)
-    // 仅在挂载时记录一次初始快照
+    set当前索引(0)
+    set选区({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
+    set编辑地址(null)
+    set编辑值('')
+    set查找可见(false)
+    // 新建历史栈或切换文档时记录该文档的初始状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [历史])
 
-  const 工作表 = 工作表列表[当前索引]
+  const 工作表 = 工作表列表[有效当前索引]
 
   /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新工作表 = (新表: Sheet) => {
-    const 下一个 = 工作表列表.map((项, 下标) => (下标 === 当前索引 ? 新表 : 项))
+    const 下一个 = 工作表列表.map((项, 下标) => (下标 === 有效当前索引 ? 新表 : 项))
     历史.record(下一个)
     set工作表列表(下一个)
   }
@@ -163,9 +244,13 @@ const SheetEditor = () => {
       message.info(目标 ? '已显示网格线' : '已隐藏网格线')
       return
     }
+    if (标识 === 'edit.find') {
+      set查找可见(true)
+      return
+    }
     if (标识 === 'formula.calculate') {
       set工作表列表((当前) =>
-        当前.map((项, 下标) => (下标 === 当前索引 ? 重算工作表(项) : 项))
+        当前.map((项, 下标) => (下标 === 有效当前索引 ? 重算工作表(项) : 项))
       )
       message.info('已重新计算工作表')
       return
@@ -197,57 +282,92 @@ const SheetEditor = () => {
       }
       桥接.office.writeXlsx(模型).then((结果: any) => {
         if (!(结果 && 结果.成功 && 结果.数据)) {
-          message.error('表格格式转换失败，请检查内容后重试')
+          提示文件错误('导出表格失败', '表格格式转换失败，请检查内容后重试')
           return
         }
-        return 桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx')).then((文件路径) => {
+        return 桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx'), 'table' as const).then(async (文件路径) => {
           if (文件路径) {
+            if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径)) {
+              提示禁止覆盖(保真风险.警告)
+              return
+            }
+            if (保真风险 && !await 确认保存副本(保真风险.警告)) return
             return 桥接.saveToFile(文件路径, 结果.数据, '二进制').then((保存结果) => {
               if (保存结果.成功) {
                 message.success('已导出为表格文件')
               } else {
-                message.error(`导出失败：${保存结果.错误}`)
+                提示文件错误('导出表格失败', 保存结果.错误 || '文件写入失败')
               }
             })
           }
           return Promise.resolve()
         }).catch((error: unknown) => {
-          message.error(`导出失败：${(error as Error).message || '未知错误'}`)
+          提示文件错误('导出表格失败', (error as Error).message || '未知错误')
         })
       }).catch((error: unknown) => {
-        message.error(`导出失败：${(error as Error).message || '未知错误'}`)
+        提示文件错误('导出表格失败', (error as Error).message || '未知错误')
       })
       return
     }
-    // 文件操作命令
+    // 文件操作命令：表格文档的打开与保存类型就是 xlsx（json 仅作为旧格式兼容读取）
     if (标识 === 'file.open') {
       if (!桥接.可用) {
         message.info('当前环境不支持打开文件功能，请使用打包后的版本')
         return
       }
-      桥接.showOpenDialog().then((文件路径) => {
+      桥接.showOpenDialog('table' as const).then((文件路径) => {
         if (文件路径) {
           桥接.readFile(文件路径).then((结果) => {
-            if (结果.成功 && 结果.内容) {
+            if (!(结果.成功 && 结果.内容)) {
+              提示文件错误('打开表格失败', 结果.错误 || '文件读取失败')
+              return
+            }
+            const 扩展匹配 = 文件路径.match(/\.[^\/]+$/)
+            const 扩展 = (扩展匹配 !== null ? 扩展匹配[0] : '').toLowerCase()
+            if (扩展 === '.json') {
+              // 旧版私有格式：工作表列表 JSON
               try {
                 const 数据 = JSON.parse(结果.内容) as Sheet[]
-                set工作表列表(数据)
-                set当前索引(0)
-                set文档路径(文件路径)
-                历史.record(数据)
+                if (!Array.isArray(数据) || 数据.length === 0) {
+                  throw new Error('结构不正确')
+                }
+                createDoc('table', 数据, { 路径: 文件路径 })
+                记录最近文档(文件路径, 基准名(文件路径), 'table')
                 message.success('文件已打开')
               } catch {
-                message.error('文件格式不正确，无法打开')
+                提示文件错误('打开表格失败', '文件格式不正确，无法打开')
               }
-            } else {
-              message.error(`打开文件失败：${结果.错误}`)
+              return
             }
+            if (扩展 === '.xlsx' && 结果.二进制) {
+              // 标准 xlsx：主进程解析出全部工作表的 HTML，再逐表导入为工作表模型
+              桥接.office.readXlsx(结果.内容).then((解析: any) => {
+                const 表列表: Array<{ 名称: string; html: string }> | undefined = 解析?.工作表列表
+                if (!解析 || 解析.成功 === false || !表列表 || 表列表.length === 0) {
+                  提示文件错误('打开表格失败', 解析?.错误 || '表格内容解析失败')
+                  return
+                }
+                const 解析表 = 表列表.map((项) => 从Html表格构建工作表(项.html, 项.名称))
+                if (解析表.some((表) => 表 === null)) {
+                  提示文件错误('打开表格失败', '部分工作表内容解析失败，文件未打开')
+                  return
+                }
+                const 新表 = 解析表 as Sheet[]
+                createDoc('table', 新表, { 路径: 文件路径, 警告: Array.isArray(解析.警告) ? 解析.警告 : [] })
+                记录最近文档(文件路径, 基准名(文件路径), 'table')
+                message.success('文件已打开')
+              }).catch(() => {
+                提示文件错误('打开表格失败', '表格内容解析失败')
+              })
+              return
+            }
+            提示文件错误('打开表格失败', '请选择 xlsx 表格文件（或旧版 json 表格文件）')
           }).catch((error: unknown) => {
-            message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+            提示文件错误('打开表格失败', (error as Error).message || '未知错误')
           })
         }
       }).catch((error: unknown) => {
-        message.error(`打开文件失败：${(error as Error).message || '未知错误'}`)
+        提示文件错误('打开表格失败', (error as Error).message || '未知错误')
       })
       return
     }
@@ -256,23 +376,14 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(`${工作表.name}.json`)
+      // 无路径时弹出保存对话框（表格类型过滤器），有路径时静默保存
+      const 选择路径 = 文档路径 ?? 桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx'), 'table' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
-          const 内容 = JSON.stringify(工作表列表)
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
-            if (结果.成功) {
-              set文档路径(文件路径)
-              message.success('文件已保存')
-            } else {
-              message.error(`保存失败：${结果.错误}`)
-            }
-          }).catch((error: unknown) => {
-            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
-          })
+          保存表格文件(文件路径, '文件已保存')
         }
       }).catch((error: unknown) => {
-        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+        提示文件错误('保存表格失败', (error as Error).message || '未知错误')
       })
       return
     }
@@ -281,31 +392,92 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      桥接.showSaveDialog(`${工作表.name}.json`).then((文件路径) => {
+      桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx'), 'table' as const).then(async (文件路径) => {
         if (文件路径) {
-          const 内容 = JSON.stringify(工作表列表)
-          桥接.saveToFile(文件路径, 内容, '文本').then((结果) => {
-            if (结果.成功) {
-              set文档路径(文件路径)
-              message.success('文件已另存为')
-            } else {
-              message.error(`保存失败：${结果.错误}`)
-            }
-          }).catch((error: unknown) => {
-            message.error(`保存失败：${(error as Error).message || '未知错误'}`)
-          })
+          if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径)) {
+            提示禁止覆盖(保真风险.警告)
+            return
+          }
+          if (保真风险 && !await 确认保存副本(保真风险.警告)) return
+          保存表格文件(文件路径, '文件已另存为')
         }
       }).catch((error: unknown) => {
-        message.error(`保存失败：${(error as Error).message || '未知错误'}`)
+        提示文件错误('保存表格失败', (error as Error).message || '未知错误')
       })
       return
     }
     const 命令 = 查找表格命令(标识)
     if (命令 === undefined) {
-      message.error('该命令未注册')
+      提示文件错误('操作失败', '该命令未注册')
       return
     }
     命令.run(上下文, 参数)
+  }
+
+  /** 保存表格文档：xlsx 为标准格式（未带扩展名时补齐），旧版 json 路径兼容回写 */
+  const 保存表格文件 = (原始路径: string, 成功提示: string) => {
+    const 文件路径 = 规范表格路径(原始路径)
+    if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径)) {
+      提示禁止覆盖(保真风险.警告)
+      return
+    }
+    const 扩展匹配 = 文件路径.match(/\.[^\/]+$/)
+    const 扩展 = (扩展匹配 !== null ? 扩展匹配[0] : '').toLowerCase()
+    if (扩展 === '.json') {
+      桥接.saveToFile(文件路径, JSON.stringify(工作表列表), '文本').then((结果) => {
+        if (结果.成功) {
+          记录当前路径(文件路径)
+          记录最近文档(文件路径, 基准名(文件路径), 'table')
+          message.success(成功提示)
+        } else {
+          提示文件错误('保存表格失败', 结果.错误 || '文件写入失败')
+        }
+      }).catch((error: unknown) => {
+        提示文件错误('保存表格失败', (error as Error).message || '未知错误')
+      })
+      return
+    }
+    // 空工作簿也允许保存（与 WPS 行为一致），导出模型为空时回落为空表定义
+    const 模型 = 导出为Xlsx(工作表列表.length > 1 ? 工作表列表 : 工作表) ?? {
+      工作表: [{ 名称: 工作表.name, 数据: [] }],
+    }
+    桥接.office.writeXlsx(模型).then((结果: any) => {
+      if (!(结果 && 结果.成功 && 结果.数据)) {
+        提示文件错误('保存表格失败', 结果?.错误 || '表格格式转换失败，请检查内容后重试')
+        return
+      }
+      return 桥接.saveToFile(文件路径, 结果.数据, '二进制').then((保存结果) => {
+        if (保存结果.成功) {
+          记录当前路径(文件路径)
+          记录最近文档(文件路径, 基准名(文件路径), 'table')
+          message.success(成功提示)
+        } else {
+          提示文件错误('保存表格失败', 保存结果.错误 || '文件写入失败')
+        }
+      })
+    }).catch((error: unknown) => {
+      提示文件错误('保存表格失败', (error as Error).message || '未知错误')
+    })
+  }
+
+  /** 从当前选区起按行优先顺序查找下一个包含关键词的单元格（循环全表） */
+  const 查找下一个 = () => {
+    const 关键词 = 查找词.trim().toLowerCase()
+    if (关键词 === '') {
+      return
+    }
+    const 总数 = 工作表.行数 * 工作表.列数
+    for (let 步进 = 1; 步进 <= 总数; 步进 += 1) {
+      const 行 = (选区.起点.行 + Math.floor((选区.起点.列 + 步进) / 工作表.列数)) % 工作表.行数
+      const 列 = (选区.起点.列 + 步进) % 工作表.列数
+      const 显示 = 读取单元格(工作表, 生成地址(行, 列)).显示值.toLowerCase()
+      if (显示.includes(关键词)) {
+        set选区({ 起点: { 行, 列 }, 终点: { 行, 列 } })
+        message.success(`已定位到 ${生成地址(行, 列)}`)
+        return
+      }
+    }
+    message.info('没有找到匹配的单元格')
   }
 
   const 提交编辑 = () => {
@@ -341,6 +513,41 @@ const SheetEditor = () => {
         列: Math.max(0, Math.min(起点.列 + 列偏移, 工作表.列数 - 1)),
       }
       set选区({ 起点: 目标, 终点: 目标 })
+    }
+    /** Shift+方向键：锚定起点，仅移动终点扩展选区 */
+    const 扩展 = (行偏移: number, 列偏移: number) => {
+      const 新终点 = {
+        行: Math.max(0, Math.min(终点.行 + 行偏移, 工作表.行数 - 1)),
+        列: Math.max(0, Math.min(终点.列 + 列偏移, 工作表.列数 - 1)),
+      }
+      set选区({ 起点, 终点: 新终点 })
+    }
+    /** Ctrl+方向键：沿方向跳到连续数据区边缘或下一个非空格（与 WPS/Excel 行为一致） */
+    const 跳边缘 = (行步进: number, 列步进: number) => {
+      const 在界内 = (行: number, 列: number) =>
+        行 >= 0 && 行 < 工作表.行数 && 列 >= 0 && 列 < 工作表.列数
+      const 有值 = (行: number, 列: number) =>
+        在界内(行, 列) && 读取单元格(工作表, 生成地址(行, 列)).原始值 !== ''
+      let 行 = 起点.行
+      let 列 = 起点.列
+      const 邻格有值 = 有值(行 + 行步进, 列 + 列步进)
+      if (有值(行, 列) && 邻格有值) {
+        // 当前处于数据区内部：滑到最后一个连续非空格
+        while (有值(行 + 行步进, 列 + 列步进)) {
+          行 += 行步进
+          列 += 列步进
+        }
+      } else {
+        // 跳到方向上第一个非空格；没有则滑到工作表边缘
+        while (在界内(行 + 行步进, 列 + 列步进)) {
+          行 += 行步进
+          列 += 列步进
+          if (有值(行, 列)) {
+            break
+          }
+        }
+      }
+      set选区({ 起点: { 行, 列 }, 终点: { 行, 列 } })
     }
     const 进入编辑 = (初始值: string) => {
       set编辑地址(生成地址(起点.行, 起点.列))
@@ -417,6 +624,46 @@ const SheetEditor = () => {
           return
         }
         break
+      // ---- 剪切：复制首格并清空选区 ----
+      case 'x':
+        if (事件.ctrlKey || 事件.metaKey) {
+          事件.preventDefault()
+          const 剪切地址 = 生成地址(起点.行, 起点.列)
+          const 剪切值 = 读取单元格(工作表, 剪切地址).原始值
+          剪贴板.current = { 源地址: 剪切地址, 值: 剪切值 }
+          try {
+            navigator.clipboard?.writeText(剪切值)
+          } catch {
+            // 浏览器环境不可用时忽略
+          }
+          const 剪切区域 = 展开区域(生成区域地址(起点, 终点)).map((位置) =>
+            生成地址(位置.行, 位置.列)
+          )
+          更新工作表(清空单元格(工作表, 剪切区域))
+          message.success(`已剪切 ${剪切地址} 的内容`)
+          return
+        }
+        break
+      // ---- 保存 / 查找 ----
+      case 's':
+        if (事件.ctrlKey || 事件.metaKey) {
+          事件.preventDefault()
+          执行命令('file.save')
+          return
+        }
+        break
+      case 'f':
+        if (事件.ctrlKey || 事件.metaKey) {
+          事件.preventDefault()
+          set查找可见(true)
+          return
+        }
+        break
+      // ---- 回到 A1 ----
+      case 'Home':
+        事件.preventDefault()
+        set选区({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
+        return
       // ---- 自动求和 ----
       case '=':
         if (事件.altKey) {
@@ -428,19 +675,27 @@ const SheetEditor = () => {
       // ---- 方向键 / Tab / 编辑 / 删除（原有逻辑）----
       case 'ArrowUp':
         事件.preventDefault()
-        移动(-1, 0)
+        if (事件.ctrlKey || 事件.metaKey) 跳边缘(-1, 0)
+        else if (事件.shiftKey) 扩展(-1, 0)
+        else 移动(-1, 0)
         return
       case 'ArrowDown':
         事件.preventDefault()
-        移动(1, 0)
+        if (事件.ctrlKey || 事件.metaKey) 跳边缘(1, 0)
+        else if (事件.shiftKey) 扩展(1, 0)
+        else 移动(1, 0)
         return
       case 'ArrowLeft':
         事件.preventDefault()
-        移动(0, -1)
+        if (事件.ctrlKey || 事件.metaKey) 跳边缘(0, -1)
+        else if (事件.shiftKey) 扩展(0, -1)
+        else 移动(0, -1)
         return
       case 'ArrowRight':
         事件.preventDefault()
-        移动(0, 1)
+        if (事件.ctrlKey || 事件.metaKey) 跳边缘(0, 1)
+        else if (事件.shiftKey) 扩展(0, 1)
+        else 移动(0, 1)
         return
       case 'Tab':
         事件.preventDefault()
@@ -482,9 +737,28 @@ const SheetEditor = () => {
     return false
   }
 
+  const 处理关闭文档 = (标识: string) => {
+    const 文档 = 已开表格文档.find((项) => 项.id === 标识)
+    if (!文档) return
+    modal.confirm({
+      title: '关闭表格',
+      content: `关闭「${文档.name}」后，该表格未保存的修改将丢失。`,
+      okText: '关闭表格',
+      cancelText: '取消',
+      onOk: () => closeEditorDoc(标识),
+    })
+  }
+
   return React.createElement(
     React.Fragment,
     null,
+    React.createElement(DocumentTabs, {
+      documents: 已开表格文档,
+      activeId: activeDocumentId,
+      onSelect: setActiveDocumentId,
+      onClose: 处理关闭文档,
+      onCreate: createEditorDoc,
+    }),
     React.createElement(RibbonTabs, {
       activeKey: 当前标签,
       onChange: set当前标签,
@@ -517,6 +791,43 @@ const SheetEditor = () => {
         message.success(`已写入 ${目标地址}`)
       },
     }),
+    查找可见
+      ? React.createElement(
+          'div',
+          { className: 'wps-sheet-findbar' },
+          React.createElement('input', {
+            className: 'wps-sheet-findbar__input',
+            placeholder: '查找内容，回车定位下一个',
+            value: 查找词,
+            autoFocus: true,
+            'aria-label': '查找内容',
+            onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set查找词(事件.target.value),
+            onKeyDown: (事件: React.KeyboardEvent) => {
+              if (事件.key === 'Enter') {
+                事件.preventDefault()
+                查找下一个()
+              }
+              if (事件.key === 'Escape') {
+                set查找可见(false)
+              }
+            },
+          }),
+          React.createElement(
+            'button',
+            { className: 'wps-sheet-findbar__btn', onClick: 查找下一个 },
+            '查找下一个'
+          ),
+          React.createElement(
+            'button',
+            {
+              className: 'wps-sheet-findbar__btn',
+              onClick: () => set查找可见(false),
+              'aria-label': '关闭查找',
+            },
+            '关闭'
+          )
+        )
+      : null,
     React.createElement(
       'div',
       { className: `wps-sheet-stage${显示网格线 ? '' : ' wps-sheet-stage--no-gridlines'}` },
@@ -553,6 +864,9 @@ const SheetEditor = () => {
             终点: { 行: 工作表.行数 - 1, 列: 工作表.列数 - 1 },
           }),
         on按键: 处理按键,
+        on拖选扩展: (位置: 单元格位置) => {
+          set选区((当前) => ({ 起点: 当前.起点, 终点: 位置 }))
+        },
         on列宽拖动开始: (列: number, 起始横坐标: number) => {
           // 拖动只在开始时记录一次历史，避免逐帧占满撤销栈
           历史.record(工作表列表)

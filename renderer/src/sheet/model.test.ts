@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   创建工作表,
   读取单元格,
@@ -23,6 +23,15 @@ import {
 } from './model'
 
 describe('工作表创建', () => {
+  it('同一毫秒内创建的多个工作表具有不同标识', () => {
+    const 时间 = vi.spyOn(Date, 'now').mockReturnValue(1791000000000)
+    try {
+      expect(创建工作表('甲').id).not.toBe(创建工作表('乙').id)
+    } finally {
+      时间.mockRestore()
+    }
+  })
+
   it('默认规格为 100 行 26 列', () => {
     const 表 = 创建工作表('Sheet1')
     expect(表.name).toBe('Sheet1')

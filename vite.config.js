@@ -1,6 +1,7 @@
 // vite.config.js
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import pkg from './package.json'
 
 export default defineConfig({
   // 渲染进程源码位于 renderer 目录，因此将 root 指向该目录
@@ -8,6 +9,12 @@ export default defineConfig({
   // 使用相对路径，保证 Electron 以 file:// 加载构建产物时静态资源可正确解析
   base: './',
   plugins: [react()],
+  // PDF 阅读器的兼容工作线程需先补齐浏览器接口，再动态装载解析模块。
+  worker: { format: 'es' },
+  // 注入应用版本号，供设置页/关于页/页脚统一读取，避免多处硬编码不一致
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     host: 'localhost',
     port: 5172,
@@ -15,6 +22,7 @@ export default defineConfig({
     hmr: true,
   },
   build: {
+    target: 'chrome114',
     // 构建产物输出到项目根目录的 dist
     outDir: '../dist',
     emptyOutDir: true,

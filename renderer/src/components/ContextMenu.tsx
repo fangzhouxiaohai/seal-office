@@ -1,5 +1,7 @@
 // 右键菜单：浮层定位，支持分组分割与命令派发。
+// 经 portal 挂到 body 并用 fixed 定位：视口坐标不受任何定位祖先/transform 影响，菜单始终贴着光标。
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface 菜单分割线 {
   type: 'divider'
@@ -73,28 +75,39 @@ function 是菜单组(节点: 菜单节点): 节点 is 菜单组 {
 const 菜单面板宽 = 220
 const 项高 = 32
 const 菜单最大高 = 320
-const 菜单横向偏移 = 10
+/** 菜单左上角相对光标的微小间隙，符合 Windows/WPS 右键菜单的贴边习惯 */
+const 光标间隙 = 2
 
 const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
   const [偏移, set偏移] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 
   useEffect(() => {
-    if (!open || 引用.current === null) {
+    if (!open) {
       return
     }
     const 视口宽 = window.innerWidth
     const 视口高 = window.innerHeight
-    const 面板宽 = 菜单面板宽
     // 计算菜单实际高度（受最大高度限制）
-    const 原始高 = items.length * 项高 + 8
+    const 项总数 = items.reduce((合计, 节点) => {
+      if (节点.type === 'group') {
+        return 合计 + 节点.子项.length + (节点.标题 !== undefined ? 1 : 0)
+      }
+      return 合计 + 1
+    }, 0)
+    const 原始高 = 项总数 * 项高 + 8
     const 面板高 = Math.min(原始高, 菜单最大高)
-    // 定位：将菜单位于光标正下方，视口居中显示
-    const 左 = Math.max(8, Math.min(x + 菜单横向偏移 - Math.floor(面板宽 / 2), 视口宽 - 面板宽 - 8))
-    const 上 = y + 菜单横向偏移
-    const 最终上 = Math.max(8, Math.min(上, 视口高 - 面板高 - 8))
-    set偏移({ top: 最终上, left: 左 })
-  }, [open, x, y, items.length])
+    // 定位：菜单左上角贴着光标（间隙 2px）；越出视口边缘时向左/向上翻转
+    let 左 = x + 光标间隙
+    if (左 + 菜单面板宽 > 视口宽 - 8) {
+      左 = Math.max(8, x - 菜单面板宽 - 光标间隙)
+    }
+    let 上 = y + 光标间隙
+    if (上 + 面板高 > 视口高 - 8) {
+      上 = Math.max(8, y - 面板高 - 光标间隙)
+    }
+    set偏移({ top: 上, left: 左 })
+  }, [open, x, y, items])
 
   useEffect(() => {
     if (!open) {
@@ -180,21 +193,25 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
     return 子元素
   }
 
-  return React.createElement(
-    'div',
-    {
-      ref: 引用,
-      className: 'wps-context-menu',
-      style: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        transform: `translate(${偏移.left}px, ${偏移.top}px)`,
-        zIndex: 9999,
+  return createPortal(
+    React.createElement(
+      'div',
+      {
+        ref: 引用,
+        className: 'wps-context-menu',
+        style: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          transform: `translate(${偏移.left}px, ${偏移.top}px)`,
+          zIndex: 9999,
+        },
+        onMouseDown: (事件: React.MouseEvent) => 事件.stopPropagation(),
+        onContextMenu: (事件: React.MouseEvent) => 事件.preventDefault(),
       },
-      onMouseDown: (事件: React.MouseEvent) => 事件.stopPropagation(),
-    },
-    渲染内容()
+      渲染内容()
+    ),
+    document.body
   )
 }
 

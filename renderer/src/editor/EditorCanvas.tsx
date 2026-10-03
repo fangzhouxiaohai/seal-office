@@ -1,6 +1,46 @@
-// 编辑区：contentEditable 容器与 A4 纸张。
+// 编辑区：contentEditable 容器与页面纸张。
 // 采用非受控写法，仅在外来内容与当前 DOM 不一致时同步，避免 React 重渲染打断输入。
 import React, { useEffect, useRef } from 'react'
+import { 净化富文本 } from './sanitizeHtml'
+
+/** 纸张尺寸映射（96dpi 像素，宽×高），未知值回落 A4 */
+const 纸张尺寸: Record<string, [number, number]> = {
+  A4: [794, 1123],
+  A5: [559, 794],
+  B5: [665, 945],
+  Letter: [816, 1056],
+}
+
+/** 页边距映射（上下边距、左右边距，像素） */
+const 页边距映射: Record<string, [number, number]> = {
+  常规: [96, 90],
+  窄: [36, 36],
+  适中: [96, 72],
+  宽: [96, 144],
+}
+
+/** 分栏数映射；偏左/偏右以两栏近似呈现 */
+const 分栏映射: Record<string, number> = {
+  一栏: 1,
+  两栏: 2,
+  三栏: 3,
+  偏左: 2,
+  偏右: 2,
+}
+
+/** 页面边框样式映射 */
+const 页面边框样式: Record<string, React.CSSProperties> = {
+  方框: { border: '2px solid #4A4A4A' },
+  阴影: { border: '2px solid #4A4A4A', boxShadow: '4px 4px 6px rgba(0,0,0,0.35)' },
+  三维: { border: '5px ridge #9AA4B0' },
+}
+
+/** 水印文案映射 */
+const 水印文案: Record<string, string> = {
+  草稿: '草稿',
+  机密: '机密',
+  禁止复制: '禁止复制',
+}
 
 interface Props {
   html: string
@@ -12,6 +52,14 @@ interface Props {
   /** 是否显示批注标记 */
   showComments?: boolean
   scale?: number
+  /** 页面布局设置（来自视图状态，未提供时保持默认 A4 纵向外观） */
+  paper?: string
+  orientation?: string
+  margin?: string
+  columns?: string
+  watermark?: string
+  pageBorder?: string
+  pageColor?: string
   onChange?: (html: string) => void
   onReady?: (元素: HTMLDivElement) => void
   /** 右键点击回调，返回坐标 */
@@ -26,6 +74,13 @@ const EditorCanvas = ({
   vertical = false,
   showComments = true,
   scale = 1,
+  paper = 'A4',
+  orientation = '纵向',
+  margin = '常规',
+  columns = '一栏',
+  watermark = '无',
+  pageBorder = '无',
+  pageColor = '无',
   onChange,
   onReady,
   onContextMenu,
@@ -34,8 +89,9 @@ const EditorCanvas = ({
 
   useEffect(() => {
     const 元素 = 引用.current
-    if (元素 !== null && 元素.innerHTML !== html) {
-      元素.innerHTML = html
+    const 安全内容 = 净化富文本(html)
+    if (元素 !== null && 元素.innerHTML !== 安全内容) {
+      元素.innerHTML = 安全内容
     }
   }, [html])
 
@@ -49,8 +105,10 @@ const EditorCanvas = ({
 
   const 处理输入 = () => {
     const 元素 = 引用.current
-    if (元素 !== null && onChange !== undefined) {
-      onChange(元素.innerHTML)
+    if (元素 !== null) {
+      const 安全内容 = 净化富文本(元素.innerHTML)
+      if (元素.innerHTML !== 安全内容) 元素.innerHTML = 安全内容
+      onChange?.(安全内容)
     }
   }
 
@@ -60,6 +118,23 @@ const EditorCanvas = ({
       onContextMenu(事件.clientX, 事件.clientY)
     }
   }
+
+  // 纸张尺寸与边距：横向时宽高互换
+  const [宽, 高] = 纸张尺寸[paper] ?? 纸张尺寸.A4
+  const 横向 = orientation === '横向'
+  const [边距上下, 边距左右] = 页边距映射[margin] ?? 页边距映射.常规
+  const 栏数 = 分栏映射[columns] ?? 1
+  const 纸张样式: React.CSSProperties = {
+    transform: `scale(${scale})`,
+    width: 横向 ? 高 : 宽,
+    minHeight: 横向 ? 宽 : 高,
+    padding: `${边距上下}px ${边距左右}px`,
+    ...(pageColor !== '无' && pageColor !== '' ? { background: pageColor } : {}),
+    ...(页面边框样式[pageBorder] ?? {}),
+    position: 'relative',
+    boxSizing: 'border-box',
+  }
+  const 水印文本 = 水印文案[watermark]
 
   const 容器类名 = [
     'wps-editor-canvas',
@@ -76,13 +151,24 @@ const EditorCanvas = ({
     { className: 容器类名 },
     React.createElement(
       'div',
-      { className: 'wps-editor-canvas__paper', style: { transform: `scale(${scale})` } },
+      { className: 'wps-editor-canvas__paper', style: 纸张样式 },
+      水印文本 !== undefined
+        ? React.createElement(
+            'div',
+            {
+              className: 'wps-editor-canvas__watermark',
+              'aria-hidden': true,
+            },
+            水印文本
+          )
+        : null,
       React.createElement('div', {
         ref: 引用,
         className: 'wps-editor-canvas__content',
         contentEditable: editable,
         suppressContentEditableWarning: true,
         spellCheck: false,
+        style: 栏数 > 1 ? { columnCount: 栏数, columnGap: '24px' } : undefined,
         onInput: 处理输入,
         onContextMenu: 处理右键,
       })

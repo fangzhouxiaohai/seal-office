@@ -11,6 +11,7 @@ describe('底部状态栏', () => {
 
   it('展示版本号', () => {
     render(<Footer total={0} starred={0} />)
-    expect(screen.getByText(/v1\.0\.0/)).toBeInTheDocument()
+    // 版本号统一注入自 package.json，不再各自硬编码
+    expect(screen.getByText(new RegExp(`v${__APP_VERSION__}`))).toBeInTheDocument()
   })
 })

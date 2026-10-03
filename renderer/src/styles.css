@@ -10,14 +10,22 @@
   --border-subtle: #f0f2f5;
   --text-1: #1a1d24;
   --text-2: #5c6472;
-  --text-3: #8a92a6;
-  --star: #f5a623;
+  --text-3: #667085;
+  --star: #9b6100;
   --danger: #e34d59;
   --success: #00a870;
   --warning: #ed7b2f;
   --shadow-card: 0 4px 16px rgba(31, 41, 55, 0.1);
   --radius-card: 8px;
   --radius-control: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --font-body: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  --font-heading: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 }
 
 * {
@@ -33,7 +41,7 @@ body,
 }
 
 body {
-  font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--text-1);
   background: var(--bg-app);
@@ -412,6 +420,18 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+@container wps-main (max-width: 620px) {
+  .wps-doc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container wps-main (max-width: 360px) {
+  .wps-doc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* 列数依据主内容区可用宽度决定，侧栏与内边距占用的空间因此被正确扣除，
@@ -1033,6 +1053,27 @@ button {
   transition: transform 0.15s ease;
 }
 
+/* 页面水印：居中斜置、不拦截交互 */
+.wps-editor-canvas__watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  color: rgba(100, 116, 139, 0.18);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 0;
+}
+
+.wps-editor-canvas__watermark ~ .wps-editor-canvas__content {
+  position: relative;
+  z-index: 1;
+}
+
 .wps-editor-canvas__content {
   min-height: 900px;
   outline: none;
@@ -1433,6 +1474,7 @@ button {
   display: flex;
   align-items: center;
   padding: 0 6px;
+  user-select: none;
   border-right: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-1);
@@ -1505,6 +1547,54 @@ button {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* 表格查找栏（Ctrl+F） */
+.wps-sheet-findbar {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 6px var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.wps-sheet-findbar__input {
+  flex: 0 1 240px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text-1);
+}
+.wps-sheet-findbar__input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.wps-sheet-findbar__btn {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-size: 12px;
+  cursor: pointer;
+}
+.wps-sheet-findbar__btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.wps-sheet-findbar__btn:focus-visible,
+.wps-sheet-findbar__input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.wps-sheet-findbar__btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 /* 关闭网格线时仅隐藏单元格分隔线，表头线保留 */
@@ -2117,4 +2207,578 @@ button {
 
 [data-theme="dark"] .help-article-card:hover {
   border-color: #3D4450;
+}
+
+/* 全屏放映视图 */
+.wps-slideshow {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+.wps-slideshow__page {
+  position: relative;
+  flex: 0 0 auto;
+  transform-origin: center center;
+  overflow: hidden;
+}
+.wps-slideshow__box {
+  position: absolute;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+}
+.wps-slideshow__indicator {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+/* 顶栏登录占位与云文档入口 */
+.wps-titlebar__login {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--bg-card);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+.wps-titlebar__login:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.wps-backup-alert {
+  margin: 8px 16px 0;
+}
+
+/* ==================== 首页（WPS 版式） ==================== */
+/* 三栏容器：图标栏 + 导航栏 + 内容 + 推荐面板 */
+.wps-homebody {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg-app);
+}
+.wps-home-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 16px 24px 32px;
+  container-type: inline-size;
+  container-name: wps-main;
+}
+
+/* 最左图标栏 */
+.wps-homerail {
+  width: 64px;
+  flex: 0 0 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 0;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+}
+.wps-homerail__item {
+  width: 56px;
+  height: 52px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+}
+.wps-homerail__item:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.wps-homerail__item--active {
+  color: var(--brand);
+}
+.wps-homerail__label {
+  line-height: 1;
+}
+.wps-homerail__item--365 {
+  margin-top: auto;
+}
+
+/* 第二列导航栏 */
+.wps-homesidebar {
+  width: 220px;
+  flex: 0 0 220px;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wps-homesidebar__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wps-homenav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wps-homenav__group {
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 10px 8px 4px;
+}
+.wps-homenav__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-1);
+  cursor: pointer;
+  text-align: left;
+}
+.wps-homenav__item:hover {
+  background: var(--brand-soft);
+}
+.wps-homenav__item--active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 600;
+}
+.wps-homesidebar__local-note {
+  margin-top: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.wps-homesidebar__local-note strong {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+/* 中列头部 */
+.wps-home__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.wps-home__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wps-home__title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.wps-home__refresh {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.wps-home__refresh:hover {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.wps-home__cloud-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+.wps-home__cloud-sync:hover {
+  color: var(--brand);
+}
+.wps-home__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 8px;
+}
+.wps-home__type-filter {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-control);
+}
+.wps-home__type-filter::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 2px 2px 8px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+.wps-home__type-filter:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.wps-home__type-filter:focus-visible,
+.wps-recommend button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.wps-recommend button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* 右侧精选推荐 */
+.wps-recommend {
+  width: 264px;
+  flex: 0 0 264px;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wps-recommend__reopen {
+  position: absolute;
+  right: 12px;
+  top: 56px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-2);
+  cursor: pointer;
+  z-index: 10;
+}
+.wps-recommend__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wps-recommend__title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+}
+.wps-recommend__close {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: var(--text-3);
+  cursor: pointer;
+  line-height: 1;
+}
+.wps-recommend__checkin {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--brand-soft);
+}
+.wps-recommend__checkin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wps-recommend__checkin-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.wps-recommend__checkin-more {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.wps-recommend__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.wps-recommend__arrow {
+  transform: rotate(180deg);
+  color: var(--text-3);
+}
+.wps-recommend__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.wps-recommend__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-1);
+}
+.wps-recommend__cell:hover {
+  border-color: var(--brand);
+}
+.wps-recommend__cell-icon {
+  display: inline-flex;
+  color: var(--brand);
+}
+.wps-recommend__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.wps-recommend__row:hover {
+  background: var(--brand-soft);
+}
+.wps-recommend__row-icon {
+  display: inline-flex;
+  margin-top: 2px;
+  color: var(--brand);
+}
+.wps-recommend__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.wps-recommend__row-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wps-recommend__hot {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+  border-radius: 4px;
+  padding: 0 3px;
+  line-height: 1.4;
+}
+.wps-recommend__row-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 190px;
+}
+
+/* 首页顶栏搜索与头像 */
+.wps-titlebar__search--home {
+  width: 480px;
+  max-width: 52vw;
+  height: 36px;
+  border-radius: 18px;
+}
+.wps-titlebar__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.wps-titlebar__avatar:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.wps-homerail__item:focus-visible,
+.wps-homenav__item:focus-visible,
+.wps-home__refresh:focus-visible,
+.wps-home__cloud-sync:focus-visible,
+.wps-recommend__reopen:focus-visible,
+.wps-titlebar__avatar:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.wps-homerail__item:disabled,
+.wps-homenav__item:disabled,
+.wps-home__refresh:disabled,
+.wps-home__cloud-sync:disabled,
+.wps-recommend__reopen:disabled,
+.wps-titlebar__avatar:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.wps-hidden {
+  display: none;
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] {
+  --star: #f5b84b;
+}
+[data-theme="dark"] .wps-homerail,
+[data-theme="dark"] .wps-homesidebar,
+[data-theme="dark"] .wps-recommend {
+  background: var(--bg-card);
+  border-color: #3d4450;
+}
+[data-theme="dark"] .wps-homebody {
+  background: var(--bg-app);
+}
+[data-theme="dark"] .wps-recommend__checkin {
+  background: var(--brand-soft);
+}
+[data-theme="dark"] .wps-recommend__cell,
+[data-theme="dark"] .wps-recommend__reopen,
+[data-theme="dark"] .wps-titlebar__avatar {
+  background: var(--bg-card);
+  border-color: #3d4450;
+}
+
+@media (max-width: 1280px) {
+  .wps-recommend {
+    width: 224px;
+    flex-basis: 224px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .wps-recommend,
+  .wps-recommend__reopen {
+    display: none;
+  }
+  .wps-home-main {
+    padding: 16px 20px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .wps-titlebar__search--home {
+    width: 100%;
+    max-width: 100%;
+  }
+  .wps-homerail {
+    display: none;
+  }
+  .wps-homesidebar {
+    width: 180px;
+    flex-basis: 180px;
+  }
+  .wps-home-main {
+    padding: 12px 16px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .wps-titlebar__brand {
+    flex: 0 0 28px;
+  }
+  .wps-titlebar__name,
+  .wps-titlebar__divider,
+  .wps-titlebar__page {
+    display: none;
+  }
+  .wps-titlebar__actions {
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+  .wps-homebody {
+    flex-direction: column;
+  }
+  .wps-homesidebar {
+    width: 100%;
+    flex: 0 0 auto;
+    padding: var(--space-2) var(--space-3);
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .wps-homesidebar__actions,
+  .wps-homesidebar > nav.wps-homenav {
+    flex-direction: row;
+    margin-bottom: 0;
+  }
+  .wps-homesidebar__actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .wps-homesidebar > div.wps-homenav,
+  .wps-homesidebar__local-note {
+    display: none;
+  }
+  .wps-homenav__item {
+    flex: 0 0 auto;
+  }
+  .wps-home-main {
+    padding: 12px;
+  }
+  .wps-home__header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }

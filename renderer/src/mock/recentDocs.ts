@@ -15,6 +15,8 @@ export interface DocItem {
   updatedAt: string
   starred: boolean
   shared: boolean
+  /** 真实文件路径：来自最近文档持久化记录时可据此打开本地文件 */
+  路径?: string
 }
 
 /** 导航筛选键，与 routes.tsx 中的导航项 key 对应 */
