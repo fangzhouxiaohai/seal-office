@@ -2,6 +2,7 @@ const { app, BrowserWindow, shell } = require('electron')
 const path = require('path')
 const { randomUUID } = require('crypto')
 const { 检查安装目录 } = require('../integrity')
+const { 创建默认程序服务 } = require('../windows/defaultApps')
 
 const 未保存风险数量 = new WeakMap()
 const 关闭核验请求 = new WeakMap()
@@ -36,6 +37,11 @@ function 查询实时关闭状态(窗口, 超时毫秒 = 15000) {
 }
 
 function 注册系统通道(ipcMain) {
+  let 默认程序服务
+  const 获取默认程序服务 = () => {
+    if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: app.getPath('exe'), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址) })
+    return 默认程序服务
+  }
   require('./slideshowFullscreen').注册放映全屏通道(ipcMain)
   ipcMain.handle('system.reportUnsavedCount', async (事件, 数量) => {
     if (!Number.isSafeInteger(数量) || 数量 < 0) {
@@ -62,13 +68,15 @@ function 注册系统通道(ipcMain) {
     return { 成功: true }
   })
   ipcMain.handle('system.setDefaultApp', async () => {
-    if (process.platform !== 'win32') return { 成功: false, 错误: '文件默认应用设置仅支持 Windows' }
     try {
-      await shell.openExternal('ms-settings:defaultapps')
-      return { 成功: true, 提示: '已打开系统默认应用设置，请按文件类型选择海豹办公' }
+      return await 获取默认程序服务().设置默认程序()
     } catch (错误) {
-      return { 成功: false, 错误: `无法打开系统默认应用设置：${错误 instanceof Error ? 错误.message : '系统拒绝打开设置'}` }
+      return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '系统默认程序设置失败' }
     }
+  })
+  ipcMain.handle('system.checkDefaultAppPrompt', async () => {
+    try { return await 获取默认程序服务().检查首次提示() }
+    catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '系统默认程序检查失败' } }
   })
   ipcMain.handle('system.checkIntegrity', async () => {
     try {

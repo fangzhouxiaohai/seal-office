@@ -71,11 +71,12 @@ describe('设置页状态与真实能力一致', () => {
     expect(screen.getByText('在线文档浏览设置').closest('.settings-wps-row')).toHaveTextContent('需要云端服务')
   })
 
-  it('文件关联打开 Windows 默认应用设置', async () => {
+  it('文件关联提供设为默认程序动作', async () => {
+    vi.spyOn(桥接, '可用', 'get').mockReturnValue(true)
     const 打开 = vi.spyOn(桥接, 'setDefaultApp').mockResolvedValue({ 成功: true, 提示: '已打开系统默认应用设置' })
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
     try {
-      await userEvent.click(screen.getByRole('button', { name: '打开系统设置' }))
+      await userEvent.click(screen.getByRole('button', { name: '设为默认程序' }))
       expect(打开).toHaveBeenCalledOnce()
       expect(await screen.findByText('已打开系统默认应用设置')).toBeInTheDocument()
     } finally {

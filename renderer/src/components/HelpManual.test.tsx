@@ -45,7 +45,8 @@ describe('帮助手册', () => {
     expect(screen.getByText(/生成新文档/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Windows 文件关联' }))
-    expect(screen.getByText(/Windows 系统设置中/)).toBeInTheDocument()
+    expect(screen.getByText(/海豹办公专属页面/)).toBeInTheDocument()
+    expect(screen.getByText(/确认或取消后都不再主动提示/)).toBeInTheDocument()
     expect(screen.getByText(/文件进入底部标签/)).toBeInTheDocument()
   })
 

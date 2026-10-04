@@ -28,6 +28,7 @@ export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文�
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
 export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
+export interface 默认程序提示结果 { 成功: boolean; 需要询问?: boolean; 错误?: string }
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -54,6 +55,7 @@ export interface 电子接口 {
   onCloseStateRequested: (回调: (标识: string) => void) => () => void
   respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
   setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
+  checkDefaultAppPrompt?: () => Promise<默认程序提示结果>
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
@@ -118,7 +120,9 @@ export const 桥接 = {
   reportUnsavedCount: (数量: number) => 取后端()?.reportUnsavedCount(数量) ?? 失败('当前环境不支持关闭保护'),
   onCloseStateRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onCloseStateRequested?.(回调) ?? (() => {}),
   respondCloseState: (标识: string, 状态: 关闭状态) => 取后端()?.respondCloseState?.(标识, 状态) ?? 失败('当前环境不支持关闭前核验'),
-  setDefaultApp: () => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 提示: '请使用打包后的应用设置默认程序' }),
+  setDefaultApp: (): ReturnType<电子接口['setDefaultApp']> => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 错误: '请使用打包后的应用设置默认程序' }),
+  get 默认程序提示可用() { return typeof 取后端()?.checkDefaultAppPrompt === 'function' },
+  checkDefaultAppPrompt: (): Promise<默认程序提示结果> => 取后端()?.checkDefaultAppPrompt?.() ?? 失败('当前环境不支持默认程序首次检查'),
   checkIntegrity: (): Promise<完整性检查结果> => 取后端()?.checkIntegrity() ?? 失败('请使用 Windows 打包版本检查安装目录'),
   getHelpContent: () => 取后端()?.getHelpContent() ?? Promise.resolve({}),
   getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务' }),

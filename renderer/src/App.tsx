@@ -21,6 +21,7 @@ import GlobalTabs from './components/GlobalTabs'
 import AiAssistant from './assistant/AiAssistant'
 import NewFileNotifier, { 本机通知事件名, type 本机通知 } from './components/NewFileNotifier'
 import AssociatedFileOpener from './components/AssociatedFileOpener'
+import DefaultAppPrompt from './components/DefaultAppPrompt'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
 
@@ -286,7 +287,8 @@ const 外壳 = () => {
     ),
     React.createElement(AiAssistant, null),
     React.createElement(NewFileNotifier, null),
-    React.createElement(AssociatedFileOpener, null)
+    React.createElement(AssociatedFileOpener, null),
+    React.createElement(DefaultAppPrompt, null)
   )
 }
 

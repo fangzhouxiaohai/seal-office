@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "seal-office",
@@ -87,30 +87,22 @@
         }
       ]
     },
-    "fileAssociations": [
+    "extraResources": [
       {
-        "ext": "docx",
-        "name": "SealOffice.docx",
-        "description": "海豹办公文字文档"
+        "from": "main/windows/shellIntegration.ps1",
+        "to": "shell-integration/shellIntegration.ps1"
       },
       {
-        "ext": "xlsx",
-        "name": "SealOffice.xlsx",
-        "description": "海豹办公表格文档"
-      },
-      {
-        "ext": "pptx",
-        "name": "SealOffice.pptx",
-        "description": "海豹办公演示文档"
-      },
-      {
-        "ext": "pdf",
-        "name": "SealOffice.pdf",
-        "description": "海豹办公 PDF 文档"
+        "from": "build/shell-new",
+        "to": "shell-new",
+        "filter": [
+          "blank.*"
+        ]
       }
     ],
     "npmRebuild": false,
     "nsis": {
+      "include": "build/installer.nsh",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

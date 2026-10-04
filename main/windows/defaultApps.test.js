@@ -1,0 +1,61 @@
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { 创建默认程序服务 } = require('./defaultApps')
+
+describe('默认程序与安装后首次提醒', () => {
+  let 目录, 调用, 系统打开, 服务, 安装, 默认
+  beforeEach(() => {
+    目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-default-'))
+    安装 = { 已安装: true, 安装标识: '首次安装', 可执行文件: 'C:\\海豹办公\\SealOffice.exe' }
+    默认 = false
+    系统打开 = vi.fn().mockResolvedValue(undefined)
+    调用 = vi.fn(async (操作) => 操作 === 'GetInstallation' ? 安装 : 操作 === 'InspectDefaults' ? { 已全部默认: 默认 } : { 成功: true })
+    服务 = 创建默认程序服务({ 平台: 'win32', 已打包: true, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
+  })
+  afterEach(() => { fs.rmSync(目录, { recursive: true, force: true }) })
+
+  it('注册真实应用后进入海豹办公专属默认程序页', async () => {
+    expect(await 服务.设置默认程序()).toMatchObject({ 成功: true })
+    expect(调用).toHaveBeenCalledWith('RegisterApplication')
+    expect(系统打开).toHaveBeenCalledWith('ms-settings:defaultapps?registeredAppUser=SealOffice')
+  })
+  it('注册失败时保留真实错误且不打开设置', async () => {
+    调用.mockRejectedValue(new Error('注册表不可写'))
+    await expect(服务.设置默认程序()).rejects.toThrow('注册表不可写')
+    expect(系统打开).not.toHaveBeenCalled()
+  })
+  it('首次非默认才询问，后续启动不再检查默认状态', async () => {
+    expect(await 服务.检查首次提示()).toMatchObject({ 成功: true, 需要询问: true })
+    expect(await 服务.检查首次提示()).toMatchObject({ 成功: true, 需要询问: false })
+    expect(调用.mock.calls.filter(([操作]) => 操作 === 'InspectDefaults')).toHaveLength(1)
+    const 新服务 = 创建默认程序服务({ 平台: 'win32', 已打包: true, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
+    expect(await 新服务.检查首次提示()).toMatchObject({ 需要询问: false })
+  })
+  it('已经全部默认时不显示首次询问', async () => {
+    默认 = true
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: false })
+  })
+  it('升级保留安装标识，重新安装的新标识重新检查一次', async () => {
+    await 服务.检查首次提示()
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: false })
+    安装.安装标识 = '重新安装'
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: true })
+  })
+  it('开发版、便携版及不同路径副本不触发安装询问', async () => {
+    安装.已安装 = false
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: false })
+    安装.已安装 = true; 安装.可执行文件 = 'C:\\别的目录\\SealOffice.exe'
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: false })
+    expect(调用.mock.calls.some(([操作]) => 操作 === 'InspectDefaults')).toBe(false)
+  })
+  it('默认状态核验失败后不会再次启动反复弹窗', async () => {
+    调用.mockImplementation(async 操作 => { if (操作 === 'GetInstallation') return 安装; throw new Error('关联查询失败') })
+    await expect(服务.检查首次提示()).rejects.toThrow('关联查询失败')
+    expect(await 服务.检查首次提示()).toMatchObject({ 需要询问: false })
+  })
+  it('并发首次检查只有一次能领取询问', async () => {
+    const 结果 = await Promise.all([服务.检查首次提示(), 服务.检查首次提示()])
+    expect(结果.filter(项 => 项.需要询问)).toHaveLength(1)
+  })
+})

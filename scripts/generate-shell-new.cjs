@@ -1,0 +1,18 @@
+const fs = require('fs')
+const path = require('path')
+const { 生成docx } = require('../main/office/docxWriter')
+const { 写入xlsx } = require('../main/office/xlsxCodec')
+const { 写入pptx } = require('../main/office/pptxCodec')
+const { PDFDocument } = require('pdf-lib')
+async function 生成() {
+  const 目录 = path.resolve(__dirname, '../build/shell-new')
+  fs.mkdirSync(目录, { recursive: true })
+  fs.writeFileSync(path.join(目录, 'blank.docx'), await 生成docx({ 段落: [] }))
+  fs.writeFileSync(path.join(目录, 'blank.xlsx'), await 写入xlsx({ 工作表: [{ 名称: '工作表1', 数据: [['']] }] }))
+  fs.writeFileSync(path.join(目录, 'blank.pptx'), await 写入pptx({ 幻灯片: [{ 背景色: '#FFFFFF', 文本框: [] }] }))
+  const pdf = await PDFDocument.create()
+  pdf.addPage([595.28, 841.89])
+  fs.writeFileSync(path.join(目录, 'blank.pdf'), await pdf.save())
+  console.log('四种现代格式空白模板已生成')
+}
+生成().catch(错误 => { console.error(错误); process.exitCode = 1 })

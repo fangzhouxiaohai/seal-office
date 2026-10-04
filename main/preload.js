@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   respondCloseState: (标识, 状态) => ipcRenderer.invoke('system.respondCloseState', 标识, 状态),
   setDefaultApp: () => ipcRenderer.invoke('system.setDefaultApp'),
+  checkDefaultAppPrompt: () => ipcRenderer.invoke('system.checkDefaultAppPrompt'),
   enterSlideshowFullscreen: () => ipcRenderer.invoke('system.enterSlideshowFullscreen'),
   exitSlideshowFullscreen: (标识) => ipcRenderer.invoke('system.exitSlideshowFullscreen', 标识),
   onSlideshowEnded: (回调) => {

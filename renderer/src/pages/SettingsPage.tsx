@@ -21,6 +21,7 @@ const SettingsPage = () => {
   const [双击关闭标签, 设双击关闭标签] = useState(false)
   const [本地偏好读取失败, 设本地偏好读取失败] = useState(false)
   const [完整性检查中, 设完整性检查中] = useState(false)
+  const [默认设置中, 设默认设置中] = useState(false)
   const [恢复中, 设恢复中] = useState(false)
   const [提醒目录, 设提醒目录] = useState<提醒目录 | null>(null)
   const [提醒读取失败, 设提醒读取失败] = useState(false)
@@ -74,13 +75,16 @@ const SettingsPage = () => {
   }
 
   const 打开默认应用设置 = async () => {
+    if (默认设置中) return
+    设默认设置中(true)
     try {
       const 结果 = await 桥接.setDefaultApp()
       if (!结果.成功) throw new Error(('错误' in 结果 ? 结果.错误 : undefined) || 结果.提示 || '无法打开系统设置')
       message.info(结果.提示 || '已打开系统默认应用设置')
     } catch (错误) {
-      modal.error({ title: '打开默认应用设置失败', content: 错误 instanceof Error ? 错误.message : '请检查系统设置是否可用', okText: '确定' })
+      modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '请检查系统设置是否可用', okText: '确定' })
     }
+    finally { 设默认设置中(false) }
   }
 
   const 检查安装目录 = async () => {
@@ -235,8 +239,8 @@ const SettingsPage = () => {
         <div className="settings-wps-card">
           {设置行(
             '文件格式关联',
-            '在 Windows 系统设置中为 DOCX、XLSX、PPTX 和 PDF 选择默认打开程序',
-            <Button size="small" onClick={() => void 打开默认应用设置()}>打开系统设置</Button>
+            '将海豹办公用于 DOCX、XLSX、PPTX 和 PDF；点击后在系统专属页面确认关联',
+            <Button size="small" loading={默认设置中} disabled={!桥接.可用 || 默认设置中} onClick={() => void 打开默认应用设置()}>设为默认程序</Button>
           )}
         </div>
 
