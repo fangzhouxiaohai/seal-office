@@ -31,6 +31,19 @@ const 构造有效演示 = async (幻灯片列表, 额外文件 = {}) => {
 }
 
 describe('读取 PPTX 文件结构', () => {
+  it('主清单关系标识重复不能静默覆盖前一个目标', async () => {
+    const 包 = await JSZip.loadAsync(await 构造有效演示([空白幻灯片]))
+    const 路径 = 'ppt/_rels/presentation.xml.rels'
+    包.file(路径, (await 包.file(路径).async('string')).replace('</Relationships>', '<Relationship Id="rId1" Type="example/slide" Target="slides/slide1.xml"/></Relationships>'))
+    await expect(读取pptx(await 包.generateAsync({ type: 'nodebuffer' }))).rejects.toThrow(/标识重复/)
+  })
+
+  it('损坏页面关系即使没有备注也必须报告，不能忽略损坏结构', async () => {
+    const 数据 = await 构造有效演示([空白幻灯片], {
+      'ppt/slides/_rels/slide1.xml.rels': '<Relationships><Relationship',
+    })
+    await expect(读取pptx(数据)).rejects.toThrow(/关系文件/)
+  })
   it('普通压缩包不能伪装成演示文件', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('readme.txt', '普通压缩文件')
@@ -370,9 +383,9 @@ describe('读取 PPTX 的保真警告', () => {
 
   it('母版实际包含图形时提示母版对象未导入', async () => {
     const 数据 = await 构造演示(文字幻灯片('正文'), {
-      'ppt/slides/_rels/slide1.xml.rels': '<Relationships><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>',
+      'ppt/slides/_rels/slide1.xml.rels': '<Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>',
       'ppt/slideLayouts/slideLayout1.xml': '<p:sldLayout/>',
-      'ppt/slideLayouts/_rels/slideLayout1.xml.rels': '<Relationships><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>',
+      'ppt/slideLayouts/_rels/slideLayout1.xml.rels': '<Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>',
       'ppt/slideMasters/slideMaster1.xml': '<p:sldMaster><p:spTree><p:sp><p:spPr><a:prstGeom prst="star5"/></p:spPr></p:sp></p:spTree></p:sldMaster>',
     })
     const 结果 = await 读取pptx(数据)

@@ -1,6 +1,7 @@
 const JSZip = require('jszip')
 const pptxgen = require('pptxgenjs')
-const path = require('path')
+const { 读取部件 } = require('./pptx/parts')
+const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
@@ -127,24 +128,6 @@ function 存在混合文字样式(形状Xml) {
   return new Set(样式列表).size > 1
 }
 
-/** 按部件关系寻找实际关联的版式和母版，忽略压缩包中的孤立资源。 */
-async function 关联目标(压缩包, 来源, 关系类型) {
-  const 关系路径 = path.posix.join(path.posix.dirname(来源), '_rels', `${path.posix.basename(来源)}.rels`)
-  const 关系文件 = 压缩包.file(关系路径)
-  if (关系文件 === null) return []
-  const xml = await 关系文件.async('string')
-  const 目标列表 = []
-  for (const 匹配 of xml.matchAll(/<Relationship\b[^>]*\/?\s*>/gi)) {
-    const 标签 = 匹配[0]
-    const 类型 = 标签.match(/\bType="([^"]+)"/i)?.[1]
-    const 目标 = 标签.match(/\bTarget="([^"]+)"/i)?.[1]
-    const 模式 = 标签.match(/\bTargetMode="([^"]+)"/i)?.[1]
-    if (!类型?.endsWith(`/${关系类型}`) || !目标 || 模式 === 'External') continue
-    目标列表.push(目标.startsWith('/') ? 目标.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(来源), 目标)))
-  }
-  return 目标列表
-}
-
 async function 收集母版警告(压缩包, 幻灯片文件名, 警告) {
   for (const 幻灯片路径 of 幻灯片文件名) {
     for (const 版式路径 of await 关联目标(压缩包, 幻灯片路径, 'slideLayout')) {
@@ -225,23 +208,16 @@ async function 读取幻灯片路径(压缩包) {
       (/<p:sldIdLst\b/i.test(清单Xml) && !/<p:sldIdLst\b[^>]*(?:\/>|>[\s\S]*<\/p:sldIdLst>)/i.test(清单Xml))) {
     throw new Error('演示文件无效：文件结构不是有效的 PPTX 演示文稿')
   }
-  const 关系 = new Map()
-  for (const 匹配 of 关系Xml.matchAll(/<Relationship\b[^>]*\/?\s*>/gi)) {
-    const 标签 = 匹配[0]
-    const 标识 = 读取Xml属性(标签, 'Id')
-    const 类型 = 读取Xml属性(标签, 'Type')
-    const 目标 = 读取Xml属性(标签, 'Target')
-    if (标识 && 类型?.endsWith('/slide') && 目标 && 读取Xml属性(标签, 'TargetMode') !== 'External') {
-      关系.set(标识, 目标.startsWith('/') ? 目标.slice(1) : path.posix.normalize(path.posix.join('ppt', 目标)))
-    }
-  }
+  const 关系 = 解析关系(关系Xml, 'ppt/presentation.xml')
   const 幻灯片路径 = []
   for (const 匹配 of 清单Xml.matchAll(/<p:sldId\b[^>]*\/?\s*>/gi)) {
     const 标识 = 读取Xml属性(匹配[0], 'r:id')
-    const 路径 = 关系.get(标识)
+    const 项 = 关系.get(标识)
+    const 路径 = 项 && !项.外部 && 项.类型.endsWith('/slide') ? 项.目标 : null
     if (!路径 || !/^ppt\/slides\/[^/]+\.xml$/i.test(路径) || !压缩包.file(路径)) {
       throw new Error('演示文件无效：幻灯片关系缺失或目标不存在')
     }
+    读取部件(压缩包, 路径)
     const 页面标识 = 读取Xml属性(匹配[0], 'id')
     幻灯片路径.push({ 路径, 页面标识 })
   }
@@ -267,7 +243,7 @@ async function 读取pptx(数据) {
     }
   }
   for (const { 路径: 名称, 页面标识 } of 文件名) {
-    const xml = await 压缩包.file(名称).async('string')
+    const xml = await 读取部件(压缩包, 名称).async('string')
     if (!/<p:sld\b[^>]*>[\s\S]*<\/p:sld>\s*$/i.test(xml) ||
         !/<p:cSld\b[^>]*>[\s\S]*<\/p:cSld>/i.test(xml) ||
         !/(?:<p:spTree\b[^>]*\/>|<p:spTree\b[^>]*>[\s\S]*<\/p:spTree>)/i.test(xml)) {
