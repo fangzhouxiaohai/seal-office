@@ -29,6 +29,16 @@ export interface 关联文件领取结果 { 成功: boolean; 路径列表?: stri
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
 export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
 export interface 默认程序提示结果 { 成功: boolean; 需要询问?: boolean; 错误?: string }
+export interface 演示资源条目 { 标识: string; 类型: string; 数据: string }
+export interface 演示资源接口 {
+  add: (数据: string, 类型: string) => Promise<{ 成功: boolean; 标识?: string; 字节数?: number; 类型?: string; 错误?: string }>
+  read: (标识: string) => Promise<{ 成功: boolean; 数据?: string; 错误?: string }>
+  dropTemporary: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
+  sync: (快照标识: string, 引用标识列表: string[]) => Promise<{ 成功: boolean; 错误?: string }>
+  release: (快照标识: string) => Promise<{ 成功: boolean; 错误?: string }>
+  export: (标识列表: string[]) => Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }>
+  restore: (条目列表: 演示资源条目[]) => Promise<{ 成功: boolean; 错误?: string }>
+}
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -43,6 +53,7 @@ export interface 电子接口 {
   backupLoad: () => Promise<{ 成功: boolean; 内容?: string | null; 错误?: string }>
   backupPreserve: (已读取内容?: string) => Promise<{ 成功: boolean; 路径?: string; 错误?: string }>
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
+  presentationResources?: 演示资源接口
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentRemove: (路径: string) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -112,6 +123,16 @@ export const 桥接 = {
   backupLoad: (): Promise<{ 成功: boolean; 内容?: string | null; 错误?: string }> => 取后端()?.backupLoad?.() ?? 失败('当前环境不支持备份读取'),
   backupPreserve: (已读取内容?: string): Promise<{ 成功: boolean; 路径?: string; 错误?: string }> => 取后端()?.backupPreserve?.(已读取内容) ?? 失败('当前环境不支持保留原始备份'),
   backupClear: () => 取后端()?.backupClear?.() ?? 失败('当前环境不支持备份清理'),
+  presentationResources: {
+    add: (数据: string, 类型: string) => 取后端()?.presentationResources?.add(数据, 类型) ?? 失败('当前环境不支持演示资源保存'),
+    read: (标识: string) => 取后端()?.presentationResources?.read(标识) ?? 失败('当前环境不支持演示资源读取'),
+    dropTemporary: (标识: string) => 取后端()?.presentationResources?.dropTemporary(标识) ?? 失败('当前环境不支持释放临时资源引用'),
+    sync: (快照标识: string, 引用标识列表: string[]) => 取后端()?.presentationResources?.sync(快照标识, 引用标识列表) ?? 失败('当前环境不支持演示资源引用更新'),
+    release: (快照标识: string) => 取后端()?.presentationResources?.release(快照标识) ?? 失败('当前环境不支持演示资源引用释放'),
+    export: (标识列表: string[]): Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }> =>
+      取后端()?.presentationResources?.export(标识列表) ?? 失败('当前环境不支持演示资源备份'),
+    restore: (条目列表: 演示资源条目[]) => 取后端()?.presentationResources?.restore(条目列表) ?? 失败('当前环境不支持演示资源恢复'),
+  },
   recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
   recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
   recentRemove: (路径: string) => 取后端()?.recentRemove?.(路径) ?? 失败('当前环境不支持最近文档移除'),

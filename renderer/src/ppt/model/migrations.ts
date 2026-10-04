@@ -111,3 +111,14 @@ export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
     throw new Error('当前版本尚不能将此演示的图片或其他对象完整写入 PPTX，已阻止有损保存')
   }
 }
+
+/** 每次出现都算一次引用，复制页面后的引用计数由正文实际结构确定。 */
+export function 收集演示资源标识(文稿: 演示文稿): string[] {
+  const 结果: string[] = []
+  for (const 页面 of 文稿.幻灯片列表) {
+    for (const 对象 of 页面.对象列表 ?? []) {
+      if (对象.资源标识) 结果.push(对象.资源标识)
+    }
+  }
+  return 结果
+}

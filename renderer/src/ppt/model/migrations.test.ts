@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { 创建演示文稿 } from '../deck'
-import { 迁移演示文稿, 演示内容快照 } from './migrations'
+import { 创建演示文稿, 复制幻灯片, 删除幻灯片 } from '../deck'
+import { 迁移演示文稿, 演示内容快照, 收集演示资源标识 } from './migrations'
 
 describe('演示文稿模型迁移与校验', () => {
   it('旧版文字文稿保留全部原文、标识和显式颜色', () => {
@@ -44,5 +44,18 @@ describe('演示文稿模型迁移与校验', () => {
       { id: '组二', 类型: '组合', x: 0, y: 0, width: 100, height: 100, 子对象标识: ['组一'] },
     ]
     expect(() => 迁移演示文稿(文稿)).toThrow(/循环/)
+  })
+
+  it('复制、删除与撤销页面的资源引用从实际正文计算', () => {
+    const 文稿 = 创建演示文稿()
+    const 指纹 = 'a'.repeat(64)
+    文稿.资源索引 = { [指纹]: { 指纹, 类型: 'image/png', 字节数: 4 } }
+    文稿.幻灯片列表[0].对象列表 = [{ id: '图一', 类型: '图片', x: 0, y: 0, width: 50, height: 50, 资源标识: 指纹 }]
+    const 原引用 = 收集演示资源标识(文稿)
+    const 复制后 = 复制幻灯片(文稿, 文稿.幻灯片列表[0].id)
+    expect(复制后.幻灯片列表[1].对象列表?.[0].id).not.toBe('图一')
+    expect(收集演示资源标识(复制后)).toEqual([指纹, 指纹])
+    expect(收集演示资源标识(删除幻灯片(复制后, 复制后.幻灯片列表[1].id))).toEqual([指纹])
+    expect(收集演示资源标识(文稿)).toEqual(原引用)
   })
 })

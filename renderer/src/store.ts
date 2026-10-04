@@ -9,12 +9,12 @@ import {
   type SortKey,
 } from './mock/recentDocs'
 import { DOC_TYPE_TO_MODULE, NAV_GROUPS, NEW_DOC_NAMES, type ModuleKey } from './navConfig'
-import { 桥接 } from './ipc/bridge'
+import { 桥接, type 演示资源条目 } from './ipc/bridge'
 import { 基准文件名, 记录最近文档, 读取本地文件内容 } from './fileOpen'
 import { 创建工作表, 检查工作簿更新, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
-import { 迁移演示文稿, 演示内容快照 } from './ppt/model/migrations'
+import { 迁移演示文稿, 演示内容快照, 收集演示资源标识 } from './ppt/model/migrations'
 import { 页面设置相同, type 文字页面设置 } from './office/docModel'
 
 export type ViewMode = 'grid' | 'list'
@@ -198,6 +198,32 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   const [文档路径, set文档路径状态] = useState<Record<string, string | null>>({})
   const [表格文档模型, set表格文档模型] = useState<Record<string, Sheet[]>>({})
   const [演示文档模型, set演示文档模型] = useState<Record<string, 演示文稿>>({})
+  const 已同步资源快照 = useRef<Set<string>>(new Set())
+  const 资源同步链 = useRef<Promise<void>>(Promise.resolve())
+  const 资源同步错误 = useRef<string | null>(null)
+  useEffect(() => {
+    const 目标 = new Map(Object.entries(演示文档模型).map(([标识, 文稿]) => [标识, 收集演示资源标识(文稿)] as const)
+      .filter(([, 引用]) => 引用.length > 0))
+    const 待释放 = [...已同步资源快照.current].filter((标识) => !目标.has(标识))
+    if (目标.size === 0 && 待释放.length === 0) return
+    已同步资源快照.current = new Set(目标.keys())
+    const 执行 = async () => {
+      for (const 标识 of 待释放) {
+        const 结果 = await 桥接.presentationResources.release(`文稿:${标识}`)
+        if (!结果.成功) throw new Error(结果.错误 || '无法释放演示资源引用')
+      }
+      for (const [标识, 引用] of 目标) {
+        const 结果 = await 桥接.presentationResources.sync(`文稿:${标识}`, 引用)
+        if (!结果.成功) throw new Error(结果.错误 || '无法更新演示资源引用')
+      }
+      资源同步错误.current = null
+    }
+    const 本轮 = 资源同步链.current.then(执行, 执行)
+    资源同步链.current = 本轮.catch((错误: unknown) => {
+      资源同步错误.current = 错误 instanceof Error ? 错误.message : '演示资源无法同步'
+      弹窗.error({ title: '演示资源同步失败', content: 资源同步错误.current })
+    })
+  }, [演示文档模型])
   const [PDF待预览, setPDF待预览] = useState<{ 路径: string; 名称: string; 数据: string } | null>(null)
   const [pdfDocuments, setPdfDocuments] = useState<PdfDocument[]>([])
   const [activePdfId, setActivePdfId] = useState<string | null>(null)
@@ -329,7 +355,22 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   const 排队执行备份 = (任务: 备份任务): Promise<备份结果> => {
     const 执行 = async (): Promise<备份结果> => {
       try {
-        const 结果 = 任务.操作 === '清理' ? await 桥接.backupClear() : await 桥接.backupSave(任务.内容)
+        let 内容 = 任务.操作 === '保存' ? 任务.内容 : ''
+        if (任务.操作 === '保存') {
+          const 数据 = JSON.parse(内容) as { 演示文档模型?: Record<string, 演示文稿>; 演示资源字节?: 演示资源条目[] }
+          const 资源标识 = [...new Set(Object.values(数据.演示文档模型 ?? {}).flatMap(收集演示资源标识))]
+          if (资源标识.length > 0) {
+            await 资源同步链.current
+            if (资源同步错误.current) throw new Error(资源同步错误.current)
+            const 资源 = await 桥接.presentationResources.export(资源标识)
+            if (!资源.成功 || !Array.isArray(资源.条目) || 资源.条目.length !== 资源标识.length) {
+              throw new Error(资源.错误 || '演示资源字节不完整，已阻止写入不完整备份')
+            }
+            数据.演示资源字节 = 资源.条目
+            内容 = JSON.stringify(数据)
+          }
+        }
+        const 结果 = 任务.操作 === '清理' ? await 桥接.backupClear() : await 桥接.backupSave(内容)
         return 结果.成功 ? { 成功: true } : { 成功: false, 错误: 结果.错误 || '无法保存工作状态' }
       } catch (错误) {
         return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '无法保存工作状态' }
@@ -439,6 +480,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           文档路径?: Record<string, string | null>
           表格文档模型?: Record<string, Sheet[]>
           演示文档模型?: Record<string, 演示文稿>
+          演示资源字节?: 演示资源条目[]
           pdfDocuments?: Array<{ id: string; name: string; path: string | null; data?: string | null }>
           activePdfId?: string | null
           activeModule?: ModuleKey
@@ -471,6 +513,14 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           } catch (错误) {
             throw new Error(`无法恢复「${文档.name}」：${错误 instanceof Error ? 错误.message : '演示模型无效'}`)
           }
+        }
+        const 演示引用 = [...new Set(Object.values(已迁移演示).flatMap(收集演示资源标识))]
+        if (演示引用.length > 0) {
+          if (!Array.isArray(数据.演示资源字节) || 数据.演示资源字节.length !== 演示引用.length) {
+            throw new Error('备份缺少演示资源字节，已阻止加载不完整的文稿')
+          }
+          const 恢复结果 = await 桥接.presentationResources.restore(数据.演示资源字节)
+          if (!恢复结果.成功) throw new Error(恢复结果.错误 || '演示资源恢复失败')
         }
         const PDF读取结果 = await Promise.allSettled(PDF元数据.map(async (记录): Promise<PdfDocument> => {
           if (typeof 记录?.id !== 'string' || typeof 记录.name !== 'string' ||

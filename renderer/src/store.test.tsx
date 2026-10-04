@@ -965,6 +965,36 @@ describe('createDoc 按文档保存模型', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
+  it('演示资源随工作区备份导出并在恢复时先还原字节', async () => {
+    let 备份内容: string | null = null
+    const 指纹 = 'b'.repeat(64)
+    const 同步 = vi.fn(async () => ({ 成功: true }))
+    const 恢复 = vi.fn(async () => ({ 成功: true }))
+    const 导出 = vi.fn(async () => ({ 成功: true, 条目: [{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }] }))
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: 备份内容 })),
+      backupSave: vi.fn(async (内容: string) => { 备份内容 = 内容; return { 成功: true } }),
+      backupClear: vi.fn(async () => ({ 成功: true })),
+      presentationResources: { sync: 同步, restore: 恢复, export: 导出, release: vi.fn(async () => ({ 成功: true })) },
+    } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    const 首次 = render(<AppProvider><读取 /></AppProvider>)
+    await waitFor(() => expect(状态!.启动恢复结束).toBe(true))
+    const 文稿 = 创建演示文稿('资源演示.pptx')
+    文稿.资源索引 = { [指纹]: { 指纹, 类型: 'image/png', 字节数: 3 } }
+    文稿.幻灯片列表[0].对象列表 = [{ id: '图一', 类型: '图片', x: 0, y: 0, width: 50, height: 50, 资源标识: 指纹 }]
+    act(() => 状态!.createDoc('ppt', 文稿, { 路径: 'E:\\资料\\资源.pptx' }))
+    await waitFor(() => expect(备份内容).not.toBeNull(), { timeout: 3500 })
+    expect(JSON.parse(备份内容!).演示资源字节).toEqual([{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }])
+    首次.unmount()
+    render(<AppProvider><读取 /></AppProvider>)
+    await waitFor(() => expect(状态!.演示文档模型[状态!.activeDocumentId!]?.幻灯片列表[0].对象列表).toHaveLength(1))
+    expect(恢复).toHaveBeenCalledWith([{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }])
+    expect(同步).toHaveBeenCalledWith(expect.stringContaining('文稿:'), [指纹])
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
   it('表格主入口创建并重开时保留页面设置与单元格布局元数据', async () => {
     let 状态: AppState | null = null
     const 来源 = [{
