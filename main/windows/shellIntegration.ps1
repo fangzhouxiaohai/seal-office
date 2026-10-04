@@ -2,6 +2,7 @@
   [ValidateSet('Install','Uninstall','RegisterApplication','GetInstallation','InspectDefaults')][string]$Action,
   [string]$ExecutableFile,
   [string]$Templates,
+  [string]$Icons,
   [ValidateSet('CurrentUser','all')][string]$Scope = 'CurrentUser',
   [string]$TestRoot = ''
 )
@@ -22,6 +23,14 @@ $taskState = "$taskApplication\ShellIntegration"
 $taskTypes = @('doc','docx','ppt','pptx','pdf','xls','xlsx')
 $taskSupported = @('docx','xlsx','pptx','pdf')
 $taskLabels = @{doc='DOC 文档';docx='DOCX 文档';ppt='PPT 演示文稿';pptx='PPTX 演示文稿';pdf='PDF 文档';xls='XLS 工作表';xlsx='XLSX 工作表'}
+$taskIcons = @{doc='word.ico';docx='word.ico';xls='table.ico';xlsx='table.ico';ppt='ppt.ico';pptx='ppt.ico';pdf='pdf.ico'}
+
+function Assert-FileIcons {
+  if (-not $Icons -or -not [IO.Path]::IsPathRooted($Icons)) { throw '文件类型图标目录无效' }
+  foreach ($name in @('word.ico','table.ico','ppt.ico','pdf.ico')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $Icons $name) -PathType Leaf)) { throw "缺少文件类型图标：$name" }
+  }
+}
 
 function Read-Value($keyPath, $name) {
   $key = $taskBase.OpenSubKey($keyPath)
@@ -57,13 +66,18 @@ function Restore-Key($keyPath, $snapshot) {
 }
 function Register-Application {
   if (-not (Test-Path -LiteralPath $ExecutableFile -PathType Leaf)) { throw '程序可执行文件不存在' }
-  foreach ($ext in $taskSupported) {
-    $id = "SealOffice.$ext"
+  Assert-FileIcons
+  foreach ($ext in $taskTypes) {
+    $id = if ($ext -in $taskSupported) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Set-Value "$taskClasses\$id" '' ("海豹办公 " + $taskLabels[$ext])
-    Set-Value "$taskClasses\$id\DefaultIcon" '' ('"' + $ExecutableFile + '",0')
-    Set-Value "$taskClasses\$id\shell\open\command" '' ('"' + $ExecutableFile + '" "%1"')
-    Set-Value "$taskClasses\.$ext\OpenWithProgids" $id ([byte[]]@()) ([Microsoft.Win32.RegistryValueKind]::None)
-    Set-Value "$taskApplication\Capabilities\FileAssociations" ".$ext" $id
+    Set-Value "$taskClasses\$id\DefaultIcon" '' ('"' + (Join-Path $Icons $taskIcons[$ext]) + '",0')
+    if ($ext -in $taskSupported) {
+      Set-Value "$taskClasses\$id\shell\open\command" '' ('"' + $ExecutableFile + '" "%1"')
+      Set-Value "$taskClasses\.$ext\OpenWithProgids" $id ([byte[]]@()) ([Microsoft.Win32.RegistryValueKind]::None)
+      Set-Value "$taskApplication\Capabilities\FileAssociations" ".$ext" $id
+    } else {
+      Set-Value "$taskClasses\$id\shell\open\command" '' ('"' + $env:SystemRoot + '\System32\rundll32.exe" shell32.dll,OpenAs_RunDLL "%1"')
+    }
   }
   Set-Value "$taskApplication\Capabilities" 'ApplicationName' '海豹办公'
   Set-Value "$taskApplication\Capabilities" 'ApplicationDescription' '文字、表格、演示文稿与 PDF 本地办公'
@@ -80,6 +94,7 @@ try {
   switch ($Action) {
     'RegisterApplication' { Register-Application; Notify-Shell; $result = @{ 成功=$true } }
     'Install' {
+      Assert-FileIcons
       foreach ($ext in $taskTypes) { if (-not (Test-Path -LiteralPath (Join-Path $Templates "blank.$ext") -PathType Leaf)) { throw "缺少 $ext 新建模板" } }
       $original = Read-Value $taskState 'OriginalShellNew'
       $saved = if ($original) { $original | ConvertFrom-Json } else { [pscustomobject]@{} }
@@ -111,11 +126,6 @@ try {
           $id = if ($ext -in $taskSupported) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
           Set-Value "$taskClasses\.$ext" '' $id
           $defaults | Add-Member -NotePropertyName $ext -NotePropertyValue $id -Force
-          if ($ext -notin $taskSupported) {
-            Set-Value "$taskClasses\$id" '' ("海豹办公 " + $taskLabels[$ext])
-            Set-Value "$taskClasses\$id\DefaultIcon" '' ('"' + $ExecutableFile + '",0')
-            Set-Value "$taskClasses\$id\shell\open\command" '' ('"' + $env:SystemRoot + '\System32\rundll32.exe" shell32.dll,OpenAs_RunDLL "%1"')
-          }
         }
       }
       Set-Value $taskState 'InstalledShellNew' ($installed | ConvertTo-Json -Depth 30 -Compress)

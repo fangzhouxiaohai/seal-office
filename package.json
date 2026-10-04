@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "seal-office",
@@ -16,6 +16,7 @@
     "test:main": "vitest run --config vitest.main.config.js",
     "test:packaging": "node --test scripts/generate-integrity.test.cjs",
     "typecheck": "tsc --noEmit",
+    "icons:files": "electron build/make-file-icons.cjs",
     "pack": "npm run build && electron-builder --win --dir",
     "dist": "npm run build && electron-builder --win"
   },
@@ -91,6 +92,11 @@
       {
         "from": "main/windows/shellIntegration.ps1",
         "to": "shell-integration/shellIntegration.ps1"
+      },
+      {
+        "from": "main/windows/file-icons",
+        "to": "file-icons",
+        "filter": ["*.ico"]
       },
       {
         "from": "build/shell-new",

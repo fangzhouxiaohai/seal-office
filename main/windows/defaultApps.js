@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execFile } = require('child_process')
+const { 准备关联文件图标 } = require('./fileIcons')
 
 function 获取关联程序路径(已打包, 当前路径, 环境 = process.env) {
   const 便携路径 = 环境.PORTABLE_EXECUTABLE_FILE
@@ -9,13 +10,15 @@ function 获取关联程序路径(已打包, 当前路径, 环境 = process.env)
   return path.win32.normalize(便携路径)
 }
 
-function 创建注册执行器({ 可执行文件, 资源目录 }) {
+function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 便携版 = Boolean(process.env.PORTABLE_EXECUTABLE_FILE) }) {
   return async 操作 => {
     const 脚本 = path.join(资源目录, 'shell-integration', 'shellIntegration.ps1')
     const 原脚本 = fs.readFileSync(path.join(__dirname, 'shellIntegration.ps1'))
     if (!原脚本.equals(fs.readFileSync(脚本))) throw new Error('系统关联组件已缺失或修改，请重新安装可信版本')
     const 命令 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-    const 输出 = await new Promise((完成, 拒绝) => execFile(命令, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', 脚本, '-Action', 操作, '-ExecutableFile', 可执行文件], { windowsHide: true, timeout: 30000, encoding: 'utf8' }, (错误, stdout, stderr) => {
+    const 参数 = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', 脚本, '-Action', 操作, '-ExecutableFile', 可执行文件]
+    if (操作 === 'RegisterApplication') 参数.push('-Icons', await 准备关联文件图标({ 资源目录, 数据目录, 便携版 }))
+    const 输出 = await new Promise((完成, 拒绝) => execFile(命令, 参数, { windowsHide: true, timeout: 30000, encoding: 'utf8' }, (错误, stdout, stderr) => {
       if (错误) {
         let 说明
         try { 说明 = JSON.parse(stdout.replace(/^\uFEFF/, '').trim()).错误 } catch { /* 系统未返回结构化错误 */ }
@@ -31,7 +34,7 @@ function 创建注册执行器({ 可执行文件, 资源目录 }) {
 }
 
 function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执行文件, 数据目录, 资源目录, 执行注册, 打开地址 }) {
-  const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录 })
+  const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录, 数据目录 })
   const 状态路径 = path.join(数据目录, 'default-app-prompt.json')
   let 队列 = Promise.resolve()
   async function 设置默认程序() {

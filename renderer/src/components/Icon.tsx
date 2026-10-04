@@ -1,6 +1,7 @@
 // 内联 SVG 图标集：全站唯一图标来源，不引入第三方图标库。
 // 线性图标统一 1.6 描边与圆角端点；文档类型图标使用填充风格。
 import React from 'react'
+import FileTypeIcon, { type FileIconType } from './FileTypeIcon'
 
 export const ICON_NAMES = [
   'home', 'clock', 'star', 'star-filled', 'share', 'cloud', 'users',
@@ -482,36 +483,8 @@ const 线性路径: Record<string, React.ReactNode> = {
   ),
 }
 
-/** 文档类型图标：填充风格，颜色由外部传入 */
+/** 其余图标：文件类别的图形统一由 FileTypeIcon 提供。 */
 const 文档图标: Record<string, React.ReactNode> = {
-  'doc-word': (
-    <>
-      <path d="M3.4 1.6h9.2v12.8H3.4z" fill="currentColor" opacity="0.16" stroke="none" />
-      <path d="M3.4 1.6h9.2v12.8H3.4z" />
-      <path d="M5.4 5.2h5.2M5.4 8h5.2M5.4 10.8h3.2" />
-    </>
-  ),
-  'doc-table': (
-    <>
-      <path d="M3.4 1.6h9.2v12.8H3.4z" fill="currentColor" opacity="0.16" stroke="none" />
-      <path d="M3.4 1.6h9.2v12.8H3.4z" />
-      <path d="M3.4 5.6h9.2M3.4 9.6h9.2M8 5.6v8.8" />
-    </>
-  ),
-  'doc-ppt': (
-    <>
-      <path d="M3.4 1.6h9.2v12.8H3.4z" fill="currentColor" opacity="0.16" stroke="none" />
-      <path d="M3.4 1.6h9.2v12.8H3.4z" />
-      <path d="M5.6 5.4h2.6a1.6 1.6 0 0 1 0 3.2H5.6zM5.6 8.6v3" />
-    </>
-  ),
-  'doc-pdf': (
-    <>
-      <path d="M3.4 1.6h5.4l3.8 3.8v9H3.4z" fill="currentColor" opacity="0.16" stroke="none" />
-      <path d="M3.4 1.6h5.4l3.8 3.8v9H3.4z" />
-      <path d="M8.8 1.6v3.8h3.8" />
-    </>
-  ),
   'doc-empty': (
     <>
       <path d="M3.4 1.6h5.4l3.8 3.8v9H3.4z" />
@@ -641,7 +614,12 @@ const 文档图标: Record<string, React.ReactNode> = {
   ),
 }
 
+const 文件类型: Record<string, FileIconType> = {
+  'doc-word': 'word', 'doc-table': 'table', 'doc-ppt': 'ppt', 'doc-pdf': 'pdf',
+}
+
 const Icon = ({ name, size = 16, color, className }: IconProps) => {
+  if (文件类型[name]) return <FileTypeIcon type={文件类型[name]} size={size} color={color} className={className} />
   const 图形 = 线性路径[name] ?? 文档图标[name] ?? 文档图标['doc-empty']
 
   return React.createElement(

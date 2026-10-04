@@ -2,7 +2,7 @@ describe('Windows 文件关联入口', () => {
   it('安装版包含系统菜单注册脚本和真实空白模板', () => {
     const 配置 = require('../package.json').build
     expect(配置.nsis.include).toBe('build/installer.nsh')
-    expect(配置.extraResources.map(项 => 项.to)).toEqual(['shell-integration/shellIntegration.ps1', 'shell-new'])
+    expect(配置.extraResources.map(项 => 项.to)).toEqual(['shell-integration/shellIntegration.ps1', 'file-icons', 'shell-new'])
   })
 
   it('只接收绝对路径及支持的扩展名，并保留中文和空格', () => {

@@ -1,5 +1,6 @@
 // 文档类型的展示元数据：文案、图标与配色，供网格卡片与列表行共用，避免多处重复定义。
 import type { DocType } from './mock/recentDocs'
+import 图标设计 from './components/fileIconDesign.json'
 
 export const DOC_TYPE_LABEL: Record<DocType, string> = {
   word: '文字',
@@ -16,8 +17,8 @@ export const DOC_TYPE_ICON: Record<DocType, string> = {
 }
 
 export const DOC_TYPE_COLOR: Record<DocType, string> = {
-  word: '#2B6CF6',
-  table: '#00A870',
-  ppt: '#ED7B2F',
-  pdf: '#E34D59',
+  word: 图标设计.types.word.color,
+  table: 图标设计.types.table.color,
+  ppt: 图标设计.types.ppt.color,
+  pdf: 图标设计.types.pdf.color,
 }

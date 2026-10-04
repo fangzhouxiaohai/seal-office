@@ -16,6 +16,48 @@ describe('便携版默认程序路径', () => {
   })
 })
 
+describe('默认程序注册执行链路', () => {
+  async function 拦截注册(执行) {
+    const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-registration-'))
+    const 资源目录 = path.join(目录, '解包 资源'), 数据目录 = path.join(目录, '持久 数据')
+    fs.mkdirSync(path.join(资源目录, 'shell-integration'), { recursive: true })
+    fs.copyFileSync(path.join(__dirname, 'shellIntegration.ps1'), path.join(资源目录, 'shell-integration', 'shellIntegration.ps1'))
+    fs.cpSync(path.join(__dirname, 'file-icons'), path.join(资源目录, 'file-icons'), { recursive: true })
+    const 子进程 = require('child_process'), 原执行 = 子进程.execFile
+    const 模块路径 = require.resolve('./defaultApps'), 原模块 = require.cache[模块路径]
+    const 调用 = vi.fn((_程序, _参数, _选项, 回调) => 回调(null, '{"成功":true}', ''))
+    子进程.execFile = 调用
+    delete require.cache[模块路径]
+    try {
+      const 注册 = require('./defaultApps').创建注册执行器({ 可执行文件: 'E:\\办公工具\\海豹办公.exe', 资源目录, 数据目录, 便携版: true })
+      await 执行({ 注册, 调用, 资源目录, 数据目录 })
+    } finally {
+      子进程.execFile = 原执行
+      require.cache[模块路径] = 原模块
+      fs.rmSync(目录, { recursive: true, force: true })
+    }
+  }
+  it('真实执行器先持久保存图标，再通过独立参数交给系统注册脚本', async () => {
+    await 拦截注册(async ({ 注册, 调用, 数据目录 }) => {
+      expect(await 注册('RegisterApplication')).toEqual({ 成功: true })
+      const [程序, 参数, 选项] = 调用.mock.calls[0]
+      expect(程序).toContain('powershell.exe')
+      expect(选项.windowsHide).toBe(true)
+      const 图标目录 = 参数[参数.indexOf('-Icons') + 1]
+      expect(图标目录).toBe(path.join(数据目录, 'file-icons'))
+      expect(fs.existsSync(path.join(图标目录, 'word.ico'))).toBe(true)
+      expect(参数[参数.indexOf('-ExecutableFile') + 1]).toBe('E:\\办公工具\\海豹办公.exe')
+    })
+  })
+  it('资源损坏时真实执行器不会启动注册进程', async () => {
+    await 拦截注册(async ({ 注册, 调用, 资源目录 }) => {
+      fs.writeFileSync(path.join(资源目录, 'file-icons', 'pdf.ico'), '被修改')
+      await expect(注册('RegisterApplication')).rejects.toThrow('PDF文件图标已缺失或修改')
+      expect(调用).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('默认程序与安装后首次提醒', () => {
   let 目录, 调用, 系统打开, 服务, 安装, 默认
   beforeEach(() => {

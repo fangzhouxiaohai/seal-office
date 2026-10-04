@@ -6,13 +6,13 @@
 
 ## Windows 下载
 
-当前版本：**1.7.1**，适用于 Windows x64。
+当前版本：**1.7.2**，适用于 Windows x64。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice.1.7.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.1/SealOffice.1.7.1.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice.Setup.1.7.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.1/SealOffice.Setup.1.7.1.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
-| 发布说明 | [v1.7.1 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.1)，包含升级记录与文件校验值。 |
+| 便携版 | [SealOffice.1.7.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.2/SealOffice.1.7.2.exe)，下载后直接运行。 |
+| 安装版 | [SealOffice.Setup.1.7.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.2/SealOffice.Setup.1.7.2.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
+| 发布说明 | [v1.7.2 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.2)，包含专属文件图标与文件校验值。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -25,6 +25,14 @@
 设置中心“组件管理”的按钮为“设为默认程序”，可随时自行设置。Windows 10／11 的默认关联由系统确认；Windows 11 支持海豹办公专属页面，Windows 10 的页面表现取决于系统版本。便携版不自动注册新建菜单或显示安装提醒，手动点击该按钮时注册可用的默认程序能力。
 
 DOC、XLS、PPT 模板是真实旧式二进制格式，当前海豹办公仍不提供旧式编辑器，需要电脑已有兼容程序。海豹办公的默认程序能力只注册 DOCX、XLSX、PPTX、PDF。详细范围见[1.7.1 升级说明](docs/v1.7.1-Windows新建菜单与默认程序.md)。
+
+### 专属文件图标
+
+关联海豹办公后，资源管理器按类别显示独立图标：文字蓝色、表格绿色、演示橙色、PDF 红色。首页、最近文档及底部标签沿用同一套图形。每类包含 9 个尺寸，覆盖小图列表与高分辨率显示；同类旧式与现代格式共用图标。
+
+![文字、表格、演示与 PDF 文件图标设计预览，包含浅深背景与常用尺寸](docs/screenshots/v1.7.2/file-type-icons.png)
+
+上图是实际图标资源的设计预览。安装和升级会注册各类图标并通知系统刷新；便携版手动设置默认程序时先持久保存图标，退出后仍可读取。Windows 文件图标由实际默认应用决定，尚未关联的文件继续显示当前默认应用图标；已关联的旧版用户安装更新后即可使用，系统缓存刷新时间由资源管理器决定。详见[1.7.2 升级说明](docs/v1.7.2-专属文件类型图标.md)。
 
 ## 主要能力
 
@@ -70,7 +78,7 @@ DOC、XLS、PPT 模板是真实旧式二进制格式，当前海豹办公仍不�
 
 ## 软件截图
 
-智能助手截图采集自 Windows 版 **1.7.0**，对话使用本机模拟接口展示流式和修改流程；全宽文字、表格、演示、PDF 和全屏放映截图采集自 **1.6.9**；图片调整和深浅主题截图保留自 **1.6.8**，首页、设置和帮助截图保留自 **1.6.7**。文档内容均为演示数据，具体功能和格式支持范围见下方说明。
+文件图标预览与首页截图来自 **1.7.2**；智能助手截图采集自 Windows 版 **1.7.0**，对话使用本机模拟接口展示流式和修改流程；全宽文字、表格、演示、PDF 和全屏放映截图采集自 **1.6.9**；图片调整和深浅主题截图保留自 **1.6.8**，设置和帮助截图保留自 **1.6.7**。文档内容均为演示数据，具体功能和格式支持范围见下方说明。
 
 ### 模型预设、任务计划与流式修改
 
@@ -96,7 +104,7 @@ DeepSeek 初始配置已填写模型与接口，填写密钥即可使用；完�
 
 首页集中展示最近文档和常用入口，已打开的文件固定在底部标签栏，方便切换。
 
-![首页与底部多标签工作区](docs/screenshots/v1.6.7/01-home.png)
+![首页与底部多标签工作区，四类快捷入口使用专属文件图标](docs/screenshots/v1.7.2/home-file-icons.png)
 
 ### 文字文档
 

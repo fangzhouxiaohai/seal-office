@@ -69,11 +69,13 @@ async function 验收() {
       const script=path.join(process.resourcesPath,'shell-integration','shellIntegration.ps1')
       const templates=path.join(process.resourcesPath,'shell-new')
       const 模块=process.mainModule.require(path.join(electron.app.getAppPath(),'main','windows','defaultApps.js'))
+      const 图标模块=process.mainModule.require(path.join(electron.app.getAppPath(),'main','windows','fileIcons.js'))
+      globalThis.验收图标目录=await 图标模块.准备关联文件图标({资源目录:process.resourcesPath,数据目录:electron.app.getPath('userData'),便携版:Boolean(process.env.PORTABLE_EXECUTABLE_FILE)})
       globalThis.验收程序路径=模块.获取关联程序路径(electron.app.isPackaged,electron.app.getPath('exe'))
       globalThis.验收关联调用=[];globalThis.验收默认地址=[]
       globalThis.验收关联执行=async action=>{
         globalThis.验收关联调用.push(action)
-        const 输出=await new Promise((resolve,reject)=>process.mainModule.require('child_process').execFile(path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action',action,'-ExecutableFile',globalThis.验收程序路径,'-Templates',templates,'-TestRoot',${JSON.stringify(注册表位置)}],{windowsHide:true,timeout:30000,encoding:'utf8'},(error,stdout,stderr)=>error?reject(new Error(stdout||stderr||error.message)):resolve(stdout)))
+        const 输出=await new Promise((resolve,reject)=>process.mainModule.require('child_process').execFile(path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action',action,'-ExecutableFile',globalThis.验收程序路径,'-Templates',templates,'-Icons',globalThis.验收图标目录,'-TestRoot',${JSON.stringify(注册表位置)}],{windowsHide:true,timeout:30000,encoding:'utf8'},(error,stdout,stderr)=>error?reject(new Error(stdout||stderr||error.message)):resolve(stdout)))
         const 结果=JSON.parse(输出.replace(/^\\uFEFF/,'').trim());if(!结果.成功)throw new Error(结果.错误);return 结果
       }
       if(${JSON.stringify(阶段)}==='confirm')await globalThis.验收关联执行('Uninstall')
@@ -84,13 +86,18 @@ async function 验收() {
       electron.ipcMain.handle('system.setDefaultApp',()=>globalThis.验收默认服务.设置默认程序())
       electron.dialog.showOpenDialog=async()=>({canceled:false,filePaths:[globalThis.验收打开路径]})
       const 字节一致=fs.readFileSync(script).equals(fs.readFileSync(path.join(electron.app.getAppPath(),'main','windows','shellIntegration.ps1')))
-      return {安装:await globalThis.验收关联执行('GetInstallation'),字节一致,路径正确:globalThis.验收程序路径===(process.env.PORTABLE_EXECUTABLE_FILE||electron.app.getPath('exe')),模板:fs.readdirSync(templates).filter(名称=>名称.startsWith('blank.'))}
+      const 图标一致=['word','table','ppt','pdf'].every(名称=>fs.readFileSync(path.join(globalThis.验收图标目录,名称+'.ico')).equals(fs.readFileSync(path.join(electron.app.getAppPath(),'main','windows','file-icons',名称+'.ico'))))
+      const 图标路径正确=globalThis.验收图标目录===path.join(process.env.PORTABLE_EXECUTABLE_FILE?electron.app.getPath('userData'):process.resourcesPath,'file-icons')
+      return {安装:await globalThis.验收关联执行('GetInstallation'),字节一致,图标一致,图标路径正确,路径正确:globalThis.验收程序路径===(process.env.PORTABLE_EXECUTABLE_FILE||electron.app.getPath('exe')),模板:fs.readdirSync(templates).filter(名称=>名称.startsWith('blank.'))}
     })()`)
     检查(安装.字节一致 && 安装.模板.length === 7, '打包注册组件与七种模板完整')
     检查(安装.安装.已安装, '真实隔离注册表安装成功')
     检查(安装.路径正确, '默认程序路径指向持久启动文件，便携版不指向临时目录')
+    检查(安装.图标一致, '四种外置文件图标与应用内可信资源一致')
+    检查(安装.图标路径正确, '安装版图标位于稳定资源目录，便携版图标位于持久数据目录')
     await 执行('location.reload()')
     await 等待("Boolean(document.querySelector('.wps-titlebar'))")
+    检查((await 执行("[...document.querySelectorAll('.wps-recommend__cell [data-file-type]')].map(图=>图.dataset.fileType)")).join(',') === 'word,table,ppt,pdf', '首页四类快捷入口显示专属文件图标')
     if (阶段 === 'repeat') {
       await 等待片刻(1800)
       检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), '取消后真实进程重启不再弹窗')
@@ -107,6 +114,7 @@ async function 验收() {
       const 后续 = await 执行('window.electronAPI.checkDefaultAppPrompt()')
       检查(后续.成功 && !后续.需要询问, '首次选择后不再主动询问')
     }
+    if (阶段 === 'first') await 截图('home-file-icons')
     if (阶段 === 'confirm') {
       await 点击('全局设置')
       await 等待("Boolean([...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='设置'))")

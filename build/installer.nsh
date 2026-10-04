@@ -1,5 +1,5 @@
 ﻿!macro customInstall
-  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\resources\shell-integration\shellIntegration.ps1" -Action Install -ExecutableFile "$INSTDIR\${APP_EXECUTABLE_FILENAME}" -Templates "$INSTDIR\resources\shell-new" -Scope "$installMode"'
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\resources\shell-integration\shellIntegration.ps1" -Action Install -ExecutableFile "$INSTDIR\${APP_EXECUTABLE_FILENAME}" -Templates "$INSTDIR\resources\shell-new" -Icons "$INSTDIR\resources\file-icons" -Scope "$installMode"'
   Pop $0
   Pop $1
   ${If} $0 != 0
