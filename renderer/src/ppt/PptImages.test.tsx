@@ -8,7 +8,7 @@ import { 创建演示文稿 } from './deck'
 import { 解码图片文件 } from './model/imageImport'
 vi.mock('./model/imageImport',()=>({ 解码图片文件:vi.fn() }))
 const 指纹='a'.repeat(64), 数据='AQID'
-afterEach(()=>{Reflect.deleteProperty(window,'electronAPI');vi.clearAllMocks()})
+afterEach(()=>{Reflect.deleteProperty(window,'electronAPI');vi.clearAllMocks();vi.unstubAllGlobals()})
 async function 装配() {
   const 添加=vi.fn(async()=>({成功:true,标识:指纹,字节数:3,类型:'image/png'})),写入=vi.fn(async(_模型: unknown)=>({成功:true,数据:'文稿字节'}))
   Object.defineProperty(window,'electronAPI',{configurable:true,value:{
@@ -21,9 +21,55 @@ async function 装配() {
   const 视图=render(<AntdApp><AppProvider><入口/></AppProvider></AntdApp>)
   await waitFor(()=>expect(状态.启动恢复结束).toBe(true))
   act(()=>状态.createDoc('ppt',创建演示文稿('图片测试')))
-  return { ...视图,添加,写入,读取文稿:()=>状态.演示文档模型[状态.activeDocumentId!] }
+  return { ...视图,添加,写入,状态:()=>状态,读取文稿:()=>状态.演示文档模型[状态.activeDocumentId!] }
 }
 describe('图片输入与保存闭环',()=>{
+  it('处理期间正文变动或开启只读均中止，释放暂存引用',async()=>{
+    const {读取文稿,添加,状态}=await 装配()
+    let 完成!: (值: {成功:boolean;标识:string;字节数:number;类型:string})=>void
+    添加.mockImplementationOnce(()=>new Promise<{成功:boolean;标识:string;字节数:number;类型:string}>(resolve=>{完成=resolve}))
+    fireEvent.change(screen.getByLabelText('选择图片文件'),{target:{files:[new File(['字节'],'图片.png')]}})
+    await waitFor(()=>expect(添加).toHaveBeenCalled())
+    const 当前=读取文稿(),更新={...当前,name:'期间编辑'}
+    act(()=>状态().更新演示文档模型(状态().activeDocumentId!,更新))
+    await act(async()=>完成({成功:true,标识:指纹,字节数:3,类型:'image/png'}))
+    expect(await screen.findByText('图片处理期间文稿已变化，请重新插入')).toBeInTheDocument()
+    expect(读取文稿()).toEqual(更新)
+    expect(window.electronAPI!.presentationResources!.dropTemporary).toHaveBeenCalledWith(指纹)
+  })
+  it.each(['只读','删除页面','切换文档'])('处理期间%s中止，既有编辑保持且暂存资源释放',async 场景=>{
+    const {读取文稿,添加,状态}=await 装配()
+    let 完成!: (值:{成功:boolean;标识:string;字节数:number;类型:string})=>void
+    添加.mockImplementationOnce(()=>new Promise<{成功:boolean;标识:string;字节数:number;类型:string}>(resolve=>{完成=resolve}))
+    fireEvent.change(screen.getByLabelText('选择图片文件'),{target:{files:[new File(['字节'],'图片.png')]}})
+    await waitFor(()=>expect(添加).toHaveBeenCalled())
+    if(场景==='只读') await userEvent.click(screen.getByRole('checkbox',{name:'只读查看'}))
+    else if(场景==='删除页面') act(()=>状态().更新演示文档模型(状态().activeDocumentId!,{...读取文稿(),幻灯片列表:[],当前索引:0}))
+    else act(()=>状态().createDoc('ppt',创建演示文稿('另一文档')))
+    const 保留=读取文稿()
+    await act(async()=>完成({成功:true,标识:指纹,字节数:3,类型:'image/png'}))
+    expect(await screen.findByText(场景==='只读'?'图片处理期间已开启只读，请关闭只读后重新插入':场景==='切换文档'?'图片处理期间文档已切换，请重新插入':'图片处理期间文稿已变化，请重新插入')).toBeInTheDocument()
+    expect(读取文稿()).toEqual(保留)
+    expect(window.electronAPI!.presentationResources!.dropTemporary).toHaveBeenCalledWith(指纹)
+  })
+  it('右键图片粘贴读取真实系统剪贴板并走图片校验',async()=>{
+    const {读取文稿,container}=await 装配()
+    const 读取=vi.fn(async()=>[{types:['image/png'],getType:async()=>new Blob(['字节'],{type:'image/png'})}])
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{read:读取}})
+    fireEvent.contextMenu(container.querySelector('.wps-ppt-canvas')!,{clientX:100,clientY:100})
+    await userEvent.click(screen.getByText('粘贴图片'))
+    await waitFor(()=>expect(读取文稿().幻灯片列表[0].对象列表).toHaveLength(1))
+    expect(读取).toHaveBeenCalledTimes(1)
+  })
+  it('按钮与页面主体焦点接收图片粘贴，输入框保持原生粘贴',async()=>{
+    const {读取文稿,添加}=await 装配(),文件=new File(['字节'],'图片.png')
+    fireEvent.paste(screen.getByRole('button',{name:'保存'}),{clipboardData:{files:[文件]}})
+    await waitFor(()=>expect(读取文稿().幻灯片列表[0].对象列表).toHaveLength(1))
+    fireEvent.paste(document.body,{clipboardData:{files:[文件]}})
+    await waitFor(()=>expect(读取文稿().幻灯片列表[0].对象列表).toHaveLength(2))
+    fireEvent.paste(screen.getByLabelText('宽度'),{clipboardData:{files:[文件]}})
+    expect(添加).toHaveBeenCalledTimes(2)
+  })
   it('选择取消不改变正文，相同字节复用资源，原生保存提交真实字节',async()=>{
     const {读取文稿,添加,写入}=await 装配(),输入=screen.getByLabelText('选择图片文件'),之前=JSON.stringify(读取文稿())
     fireEvent.change(输入,{target:{files:[]}})

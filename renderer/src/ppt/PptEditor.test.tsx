@@ -288,7 +288,7 @@ describe('演示文稿编辑器容器', () => {
     await userEvent.click(取消按钮[取消按钮.length - 1])
     expect(screen.getByRole('tab', { name: /汇报\.pptx/ })).toBeInTheDocument()
   })
-  it('导入警告会弹窗提示，并禁止保存覆盖演示源文件', async () => {
+  it.each(['图片尚未导入','图片效果未完整导入','图片填充区域未完整导入'])('导入风险 %s 弹窗提示并禁止覆盖来源', async 风险 => {
     const 写入 = vi.fn()
     const 编码 = vi.fn()
     Object.defineProperty(window, 'electronAPI', {
@@ -304,14 +304,14 @@ describe('演示文稿编辑器容器', () => {
     const 创建入口 = () => {
       const 状态 = useAppStore()
       return <>
-        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx', 警告: ['图片尚未导入'] })}>打开带警告演示</button>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx', 警告: [风险] })}>打开带警告演示</button>
         {状态.module === 'ppt' ? <PptEditor /> : null}
       </>
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
     expect((await screen.findAllByText('演示文稿内容可能未完整导入')).length).toBeGreaterThan(0)
-    expect(screen.getAllByText('图片尚未导入').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(风险).length).toBeGreaterThan(0)
     await userEvent.click(screen.getByRole('button', { name: '保存' }))
     expect((await screen.findAllByText('已阻止覆盖来源文件')).length).toBeGreaterThan(0)
     expect(编码).not.toHaveBeenCalled()

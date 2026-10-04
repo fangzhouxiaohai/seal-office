@@ -2222,7 +2222,7 @@ button {
 .wps-ppt-box {
   position: absolute;
   padding: 4px 6px;
-  border: 1px dashed transparent;
+  outline: 1px dashed transparent;
   line-height: 1.35;
   cursor: move;
   overflow: hidden;
@@ -2230,21 +2230,26 @@ button {
 }
 
 .wps-ppt-box:hover {
-  border-color: rgba(43, 108, 246, 0.4);
+  outline-color: rgba(43, 108, 246, 0.4);
 }
 
 .wps-ppt-box--selected {
-  border-color: var(--brand);
-  border-style: solid;
+  outline-color: var(--brand);
+  outline-style: solid;
 }
 
 .wps-ppt-box--editing {
-  border-color: var(--brand);
-  border-style: solid;
+  outline-color: var(--brand);
+  outline-style: solid;
   cursor: text;
 }
 
 .wps-ppt-box__editor {
+  box-sizing: border-box;
+  white-space: inherit;
+  overflow-wrap: inherit;
+  word-break: inherit;
+  line-height: inherit;
   width: 100%;
   height: 100%;
   padding: 0;

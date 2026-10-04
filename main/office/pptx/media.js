@@ -5,7 +5,7 @@ const sax = require('sax')
 const { 读取关系 } = require('./relations')
 const { 读取部件 } = require('./parts')
 
-const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}="([^"]*)"`))?.[1]
+const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
 const 编码标识 = 标识 => `seal-id:${Buffer.from(标识, 'utf8').toString('base64url')}`
 const 解码标识 = (名称, 后备) => 名称?.startsWith('seal-id:') ? Buffer.from(名称.slice(8), 'base64url').toString('utf8') : 后备
 const 转EMU = 值 => Math.round(值 * 12700)
@@ -120,6 +120,13 @@ async function 读取图片对象(包, 路径, xml) {
     const 内容 = 匹配[1]
     const 支持标签 = new Set(['p:pic','p:nvPicPr','p:cNvPr','p:cNvPicPr','p:nvPr','p:blipFill','p:spPr','a:picLocks','a:blip','a:srcRect','a:stretch','a:fillRect','a:xfrm','a:off','a:ext','a:prstGeom','a:avLst'])
     if (Array.from(内容.matchAll(/<([\w:]+)\b/g), 项 => 项[1]).some(标签 => !支持标签.has(标签))) 警告.push('图片效果未完整导入')
+    const 支持属性 = { 'p:cNvPr': ['id','name'], 'a:picLocks': ['noMove','noResize'], 'a:blip': ['r:embed'], 'a:srcRect': ['l','t','r','b'], 'a:fillRect': ['l','t','r','b'], 'a:xfrm': ['rot','flipH','flipV'], 'a:off': ['x','y'], 'a:ext': ['cx','cy'], 'a:prstGeom': ['prst'] }
+    const 属性解析器 = sax.parser(true)
+    属性解析器.onopentag = 标签 => {
+      if (Object.keys(标签.attributes).some(键 => !(支持属性[标签.name] ?? []).includes(键))) 警告.push('图片属性未完整导入')
+      if (标签.name === 'a:xfrm' && ['flipH','flipV'].some(键 => 标签.attributes[键] !== undefined && !['0','false'].includes(标签.attributes[键]))) 警告.push('图片效果未完整导入')
+    }
+    属性解析器.write(`<p:pic>${内容}</p:pic>`).close()
     const 嵌入 = 属性(内容.match(/<a:blip\b[^>]*>/)?.[0] ?? '', 'r:embed')
     const 关联 = 关系.get(嵌入)
     if (!关联 || 关联.外部 || !关联.类型.endsWith('/image')) throw new Error('图片嵌入关系缺失或使用外部链接')
@@ -134,12 +141,15 @@ async function 读取图片对象(包, 路径, xml) {
     const 裁剪值 = { 左: Number(属性(裁剪, 'l') ?? 0) / 100000, 上: Number(属性(裁剪, 't') ?? 0) / 100000, 右: Number(属性(裁剪, 'r') ?? 0) / 100000, 下: Number(属性(裁剪, 'b') ?? 0) / 100000 }
     const 属性标签 = 内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? ''
     const 锁标签 = 内容.match(/<a:picLocks\b[^>]*>/)?.[0] ?? ''
-    if (Array.from(锁标签.matchAll(/\b([\w:]+)="([^"]*)"/g)).some(项 => !['noMove','noResize'].includes(项[1])) || (属性(锁标签,'noMove') ?? '0') !== (属性(锁标签,'noResize') ?? '0')) 警告.push('图片锁定属性未完整导入')
+    const 锁定值 = 键 => ['1','true'].includes(属性(锁标签, 键))
+    if (Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g)).some(项 => !['noMove','noResize'].includes(项[1]) || !['0','1','false','true'].includes(项[2])) || 锁定值('noMove') !== 锁定值('noResize')) 警告.push('图片锁定属性未完整导入')
     const 旋转 = Number(属性(变换, 'rot') ?? 0) / 60000
-    if (/\bflip[HV]="1"|<a:(?:effectLst|effectDag|tile|duotone|lum|alphaModFix|ln|custGeom)\b|<a:prstGeom\b[^>]*prst="(?!rect")/.test(内容)) 警告.push('图片效果未完整导入')
+    if (/\bflip[HV]="(?:1|true)"|<a:(?:effectLst|effectDag|tile|duotone|lum|alphaModFix|ln|custGeom)\b|<a:prstGeom\b[^>]*prst="(?!rect")/.test(内容)) 警告.push('图片效果未完整导入')
+    const 填充区域 = 内容.match(/<a:fillRect\b[^>]*>/)?.[0] ?? ''
+    if (['l','t','r','b'].some(名称 => Number(属性(填充区域, 名称) ?? 0) !== 0)) 警告.push('图片填充区域未完整导入')
     const 几何值 = [属性(位置,'x'),属性(位置,'y'),属性(尺寸,'cx'),属性(尺寸,'cy')].map(Number)
     if (!几何值.every(Number.isFinite) || 几何值[2] <= 0 || 几何值[3] <= 0 || !Number.isFinite(旋转) || Object.values(裁剪值).some(值 => !Number.isFinite(值) || 值 < 0 || 值 >= 1) || 裁剪值.左 + 裁剪值.右 >= 1 || 裁剪值.上 + 裁剪值.下 >= 1) throw new Error('图片几何或裁剪数据损坏')
-    对象列表.push({ id: 解码标识(属性(属性标签, 'name'), `image-${路径}-${属性(属性标签, 'id')}`), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(属性(锁标签, 'noMove') === '1' ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识 })
+    对象列表.push({ id: 解码标识(属性(属性标签, 'name'), `image-${路径}-${属性(属性标签, 'id')}`), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识 })
   }
   // 组合按原生对象树读取；非恒等坐标变换保留风险提示，不能覆盖来源。
   const 栈 = [], 组合列表 = [], 顺序 = []
@@ -166,7 +176,7 @@ async function 读取图片对象(包, 路径, xml) {
     if (标签.name === 'a:ext' && !当前.子对象标识.length) { 当前.width = 转像素(标签.attributes.cx); 当前.height = 转像素(标签.attributes.cy) }
     if (标签.name === 'a:chOff' && (转像素(标签.attributes.x) !== 当前.x || 转像素(标签.attributes.y) !== 当前.y)) 警告.push('组合坐标变换未完整导入')
     if (标签.name === 'a:chExt' && (转像素(标签.attributes.cx) !== 当前.width || 转像素(标签.attributes.cy) !== 当前.height)) 警告.push('组合坐标变换未完整导入')
-    if (标签.name === 'a:xfrm' && !当前.子对象标识.length && (Number(标签.attributes.rot ?? 0) || 标签.attributes.flipH === '1' || 标签.attributes.flipV === '1')) 警告.push('组合旋转未完整导入')
+    if (标签.name === 'a:xfrm' && !当前.子对象标识.length && (Number(标签.attributes.rot ?? 0) || ['1','true'].includes(标签.attributes.flipH) || ['1','true'].includes(标签.attributes.flipV))) 警告.push('组合旋转未完整导入')
   }
   解析器.onclosetag = 名称 => { if (名称 === 'p:grpSp') 栈.pop(); if (名称 === 'p:grpSpPr') 组合属性 = false }
   解析器.write(xml).close()

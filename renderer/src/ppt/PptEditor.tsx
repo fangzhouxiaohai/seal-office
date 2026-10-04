@@ -78,6 +78,7 @@ const PptEditor = () => {
   const 图片输入 = useRef<HTMLInputElement>(null)
   const 插入中 = useRef(false)
   const 当前标识引用 = useRef(activeDocumentId); 当前标识引用.current = activeDocumentId
+  const 插图状态 = useRef({ 文稿, 只读 }); 插图状态.current = { 文稿, 只读 }
   const 图片引用键 = JSON.stringify([...new Set(收集演示资源标识(文稿))])
   useEffect(() => {
     let 取消 = false
@@ -324,6 +325,8 @@ const PptEditor = () => {
         对象列表.push({ id, 类型: '图片', x: (960 - width) / 2, y: (540 - height) / 2, width, height, 资源标识: 结果.标识 }); 新标识.push(id)
       }
       if (当前标识引用.current !== activeDocumentId) throw new Error('图片处理期间文档已切换，请重新插入')
+      if (插图状态.current.只读) throw new Error('图片处理期间已开启只读，请关闭只读后重新插入')
+      if (插图状态.current.文稿 !== 文稿 || !插图状态.current.文稿.幻灯片列表.some(页 => 页.id === 当前幻灯片.id)) throw new Error('图片处理期间文稿已变化，请重新插入')
       更新文稿({ ...更新幻灯片(文稿, 当前幻灯片.id, { 对象列表 }), 资源索引 })
       set选中对象(新标识); set选中框标识(null)
     } catch (错误) { 显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败') }
@@ -334,6 +337,31 @@ const PptEditor = () => {
       }
       插入中.current = false
     }
+  }
+
+  const 图片粘贴引用 = useRef(插入图片); 图片粘贴引用.current = 插入图片
+  useEffect(() => {
+    const 粘贴 = (事件: ClipboardEvent) => {
+      const 目标 = 事件.target instanceof Element ? 事件.target : null
+      if (目标?.closest('input,textarea,[contenteditable="true"],[role="textbox"]') || 插图状态.current.只读) return
+      const 文件 = Array.from(事件.clipboardData?.files ?? [])
+      if (文件.length) { 事件.preventDefault(); void 图片粘贴引用.current(文件) }
+    }
+    document.addEventListener('paste', 粘贴)
+    return () => document.removeEventListener('paste', 粘贴)
+  }, [])
+
+  const 粘贴系统图片 = async () => {
+    try {
+      if (!navigator.clipboard?.read) throw new Error('当前环境无法读取系统图片剪贴板，请使用键盘粘贴')
+      const 文件: File[] = []
+      for (const 条目 of await navigator.clipboard.read()) {
+        const 类型 = 条目.types.find(值 => 值.startsWith('image/'))
+        if (类型) 文件.push(new File([await 条目.getType(类型)], '剪贴板图片', { type: 类型 }))
+      }
+      if (!文件.length) throw new Error('系统剪贴板没有图片，请复制图片后再粘贴')
+      await 图片粘贴引用.current(文件)
+    } catch (错误) { 显示文件错误('图片粘贴失败', 错误 instanceof Error ? 错误.message : '剪贴板读取失败') }
   }
 
   /** 撤销：回到上一份演示文稿快照 */
@@ -395,6 +423,7 @@ const PptEditor = () => {
   const 执行命令 = (标识: string, 参数?: string) => {
     if (只读 && !标识.startsWith('view.') && !标识.startsWith('slideshow.') && !标识.startsWith('file.')) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
+    if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
     // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
     if (标识 === 'edit.cut' || 标识 === 'edit.copy') {
       标识 = 'clipboard.copy'
@@ -741,6 +770,7 @@ const PptEditor = () => {
         { type: 'item', commandId: 'edit.cut', label: '剪切' },
         { type: 'item', commandId: 'edit.copy', label: '复制' },
         { type: 'item', commandId: 'edit.paste', label: '粘贴' },
+        { type: 'item', commandId: 'edit.pasteImage', label: '粘贴图片' },
       ]},
       { type: 'divider' },
       { type: 'group', 子项: [
