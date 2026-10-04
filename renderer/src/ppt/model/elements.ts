@@ -1,4 +1,5 @@
 import type { 演示对象, 幻灯片 } from '../deck'
+import { 要求对象可编辑 } from './objectPermissions'
 export type 图形种类 = '矩形'|'圆角矩形'|'椭圆'|'菱形'|'三角形'|'箭头'|'星形'|'爱心'|'艺术字'|'连接线'
 export interface 形状数据 { 种类: 图形种类; 文本: string; 填充: string; 线条: string; 线宽: number; 颜色: string; 字号: number; 加粗: boolean }
 export interface 单元格 { 文本: string; 背景: string; 颜色: string; 字号: number; 加粗: boolean; 对齐: 'left'|'center'|'right' }
@@ -75,6 +76,7 @@ export function 创建语义图(类型: '流程'|'层级'|'循环'|'脑图'): �
 }
 
 function 取语义组(页: 幻灯片, 组标识: string) {
+  要求对象可编辑(页,[组标识])
   const 组 = 页.对象列表?.find(项 => 项.id === 组标识)
   if (!组 || 组.类型 !== '组合' || !组.语义类型 || !组.子对象标识 || 组.锁定) throw new Error('请选择未锁定的语义图组合')
   return 组

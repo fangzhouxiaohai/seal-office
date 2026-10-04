@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, 吸附位置 } from './objectOperations'
+import { 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, 吸附位置, 对象可以移动, 删除对象, 替换对象内容 } from './objectOperations'
+import { 创建图形, 创建表格 } from './elements'
 import type { 幻灯片 } from '../deck'
 const 页面 = (): 幻灯片 => ({ id: '页', title: '测试', 版式: '空白', 背景色: '#FFFFFF', 文本框列表: [], 对象列表: [0,1,2].map((值) => ({ id: `图${值}`, 类型: '图片', x: 值 * 100, y: 值 * 20, width: 50, height: 50, 资源标识: '资源' })) })
 describe('对象几何统一提交', () => {
+  it('图形与表格混选旋转拒绝整个修改并保持原页', () => {
+    const 页 = { ...页面(), 对象列表: [创建图形('矩形'), 创建表格(2,2)] }, 原文 = JSON.stringify(页)
+    expect(() => 修改对象(页,页.对象列表.map(项=>项.id),{旋转:37})).toThrow(/旋转/)
+    expect(JSON.stringify(页)).toBe(原文)
+  })
+  it('嵌套图片组合锁定后成员不能移动缩放或解锁逃逸', () => {
+    const 页 = 组合对象(组合对象(页面(),['图0','图1'],'内组'),['内组','图2'],'外组')
+    页.对象列表!.find(项=>项.id==='外组')!.锁定=true
+    expect(对象可以移动(页,'图0')).toBe(false)
+    expect(修改对象(页,['图0'],{x:900,width:900})).toBe(页)
+    expect(修改对象(页,['内组'],{锁定:false})).toBe(页)
+    expect(() => 解除组合(页,['内组'])).toThrow(/锁定/)
+    expect(() => 对齐对象(页,['图0','图1'],'左')).toThrow(/锁定/)
+    expect(() => 删除对象(页,['图0'])).toThrow(/锁定/)
+    expect(() => 调整图层(页,['图0'],'置顶')).toThrow(/锁定/)
+    expect(() => 替换对象内容(页,{...页.对象列表![0],width:900})).toThrow(/锁定/)
+  })
   it('锁定对象不会被移动或缩放，非法尺寸拒绝提交', () => {
     const 页 = 页面(); 页.对象列表![0].锁定 = true
     expect(修改对象(页, ['图0'], { x: 90 }).对象列表![0].x).toBe(0)

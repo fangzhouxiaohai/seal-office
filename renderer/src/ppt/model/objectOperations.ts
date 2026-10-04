@@ -1,10 +1,8 @@
 import type { 幻灯片, 演示对象 } from '../deck'
 import { 同步连接点 } from './elements'
+import { 对象允许编辑, 对象可以移动, 对象支持旋转, 要求对象可编辑 } from './objectPermissions'
+export { 对象可以移动 } from './objectPermissions'
 export type 几何修改 = Partial<Pick<演示对象, 'x' | 'y' | 'width' | 'height' | '旋转' | '锁定' | '裁剪'>>
-export function 对象可以移动(页: 幻灯片, id: string): boolean {
-  const 对象 = 页.对象列表?.find(项 => 项.id === id)
-  return !对象?.锁定 && (对象?.子对象标识 ?? []).every(子 => 对象可以移动(页, 子))
-}
 /** 按原生对象树顺序排列父节点和成员，解除组合时保留外部对象图层。 */
 export function 读取对象树顺序(列表: 演示对象[]): 演示对象[] {
   const 成员 = new Set(列表.flatMap(项 => 项.子对象标识 ?? []))
@@ -12,15 +10,20 @@ export function 读取对象树顺序(列表: 演示对象[]): 演示对象[] {
   return 列表.filter(项 => !成员.has(项.id)).flatMap(展开)
 }
 export function 修改对象(页: 幻灯片, 标识: string[], 修改: 几何修改): 幻灯片 {
+  if (修改.旋转 !== undefined && (页.对象列表 ?? []).some(项 => 标识.includes(项.id) && !对象支持旋转(项))) throw new Error('选中的表格、组合或连接线暂不支持旋转')
+  if (标识.length > 1 && !(Object.keys(修改).length === 1 && 修改.锁定 === false)) 要求对象可编辑(页,标识)
   for (const 键 of ['x','y','width','height','旋转'] as const) {
     const 值 = 修改[键]
     if (值 !== undefined && (!Number.isFinite(值) || (['width','height'].includes(键) && 值 <= 0))) throw new Error('对象位置或尺寸无效')
   }
   if (修改.裁剪 && (Object.values(修改.裁剪).some(值 => !Number.isFinite(值) || 值 < 0 || 值 >= 1) || 修改.裁剪.左 + 修改.裁剪.右 >= 1 || 修改.裁剪.上 + 修改.裁剪.下 >= 1)) throw new Error('图片裁剪范围无效')
   const 列表 = (页.对象列表 ?? []).map(项 => ({ ...项 }))
+  let 有变化 = false
   const 修改单项 = (id: string, 值: 几何修改) => {
     const 下标 = 列表.findIndex(项 => 项.id === id), 原 = 列表[下标]
-    if (!原 || (原.锁定 && 值.锁定 !== false)) return
+    const 仅解锁 = Object.keys(值).length === 1 && 值.锁定 === false
+    if (!原 || !对象允许编辑(页,id,仅解锁)) return
+    if (Object.entries(值).every(([键,值]) => 原[键 as keyof 演示对象] === 值)) return
     const 新 = { ...原, ...值 }
     if (原.类型 === '组合' && 原.子对象标识) {
       if (值.旋转 !== undefined && 值.旋转 !== 0) throw new Error('组合暂不支持旋转，请先取消组合')
@@ -32,11 +35,25 @@ export function 修改对象(页: 幻灯片, 标识: string[], 修改: 几何修
       }
     }
     列表[下标] = 新
+    有变化 = true
   }
   标识.forEach(id => 修改单项(id, 修改))
-  return 同步连接点({ ...页, 对象列表: 列表 })
+  return 有变化 ? 同步连接点({ ...页, 对象列表: 列表 }) : 页
 }
-const 选中 = (页: 幻灯片, 标识: string[]) => (页.对象列表 ?? []).filter(项 => 标识.includes(项.id) && !项.锁定)
+const 选中 = (页: 幻灯片, 标识: string[]) => { 要求对象可编辑(页,标识); return (页.对象列表 ?? []).filter(项 => 标识.includes(项.id)) }
+export function 替换对象内容(页: 幻灯片, 对象: 演示对象): 幻灯片 {
+  要求对象可编辑(页,[对象.id])
+  return { ...页, 对象列表: 页.对象列表!.map(项 => 项.id === 对象.id ? 对象 : 项) }
+}
+export function 删除对象(页: 幻灯片, 标识: string[]): 幻灯片 {
+  要求对象可编辑(页,标识)
+  const 删除 = new Set(标识)
+  const 展开 = (id: string) => { for (const 子 of 页.对象列表?.find(项 => 项.id === id)?.子对象标识 ?? []) { 删除.add(子); 展开(子) } }
+  for (const id of 删除) 展开(id)
+  for (const 项 of 页.对象列表 ?? []) if (项.连接 && (删除.has(项.连接.起点.对象) || 删除.has(项.连接.终点.对象))) 删除.add(项.id)
+  要求对象可编辑(页,[...删除])
+  return { ...页, 对象列表: 页.对象列表?.filter(项 => !删除.has(项.id)).map(项 => 项.子对象标识 ? { ...项, 子对象标识: 项.子对象标识.filter(id => !删除.has(id)) } : 项).filter(项 => 项.类型 !== '组合' || 项.子对象标识?.length) }
+}
 export function 对齐对象(页: 幻灯片, 标识: string[], 方向: '左'|'右'|'上'|'下'|'水平居中'|'垂直居中'): 幻灯片 {
   const 列表 = 选中(页, 标识)
   if (列表.length < 2) return 页
@@ -61,6 +78,7 @@ export function 组合对象(页: 幻灯片, 标识: string[], id: string): 幻�
   return { ...页, 对象列表: [...页.对象列表 ?? [], { id, 类型: '组合', x, y, width: Math.max(...列表.map(项 => 项.x + 项.width)) - x, height: Math.max(...列表.map(项 => 项.y + 项.height)) - y, 子对象标识: 列表.map(项 => 项.id) }] }
 }
 export function 解除组合(页: 幻灯片, 标识: string[]): 幻灯片 {
+  要求对象可编辑(页,标识)
   const 列表 = 读取对象树顺序(页.对象列表 ?? [])
   const 取消 = new Set(列表.filter(项 => 标识.includes(项.id) && 项.类型 === '组合' && !项.锁定).map(项 => 项.id))
   const 保留成员 = (id: string): string[] => 取消.has(id) ? (列表.find(项 => 项.id === id)?.子对象标识 ?? []).flatMap(保留成员) : [id]

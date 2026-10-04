@@ -1,3 +1,4 @@
+import { 对象允许编辑, 要求对象可编辑 } from './model/objectPermissions'
 import { 添加语义节点, 添加语义连线 } from './model/elements'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
 import React, { useEffect, useRef, useState } from 'react'
@@ -33,7 +34,7 @@ import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
-import { 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
+import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
 
@@ -289,9 +290,10 @@ const PptEditor = () => {
   const 对象提交 = (修改: Record<string, 几何修改>) => {
     if (只读 || !当前幻灯片) return
     try {
+      要求对象可编辑(当前幻灯片,Object.keys(修改))
       let 页 = 当前幻灯片
       for (const [标识, 值] of Object.entries(修改)) 页 = 修改对象(页, [标识], 值)
-      更新文稿(更新幻灯片(文稿, 页.id, 页))
+      if (页 !== 当前幻灯片) 更新文稿(更新幻灯片(文稿, 页.id, 页))
     } catch (错误) { 显示文件错误('对象修改失败', 错误 instanceof Error ? 错误.message : '对象属性无效') }
   }
   const 对象操作 = (命令: string) => {
@@ -299,6 +301,9 @@ const PptEditor = () => {
     try {
       let 页 = 当前幻灯片
       const [操作, 参数] = 命令.split(':')
+      if (操作 === '锁定') { if (选中对象.some(id => !对象允许编辑(页,id))) throw new Error('请先解锁所属组合') }
+      else if (操作 !== '解锁') 要求对象可编辑(页,选中对象)
+      else if (选中对象.some(id => !对象允许编辑(页,id,true))) throw new Error('请先解锁所属组合')
       if (操作 === '新增节点') 页 = 添加语义节点(页, 选中对象[0])
       if (操作 === '新增连线') { const [起点,终点] = 参数.split(','); 页 = 添加语义连线(页, 选中对象[0], 起点, 终点) }
       if (操作 === '对齐') 页 = 对齐对象(页, 选中对象, 参数 as Parameters<typeof 对齐对象>[2])
@@ -308,13 +313,9 @@ const PptEditor = () => {
       if (操作 === '取消组合') { 页 = 解除组合(页, 选中对象); set选中对象([]) }
       if (操作 === '锁定' || 操作 === '解锁') 页 = 修改对象(页, 选中对象, { 锁定: 操作 === '锁定' })
       if (操作 === '删除') {
-        const 删除 = new Set(选中对象.filter(id => !页.对象列表?.find(项 => 项.id === id)?.锁定))
-        const 展开 = (id: string) => { for (const 子 of 页.对象列表?.find(项 => 项.id === id)?.子对象标识 ?? []) { 删除.add(子); 展开(子) } }
-        for (const id of 删除) 展开(id)
-        for (const 项 of 页.对象列表 ?? []) if (项.连接 && (删除.has(项.连接.起点.对象) || 删除.has(项.连接.终点.对象))) 删除.add(项.id)
-        页 = { ...页, 对象列表: 页.对象列表?.filter(项 => !删除.has(项.id)).map(项 => 项.子对象标识 ? { ...项, 子对象标识: 项.子对象标识.filter(id => !删除.has(id)) } : 项).filter(项 => 项.类型 !== '组合' || 项.子对象标识?.length) }; set选中对象([])
+        页 = 删除对象(页,选中对象); set选中对象([])
       }
-      更新文稿(更新幻灯片(文稿, 页.id, 页))
+      if (页 !== 当前幻灯片) 更新文稿(更新幻灯片(文稿, 页.id, 页))
     } catch (错误) { 显示文件错误('对象操作失败', 错误 instanceof Error ? 错误.message : '对象操作失败') }
   }
   const 插入图片 = async (文件列表: File[]) => {
@@ -899,8 +900,9 @@ const PptEditor = () => {
           })
         ),
       当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
-        if (只读 || 对象.锁定) return
-        更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 对象列表: 当前幻灯片.对象列表?.map(项 => 项.id === 对象.id ? 对象 : 项) }))
+        if (只读) return
+        try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
+        catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }
       } }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),

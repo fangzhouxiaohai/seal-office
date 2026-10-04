@@ -32,6 +32,7 @@ export default function SlideCanvas(属性: Props) {
     const 移动 = (事件: MouseEvent) => {
       const 状态 = 拖动.current, 当前 = 最新.current
       if (!状态) return
+      if (当前.只读 || 状态.对象.some(项 => !当前.幻灯片.文本框列表.some(框 => 框.id === 项.id) && !对象可以移动(当前.幻灯片,项.id))) { 拖动.current = null; set预览({}); return }
       let dx = (事件.clientX - 状态.x) / 当前.缩放, dy = (事件.clientY - 状态.y) / 当前.缩放
       if (Math.abs(dx) + Math.abs(dy) < 2 && !Object.keys(状态.修改).length) return
       const 修改: Record<string, 几何修改> = {}
@@ -53,6 +54,7 @@ export default function SlideCanvas(属性: Props) {
     const 结束 = () => {
       const 状态 = 拖动.current; 拖动.current = null; set预览({})
       if (!状态 || !Object.keys(状态.修改).length || 最新.current.只读) return
+      if (状态.对象.some(项 => !最新.current.幻灯片.文本框列表.some(框 => 框.id === 项.id) && !对象可以移动(最新.current.幻灯片,项.id))) return
       const 文本 = 状态.对象.filter(项 => 最新.current.幻灯片.文本框列表.some(框 => 框.id === 项.id))
       for (const 框 of 文本) { const 改 = 状态.修改[框.id]; 最新.current.on拖动框(框.id, 改.x ?? 框.x, 改.y ?? 框.y) }
       const 修改 = Object.fromEntries(Object.entries(状态.修改).filter(([id]) => !文本.some(框 => 框.id === id)))
@@ -72,7 +74,7 @@ export default function SlideCanvas(属性: Props) {
       标识 = 事件.ctrlKey || 事件.shiftKey ? (选中对象.includes(对象.id) ? 选中对象.filter(id => id !== 对象.id) : [...选中对象, 对象.id]) : 选中对象.includes(对象.id) ? 选中对象 : [对象.id]
       属性.on选中对象?.(标识)
     }
-    if (对象.锁定 || (!文本 && !对象可以移动(页, 对象.id)) || 属性.编辑框标识 === 对象.id) return
+    if (对象.锁定 || (!文本 && 标识.some(id => !对象可以移动(页,id))) || 属性.编辑框标识 === 对象.id) return
     事件.preventDefault()
     拖动.current = { x: 事件.clientX, y: 事件.clientY, 对象: 文本 || 尺寸 ? [对象] : (页.对象列表 ?? []).filter(项 => 标识.includes(项.id) && 对象可以移动(页, 项.id)), 尺寸, 修改: {} }
   }
