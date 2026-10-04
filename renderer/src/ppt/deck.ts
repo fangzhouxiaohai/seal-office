@@ -53,6 +53,8 @@ export type 演示对象 = {
   width: number
   height: number
   旋转?: number
+  锁定?: boolean
+  裁剪?: { 左: number; 上: number; 右: number; 下: number }
   资源标识?: string
   子对象标识?: string[]
 }

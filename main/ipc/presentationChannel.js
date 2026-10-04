@@ -1,4 +1,5 @@
 const { 创建资源存储 } = require('../ppt/resources')
+const { 检查图片字节 } = require('../office/pptx/media')
 
 function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
   const 执行 = (任务) => {
@@ -12,6 +13,7 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
     }
     const 字节 = Buffer.from(数据, 'base64')
     if (字节.toString('base64') !== 数据) throw new Error('演示资源数据编码无效')
+    if (typeof 类型 === 'string' && 类型.startsWith('image/')) 检查图片字节(字节, 类型)
     const 标识 = 资源存储.加入(字节, 类型)
     return { 标识, 字节数: 字节.length, 类型 }
   }))

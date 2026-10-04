@@ -2170,6 +2170,40 @@ button {
   background: #f0f2f5;
 }
 
+/* 对象控件沿用现有设计令牌；选框只在编辑状态出现。 */
+.wps-ppt-object-toolbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; background: var(--bg-card); color: var(--text-2); font-size: 12px; }
+.wps-ppt-object-toolbar label { display: inline-flex; align-items: center; gap: var(--space-1); }
+.wps-ppt-object-toolbar input[type="number"] { width: 64px; }
+.wps-ppt-object-toolbar button, .wps-ppt-properties button, .wps-ppt-properties input, .wps-ppt-object-toolbar input[type="number"] { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-1) var(--space-2); font: inherit; min-height: 28px; }
+.wps-ppt-object-toolbar button:hover, .wps-ppt-properties button:hover { background: var(--bg-hover); border-color: var(--brand); }
+.wps-ppt-object-toolbar button:focus-visible, .wps-ppt-object-toolbar input:focus-visible, .wps-ppt-properties button:focus-visible, .wps-ppt-properties input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-ppt-properties button:disabled, .wps-ppt-properties input:disabled { opacity: .55; cursor: default; }
+.wps-ppt-properties { flex: 0 0 232px; min-width: 0; padding: var(--space-4); border-left: 1px solid var(--border); background: var(--bg-card); overflow: auto; font-size: 12px; }
+.wps-ppt-properties h2 { font-size: 14px; font-weight: 600; margin: 0 0 var(--space-6); }
+.wps-ppt-properties fieldset { border: 0; padding: 0; margin: 0 0 var(--space-6); }
+.wps-ppt-properties legend { color: var(--text-2); margin-bottom: var(--space-2); }
+.wps-ppt-properties__fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.wps-ppt-properties__fields label { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.wps-ppt-properties__fields input { width: 100%; }
+.wps-ppt-properties__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.wps-ppt-canvas-space { position: relative; flex: 0 0 auto; margin: var(--space-6); }
+.wps-ppt-image { cursor: move; }
+.wps-ppt-image--selected { outline: 1px solid var(--brand); }
+.wps-ppt-resize { position: absolute; right: -5px; bottom: -5px; width: 12px; height: 12px; padding: 0; border: 1px solid var(--brand); background: var(--bg-card); cursor: nwse-resize; pointer-events: auto; }
+.wps-ppt-resize:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-ppt-ruler { position: absolute; font-size: 10px; color: var(--text-2); background: var(--bg-card); cursor: crosshair; }
+.wps-ppt-ruler span { position: absolute; border-left: 1px solid var(--border); padding-left: var(--space-1); }
+.wps-ppt-ruler--horizontal { left: 0; right: 0; top: -24px; height: 20px; }
+.wps-ppt-ruler--vertical { top: 0; bottom: 0; left: -28px; width: 24px; }
+.wps-ppt-guide { position: absolute; pointer-events: none; border-color: var(--brand); opacity: .65; }
+.wps-ppt-guide--vertical { top: 0; bottom: 0; border-left: 1px dashed var(--brand); }
+.wps-ppt-guide--horizontal { left: 0; right: 0; border-top: 1px dashed var(--brand); }
+.wps-ppt-thumb__canvas { padding: 0; overflow: hidden; }
+.wps-ppt-thumb__canvas .wps-ppt-preview { width: 100%; height: 100%; }
+@media (max-width: 1024px) { .wps-ppt-properties { flex-basis: 204px; padding: var(--space-3); } }
+@media (max-width: 768px) { .wps-ppt-body:has(.wps-ppt-properties) { flex-wrap: wrap; } .wps-ppt-properties { flex: 1 1 100%; border-left: 0; border-top: 1px solid var(--border); max-height: 240px; } .wps-ppt-properties__fields { grid-template-columns: repeat(4, minmax(0,1fr)); } .wps-ppt-object-toolbar span { display: none; } }
+@media (max-width: 480px) { .wps-ppt-properties__fields { grid-template-columns: 1fr 1fr; } .wps-ppt-object-toolbar { gap: var(--space-2); } }
+
 .wps-ppt-canvas {
   position: relative;
   flex: 0 0 auto;

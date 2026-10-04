@@ -3,6 +3,12 @@ import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { 创建演示文稿, 添加幻灯片 } from './deck'
 
 describe('演示文稿导出', () => {
+  it('图片预览使用共享渲染且缺失真实资源时拒绝导出', () => {
+    const 文稿 = 创建演示文稿()
+    文稿.幻灯片列表[0].对象列表 = [{ id:'图',类型:'图片',x:10,y:20,width:100,height:50,旋转:30,资源标识:'资源' }]
+    expect(() => 导出为Html预览(文稿,'测试')).toThrow(/资源/)
+    expect(导出为Html预览(文稿,'测试',{资源:'data:image/png;base64,AQID'})).toContain('src="data:image/png;base64,AQID"')
+  })
   it('为每张幻灯片生成一个区块', () => {
     const 文稿 = 添加幻灯片(添加幻灯片(创建演示文稿()))
     const html = 导出为Html预览(文稿, '演示文稿')

@@ -1,210 +1,104 @@
-// 画布：渲染当前幻灯片的文本框，支持选中、双击编辑、拖动和文本选择格式化。
-import React, { useRef } from 'react'
-import { 画布宽, 画布高, type 幻灯片, type 文本框 } from './deck'
-
+import React, { useEffect, useRef, useState } from 'react'
+import { 画布宽, 画布高, type 幻灯片, type 演示对象 } from './deck'
+import { 文本内容, 文本样式, 图片内容, 对象样式, 读取绘制对象, type 图片地址表 } from './render/SlideObjects'
+import { 吸附位置, 修改对象, 对象可以移动, type 几何修改 } from './model/objectOperations'
 interface Props {
-  幻灯片: 幻灯片
-  选中框标识: string | null
-  缩放: number
-  编辑框标识: string | null
-  编辑值: string
-  显示网格线: boolean
-  on选中框: (标识: string | null) => void
-  on双击框: (标识: string) => void
-  on编辑值变化: (值: string) => void
-  on提交编辑: () => void
+  幻灯片: 幻灯片; 选中框标识: string | null; 缩放: number; 编辑框标识: string | null; 编辑值: string; 显示网格线: boolean
+  图片地址?: 图片地址表; 选中对象?: string[]; 只读?: boolean; 显示标尺?: boolean; 吸附?: boolean
+  参考线?: { 垂直: number[]; 水平: number[] }
+  on参考线?: (线: { 垂直: number[]; 水平: number[] }) => void
+  on选中对象?: (标识: string[]) => void; on对象提交?: (修改: Record<string, 几何修改>) => void
+  on图片输入?: (文件: File[]) => void; on适应缩放?: (比例: number) => void
+  on选中框: (标识: string | null) => void; on双击框: (标识: string) => void
+  on编辑值变化: (值: string) => void; on提交编辑: () => void
   on拖动框: (标识: string, x: number, y: number) => void
   on文本选择: (标识: string, 起始: number, 结束: number) => void
   onContextMenu?: (x: number, y: number) => void
 }
-
-const 拖拽阈值 = 5
-
-const SlideCanvas = ({
-  幻灯片,
-  选中框标识,
-  缩放,
-  编辑框标识,
-  编辑值,
-  显示网格线,
-  on选中框,
-  on双击框,
-  on编辑值变化,
-  on提交编辑,
-  on拖动框,
-  on文本选择,
-  onContextMenu,
-}: Props) => {
-  const 拖动 = useRef<{ 状态: 'idle' | 'dragging'; 标识: string; 起始x: number; 起始y: number; 原x: number; 原y: number } | null>(null)
-  const 选择起始 = useRef<number | null>(null)
-  const 当前框文本 = useRef<string>('')
-
-  const 处理按下 = (事件: React.MouseEvent, 框: 文本框) => {
-    事件.stopPropagation()
-    on选中框(框.id)
-    当前框文本.current = 框.text
-    选择起始.current = null
-    拖动.current = {
-      状态: 'idle',
-      标识: 框.id,
-      起始x: 事件.clientX,
-      起始y: 事件.clientY,
-      原x: 框.x,
-      原y: 框.y,
-    }
-  }
-
-  const 处理移动 = (事件: React.MouseEvent) => {
-    const 状态 = 拖动.current
-    if (状态 === null || 状态.状态 === 'idle') {
-      return
-    }
-    const 比例 = 缩放 <= 0 ? 1 : 缩放
-    on拖动框(
-      状态.标识,
-      状态.原x + (事件.clientX - 状态.起始x) / 比例,
-      状态.原y + (事件.clientY - 状态.起始y) / 比例
-    )
-  }
-
-  const 停止拖动 = () => {
-    拖动.current = null
-  }
-
-  const 处理文本框鼠标移动 = (事件: React.MouseEvent, 框: 文本框) => {
-    // 只有在文本框被选中时，才检测文本选择
-    if (选中框标识 !== 框.id) return
-    const 拖动状态 = 拖动.current
-    // 空闲状态：记录移动距离，不足阈值不激活拖拽，允许文本选择
-    if (拖动状态 !== null && 拖动状态.状态 === 'idle') {
-      const dx = Math.abs(事件.clientX - 拖动状态.起始x)
-      const dy = Math.abs(事件.clientY - 拖动状态.起始y)
-      if (dx > 拖拽阈值 || dy > 拖拽阈值) {
-        拖动.current = { ...拖动状态, 状态: 'dragging' }
-        return
+export default function SlideCanvas(属性: Props) {
+  const { 幻灯片: 页, 缩放, 图片地址 = {}, 选中对象 = [], 只读 = false } = 属性
+  const 容器 = useRef<HTMLDivElement>(null)
+  const [预览, set预览] = useState<Record<string, 几何修改>>({})
+  const 拖动 = useRef<{ x: number; y: number; 对象: 演示对象[]; 尺寸: boolean; 修改: Record<string, 几何修改> } | null>(null)
+  const 最新 = useRef(属性); 最新.current = 属性
+  useEffect(() => {
+    const 更新 = () => { const rect = 容器.current?.getBoundingClientRect(); if (rect?.width && rect.height) 最新.current.on适应缩放?.(Math.min((rect.width - 96) / 画布宽, (rect.height - 96) / 画布高)) }
+    更新()
+    const 观察 = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(更新)
+    if (容器.current) 观察?.observe(容器.current)
+    return () => 观察?.disconnect()
+  }, [])
+  useEffect(() => {
+    const 移动 = (事件: MouseEvent) => {
+      const 状态 = 拖动.current, 当前 = 最新.current
+      if (!状态) return
+      let dx = (事件.clientX - 状态.x) / 当前.缩放, dy = (事件.clientY - 状态.y) / 当前.缩放
+      if (Math.abs(dx) + Math.abs(dy) < 2 && !Object.keys(状态.修改).length) return
+      const 修改: Record<string, 几何修改> = {}
+      if (当前.吸附 && !状态.尺寸 && 状态.对象.length) {
+        const 已选 = new Set(状态.对象.map(项 => 项.id))
+        const 展开 = (id: string) => { for (const 子 of 当前.幻灯片.对象列表?.find(项 => 项.id === id)?.子对象标识 ?? []) { 已选.add(子); 展开(子) } }
+        状态.对象.forEach(项 => 展开(项.id))
+        const 其他 = [...当前.幻灯片.对象列表 ?? [], ...当前.幻灯片.文本框列表].filter(项 => !已选.has(项.id))
+        const 左 = Math.min(...状态.对象.map(项 => 项.x)), 上 = Math.min(...状态.对象.map(项 => 项.y)), 宽 = Math.max(...状态.对象.map(项 => 项.x + 项.width)) - 左, 高 = Math.max(...状态.对象.map(项 => 项.y + 项.height)) - 上
+        const 位置 = 吸附位置(左 + dx, 上 + dy, 宽, 高, 当前.缩放, [0,480,960,...当前.参考线?.垂直 ?? [],...其他.flatMap(项 => [项.x,项.x+项.width/2,项.x+项.width])], [0,270,540,...当前.参考线?.水平 ?? [],...其他.flatMap(项 => [项.y,项.y+项.height/2,项.y+项.height])])
+        dx = 位置.x - 左; dy = 位置.y - 上
       }
-      const 比例 = 缩放 <= 0 ? 1 : 缩放
-      // 画布使用 transform:scale 缩放，必须先用 getBoundingClientRect 把
-      // 视口坐标换算回画布逻辑坐标，再减去文本框位置得到相对坐标。
-      const 画布元素 = (事件.currentTarget as HTMLElement).closest('.wps-ppt-canvas') as HTMLElement | null
-      const 画布矩形 = 画布元素 ? 画布元素.getBoundingClientRect() : null
-      const 逻辑x = 画布矩形 ? (事件.clientX - 画布矩形.left) / 比例 : 事件.clientX / 比例
-      const 逻辑y = 画布矩形 ? (事件.clientY - 画布矩形.top) / 比例 : 事件.clientY / 比例
-      const 相对x = (逻辑x - 框.x) / 框.width
-      const 相对y = (逻辑y - 框.y) / 框.height
-      const 文本 = 框.text
-      const 估算位置 = Math.max(0, Math.min(文本.length, Math.floor(相对x * 文本.length + 相对y * 文本.length * 0.1)))
-      if (选择起始.current === null) {
-        选择起始.current = 估算位置
-        return
+      for (const 对象 of 状态.对象) {
+        const 弧度 = (对象.旋转 ?? 0) * Math.PI / 180
+        修改[对象.id] = 状态.尺寸 ? { width: Math.max(8, 对象.width + dx * Math.cos(弧度) + dy * Math.sin(弧度)), height: Math.max(8, 对象.height - dx * Math.sin(弧度) + dy * Math.cos(弧度)) } : { x: 对象.x + dx, y: 对象.y + dy }
       }
-      on文本选择(框.id, 选择起始.current, 估算位置)
-      return
+      状态.修改 = 修改; set预览(修改)
     }
-    // 拖拽中或无拖动状态：不处理文本选择
-    if (拖动状态 !== null && 拖动状态.状态 === 'dragging') return
-  }
-
-  const 处理文本框鼠标离开 = () => {
-    选择起始.current = null
-  }
-
-  const 处理文本框双击 = (事件: React.MouseEvent, 标识: string) => {
+    const 结束 = () => {
+      const 状态 = 拖动.current; 拖动.current = null; set预览({})
+      if (!状态 || !Object.keys(状态.修改).length || 最新.current.只读) return
+      const 文本 = 状态.对象.filter(项 => 最新.current.幻灯片.文本框列表.some(框 => 框.id === 项.id))
+      for (const 框 of 文本) { const 改 = 状态.修改[框.id]; 最新.current.on拖动框(框.id, 改.x ?? 框.x, 改.y ?? 框.y) }
+      const 修改 = Object.fromEntries(Object.entries(状态.修改).filter(([id]) => !文本.some(框 => 框.id === id)))
+      if (Object.keys(修改).length) 最新.current.on对象提交?.(修改)
+    }
+    window.addEventListener('mousemove', 移动); window.addEventListener('mouseup', 结束)
+    return () => { window.removeEventListener('mousemove', 移动); window.removeEventListener('mouseup', 结束) }
+  }, [])
+  const 开始 = (事件: React.MouseEvent, 对象: 演示对象, 尺寸 = false) => {
     事件.stopPropagation()
-    选择起始.current = null
-    on双击框(标识)
+    if (只读 || 事件.button !== 0) return
+    const 文本 = 页.文本框列表.some(框 => 框.id === 对象.id)
+    let 标识 = 选中对象
+    if (文本) { 属性.on选中框(对象.id); 属性.on选中对象?.([]) }
+    else {
+      属性.on选中框(null)
+      标识 = 事件.ctrlKey || 事件.shiftKey ? (选中对象.includes(对象.id) ? 选中对象.filter(id => id !== 对象.id) : [...选中对象, 对象.id]) : 选中对象.includes(对象.id) ? 选中对象 : [对象.id]
+      属性.on选中对象?.(标识)
+    }
+    if (对象.锁定 || (!文本 && !对象可以移动(页, 对象.id)) || 属性.编辑框标识 === 对象.id) return
+    事件.preventDefault()
+    拖动.current = { x: 事件.clientX, y: 事件.clientY, 对象: 文本 || 尺寸 ? [对象] : (页.对象列表 ?? []).filter(项 => 标识.includes(项.id) && 对象可以移动(页, 项.id)), 尺寸, 修改: {} }
   }
-
-  return React.createElement(
-    'div',
-    { className: 'wps-ppt-stage' },
-    React.createElement(
-      'div',
-      {
-        className: `wps-ppt-canvas${显示网格线 ? ' wps-ppt-canvas--gridlines' : ''}`,
-        style: {
-          width: `${画布宽}px`,
-          height: `${画布高}px`,
-          background: 幻灯片.背景色,
-          transform: `scale(${缩放})`,
-        },
-        onClick: () => on选中框(null),
-        onContextMenu: (事件: React.MouseEvent) => {
-          if (onContextMenu) {
-            事件.preventDefault()
-            onContextMenu(事件.clientX, 事件.clientY)
-          }
-        },
-        onMouseMove: 处理移动,
-        onMouseUp: 停止拖动,
-        onMouseLeave: 停止拖动,
-      },
-      幻灯片.文本框列表.map((框) => {
-        const 片段列表 = 框.片段列表 && 框.片段列表.length > 0
-          ? 框.片段列表
-          : null
-        return React.createElement(
-          'div',
-          {
-            key: 框.id,
-            className: [
-              'wps-ppt-box',
-              框.id === 选中框标识 ? 'wps-ppt-box--selected' : '',
-              框.id === 编辑框标识 ? 'wps-ppt-box--editing' : '',
-            ]
-              .filter((项) => 项.length > 0)
-              .join(' '),
-            'data-框标识': 框.id,
-            style: {
-              left: `${框.x}px`,
-              top: `${框.y}px`,
-              width: `${框.width}px`,
-              height: `${框.height}px`,
-              fontSize: `${框.字号}px`,
-              fontFamily: 框.字体,
-              fontWeight: 框.加粗 ? 600 : 400,
-              fontStyle: 框.斜体 ? 'italic' : 'normal',
-              textDecoration: 框.下划线 ? 'underline' : 'none',
-              color: 框.颜色,
-              textAlign: 框.对齐,
-              userSelect: 'text',
-            },
-            onMouseDown: (事件: React.MouseEvent) => 处理按下(事件, 框),
-            onDoubleClick: (事件: React.MouseEvent) => 处理文本框双击(事件, 框.id),
-            onMouseMove: (事件: React.MouseEvent) => 处理文本框鼠标移动(事件, 框),
-            onMouseLeave: 处理文本框鼠标离开,
-          },
-          框.id === 编辑框标识
-            ? React.createElement('textarea', {
-                className: 'wps-ppt-box__editor',
-                value: 编辑值,
-                autoFocus: true,
-                style: { textAlign: 框.对齐 },
-                onChange: (事件: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  on编辑值变化(事件.target.value),
-                onBlur: on提交编辑,
-              })
-            : 片段列表
-              ? 片段列表.map((片段, 索引) =>
-                  React.createElement(
-                    'span',
-                    {
-                      key: 索引,
-                      style: {
-                        color: 片段.颜色 || 框.颜色,
-                        fontWeight: 片段.加粗 ? 600 : undefined,
-                        fontStyle: 片段.斜体 ? 'italic' : undefined,
-                        textDecoration: 片段.下划线 ? 'underline' : undefined,
-                      },
-                    },
-                    片段.文本
-                  )
-                )
-              : 框.text
-        )
-      })
-    )
-  )
+  const 父表 = new Map((页.对象列表 ?? []).flatMap(项 => (项.子对象标识 ?? []).map(id => [id, 项.id] as const)))
+  const 顶层 = (id: string): string => 父表.has(id) ? 顶层(父表.get(id)!) : id
+  const 预览页 = Object.entries(预览).reduce((当前, [id, 值]) => 修改对象(当前, [id], 值), 页)
+  const 绘制列表 = [...读取绘制对象(预览页.对象列表 ?? []), ...预览页.对象列表?.filter(项 => 项.类型 === '组合') ?? []]
+  return <div ref={容器} className="wps-ppt-stage" onDragOver={事件 => { if (!只读) 事件.preventDefault() }} onDrop={事件 => { if (只读) return; 事件.preventDefault(); 属性.on图片输入?.(Array.from(事件.dataTransfer.files)) }} onPaste={事件 => { const 文件 = Array.from(事件.clipboardData.files); if (!只读 && 文件.length) { 事件.preventDefault(); 属性.on图片输入?.(文件) } }}>
+    <div className="wps-ppt-canvas-space" style={{ width: 画布宽 * 缩放, height: 画布高 * 缩放 }}>
+      {属性.显示标尺 && <><div className="wps-ppt-ruler wps-ppt-ruler--horizontal" onDoubleClick={事件 => { const rect = 事件.currentTarget.getBoundingClientRect(); 属性.on参考线?.({ 垂直: [...属性.参考线?.垂直 ?? [], (事件.clientX - rect.left) / 缩放], 水平: 属性.参考线?.水平 ?? [] }) }}>{Array.from({ length: 10 }, (_,i) => <span key={i} style={{ left: `${i * 100 / 960 * 100}%` }}>{i * 100}</span>)}</div><div className="wps-ppt-ruler wps-ppt-ruler--vertical" onDoubleClick={事件 => { const rect = 事件.currentTarget.getBoundingClientRect(); 属性.on参考线?.({ 水平: [...属性.参考线?.水平 ?? [], (事件.clientY - rect.top) / 缩放], 垂直: 属性.参考线?.垂直 ?? [] }) }}>{Array.from({ length: 6 }, (_,i) => <span key={i} style={{ top: `${i * 100 / 540 * 100}%` }}>{i * 100}</span>)}</div></>}
+      <div className={`wps-ppt-canvas${属性.显示网格线 ? ' wps-ppt-canvas--gridlines' : ''}`} style={{ width: 画布宽, height: 画布高, backgroundColor: 页.背景色, transform: `scale(${缩放})`, transformOrigin: 'top left' }} onClick={() => { 属性.on选中框(null); 属性.on选中对象?.([]) }} onContextMenu={事件 => { 事件.preventDefault(); 属性.onContextMenu?.(事件.clientX, 事件.clientY) }}>
+        {页.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className={`wps-ppt-box${框.id === 属性.选中框标识 ? ' wps-ppt-box--selected' : ''}`} style={{ ...文本样式(框), ...预览[框.id] }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, { ...框, 类型: '图形' })} onDoubleClick={事件 => { 事件.stopPropagation(); if (!只读) 属性.on双击框(框.id) }}>
+          {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
+        </div>)}
+        {绘制列表.map(对象 => {
+          if (对象.类型 !== '图片' && 对象.类型 !== '组合') return null
+          const 根 = 页.对象列表!.find(项 => 项.id === 顶层(对象.id))!, 选中 = 选中对象.includes(对象.id), 几何 = { ...对象, ...预览[对象.id] }
+          if (对象.类型 === '组合' && !选中) return null
+          return <div key={对象.id} data-对象标识={对象.id} className={`wps-ppt-image${选中 ? ' wps-ppt-image--selected' : ''}`} style={{ ...对象样式(几何), pointerEvents: 对象.类型 === '组合' ? 'none' : 'auto' }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, 根)}>
+            {对象.类型 === '图片' && <图片内容 对象={几何} 图片地址={图片地址} />}
+            {选中 && !只读 && 对象可以移动(页, 对象.id) && <button type="button" className="wps-ppt-resize" aria-label="调整对象尺寸" onMouseDown={事件 => 开始(事件, 对象, true)} />}
+          </div>
+        })}
+        {属性.参考线?.垂直.map((x,i) => <div key={`竖${i}`} className="wps-ppt-guide wps-ppt-guide--vertical" style={{ left: x }} />)}
+        {属性.参考线?.水平.map((y,i) => <div key={`横${i}`} className="wps-ppt-guide wps-ppt-guide--horizontal" style={{ top: y }} />)}
+      </div>
+    </div>
+  </div>
 }
-
-export default SlideCanvas

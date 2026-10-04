@@ -69,6 +69,12 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       if (全部对象标识.has(对象.id)) throw new Error(`对象标识重复：${对象.id}`)
       全部对象标识.add(对象.id)
       页面对象.set(对象.id, 对象 as 演示对象)
+      if (对象.锁定 !== undefined && typeof 对象.锁定 !== 'boolean') throw new Error(`对象 ${对象.id} 锁定状态无效`)
+      if (对象.裁剪 !== undefined) {
+        const 裁剪 = 对象.裁剪
+        if (!是记录(裁剪) || !['左', '上', '右', '下'].every(键 => 有限数(裁剪[键]) && (裁剪[键] as number) >= 0 && (裁剪[键] as number) < 1) ||
+          (裁剪.左 as number) + (裁剪.右 as number) >= 1 || (裁剪.上 as number) + (裁剪.下 as number) >= 1) throw new Error(`对象 ${对象.id} 裁剪范围无效`)
+      }
       if ((对象.类型 === '图片' || 对象.类型 === '媒体') &&
         (!非空文字(对象.资源标识) || !Object.prototype.hasOwnProperty.call(输入.资源索引, 对象.资源标识))) {
         throw new Error(`对象 ${对象.id} 缺失资源`)
@@ -104,12 +110,13 @@ export function 演示内容快照(文稿: 演示文稿): string {
   return JSON.stringify(规整(正文))
 }
 
-/** 当前 PPTX 写入器仅能保真写入文字；新增对象接通编码前必须阻止有损保存。 */
+/** 仅放行已通过真实文件及 PowerPoint 核验的文字、位图和恒等坐标组合。 */
 export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   迁移演示文稿(文稿)
-  if (文稿.幻灯片列表.some((页面) => (页面.对象列表?.length ?? 0) > 0) ||
-      Object.keys(文稿.资源索引 ?? {}).length > 0) {
-    throw new Error('当前版本尚不能将此演示的图片或其他对象完整写入 PPTX，已阻止有损保存')
+  if (文稿.幻灯片列表.some(页面 => 页面.对象列表?.some(对象 =>
+    !['图片','组合'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
+    (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? ''))))) {
+    throw new Error('当前版本尚不能完整写入此演示的对象或图片格式，已阻止有损保存')
   }
 }
 

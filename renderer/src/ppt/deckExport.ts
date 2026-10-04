@@ -1,6 +1,9 @@
 // 演示文稿导出：生成含全部幻灯片的 HTML 预览页。
 
 import { type 演示文稿 } from './deck'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { SlideObjects, type 图片地址表 } from './render/SlideObjects'
 
 /** 转义 HTML 特殊字符，避免文本框内容破坏导出页结构 */
 function 转义Html(文本: string): string {
@@ -8,23 +11,15 @@ function 转义Html(文本: string): string {
 }
 
 /** 导出为 HTML 预览页；无幻灯片时返回空字符串 */
-export function 导出为Html预览(文稿: 演示文稿, 标题: string): string {
+export function 导出为Html预览(文稿: 演示文稿, 标题: string, 图片地址: 图片地址表 = {}): string {
   if (文稿.幻灯片列表.length === 0) {
     return ''
   }
 
   const 页列表 = 文稿.幻灯片列表
     .map((幻灯片, 索引) => {
-      const 框列表 = 幻灯片.文本框列表
-        .map(
-          (框) =>
-            `<div style="position:absolute;left:${框.x}px;top:${框.y}px;width:${框.width}px;` +
-            `height:${框.height}px;font-size:${框.字号}px;color:${框.颜色};` +
-            `font-weight:${框.加粗 ? 600 : 400};font-style:${框.斜体 ? 'italic' : 'normal'};` +
-            `text-decoration:${框.下划线 ? 'underline' : 'none'};` +
-            `text-align:${框.对齐}">${转义Html(框.text)}</div>`
-        )
-        .join('')
+      for (const 对象 of 幻灯片.对象列表 ?? []) { if (对象.类型 === '图片' && !图片地址[对象.资源标识 ?? '']) throw new Error('预览导出缺少图片资源，请等待图片加载完成') }
+      const 框列表 = renderToStaticMarkup(createElement(SlideObjects, { 幻灯片, 图片地址 }))
       return (
         `<section style="position:relative;width:960px;height:540px;margin:24px auto;` +
         `background:${幻灯片.背景色};border:1px solid #E8EBF0;overflow:hidden">` +

@@ -3,6 +3,7 @@ const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
+const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -60,7 +61,6 @@ const 规整颜色 = (颜色, 默认) => {
 /** 从幻灯片实际内容判断当前文本框解析器会跳过的对象。 */
 function 收集幻灯片警告(xml, 警告) {
   const 有标签 = (标签) => new RegExp(`<${标签}[\\s/>]`, 'i').test(xml)
-  if (有标签('p:pic')) 警告.add('图片未导入')
   const 无文字图形 = Array.from(xml.matchAll(/<p:sp(?:\s[^>]*)?>([\s\S]*?)<\/p:sp>/gi))
     .some((匹配) => !/<a:t[\s/>]/i.test(匹配[1]) && /<(?:p:spPr|a:prstGeom|a:xfrm)[\s/>]/i.test(匹配[1]))
   if (无文字图形 || 有标签('p:cxnSp')) 警告.add('图形未导入')
@@ -234,6 +234,7 @@ async function 读取pptx(数据) {
   const { 幻灯片路径: 文件名, 清单Xml } = await 读取幻灯片路径(压缩包)
   const 幻灯片列表 = []
   const 警告 = new Set()
+  const 资源表 = new Map()
   const 尺寸标签 = 清单Xml.match(/<p:sldSz\b[^>]*\/?>/i)?.[0]
   if (尺寸标签) {
     const 宽 = Number(读取Xml属性(尺寸标签, 'cx'))
@@ -251,6 +252,10 @@ async function 读取pptx(数据) {
     }
     收集幻灯片警告(xml, 警告)
     const 幻灯片 = 解析幻灯片Xml(xml, 幻灯片列表.length, 页面标识)
+    const 图片 = await 读取图片对象(压缩包, 名称, xml)
+    if (图片.对象列表.length) 幻灯片.对象列表 = 图片.对象列表
+    for (const 资源 of 图片.资源条目) 资源表.set(资源.标识, 资源)
+    for (const 原因 of 图片.警告) 警告.add(原因)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
     幻灯片列表.push(幻灯片)
@@ -262,8 +267,11 @@ async function 读取pptx(数据) {
       name: '导入演示文稿',
       幻灯片列表,
       当前索引: 0,
+      模型版本: 2,
+      资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
     },
     警告: Array.from(警告),
+    资源条目: Array.from(资源表.values()),
   }
 }
 
@@ -360,7 +368,7 @@ async function 写入pptx(模型) {
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
   }
-  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.length > 0) ||
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
       (Array.isArray(项.图片) && 项.图片.length > 0) ||
       (Array.isArray(项.图表) && 项.图表.length > 0) ||
       (Array.isArray(项.媒体) && 项.媒体.length > 0))) {
@@ -441,7 +449,7 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.some((项) => 项.过渡效果 || 项.id || 项.文本框?.some((框) => 框.id))) return 原文件
+  if (!幻灯片列表.some((项) => 项.过渡效果 || 项.id || 项.文本框?.some((框) => 框.id) || 项.对象列表?.length)) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 效果 = 幻灯片列表[索引].过渡效果
@@ -455,6 +463,7 @@ async function 写入pptx(模型) {
     const 文件 = 压缩包.file(名称)
     if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
     let xml = 写入稳定标识(await 文件.async('string'), 幻灯片列表[索引], 索引)
+    if (幻灯片列表[索引].对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 幻灯片列表[索引].对象列表, 模型.资源条目 ?? [])
     if (!过渡Xml) {
       压缩包.file(名称, xml)
       continue

@@ -1,3 +1,4 @@
+import { 恢复导入图片 } from './ppt/render/resources'
 // 本地文件打开助手：按扩展名把文件内容分流到对应模块的数据模型。
 // 首页「打开文件」与最近文档点击共用同一条链路，避免两套行为不一致。
 import { 桥接 } from './ipc/bridge'
@@ -180,7 +181,7 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     if (扩展 === 'pptx') {
       const 数据: any = await 桥接.office.readPptx(结果.内容)
       if (数据 && 数据.成功 && 数据.演示文稿) {
-        return 带文件指纹({ 类型: 'ppt', 演示文稿: 数据.演示文稿, ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}) })
+        return 带文件指纹({ 类型: 'ppt', 演示文稿: await 恢复导入图片(数据), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}) })
       }
       throw new Error(数据?.错误 || '演示文稿解析失败')
     }

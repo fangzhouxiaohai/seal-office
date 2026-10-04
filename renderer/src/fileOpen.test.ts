@@ -3,6 +3,7 @@ import { Modal } from 'antd'
 import { 读取本地文件内容, 注册最近文档错误弹窗, 记录最近文档, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 保存为纯文本 } from './editor/exportDoc'
 import { 创建工作表, 写入单元格 } from './sheet/model'
+import { 创建演示文稿 } from './ppt/deck'
 
 afterEach(() => {
   Reflect.deleteProperty(window, 'electronAPI')
@@ -88,7 +89,7 @@ describe('本地文件打开', () => {
   })
 
   it('演示文稿保留解析器的未导入内容警告', async () => {
-    const 演示文稿 = { 幻灯片列表: [{ 标识: '第一页' }] }
+    const 演示文稿 = 创建演示文稿('第一页')
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
