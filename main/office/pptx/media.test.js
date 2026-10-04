@@ -14,6 +14,14 @@ const 头 = Buffer.from([0,0,0,1,0,0,0,1,8,6,0,0,0])
 const 图片 = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), 块('IHDR', 头), 块('IDAT', zlib.deflateSync(Buffer.from([0,255,0,0,255]))), 块('IEND', Buffer.alloc(0))])
 
 describe('原生图片关系', () => {
+  it('移除已识别原生形状后仍检测图片和普通文字图层风险', async () => {
+    const 包 = new JSZip(); 包.file('[Content_Types].xml','<Types></Types>')
+    const 标识 = crypto.createHash('sha256').update(图片).digest('hex'), 路径 = 'ppt/slides/slide1.xml'
+    const 形 = {id:'原生形',类型:'图形',x:0,y:0,width:100,height:100,形状:{种类:'矩形',文本:'节点',填充:'#FFFFFF',线条:'#000000',线宽:1,颜色:'#000000',字号:20,加粗:false}}
+    const xml = await 写入图片对象(包,路径,'<p:sld><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>',[形,{id:'图片',类型:'图片',x:0,y:0,width:80,height:60,资源标识:标识}],[{标识,类型:'image/png',数据:图片.toString('base64')}])
+    const 交错 = xml.replace('</p:spTree>','<p:sp><p:txBody><a:p><a:r><a:t>上层文字</a:t></a:r></a:p></p:txBody></p:sp></p:spTree>')
+    expect((await 读取图片对象(包,路径,交错)).警告).toContain('图片与文字图层未完整导入')
+  })
   it.each(['noMove="true" noResize="true"',"noMove='true' noResize='true'"] )('组合合法布尔锁定 %s 两轮读写保留',async 属性=>{
     const {写入pptx,读取pptx}=require('../pptxCodec')
     const 标识=crypto.createHash('sha256').update(图片).digest('hex'),资源条目=[{标识,类型:'image/png',数据:图片.toString('base64')}]

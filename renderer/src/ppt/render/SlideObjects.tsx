@@ -2,6 +2,14 @@ import React from 'react'
 import { App as AntdApp } from 'antd'
 import type { 幻灯片, 文本框, 演示对象 } from '../deck'
 import { 读取对象树顺序 } from '../model/objectOperations'
+import { ShapeRenderer } from './ShapeRenderer'
+import { TableRenderer } from './TableRenderer'
+export function 对象内容({ 对象, 图片地址 = {} }: { 对象: 演示对象; 图片地址?: 图片地址表 }) {
+  if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
+  if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
+  if (对象.类型 === '表格') return <TableRenderer 对象={对象}/>
+  return null
+}
 export type 图片地址表 = Record<string, string>
 export function 读取绘制对象(列表: 演示对象[]): 演示对象[] {
   return 读取对象树顺序(列表).filter(项 => 项.类型 !== '组合')
@@ -23,5 +31,5 @@ export function 对象样式(对象: 演示对象): React.CSSProperties {
 }
 /** 编辑画布、缩略预览与放映共享相同坐标、文字片段和图片裁剪规则。 */
 export function SlideObjects({ 幻灯片, 图片地址 = {} }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表 }) {
-  return <>{幻灯片.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).filter(项 => 项.类型 === '图片').map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><图片内容 对象={对象} 图片地址={图片地址} /></div>)}</>
+  return <>{幻灯片.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} /></div>)}</>
 }

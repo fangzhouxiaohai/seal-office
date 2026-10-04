@@ -1,3 +1,4 @@
+import { 原生插入命令 } from './commands/insert'
 // 演示文稿命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
 import {
   创建文本框,
@@ -527,6 +528,7 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
   累计[命令.id] = 命令
   return 累计
 }, {})
+原生插入命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
 /** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
 export const 演示未实现清单: Array<[string, string]> = []

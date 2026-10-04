@@ -1,0 +1,23 @@
+.wps-ppt-element {
+  --ppt-element-control: 32px;
+  --ppt-element-label: 12px;
+  --ppt-element-body: 14px;
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--ppt-element-body);
+  line-height: 1.5;
+}
+.wps-ppt-element label { display: grid; gap: var(--space-1); min-width: 0; color: var(--text-2); font-size: var(--ppt-element-label); }
+.wps-ppt-element__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.wps-ppt-element textarea, .wps-ppt-element select, .wps-ppt-element input:not([type=checkbox]), .wps-ppt-element button { box-sizing: border-box; width: 100%; min-height: var(--ppt-element-control); min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-control); color: var(--text-1); background: var(--bg-card); font: inherit; }
+.wps-ppt-element textarea { resize: vertical; padding: var(--space-2); min-height: 64px; }
+.wps-ppt-element button:hover:enabled { background: var(--bg-hover); border-color: var(--brand); }
+.wps-ppt-element :is(button,input,select,textarea):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-ppt-element :disabled { color: var(--text-3); cursor: default; }
+.wps-ppt-element p { margin: var(--space-2) 0; color: var(--text-2); font-size: var(--ppt-element-label); }
+.wps-ppt-element label:has(input[type=checkbox]) { display: flex; align-items: center; gap: var(--space-2); }
+.wps-ppt-element input[type=checkbox] { width: auto; min-height: 0; margin: 0; accent-color: var(--brand); }
+.wps-ppt-element-members button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wps-ppt-element-members p { color: var(--text-2); line-height: 1.5; }
+@media (max-width: 480px) { .wps-ppt-element__grid { grid-template-columns: 1fr; } }

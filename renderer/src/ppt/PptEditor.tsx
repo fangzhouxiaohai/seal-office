@@ -1,3 +1,4 @@
+import { 添加语义节点, 添加语义连线 } from './model/elements'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
 import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
@@ -19,6 +20,7 @@ import {
   重排幻灯片,
   更新文本框,
   type 演示文稿,
+  type 演示对象,
 } from './deck'
 import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { PptStatusBar, ThumbnailList } from './PptChrome'
@@ -297,6 +299,8 @@ const PptEditor = () => {
     try {
       let 页 = 当前幻灯片
       const [操作, 参数] = 命令.split(':')
+      if (操作 === '新增节点') 页 = 添加语义节点(页, 选中对象[0])
+      if (操作 === '新增连线') { const [起点,终点] = 参数.split(','); 页 = 添加语义连线(页, 选中对象[0], 起点, 终点) }
       if (操作 === '对齐') 页 = 对齐对象(页, 选中对象, 参数 as Parameters<typeof 对齐对象>[2])
       if (操作 === '分布') 页 = 分布对象(页, 选中对象, 参数 as '水平'|'垂直')
       if (操作 === '图层') 页 = 调整图层(页, 选中对象, 参数 as Parameters<typeof 调整图层>[2])
@@ -307,7 +311,8 @@ const PptEditor = () => {
         const 删除 = new Set(选中对象.filter(id => !页.对象列表?.find(项 => 项.id === id)?.锁定))
         const 展开 = (id: string) => { for (const 子 of 页.对象列表?.find(项 => 项.id === id)?.子对象标识 ?? []) { 删除.add(子); 展开(子) } }
         for (const id of 删除) 展开(id)
-        页 = { ...页, 对象列表: 页.对象列表?.filter(项 => !删除.has(项.id)) }; set选中对象([])
+        for (const 项 of 页.对象列表 ?? []) if (项.连接 && (删除.has(项.连接.起点.对象) || 删除.has(项.连接.终点.对象))) 删除.add(项.id)
+        页 = { ...页, 对象列表: 页.对象列表?.filter(项 => !删除.has(项.id)).map(项 => 项.子对象标识 ? { ...项, 子对象标识: 项.子对象标识.filter(id => !删除.has(id)) } : 项).filter(项 => 项.类型 !== '组合' || 项.子对象标识?.length) }; set选中对象([])
       }
       更新文稿(更新幻灯片(文稿, 页.id, 页))
     } catch (错误) { 显示文件错误('对象操作失败', 错误 instanceof Error ? 错误.message : '对象操作失败') }
@@ -893,7 +898,10 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作 }) : null
+      当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+        if (只读 || 对象.锁定) return
+        更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 对象列表: 当前幻灯片.对象列表?.map(项 => 项.id === 对象.id ? 对象 : 项) }))
+      } }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
     React.createElement(ContextMenu, {

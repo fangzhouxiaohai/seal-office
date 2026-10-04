@@ -1,3 +1,4 @@
+const { 写入原生对象, 读取原生对象 } = require('./elements')
 const crypto = require('crypto')
 const path = require('path')
 const zlib = require('zlib')
@@ -64,6 +65,7 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   for (const 对象 of 对象列表) {
     if (!对象.id || 标识表.has(对象.id)) throw new Error('图片对象标识为空或重复')
     标识表.add(对象.id)
+    if (对象.连接 && [对象.连接.起点,对象.连接.终点].some(端 => !对象列表.some(项 => 项.id === 端.对象 && 项.形状 && !项.连接))) throw new Error('连接线引用的节点不存在或无效')
     if (![对象.x,对象.y,对象.width,对象.height,对象.旋转 ?? 0].every(Number.isFinite) || 对象.width <= 0 || 对象.height <= 0) throw new Error('图片对象位置或尺寸无效')
     const 裁剪 = 对象.裁剪
     if (裁剪 && (!['左','上','右','下'].every(边 => Number.isFinite(裁剪[边]) && 裁剪[边] >= 0 && 裁剪[边] < 1) || 裁剪.左 + 裁剪.右 >= 1 || 裁剪.上 + 裁剪.下 >= 1)) throw new Error('图片裁剪范围无效')
@@ -84,13 +86,18 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   let 类型Xml = await 读取部件(包, '[Content_Types].xml').async('string')
   let 编号 = Math.max(1, ...Array.from(xml.matchAll(/<p:cNvPr\b[^>]*id="(\d+)"/g), 项 => Number(项[1]))) + 1
   const 成员 = new Set(对象列表.flatMap(项 => 项.类型 === '组合' ? 项.子对象标识 ?? [] : []))
+  const 原生标识 = new Map()
+  let 预分配 = 编号
+  const 分配标识 = 对象 => { 原生标识.set(对象.id,预分配++); for (const id of 对象.子对象标识 ?? []) 分配标识(对象列表.find(项 => 项.id === id)) }
+  对象列表.filter(项 => !成员.has(项.id)).forEach(分配标识)
   const 生成 = 对象 => {
     if (对象.类型 === '组合') {
       if (对象.旋转) throw new Error('当前不能保真保存旋转组合，已阻止有损保存')
       const 子对象 = (对象.子对象标识 ?? []).map(id => 对象列表.find(项 => 项.id === id))
       if (!子对象.length || 子对象.some(项 => !项)) throw new Error('组合对象成员缺失')
-      return `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${编号++}" name="${编码标识(对象.id)}"/><p:cNvGrpSpPr><a:grpSpLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvGrpSpPr><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/><a:chOff x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:chExt cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm></p:grpSpPr>${子对象.map(生成).join('')}</p:grpSp>`
+      return `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${编号++}" name="${编码标识(对象.id)}"${对象.语义类型 ? ` descr="seal-diagram:${对象.语义类型}"` : ''}/><p:cNvGrpSpPr><a:grpSpLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvGrpSpPr><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/><a:chOff x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:chExt cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm></p:grpSpPr>${子对象.map(生成).join('')}</p:grpSp>`
     }
+    if (['图形','表格'].includes(对象.类型)) return 写入原生对象(对象, 编号++, 原生标识)
     if (对象.类型 !== '图片') throw new Error('当前不能保真保存此对象，已阻止有损保存')
     const 资源 = 资源表.get(对象.资源标识)
     if (!资源 || !资源.数据) throw new Error(`图片资源字节缺失：${对象.资源标识}`)
@@ -114,8 +121,9 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
 
 async function 读取图片对象(包, 路径, xml) {
   const 关系 = await 读取关系(包, 路径)
-  const 对象列表 = [], 资源表 = new Map(), 警告 = []
-  const 首图 = xml.search(/<p:pic\b/), 文字位置 = Array.from(xml.matchAll(/<p:sp\b/g), 项 => 项.index)
+  const 原生 = 读取原生对象(xml)
+  const 对象列表 = [...原生.对象列表], 资源表 = new Map(), 警告 = [...原生.警告]
+  const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b/g), 项 => 项.index)
   if (首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)) 警告.push('图片与文字图层未完整导入')
   if (/<p:pic\b[^>]*\/>/.test(xml)) 警告.push('图片未导入')
   for (const 匹配 of xml.matchAll(/<p:pic\b[^>]*>([\s\S]*?)<\/p:pic>/g)) {
@@ -174,7 +182,7 @@ async function 读取图片对象(包, 路径, xml) {
     }
     if (标签.name === 'p:cNvPr') {
       const 标识 = 解码标识(标签.attributes.name, `image-${路径}-${标签.attributes.id}`)
-      if (!当前.id) 当前.id = 标识
+      if (!当前.id) { 当前.id = 标识; const 语义 = 标签.attributes.descr?.replace(/^seal-diagram:/, ''); if (['流程','层级','循环','脑图'].includes(语义)) 当前.语义类型 = 语义 }
       else 当前.子对象标识.push(标识)
     }
     if (标签.name === 'a:off' && !当前.子对象标识.length) { 当前.x = 转像素(标签.attributes.x); 当前.y = 转像素(标签.attributes.y) }

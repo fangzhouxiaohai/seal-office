@@ -288,7 +288,7 @@ describe('演示文稿编辑器容器', () => {
     await userEvent.click(取消按钮[取消按钮.length - 1])
     expect(screen.getByRole('tab', { name: /汇报\.pptx/ })).toBeInTheDocument()
   })
-  it.each(['图片尚未导入','图片效果未完整导入','图片填充区域未完整导入','组合锁定属性未完整导入'])('导入风险 %s 弹窗提示并禁止覆盖来源', async 风险 => {
+  it.each(['图片尚未导入','图片效果未完整导入','图片填充区域未完整导入','组合锁定属性未完整导入','原生对象已被外部修改，语义结构未完整导入'])('导入风险 %s 弹窗提示并禁止覆盖来源', async 风险 => {
     const 写入 = vi.fn()
     const 编码 = vi.fn()
     Object.defineProperty(window, 'electronAPI', {

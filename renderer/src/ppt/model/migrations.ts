@@ -1,4 +1,5 @@
 import type { 演示文稿, 演示对象 } from '../deck'
+import { 校验原生元素 } from './elements'
 
 const 是记录 = (值: unknown): 值 is Record<string, unknown> =>
   typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -96,6 +97,10 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       }
     }
     for (const 标识 of 页面对象.keys()) 访问(标识, new Set())
+    for (const 对象 of 页面对象.values()) {
+      校验原生元素(对象)
+      if (对象.连接 && [对象.连接.起点,对象.连接.终点].some(端 => !页面对象.get(端.对象)?.形状 || 页面对象.get(端.对象)?.连接)) throw new Error('连接线引用的节点不存在或无效')
+    }
   }
 }
 
@@ -113,8 +118,9 @@ export function 演示内容快照(文稿: 演示文稿): string {
 /** 仅放行已通过真实文件及 PowerPoint 核验的文字、位图和恒等坐标组合。 */
 export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   迁移演示文稿(文稿)
+  文稿.幻灯片列表.forEach(页 => 页.对象列表?.forEach(校验原生元素))
   if (文稿.幻灯片列表.some(页面 => 页面.对象列表?.some(对象 =>
-    !['图片','组合'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
+    !['图片','组合','图形','表格'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
     (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? ''))))) {
     throw new Error('当前版本尚不能完整写入此演示的对象或图片格式，已阻止有损保存')
   }

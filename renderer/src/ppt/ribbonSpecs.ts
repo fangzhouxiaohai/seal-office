@@ -110,6 +110,10 @@ const 插入标签: RibbonTabSpec = {
       items: [
         大('insert.picture', '图片', 'image'),
         大('insert.chart', '图表', 'chart'),
+        下拉('insert.shape', '图形', 'textbox', ['矩形','圆角矩形','椭圆','菱形','三角形','箭头']),
+        下拉('insert.icon', '矢量图标', 'textbox', ['星形','爱心']),
+        下拉('insert.diagram', '语义图', 'textbox', ['流程','层级','循环','脑图']),
+        大('insert.wordart', '艺术字', 'textbox'),
       ],
     },
     {

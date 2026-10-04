@@ -1,4 +1,5 @@
 import type { 幻灯片, 演示对象 } from '../deck'
+import { 同步连接点 } from './elements'
 export type 几何修改 = Partial<Pick<演示对象, 'x' | 'y' | 'width' | 'height' | '旋转' | '锁定' | '裁剪'>>
 export function 对象可以移动(页: 幻灯片, id: string): boolean {
   const 对象 = 页.对象列表?.find(项 => 项.id === id)
@@ -33,7 +34,7 @@ export function 修改对象(页: 幻灯片, 标识: string[], 修改: 几何修
     列表[下标] = 新
   }
   标识.forEach(id => 修改单项(id, 修改))
-  return { ...页, 对象列表: 列表 }
+  return 同步连接点({ ...页, 对象列表: 列表 })
 }
 const 选中 = (页: 幻灯片, 标识: string[]) => (页.对象列表 ?? []).filter(项 => 标识.includes(项.id) && !项.锁定)
 export function 对齐对象(页: 幻灯片, 标识: string[], 方向: '左'|'右'|'上'|'下'|'水平居中'|'垂直居中'): 幻灯片 {
