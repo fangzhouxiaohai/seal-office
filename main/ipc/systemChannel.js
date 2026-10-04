@@ -2,7 +2,7 @@ const { app, BrowserWindow, shell } = require('electron')
 const path = require('path')
 const { randomUUID } = require('crypto')
 const { 检查安装目录 } = require('../integrity')
-const { 创建默认程序服务 } = require('../windows/defaultApps')
+const { 创建默认程序服务, 获取关联程序路径 } = require('../windows/defaultApps')
 
 const 未保存风险数量 = new WeakMap()
 const 关闭核验请求 = new WeakMap()
@@ -39,7 +39,7 @@ function 查询实时关闭状态(窗口, 超时毫秒 = 15000) {
 function 注册系统通道(ipcMain) {
   let 默认程序服务
   const 获取默认程序服务 = () => {
-    if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: app.getPath('exe'), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址) })
+    if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: 获取关联程序路径(app.isPackaged, app.getPath('exe')), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址) })
     return 默认程序服务
   }
   require('./slideshowFullscreen').注册放映全屏通道(ipcMain)

@@ -2,6 +2,13 @@ const fs = require('fs')
 const path = require('path')
 const { execFile } = require('child_process')
 
+function 获取关联程序路径(已打包, 当前路径, 环境 = process.env) {
+  const 便携路径 = 环境.PORTABLE_EXECUTABLE_FILE
+  if (!已打包 || !便携路径) return 当前路径
+  if (typeof 便携路径 !== 'string' || !path.win32.isAbsolute(便携路径) || path.win32.extname(便携路径).toLowerCase() !== '.exe') throw new Error('便携版启动文件路径无效，请从原始便携程序启动')
+  return path.win32.normalize(便携路径)
+}
+
 function 创建注册执行器({ 可执行文件, 资源目录 }) {
   return async 操作 => {
     const 脚本 = path.join(资源目录, 'shell-integration', 'shellIntegration.ps1')
@@ -60,4 +67,4 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
   }
   return { 设置默认程序, 检查首次提示 }
 }
-module.exports = { 创建默认程序服务, 创建注册执行器 }
+module.exports = { 创建默认程序服务, 创建注册执行器, 获取关联程序路径 }

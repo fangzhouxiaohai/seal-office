@@ -7,7 +7,7 @@ function 加载系统通道(设置默认) {
   const 默认路径 = require.resolve('../windows/defaultApps')
   require(默认路径)
   const 原默认导出 = require.cache[默认路径].exports
-  require.cache[默认路径].exports = { 创建默认程序服务: () => ({ 设置默认程序: 设置默认, 检查首次提示: async () => ({ 成功: true, 需要询问: false }) }) }
+  require.cache[默认路径].exports = { 获取关联程序路径: (_已打包, 路径) => 路径, 创建默认程序服务: () => ({ 设置默认程序: 设置默认, 检查首次提示: async () => ({ 成功: true, 需要询问: false }) }) }
   require.cache[电子路径].exports = {
     app: { getVersion: () => '1.7.1', getPath: () => '测试路径', isPackaged: true },
     BrowserWindow: { fromWebContents: () => null },

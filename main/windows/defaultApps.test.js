@@ -1,7 +1,20 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { 创建默认程序服务 } = require('./defaultApps')
+const { 创建默认程序服务, 获取关联程序路径 } = require('./defaultApps')
+
+describe('便携版默认程序路径', () => {
+  it('打包便携版使用原始启动文件，避免注册临时解包目录', () => {
+    expect(获取关联程序路径(true, 'C:\\临时\\SealOffice.exe', { PORTABLE_EXECUTABLE_FILE: 'D:\\办公工具\\SealOffice 1.7.1.exe' })).toBe('D:\\办公工具\\SealOffice 1.7.1.exe')
+  })
+  it('安装版与开发版继续使用当前程序路径', () => {
+    expect(获取关联程序路径(true, 'C:\\程序\\SealOffice.exe', {})).toBe('C:\\程序\\SealOffice.exe')
+    expect(获取关联程序路径(false, 'C:\\electron.exe', { PORTABLE_EXECUTABLE_FILE: 'D:\\SealOffice.exe' })).toBe('C:\\electron.exe')
+  })
+  it('便携启动标识无效时明确报错，不回退到临时路径', () => {
+    expect(() => 获取关联程序路径(true, 'C:\\临时\\SealOffice.exe', { PORTABLE_EXECUTABLE_FILE: '相对路径.exe' })).toThrow('便携版启动文件路径无效')
+  })
+})
 
 describe('默认程序与安装后首次提醒', () => {
   let 目录, 调用, 系统打开, 服务, 安装, 默认
