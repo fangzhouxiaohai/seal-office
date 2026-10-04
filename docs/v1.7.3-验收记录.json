@@ -697,7 +697,30 @@
   "边界": "三种运行形式各启动三次；安装目录验证带文件冷启动及四种文件二次启动交给已有窗口。Windows 默认程序 UserChoice 未被强制修改，PDF 仍保持用户原选择。系统右键新建七类文件均通过，DOC/XLS/PPT 是真实旧式模板，仍需要已有兼容程序编辑。资源管理器旧创建方式缓存可能需重启资源管理器或注销；既有零字节文件必须重新新建。",
   "临时目录与缓存": "全部主动测试资料、原安装文件备份、下载、运行数据及开发缓存位于 E 盘；用户原资料保留。",
   "发布": {
-    "状态": "附件待上传",
-    "发布页": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.3"
+    "状态": "已公开",
+    "发布页": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.3",
+    "版本标签": "v1.7.3",
+    "源码提交": "49f4f7be89cc37a4e81ed182577a5fdde144289d",
+    "发布时间": "2026-10-04T18:30:22Z",
+    "最新版本": true,
+    "匿名公开接口核对": "通过",
+    "发布说明与本地一致": true,
+    "附件大小与SHA256核对": "两项均通过",
+    "附件": [
+      {
+        "name": "SealOffice.1.7.3.exe",
+        "size": 88124117,
+        "digest": "sha256:c5ef9c54c1e8d84661c94133803095d6b9a2f273421054c58b13496d6620f6a5",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.3/SealOffice.1.7.3.exe"
+      },
+      {
+        "name": "SealOffice.Setup.1.7.3.exe",
+        "size": 88349527,
+        "digest": "sha256:e63dfdec70197ac4ed1a7a3a51db8622cb25eec16b906976de14cfd3b5c07e09",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.3/SealOffice.Setup.1.7.3.exe"
+      }
+    ]
   }
 }
