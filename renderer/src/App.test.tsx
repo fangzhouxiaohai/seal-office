@@ -331,9 +331,9 @@ describe('应用外壳（WPS 版式首页）', () => {
   it('取消全部星标后星标筛选展示空状态', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByText('星标'))
-    for (let 序号 = 0; 序号 < 5; 序号 += 1) {
-      await userEvent.click(screen.getAllByRole('button', { name: '取消星标' })[0])
-    }
+    const 星标按钮 = screen.getAllByRole('button', { name: '取消星标' })
+    expect(星标按钮).toHaveLength(5)
+    for (const 按钮 of 星标按钮) await userEvent.click(按钮)
     expect(screen.getByText('暂无最近文档')).toBeInTheDocument()
   })
 

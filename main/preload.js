@@ -49,11 +49,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getConfig: () => ipcRenderer.invoke('ai.getConfig'),
     saveConfig: (配置) => ipcRenderer.invoke('ai.saveConfig', 配置),
     clearConfig: () => ipcRenderer.invoke('ai.clearConfig'),
+    getSession: (标识) => ipcRenderer.invoke('ai.getSession', 标识),
+    clearSession: (标识) => ipcRenderer.invoke('ai.clearSession', 标识),
+    updateSessionPlan: (标识, 计划) => ipcRenderer.invoke('ai.updateSessionPlan', 标识, 计划),
+    bindSession: (来源, 目标) => ipcRenderer.invoke('ai.bindSession', 来源, 目标),
+    discardSessionProposal: (标识) => ipcRenderer.invoke('ai.discardSessionProposal', 标识),
+    submitToolResult: (结果) => ipcRenderer.invoke('ai.submitToolResult', 结果),
+    onToolCall: (回调) => {
+      const 处理 = (_事件, 请求) => {
+        if (请求 && typeof 请求.请求标识 === 'string' && typeof 请求.调用标识 === 'string' && 请求.工具 === 'propose_changes') 回调(请求)
+      }
+      ipcRenderer.on('ai.toolCall', 处理)
+      return () => ipcRenderer.removeListener('ai.toolCall', 处理)
+    },
     chat: (对话) => ipcRenderer.invoke('ai.chat', 对话),
     cancel: (标识) => ipcRenderer.invoke('ai.cancel', 标识),
     onStream: (回调) => {
       const 处理 = (_事件, 片段) => {
-        if (片段 && typeof 片段.请求标识 === 'string' && ['思考', '正文', '状态'].includes(片段.类型) && typeof 片段.内容 === 'string') 回调(片段)
+        if (片段 && typeof 片段.请求标识 === 'string' && ['思考', '正文', '状态', '计划', '工具', '压缩'].includes(片段.类型) && typeof 片段.内容 === 'string') 回调(片段)
       }
       ipcRenderer.on('ai.stream', 处理)
       return () => ipcRenderer.removeListener('ai.stream', 处理)

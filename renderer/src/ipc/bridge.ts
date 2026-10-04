@@ -13,11 +13,16 @@ export interface 最近文档记录 {
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
 export type 思考强度 = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra'
 export type 思考参数模式 = 'none' | 'three' | 'four' | 'six' | 'thinking' | 'budget'
-export interface 助手配置 { 名称: string; 地址: string; 模型: string; 已配置密钥: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式 }
-export interface 助手配置输入 { 名称: string; 地址: string; 模型: string; 密钥?: string; 清除密钥?: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式 }
-export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 请求标识?: string; 思考强度?: 思考强度 }
-export interface 助手流片段 { 请求标识: string; 类型: '思考' | '正文' | '状态'; 内容: string }
-export interface 助手对话结果 { 内容: string; 思考?: string; 已停止?: boolean }
+export interface 助手配置 { 名称: string; 地址: string; 模型: string; 已配置密钥: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式; 上下文令牌?: number }
+export interface 助手配置输入 { 名称: string; 地址: string; 模型: string; 密钥?: string; 清除密钥?: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式; 上下文令牌?: number }
+export interface 助手计划项 { id: string; title: string; status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'awaiting_confirmation' }
+export interface 助手待确认候选 { 回复: string; 修改: unknown[]; 文档上下文: string; 文件快照: string | null }
+export interface 助手会话 { 显示消息: Array<{ 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 状态?: '完成' | '已停止' | '失败'; 阶段?: string }>; 摘要: string; 计划: 助手计划项[]; 压缩次数: number; 待确认候选?: 助手待确认候选 | null }
+export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 请求标识?: string; 思考强度?: 思考强度; 会话标识?: string; 自动执行?: boolean; 上下文令牌?: number; 文件快照?: string }
+export interface 助手流片段 { 请求标识: string; 类型: '思考' | '正文' | '状态' | '计划' | '工具' | '压缩'; 内容: string }
+export interface 助手工具请求 { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }
+export interface 助手工具结果 { 请求标识: string; 调用标识: string; 成功: boolean; 数据?: unknown; 错误?: string }
+export interface 助手对话结果 { 内容: string; 思考?: string; 已停止?: boolean; 计划?: 助手计划项[]; 摘要?: string; 压缩次数?: number }
 export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string }
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
@@ -59,6 +64,13 @@ export interface 电子接口 {
     chat: (对话: 助手对话输入) => Promise<助手结果<助手对话结果>>
     cancel: (标识: string) => Promise<助手结果<never>>
     onStream: (回调: (片段: 助手流片段) => void) => () => void
+    getSession?: (标识: string) => Promise<助手结果<助手会话 | null>>
+    clearSession?: (标识: string) => Promise<助手结果<never>>
+    updateSessionPlan?: (标识: string, 计划: 助手计划项[]) => Promise<助手结果<never>>
+    bindSession?: (来源: string, 目标: string) => Promise<助手结果<never>>
+    discardSessionProposal?: (标识: string) => Promise<助手结果<never>>
+    onToolCall?: (回调: (请求: 助手工具请求) => void) => () => void
+    submitToolResult?: (结果: 助手工具结果) => Promise<助手结果<never>>
   }
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
@@ -118,6 +130,13 @@ export const 桥接 = {
     chat: (对话: 助手对话输入): Promise<助手结果<助手对话结果>> => 取后端()?.ai?.chat(对话) ?? 失败('当前环境不支持智能助手对话'),
     cancel: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.cancel?.(标识) ?? 失败('当前环境不支持停止任务'),
     onStream: (回调: (片段: 助手流片段) => void): (() => void) => 取后端()?.ai?.onStream?.(回调) ?? (() => {}),
+    getSession: (标识: string): Promise<助手结果<助手会话 | null>> => 取后端()?.ai?.getSession?.(标识) ?? 失败('当前环境不支持会话记忆读取'),
+    clearSession: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.clearSession?.(标识) ?? 失败('当前环境不支持会话记忆'),
+    updateSessionPlan: (标识: string, 计划: 助手计划项[]): Promise<助手结果<never>> => 取后端()?.ai?.updateSessionPlan?.(标识, 计划) ?? 失败('当前环境不支持计划状态保存'),
+    bindSession: (来源: string, 目标: string): Promise<助手结果<never>> => 取后端()?.ai?.bindSession?.(来源, 目标) ?? 失败('当前环境不支持保存文件后的对话记忆绑定'),
+    discardSessionProposal: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.discardSessionProposal?.(标识) ?? 失败('当前环境不支持候选记忆更新'),
+    onToolCall: (回调: (请求: 助手工具请求) => void): (() => void) => 取后端()?.ai?.onToolCall?.(回调) ?? (() => {}),
+    submitToolResult: (结果: 助手工具结果): Promise<助手结果<never>> => 取后端()?.ai?.submitToolResult?.(结果) ?? 失败('当前环境不支持助手工具'),
   },
   office: {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),

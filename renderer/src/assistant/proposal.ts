@@ -13,8 +13,8 @@ export type 演示修改 = { 种类: '演示文本替换'; 页码: number; 文�
 export type 助手修改 = 文字修改 | 表格修改 | 演示修改
 export type 助手回复 = { 回复: string; 修改: 助手修改[] }
 
-function 有限文本(值: unknown, 字段: string, 可空 = false): string {
-  if (typeof 值 !== 'string' || 值.length > 12000 || (!可空 && !值.trim())) throw new Error(`${字段}格式无效`)
+function 有效文本(值: unknown, 字段: string, 可空 = false): string {
+  if (typeof 值 !== 'string' || (!可空 && !值.trim())) throw new Error(`${字段}格式无效`)
   return 值
 }
 
@@ -25,21 +25,21 @@ export function 解析助手回复(原文: string): 助手回复 {
   try { 数据 = JSON.parse(文本) }
   catch {
     if (文本.startsWith('{') || 文本.startsWith('[')) throw new Error('模型回复的修改格式无效，请重新描述需求')
-    return { 回复: 有限文本(文本, '模型回复'), 修改: [] }
+    return { 回复: 有效文本(文本, '模型回复'), 修改: [] }
   }
   if (!数据 || typeof 数据 !== 'object' || Array.isArray(数据)) throw new Error('模型回复格式无效')
   const 对象 = 数据 as Record<string, unknown>
-  const 回复 = 有限文本(对象.回复, '模型回复')
-  if (!Array.isArray(对象.修改) || 对象.修改.length > 200) throw new Error('模型修改数量无效（最多 200 处，请分批处理）')
+  const 回复 = 有效文本(对象.回复, '模型回复')
+  if (!Array.isArray(对象.修改)) throw new Error('模型修改数量格式无效')
   const 修改 = 对象.修改.map((项): 助手修改 => {
     if (!项 || typeof 项 !== 'object' || Array.isArray(项)) throw new Error('模型修改格式无效')
     const 指令 = 项 as Record<string, unknown>
-    if (指令.种类 === '文字替换') return { 种类: '文字替换', ...(指令.段落标识 !== undefined ? { 段落标识: 有限文本(指令.段落标识, '段落标识') } : {}), 查找: 有限文本(指令.查找, '查找文本'), 替换为: 有限文本(指令.替换为, '替换文本', true) }
-    if (指令.种类 === '段落排版') return { 种类: '段落排版', 段落标识: 有限文本(指令.段落标识, '段落标识'), 原文: 有限文本(指令.原文, '段落原文', true), 格式: 校验段落格式(指令.格式) }
-    if (指令.种类 === '单元格写入') return { 种类: '单元格写入', 工作表: 有限文本(指令.工作表, '工作表'), 地址: 有限文本(指令.地址, '单元格地址'), 原值: 有限文本(指令.原值, '原值', true), 新值: 有限文本(指令.新值, '新值', true) }
+    if (指令.种类 === '文字替换') return { 种类: '文字替换', ...(指令.段落标识 !== undefined ? { 段落标识: 有效文本(指令.段落标识, '段落标识') } : {}), 查找: 有效文本(指令.查找, '查找文本'), 替换为: 有效文本(指令.替换为, '替换文本', true) }
+    if (指令.种类 === '段落排版') return { 种类: '段落排版', 段落标识: 有效文本(指令.段落标识, '段落标识'), 原文: 有效文本(指令.原文, '段落原文', true), 格式: 校验段落格式(指令.格式) }
+    if (指令.种类 === '单元格写入') return { 种类: '单元格写入', 工作表: 有效文本(指令.工作表, '工作表'), 地址: 有效文本(指令.地址, '单元格地址'), 原值: 有效文本(指令.原值, '原值', true), 新值: 有效文本(指令.新值, '新值', true) }
     if (指令.种类 === '演示文本替换') {
       if (!Number.isSafeInteger(指令.页码) || Number(指令.页码) < 1) throw new Error('幻灯片页码无效')
-      return { 种类: '演示文本替换', 页码: Number(指令.页码), 文本框标识: 有限文本(指令.文本框标识, '文本框标识'), 查找: 有限文本(指令.查找, '查找文本'), 替换为: 有限文本(指令.替换为, '替换文本', true) }
+      return { 种类: '演示文本替换', 页码: Number(指令.页码), 文本框标识: 有效文本(指令.文本框标识, '文本框标识'), 查找: 有效文本(指令.查找, '查找文本'), 替换为: 有效文本(指令.替换为, '替换文本', true) }
     }
     throw new Error('模型返回了不支持的修改指令，未执行任何操作')
   })
@@ -98,8 +98,9 @@ function 应用段落格式(元素: HTMLElement, 格式: 段落格式): HTMLElem
 export function 预览文字修改(html: string, 修改: 文字修改[]): string {
   const 根 = 构建文字根(html)
   const 段落 = 收集文字段落(根)
+  const 段落索引 = new Map(段落.map((块) => [块.标识, 块]))
   for (const 项 of 修改) {
-    const 目标 = '段落标识' in 项 && 项.段落标识 ? 段落.find((块) => 块.标识 === 项.段落标识) : undefined
+    const 目标 = '段落标识' in 项 && 项.段落标识 ? 段落索引.get(项.段落标识) : undefined
     if ('段落标识' in 项 && 项.段落标识 && !目标) throw new Error(`找不到指定段落：${项.段落标识}`)
     if (项.种类 === '段落排版') {
       if (!目标 || 目标.原文 !== 项.原文) throw new Error('段落原文与发送时快照不一致，已阻止误改')
@@ -107,7 +108,7 @@ export function 预览文字修改(html: string, 修改: 文字修改[]): string
       目标.元素 = 应用段落格式(目标.元素, 校验段落格式(格式))
       continue
     }
-    if (!项.查找 || 项.查找.length > 12000 || 项.替换为.length > 12000) throw new Error('文字修改内容无效')
+    if (typeof 项.查找 !== 'string' || !项.查找 || typeof 项.替换为 !== 'string') throw new Error('文字修改内容无效')
     const 匹配: Array<{ 元素: HTMLElement; 位置: number }> = []
     for (const 块 of 目标 ? [目标] : 段落) {
       const 原文 = 段落文本(块.元素)

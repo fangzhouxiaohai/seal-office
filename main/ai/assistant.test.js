@@ -1,6 +1,15 @@
 const { 创建助手服务, 规范配置 } = require('./assistant')
 
 describe('智能助手模型连接', () => {
+  it('长助手回复可作为下一轮历史发送，用户输入仍单独校验', async () => {
+    const 配置 = { 名称: '测试服务', 服务商: 'custom', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '', 思考强度: 'high', 参数模式: 'none' }
+    const 请求 = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"回复":"继续处理。","修改":[]}' }, finish_reason: 'stop' }] }), { headers: { 'Content-Type': 'application/json' } }))
+    const 服务 = 创建助手服务({ 配置路径: '测试配置', 存储: { readFile: async () => Buffer.from(JSON.stringify(配置)) }, 安全存储: { isEncryptionAvailable: () => true, decryptString: (值) => 值.toString() }, 请求 })
+    await expect(服务.对话({ 消息: [{ 角色: 'assistant', 内容: '完整总结。'.repeat(4000) }, { 角色: 'user', 内容: '请继续调整排版。' }], 思考强度: 'high' })).resolves.toMatchObject({ 内容: '{"回复":"继续处理。","修改":[]}' })
+    expect(JSON.parse(请求.mock.calls[0][1].body).messages.at(-2).content).toBe('完整总结。'.repeat(4000))
+    await expect(服务.对话({ 消息: [{ 角色: 'user', 内容: '甲'.repeat(12001) }] })).rejects.toThrow('过长')
+  })
+
   it('拒绝向非本机明文地址发送文档和密钥', () => {
     expect(() => 规范配置({ 名称: '自定义', 地址: 'http://example.com/v1/chat/completions', 模型: 'test' })).toThrow('安全连接')
   })
@@ -26,7 +35,7 @@ describe('智能助手模型连接', () => {
     await 服务.保存配置({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '私人密钥' })
     expect(文件.get('assistant.secure').toString('utf8')).not.toContain('私人密钥')
     const 配置 = await 服务.读取配置()
-    expect(配置).toEqual({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 已配置密钥: true, 服务商: 'custom', 思考强度: 'high', 参数模式: 'none' })
+    expect(配置).toEqual({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 已配置密钥: true, 服务商: 'custom', 思考强度: 'high', 参数模式: 'none', 上下文令牌: 131072 })
   })
 
   it('模型请求只返回回复，服务错误不包含密钥', async () => {
@@ -103,6 +112,6 @@ describe('智能助手模型连接', () => {
     const 清除 = 服务.清除配置()
     允许写完()
     await Promise.all([保存, 清除])
-    expect(await 服务.读取配置()).toEqual({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 模型: 'deepseek-flash', 已配置密钥: false, 服务商: 'deepseek', 思考强度: 'high', 参数模式: 'three' })
+    expect(await 服务.读取配置()).toEqual({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 模型: 'deepseek-flash', 已配置密钥: false, 服务商: 'deepseek', 思考强度: 'high', 参数模式: 'three', 上下文令牌: 131072 })
   })
 })

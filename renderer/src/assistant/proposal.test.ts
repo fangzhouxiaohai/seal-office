@@ -4,6 +4,32 @@ import { 创建工作表, 写入单元格 } from '../sheet/model'
 import { 创建演示文稿 } from '../ppt/deck'
 
 describe('智能助手修改预览', () => {
+  it('长原文与长替换内容不因字符上限中止', () => {
+    const 原文 = '正文'.repeat(7000), 新文 = '改写'.repeat(8000)
+    const 回复 = 解析助手回复(JSON.stringify({ 回复: '已生成完整候选', 修改: [{ 种类: '文字替换', 段落标识: '段落-1', 查找: 原文, 替换为: 新文 }] }))
+    expect(预览文字修改(`<p>${原文}</p>`, 回复.修改 as Parameters<typeof 预览文字修改>[1])).toBe(`<p>${新文}</p>`)
+  })
+
+  it('超过两百处段落修改完整解析并按原始段落定位', () => {
+    const 修改 = Array.from({ length: 240 }, (_, 索引) => ({ 种类: '文字替换', 段落标识: `段落-${索引 + 1}`, 查找: '重复正文', 替换为: `段落正文${索引 + 1}` }))
+    const 回复 = 解析助手回复(JSON.stringify({ 回复: '批量调整', 修改 }))
+    const 根 = document.createElement('div')
+    根.innerHTML = 预览文字修改('<p>重复正文</p>'.repeat(240), 回复.修改 as Parameters<typeof 预览文字修改>[1])
+    expect(根.querySelectorAll('p')).toHaveLength(240)
+    expect(根.lastElementChild?.textContent).toBe('段落正文240')
+  })
+
+  it('有效长总结可解析，同时保留文字修改和排版候选', () => {
+    const 总结 = '完整总结。'.repeat(4000)
+    const 修改 = [{ 种类: '段落排版', 段落标识: '段落-1', 原文: '原始标题', 格式: { 标题级别: 1, 对齐: 'center', 颜色: '#000000' } }]
+    const 回复 = 解析助手回复(JSON.stringify({ 回复: 总结, 修改 }))
+    expect(回复.回复).toBe(总结)
+    const 候选 = 预览文字修改('<p>原始标题</p>', 回复.修改 as Parameters<typeof 预览文字修改>[1])
+    expect(候选).toContain('<h1')
+    expect(候选).toContain('text-align: center')
+    expect(解析助手回复(总结)).toEqual({ 回复: 总结, 修改: [] })
+  })
+
   it('同一段落跨加粗与颜色片段可精确替换且保留图片与邻近格式', () => {
     const 结果 = 预览文字修改('<p>开始<strong>旧标题</strong><span style="color:red">后半</span>结尾<img src="data:image/png;base64,AA=="></p>', [{ 种类: '文字替换', 查找: '旧标题后半', 替换为: '新标题' }])
     const 根 = document.createElement('div'); 根.innerHTML = 结果

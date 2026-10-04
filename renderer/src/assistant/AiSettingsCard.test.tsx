@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import AiSettingsCard from './AiSettingsCard'
@@ -7,6 +7,20 @@ import AiSettingsCard from './AiSettingsCard'
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手设置同步', () => {
+  it('高级设置可调整上下文令牌并保存，旧配置使用默认值', async () => {
+    const 保存配置 = vi.fn().mockImplementation(async (输入) => ({ 成功: true, 数据: { ...输入, 已配置密钥: false } }))
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+      getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '本机', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }),
+      saveConfig: 保存配置, chat: vi.fn(),
+    } } })
+    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AiSettingsCard /></AntdApp></ConfigProvider>)
+    const 输入框 = await screen.findByRole('spinbutton', { name: '上下文令牌' })
+    await waitFor(() => expect(输入框).toBeEnabled())
+    expect(输入框).toHaveValue('131072')
+    fireEvent.change(输入框, { target: { value: '262144' } })
+    await userEvent.click(screen.getByRole('button', { name: '保存模型设置' }))
+    await waitFor(() => expect(保存配置).toHaveBeenCalledWith(expect.objectContaining({ 上下文令牌: 262144 })))
+  })
   it('DeepSeek 初始预设仅填写密钥即可保存高强度配置，切换智谱清空旧密钥', async () => {
     const 保存配置 = vi.fn().mockImplementation(async (输入) => ({ 成功: true, 数据: { ...输入, 密钥: undefined, 已配置密钥: true } }))
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
