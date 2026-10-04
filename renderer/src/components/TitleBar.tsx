@@ -116,7 +116,7 @@ const TitleBar = ({
       )
     )
 
-  /** 深浅模式切换按钮：浅色显示太阳、深色显示月亮 */
+  /** 深浅模式切换按钮：所有页面固定在顶栏最右侧，状态与全局主题同步 */
   const 渲染主题切换 = () =>
     React.createElement(
       Tooltip,
@@ -127,6 +127,7 @@ const TitleBar = ({
           type: 'button',
           className: 'wps-icon-button',
           'aria-label': '切换深浅模式',
+          'aria-pressed': 主题深色,
           onClick: () => {
             if (on切换主题 !== undefined) on切换主题()
           },
@@ -143,7 +144,6 @@ const TitleBar = ({
         渲染图标按钮('通知', 'bell', '通知', on通知),
         渲染图标按钮('联系客服', 'headset', '联系客服', on客服),
         渲染全局设置(),
-        渲染主题切换(),
         React.createElement(
           Tooltip,
           { title: '登录（即将开放，当前版本免登录使用）' },
@@ -217,7 +217,7 @@ const TitleBar = ({
               prefix: React.createElement(Icon, { name: 'search', size: 16 }),
             })
     ),
-    React.createElement('div', { className: 'wps-titlebar__actions' }, 渲染右侧())
+    React.createElement('div', { className: 'wps-titlebar__actions' }, 渲染右侧(), 渲染主题切换())
   )
 }
 

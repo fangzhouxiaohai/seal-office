@@ -9,6 +9,36 @@ const { 读取docx } = 加载模块('../../../main/office/docxReader.js')
 const JSZip = 加载模块('jszip')
 
 describe('编辑区到真实 DOCX 的段落格式往返', () => {
+  it.each([1, 2, 3, 4, 5, 6])('默认 %i 级标题重开不会增加蓝色', async (级别) => {
+    const 结果 = await 读取docx(await 生成docx(htmlToDocxModel(`<h${级别}>默认标题</h${级别}>`)))
+    expect(结果.警告).toEqual([])
+    const 模型 = htmlToDocxModel(净化富文本(结果.html))
+    expect(模型.段落[0]).toMatchObject({ 级别, 文字: [expect.objectContaining({ 颜色: undefined })] })
+    expect(结果.html).not.toMatch(/#(?:2E74B5|1F4D78)/)
+  })
+
+  it.each([
+    { 名称: '默认标题', html: '<h1>默认标题</h1>', 颜色: [undefined] },
+    { 名称: '命名黑色标题', html: '<h1 style="color:black">黑色标题</h1>', 颜色: ['000000'] },
+    { 名称: '旧式黑色标题', html: '<h1><font color="black">黑色标题</font></h1>', 颜色: ['000000'] },
+    { 名称: '显式黑色标题', html: '<h1 style="color:#000000">黑色标题</h1>', 颜色: ['000000'] },
+    { 名称: '黑色与彩色混排', html: '<h1 style="color:black">黑色<span style="color:#C00000">红色</span></h1>', 颜色: ['000000', 'C00000'] },
+  ])('$名称连续保存重开不会套用蓝色标题样式', async ({ html: 原文, 颜色 }) => {
+    let html = 原文
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.未覆盖).toEqual([])
+      const 段 = 模型.段落[0]
+      if (段.类型 !== '段落') throw new Error('标题应为文本段落')
+      expect(段.级别).toBe(1)
+      expect(段.文字.map((片) => 片.颜色)).toEqual(颜色)
+      const 结果 = await 读取docx(await 生成docx(模型))
+      expect(结果.警告).toEqual([])
+      html = 净化富文本(结果.html)
+      expect(html).not.toContain('#2E74B5')
+    }
+  })
+
   it('WPS 常见的字符单位缩进、行单位段距和自动间距属性原样往返', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr>' +

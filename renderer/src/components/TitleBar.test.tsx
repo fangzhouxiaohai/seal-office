@@ -28,4 +28,11 @@ describe('顶栏', () => {
     expect(screen.getByText('季度报告.docx')).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('搜索文件、模板')).toBeNull()
   })
+
+  it('非首页顶栏首次显示时也提供可用的深浅模式切换', async () => {
+    const 切换主题 = vi.fn()
+    render(<TitleBar pageName="文档" documentName="季度报告.docx" on切换主题={切换主题} />)
+    await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
+    expect(切换主题).toHaveBeenCalledOnce()
+  })
 })

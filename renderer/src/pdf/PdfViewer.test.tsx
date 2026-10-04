@@ -26,7 +26,7 @@ describe('PDF 阅读预览', () => {
     render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={vi.fn()} />)
 
     expect(await screen.findByText('第 1 页 / 共 3 页')).toBeInTheDocument()
-    expect(取页面).toHaveBeenCalledWith(1)
+    await waitFor(() => expect(取页面).toHaveBeenCalledWith(1))
     fireEvent.click(screen.getByRole('button', { name: '下一页' }))
     await waitFor(() => expect(取页面).toHaveBeenCalledWith(2))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))

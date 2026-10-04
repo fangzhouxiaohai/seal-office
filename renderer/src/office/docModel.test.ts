@@ -34,6 +34,18 @@ describe('颜色转十六进制', () => {
     expect(颜色转十六进制('transparent')).toBeUndefined()
     expect(颜色转十六进制('rgba(0, 0, 0, 0)')).toBeUndefined()
   })
+
+  it('有效命名颜色保留具体颜色，解析后不遗留节点', () => {
+    const 节点数 = document.documentElement.childElementCount
+    expect(颜色转十六进制('black')).toBe('000000')
+    expect(颜色转十六进制('WHITE')).toBe('FFFFFF')
+    expect(颜色转十六进制('darkred')).toBe('8B0000')
+    expect(document.documentElement.childElementCount).toBe(节点数)
+  })
+
+  it.each(['invalidcolor', 'inherit', 'initial', 'currentColor', 'unset', 'revert', 'revert-layer'])('%s 不能被当作明确的黑色', (颜色) => {
+    expect(颜色转十六进制(颜色)).toBeUndefined()
+  })
 })
 
 describe('长度转磅', () => {

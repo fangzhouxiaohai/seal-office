@@ -22,6 +22,7 @@ import RibbonTabs from './ribbon/RibbonTabs'
 import { 保存选区, 恢复选区, 选区覆盖的段落 } from './selection'
 import RibbonPanel from './ribbon/RibbonPanel'
 import EditorCanvas from './EditorCanvas'
+import ImageTools from './ImageTools'
 import Ruler from './Ruler'
 import FindReplacePanel from './FindReplacePanel'
 import EditorStatusBar from './EditorStatusBar'
@@ -1015,6 +1016,16 @@ const DocEditor = () => {
         })
       )
     ),
+    React.createElement(ImageTools, {
+      编辑区: 编辑区引用,
+      文档标识,
+      只读: 视图.文档保护,
+      开始修改: () => {
+        if (输入计时器.current !== null) { window.clearTimeout(输入计时器.current); 输入计时器.current = null }
+        记录历史()
+      },
+      完成修改: () => { 记录历史(); 同步内容(); 刷新() },
+    }),
     React.createElement(ContextMenu, {
       open: 菜单可见,
       x: 菜单坐标.x,

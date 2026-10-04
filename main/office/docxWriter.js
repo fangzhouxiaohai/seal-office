@@ -99,6 +99,17 @@ const 标题样式 = {
   6: HeadingLevel.HEADING_6,
 }
 
+// 标题使用自动文字颜色，显式设置的文字颜色仍由片段覆盖。
+// 保留保存库原有字号和字形，避免移除蓝色时连带改变其他排版。
+const 标题默认样式 = {
+  heading1: { run: { color: 'auto', size: 32 } },
+  heading2: { run: { color: 'auto', size: 26 } },
+  heading3: { run: { color: 'auto', size: 24 } },
+  heading4: { run: { color: 'auto', italics: true } },
+  heading5: { run: { color: 'auto' } },
+  heading6: { run: { color: 'auto' } },
+}
+
 /** 对齐方式到 docx 常量的映射 */
 const 对齐映射 = {
   左: AlignmentType.LEFT,
@@ -300,6 +311,7 @@ exports.生成docx = async (文档模型) => {
   }
 
   const 文档 = new Document({
+    styles: { default: 标题默认样式 },
     numbering: 编号配置,
     background: 页面底色(文档模型?.页面设置),
     sections: [{ properties: 构建页面属性(文档模型?.页面设置), children: 子元素 }],

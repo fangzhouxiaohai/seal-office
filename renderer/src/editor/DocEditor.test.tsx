@@ -41,6 +41,30 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
+  it('图片对齐更新未保存状态，并可撤销、重做', async () => {
+    const 创建入口 = () => {
+      const { createDoc } = useAppStore()
+      return <button onClick={() => createDoc('word', '<p>前文<img width="120" height="80" alt="位置核验">后文</p>', { 路径: 'C:\\资料\\图片.docx' })}>打开图片文档</button>
+    }
+    const { container } = render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><创建入口 /><DocEditor /><GlobalTabs /></AppProvider></AntdApp></ConfigProvider>)
+    await userEvent.click(screen.getByRole('button', { name: '打开图片文档' }))
+    const 根 = container.querySelector('.wps-editor-canvas__content')!
+    const 图 = 根.querySelector('img')!
+    vi.spyOn(图, 'getBoundingClientRect').mockReturnValue({ x: 100, y: 200, left: 100, top: 200, width: 120, height: 80, right: 220, bottom: 280, toJSON: () => ({}) })
+    expect(container.querySelector('.wps-global-tab__dirty')).toBeNull()
+    await userEvent.click(图)
+    await userEvent.click(within(screen.getByRole('toolbar', { name: '图片工具' })).getByRole('button', { name: '居中' }))
+    expect(根.querySelector('img')?.parentElement?.style.textAlign).toBe('center')
+    expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    expect(根.querySelector('p')).toHaveTextContent('前文后文')
+    expect(根.querySelectorAll('p')).toHaveLength(1)
+    expect(container.querySelector('.wps-global-tab__dirty')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '重做' }))
+    expect(根.querySelector('img')?.parentElement?.style.textAlign).toBe('center')
+    expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+  })
+
   it('图片入口直接选择本机文件，不再弹出无法保存 DOCX 的确认框', async () => {
     const 点击 = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
     try {

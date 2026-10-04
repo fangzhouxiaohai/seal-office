@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { createRequire } from 'node:module'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { theme } from 'antd'
@@ -6,6 +7,11 @@ import App, { 动态主题容器 } from './App'
 import { RECENT_DOCS } from './mock/recentDocs'
 import { 桥接 } from './ipc/bridge'
 import { SettingsProvider, useSettings } from './store/settingsStore'
+import { htmlToDocxModel } from './editor/commands'
+
+const 加载模块 = createRequire(import.meta.url)
+const { 生成docx } = 加载模块('../../main/office/docxWriter.js')
+const { 读取docx } = 加载模块('../../main/office/docxReader.js')
 
 /** 通过「新建」下拉选择文档类型（WPS 首页的新建入口为下拉菜单） */
 const 通过新建菜单创建 = async (名称: string) => {
@@ -14,6 +20,45 @@ const 通过新建菜单创建 = async (名称: string) => {
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
+  it.each(['首页打开', '最近列表'])('%s 重开真实 DOCX 时保留黑色标题和已保存状态', async (入口) => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    const 数据 = await 生成docx(htmlToDocxModel('<h1 style="color:black">黑色标题</h1><p>文档正文</p>'))
+    const 路径 = 'C:\\资料\\黑色标题.docx'
+    const 读取 = vi.fn(async (内容: string) => ({ 成功: true, ...await 读取docx(Buffer.from(内容, 'base64')) }))
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showOpenDialog: vi.fn().mockResolvedValue(路径),
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 数据.toString('base64'), 二进制: true, 扩展名: '.docx' }),
+      office: { readDocx: 读取 },
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      const { container } = render(<App 初始最近文档={[{
+        id: '标题核验', name: '黑色标题.docx', type: 'word', 路径,
+        size: 数据.length, updatedAt: '2026-10-04 12:00', starred: false, shared: false,
+      }]} />)
+      if (入口 === '首页打开') await userEvent.click(screen.getByRole('button', { name: '打开' }))
+      else {
+        await userEvent.click(screen.getByRole('button', { name: '列表视图' }))
+        await userEvent.click(screen.getByRole('button', { name: '打开 黑色标题.docx' }))
+      }
+      const 标签 = await screen.findByRole('tab', { name: '黑色标题.docx' })
+      const 标题 = container.querySelector('.wps-editor-canvas__content h1') as HTMLElement
+      expect(标题).toHaveTextContent('黑色标题')
+      expect(getComputedStyle(标题.querySelector('span')! as HTMLElement).color).toBe('rgb(0, 0, 0)')
+      expect(读取).toHaveBeenCalledOnce()
+      expect(标签.querySelector('.wps-global-tab__dirty')).toBeNull()
+      expect(screen.queryByRole('dialog')?.textContent).toBeUndefined()
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
   it('自动恢复未保存工作区时保留正文和标记，不显示恢复提示', async () => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     localStorage.setItem('seal-session-restore', 'true')
@@ -205,12 +250,29 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(document.body).toHaveTextContent('设置中心')
   })
 
-  it('主题切换按钮在深浅模式间翻转', async () => {
-    render(<App 初始最近文档={RECENT_DOCS} />)
-    const 之前 = document.documentElement.getAttribute('data-theme')
-    await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
-    const 之后 = document.documentElement.getAttribute('data-theme')
-    expect(之前).not.toBe(之后)
+  it('主题切换入口首次进入设置即存在，返回首页和重启后仍可用且保留主题', async () => {
+    localStorage.removeItem('seal-theme')
+    try {
+      const { unmount } = render(<App 初始最近文档={[]} />)
+      expect(screen.getAllByRole('button', { name: '切换深浅模式' })).toHaveLength(1)
+      await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
+      await userEvent.click(await screen.findByRole('menuitem', { name: '设置' }))
+      expect(document.body).toHaveTextContent('设置中心')
+      await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+      expect(localStorage.getItem('seal-theme')).toBe('深色')
+      await userEvent.click(screen.getByRole('tab', { name: '首页' }))
+      expect(screen.getAllByRole('button', { name: '切换深浅模式' })).toHaveLength(1)
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+      unmount()
+      render(<App 初始最近文档={[]} />)
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+      await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
+      expect(document.documentElement).toHaveAttribute('data-theme', 'light')
+      expect(localStorage.getItem('seal-theme')).toBe('浅色')
+    } finally {
+      localStorage.removeItem('seal-theme')
+    }
   })
 
   it('主题切换同步更新弹窗和表单使用的组件库令牌', async () => {

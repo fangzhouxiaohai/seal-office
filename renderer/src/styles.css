@@ -26,6 +26,8 @@
   --space-8: 32px;
   --font-body: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
   --font-heading: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  --document-paper: #ffffff;
+  --document-ink: #000000;
 }
 
 * {
@@ -1224,7 +1226,7 @@ button {
   width: 794px;
   min-height: 1123px;
   padding: 96px 90px;
-  background: var(--bg-card);
+  background: var(--document-paper);
   box-shadow: 0 2px 12px rgba(31, 41, 55, 0.12);
   transform-origin: top center;
   transition: transform 0.15s ease;
@@ -1254,7 +1256,7 @@ button {
 .wps-editor-canvas__content {
   min-height: 900px;
   outline: none;
-  color: var(--text-1);
+  color: var(--document-ink);
   font-size: 14px;
   line-height: 1.75;
   word-break: break-word;

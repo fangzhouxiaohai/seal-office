@@ -120,6 +120,9 @@ const 标题级别: Record<string, number> = { H1: 1, H2: 2, H3: 3, H4: 4, H5: 5
 /** 视为独立段落的块级标签 */
 const 块级标签 = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'SECTION', 'ARTICLE'])
 
+const 非具体颜色 = new Set(['', 'transparent', 'inherit', 'initial', 'currentcolor', 'unset', 'revert', 'revert-layer'])
+const 命名颜色缓存 = new Map<string, string>()
+
 /**
  * 把 CSS 颜色统一转为六位大写十六进制。
  * 完全透明与无法识别的取值返回 undefined，避免误写成黑色。
@@ -129,7 +132,7 @@ export function 颜色转十六进制(颜色: string | undefined | null): string
     return undefined
   }
   const 值 = 颜色.trim().toLowerCase()
-  if (值 === '' || 值 === 'transparent' || 值 === 'inherit' || 值 === 'initial' || 值 === 'currentcolor') {
+  if (非具体颜色.has(值)) {
     return undefined
   }
 
@@ -156,6 +159,26 @@ export function 颜色转十六进制(颜色: string | undefined | null): string
   }
   if (/^[0-9a-f]{6}$/.test(十六进制)) {
     return 十六进制.toUpperCase()
+  }
+
+  // 由浏览器识别命名颜色，兼容内联样式和旧式字体颜色属性。
+  if (/^[a-z]+$/.test(值)) {
+    const 已解析 = 命名颜色缓存.get(值)
+    if (已解析) return 已解析
+    const 探针 = document.createElement('span')
+    探针.style.color = 值
+    if (!探针.style.color) return undefined
+    探针.style.display = 'none'
+    document.documentElement.appendChild(探针)
+    try {
+      const 规范颜色 = getComputedStyle(探针).color
+      // 只转换浏览器给出的具体颜色，未解析的关键字不能变成默认黑色。
+      const 结果 = /^(?:rgba?\(|#)/i.test(规范颜色) ? 颜色转十六进制(规范颜色) : undefined
+      if (结果) 命名颜色缓存.set(值, 结果)
+      return 结果
+    } finally {
+      探针.remove()
+    }
   }
   return undefined
 }
