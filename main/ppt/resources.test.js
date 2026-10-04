@@ -1,6 +1,31 @@
 const { 创建资源存储 } = require('./resources')
 
 describe('演示资源存储', () => {
+  it('多文稿资源恢复后逐一同步快照不会误清理尚未同步的字节', () => {
+    const 来源 = 创建资源存储()
+    const 首项 = 来源.加入(Buffer.from('1234'), 'image/png')
+    const 次项 = 来源.加入(Buffer.from('5678'), 'image/png')
+    const 存储 = 创建资源存储()
+    存储.恢复(来源.导出())
+    存储.同步快照('首文稿', [首项])
+    expect(存储.读取(次项).toString()).toBe('5678')
+    存储.同步快照('次文稿', [次项])
+    存储.同步快照('首文稿', [])
+    expect(存储.列表()).toMatchObject([{ 标识: 次项, 引用次数: 1 }])
+  })
+  it('释放最后快照真实回收容量，历史快照仍保护撤销字节', () => {
+    const 存储 = 创建资源存储({ 最大单项字节: 4, 最大总字节: 4 })
+    const 标识 = 存储.加入(Buffer.from('1234'), 'image/png')
+    存储.同步快照('当前', [标识])
+    存储.同步快照('历史', [标识])
+    存储.解除引用(标识)
+    存储.释放快照('当前')
+    expect(存储.读取(标识).toString()).toBe('1234')
+    expect(() => 存储.加入(Buffer.from('5678'), 'image/png')).toThrow(/总大小/)
+    存储.释放快照('历史')
+    expect(存储.列表()).toEqual([])
+    expect(() => 存储.加入(Buffer.from('5678'), 'image/png')).not.toThrow()
+  })
   it('复制、删除与撤销分别持有快照引用，关闭历史后才释放字节', () => {
     const 存储 = 创建资源存储()
     const 标识 = 存储.加入(Buffer.from('sample'), 'image/png')

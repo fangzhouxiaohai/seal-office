@@ -1,6 +1,6 @@
 // 应用状态层：集中承载当前模块、导航筛选、视图模式、排序方式、文档列表与编辑器文档。
 // 采用 Context 而非全局变量，保证状态随组件树卸载而释放，便于测试隔离。
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { App as AntdApp, Modal } from 'antd'
 import {
   filterDocs,
@@ -14,7 +14,7 @@ import { 基准文件名, 记录最近文档, 读取本地文件内容 } from '.
 import { 创建工作表, 检查工作簿更新, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
-import { 迁移演示文稿, 演示内容快照, 收集演示资源标识 } from './ppt/model/migrations'
+import { 迁移演示文稿, 演示内容快照, 收集演示资源标识, 校验演示备份资源 } from './ppt/model/migrations'
 import { 页面设置相同, type 文字页面设置 } from './office/docModel'
 
 export type ViewMode = 'grid' | 'list'
@@ -95,6 +95,7 @@ export interface AppState {
   表格文档模型: Record<string, Sheet[]>
   更新表格文档模型: (标识: string, 更新: React.SetStateAction<Sheet[]>) => void
   演示文档模型: Record<string, 演示文稿>
+  设置演示历史资源: (标识: string, 引用: string[]) => void
   更新演示文档模型: (标识: string, 更新: React.SetStateAction<演示文稿>) => void
   PDF待预览: { 路径: string; 名称: string; 数据: string } | null
   pdfDocuments: readonly PdfDocument[]
@@ -198,23 +199,36 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   const [文档路径, set文档路径状态] = useState<Record<string, string | null>>({})
   const [表格文档模型, set表格文档模型] = useState<Record<string, Sheet[]>>({})
   const [演示文档模型, set演示文档模型] = useState<Record<string, 演示文稿>>({})
+  const [演示历史资源, set演示历史资源] = useState<Record<string, string[]>>({})
+  const 设置演示历史资源 = useCallback((标识: string, 引用: string[]) => {
+    set演示历史资源(当前 => {
+      if (JSON.stringify(当前[标识] ?? []) === JSON.stringify(引用)) return 当前
+      const 更新 = { ...当前 }
+      if (引用.length) 更新[标识] = 引用
+      else delete 更新[标识]
+      return 更新
+    })
+  }, [])
   const 已同步资源快照 = useRef<Set<string>>(new Set())
   const 资源同步链 = useRef<Promise<void>>(Promise.resolve())
   const 资源同步错误 = useRef<string | null>(null)
   useEffect(() => {
-    const 目标 = new Map(Object.entries(演示文档模型).map(([标识, 文稿]) => [标识, 收集演示资源标识(文稿)] as const)
-      .filter(([, 引用]) => 引用.length > 0))
+    // 先为真实历史建立所有权，再替换当前文稿引用，避免删除后撤销资源被回收。
+    const 目标 = new Map<string, string[]>([
+      ...Object.entries(演示历史资源).filter(([标识]) => 标识 === '独立文稿' || 演示文档模型[标识]).map(([标识, 引用]) => [`历史:${标识}`, 引用] as const),
+      ...Object.entries(演示文档模型).map(([标识, 文稿]) => [`文稿:${标识}`, 收集演示资源标识(文稿)] as const),
+    ].filter(([, 引用]) => 引用.length > 0))
     const 待释放 = [...已同步资源快照.current].filter((标识) => !目标.has(标识))
     if (目标.size === 0 && 待释放.length === 0) return
     已同步资源快照.current = new Set(目标.keys())
     const 执行 = async () => {
-      for (const 标识 of 待释放) {
-        const 结果 = await 桥接.presentationResources.release(`文稿:${标识}`)
-        if (!结果.成功) throw new Error(结果.错误 || '无法释放演示资源引用')
-      }
       for (const [标识, 引用] of 目标) {
-        const 结果 = await 桥接.presentationResources.sync(`文稿:${标识}`, 引用)
+        const 结果 = await 桥接.presentationResources.sync(标识, 引用)
         if (!结果.成功) throw new Error(结果.错误 || '无法更新演示资源引用')
+      }
+      for (const 标识 of 待释放) {
+        const 结果 = await 桥接.presentationResources.release(标识)
+        if (!结果.成功) throw new Error(结果.错误 || '无法释放演示资源引用')
       }
       资源同步错误.current = null
     }
@@ -223,7 +237,18 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       资源同步错误.current = 错误 instanceof Error ? 错误.message : '演示资源无法同步'
       弹窗.error({ title: '演示资源同步失败', content: 资源同步错误.current })
     })
-  }, [演示文档模型])
+  }, [演示文档模型, 演示历史资源])
+  useEffect(() => () => {
+    const 待释放 = [...已同步资源快照.current]
+    资源同步链.current = 资源同步链.current.then(async () => {
+      for (const 标识 of 待释放) {
+        const 结果 = await 桥接.presentationResources.release(标识)
+        if (!结果.成功) throw new Error(结果.错误 || '无法释放演示资源引用')
+      }
+    }).catch((错误: unknown) => {
+      弹窗.error({ title: '演示资源释放失败', content: 错误 instanceof Error ? 错误.message : '演示资源无法释放' })
+    })
+  }, [])
   const [PDF待预览, setPDF待预览] = useState<{ 路径: string; 名称: string; 数据: string } | null>(null)
   const [pdfDocuments, setPdfDocuments] = useState<PdfDocument[]>([])
   const [activePdfId, setActivePdfId] = useState<string | null>(null)
@@ -516,10 +541,8 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         }
         const 演示引用 = [...new Set(Object.values(已迁移演示).flatMap(收集演示资源标识))]
         if (演示引用.length > 0) {
-          if (!Array.isArray(数据.演示资源字节) || 数据.演示资源字节.length !== 演示引用.length) {
-            throw new Error('备份缺少演示资源字节，已阻止加载不完整的文稿')
-          }
-          const 恢复结果 = await 桥接.presentationResources.restore(数据.演示资源字节)
+          校验演示备份资源(Object.values(已迁移演示), 数据.演示资源字节)
+          const 恢复结果 = await 桥接.presentationResources.restore(数据.演示资源字节!)
           if (!恢复结果.成功) throw new Error(恢复结果.错误 || '演示资源恢复失败')
         }
         const PDF读取结果 = await Promise.allSettled(PDF元数据.map(async (记录): Promise<PdfDocument> => {
@@ -820,6 +843,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     setWorkspaceOrder(剩余顺序)
     set表格文档模型((当前) => { const 结果 = { ...当前 }; delete 结果[标识]; return 结果 })
     set演示文档模型((当前) => { const 结果 = { ...当前 }; delete 结果[标识]; return 结果 })
+    设置演示历史资源(标识, [])
     set文档路径状态((当前) => { const 结果 = { ...当前 }; delete 结果[标识]; return 结果 })
     if (!正在显示) {
       if (activeDocumentId === 标识) setActiveDocumentId(剩余[剩余.length - 1]?.id ?? null)
@@ -1030,6 +1054,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       更新表格文档模型,
       演示文档模型,
       更新演示文档模型,
+      设置演示历史资源,
       PDF待预览,
       pdfDocuments,
       showSettings,

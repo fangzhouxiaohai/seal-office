@@ -62,4 +62,9 @@ export class HistoryStack<T = 快照> {
   size(): number {
     return this.列表.length
   }
+
+  /** 返回实际保留的撤销与重做快照，供资源所有权随历史淘汰而释放。 */
+  snapshots(): readonly T[] {
+    return this.列表.slice()
+  }
 }

@@ -80,6 +80,7 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       const 对象 = 页面对象.get(标识)
       if (!对象 || 对象.类型 !== '组合') return
       if (!Array.isArray(对象.子对象标识) || 对象.子对象标识.length === 0) throw new Error(`组合对象 ${标识} 缺少成员`)
+      if (new Set(对象.子对象标识).size !== 对象.子对象标识.length) throw new Error(`组合对象 ${标识} 存在重复成员`)
       const 新路径 = new Set(路径).add(标识)
       for (const 子标识 of 对象.子对象标识) {
         if (!页面对象.has(子标识)) throw new Error(`组合对象 ${标识} 引用的成员不存在：${子标识}`)
@@ -121,4 +122,31 @@ export function 收集演示资源标识(文稿: 演示文稿): string[] {
     }
   }
   return 结果
+}
+
+/** 加载正文前核对实际资源集合与各文稿索引，不能只比较条目数量。 */
+export function 校验演示备份资源(文稿列表: 演示文稿[], 条目列表: unknown): void {
+  const 引用 = new Set(文稿列表.flatMap(收集演示资源标识))
+  if (引用.size === 0) return
+  if (!Array.isArray(条目列表)) throw new Error('备份缺少演示资源字节')
+  const 条目表 = new Map<string, Record<string, unknown>>()
+  for (const 条目 of 条目列表) {
+    if (!是记录(条目) || !非空文字(条目.标识) || typeof 条目.数据 !== 'string') throw new Error('备份演示资源条目无效')
+    if (条目表.has(条目.标识)) throw new Error(`备份演示资源标识重复：${条目.标识}`)
+    条目表.set(条目.标识, 条目)
+  }
+  for (const 文稿 of 文稿列表) {
+    for (const 标识 of new Set(收集演示资源标识(文稿))) {
+      const 条目 = 条目表.get(标识)
+      if (!条目) throw new Error(`备份缺少演示资源字节：${标识}`)
+      const 元数据 = 文稿.资源索引![标识]
+      if (元数据.指纹 !== 标识) throw new Error(`备份演示资源指纹不一致：${标识}`)
+      if (条目.类型 !== 元数据.类型) throw new Error(`备份演示资源类型不一致：${标识}`)
+      const 数据 = 条目.数据 as string
+      if (!数据 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(数据)) throw new Error(`备份演示资源编码无效：${标识}`)
+      const 字节数 = 数据.length / 4 * 3 - (数据.endsWith('==') ? 2 : 数据.endsWith('=') ? 1 : 0)
+      if (字节数 !== 元数据.字节数) throw new Error(`备份演示资源字节数不一致：${标识}`)
+    }
+  }
+  if (条目表.size !== 引用.size) throw new Error('备份演示资源包含未被文稿引用的条目')
 }

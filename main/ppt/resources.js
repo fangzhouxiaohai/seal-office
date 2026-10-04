@@ -14,6 +14,15 @@ function 创建资源存储(选项 = {}) {
   const 条目 = new Map()
   const 快照 = new Map()
   let 总字节 = 0
+  const 回收 = (标识列表) => {
+    for (const 标识 of 标识列表) {
+      const 资源 = 条目.get(标识)
+      if (资源?.引用次数 === 0) {
+        条目.delete(标识)
+        总字节 -= 资源.数据.length
+      }
+    }
+  }
   return {
     加入(数据, 类型) {
       if (!Buffer.isBuffer(数据) || 数据.length === 0) throw new Error('资源内容为空或不是二进制数据')
@@ -50,12 +59,7 @@ function 创建资源存储(选项 = {}) {
       资源.引用次数 -= 1
     },
     清理未引用() {
-      for (const [标识, 资源] of 条目) {
-        if (资源.引用次数 === 0) {
-          条目.delete(标识)
-          总字节 -= 资源.数据.length
-        }
-      }
+      回收(条目.keys())
     },
     同步快照(快照标识, 引用标识列表) {
       if (typeof 快照标识 !== 'string' || !快照标识 || !Array.isArray(引用标识列表)) throw new Error('资源快照参数无效')
@@ -64,13 +68,18 @@ function 创建资源存储(选项 = {}) {
         if (!条目.has(标识)) throw new Error(`资源不存在：${标识}`)
         新引用.set(标识, (新引用.get(标识) ?? 0) + 1)
       }
-      for (const [标识, 次数] of 快照.get(快照标识) ?? []) 条目.get(标识).引用次数 -= 次数
+      const 旧引用 = 快照.get(快照标识) ?? new Map()
+      for (const [标识, 次数] of 旧引用) 条目.get(标识).引用次数 -= 次数
       for (const [标识, 次数] of 新引用) 条目.get(标识).引用次数 += 次数
       快照.set(快照标识, 新引用)
+      // 只回收本快照淘汰的资源，其他刚恢复的零引用字节仍在等待建立所有权。
+      回收(旧引用.keys())
     },
     释放快照(快照标识) {
-      for (const [标识, 次数] of 快照.get(快照标识) ?? []) 条目.get(标识).引用次数 -= 次数
+      const 旧引用 = 快照.get(快照标识) ?? new Map()
+      for (const [标识, 次数] of 旧引用) 条目.get(标识).引用次数 -= 次数
       快照.delete(快照标识)
+      回收(旧引用.keys())
     },
     导出(标识列表 = Array.from(条目.keys())) {
       if (!Array.isArray(标识列表)) throw new Error('资源导出参数无效')

@@ -2,6 +2,22 @@ import { describe, it, expect } from 'vitest'
 import { HistoryStack } from './history'
 
 describe('撤销重做历史栈', () => {
+  it('资源持有列表包含重做分支，分支清空与上限淘汰后移除对应快照', () => {
+    const 栈 = new HistoryStack<string>()
+    栈.record('初始资源')
+    栈.record('重做资源')
+    栈.undo()
+    expect(栈.snapshots()).toEqual(['初始资源', '重做资源'])
+    栈.record('新分支')
+    expect(栈.snapshots()).toEqual(['初始资源', '新分支'])
+    for (let 序号 = 0; 序号 < 100; 序号++) 栈.record(`新资源${序号}`)
+    expect(栈.snapshots()).toHaveLength(100)
+    expect(栈.snapshots()).not.toContain('初始资源')
+    expect(栈.snapshots()).not.toContain('新分支')
+    const 导出 = 栈.snapshots() as string[]
+    导出.length = 0
+    expect(栈.size()).toBe(100)
+  })
   it('初始状态既不可撤销也不可重做', () => {
     const 栈 = new HistoryStack()
     expect(栈.canUndo()).toBe(false)

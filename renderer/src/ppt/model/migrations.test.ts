@@ -3,6 +3,16 @@ import { 创建演示文稿, 复制幻灯片, 删除幻灯片 } from '../deck'
 import { 迁移演示文稿, 演示内容快照, 收集演示资源标识 } from './migrations'
 
 describe('演示文稿模型迁移与校验', () => {
+  it('同一组合重复列出成员时拒绝加载且保留输入', () => {
+    const 文稿 = 创建演示文稿()
+    文稿.幻灯片列表[0].对象列表 = [
+      { id: '图形', 类型: '图形', x: 0, y: 0, width: 10, height: 10 },
+      { id: '组合', 类型: '组合', x: 0, y: 0, width: 10, height: 10, 子对象标识: ['图形', '图形'] },
+    ]
+    const 原始 = JSON.stringify(文稿)
+    expect(() => 迁移演示文稿(文稿)).toThrow(/重复成员/)
+    expect(JSON.stringify(文稿)).toBe(原始)
+  })
   it('旧版文字文稿保留全部原文、标识和显式颜色', () => {
     const 旧稿 = 创建演示文稿('旧版.pptx')
     delete 旧稿.模型版本

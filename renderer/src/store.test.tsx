@@ -965,6 +965,38 @@ describe('createDoc 按文档保存模型', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
+  it.each(['标识', '重复', '类型', '字节数'])('恢复拒绝资源%s不匹配并保留当前文稿', async (缺口) => {
+    const 确认 = vi.spyOn(Modal, 'confirm').mockImplementation(() => ({ destroy: vi.fn(), update: vi.fn() }))
+    const 恢复 = vi.fn(async () => ({ 成功: true }))
+    let 返回备份!: (结果: { 成功: boolean; 内容: string }) => void
+    const 指纹 = 'a'.repeat(64), 第二 = 'b'.repeat(64)
+    const 文稿 = 创建演示文稿('备份演示')
+    文稿.资源索引 = { [指纹]: { 指纹, 类型: 'image/png', 字节数: 3 }, [第二]: { 指纹: 第二, 类型: 'image/png', 字节数: 3 } }
+    文稿.幻灯片列表[0].对象列表 = [指纹, 第二].map((资源标识, 序号) => ({ id: `图片${序号}`, 类型: '图片', x: 0, y: 0, width: 10, height: 10, 资源标识 }))
+    const 条目 = [{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }, { 标识: 第二, 类型: 'image/png', 数据: 'ZGVm' }]
+    if (缺口 === '标识') 条目[0].标识 = 'c'.repeat(64)
+    if (缺口 === '重复') 条目[1] = { ...条目[0] }
+    if (缺口 === '类型') 条目[0].类型 = 'image/jpeg'
+    if (缺口 === '字节数') 文稿.资源索引[指纹].字节数 = 9
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(() => new Promise(完成 => { 返回备份 = 完成 })),
+      presentationResources: { restore: 恢复, sync: vi.fn(async () => ({ 成功: true })) },
+    } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    try {
+      render(<AppProvider><读取 /></AppProvider>)
+      act(() => 状态!.createDoc('word', '<p>当前原文</p>'))
+      const 原文档 = 状态!.documents
+      await act(async () => 返回备份({ 成功: true, 内容: JSON.stringify({ documents: [{ id: '备份', name: '备份演示', type: 'ppt', html: '' }], 演示文档模型: { 备份: 文稿 }, 演示资源字节: 条目 }) }))
+      await waitFor(() => expect(确认).toHaveBeenCalled())
+      expect(确认.mock.calls[0][0].content).toContain(缺口 === '标识' ? '缺少' : 缺口 === '重复' ? '重复' : 缺口)
+      expect(恢复).not.toHaveBeenCalled()
+      expect(状态!.documents).toEqual(原文档)
+      expect(状态!.演示文档模型).toEqual({})
+    } finally { 确认.mockRestore(); Reflect.deleteProperty(window, 'electronAPI') }
+  })
+
   it('演示资源随工作区备份导出并在恢复时先还原字节', async () => {
     let 备份内容: string | null = null
     const 指纹 = 'b'.repeat(64)
@@ -988,10 +1020,13 @@ describe('createDoc 按文档保存模型', () => {
     await waitFor(() => expect(备份内容).not.toBeNull(), { timeout: 3500 })
     expect(JSON.parse(备份内容!).演示资源字节).toEqual([{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }])
     首次.unmount()
-    render(<AppProvider><读取 /></AppProvider>)
+    const 重开 = render(<AppProvider><读取 /></AppProvider>)
     await waitFor(() => expect(状态!.演示文档模型[状态!.activeDocumentId!]?.幻灯片列表[0].对象列表).toHaveLength(1))
     expect(恢复).toHaveBeenCalledWith([{ 标识: 指纹, 类型: 'image/png', 数据: 'YWJj' }])
     expect(同步).toHaveBeenCalledWith(expect.stringContaining('文稿:'), [指纹])
+    act(() => 状态!.closeEditorDoc(状态!.activeDocumentId!))
+    await waitFor(() => expect(window.electronAPI!.presentationResources!.release).toHaveBeenCalled())
+    重开.unmount()
     Reflect.deleteProperty(window, 'electronAPI')
   })
 

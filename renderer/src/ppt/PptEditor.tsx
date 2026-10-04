@@ -9,7 +9,7 @@ import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 演示标签 } from './ribbonSpecs'
 import { 查找演示命令, type 演示命令上下文 } from './pptCommands'
 import { 读取演示命令状态 } from './model/commandStatus'
-import { 校验当前Pptx写入能力 } from './model/migrations'
+import { 校验当前Pptx写入能力, 收集演示资源标识 } from './model/migrations'
 import {
   创建演示文稿,
   切换幻灯片,
@@ -46,7 +46,7 @@ const 规范演示保存路径 = (路径: string): string | null => {
 
 const PptEditor = () => {
   const { message, modal } = AntdApp.useApp()
-  const { documents, createDoc, markDocumentSaved, 演示文档模型, 更新演示文档模型, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径, 查找保存路径占用, 更新文件指纹 } = useAppStore()
+  const { documents, createDoc, markDocumentSaved, 演示文档模型, 更新演示文档模型, 设置演示历史资源, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径, 查找保存路径占用, 更新文件指纹 } = useAppStore()
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
   const [独立文稿, set独立文稿] = useState<演示文稿>(() => 创建演示文稿())
   const 文稿 = activeDocumentId === null ? 独立文稿 : 演示文档模型[activeDocumentId]
@@ -97,6 +97,18 @@ const PptEditor = () => {
     历史 = new HistoryStack<演示文稿>()
     历史表.current.set(历史标识, 历史)
   }
+  const 同步历史资源 = () => 设置演示历史资源(历史标识, 历史.snapshots().flatMap(收集演示资源标识))
+  useEffect(() => {
+    for (const 标识 of 历史表.current.keys()) {
+      if (标识 !== '独立文稿' && !documents.some(文档 => 文档.id === 标识)) {
+        历史表.current.delete(标识)
+        设置演示历史资源(标识, [])
+      }
+    }
+  }, [documents, 设置演示历史资源])
+  useEffect(() => () => {
+    for (const 标识 of 历史表.current.keys()) 设置演示历史资源(标识, [])
+  }, [设置演示历史资源])
   const 已提示警告 = useRef<Set<string>>(new Set())
   const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
     ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
@@ -177,6 +189,7 @@ const PptEditor = () => {
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
   useEffect(() => {
     if (历史.current() === null) 历史.record(文稿)
+    同步历史资源()
     // 新建历史栈或切换文档时记录该文档的初始状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [历史])
@@ -187,6 +200,7 @@ const PptEditor = () => {
     if (已记录 === 文稿) return
     if (已记录 && JSON.stringify({ ...已记录, 当前索引: 0 }) === JSON.stringify({ ...文稿, 当前索引: 0 })) return
     历史.record(文稿)
+    同步历史资源()
   }, [历史, 文稿])
 
   // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
@@ -228,6 +242,7 @@ const PptEditor = () => {
   /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新文稿 = (新文稿: 演示文稿) => {
     历史.record(新文稿)
+    同步历史资源()
     set文稿(新文稿)
   }
 

@@ -1,10 +1,10 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import PptEditor from './PptEditor'
 import GlobalTabs from '../components/GlobalTabs'
-import { AppProvider, useAppStore } from '../store'
+import { AppProvider, useAppStore, type AppState } from '../store'
 import { 添加幻灯片, 创建演示文稿 } from './deck'
 
 const 渲染演示 = () =>
@@ -23,6 +23,35 @@ afterEach(() => {
 })
 
 describe('演示文稿编辑器容器', () => {
+  it('删除对象后的撤销历史持有资源，关闭文稿与编辑器后释放全部所有权', async () => {
+    const 指纹 = 'a'.repeat(64)
+    const 所有权 = new Map<string, string[]>()
+    const 同步 = vi.fn(async (标识: string, 引用: string[]) => { 所有权.set(标识, 引用); return { 成功: true } })
+    const 释放 = vi.fn(async (标识: string) => { 所有权.delete(标识); return { 成功: true } })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
+      presentationResources: { sync: 同步, release: 释放 },
+    } })
+    let 状态: AppState | null = null
+    const 入口 = () => { 状态 = useAppStore(); return 状态.documents.length ? <PptEditor /> : null }
+    const 视图 = render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await waitFor(() => expect(状态!.启动恢复结束).toBe(true))
+    const 文稿 = 创建演示文稿()
+    文稿.资源索引 = { [指纹]: { 指纹, 类型: 'image/png', 字节数: 3 } }
+    文稿.幻灯片列表[0].对象列表 = [{ id: '图片', 类型: '图片', x: 0, y: 0, width: 10, height: 10, 资源标识: 指纹 }]
+    act(() => 状态!.createDoc('ppt', 文稿))
+    const 标签 = 状态!.activeDocumentId!
+    await waitFor(() => expect(所有权.get(`历史:${标签}`)).toContain(指纹))
+    act(() => 状态!.更新演示文档模型(标签, 当前 => ({ ...当前, 幻灯片列表: 当前.幻灯片列表.map(页 => ({ ...页, 对象列表: [] })) })))
+    await waitFor(() => expect(释放).toHaveBeenCalledWith(`文稿:${标签}`))
+    expect(所有权.get(`历史:${标签}`)).toContain(指纹)
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    await waitFor(() => expect(状态!.演示文档模型[标签].幻灯片列表[0].对象列表).toHaveLength(1))
+    act(() => 状态!.closeEditorDoc(标签))
+    await waitFor(() => expect(所有权.size).toBe(0))
+    expect(释放).toHaveBeenCalledWith(`历史:${标签}`)
+    视图.unmount()
+  })
   it.each(['F5', 'Shift+F5', '菜单'])('零页演示通过 %s 放映时弹窗提示且不进入全屏', async (方式) => {
     const 进入 = vi.fn()
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
