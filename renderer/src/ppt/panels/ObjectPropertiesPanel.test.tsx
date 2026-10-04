@@ -20,5 +20,8 @@ describe('选区权限', () => {
     expect(screen.getByLabelText('宽度')).toBeDisabled()
     expect(screen.getByRole('button',{name:'删除'})).toBeDisabled()
     expect(screen.getByRole('button',{name:'锁定'})).toBeDisabled()
+    节点.锁定=true
+    rerender(<ObjectPropertiesPanel {...参数} 选中={[节点.id]}/>)
+    expect(screen.getByRole('button',{name:'解锁'})).toBeDisabled()
   })
 })
