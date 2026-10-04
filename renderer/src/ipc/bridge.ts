@@ -11,9 +11,13 @@ export interface 最近文档记录 {
   时间?: number
 }
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
-export interface 助手配置 { 名称: string; 地址: string; 模型: string; 已配置密钥: boolean }
-export interface 助手配置输入 { 名称: string; 地址: string; 模型: string; 密钥?: string; 清除密钥?: boolean }
-export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string }
+export type 思考强度 = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra'
+export type 思考参数模式 = 'none' | 'three' | 'four' | 'six' | 'thinking' | 'budget'
+export interface 助手配置 { 名称: string; 地址: string; 模型: string; 已配置密钥: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式 }
+export interface 助手配置输入 { 名称: string; 地址: string; 模型: string; 密钥?: string; 清除密钥?: boolean; 服务商?: string; 思考强度?: 思考强度; 参数模式?: 思考参数模式 }
+export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 请求标识?: string; 思考强度?: 思考强度 }
+export interface 助手流片段 { 请求标识: string; 类型: '思考' | '正文' | '状态'; 内容: string }
+export interface 助手对话结果 { 内容: string; 思考?: string; 已停止?: boolean }
 export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string }
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
@@ -52,7 +56,9 @@ export interface 电子接口 {
     getConfig: () => Promise<助手结果<助手配置>>
     saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>
     clearConfig: () => Promise<助手结果<助手配置>>
-    chat: (对话: 助手对话输入) => Promise<助手结果<{ 内容: string }>>
+    chat: (对话: 助手对话输入) => Promise<助手结果<助手对话结果>>
+    cancel: (标识: string) => Promise<助手结果<never>>
+    onStream: (回调: (片段: 助手流片段) => void) => () => void
   }
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
@@ -109,7 +115,9 @@ export const 桥接 = {
     getConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.getConfig() ?? 失败('当前环境不支持智能助手'),
     saveConfig: (配置: 助手配置输入): Promise<助手结果<助手配置>> => 取后端()?.ai?.saveConfig(配置) ?? 失败('当前环境不支持智能助手设置'),
     clearConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.clearConfig() ?? 失败('当前环境不支持智能助手设置'),
-    chat: (对话: 助手对话输入): Promise<助手结果<{ 内容: string }>> => 取后端()?.ai?.chat(对话) ?? 失败('当前环境不支持智能助手对话'),
+    chat: (对话: 助手对话输入): Promise<助手结果<助手对话结果>> => 取后端()?.ai?.chat(对话) ?? 失败('当前环境不支持智能助手对话'),
+    cancel: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.cancel?.(标识) ?? 失败('当前环境不支持停止任务'),
+    onStream: (回调: (片段: 助手流片段) => void): (() => void) => 取后端()?.ai?.onStream?.(回调) ?? (() => {}),
   },
   office: {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),

@@ -26,7 +26,7 @@ describe('智能助手模型连接', () => {
     await 服务.保存配置({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '私人密钥' })
     expect(文件.get('assistant.secure').toString('utf8')).not.toContain('私人密钥')
     const 配置 = await 服务.读取配置()
-    expect(配置).toEqual({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 已配置密钥: true })
+    expect(配置).toEqual({ 名称: '测试服务', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 已配置密钥: true, 服务商: 'custom', 思考强度: 'high', 参数模式: 'none' })
   })
 
   it('模型请求只返回回复，服务错误不包含密钥', async () => {
@@ -103,6 +103,6 @@ describe('智能助手模型连接', () => {
     const 清除 = 服务.清除配置()
     允许写完()
     await Promise.all([保存, 清除])
-    expect(await 服务.读取配置()).toEqual({ 名称: '自定义模型服务', 地址: '', 模型: '', 已配置密钥: false })
+    expect(await 服务.读取配置()).toEqual({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 模型: 'deepseek-flash', 已配置密钥: false, 服务商: 'deepseek', 思考强度: 'high', 参数模式: 'three' })
   })
 })

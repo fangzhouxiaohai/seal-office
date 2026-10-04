@@ -10,6 +10,41 @@ import { 标记放映开始 } from '../ppt/presentationState'
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手对话修改链路', () => {
+  it('返回前动态展示思考与正文，停止保留输出且不创建修改候选', async () => {
+    let 推送: (片段: { 请求标识: string; 类型: '思考' | '正文'; 内容: string }) => void = () => {}
+    let 完成: (结果: unknown) => void = () => {}
+    const 释放 = vi.fn()
+    const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve }))
+    const 停止 = vi.fn(async () => { 完成({ 成功: true, 数据: { 内容: '', 已停止: true } }); return { 成功: true } })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      ai: {
+        getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost/chat/completions', 模型: '测试', 参数模式: 'six', 思考强度: 'high', 已配置密钥: false } }),
+        chat: 对话, cancel: 停止, onStream: (回调: typeof 推送) => { 推送 = 回调; return 释放 },
+      }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+    } })
+    const { unmount } = render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+    await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '帮我分析')
+    await userEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(对话).toHaveBeenCalled())
+    const 请求 = 对话.mock.calls[0] as unknown as [{ 请求标识: string; 思考强度: string }]
+    expect(请求[0].思考强度).toBe('high')
+    act(() => 推送({ 请求标识: '其他请求', 类型: '正文', 内容: '禁止串写' }))
+    act(() => 推送({ 请求标识: 请求[0].请求标识, 类型: '思考', 内容: '先检查标题与段落。' }))
+    expect(screen.getByText('先检查标题与段落。')).toBeInTheDocument()
+    expect(screen.getByText('正在思考')).toBeInTheDocument()
+    act(() => 推送({ 请求标识: 请求[0].请求标识, 类型: '正文', 内容: '{"回复":"建议使用统一标题' }))
+    expect(screen.getByText('建议使用统一标题')).toBeInTheDocument()
+    expect(screen.getByText('正在输出')).toBeInTheDocument()
+    expect(screen.getByRole('log', { name: '助手对话' })).not.toHaveTextContent('禁止串写')
+    expect(screen.getByRole('log', { name: '助手对话' })).not.toHaveTextContent('"回复"')
+    await userEvent.click(screen.getByRole('button', { name: '停止生成' }))
+    await waitFor(() => expect(screen.getByText('已停止，未应用修改')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: '应用修改' })).not.toBeInTheDocument()
+    expect(screen.getByText('建议使用统一标题')).toBeInTheDocument()
+    expect(停止).toHaveBeenCalledWith(请求[0].请求标识)
+    unmount(); expect(释放).toHaveBeenCalled()
+  })
   it('放映隐藏入口和已经打开的面板，退出后保留输入并恢复面板', async () => {
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
       ai: {

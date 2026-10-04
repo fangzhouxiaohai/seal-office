@@ -1,0 +1,6 @@
+[
+  { "标识": "deepseek", "名称": "DeepSeek", "地址": "https://api.deepseek.com/chat/completions", "模型": "deepseek-flash", "参数模式": "three", "说明": "默认 deepseek-flash，高强度思考；填入 DeepSeek API 密钥即可使用。", "文档": "https://api-docs.deepseek.com/zh-cn/guides/thinking_mode" },
+  { "标识": "doubao", "名称": "豆包", "地址": "https://ark.cn-beijing.volces.com/api/v3/chat/completions", "模型": "", "参数模式": "thinking", "说明": "填入火山方舟 API 密钥及已开通的模型 ID 或 ep- 推理接入点。默认开启思考，具体能力由模型决定。", "文档": "https://www.volcengine.com/docs/82379/1263279" },
+  { "标识": "zhipu", "名称": "智谱", "地址": "https://open.bigmodel.cn/api/paas/v4/chat/completions", "模型": "glm-5.3", "参数模式": "three", "说明": "默认 GLM-5.3；填入智谱开放平台 API 密钥，账号需有该模型访问权限。", "文档": "https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3" },
+  { "标识": "kimi", "名称": "Kimi", "地址": "https://api.moonshot.cn/v1/chat/completions", "模型": "kimi-k3", "参数模式": "three", "说明": "默认 Kimi K3；填入 Moonshot API 密钥，账号需有该模型访问权限。", "文档": "https://platform.moonshot.cn/docs/guide/kimi-k3-quickstart" }
+]

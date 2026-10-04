@@ -36,6 +36,9 @@ export default defineConfig({
     css: false,
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
+    // 富编辑器与真实 Office 往返测试占用较多内存，限制并发以避免资源争用超时。
+    minThreads: 1,
+    maxThreads: 4,
     // 表格编辑器会渲染 2600 个单元格，jsdom 下构造成本远高于浏览器，
     // 放宽超时以避免全量并行运行时的偶发失败
     testTimeout: 20000,
