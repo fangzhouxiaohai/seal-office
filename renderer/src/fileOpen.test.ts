@@ -10,6 +10,16 @@ afterEach(() => {
 })
 
 describe('本地文件打开', () => {
+  it('零字节办公文件说明缺少结构，不生成空白文档掩盖错误', async () => {
+    const 解析 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: '', 二进制: true, 扩展名: '.docx' }),
+      office: { readDocx: 解析 },
+    } })
+    await expect(读取本地文件内容('E:\\Temp\\新建文档.docx')).rejects.toThrow('文件为零字节')
+    expect(解析).not.toHaveBeenCalled()
+  })
+
   it('读取失败时保留原始错误，不返回空文档', async () => {
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,

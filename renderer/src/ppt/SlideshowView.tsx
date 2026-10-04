@@ -73,7 +73,7 @@ function 放映页({ 幻灯片, 缩放 }: { 幻灯片: 幻灯片; 缩放: number
   )
 }
 
-const SlideshowView = ({ 文稿, 当前索引, on翻页, on退出 }: Props) => {
+const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出 }: Props) => {
   const { modal } = AntdApp.useApp()
   const 放映根 = React.useRef<HTMLDivElement>(null)
   const 退出引用 = React.useRef(on退出)
@@ -215,6 +215,19 @@ const SlideshowView = ({ 文稿, 当前索引, on翻页, on退出 }: Props) => {
       `${安全索引 + 1} / ${总页数}`
     )
   ), document.body)
+}
+
+const SlideshowView = (props: Props) => {
+  const { modal } = AntdApp.useApp()
+  const 空文稿 = props.文稿.幻灯片列表.length === 0
+  const 退出引用 = React.useRef(props.on退出)
+  退出引用.current = props.on退出
+  React.useEffect(() => {
+    if (!空文稿) return
+    退出引用.current()
+    modal.warning({ title: '无法开始放映', content: '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })
+  }, [空文稿, modal])
+  return 空文稿 ? null : React.createElement(放映内容, props)
 }
 
 export default SlideshowView

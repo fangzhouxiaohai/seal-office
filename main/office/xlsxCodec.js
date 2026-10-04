@@ -354,7 +354,16 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
   let 冻结
   if (视图?.state === 'frozen' && Number.isInteger(视图.xSplit) && Number.isInteger(视图.ySplit)) {
     冻结 = { 行: 视图.ySplit, 列: 视图.xSplit }
-  } else if (工作表.views?.length > 0) 警告.add('部分工作表视图设置未导入')
+  }
+  const 默认显示 = (视图) =>
+    (!视图.state || 视图.state === 'normal' || 视图.state === 'frozen') &&
+    !视图.rightToLeft && 视图.showGridLines !== false && 视图.showRowColHeaders !== false &&
+    (视图.zoomScale === undefined || 视图.zoomScale === 100) &&
+    (视图.zoomScaleNormal === undefined || 视图.zoomScaleNormal === 100) &&
+    (!视图.style || 视图.style === 'normal')
+  if ((工作表.views?.length ?? 0) > 1 || (视图 && (!默认显示(视图) || (视图.state === 'frozen' && !冻结)))) {
+    警告.add('部分工作表视图设置未导入')
+  }
   return {
     单元格格式,
     单元格验证: 读取工作表验证(工作表, 警告),

@@ -72,7 +72,7 @@ export const PptStatusBar = ({ 文稿, 缩放, on缩放变化 }: StatusProps) =>
     React.createElement(
       'div',
       { className: 'wps-editor-status__left' },
-      React.createElement('span', null, `第 ${文稿.当前索引 + 1} 张`),
+      React.createElement('span', null, `第 ${当前 === null ? 0 : 文稿.当前索引 + 1} 张`),
       React.createElement('span', { className: 'wps-editor-status__dot' }, '/'),
       React.createElement('span', null, `共 ${文稿.幻灯片列表.length} 张`),
       React.createElement('span', { className: 'wps-editor-status__dot' }, '·'),

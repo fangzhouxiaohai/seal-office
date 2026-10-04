@@ -188,14 +188,21 @@ const PptEditor = () => {
   }, [历史, 文稿])
 
   // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
+  const 开始放映 = (索引: number) => {
+    if (文稿.幻灯片列表.length === 0) {
+      modal.warning({ title: '无法开始放映', content: '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })
+      return
+    }
+    set放映索引(索引)
+    set放映中(true)
+  }
   const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
   放映键处理引用.current = (事件: KeyboardEvent) => {
     if (事件.key !== 'F5') {
       return
     }
     事件.preventDefault()
-    set放映索引(事件.shiftKey ? 文稿.当前索引 : 0)
-    set放映中(true)
+    开始放映(事件.shiftKey ? 文稿.当前索引 : 0)
   }
   useEffect(() => {
     const 监听 = (事件: KeyboardEvent) => 放映键处理引用.current(事件)
@@ -293,8 +300,7 @@ const PptEditor = () => {
     }
     if (标识 === 'slideshow.start' || 标识 === 'slideshow.current') {
       // F5 从头放映，Shift+F5 从当前页放映
-      set放映索引(标识 === 'slideshow.start' ? 0 : 文稿.当前索引)
-      set放映中(true)
+      开始放映(标识 === 'slideshow.start' ? 0 : 文稿.当前索引)
       return
     }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {

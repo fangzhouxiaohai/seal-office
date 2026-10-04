@@ -21,6 +21,21 @@ function 附加图片说明(字节数) {
 
 describe('xlsxCodec', () => {
   describe('读取xlsx', () => {
+    it('普通默认视图的三张空表不产生导入风险', async () => {
+      const workbook = new ExcelJS.Workbook()
+      for (const name of ['Sheet1', 'Sheet2', 'Sheet3']) workbook.addWorksheet(name, { views: [{ state: 'normal', activeCell: 'A1' }] })
+      const result = await 读取xlsx(await workbook.xlsx.writeBuffer())
+      expect(result.工作表列表).toHaveLength(3)
+      expect(result.警告).toEqual([])
+    })
+
+    it.each([{ state: 'split', xSplit: 20, ySplit: 20 }, { state: 'normal', zoomScale: 80 }, { state: 'normal', showGridLines: false }, { state: 'normal', rightToLeft: true }])('未支持的真实视图设置仍有风险提示：%j', async view => {
+      const workbook = new ExcelJS.Workbook()
+      workbook.addWorksheet('视图', { views: [view] })
+      const result = await 读取xlsx(await workbook.xlsx.writeBuffer())
+      expect(result.警告).toContain('部分工作表视图设置未导入')
+    })
+
     it('应该能读取空工作表', async () => {
       const workbook = new ExcelJS.Workbook()
       workbook.addWorksheet('空表')

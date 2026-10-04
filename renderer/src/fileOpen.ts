@@ -146,6 +146,10 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
   if (!结果.成功) {
     throw new Error(结果.错误 || '文件读取失败')
   }
+  const 扩展 = (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase() || 归一化扩展名(路径)
+  if (结果.内容 === '' && ['docx', 'xlsx', 'pptx', 'pdf', 'doc', 'xls', 'ppt'].includes(扩展)) {
+    throw new Error('文件为零字节，未包含有效的办公文件结构。如果文件来自旧版右键新建菜单，请更新海豹办公并刷新资源管理器后重新新建；现有文件没有可恢复的正文。')
+  }
   if (结果.内容 === undefined || 结果.内容 === '') {
     throw new Error('文件内容为空')
   }
@@ -153,7 +157,6 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     typeof 结果.文件指纹 === 'string' && 结果.文件指纹.length > 0
       ? { ...内容, 文件指纹: 结果.文件指纹 }
       : 内容
-  const 扩展 = (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase() || 归一化扩展名(路径)
   if (结果.二进制) {
     if (扩展 === 'docx') {
       const 数据: any = await 桥接.office.readDocx(结果.内容)

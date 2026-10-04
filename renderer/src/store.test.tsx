@@ -919,6 +919,28 @@ describe('createDoc 按文档保存模型', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
+  it('零页演示的保存基线和路径可以静默备份恢复', async () => {
+    let 备份内容: string | null = null
+    const backupSave = vi.fn(async (内容: string) => { 备份内容 = 内容; return { 成功: true } })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: 备份内容 })), backupSave,
+      backupClear: vi.fn(async () => ({ 成功: true })),
+    } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    const 首次 = render(<AppProvider><读取 /></AppProvider>)
+    await waitFor(() => expect(window.electronAPI!.backupLoad).toHaveBeenCalled())
+    act(() => 状态!.createDoc('ppt', { id: 'empty', name: '空演示', 幻灯片列表: [], 当前索引: 0 }, { 路径: 'E:\\Temp\\空演示.pptx' }))
+    await waitFor(() => expect(backupSave).toHaveBeenCalled(), { timeout: 3500 })
+    首次.unmount()
+    render(<AppProvider><读取 /></AppProvider>)
+    await waitFor(() => expect(状态!.documents).toHaveLength(1))
+    expect(状态!.演示文档模型[状态!.activeDocumentId!].幻灯片列表).toEqual([])
+    expect(状态!.workspaceTabs[0].dirty).toBe(false)
+    expect(状态!.文档路径[状态!.activeDocumentId!]).toBe('E:\\Temp\\空演示.pptx')
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
   it('表格主入口创建并重开时保留页面设置与单元格布局元数据', async () => {
     let 状态: AppState | null = null
     const 来源 = [{

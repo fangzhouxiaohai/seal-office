@@ -461,7 +461,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           typeof 文档?.id === 'string' && typeof 文档.name === 'string' && typeof 文档.html === 'string' &&
           (文档.type === 'word' || 文档.type === undefined ||
             (文档.type === 'table' && Array.isArray(数据.表格文档模型?.[文档.id]) && 数据.表格文档模型![文档.id].length > 0 && 数据.表格文档模型![文档.id].every(是工作表模型)) ||
-            (文档.type === 'ppt' && Array.isArray(数据.演示文档模型?.[文档.id]?.幻灯片列表) && 数据.演示文档模型![文档.id].幻灯片列表.length > 0)))
+            (文档.type === 'ppt' && Array.isArray(数据.演示文档模型?.[文档.id]?.幻灯片列表))))
         if (!有效文档) throw new Error('备份内容缺少表格或演示模型，已阻止加载不完整的编辑状态')
         const PDF读取结果 = await Promise.allSettled(PDF元数据.map(async (记录): Promise<PdfDocument> => {
           if (typeof 记录?.id !== 'string' || typeof 记录.name !== 'string' ||
@@ -656,7 +656,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     } else if (目标模块 === 'ppt') {
       if (初始内容 === undefined || 初始内容 === null) {
         新演示 = 创建演示文稿()
-      } else if (typeof 初始内容 === 'object' && Array.isArray((初始内容 as 演示文稿).幻灯片列表) && (初始内容 as 演示文稿).幻灯片列表.length > 0) {
+      } else if (typeof 初始内容 === 'object' && Array.isArray((初始内容 as 演示文稿).幻灯片列表)) {
         新演示 = 初始内容 as 演示文稿
       } else {
         throw new Error('演示文稿内容格式无效，文件未打开')

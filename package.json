@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "seal-office",
@@ -33,7 +33,8 @@
     "pdfmake": "^0.2.15",
     "pptxgenjs": "^3.12.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "sax": "^1.6.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -96,7 +97,9 @@
       {
         "from": "main/windows/file-icons",
         "to": "file-icons",
-        "filter": ["*.ico"]
+        "filter": [
+          "*.ico"
+        ]
       },
       {
         "from": "build/shell-new",

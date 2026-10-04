@@ -21,6 +21,15 @@ function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, �
 const 渲染放映 = (on退出 = vi.fn()) => render(<AntdApp><SlideshowView 文稿={创建演示文稿()} 当前索引={0} on翻页={vi.fn()} on退出={on退出} /></AntdApp>)
 
 describe('本机幻灯片切换', () => {
+  it('零页模型直接进入放映时安全退出并显示原因', async () => {
+    const { 进入 } = 安装全屏接口()
+    const 退出 = vi.fn()
+    render(<AntdApp><SlideshowView 文稿={{ ...创建演示文稿(), 幻灯片列表: [] }} 当前索引={0} on翻页={vi.fn()} on退出={退出} /></AntdApp>)
+    expect(await screen.findByText('请先添加至少一张幻灯片，再开始放映。')).toBeInTheDocument()
+    expect(退出).toHaveBeenCalledTimes(1)
+    expect(进入).not.toHaveBeenCalled()
+    expect(document.querySelector('.wps-slideshow')).toBeNull()
+  })
   it('翻页到有推进效果的页面时重新播放进入过渡', () => {
     安装全屏接口()
     const 文稿 = 添加幻灯片(创建演示文稿())

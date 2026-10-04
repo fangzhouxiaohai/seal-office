@@ -1,6 +1,7 @@
 const JSZip = require('jszip')
 const pptxgen = require('pptxgenjs')
 const path = require('path')
+const sax = require('sax')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -148,6 +149,24 @@ function 读取Xml属性(标签, 名称) {
   return 标签.match(new RegExp(`\\b${名称}\\s*=\\s*(["'])(.*?)\\1`, 'i'))?.[2] ?? null
 }
 
+/** 严格检查完整清单，零页演示也必须拥有唯一、配对的根节点。 */
+function 验证清单Xml(xml, 根名称) {
+  const 解析器 = sax.parser(true)
+  let 深度 = 0, 根数量 = 0
+  const 拒绝 = () => { throw new Error('演示文件无效：演示清单结构损坏') }
+  解析器.onerror = 拒绝
+  解析器.ondoctype = 拒绝
+  解析器.onopentag = 标签 => {
+    if (深度 === 0 && (++根数量 !== 1 || 标签.name !== 根名称)) 拒绝()
+    深度++
+  }
+  解析器.onclosetag = () => { 深度-- }
+  解析器.ontext = 文本 => { if (深度 === 0 && 文本.trim()) 拒绝() }
+  解析器.oncdata = () => { if (深度 === 0) 拒绝() }
+  解析器.write(xml).close()
+  if (根数量 !== 1 || 深度 !== 0) 拒绝()
+}
+
 /** 依据演示清单和关系文件确认实际幻灯片，不能从包内孤立文件推断。 */
 async function 读取幻灯片路径(压缩包) {
   const 类型文件 = 压缩包.file('[Content_Types].xml')
@@ -157,8 +176,12 @@ async function 读取幻灯片路径(压缩包) {
   const [类型Xml, 清单Xml, 关系Xml] = await Promise.all([
     类型文件.async('string'), 清单文件.async('string'), 关系文件.async('string'),
   ])
+  验证清单Xml(类型Xml, 'Types')
+  验证清单Xml(清单Xml, 'p:presentation')
+  验证清单Xml(关系Xml, 'Relationships')
   if (!/<Types\b/i.test(类型Xml) || !/presentationml\.presentation\.main\+xml/i.test(类型Xml) ||
-      !/<p:presentation\b/i.test(清单Xml) || !/<Relationships\b/i.test(关系Xml)) {
+      !/<p:presentation\b[^>]*(?:\/>|>[\s\S]*<\/p:presentation>\s*$)/i.test(清单Xml) || !/<Relationships\b/i.test(关系Xml) ||
+      (/<p:sldIdLst\b/i.test(清单Xml) && !/<p:sldIdLst\b[^>]*(?:\/>|>[\s\S]*<\/p:sldIdLst>)/i.test(清单Xml))) {
     throw new Error('演示文件无效：文件结构不是有效的 PPTX 演示文稿')
   }
   const 关系 = new Map()
@@ -180,7 +203,6 @@ async function 读取幻灯片路径(压缩包) {
     }
     幻灯片路径.push(路径)
   }
-  if (幻灯片路径.length === 0) throw new Error('演示文件无效：没有真实幻灯片')
   return { 幻灯片路径, 清单Xml }
 }
 
@@ -312,7 +334,9 @@ async function 写入pptx(模型) {
   } else if (模型 && Array.isArray(模型.幻灯片列表)) {
     幻灯片列表 = 模型.幻灯片列表
   }
-  if (幻灯片列表.length === 0) 幻灯片列表.push({ 文本: '' })
+  if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
+    throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
+  }
   if (幻灯片列表.some((项) => 项.动画)) {
     throw new Error('动画无法可靠保存为 PPTX，请先移除动画效果')
   }

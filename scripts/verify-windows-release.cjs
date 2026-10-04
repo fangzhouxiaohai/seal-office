@@ -2,7 +2,8 @@ const fs = require('fs')
 const path = require('path')
 const { once } = require('events')
 
-const [页面端口, 主端口, 数据目录, 注册表位置, 阶段, 报告路径, 截图目录 = ''] = process.argv.slice(2)
+const [页面端口, 主端口, 数据目录, 注册表位置, 阶段, 报告路径, 截图目录参数 = '', 系统新建清单 = '', 关联打开文件 = '-'] = process.argv.slice(2)
+const 截图目录 = 截图目录参数 === '-' ? '' : 截图目录参数
 const 等待片刻 = 毫秒 => new Promise(完成 => setTimeout(完成, 毫秒))
 const 连接列表 = [], 核验 = []
 const 检查 = (条件, 说明) => { if (!条件) throw new Error(说明); 核验.push(说明) }
@@ -55,13 +56,19 @@ async function 验收() {
   const 截图 = async 名称 => {
     if (!截图目录) return
     fs.mkdirSync(截图目录, { recursive: true })
+    await 等待("!document.querySelector('.ant-message-notice')")
     await 等待("document.fonts.status==='loaded'"); await 等待片刻(300)
     await 主.执行(`(async()=>{const 图=await globalThis.验收窗口.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});if(图.isEmpty())throw new Error('成品截图为空');process.mainModule.require('fs').writeFileSync(${JSON.stringify(path.join(截图目录, 名称 + '.png'))},图.toPNG());return 图.getSize()})()`)
   }
   try {
     await 等待("Boolean(document.querySelector('.wps-titlebar'))")
     const 初始 = await 执行('window.electronAPI.checkDefaultAppPrompt()')
-    检查(初始.成功 && !初始.需要询问, '未安装成品不触发安装后首次询问')
+    检查(初始.成功 && !初始.需要询问, '成品启动后的首次提醒状态可正常查询')
+    if (关联打开文件 !== '-' && 阶段 === 'first') {
+      await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(path.basename(关联打开文件))}`)
+      检查(!await 执行("Boolean(document.querySelector('.wps-global-tab__dirty'))||Boolean(document.querySelector('.ant-modal-confirm-error'))"), '真实安装程序冷启动通过文件关联命令打开系统新建文件')
+      // 首次安装询问可能覆盖文档；随后重新加载会按隔离状态重新验收。
+    }
     const 安装 = await 主.执行(`(async()=>{
       const electron=process.mainModule.require('electron'),fs=process.mainModule.require('fs'),path=process.mainModule.require('path')
       globalThis.验收窗口=electron.BrowserWindow.getAllWindows().find(项=>项.webContents.getURL().endsWith('/dist/index.html'))
@@ -80,7 +87,7 @@ async function 验收() {
       }
       if(${JSON.stringify(阶段)}==='confirm')await globalThis.验收关联执行('Uninstall')
       await globalThis.验收关联执行('Install')
-      globalThis.验收默认服务=模块.创建默认程序服务({已打包:electron.app.isPackaged,可执行文件:globalThis.验收程序路径,数据目录:electron.app.getPath('userData'),资源目录:process.resourcesPath,执行注册:globalThis.验收关联执行,打开地址:async 地址=>{globalThis.验收默认地址.push(地址)}})
+      globalThis.验收默认服务=模块.创建默认程序服务({已打包:electron.app.isPackaged,可执行文件:globalThis.验收程序路径,数据目录:path.join(electron.app.getPath('userData'),'default-app-validation'),资源目录:process.resourcesPath,执行注册:globalThis.验收关联执行,打开地址:async 地址=>{globalThis.验收默认地址.push(地址)}})
       for(const 名称 of ['system.checkDefaultAppPrompt','system.setDefaultApp'])electron.ipcMain.removeHandler(名称)
       electron.ipcMain.handle('system.checkDefaultAppPrompt',()=>globalThis.验收默认服务.检查首次提示())
       electron.ipcMain.handle('system.setDefaultApp',()=>globalThis.验收默认服务.设置默认程序())
@@ -97,6 +104,8 @@ async function 验收() {
     检查(安装.图标路径正确, '安装版图标位于稳定资源目录，便携版图标位于持久数据目录')
     await 执行('location.reload()')
     await 等待("Boolean(document.querySelector('.wps-titlebar'))")
+    await 执行("document.querySelector('.wps-global-tabs__home').click()")
+    await 等待("Boolean(document.querySelector('.wps-recommend__cell'))")
     检查((await 执行("[...document.querySelectorAll('.wps-recommend__cell [data-file-type]')].map(图=>图.dataset.fileType)")).join(',') === 'word,table,ppt,pdf', '首页四类快捷入口显示专属文件图标')
     if (阶段 === 'repeat') {
       await 等待片刻(1800)
@@ -126,21 +135,70 @@ async function 验收() {
       await 等待(`Boolean(${找按钮('设为默认程序')})&&!(${找按钮('设为默认程序')}).disabled`)
       检查((await 主.执行('globalThis.验收默认地址')).length === 2, '设置中心默认程序按钮链路正常')
       for (const 扩展 of ['docx', 'xlsx', 'pptx', 'pdf']) {
-        const 名称 = `新建空白.${扩展}`, 文件 = path.join(数据目录, 名称)
-        await 主.执行(`process.mainModule.require('fs').copyFileSync(process.mainModule.require('path').join(process.resourcesPath,'shell-new',${JSON.stringify('blank.' + 扩展)}),${JSON.stringify(文件)});globalThis.验收打开路径=${JSON.stringify(文件)};true`)
+        const 实际新建 = 系统新建清单 ? JSON.parse(fs.readFileSync(系统新建清单, 'utf8').replace(/^\uFEFF/, '')).文件.find(项 => 项.扩展名 === 扩展) : null
+        const 文件 = 实际新建?.路径 || path.join(数据目录, `新建空白.${扩展}`), 名称 = path.basename(文件)
+        if (系统新建清单 && !实际新建) throw new Error(`真实新建清单缺少 ${扩展}`)
+        if (!实际新建) await 主.执行(`process.mainModule.require('fs').copyFileSync(process.mainModule.require('path').join(process.resourcesPath,'shell-new',${JSON.stringify('blank.' + 扩展)}),${JSON.stringify(文件)});true`)
+        await 主.执行(`globalThis.验收打开路径=${JSON.stringify(文件)};true`)
         await 执行("document.querySelector('.wps-global-tabs__home').click()")
-        await 点击('打开'); await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
+        if (关联打开文件 !== '-') {
+          await 主.执行(`new Promise((resolve,reject)=>{const electron=process.mainModule.require('electron');process.mainModule.require('child_process').execFile(electron.app.getPath('exe'),['--user-data-dir='+electron.app.getPath('userData'),${JSON.stringify(文件)}],{windowsHide:true,timeout:15000},error=>error?reject(error):resolve(true))})`)
+        } else await 点击('打开')
+        await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
         await 等待片刻(300)
-        检查(!await 执行("Boolean(document.querySelector('.ant-modal'))||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))"), `${扩展} 真实空白模板打开无警告且未误标修改`)
+        检查(!await 执行("Boolean(document.querySelector('.ant-modal'))||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))"), `${扩展} ${实际新建 ? '资源管理器实际新建文件' : '空白模板'}打开无警告且未误标修改`)
+        if (关联打开文件 !== '-') 检查(true, `${扩展} 真实安装程序二次启动交给已有窗口打开`)
         if (扩展 !== 'pdf') {
+          const 文本 = `右键新建验收：${扩展} 编辑后保存重开`
+          let 内容表达式
+          if (扩展 === 'docx') {
+            await 执行(`(()=>{const 编辑区=document.querySelector('.wps-editor-canvas__content');编辑区.focus();编辑区.innerHTML='<p>'+${JSON.stringify(文本)}+'</p>';编辑区.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:${JSON.stringify(文本)}}));return true})()`)
+            内容表达式 = `document.querySelector('.wps-editor-canvas__content')?.textContent.includes(${JSON.stringify(文本)})`
+          } else if (扩展 === 'xlsx') {
+            await 执行(`(()=>{const 输入=document.querySelector('[aria-label="公式栏"]');输入.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(输入,${JSON.stringify(文本)});输入.dispatchEvent(new Event('input',{bubbles:true}));return true})()`)
+            await 等待片刻(100)
+            await 执行(`document.querySelector('[aria-label="公式栏"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));true`)
+            内容表达式 = `document.querySelector('[data-地址="A1"]')?.textContent.includes(${JSON.stringify(文本)})`
+          } else {
+            await 点击('插入'); await 点击('文本框')
+            await 执行(`document.querySelector('.wps-ppt-box:last-child').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));true`)
+            await 等待("Boolean(document.querySelector('.wps-ppt-box__editor'))")
+            await 执行(`(()=>{const 输入=document.querySelector('.wps-ppt-box__editor');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(输入,${JSON.stringify(文本)});输入.dispatchEvent(new Event('input',{bubbles:true}));return true})()`)
+            await 等待片刻(100)
+            await 执行("document.querySelector('.wps-ppt-box__editor').blur();true")
+            内容表达式 = `[...document.querySelectorAll('.wps-ppt-box')].some(项=>项.textContent.includes(${JSON.stringify(文本)}))`
+          }
+          await 等待(内容表达式)
+          await 等待("Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))")
+          if (扩展 === 'pptx') await 点击('开始')
           await 点击('保存'); await 等待("!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')")
-          检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), `${扩展} 空白模板保存成功`)
+          检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), `${扩展} 实际编辑后保存成功`)
           await 点击(`关闭 ${名称}`)
           await 执行("document.querySelector('.wps-global-tabs__home').click()")
           await 点击('打开'); await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
           检查(!await 执行("Boolean(document.querySelector('.ant-modal'))||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))"), `${扩展} 保存重开无导入及未保存误报`)
+          await 等待(内容表达式)
+          检查(true, `${扩展} 编辑内容保存重开后完整保留`)
+          await 截图('shell-new-' + 扩展)
         }
       }
+      const 零页文件 = path.join(数据目录, '合法零页演示.pptx')
+      await 主.执行(`(async()=>{const path=process.mainModule.require('path'),fs=process.mainModule.require('fs'),electron=process.mainModule.require('electron');const codec=process.mainModule.require(path.join(electron.app.getAppPath(),'main','office','pptxCodec.js'));fs.writeFileSync(${JSON.stringify(零页文件)},await codec.写入pptx({幻灯片:[]}));globalThis.验收打开路径=${JSON.stringify(零页文件)};return true})()`)
+      await 执行("document.querySelector('.wps-global-tabs__home').click()")
+      await 点击('打开'); await 等待("document.querySelector('.wps-titlebar__doc')?.textContent==='合法零页演示.pptx'")
+      await 等待("document.body.textContent.includes('第 0 张')")
+      await 截图('zero-slide-presentation')
+      await 执行("document.dispatchEvent(new KeyboardEvent('keydown',{key:'F5',bubbles:true}));true")
+      await 等待("document.querySelector('.ant-modal-confirm-content')?.textContent==='请先添加至少一张幻灯片，再开始放映。'")
+      检查(!await 执行("Boolean(document.querySelector('.wps-slideshow'))"), '零页演示放映友好提示且没有崩溃或进入全屏')
+      await 点击('我知道了'); await 等待("!document.querySelector('.ant-modal')")
+      await 点击('新建幻灯片'); await 等待("Boolean(document.querySelector('.wps-ppt-canvas'))")
+      await 点击('开始')
+      await 点击('保存'); await 等待("!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')")
+      await 点击('关闭 合法零页演示.pptx')
+      await 执行("document.querySelector('.wps-global-tabs__home').click()")
+      await 点击('打开'); await 等待("document.body.textContent.includes('第 1 张')")
+      检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), '零页演示新增后保存重开保留真实一页')
     }
     const 信息 = await 执行('window.electronAPI.getAppInfo()'), 完整性 = await 执行('window.electronAPI.checkIntegrity()')
     检查(完整性.成功 && 完整性.完整, '最终成品完整性校验通过')

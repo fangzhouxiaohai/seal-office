@@ -8,7 +8,9 @@
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-$taskBase = if ($Scope -eq 'all') { [Microsoft.Win32.Registry]::LocalMachine } else { [Microsoft.Win32.Registry]::CurrentUser }
+$taskHive = if ($Scope -eq 'all') { [Microsoft.Win32.RegistryHive]::LocalMachine } else { [Microsoft.Win32.RegistryHive]::CurrentUser }
+$taskBase = [Microsoft.Win32.RegistryKey]::OpenBaseKey($taskHive, [Microsoft.Win32.RegistryView]::Registry64)
+$taskUserBase = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser, [Microsoft.Win32.RegistryView]::Registry64)
 $taskClasses = 'Software\Classes'
 $taskApplication = 'Software\SealOffice'
 $taskRegistered = 'Software\RegisteredApplications'
@@ -20,6 +22,9 @@ if ($TestRoot) {
   $taskRegistered = "$TestRoot\RegisteredApplications"
 }
 $taskState = "$taskApplication\ShellIntegration"
+$taskUserClasses = if ($TestRoot) { "$TestRoot\CurrentUser\Classes" } else { 'Software\Classes' }
+$taskUserApplication = if ($TestRoot) { "$TestRoot\CurrentUser\Application" } else { 'Software\SealOffice' }
+$taskUserRegistered = if ($TestRoot) { "$TestRoot\CurrentUser\RegisteredApplications" } else { 'Software\RegisteredApplications' }
 $taskTypes = @('doc','docx','ppt','pptx','pdf','xls','xlsx')
 $taskSupported = @('docx','xlsx','pptx','pdf')
 $taskLabels = @{doc='DOC 文档';docx='DOCX 文档';ppt='PPT 演示文稿';pptx='PPTX 演示文稿';pdf='PDF 文档';xls='XLS 工作表';xlsx='XLSX 工作表'}
@@ -32,8 +37,8 @@ function Assert-FileIcons {
   }
 }
 
-function Read-Value($keyPath, $name) {
-  $key = $taskBase.OpenSubKey($keyPath)
+function Read-Value($keyPath, $name, $base = $taskBase) {
+  $key = $base.OpenSubKey($keyPath)
   if (-not $key) { return $null }
   try { return $key.GetValue($name, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
   finally { $key.Dispose() }
@@ -42,19 +47,19 @@ function Set-Value($keyPath, $name, $value, $kind = [Microsoft.Win32.RegistryVal
   $key = $taskBase.CreateSubKey($keyPath)
   try { $key.SetValue($name, $value, $kind) } finally { $key.Dispose() }
 }
-function Snapshot-Key($keyPath) {
-  $key = $taskBase.OpenSubKey($keyPath)
+function Snapshot-Key($keyPath, $base = $taskBase) {
+  $key = $base.OpenSubKey($keyPath)
   if (-not $key) { return $null }
   try {
     $values = @($key.GetValueNames() | Sort-Object | ForEach-Object { [ordered]@{ Name=$_; Kind=$key.GetValueKind($_).ToString(); Value=$key.GetValue($_, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) } })
-    $children = @($key.GetSubKeyNames() | Sort-Object | ForEach-Object { [ordered]@{ Name=$_; Data=(Snapshot-Key "$keyPath\$_") } })
+    $children = @($key.GetSubKeyNames() | Sort-Object | ForEach-Object { [ordered]@{ Name=$_; Data=(Snapshot-Key "$keyPath\$_" $base) } })
     return [ordered]@{ Values=$values; Children=$children }
   } finally { $key.Dispose() }
 }
-function Restore-Key($keyPath, $snapshot) {
-  $taskBase.DeleteSubKeyTree($keyPath, $false)
+function Restore-Key($keyPath, $snapshot, $base = $taskBase) {
+  $base.DeleteSubKeyTree($keyPath, $false)
   if (-not $snapshot) { return }
-  $key = $taskBase.CreateSubKey($keyPath)
+  $key = $base.CreateSubKey($keyPath)
   try {
     foreach ($item in $snapshot.Values) {
       $kind = [Microsoft.Win32.RegistryValueKind]::$($item.Kind)
@@ -62,7 +67,57 @@ function Restore-Key($keyPath, $snapshot) {
       $key.SetValue($item.Name, $value, $kind)
     }
   } finally { $key.Dispose() }
-  foreach ($child in $snapshot.Children) { Restore-Key "$keyPath\$($child.Name)" $child.Data }
+  foreach ($child in $snapshot.Children) { Restore-Key "$keyPath\$($child.Name)" $child.Data $base }
+}
+
+function Get-NewTargets {
+  foreach ($ext in $taskTypes) {
+    $names = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    [void]$names.Add($(if ($ext -in $taskSupported) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }))
+    $sources = @(@{ Base=$taskBase; Path=$taskClasses })
+    if (-not $TestRoot) { $sources += @{ Base=[Microsoft.Win32.Registry]::ClassesRoot; Path='' } }
+    elseif ($Scope -eq 'all') { $sources += @{ Base=$taskUserBase; Path=$taskUserClasses } }
+    foreach ($source in $sources) {
+      $path = if ($source.Path) { "$($source.Path)\.$ext" } else { ".$ext" }
+      $key = $source.Base.OpenSubKey($path)
+      if ($key) {
+        try {
+          $defaultId = $key.GetValue('')
+          if ($defaultId -and $defaultId -notmatch '\\') { [void]$names.Add([string]$defaultId) }
+          foreach ($name in $key.GetSubKeyNames()) {
+            if ($name -in @('ShellNew','OpenWithProgids','OpenWithList','PersistentHandler')) { continue }
+            $child = $key.OpenSubKey("$name\ShellNew")
+            if ($child) { [void]$names.Add($name); $child.Dispose() }
+          }
+        } finally { $key.Dispose() }
+      }
+    }
+    $suffixes = @(".$ext\ShellNew") + @($names | Sort-Object | ForEach-Object { ".$ext\$_\ShellNew" })
+    foreach ($suffix in $suffixes) {
+      @{ Id="Primary|$suffix"; Base=$taskBase; Path="$taskClasses\$suffix"; Extension=$ext }
+      # 用户注册表优先于机器注册表，全用户安装也需要处理当前用户的旧菜单覆盖。
+      if ($Scope -eq 'all') {
+        @{ Id="CurrentUser|$suffix"; Base=$taskUserBase; Path="$taskUserClasses\$suffix"; Extension=$ext }
+      }
+    }
+  }
+}
+
+function Get-Target($id) {
+  $parts = $id -split '\|', 2
+  if ($parts.Count -ne 2 -or $parts[0] -notin @('Primary','CurrentUser') -or $parts[1] -notmatch '^\.(doc|docx|ppt|pptx|pdf|xls|xlsx)\\(?:[^\\]+\\)?ShellNew$') { throw '新建菜单备份路径无效' }
+  if ($parts[0] -eq 'CurrentUser') { return @{ Base=$taskUserBase; Path="$taskUserClasses\$($parts[1])" } }
+  return @{ Base=$taskBase; Path="$taskClasses\$($parts[1])" }
+}
+
+function Migrate-InstallationState {
+  if ($TestRoot -or $taskHive -ne [Microsoft.Win32.RegistryHive]::LocalMachine) { return }
+  $legacy = [Microsoft.Win32.RegistryKey]::OpenBaseKey($taskHive, [Microsoft.Win32.RegistryView]::Registry32)
+  try {
+    $snapshot = Snapshot-Key $taskApplication $legacy
+    if ($snapshot -and -not (Read-Value $taskState 'InstallationId')) { Restore-Key $taskApplication $snapshot }
+    if ($snapshot) { $legacy.DeleteSubKeyTree($taskApplication, $false) }
+  } finally { $legacy.Dispose() }
 }
 function Register-Application {
   if (-not (Test-Path -LiteralPath $ExecutableFile -PathType Leaf)) { throw '程序可执行文件不存在' }
@@ -84,11 +139,43 @@ function Register-Application {
   Set-Value "$taskApplication\Capabilities" 'ApplicationIcon' ('"' + $ExecutableFile + '",0')
   Set-Value $taskRegistered 'SealOffice' "$taskApplication\Capabilities"
 }
+function Remove-ApplicationRegistration($base, $classes, $application, $registered) {
+  $command = '"' + $ExecutableFile + '" "%1"'
+  $owned = (Read-Value "$application\Capabilities" 'ApplicationIcon' $base) -eq ('"' + $ExecutableFile + '",0')
+  foreach ($ext in $taskSupported) {
+    if ((Read-Value "$classes\SealOffice.$ext\shell\open\command" '' $base) -ne $command) { continue }
+    $key = $base.OpenSubKey("$classes\.$ext\OpenWithProgids", $true)
+    if ($key) { try { $key.DeleteValue("SealOffice.$ext", $false) } finally { $key.Dispose() } }
+    $base.DeleteSubKeyTree("$classes\SealOffice.$ext", $false)
+  }
+  if ($owned) {
+    foreach ($ext in @('doc','ppt','xls')) { $base.DeleteSubKeyTree("$classes\SealOffice.New.$ext", $false) }
+    $key = $base.OpenSubKey($registered, $true)
+    if ($key) {
+      try { if ($key.GetValue('SealOffice') -eq "$application\Capabilities") { $key.DeleteValue('SealOffice', $false) } }
+      finally { $key.Dispose() }
+    }
+    $base.DeleteSubKeyTree("$application\Capabilities", $false)
+  }
+}
+function Remove-CreatedDefaults($defaults, $base, $classes) {
+  foreach ($item in $defaults.PSObject.Properties) {
+    if ($item.Name -notin $taskTypes) { throw '默认文件类型备份无效' }
+    if ((Read-Value "$classes\.$($item.Name)" '' $base) -eq $item.Value) {
+      $key = $base.OpenSubKey("$classes\.$($item.Name)", $true)
+      try { $key.DeleteValue('', $false) } finally { $key.Dispose() }
+    }
+  }
+}
 function Notify-Shell {
   if (-not ('SealShellNotify' -as [type])) {
-    Add-Type 'using System; using System.Runtime.InteropServices; public static class SealShellNotify { [DllImport("shell32.dll")] public static extern void SHChangeNotify(uint e, uint f, IntPtr a, IntPtr b); }'
+    Add-Type 'using System; using System.Runtime.InteropServices; public static class SealShellNotify { [DllImport("shell32.dll")] public static extern void SHChangeNotify(uint e, uint f, IntPtr a, IntPtr b); [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, UIntPtr wp, string lp, uint flags, uint timeout, out UIntPtr result); }'
   }
   [SealShellNotify]::SHChangeNotify(0x08000000, 0x1000, [IntPtr]::Zero, [IntPtr]::Zero)
+  if (-not $TestRoot) {
+    $output = [UIntPtr]::Zero
+    [void][SealShellNotify]::SendMessageTimeout([IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'Software\Classes', 2, 2000, [ref]$output)
+  }
 }
 try {
   switch ($Action) {
@@ -96,27 +183,70 @@ try {
     'Install' {
       Assert-FileIcons
       foreach ($ext in $taskTypes) { if (-not (Test-Path -LiteralPath (Join-Path $Templates "blank.$ext") -PathType Leaf)) { throw "缺少 $ext 新建模板" } }
+      Migrate-InstallationState
       $original = Read-Value $taskState 'OriginalShellNew'
       $saved = if ($original) { $original | ConvertFrom-Json } else { [pscustomobject]@{} }
       $installedRaw = Read-Value $taskState 'InstalledShellNew'
       $installed = if ($installedRaw) { $installedRaw | ConvertFrom-Json } else { [pscustomobject]@{} }
       $defaultsRaw = Read-Value $taskState 'CreatedDefaults'
       $defaults = if ($defaultsRaw) { $defaultsRaw | ConvertFrom-Json } else { [pscustomobject]@{} }
-      foreach ($ext in $taskTypes) {
-        $snapshot = Snapshot-Key "$taskClasses\.$ext\ShellNew"
-        $previous = $installed.PSObject.Properties[$ext]
-        if (-not $saved.PSObject.Properties[$ext] -or ($previous -and (($snapshot | ConvertTo-Json -Depth 30 -Compress) -ne $previous.Value))) {
-          $saved | Add-Member -NotePropertyName $ext -NotePropertyValue $snapshot -Force
+      $userDefaultsRaw = Read-Value $taskState 'UserCreatedDefaults'
+      $userDefaults = if ($userDefaultsRaw) { $userDefaultsRaw | ConvertFrom-Json } else { [pscustomobject]@{} }
+      $savedPathsRaw = Read-Value $taskState 'OriginalShellNewPaths'
+      $savedPaths = if ($savedPathsRaw) { $savedPathsRaw | ConvertFrom-Json } else { [pscustomobject]@{} }
+      $installedPathsRaw = Read-Value $taskState 'InstalledShellNewPaths'
+      $installedPaths = if ($installedPathsRaw) { $installedPathsRaw | ConvertFrom-Json } else { [pscustomobject]@{} }
+      $targets = @(Get-NewTargets)
+      $userState = $taskUserBase.OpenSubKey("$taskUserApplication\ShellIntegration")
+      $userSaved = $null; $userInstalled = $null; $userToken = $null; $takeOverUser = $false
+      if ($Scope -eq 'all' -and $userState) {
+        try {
+          if ($userState.GetValue('ExecutableFile') -eq $ExecutableFile) {
+            $takeOverUser = $true
+            $userToken = $userState.GetValue('InstallationId')
+            $raw = $userState.GetValue('CreatedDefaults')
+            if ($raw) { foreach ($item in ($raw | ConvertFrom-Json).PSObject.Properties) { $userDefaults | Add-Member -NotePropertyName $item.Name -NotePropertyValue $item.Value -Force } }
+            $raw = $userState.GetValue('OriginalShellNewPaths'); if ($raw) { $userSaved = $raw | ConvertFrom-Json }
+            $raw = $userState.GetValue('InstalledShellNewPaths'); if ($raw) { $userInstalled = $raw | ConvertFrom-Json }
+            if (-not $userSaved) { $userSaved = [pscustomobject]@{} }
+            if (-not $userInstalled) { $userInstalled = [pscustomobject]@{} }
+            $oldSavedRaw = $userState.GetValue('OriginalShellNew'); $oldInstalledRaw = $userState.GetValue('InstalledShellNew')
+            if ($oldSavedRaw -and $oldInstalledRaw) {
+              $oldSaved = $oldSavedRaw | ConvertFrom-Json; $oldInstalled = $oldInstalledRaw | ConvertFrom-Json
+              foreach ($ext in $taskTypes) {
+                $id = "Primary|.$ext\ShellNew"
+                if (-not $userSaved.PSObject.Properties[$id] -and $oldSaved.PSObject.Properties[$ext] -and $oldInstalled.PSObject.Properties[$ext]) {
+                  $userSaved | Add-Member -NotePropertyName $id -NotePropertyValue $oldSaved.$ext
+                  $userInstalled | Add-Member -NotePropertyName $id -NotePropertyValue $oldInstalled.$ext
+                }
+              }
+            }
+          }
+        } finally { $userState.Dispose() }
+      } elseif ($userState) { $userState.Dispose() }
+      foreach ($target in $targets) {
+        $snapshot = Snapshot-Key $target.Path $target.Base
+        $previous = $installedPaths.PSObject.Properties[$target.Id]
+        if (-not $savedPaths.PSObject.Properties[$target.Id] -or ($previous -and (($snapshot | ConvertTo-Json -Depth 30 -Compress) -ne $previous.Value))) {
+          $ext = $target.Extension
+          if (-not $previous -and $target.Id -eq "Primary|.$ext\ShellNew" -and $saved.PSObject.Properties[$ext] -and (($snapshot | ConvertTo-Json -Depth 30 -Compress) -eq $installed.$ext)) { $snapshot = $saved.$ext }
+          $userId = $target.Id -replace '^CurrentUser\|', 'Primary|'
+          if (-not $previous -and $target.Id.StartsWith('CurrentUser|') -and $userSaved -and $userInstalled -and $userSaved.PSObject.Properties[$userId] -and (($snapshot | ConvertTo-Json -Depth 30 -Compress) -eq $userInstalled.PSObject.Properties[$userId].Value)) { $snapshot = $userSaved.PSObject.Properties[$userId].Value }
+          $savedPaths | Add-Member -NotePropertyName $target.Id -NotePropertyValue $snapshot -Force
         }
       }
-      Set-Value $taskState 'OriginalShellNew' ($saved | ConvertTo-Json -Depth 30 -Compress)
+      Set-Value $taskState 'OriginalShellNewPaths' ($savedPaths | ConvertTo-Json -Depth 30 -Compress)
       Register-Application
+      foreach ($target in $targets) {
+        Restore-Key $target.Path $null $target.Base
+        $key = $target.Base.CreateSubKey($target.Path)
+        try {
+          $key.SetValue('FileName', (Join-Path $Templates "blank.$($target.Extension)"))
+          $key.SetValue('ItemName', ("海豹办公 " + $taskLabels[$target.Extension]))
+        } finally { $key.Dispose() }
+        $installedPaths | Add-Member -NotePropertyName $target.Id -NotePropertyValue ((Snapshot-Key $target.Path $target.Base) | ConvertTo-Json -Depth 30 -Compress) -Force
+      }
       foreach ($ext in $taskTypes) {
-        $keyPath = "$taskClasses\.$ext\ShellNew"
-        Restore-Key $keyPath $null
-        Set-Value $keyPath 'FileName' (Join-Path $Templates "blank.$ext")
-        Set-Value $keyPath 'ItemName' ("海豹办公 " + $taskLabels[$ext])
-        $installed | Add-Member -NotePropertyName $ext -NotePropertyValue ((Snapshot-Key $keyPath) | ConvertTo-Json -Depth 30 -Compress) -Force
         $currentClass = Read-Value "$taskClasses\.$ext" ''
         if (-not $currentClass -and -not $TestRoot) {
           $merged = [Microsoft.Win32.Registry]::ClassesRoot.OpenSubKey(".$ext")
@@ -128,17 +258,32 @@ try {
           $defaults | Add-Member -NotePropertyName $ext -NotePropertyValue $id -Force
         }
       }
-      Set-Value $taskState 'InstalledShellNew' ($installed | ConvertTo-Json -Depth 30 -Compress)
+      Set-Value $taskState 'InstalledShellNewPaths' ($installedPaths | ConvertTo-Json -Depth 30 -Compress)
       Set-Value $taskState 'CreatedDefaults' ($defaults | ConvertTo-Json -Depth 30 -Compress)
-      if (-not (Read-Value $taskState 'InstallationId')) { Set-Value $taskState 'InstallationId' ([guid]::NewGuid().ToString()) }
+      Set-Value $taskState 'UserCreatedDefaults' ($userDefaults | ConvertTo-Json -Depth 30 -Compress)
+      if (-not (Read-Value $taskState 'InstallationId')) { Set-Value $taskState 'InstallationId' $(if ($userToken) { $userToken } else { [guid]::NewGuid().ToString() }) }
       Set-Value $taskState 'ExecutableFile' $ExecutableFile
+      if ($takeOverUser) {
+        Remove-ApplicationRegistration $taskUserBase $taskUserClasses $taskUserApplication $taskUserRegistered
+        $taskUserBase.DeleteSubKeyTree("$taskUserApplication\ShellIntegration", $false)
+      }
       Notify-Shell
       $result = @{ 成功=$true; 新建格式=$taskTypes }
     }
     'Uninstall' {
+      Migrate-InstallationState
+      $savedPathsRaw = Read-Value $taskState 'OriginalShellNewPaths'
+      $installedPathsRaw = Read-Value $taskState 'InstalledShellNewPaths'
       $original = Read-Value $taskState 'OriginalShellNew'
       $installedRaw = Read-Value $taskState 'InstalledShellNew'
-      if ($original -and $installedRaw) {
+      if ($savedPathsRaw -and $installedPathsRaw) {
+        $savedPaths = $savedPathsRaw | ConvertFrom-Json; $installedPaths = $installedPathsRaw | ConvertFrom-Json
+        foreach ($entry in $installedPaths.PSObject.Properties) {
+          $target = Get-Target $entry.Name
+          $current = (Snapshot-Key $target.Path $target.Base) | ConvertTo-Json -Depth 30 -Compress
+          if ($current -eq $entry.Value) { Restore-Key $target.Path $savedPaths.PSObject.Properties[$entry.Name].Value $target.Base }
+        }
+      } elseif ($original -and $installedRaw) {
         $saved = $original | ConvertFrom-Json; $installed = $installedRaw | ConvertFrom-Json
         foreach ($ext in $taskTypes) {
           $current = (Snapshot-Key "$taskClasses\.$ext\ShellNew") | ConvertTo-Json -Depth 30 -Compress
@@ -148,30 +293,30 @@ try {
       $defaultsRaw = Read-Value $taskState 'CreatedDefaults'
       if ($defaultsRaw) {
         $defaults = $defaultsRaw | ConvertFrom-Json
-        foreach ($item in $defaults.PSObject.Properties) {
-          if ((Read-Value "$taskClasses\.$($item.Name)" '') -eq $item.Value) {
-            $key = $taskBase.OpenSubKey("$taskClasses\.$($item.Name)", $true)
-            try { $key.DeleteValue('', $false) } finally { $key.Dispose() }
-          }
-        }
+        Remove-CreatedDefaults $defaults $taskBase $taskClasses
       }
-      foreach ($ext in $taskSupported) {
-        $key = $taskBase.OpenSubKey("$taskClasses\.$ext\OpenWithProgids", $true)
-        if ($key) { try { $key.DeleteValue("SealOffice.$ext", $false) } finally { $key.Dispose() } }
-        $taskBase.DeleteSubKeyTree("$taskClasses\SealOffice.$ext", $false)
-      }
-      foreach ($ext in @('doc','ppt','xls')) { $taskBase.DeleteSubKeyTree("$taskClasses\SealOffice.New.$ext", $false) }
-      $key = $taskBase.OpenSubKey($taskRegistered, $true)
-      if ($key) { try { $key.DeleteValue('SealOffice', $false) } finally { $key.Dispose() } }
-      $taskBase.DeleteSubKeyTree($taskApplication, $false)
+      $userDefaultsRaw = Read-Value $taskState 'UserCreatedDefaults'
+      if ($Scope -eq 'all' -and $userDefaultsRaw) { Remove-CreatedDefaults ($userDefaultsRaw | ConvertFrom-Json) $taskUserBase $taskUserClasses }
+      Remove-ApplicationRegistration $taskBase $taskClasses $taskApplication $taskRegistered
+      if ($Scope -eq 'all') { Remove-ApplicationRegistration $taskUserBase $taskUserClasses $taskUserApplication $taskUserRegistered }
+      $taskBase.DeleteSubKeyTree($taskState, $false)
       Notify-Shell
       $result = @{ 成功=$true }
     }
     'GetInstallation' {
       $id = Read-Value $taskState 'InstallationId'; $exe = Read-Value $taskState 'ExecutableFile'
       if (-not $id -and -not $TestRoot) {
-        $machine = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('Software\SealOffice\ShellIntegration')
-        if ($machine) { try { $id=$machine.GetValue('InstallationId'); $exe=$machine.GetValue('ExecutableFile') } finally { $machine.Dispose() } }
+        foreach ($hive in @([Microsoft.Win32.RegistryHive]::CurrentUser, [Microsoft.Win32.RegistryHive]::LocalMachine)) {
+          foreach ($view in @([Microsoft.Win32.RegistryView]::Registry64, [Microsoft.Win32.RegistryView]::Registry32)) {
+            $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, $view)
+            try {
+              $machine = $base.OpenSubKey('Software\SealOffice\ShellIntegration')
+              if ($machine) { try { $id=$machine.GetValue('InstallationId'); $exe=$machine.GetValue('ExecutableFile') } finally { $machine.Dispose() } }
+            } finally { $base.Dispose() }
+            if ($id) { break }
+          }
+          if ($id) { break }
+        }
       }
       $result = @{ 成功=$true; 已安装=[bool]$id; 安装标识=$id; 可执行文件=$exe }
     }

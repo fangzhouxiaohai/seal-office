@@ -37,14 +37,39 @@ describe('读取 PPTX 文件结构', () => {
     await expect(读取pptx(await 压缩包.generateAsync({ type: 'nodebuffer' }))).rejects.toThrow('演示文件无效')
   })
 
-  it('演示包没有真实幻灯片时不能生成默认幻灯片', async () => {
-    await expect(读取pptx(await 构造有效演示([]))).rejects.toThrow('演示文件无效')
+  it('合法零页演示按真实空列表打开且不生成默认幻灯片', async () => {
+    const result = await 读取pptx(await 构造有效演示([]))
+    expect(result.演示文稿.幻灯片列表).toEqual([])
+    expect(result.警告).toEqual([])
+  })
+
+  it('显式零页演示保存重开仍为零页且不修改传入模型', async () => {
+    const model = { 幻灯片: [] }
+    const result = await 读取pptx(await 写入pptx(model))
+    expect(result.演示文稿.幻灯片列表).toEqual([])
+    expect(model.幻灯片).toEqual([])
   })
 
   it('演示关系引用缺失的幻灯片时必须报错', async () => {
     const 压缩包 = await JSZip.loadAsync(await 构造有效演示([空白幻灯片]))
     压缩包.remove('ppt/slides/slide1.xml')
     await expect(读取pptx(await 压缩包.generateAsync({ type: 'nodebuffer' }))).rejects.toThrow('演示文件无效')
+  })
+
+  it('截断的演示清单不能作为合法零页演示打开', async () => {
+    const zip = await JSZip.loadAsync(await 构造有效演示([]))
+    zip.file('ppt/presentation.xml', '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst>')
+    await expect(读取pptx(await zip.generateAsync({ type: 'nodebuffer' }))).rejects.toThrow('演示文件无效')
+  })
+
+  it.each([
+    '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/><损坏',
+    '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst><p:ext></p:sldIdLst></p:presentation>',
+    '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>',
+  ])('损坏清单不能误识别为合法零页演示：%s', async (清单) => {
+    const zip = await JSZip.loadAsync(await 构造有效演示([]))
+    zip.file('ppt/presentation.xml', 清单)
+    await expect(读取pptx(await zip.generateAsync({ type: 'nodebuffer' }))).rejects.toThrow('演示文件无效')
   })
 
   it('幻灯片部件并非完整内容时必须报文件损坏', async () => {
@@ -205,9 +230,8 @@ describe('pptxCodec', () => {
       expect(slide1File).toBeDefined()
     })
 
-    it('null 模型应该使用默认空数组', async () => {
-      const result = await 写入pptx(null)
-      expect(Buffer.isBuffer(result)).toBe(true)
+    it('缺失保存模型明确报错，不生成默认内容', async () => {
+      await expect(写入pptx(null)).rejects.toThrow('缺少幻灯片列表')
     })
 
     it('应该支持渲染层 { 幻灯片列表 } 契约', async () => {

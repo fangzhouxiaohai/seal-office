@@ -23,6 +23,50 @@ afterEach(() => {
 })
 
 describe('演示文稿编辑器容器', () => {
+  it.each(['F5', 'Shift+F5', '菜单'])('零页演示通过 %s 放映时弹窗提示且不进入全屏', async (方式) => {
+    const 进入 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      enterSlideshowFullscreen: 进入,
+    } })
+    const 入口 = () => {
+      const 状态 = useAppStore()
+      return <><button onClick={() => 状态.createDoc('ppt', { id: 'empty', name: '空演示', 幻灯片列表: [], 当前索引: 0 })}>打开零页演示</button>{状态.module === 'ppt' ? <PptEditor /> : null}</>
+    }
+    render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开零页演示' }))
+    if (方式 === '菜单') {
+      await userEvent.click(screen.getByRole('tab', { name: '幻灯片放映' }))
+      await userEvent.click(screen.getByRole('button', { name: '从头开始' }))
+    } else fireEvent.keyDown(document, { key: 'F5', shiftKey: 方式 === 'Shift+F5' })
+    expect(await screen.findByText('请先添加至少一张幻灯片，再开始放映。')).toBeInTheDocument()
+    expect(进入).not.toHaveBeenCalled()
+    expect(document.querySelector('.wps-slideshow')).toBeNull()
+  })
+
+  it('真实零页演示可打开、新增幻灯片并保存到原文件', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      saveToFile: vi.fn().mockResolvedValue({ 成功: true }),
+      office: { writePptx: 写入 },
+    } })
+    const 入口 = () => {
+      const 状态 = useAppStore()
+      return <><button onClick={() => 状态.createDoc('ppt', { id: 'empty', name: '空演示', 幻灯片列表: [], 当前索引: 0 }, { 路径: 'E:\\Temp\\空演示.pptx' })}>打开零页演示</button>{状态.module === 'ppt' ? <PptEditor /> : null}</>
+    }
+    const { container } = render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开零页演示' }))
+    expect(screen.getByText('暂无幻灯片')).toBeInTheDocument()
+    expect(screen.getByText('第 0 张')).toBeInTheDocument()
+    await userEvent.click(container.querySelector('.wps-ppt-thumbs__create')!)
+    expect(container.querySelector('.wps-ppt-canvas')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入).toHaveBeenCalled())
+    expect(写入.mock.calls[0][0].幻灯片).toHaveLength(1)
+  })
+
   it('幻灯片浏览可整体预览和拖动排序，并返回普通视图', async () => {
     const 模型 = 添加幻灯片(添加幻灯片(创建演示文稿()))
     模型.幻灯片列表.forEach((页, 索引) => { 页.文本框列表[0].text = ['甲页', '乙页', '丙页'][索引] })
