@@ -18,6 +18,7 @@ export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string 
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
+export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -38,6 +39,9 @@ export interface 电子接口 {
   revealInFolder: (路径: string) => Promise<{ 成功: boolean; 错误?: string }>
   exportToPdf: (html: string, 默认文件名: string) => Promise<文件保存结果 & { 已取消?: boolean }>
   reportUnsavedCount: (数量: number) => Promise<{ 成功: boolean; 错误?: string }>
+  enterSlideshowFullscreen: () => Promise<放映全屏结果>
+  exitSlideshowFullscreen: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
+  onSlideshowEnded: (回调: (标识: string) => void) => () => void
   onCloseStateRequested: (回调: (标识: string) => void) => () => void
   respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
   setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
@@ -58,6 +62,10 @@ const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? win
 const 失败 = (提示: string) => Promise.resolve({ 成功: false, 错误: 提示 })
 export const 桥接 = {
   get 可用() { return 取后端() !== null },
+  get 放映全屏可用() { return typeof 取后端()?.enterSlideshowFullscreen === 'function' },
+  enterSlideshowFullscreen: (): Promise<放映全屏结果> => 取后端()?.enterSlideshowFullscreen?.() ?? 失败('当前环境不支持系统全屏'),
+  exitSlideshowFullscreen: (标识: string) => 取后端()?.exitSlideshowFullscreen?.(标识) ?? 失败('当前环境不支持恢复窗口'),
+  onSlideshowEnded: (回调: (标识: string) => void): (() => void) => 取后端()?.onSlideshowEnded?.(回调) ?? (() => {}),
   get 关联文件可用() { return typeof 取后端()?.takePendingAssociatedFiles === 'function' && typeof 取后端()?.onAssociatedFilesAvailable === 'function' },
   showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showOpenDialog(打开类型) ?? Promise.resolve(null),

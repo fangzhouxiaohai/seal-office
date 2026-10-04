@@ -5,6 +5,7 @@ import { App as AntdApp, ConfigProvider, Modal, theme } from 'antd'
 import { AppProvider, useAppStore, type AppState } from './store'
 import { RECENT_DOCS } from './mock/recentDocs'
 import { 写入单元格, 设置数据验证 } from './sheet/model'
+import { 创建演示文稿 } from './ppt/deck'
 
 /** 探针组件：把状态与操作暴露为可点击按钮，便于断言 */
 const 探针 = ({ 提示文本 }: { 提示文本?: (文本: string) => void }) => {
@@ -1100,6 +1101,24 @@ describe('createDoc 按文档保存模型', () => {
     fireEvent.click(screen.getByText('注入'))
     await waitFor(() => expect(抓取!.activeDocumentId).not.toBeNull())
     expect(抓取!.表格文档模型[抓取!.activeDocumentId!][0].单元格.A1.显示值).toBe('1')
+  })
+
+  it('已保存演示只翻页保持已保存，修改正文仍显示未保存，撤销正文修改后恢复', async () => {
+    let 状态!: AppState
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    render(<AppProvider><读取 /></AppProvider>)
+    const 文稿 = 创建演示文稿('核验演示')
+    文稿.幻灯片列表.push({ ...文稿.幻灯片列表[0], id: '第二页' })
+    act(() => 状态.createDoc('ppt', 文稿, { 路径: 'C:\\资料\\核验演示.pptx' }))
+    const 标识 = 状态.activeDocumentId!
+    expect(状态.workspaceTabs[0].dirty).toBe(false)
+    act(() => 状态.更新演示文档模型(标识, { ...文稿, 当前索引: 1 }))
+    expect(状态.workspaceTabs[0].dirty).toBe(false)
+    const 已修改 = { ...文稿, 当前索引: 1, 幻灯片列表: 文稿.幻灯片列表.map((页, 索引) => 索引 === 0 ? { ...页, 文本框列表: 页.文本框列表.map((框) => ({ ...框, text: '修改后的标题' })) } : 页) }
+    act(() => 状态.更新演示文档模型(标识, 已修改))
+    expect(状态.workspaceTabs[0].dirty).toBe(true)
+    act(() => 状态.更新演示文档模型(标识, { ...文稿, 当前索引: 1 }))
+    expect(状态.workspaceTabs[0].dirty).toBe(false)
   })
 
   it('ppt 类型的初始演示文稿按编辑标签标识保存', async () => {

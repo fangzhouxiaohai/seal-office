@@ -4,6 +4,7 @@ import { useAppStore, type EditorDocument } from '../store'
 import { 桥接, type 助手配置 } from '../ipc/bridge'
 import { 检查工作簿更新, type Sheet } from '../sheet/model'
 import { type 演示文稿 } from '../ppt/deck'
+import { 使用放映状态 } from '../ppt/presentationState'
 import Icon from '../components/Icon'
 import AiSettingsCard from './AiSettingsCard'
 import { 解析助手回复, 预览文字修改, 预览表格修改, 预览演示修改, type 助手修改, type 文字修改, type 表格修改, type 演示修改 } from './proposal'
@@ -55,6 +56,7 @@ function 修改说明(项: 助手修改): { 位置: string; 原文: string; 新�
 }
 
 export default function AiAssistant() {
+  const 放映中 = 使用放映状态()
   const { message, modal } = AntdApp.useApp()
   const { documents, activeDocumentId, activeWorkspaceTabId, 表格文档模型, 演示文档模型, updateEditorHtml, 更新表格文档模型, 更新演示文档模型 } = useAppStore()
   const 当前文档 = useMemo(() => activeWorkspaceTabId === activeDocumentId
@@ -158,8 +160,8 @@ export default function AiAssistant() {
   }
 
   return <>
-    <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>
-    <Drawer className="assistant-drawer" title="智能助手" placement="right" width="min(430px, 100vw)" open={打开} onClose={() => set打开(false)} destroyOnClose={false}>
+    {放映中 ? null : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
+    <Drawer className="assistant-drawer" title="智能助手" placement="right" width="min(430px, 100vw)" open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
       <div className="assistant-drawer__layout">
         <div className="assistant-drawer__header"><strong>文件对话</strong><Button type="link" onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div>
         {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { set配置(新配置); set配置展开(false) }} /> : null}

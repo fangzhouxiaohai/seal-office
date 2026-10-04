@@ -35,6 +35,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   respondCloseState: (标识, 状态) => ipcRenderer.invoke('system.respondCloseState', 标识, 状态),
   setDefaultApp: () => ipcRenderer.invoke('system.setDefaultApp'),
+  enterSlideshowFullscreen: () => ipcRenderer.invoke('system.enterSlideshowFullscreen'),
+  exitSlideshowFullscreen: (标识) => ipcRenderer.invoke('system.exitSlideshowFullscreen', 标识),
+  onSlideshowEnded: (回调) => {
+    const 处理 = (_事件, 标识) => { if (typeof 标识 === 'string') 回调(标识) }
+    ipcRenderer.on('system.slideshowEnded', 处理)
+    return () => ipcRenderer.removeListener('system.slideshowEnded', 处理)
+  },
   checkIntegrity: () => ipcRenderer.invoke('system.checkIntegrity'),
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),
   getAppInfo: () => ipcRenderer.invoke('app.getInfo'),

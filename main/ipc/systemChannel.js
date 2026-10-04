@@ -36,6 +36,7 @@ function 查询实时关闭状态(窗口, 超时毫秒 = 15000) {
 }
 
 function 注册系统通道(ipcMain) {
+  require('./slideshowFullscreen').注册放映全屏通道(ipcMain)
   ipcMain.handle('system.reportUnsavedCount', async (事件, 数量) => {
     if (!Number.isSafeInteger(数量) || 数量 < 0) {
       return { 成功: false, 错误: '未保存文档数量无效' }

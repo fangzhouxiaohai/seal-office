@@ -343,7 +343,7 @@ describe('应用外壳（WPS 版式首页）', () => {
     // 文档模块已由占位页升级为完整编辑器
     expect(container.querySelector('.wps-ribbon-tabs')).not.toBeNull()
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: '返回首页' }))
+    await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     expect(screen.getByText('新建')).toBeInTheDocument()
   })
 
@@ -379,13 +379,55 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(document.querySelector('.wps-homebody')).toBeNull()
   })
 
-  it('从 PDF 页侧栏进入日历时切回首页并显示日历', async () => {
+  it('从 PDF 页底部返回首页后可以进入日历', async () => {
     render(<App 初始最近文档={[]} />)
     await userEvent.click(screen.getByText('PDF 工具'))
     expect(document.querySelector('.wps-main--pdf')).not.toBeNull()
-    await userEvent.click(screen.getByText('日历'))
+    await userEvent.click(screen.getByRole('tab', { name: '首页' }))
+    await userEvent.click(document.querySelector('.wps-homerail__item:nth-child(2)')!)
     expect(document.querySelector('.wps-homebody')).not.toBeNull()
     expect(await screen.findByRole('heading', { name: '本机日历' })).toBeInTheDocument()
+  })
+
+  it.each(['新建文字', '新建表格', '新建演示', '新建 PDF'])('文件页面 %s 不显示全局左栏且可以从底部返回首页', async (名称) => {
+    const { container } = render(<App 初始最近文档={[]} />)
+    if (名称 === '新建 PDF') await userEvent.click(screen.getByText('PDF 工具'))
+    else await 通过新建菜单创建(名称)
+    expect(container.querySelector('.wps-homebody')).toBeNull()
+    expect(container.querySelector('.wps-sidebar')).toBeNull()
+    expect(screen.queryByRole('button', { name: '返回首页' })).toBeNull()
+    await userEvent.click(screen.getByRole('tab', { name: '首页' }))
+    expect(container.querySelector('.wps-homebody')).not.toBeNull()
+  })
+
+  it('演示文稿通过 F5 全屏播放，最后一页结束后恢复窗口与助手入口', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    const 进入 = vi.fn().mockResolvedValue({ 成功: true, 会话标识: '应用放映会话' })
+    const 退出 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      enterSlideshowFullscreen: 进入, exitSlideshowFullscreen: 退出,
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      render(<App 初始最近文档={[]} />)
+      await 通过新建菜单创建('新建演示')
+      const 放映前未保存数 = document.querySelectorAll('.wps-global-tab__dirty').length
+      expect(screen.getByRole('button', { name: '打开智能助手' })).toBeInTheDocument()
+      fireEvent.keyDown(document, { key: 'F5' })
+      await waitFor(() => expect(进入).toHaveBeenCalledTimes(1))
+      expect(screen.queryByRole('button', { name: '打开智能助手' })).toBeNull()
+      expect(screen.getByRole('dialog', { name: '幻灯片放映' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('dialog', { name: '幻灯片放映' }))
+      await waitFor(() => expect(退出).toHaveBeenCalledWith('应用放映会话'))
+      expect(screen.queryByRole('dialog', { name: '幻灯片放映' })).toBeNull()
+      expect(screen.getByRole('button', { name: '打开智能助手' })).toBeInTheDocument()
+      expect(document.querySelectorAll('.wps-global-tab__dirty')).toHaveLength(放映前未保存数)
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
   })
 
   it('无真实路径的演示记录不会打开空白文档', async () => {

@@ -18,6 +18,16 @@ import { 页面设置相同, type 文字页面设置 } from './office/docModel'
 
 export type ViewMode = 'grid' | 'list'
 
+/** 当前浏览页码属于工作区状态，不改变 PPTX 的正文内容。损坏快照仍视为未保存。 */
+function 演示内容相同(当前: 演示文稿 | undefined, 已保存?: string): boolean {
+  if (!当前 || !已保存) return false
+  try {
+    const 快照 = JSON.parse(已保存)
+    if (!快照 || !Array.isArray(快照.幻灯片列表)) return false
+    return JSON.stringify({ ...当前, 当前索引: 0 }) === JSON.stringify({ ...快照, 当前索引: 0 })
+  } catch { return false }
+}
+
 /** 各编辑器文档的身份与文字内容；表格和演示模型按相同标识独立保存。 */
 export interface EditorDocument {
   id: string
@@ -218,7 +228,9 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       const 类型 = 文档.type ?? 'word'
       const 路径 = 文档路径[文档.id] ?? null
       const 当前模型 = 类型 === 'table' ? 表格文档模型[文档.id] : 类型 === 'ppt' ? 演示文档模型[文档.id] : null
-      const 模型有修改 = 类型 !== 'word' && (当前模型 === undefined || JSON.stringify(当前模型) !== 文档.已保存模型)
+      const 模型有修改 = 类型 === 'ppt'
+        ? !演示内容相同(演示文档模型[文档.id], 文档.已保存模型)
+        : 类型 !== 'word' && (当前模型 === undefined || JSON.stringify(当前模型) !== 文档.已保存模型)
       文档标签.set(文档.id, {
         id: 文档.id,
         name: 文档.name,

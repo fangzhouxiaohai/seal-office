@@ -28,6 +28,8 @@
   --font-heading: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
   --document-paper: #ffffff;
   --document-ink: #000000;
+  --presentation-bg: #000000;
+  --presentation-caption: rgba(255, 255, 255, 0.65);
 }
 
 * {
@@ -2613,11 +2615,15 @@ button {
 }
 
 /* 全屏放映视图 */
+.seal-presenting .wps-app,
+.seal-presenting .assistant-drawer {
+  visibility: hidden;
+}
 .wps-slideshow {
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: #000;
+  background: var(--presentation-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2657,9 +2663,9 @@ button {
 }
 .wps-slideshow__indicator {
   position: absolute;
-  right: 16px;
-  bottom: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  right: var(--space-4);
+  bottom: var(--space-3);
+  color: var(--presentation-caption);
   font-size: 13px;
   font-family: inherit;
   pointer-events: none;

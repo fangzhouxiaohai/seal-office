@@ -1,14 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import { AppProvider, useAppStore } from '../store'
 import DocEditor from '../editor/DocEditor'
 import AiAssistant from './AiAssistant'
+import { 标记放映开始 } from '../ppt/presentationState'
 
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手对话修改链路', () => {
+  it('放映隐藏入口和已经打开的面板，退出后保留输入并恢复面板', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      ai: {
+        getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
+        chat: vi.fn(),
+      },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+    } })
+    render(<AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+    await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '保留这条输入')
+    let 释放!: () => void
+    act(() => { 释放 = 标记放映开始() })
+    try {
+      expect(screen.queryByRole('button', { name: '打开智能助手' })).toBeNull()
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: '智能助手' })).toBeNull())
+    } finally { act(() => 释放()) }
+    expect(screen.getByRole('button', { name: '打开智能助手' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: '发送给智能助手的消息' })).toHaveValue('保留这条输入')
+  })
   it('读取当前文件、预览候选修改，并仅在确认后写入编辑区', async () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '建议将标题写得更明确。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '项目概览' }] }) } })
     Object.defineProperty(window, 'electronAPI', {

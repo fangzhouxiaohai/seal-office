@@ -211,7 +211,7 @@ const 外壳 = () => {
       : React.createElement(
       'div',
       { className: 'wps-body' },
-      React.createElement(Sidebar, {
+      (module === 'settings' || module === 'help') ? React.createElement(Sidebar, {
         mode: 是首页 ? 'home' : (module === 'settings' ? 'settings' : module === 'help' ? 'help' : module === 'pdf' ? 'pdf' : 'editor'),
         activeKey: navKey,
         onSelect: (键: string) => {
@@ -230,7 +230,7 @@ const 外壳 = () => {
         onShowSettings: showSettings,
         onShowHelp: () => set帮助弹窗打开(true),
         onShowPdf: () => createDoc('pdf'),
-      }),
+      }) : null,
       主内容
     ),
     React.createElement(GlobalTabs, null),
