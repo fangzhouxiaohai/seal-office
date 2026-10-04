@@ -335,7 +335,30 @@
   "边界": "原生测试使用隔离注册表及唯一的临时测试扩展名，结束后清除；未修改用户受保护的默认应用选择。安装包同源解包应用和便携版分别真实运行三次，未在用户现有安装目录执行覆盖安装。",
   "临时目录与缓存": "全部主动测试资料、图标生成缓存、下载与编译缓存位于 E 盘；应用内图标复制为持久资料。",
   "发布": {
-    "状态": "附件待上传",
-    "发布页": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.2"
+    "状态": "已公开",
+    "发布页": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.2",
+    "版本标签": "v1.7.2",
+    "源码提交": "cb71480ff348d30569a10bf4e991bee08bc9e726",
+    "发布时间": "2026-10-04T16:25:47Z",
+    "最新版本": true,
+    "匿名公开接口核对": "通过",
+    "发布说明与本地一致": true,
+    "附件大小与SHA256核对": "两项均通过",
+    "附件": [
+      {
+        "name": "SealOffice.1.7.2.exe",
+        "size": 88120891,
+        "digest": "sha256:e8354651c7ccf964e15f5780225c7c62ded7e4ff7767b63e52fd778ff62e7688",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.2/SealOffice.1.7.2.exe"
+      },
+      {
+        "name": "SealOffice.Setup.1.7.2.exe",
+        "size": 88346298,
+        "digest": "sha256:df563c5bbe5c300c089ea1d88d688ccf4df60805234e356ffce9883516111b7e",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.2/SealOffice.Setup.1.7.2.exe"
+      }
+    ]
   }
 }
