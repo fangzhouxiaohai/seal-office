@@ -14,6 +14,7 @@ interface Props {
   size?: 'large' | 'small'
   active?: boolean
   disabled?: boolean
+  disabledReason?: string
   /** 下拉按钮当前展示的值 */
   currentValue?: string
   /** 支持字符串或键值对两种写法 */
@@ -47,6 +48,7 @@ const RibbonButton = ({
   size = 'large',
   active = false,
   disabled = false,
+  disabledReason,
   currentValue,
   options,
   onClick,
@@ -82,7 +84,7 @@ const RibbonButton = ({
       },
       React.createElement(
         'button',
-        { type: 'button', className: 类名, 'aria-label': label, disabled, onMouseDown: 保持选区 },
+        { type: 'button', className: 类名, 'aria-label': label, title: disabledReason ?? label, disabled, onMouseDown: 保持选区 },
         React.createElement(Icon, { name: icon, size: 16 }),
         React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
         React.createElement('span', { className: 'wps-ribbon-button__caret' })
@@ -96,7 +98,7 @@ const RibbonButton = ({
       type: 'button',
       className: 类名,
       'aria-label': label,
-      title: label,
+      title: disabledReason ?? label,
       disabled,
       onMouseDown: 保持选区,
       onClick: disabled ? undefined : onClick,

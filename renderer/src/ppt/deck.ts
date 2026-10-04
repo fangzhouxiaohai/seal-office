@@ -41,13 +41,35 @@ export interface 幻灯片 {
   /** 当前页的演讲备注，随演示文稿保存 */
   备注?: string
   文本框列表: 文本框[]
+  /** 扩展对象在完成 PPTX 往返能力前仍须接受校验并禁止有损保存。 */
+  对象列表?: 演示对象[]
+}
+
+export type 演示对象 = {
+  id: string
+  类型: '图片' | '图形' | '表格' | '图表' | '媒体' | '组合'
+  x: number
+  y: number
+  width: number
+  height: number
+  旋转?: number
+  资源标识?: string
+  子对象标识?: string[]
+}
+
+export interface 演示资源 {
+  指纹: string
+  类型: string
+  字节数: number
 }
 
 export interface 演示文稿 {
+  模型版本?: 2
   id: string
   name: string
   幻灯片列表: 幻灯片[]
   当前索引: number
+  资源索引?: Record<string, 演示资源>
 }
 
 /** 画布基准尺寸，按 16:9 比例 */
@@ -114,10 +136,12 @@ export function 创建幻灯片(版式: 版式类型 = '标题和内容', 标题
 
 export function 创建演示文稿(name = '未命名演示.pptx'): 演示文稿 {
   return {
+    模型版本: 2,
     id: 生成标识('deck'),
     name,
     幻灯片列表: [创建幻灯片('标题幻灯片', '幻灯片 1')],
     当前索引: 0,
+    资源索引: {},
   }
 }
 

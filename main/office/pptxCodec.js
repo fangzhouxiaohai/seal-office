@@ -8,6 +8,47 @@ const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
 // OOXML 的 EMU（每英寸 914400）按同一 72dpi 基准折算回画布像素
 const EMU转像素 = (emu) => Math.round((Number(emu) / 12700) * 100) / 100
 
+const 标识前缀 = 'seal-id:'
+const 编码标识 = (标识) => `${标识前缀}${Buffer.from(标识, 'utf8').toString('base64url')}`
+function 写入标签名称(标签, 标识) {
+  const 名称 = `name="${编码标识(标识)}"`
+  return /\bname="[^"]*"/.test(标签) ? 标签.replace(/\bname="[^"]*"/, 名称) : 标签.replace(/\/?>(?=$)/, (结束) => ` ${名称}${结束}`)
+}
+function 写入稳定标识(xml, 页面数据, 序号) {
+  let 更新 = xml
+  if (typeof 页面数据.id === 'string' && 页面数据.id.length > 0) {
+    let 已写入 = false
+    更新 = 更新.replace(/<p:cSld\b[^>]*>/i, (标签) => {
+      已写入 = true
+      return 写入标签名称(标签, 页面数据.id)
+    })
+    if (!已写入) throw new Error(`生成幻灯片失败：第 ${序号 + 1} 页缺少内容节点`)
+  }
+  if (Array.isArray(页面数据.文本框) && 页面数据.文本框.some((框) => typeof 框.id === 'string')) {
+    let 框序号 = 0
+    更新 = 更新.replace(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/gi, (形状) => {
+      const 框 = 页面数据.文本框[框序号++]
+      if (!框 || typeof 框.id !== 'string' || 框.id.length === 0) return 形状
+      let 已写入 = false
+      const 结果 = 形状.replace(/<p:cNvPr\b[^>]*>/i, (标签) => {
+        已写入 = true
+        return 写入标签名称(标签, 框.id)
+      })
+      if (!已写入) throw new Error(`生成幻灯片失败：第 ${序号 + 1} 页文本框缺少标识节点`)
+      return 结果
+    })
+    if (框序号 < 页面数据.文本框.length) throw new Error(`生成幻灯片失败：第 ${序号 + 1} 页文本框数量不符`)
+  }
+  return 更新
+}
+function 解码标识(名称) {
+  if (typeof 名称 !== 'string' || !名称.startsWith(标识前缀)) return null
+  try {
+    const 原文 = Buffer.from(名称.slice(标识前缀.length), 'base64url').toString('utf8')
+    return 原文.length > 0 && 原文.length <= 256 ? 原文 : null
+  } catch { return null }
+}
+
 /** 去掉颜色值里的 #，pptxgenjs 只接受无井号的十六进制 */
 const 规整颜色 = (颜色, 默认) => {
   if (typeof 颜色 !== 'string') return 默认
@@ -201,7 +242,8 @@ async function 读取幻灯片路径(压缩包) {
     if (!路径 || !/^ppt\/slides\/[^/]+\.xml$/i.test(路径) || !压缩包.file(路径)) {
       throw new Error('演示文件无效：幻灯片关系缺失或目标不存在')
     }
-    幻灯片路径.push(路径)
+    const 页面标识 = 读取Xml属性(匹配[0], 'id')
+    幻灯片路径.push({ 路径, 页面标识 })
   }
   return { 幻灯片路径, 清单Xml }
 }
@@ -224,7 +266,7 @@ async function 读取pptx(数据) {
       警告.add('页面尺寸未完整导入')
     }
   }
-  for (const 名称 of 文件名) {
+  for (const { 路径: 名称, 页面标识 } of 文件名) {
     const xml = await 压缩包.file(名称).async('string')
     if (!/<p:sld\b[^>]*>[\s\S]*<\/p:sld>\s*$/i.test(xml) ||
         !/<p:cSld\b[^>]*>[\s\S]*<\/p:cSld>/i.test(xml) ||
@@ -232,12 +274,12 @@ async function 读取pptx(数据) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
     收集幻灯片警告(xml, 警告)
-    const 幻灯片 = 解析幻灯片Xml(xml, 幻灯片列表.length)
+    const 幻灯片 = 解析幻灯片Xml(xml, 幻灯片列表.length, 页面标识)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
     幻灯片列表.push(幻灯片)
   }
-  await 收集母版警告(压缩包, 文件名, 警告)
+  await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -250,7 +292,7 @@ async function 读取pptx(数据) {
 }
 
 /** 解析单张幻灯片 XML：背景色 + 各形状的位置与文字样式 */
-function 解析幻灯片Xml(xml, 序号) {
+function 解析幻灯片Xml(xml, 序号, 页面标识) {
   // 幻灯片背景色
   let 背景色 = '#FFFFFF'
   const 背景匹配 = xml.match(/<p:bg>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"[\s\S]*?<\/p:bg>/)
@@ -258,17 +300,19 @@ function 解析幻灯片Xml(xml, 序号) {
     背景色 = `#${背景匹配[1].toUpperCase()}`
   }
   const 文本框列表 = []
+  const 页面名称 = 读取Xml属性(xml.match(/<p:cSld\b[^>]*>/i)?.[0] ?? '', 'name')
+  const 稳定页面标识 = 解码标识(页面名称) ?? (页面标识 ? `slide-ooxml-${页面标识}` : `slide-${序号}`)
   const 形状正则 = /<p:sp\b[^>]*>([\s\S]*?)<\/p:sp>/gi
   let 形状匹配
   while ((形状匹配 = 形状正则.exec(xml)) !== null) {
-    const 解析 = 解析形状Xml(形状匹配[1], 序号, 文本框列表.length)
+    const 解析 = 解析形状Xml(形状匹配[1], 稳定页面标识, 文本框列表.length)
     if (解析 !== null) 文本框列表.push(解析)
   }
   const 首框 = 文本框列表[0]
   const 标题文本 = 首框 !== undefined ? 首框.text.split('\n')[0] : '幻灯片'
   const 过渡效果 = 解析过渡效果(xml).效果
   return {
-    id: `slide-${序号}`,
+    id: 稳定页面标识,
     title: 标题文本,
     版式: 文本框列表.length > 1 ? '标题和内容' : '标题幻灯片',
     背景色,
@@ -278,7 +322,7 @@ function 解析幻灯片Xml(xml, 序号) {
 }
 
 /** 解析单个 <p:sp> 形状；无文字时返回 null */
-function 解析形状Xml(形状Xml, 序号, 框序号) {
+function 解析形状Xml(形状Xml, 页面标识, 框序号) {
   const 段落列表 = Array.from(形状Xml.matchAll(/<a:p\b[^>]*>([\s\S]*?)<\/a:p>/gi), (匹配) => 匹配[1])
   // 无文字的装饰形状不导入为文本框
   const 合并文本 = 段落列表.map((段落) => {
@@ -300,8 +344,11 @@ function 解析形状Xml(形状Xml, 序号, 框序号) {
   const 下划线 = 首个rPr?.[1].match(/\bu="([^"]+)"/i)?.[1]
   const 颜色匹配 = 形状Xml.match(/<a:rPr[^>]*>[\s\S]{0,400}?<a:srgbClr val="([0-9A-Fa-f]{6})"/)
   const 对齐匹配 = 形状Xml.match(/<a:pPr[^>]*algn="(\w+)"/)
+  const 属性标签 = 形状Xml.match(/<p:cNvPr\b[^>]*>/i)?.[0] ?? ''
+  const 形状标识 = 读取Xml属性(属性标签, 'id') ?? String(框序号)
+  const 框标识 = 解码标识(读取Xml属性(属性标签, 'name')) ?? `box-${页面标识}-${形状标识}`
   return {
-    id: `box-${序号}-${框序号}`,
+    id: 框标识,
     x: 位置 !== null ? EMU转像素(位置[1]) : 80,
     y: 位置 !== null ? EMU转像素(位置[2]) : 60,
     width: 尺寸 !== null ? EMU转像素(尺寸[1]) : 800,
@@ -336,6 +383,12 @@ async function 写入pptx(模型) {
   }
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
+  }
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.length > 0) ||
+      (Array.isArray(项.图片) && 项.图片.length > 0) ||
+      (Array.isArray(项.图表) && 项.图表.length > 0) ||
+      (Array.isArray(项.媒体) && 项.媒体.length > 0))) {
+    throw new Error('演示文稿含当前写入器不支持的对象，已阻止有损保存')
   }
   if (幻灯片列表.some((项) => 项.动画)) {
     throw new Error('动画无法可靠保存为 PPTX，请先移除动画效果')
@@ -412,21 +465,24 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.some((项) => 项.过渡效果)) return 原文件
+  if (!幻灯片列表.some((项) => 项.过渡效果 || 项.id || 项.文本框?.some((框) => 框.id))) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 效果 = 幻灯片列表[索引].过渡效果
-    if (!效果) continue
-    const 过渡Xml = 效果 === '淡入淡出'
+    const 过渡Xml = !效果 ? null : 效果 === '淡入淡出'
       ? '<p:transition spd="med"><p:fade/></p:transition>'
       : 效果 === '推进'
         ? '<p:transition spd="med"><p:push dir="l"/></p:transition>'
         : null
-    if (!过渡Xml) throw new Error(`不支持的幻灯片切换效果：${效果}`)
+    if (效果 && !过渡Xml) throw new Error(`不支持的幻灯片切换效果：${效果}`)
     const 名称 = `ppt/slides/slide${索引 + 1}.xml`
     const 文件 = 压缩包.file(名称)
     if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
-    const xml = await 文件.async('string')
+    let xml = 写入稳定标识(await 文件.async('string'), 幻灯片列表[索引], 索引)
+    if (!过渡Xml) {
+      压缩包.file(名称, xml)
+      continue
+    }
     const 覆盖结束 = xml.lastIndexOf('</p:clrMapOvr>')
     const 覆盖自闭合 = xml.match(/<p:clrMapOvr\b[^>]*\/>/i)
     const 内容结束 = xml.lastIndexOf('</p:cSld>')
@@ -436,8 +492,8 @@ async function 写入pptx(模型) {
         ? 覆盖自闭合.index + 覆盖自闭合[0].length
         : 内容结束 >= 0 ? 内容结束 + '</p:cSld>'.length : -1
     if (插入位置 < 0 || !/<\/p:sld>/i.test(xml)) throw new Error(`生成幻灯片失败：第 ${索引 + 1} 张结构无效`)
-    const 更新 = xml.slice(0, 插入位置) + 过渡Xml + xml.slice(插入位置)
-    压缩包.file(名称, 更新)
+    xml = xml.slice(0, 插入位置) + 过渡Xml + xml.slice(插入位置)
+    压缩包.file(名称, xml)
   }
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }

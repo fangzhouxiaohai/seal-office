@@ -941,6 +941,30 @@ describe('createDoc 按文档保存模型', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
+  it('旧演示备份升级模型版本后保持原文与已保存状态', async () => {
+    const 旧稿 = 创建演示文稿('旧备份.pptx')
+    delete 旧稿.模型版本
+    delete 旧稿.资源索引
+    旧稿.幻灯片列表[0].文本框列表[0].颜色 = '#000000'
+    const 备份 = JSON.stringify({
+      documents: [{ id: '旧标签', name: '旧备份.pptx', html: '', 已保存Html: '', 已保存模型: JSON.stringify(旧稿), type: 'ppt' }],
+      activeDocumentId: '旧标签', 文档路径: { 旧标签: 'E:\\资料\\旧备份.pptx' },
+      演示文档模型: { 旧标签: 旧稿 }, activeModule: 'ppt', workspaceOrder: ['旧标签'],
+    })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: 备份 })),
+      backupSave: vi.fn(async () => ({ 成功: true })), backupClear: vi.fn(async () => ({ 成功: true })),
+    } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    render(<AppProvider><读取 /></AppProvider>)
+    await waitFor(() => expect(状态!.启动恢复结束).toBe(true))
+    expect(状态!.演示文档模型.旧标签.模型版本).toBe(2)
+    expect(状态!.演示文档模型.旧标签.幻灯片列表[0].文本框列表[0].颜色).toBe('#000000')
+    expect(状态!.workspaceTabs[0].dirty).toBe(false)
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
   it('表格主入口创建并重开时保留页面设置与单元格布局元数据', async () => {
     let 状态: AppState | null = null
     const 来源 = [{
@@ -1130,7 +1154,7 @@ describe('createDoc 按文档保存模型', () => {
     const 读取 = () => { 状态 = useAppStore(); return null }
     render(<AppProvider><读取 /></AppProvider>)
     const 文稿 = 创建演示文稿('核验演示')
-    文稿.幻灯片列表.push({ ...文稿.幻灯片列表[0], id: '第二页' })
+    文稿.幻灯片列表.push({ ...文稿.幻灯片列表[0], id: '第二页', 文本框列表: 文稿.幻灯片列表[0].文本框列表.map((框) => ({ ...框, id: `${框.id}-第二页` })) })
     act(() => 状态.createDoc('ppt', 文稿, { 路径: 'C:\\资料\\核验演示.pptx' }))
     const 标识 = 状态.activeDocumentId!
     expect(状态.workspaceTabs[0].dirty).toBe(false)
@@ -1149,7 +1173,7 @@ describe('createDoc 按文档保存模型', () => {
       抓取 = useAppStore()
       return null
     }
-    const 演示 = { id: 'd1', name: '测试.pptx', 幻灯片列表: [{ id: 's1' }], 当前索引: 0 }
+    const 演示 = { ...创建演示文稿('测试.pptx'), id: 'd1' }
     render(
       <AppProvider>
         <button onClick={() => 抓取!.createDoc('ppt', 演示)}>注入</button>

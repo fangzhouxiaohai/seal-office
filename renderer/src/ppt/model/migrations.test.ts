@@ -1,0 +1,48 @@
+import { describe, expect, it } from 'vitest'
+import { 创建演示文稿 } from '../deck'
+import { 迁移演示文稿, 演示内容快照 } from './migrations'
+
+describe('演示文稿模型迁移与校验', () => {
+  it('旧版文字文稿保留全部原文、标识和显式颜色', () => {
+    const 旧稿 = 创建演示文稿('旧版.pptx')
+    delete 旧稿.模型版本
+    旧稿.幻灯片列表[0].文本框列表[0].颜色 = '#000000'
+    const 结果 = 迁移演示文稿(旧稿)
+    expect(结果.模型版本).toBe(2)
+    expect(结果.幻灯片列表[0].id).toBe(旧稿.幻灯片列表[0].id)
+    expect(结果.幻灯片列表[0].文本框列表[0].颜色).toBe('#000000')
+    expect(旧稿.模型版本).toBeUndefined()
+  })
+
+  it('浏览页码不属于正文快照，文字变化属于正文', () => {
+    const 文稿 = 创建演示文稿()
+    expect(演示内容快照(文稿)).toBe(演示内容快照({ ...文稿, 当前索引: 1 }))
+    const 修改 = { ...文稿, 幻灯片列表: [{ ...文稿.幻灯片列表[0], title: '已修改' }] }
+    expect(演示内容快照(修改)).not.toBe(演示内容快照(文稿))
+  })
+
+  it.each([
+    ['重复页面标识', (文稿: ReturnType<typeof 创建演示文稿>) => { 文稿.幻灯片列表.push({ ...文稿.幻灯片列表[0] }) }],
+    ['非法尺寸', (文稿: ReturnType<typeof 创建演示文稿>) => { 文稿.幻灯片列表[0].文本框列表[0].width = -1 }],
+    ['丢失正文列表', (文稿: ReturnType<typeof 创建演示文稿>) => { delete (文稿.幻灯片列表[0] as unknown as Record<string, unknown>).文本框列表 }],
+    ['未来模型版本', (文稿: ReturnType<typeof 创建演示文稿>) => { (文稿 as unknown as Record<string, unknown>).模型版本 = 99 }],
+    ['无效资源索引', (文稿: ReturnType<typeof 创建演示文稿>) => { (文稿 as unknown as Record<string, unknown>).资源索引 = null }],
+  ])('%s 会拒绝加载且不修改输入', (_名称, 修改) => {
+    const 文稿 = 创建演示文稿()
+    修改(文稿)
+    const 原始 = JSON.stringify(文稿)
+    expect(() => 迁移演示文稿(文稿)).toThrow()
+    expect(JSON.stringify(文稿)).toBe(原始)
+  })
+
+  it('缺失资源和循环分组会拒绝加载', () => {
+    const 文稿 = 创建演示文稿()
+    文稿.幻灯片列表[0].对象列表 = [{ id: '图一', 类型: '图片', x: 0, y: 0, width: 100, height: 100, 资源标识: '未找到' }]
+    expect(() => 迁移演示文稿(文稿)).toThrow(/资源/)
+    文稿.幻灯片列表[0].对象列表 = [
+      { id: '组一', 类型: '组合', x: 0, y: 0, width: 100, height: 100, 子对象标识: ['组二'] },
+      { id: '组二', 类型: '组合', x: 0, y: 0, width: 100, height: 100, 子对象标识: ['组一'] },
+    ]
+    expect(() => 迁移演示文稿(文稿)).toThrow(/循环/)
+  })
+})

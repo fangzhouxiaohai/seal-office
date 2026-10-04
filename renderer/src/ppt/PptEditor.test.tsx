@@ -491,11 +491,12 @@ describe('演示文稿编辑器容器', () => {
     expect(写入.mock.calls[0][0].幻灯片[0].过渡效果).toBe('淡入淡出')
   })
 
-  it('动画入口用弹窗说明无法可靠保存，不显示已设置成功', async () => {
+  it('尚未可靠保存的动画入口禁用并说明原因', async () => {
     渲染演示()
     await userEvent.click(screen.getByRole('tab', { name: '动画' }))
-    await userEvent.click(screen.getByRole('button', { name: '出现' }))
-    expect((await screen.findAllByText('动画功能受限')).length).toBeGreaterThan(0)
+    const 按钮 = screen.getByRole('button', { name: '出现' })
+    expect(按钮).toBeDisabled()
+    expect(按钮).toHaveAttribute('title', '此操作尚未完成文件保存与重新打开验证')
     expect(screen.queryByText('已设置动画效果：出现')).toBeNull()
   })
 
@@ -532,11 +533,10 @@ describe('演示文稿编辑器容器', () => {
     expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
   })
 
-  it('点击插入标签下的图表命令给出中文指引', async () => {
+  it('图表未完成往返前入口禁用', async () => {
     渲染演示()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    await userEvent.click(screen.getByRole('button', { name: '图表' }))
-    expect(await screen.findByText('图表功能需要高级图表编辑能力，将在后续版本接入')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '图表' })).toBeDisabled()
   })
 
   it('点击缩略图切换当前幻灯片', async () => {

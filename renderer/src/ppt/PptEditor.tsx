@@ -8,6 +8,8 @@ import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 演示标签 } from './ribbonSpecs'
 import { 查找演示命令, type 演示命令上下文 } from './pptCommands'
+import { 读取演示命令状态 } from './model/commandStatus'
+import { 校验当前Pptx写入能力 } from './model/migrations'
 import {
   创建演示文稿,
   切换幻灯片,
@@ -398,12 +400,15 @@ const PptEditor = () => {
           }
           // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
+          校验当前Pptx写入能力(文稿)
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
+            id: 幻灯片.id,
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
+              id: 框.id,
               x: 框.x,
               y: 框.y,
               width: 框.width,
@@ -475,12 +480,15 @@ const PptEditor = () => {
           }
           // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
+          校验当前Pptx写入能力(文稿)
           const 幻灯片模型 = 文稿.幻灯片列表.map((幻灯片) => ({
+            id: 幻灯片.id,
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
+              id: 框.id,
               x: 框.x,
               y: 框.y,
               width: 框.width,
@@ -642,6 +650,8 @@ const PptEditor = () => {
       tabs: 演示标签,
       onCommand: 执行命令,
       获取激活态: 取激活态,
+      获取禁用态: (标识: string) => 读取演示命令状态(标识).状态 !== '可用',
+      获取禁用原因: (标识: string) => 读取演示命令状态(标识).原因,
       onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement(

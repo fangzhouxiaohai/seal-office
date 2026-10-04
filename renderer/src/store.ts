@@ -14,6 +14,7 @@ import { 基准文件名, 记录最近文档, 读取本地文件内容 } from '.
 import { 创建工作表, 检查工作簿更新, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
+import { 迁移演示文稿, 演示内容快照 } from './ppt/model/migrations'
 import { 页面设置相同, type 文字页面设置 } from './office/docModel'
 
 export type ViewMode = 'grid' | 'list'
@@ -22,9 +23,7 @@ export type ViewMode = 'grid' | 'list'
 function 演示内容相同(当前: 演示文稿 | undefined, 已保存?: string): boolean {
   if (!当前 || !已保存) return false
   try {
-    const 快照 = JSON.parse(已保存)
-    if (!快照 || !Array.isArray(快照.幻灯片列表)) return false
-    return JSON.stringify({ ...当前, 当前索引: 0 }) === JSON.stringify({ ...快照, 当前索引: 0 })
+    return 演示内容快照(迁移演示文稿(当前)) === 演示内容快照(迁移演示文稿(JSON.parse(已保存)))
   } catch { return false }
 }
 
@@ -463,6 +462,16 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
             (文档.type === 'table' && Array.isArray(数据.表格文档模型?.[文档.id]) && 数据.表格文档模型![文档.id].length > 0 && 数据.表格文档模型![文档.id].every(是工作表模型)) ||
             (文档.type === 'ppt' && Array.isArray(数据.演示文档模型?.[文档.id]?.幻灯片列表))))
         if (!有效文档) throw new Error('备份内容缺少表格或演示模型，已阻止加载不完整的编辑状态')
+        const 已迁移演示: Record<string, 演示文稿> = {}
+        for (const 文档 of 文字表格演示) {
+          if (文档.type !== 'ppt') continue
+          try {
+            已迁移演示[文档.id] = 迁移演示文稿(数据.演示文档模型?.[文档.id])
+            if (文档.已保存模型) 迁移演示文稿(JSON.parse(文档.已保存模型))
+          } catch (错误) {
+            throw new Error(`无法恢复「${文档.name}」：${错误 instanceof Error ? 错误.message : '演示模型无效'}`)
+          }
+        }
         const PDF读取结果 = await Promise.allSettled(PDF元数据.map(async (记录): Promise<PdfDocument> => {
           if (typeof 记录?.id !== 'string' || typeof 记录.name !== 'string' ||
               (记录.path !== null && typeof 记录.path !== 'string')) {
@@ -508,7 +517,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         setWorkspaceOrder([...恢复顺序, ...[...文字表格演示.map((文档) => 文档.id), ...有效PDF.map((文档) => 文档.id)].filter((标识) => !恢复顺序.includes(标识))])
         set文档路径状态(数据.文档路径 ?? {})
         set表格文档模型(数据.表格文档模型 ?? {})
-        set演示文档模型(数据.演示文档模型 ?? {})
+        set演示文档模型(已迁移演示)
         const 恢复模块 = 数据.activeModule === 'home' ? 'home'
           : 数据.activeModule === 'pdf' && 当前PDF ? 'pdf'
             : 当前文档?.type ?? (当前PDF ? 'pdf' : 'home')
@@ -657,7 +666,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       if (初始内容 === undefined || 初始内容 === null) {
         新演示 = 创建演示文稿()
       } else if (typeof 初始内容 === 'object' && Array.isArray((初始内容 as 演示文稿).幻灯片列表)) {
-        新演示 = 初始内容 as 演示文稿
+        新演示 = 迁移演示文稿(初始内容)
       } else {
         throw new Error('演示文稿内容格式无效，文件未打开')
       }
@@ -839,7 +848,13 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     set演示文档模型((当前) => {
       const 原值 = 当前[标识]
       if (!原值) throw new Error('演示编辑状态缺失，已阻止覆盖文件')
-      return { ...当前, [标识]: typeof 更新 === 'function' ? 更新(原值) : 更新 }
+      const 新值 = typeof 更新 === 'function' ? 更新(原值) : 更新
+      try {
+        return { ...当前, [标识]: 迁移演示文稿(新值) }
+      } catch (错误) {
+        弹窗.warning({ title: '演示修改已阻止', content: 错误 instanceof Error ? 错误.message : '演示模型无效' })
+        return 当前
+      }
     })
   }
 

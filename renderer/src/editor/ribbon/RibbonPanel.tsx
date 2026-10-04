@@ -15,6 +15,7 @@ interface Props {
   获取激活态?: (命令标识: string) => boolean
   /** 查询命令是否不可用 */
   获取禁用态?: (命令标识: string) => boolean
+  获取禁用原因?: (命令标识: string) => string | undefined
   /** 查询下拉按钮当前应展示的值 */
   获取当前值?: (命令标识: string) => string | undefined
   /** 下拉浮层打开前触发，用于保存编辑区选区快照 */
@@ -27,6 +28,7 @@ const RibbonPanel = ({
   onCommand,
   获取激活态,
   获取禁用态,
+  获取禁用原因,
   获取当前值,
   onDropdownOpen,
 }: Props) => {
@@ -50,6 +52,7 @@ const RibbonPanel = ({
             size: 项.kind === 'small' ? 'small' : 'large',
             active: 获取激活态 ? 获取激活态(项.commandId) : false,
             disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,
+            disabledReason: 获取禁用原因?.(项.commandId),
             currentValue: 项.options !== undefined ? (获取当前值 ? 获取当前值(项.commandId) : 项.currentValue) : undefined,
             options: 项.options,
             onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
