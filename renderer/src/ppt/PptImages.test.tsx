@@ -6,6 +6,7 @@ import { AppProvider, useAppStore, type AppState } from '../store'
 import PptEditor from './PptEditor'
 import { 创建演示文稿 } from './deck'
 import { 解码图片文件 } from './model/imageImport'
+import { 标记放映开始 } from './presentationState'
 vi.mock('./model/imageImport',()=>({ 解码图片文件:vi.fn() }))
 const 指纹='a'.repeat(64), 数据='AQID'
 afterEach(()=>{Reflect.deleteProperty(window,'electronAPI');vi.clearAllMocks();vi.unstubAllGlobals()})
@@ -13,6 +14,7 @@ async function 装配() {
   const 添加=vi.fn(async()=>({成功:true,标识:指纹,字节数:3,类型:'image/png'})),写入=vi.fn(async(_模型: unknown)=>({成功:true,数据:'文稿字节'}))
   Object.defineProperty(window,'electronAPI',{configurable:true,value:{
     backupLoad:vi.fn(async()=>({成功:true,内容:null})),recentAdd:vi.fn(async()=>({成功:true})),showSaveDialog:vi.fn(async()=> 'E:\\Temp\\图片测试.pptx'),saveToFile:vi.fn(async()=>({成功:true})),
+    enterSlideshowFullscreen:vi.fn(async()=>({成功:true,会话标识:'测试放映'})),exitSlideshowFullscreen:vi.fn(async()=>({成功:true})),onSlideshowEnded:vi.fn(()=>()=>{}),
     presentationResources:{add:添加,read:vi.fn(async()=>({成功:true,数据})),dropTemporary:vi.fn(async()=>({成功:true})),sync:vi.fn(async()=>({成功:true})),release:vi.fn(async()=>({成功:true})),export:vi.fn(async()=>({成功:true,条目:[{标识:指纹,类型:'image/png',数据}]}))},office:{writePptx:写入}
   }})
   vi.mocked(解码图片文件).mockResolvedValue({数据,类型:'image/png',宽:800,高:400})
@@ -24,6 +26,36 @@ async function 装配() {
   return { ...视图,添加,写入,状态:()=>状态,读取文稿:()=>状态.演示文档模型[状态.activeDocumentId!] }
 }
 describe('图片输入与保存闭环',()=>{
+  it('放映对话框焦点下图片粘贴不修改后台正文',async()=>{
+    const {读取文稿,添加}=await 装配(),之前=读取文稿()
+    fireEvent.keyDown(document,{key:'F5'})
+    const 放映=await screen.findByRole('dialog',{name:'幻灯片放映'})
+    fireEvent.paste(放映,{clipboardData:{files:[new File(['字节'],'图片.png')]}})
+    await act(async()=>{})
+    expect(添加).not.toHaveBeenCalled();expect(读取文稿()).toEqual(之前)
+  })
+  it.each(['放映','预览'])('图片处理中进入%s中止并释放暂存资源',async 场景=>{
+    const {读取文稿,添加}=await 装配(),之前=读取文稿()
+    let 完成!: (值:{成功:boolean;标识:string;字节数:number;类型:string})=>void
+    添加.mockImplementationOnce(()=>new Promise<{成功:boolean;标识:string;字节数:number;类型:string}>(resolve=>{完成=resolve}))
+    fireEvent.paste(document.body,{clipboardData:{files:[new File(['字节'],'图片.png')]}})
+    await waitFor(()=>expect(添加).toHaveBeenCalled())
+    let 释放:(()=>void)|undefined
+    if(场景==='放映') { fireEvent.keyDown(document,{key:'F5'});await screen.findByRole('dialog',{name:'幻灯片放映'}) }
+    else act(()=>{释放=标记放映开始()})
+    try {
+      await act(async()=>完成({成功:true,标识:指纹,字节数:3,类型:'image/png'}))
+      expect(await screen.findByText('图片处理期间已进入放映或预览，请返回编辑后重新插入')).toBeInTheDocument()
+      expect(读取文稿()).toEqual(之前)
+      expect(window.electronAPI!.presentationResources!.dropTemporary).toHaveBeenCalledWith(指纹)
+    } finally { if(释放) act(释放) }
+  })
+  it('共享预览活动期间图片粘贴不启动解码',async()=>{
+    const {读取文稿,添加}=await 装配(),之前=读取文稿()
+    let 释放!:()=>void;act(()=>{释放=标记放映开始()})
+    try {fireEvent.paste(document.body,{clipboardData:{files:[new File(['字节'],'图片.png')]}});await act(async()=>{});expect(添加).not.toHaveBeenCalled();expect(读取文稿()).toEqual(之前)}
+    finally {act(释放)}
+  })
   it('处理期间正文变动或开启只读均中止，释放暂存引用',async()=>{
     const {读取文稿,添加,状态}=await 装配()
     let 完成!: (值: {成功:boolean;标识:string;字节数:number;类型:string})=>void

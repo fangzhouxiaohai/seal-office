@@ -6,6 +6,8 @@ const { 读取关系 } = require('./relations')
 const { 读取部件 } = require('./parts')
 
 const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
+const 布尔真值 = 值 => ['1','true'].includes(值)
+const 锁定属性未保真 = 属性表 => Object.entries(属性表).some(([键,值]) => !['noMove','noResize'].includes(键) || !['0','1','false','true'].includes(值)) || 布尔真值(属性表.noMove) !== 布尔真值(属性表.noResize)
 const 编码标识 = 标识 => `seal-id:${Buffer.from(标识, 'utf8').toString('base64url')}`
 const 解码标识 = (名称, 后备) => 名称?.startsWith('seal-id:') ? Buffer.from(名称.slice(8), 'base64url').toString('utf8') : 后备
 const 转EMU = 值 => Math.round(值 * 12700)
@@ -141,8 +143,8 @@ async function 读取图片对象(包, 路径, xml) {
     const 裁剪值 = { 左: Number(属性(裁剪, 'l') ?? 0) / 100000, 上: Number(属性(裁剪, 't') ?? 0) / 100000, 右: Number(属性(裁剪, 'r') ?? 0) / 100000, 下: Number(属性(裁剪, 'b') ?? 0) / 100000 }
     const 属性标签 = 内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? ''
     const 锁标签 = 内容.match(/<a:picLocks\b[^>]*>/)?.[0] ?? ''
-    const 锁定值 = 键 => ['1','true'].includes(属性(锁标签, 键))
-    if (Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g)).some(项 => !['noMove','noResize'].includes(项[1]) || !['0','1','false','true'].includes(项[2])) || 锁定值('noMove') !== 锁定值('noResize')) 警告.push('图片锁定属性未完整导入')
+    const 锁定值 = 键 => 布尔真值(属性(锁标签, 键))
+    if (锁定属性未保真(Object.fromEntries(Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g),项=>[项[1],项[2]])))) 警告.push('图片锁定属性未完整导入')
     const 旋转 = Number(属性(变换, 'rot') ?? 0) / 60000
     if (/\bflip[HV]="(?:1|true)"|<a:(?:effectLst|effectDag|tile|duotone|lum|alphaModFix|ln|custGeom)\b|<a:prstGeom\b[^>]*prst="(?!rect")/.test(内容)) 警告.push('图片效果未完整导入')
     const 填充区域 = 内容.match(/<a:fillRect\b[^>]*>/)?.[0] ?? ''
@@ -166,7 +168,10 @@ async function 读取图片对象(包, 路径, xml) {
     }
     if (!栈.length) return
     const 当前 = 栈[栈.length - 1]
-    if (标签.name === 'a:grpSpLocks' && 标签.attributes.noMove === '1') 当前.锁定 = true
+    if (标签.name === 'a:grpSpLocks') {
+      if (布尔真值(标签.attributes.noMove)) 当前.锁定 = true
+      if (锁定属性未保真(标签.attributes)) 警告.push('组合锁定属性未完整导入')
+    }
     if (标签.name === 'p:cNvPr') {
       const 标识 = 解码标识(标签.attributes.name, `image-${路径}-${标签.attributes.id}`)
       if (!当前.id) 当前.id = 标识

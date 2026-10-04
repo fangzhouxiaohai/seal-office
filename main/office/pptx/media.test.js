@@ -14,6 +14,22 @@ const 头 = Buffer.from([0,0,0,1,0,0,0,1,8,6,0,0,0])
 const 图片 = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), 块('IHDR', 头), 块('IDAT', zlib.deflateSync(Buffer.from([0,255,0,0,255]))), 块('IEND', Buffer.alloc(0))])
 
 describe('原生图片关系', () => {
+  it.each(['noMove="true" noResize="true"',"noMove='true' noResize='true'"] )('组合合法布尔锁定 %s 两轮读写保留',async 属性=>{
+    const {写入pptx,读取pptx}=require('../pptxCodec')
+    const 标识=crypto.createHash('sha256').update(图片).digest('hex'),资源条目=[{标识,类型:'image/png',数据:图片.toString('base64')}]
+    const 包=await JSZip.loadAsync(await 写入pptx({幻灯片:[{id:'页',背景色:'#FFFFFF',文本框:[],对象列表:[{id:'组合',类型:'组合',x:0,y:0,width:80,height:60,锁定:true,子对象标识:['图']},{id:'图',类型:'图片',x:0,y:0,width:80,height:60,资源标识:标识}]}],资源条目}))
+    const 路径='ppt/slides/slide1.xml';包.file(路径,(await 包.file(路径).async('string')).replace(/<a:grpSpLocks[^>]*\/>/,`<a:grpSpLocks ${属性}/>`))
+    let 结果=await 读取pptx(await 包.generateAsync({type:'nodebuffer'}))
+    expect(结果.警告).toEqual([]);expect(结果.演示文稿.幻灯片列表[0].对象列表.find(项=>项.id==='组合').锁定).toBe(true)
+    结果=await 读取pptx(await 写入pptx({幻灯片:结果.演示文稿.幻灯片列表.map(页=>({...页,文本框:页.文本框列表})),资源条目:结果.资源条目}))
+    expect(结果.警告).toEqual([]);expect(结果.演示文稿.幻灯片列表[0].对象列表.find(项=>项.id==='组合').锁定).toBe(true)
+  })
+  it.each(['noMove="0" noResize="1"','noMove="1" noResize="0"','noMove="false" noResize="true"','noMove="0" noResize="0" noRot="true"'])('组合不可表达锁定 %s 产生风险',async 属性=>{
+    const 包=new JSZip();包.file('[Content_Types].xml','<Types></Types>')
+    const 标识=crypto.createHash('sha256').update(图片).digest('hex'),路径='ppt/slides/slide1.xml'
+    const xml=await 写入图片对象(包,路径,'<p:sld><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>',[{id:'组合',类型:'组合',x:0,y:0,width:80,height:60,子对象标识:['图']},{id:'图',类型:'图片',x:0,y:0,width:80,height:60,资源标识:标识}],[{标识,类型:'image/png',数据:图片.toString('base64')}])
+    expect((await 读取图片对象(包,路径,xml.replace(/<a:grpSpLocks[^>]*\/>/,`<a:grpSpLocks ${属性}/>`))).警告).toContain('组合锁定属性未完整导入')
+  })
   it.each(['flipH="true"','flipV="true"','flipH="1"',"flipH='true'"])('真实文件的未保真翻转 %s 产生风险',async 属性 => {
     const {写入pptx,读取pptx}=require('../pptxCodec')
     const 标识=crypto.createHash('sha256').update(图片).digest('hex')

@@ -33,6 +33,7 @@ import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import { 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
+import { 使用放映状态 } from './presentationState'
 
 /** 取路径中的文件名，供最近文档记录使用 */
 const 基准名 = (路径: string): string => {
@@ -78,7 +79,6 @@ const PptEditor = () => {
   const 图片输入 = useRef<HTMLInputElement>(null)
   const 插入中 = useRef(false)
   const 当前标识引用 = useRef(activeDocumentId); 当前标识引用.current = activeDocumentId
-  const 插图状态 = useRef({ 文稿, 只读 }); 插图状态.current = { 文稿, 只读 }
   const 图片引用键 = JSON.stringify([...new Set(收集演示资源标识(文稿))])
   useEffect(() => {
     let 取消 = false
@@ -117,6 +117,9 @@ const PptEditor = () => {
   const [选中结束, set选中结束] = useState<number | undefined>(undefined)
   /** 放映状态：放映中显示全屏视图，索引独立于编辑器的当前页 */
   const [放映中, set放映中] = useState(false)
+  const 活动预览 = 使用放映状态()
+  const 插图状态 = useRef({ 文稿, 只读, 禁止插图: 放映中 || 活动预览 })
+  插图状态.current = { 文稿, 只读, 禁止插图: 放映中 || 活动预览 }
   const [放映索引, set放映索引] = useState(0)
   /** 下拉框打开时保存的选区快照，防止焦点转移导致选区丢失 */
   const 选区快照 = useRef<{ 起始?: number; 结束?: number } | null>(null)
@@ -310,7 +313,7 @@ const PptEditor = () => {
     } catch (错误) { 显示文件错误('对象操作失败', 错误 instanceof Error ? 错误.message : '对象操作失败') }
   }
   const 插入图片 = async (文件列表: File[]) => {
-    if (只读 || !当前幻灯片 || !文件列表.length || 插入中.current) return
+    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !文件列表.length || 插入中.current) return
     插入中.current = true
     const 临时引用: string[] = []
     try {
@@ -325,6 +328,7 @@ const PptEditor = () => {
         对象列表.push({ id, 类型: '图片', x: (960 - width) / 2, y: (540 - height) / 2, width, height, 资源标识: 结果.标识 }); 新标识.push(id)
       }
       if (当前标识引用.current !== activeDocumentId) throw new Error('图片处理期间文档已切换，请重新插入')
+      if (插图状态.current.禁止插图) throw new Error('图片处理期间已进入放映或预览，请返回编辑后重新插入')
       if (插图状态.current.只读) throw new Error('图片处理期间已开启只读，请关闭只读后重新插入')
       if (插图状态.current.文稿 !== 文稿 || !插图状态.current.文稿.幻灯片列表.some(页 => 页.id === 当前幻灯片.id)) throw new Error('图片处理期间文稿已变化，请重新插入')
       更新文稿({ ...更新幻灯片(文稿, 当前幻灯片.id, { 对象列表 }), 资源索引 })
@@ -343,7 +347,7 @@ const PptEditor = () => {
   useEffect(() => {
     const 粘贴 = (事件: ClipboardEvent) => {
       const 目标 = 事件.target instanceof Element ? 事件.target : null
-      if (目标?.closest('input,textarea,[contenteditable="true"],[role="textbox"]') || 插图状态.current.只读) return
+      if (目标?.closest('input,textarea,[contenteditable="true"],[role="textbox"]') || 插图状态.current.只读 || 插图状态.current.禁止插图) return
       const 文件 = Array.from(事件.clipboardData?.files ?? [])
       if (文件.length) { 事件.preventDefault(); void 图片粘贴引用.current(文件) }
     }
