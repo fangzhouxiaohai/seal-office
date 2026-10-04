@@ -1298,5 +1298,29 @@
         "备份成功": true
       }
     }
-  ]
+  ],
+  "发布": {
+    "状态": "已公开",
+    "发布页": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.0",
+    "版本标签": "v1.7.0",
+    "源码提交": "8da5d20b22fe20c7588906e8cf9a5c8baa684e62",
+    "发布时间": "2026-10-04T12:20:14Z",
+    "匿名公开接口核对": "通过",
+    "发布说明与本地一致": true,
+    "附件大小与SHA256核对": "两项均通过",
+    "附件": [
+      {
+        "name": "SealOffice.1.7.0.exe",
+        "size": 88016904,
+        "digest": "sha256:05c030fc328149c125ea6904424e3e371517845df3821cf4ade4238371003cf9",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.0/SealOffice.1.7.0.exe"
+      },
+      {
+        "name": "SealOffice.Setup.1.7.0.exe",
+        "size": 88242573,
+        "digest": "sha256:6efe26d06f6556ff50d7d122ffa97fb1f2ad5e7351fe647fe9aff93855c61faf",
+        "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.0/SealOffice.Setup.1.7.0.exe"
+      }
+    ]
+  }
 }
