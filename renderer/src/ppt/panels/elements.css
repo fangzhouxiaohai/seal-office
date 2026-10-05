@@ -21,3 +21,11 @@
 .wps-ppt-element-members button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wps-ppt-element-members p { color: var(--text-2); line-height: 1.5; }
 @media (max-width: 480px) { .wps-ppt-element__grid { grid-template-columns: 1fr; } }
+.wps-ppt-chart-panel__table { overflow: auto; max-height: 320px; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.wps-ppt-chart-panel table { border-collapse: collapse; min-width: 100%; }
+.wps-ppt-chart-panel :is(th,td) { min-width: 96px; padding: var(--space-1); border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+.wps-ppt-chart-panel th { position: sticky; top: 0; background: var(--bg-card); }
+.wps-ppt-chart-panel th input, .wps-ppt-chart-panel th button { margin-bottom: var(--space-1); }
+.wps-ppt-chart-panel .wps-ppt-chart-panel__apply { background: var(--brand); color: var(--text-inverse, #fff); }
+
+.wps-ppt-chart-panel .wps-ppt-chart-panel__apply:hover:enabled { background: var(--brand); color: var(--text-inverse, #fff); }

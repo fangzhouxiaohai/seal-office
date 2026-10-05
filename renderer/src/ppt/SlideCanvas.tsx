@@ -90,7 +90,7 @@ export default function SlideCanvas(属性: Props) {
           {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
         </div>)}
         {绘制列表.map(对象 => {
-          if (!['图片','组合','图形','表格'].includes(对象.类型)) return null
+          if (!['图片','组合','图形','表格','图表'].includes(对象.类型)) return null
           const 根 = 页.对象列表!.find(项 => 项.id === 顶层(对象.id))!, 选中 = 选中对象.includes(对象.id), 几何 = { ...对象, ...预览[对象.id] }
           if (对象.类型 === '组合' && !选中) return null
           return <div key={对象.id} data-对象标识={对象.id} className={`wps-ppt-image${选中 ? ' wps-ppt-image--selected' : ''}`} style={{ ...对象样式(几何), pointerEvents: 对象.类型 === '组合' ? 'none' : 'auto' }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, 选中对象.includes(对象.id) ? 对象 : 根)}>

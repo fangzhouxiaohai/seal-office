@@ -1,3 +1,5 @@
+import { 校验图表, 图表配色 } from '../../../../main/office/pptx/chartData.js'
+export { 图表配色 }
 import type { 演示对象, 幻灯片 } from '../deck'
 import { 要求对象可编辑 } from './objectPermissions'
 export type 图形种类 = '矩形'|'圆角矩形'|'椭圆'|'菱形'|'三角形'|'箭头'|'星形'|'爱心'|'艺术字'|'连接线'
@@ -95,6 +97,7 @@ export function 添加语义连线(页: 幻灯片, 组标识: string, 起点: st
 
 /** 保存前完整校验结构，未知字段或损坏单元格不能以默认数据替代。 */
 export function 校验原生元素(对象: 演示对象): void {
+  if (对象.类型 === '图表') 校验图表数据(对象)
   const 颜色 = (值: unknown) => typeof 值 === 'string' && /^#[0-9a-f]{6}$/i.test(值)
   const 字段 = (值: unknown, 允许: string[]) => { if (!值 || typeof 值 !== 'object' || Object.keys(值).some(键 => !允许.includes(键))) throw new Error('原生对象含未知属性，已阻止有损保存') }
   if (对象.类型 === '图形') {
@@ -131,4 +134,34 @@ export function 校验原生元素(对象: 演示对象): void {
     let 当前 = { ...对象, 表格: { ...表, 合并: [] } } as 演示对象
     for (const 并 of 表.合并) { 字段(并,['行','列','行数','列数']); 当前 = 合并单元格(当前,并.行,并.列,并.行数,并.列数) }
   }
+}
+
+export type 图表种类 = '柱状图'|'折线图'|'饼图'
+export interface 图表系列 { id: string; 名称: string; 数值: number[]; 颜色: string }
+export interface 图表数据 { 种类: 图表种类; 标题: string; 分类: string[]; 系列: 图表系列[]; 图例: '下'|'右'|'无'; 横轴标题: string; 纵轴标题: string; 显示横轴: boolean; 显示纵轴: boolean; 数值格式: '0'|'0.00'|'0%'|'0.00%'|'#,##0' }
+export function 创建图表(种类: 图表种类): 演示对象 {
+  const 对象: 演示对象 = { id: 标识(), 类型: '图表', x: 120, y: 80, width: 600, height: 360, 图表: { 种类, 标题: '季度收入', 分类: ['第一季度','第二季度','第三季度'], 系列: [{id:'series-0',名称:'收入',数值:[12,24,18],颜色:图表配色[0]}], 图例:'下', 横轴标题:'',纵轴标题:'',显示横轴:true,显示纵轴:true,数值格式:'0' } }
+  校验图表数据(对象)
+  return 对象
+}
+export function 校验图表数据(对象: 演示对象): void { 校验图表(对象) }
+export function 修改图表(对象: 演示对象, 图表: 图表数据): 演示对象 {
+  if (对象.类型 !== '图表') throw new Error('请选择图表')
+  const 新对象 = { ...对象, 图表 }; 校验图表数据(新对象); return 新对象
+}
+export function 添加图表系列(对象: 演示对象): 演示对象 {
+  const 图 = 对象.图表
+  if (!图) throw new Error('请选择图表')
+  const 编号 = Math.max(...图.系列.map(项=>Number(项.id.slice(7))))+1
+  return 修改图表(对象,{...图,系列:[...图.系列,{id:`series-${编号}`,名称:`系列${编号+1}`,数值:图.分类.map(()=>0),颜色:图表配色[图.系列.length%图表配色.length]}]})
+}
+export function 删除图表系列(对象: 演示对象, id: string): 演示对象 {
+  const 图 = 对象.图表
+  if (!图 || !图.系列.some(项=>项.id===id)) throw new Error('图表系列不存在')
+  if (图.系列.length===1) throw new Error('图表至少保留一个系列')
+  return 修改图表(对象,{...图,系列:图.系列.filter(项=>项.id!==id)})
+}
+export function 格式化图表数值(值: number, 格式: 图表数据['数值格式']): string {
+  const 百分比=格式.includes('%'),小数=格式.includes('.00')?2:0
+  return (百分比?值*100:值).toLocaleString('zh-CN',{useGrouping:格式.includes(','),minimumFractionDigits:小数,maximumFractionDigits:小数})+(百分比?'%':'')
 }

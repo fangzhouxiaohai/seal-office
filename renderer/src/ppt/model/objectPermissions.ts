@@ -17,7 +17,7 @@ export function 对象可以移动(页: 幻灯片, id: string): boolean {
   return (页.对象列表?.find(项 => 项.id === id)?.子对象标识 ?? []).every(子 => 对象可以移动(页,子))
 }
 export function 对象支持旋转(对象: 演示对象): boolean {
-  return 对象.类型 !== '表格' && 对象.类型 !== '组合' && !对象.连接
+  return 对象.类型 !== '图表' && 对象.类型 !== '表格' && 对象.类型 !== '组合' && !对象.连接
 }
 export function 要求对象可编辑(页: 幻灯片, 标识: string[]): void {
   if (标识.some(id => !对象可以移动(页,id))) throw new Error('对象或其组合已锁定，请先解锁所属组合及成员')

@@ -251,9 +251,9 @@ async function 读取pptx(数据) {
         !/(?:<p:spTree\b[^>]*\/>|<p:spTree\b[^>]*>[\s\S]*<\/p:spTree>)/i.test(xml)) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
-    收集幻灯片警告(读取原生对象(xml).剩余, 警告)
-    const 幻灯片 = 解析幻灯片Xml(读取原生对象(xml).剩余, 幻灯片列表.length, 页面标识)
     const 图片 = await 读取图片对象(压缩包, 名称, xml)
+    收集幻灯片警告(读取原生对象(图片.图表剩余).剩余, 警告)
+    const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识)
     if (图片.对象列表.length) 幻灯片.对象列表 = 图片.对象列表
     for (const 资源 of 图片.资源条目) 资源表.set(资源.标识, 资源)
     for (const 原因 of 图片.警告) 警告.add(原因)
@@ -369,7 +369,7 @@ async function 写入pptx(模型) {
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
   }
-  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
       (Array.isArray(项.图片) && 项.图片.length > 0) ||
       (Array.isArray(项.图表) && 项.图表.length > 0) ||
       (Array.isArray(项.媒体) && 项.媒体.length > 0))) {

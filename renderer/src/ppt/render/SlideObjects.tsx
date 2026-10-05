@@ -1,3 +1,4 @@
+import { ChartRenderer } from './ChartRenderer'
 import React from 'react'
 import { App as AntdApp } from 'antd'
 import type { 幻灯片, 文本框, 演示对象 } from '../deck'
@@ -7,6 +8,7 @@ import { TableRenderer } from './TableRenderer'
 export function 对象内容({ 对象, 图片地址 = {} }: { 对象: 演示对象; 图片地址?: 图片地址表 }) {
   if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
   if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
+  if (对象.类型 === '图表') return <ChartRenderer 对象={对象}/>
   if (对象.类型 === '表格') return <TableRenderer 对象={对象}/>
   return null
 }

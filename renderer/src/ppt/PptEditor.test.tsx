@@ -562,10 +562,10 @@ describe('演示文稿编辑器容器', () => {
     expect(container.querySelectorAll('.wps-ppt-thumb')).toHaveLength(2)
   })
 
-  it('图表未完成往返前入口禁用', async () => {
+  it('原生图表通过往返验证后入口可用', async () => {
     渲染演示()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    expect(screen.getByRole('button', { name: '图表' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '图表' })).toBeEnabled()
   })
 
   it('点击缩略图切换当前幻灯片', async () => {

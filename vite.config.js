@@ -24,7 +24,7 @@ export default defineConfig({
   build: {
     target: 'chrome114',
     // 图片签名与尺寸校验由浏览器和主进程共用同一个纯函数模块。
-    commonjsOptions: { include: [/node_modules/, /main[\\/]office[\\/]imageData\.js$/] },
+    commonjsOptions: { include: [/node_modules/, /main[\\/]office[\\/]imageData\.js$/, /main[\\/]office[\\/]pptx[\\/]chartData\.js$/] },
     // 构建产物输出到项目根目录的 dist
     outDir: '../dist',
     emptyOutDir: true,

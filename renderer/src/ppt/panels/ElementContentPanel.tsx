@@ -1,3 +1,4 @@
+import ChartDataPanel from './ChartDataPanel'
 import { useState } from 'react'
 import { App as AntdApp } from 'antd'
 import type { 演示对象 } from '../deck'
@@ -7,6 +8,7 @@ export default function ElementContentPanel({ 对象, 禁用, on替换 }: { 对�
   const { modal } = AntdApp.useApp()
   const [行, set行] = useState(0), [列,set列] = useState(0), [行数,set行数] = useState(1), [列数,set列数] = useState(2)
   const 操作 = (执行: () => 演示对象) => { try { on替换(执行()) } catch (错) { modal.error({ title: '对象编辑失败', content: 错 instanceof Error ? 错.message : '对象内容无效' }) } }
+  if (对象.图表) return <ChartDataPanel 对象={对象} 禁用={禁用} on替换={on替换}/>
   if (对象.形状 && !对象.连接) {
     const 形 = 对象.形状
     return <fieldset className="wps-ppt-element" disabled={禁用}><legend>{形.种类 === '艺术字' ? '艺术字' : '图形内容'}</legend>

@@ -1,3 +1,4 @@
+const { 准备图表, 图框Xml, 读取图表 } = require('./charts')
 const { 写入原生对象, 读取原生对象 } = require('./elements')
 const crypto = require('crypto')
 const path = require('path')
@@ -84,6 +85,7 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   const 关系路径 = path.posix.join(path.posix.dirname(路径), '_rels', `${path.posix.basename(路径)}.rels`)
   let 关系Xml = 包.file(关系路径) ? await 包.file(关系路径).async('string') : '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
   let 类型Xml = await 读取部件(包, '[Content_Types].xml').async('string')
+  const 图表部件 = await 准备图表(包, 路径, 对象列表)
   let 编号 = Math.max(1, ...Array.from(xml.matchAll(/<p:cNvPr\b[^>]*id="(\d+)"/g), 项 => Number(项[1]))) + 1
   const 成员 = new Set(对象列表.flatMap(项 => 项.类型 === '组合' ? 项.子对象标识 ?? [] : []))
   const 原生标识 = new Map()
@@ -96,6 +98,13 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
       const 子对象 = (对象.子对象标识 ?? []).map(id => 对象列表.find(项 => 项.id === id))
       if (!子对象.length || 子对象.some(项 => !项)) throw new Error('组合对象成员缺失')
       return `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${编号++}" name="${编码标识(对象.id)}"${对象.语义类型 ? ` descr="seal-diagram:${对象.语义类型}"` : ''}/><p:cNvGrpSpPr><a:grpSpLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvGrpSpPr><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/><a:chOff x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:chExt cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm></p:grpSpPr>${子对象.map(生成).join('')}</p:grpSp>`
+    }
+    if (对象.类型 === '图表') {
+      const 名称 = 图表部件.get(对象.id), 关系标识 = `sealChart${编号}`
+      关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${关系标识}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/${名称}.xml"/></Relationships>`)
+      类型Xml = 类型Xml.replace('</Types>', `<Override PartName="/ppt/charts/${名称}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`)
+      if (!类型Xml.includes('Extension="xlsx"')) 类型Xml = 类型Xml.replace('</Types>', '<Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/></Types>')
+      return 图框Xml(对象,编号++,关系标识)
     }
     if (['图形','表格'].includes(对象.类型)) return 写入原生对象(对象, 编号++, 原生标识)
     if (对象.类型 !== '图片') throw new Error('当前不能保真保存此对象，已阻止有损保存')
@@ -122,7 +131,8 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
 async function 读取图片对象(包, 路径, xml) {
   const 关系 = await 读取关系(包, 路径)
   const 原生 = 读取原生对象(xml)
-  const 对象列表 = [...原生.对象列表], 资源表 = new Map(), 警告 = [...原生.警告]
+  const 图表 = await 读取图表(包, 路径, xml)
+  const 对象列表 = [...原生.对象列表,...图表.对象列表], 资源表 = new Map(), 警告 = [...原生.警告,...图表.警告]
   const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b/g), 项 => 项.index)
   if (首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)) 警告.push('图片与文字图层未完整导入')
   if (/<p:pic\b[^>]*\/>/.test(xml)) 警告.push('图片未导入')
@@ -199,7 +209,7 @@ async function 读取图片对象(包, 路径, xml) {
     else 对象列表.push(组合)
   }
   对象列表.sort((甲, 乙) => 顺序.indexOf(甲.id) - 顺序.indexOf(乙.id))
-  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告 }
+  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告, 图表剩余: 图表.剩余 }
 }
 
 module.exports = { 检查图片字节, 读取图片对象, 写入图片对象 }

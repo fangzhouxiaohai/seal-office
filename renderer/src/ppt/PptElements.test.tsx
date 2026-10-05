@@ -23,6 +23,34 @@ async function 装配(语义 = false, 初始对象?: 演示对象[]) {
   return { ...视图, 写入, 状态:()=>状态, 读取: () => 状态.演示文档模型[状态.activeDocumentId!] }
 }
 describe('原生对象编辑入口', () => {
+  it('图表插入、系列和分类编辑、设置、撤销重做与保存形成完整链路', async () => {
+    const {container,读取,写入}=await 装配()
+    await userEvent.click(screen.getByRole('tab',{name:'插入'}))
+    await userEvent.click(screen.getByRole('button',{name:'图表'}))
+    const 对象=读取().幻灯片列表[0].对象列表![0]
+    fireEvent.mouseDown(container.querySelector(`.wps-ppt-canvas [data-对象标识="${对象.id}"]`)!,{button:0});fireEvent.mouseUp(window)
+    expect(screen.getByLabelText('旋转角度')).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('图表标题'),{target:{value:'销售数据'}})
+    fireEvent.change(screen.getByLabelText('图表类型'),{target:{value:'折线图'}})
+    fireEvent.change(screen.getByLabelText('图表图例'),{target:{value:'右'}})
+    fireEvent.change(screen.getByLabelText('纵轴标题'),{target:{value:'万元'}})
+    fireEvent.change(screen.getByLabelText('图表数值格式'),{target:{value:'0.00'}})
+    await userEvent.click(screen.getByRole('button',{name:'添加系列'}))
+    await userEvent.click(screen.getByRole('button',{name:'添加分类'}))
+    fireEvent.change(screen.getByLabelText('第4行第2系列数值'),{target:{value:'18.5'}})
+    await userEvent.click(screen.getByRole('button',{name:'应用图表数据'}))
+    const 新图=读取().幻灯片列表[0].对象列表![0].图表!
+    expect(新图).toMatchObject({种类:'折线图',标题:'销售数据',图例:'右',纵轴标题:'万元',数值格式:'0.00'})
+    expect(新图.系列[1].数值[3]).toBe(18.5)
+    expect(导出为Html预览(读取(),'图表')).toContain('data-chart-type="折线图"')
+    await userEvent.click(screen.getByRole('tab',{name:'开始'}))
+    await userEvent.click(screen.getByRole('button',{name:'撤销'}))
+    expect(读取().幻灯片列表[0].对象列表![0].图表!.种类).toBe('柱状图')
+    await userEvent.click(screen.getByRole('button',{name:'重做'}))
+    expect(读取().幻灯片列表[0].对象列表![0].图表!.系列[1].数值[3]).toBe(18.5)
+    await userEvent.click(screen.getByRole('button',{name:'保存'}))
+    await waitFor(()=>expect(写入).toHaveBeenCalled())
+  })
   it('成员自身锁定后经过状态迁移和失选仍可重选解锁，编辑随之恢复', async () => {
     const {container,读取,状态}=await 装配(true)
     const 节点=读取().幻灯片列表[0].对象列表!.find(项=>项.形状?.文本==='开始')!

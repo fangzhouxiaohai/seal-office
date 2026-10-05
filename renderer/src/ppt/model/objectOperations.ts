@@ -10,7 +10,7 @@ export function 读取对象树顺序(列表: 演示对象[]): 演示对象[] {
   return 列表.filter(项 => !成员.has(项.id)).flatMap(展开)
 }
 export function 修改对象(页: 幻灯片, 标识: string[], 修改: 几何修改): 幻灯片 {
-  if (修改.旋转 !== undefined && (页.对象列表 ?? []).some(项 => 标识.includes(项.id) && !对象支持旋转(项))) throw new Error('选中的表格、组合或连接线暂不支持旋转')
+  if (修改.旋转 !== undefined && (页.对象列表 ?? []).some(项 => 标识.includes(项.id) && !对象支持旋转(项))) throw new Error('选中的图表、表格、组合或连接线暂不支持旋转')
   if (标识.length > 1 && !(Object.keys(修改).length === 1 && 修改.锁定 === false)) 要求对象可编辑(页,标识)
   for (const 键 of ['x','y','width','height','旋转'] as const) {
     const 值 = 修改[键]

@@ -3,7 +3,7 @@ import { 读取演示命令状态 } from './commandStatus'
 
 describe('演示命令能力状态', () => {
   it('未实现入口不计为可用', () => {
-    expect(读取演示命令状态('insert.chart')).toMatchObject({ 状态: '暂不可用' })
+    expect(读取演示命令状态('insert.chart')).toMatchObject({ 状态: '可用' })
     expect(读取演示命令状态('insert.table')).toMatchObject({ 状态: '可用' })
     expect(读取演示命令状态('insert.picture')).toMatchObject({ 状态: '可用' })
     expect(读取演示命令状态('slide.new')).toMatchObject({ 状态: '可用' })

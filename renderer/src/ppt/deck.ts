@@ -1,6 +1,6 @@
 // 演示文稿数据模型：幻灯片与文本框的增删改。
 // 全部为纯函数，返回新对象，便于配合撤销重做使用。
-import type { 形状数据, 表格数据, 连接数据 } from './model/elements'
+import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './model/elements'
 
 export interface 文本片段 {
   文本: string
@@ -60,6 +60,7 @@ export type 演示对象 = {
   子对象标识?: string[]
   形状?: 形状数据
   表格?: 表格数据
+  图表?: 图表数据
   连接?: 连接数据
   语义类型?: '流程'|'层级'|'循环'|'脑图'
 }
