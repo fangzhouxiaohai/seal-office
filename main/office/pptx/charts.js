@@ -1,3 +1,4 @@
+const { 读取对象标识 } = require('./objectIds')
 const JSZip = require('jszip')
 const ExcelJS = require('exceljs')
 const sax = require('sax')
@@ -103,7 +104,7 @@ async function 读取图表(包,页路径,xml) {
     if (种类==='饼图') {const 元=后代(根,'seal:axes')[0];if (元) 坐标=JSON.parse(Buffer.from(元.属性.value,'base64url').toString('utf8'))}
     const 图={种类,标题:标题(图节点),分类,系列,图例:图例?(值(图例,'c:legendPos')==='b'?'下':'右'):'无',...坐标,数值格式:后代(系列节点[0],'c:formatCode')[0]?.文}
     const 标=后代(框,'p:cNvPr')[0],位置=后代(框,'a:off')[0]?.属性,尺寸=后代(框,'a:ext')[0]?.属性,锁=后代(框,'a:graphicFrameLocks')[0]?.属性
-    const 对象={id:标.属性.name?.startsWith('seal-id:')?Buffer.from(标.属性.name.slice(8),'base64url').toString('utf8'):`chart-${页路径}-${标.属性.id}`,类型:'图表',x:Number(位置?.x)/12700,y:Number(位置?.y)/12700,width:Number(尺寸?.cx)/12700,height:Number(尺寸?.cy)/12700,...(锁?.noMove==='1'?{锁定:true}:{}),图表:图}
+    const 对象={id:读取对象标识(标.属性.name,页路径,标.属性.id),类型:'图表',x:Number(位置?.x)/12700,y:Number(位置?.y)/12700,width:Number(尺寸?.cx)/12700,height:Number(尺寸?.cy)/12700,...(锁?.noMove==='1'?{锁定:true}:{}),图表:图}
     try {校验图表(对象)} catch(错) {throw new Error(`图表数据无法导入：${错.message}`)}
     // 比较真实原生内容；任何未支持的效果或属性都会触发来源保护。
     if (图表Xml(图)!==图Xml || 图框Xml(对象,Number(标.属性.id),图引用.属性['r:id'])!==匹配[0]) 警告.push('图表外部属性未完整导入')

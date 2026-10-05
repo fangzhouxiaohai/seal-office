@@ -1,3 +1,4 @@
+const { 读取对象标识 } = require('./objectIds')
 const { 准备图表, 图框Xml, 读取图表 } = require('./charts')
 const { 写入原生对象, 读取原生对象 } = require('./elements')
 const crypto = require('crypto')
@@ -11,7 +12,6 @@ const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}=["']([^"']*)[
 const 布尔真值 = 值 => ['1','true'].includes(值)
 const 锁定属性未保真 = 属性表 => Object.entries(属性表).some(([键,值]) => !['noMove','noResize'].includes(键) || !['0','1','false','true'].includes(值)) || 布尔真值(属性表.noMove) !== 布尔真值(属性表.noResize)
 const 编码标识 = 标识 => `seal-id:${Buffer.from(标识, 'utf8').toString('base64url')}`
-const 解码标识 = (名称, 后备) => 名称?.startsWith('seal-id:') ? Buffer.from(名称.slice(8), 'base64url').toString('utf8') : 后备
 const 转EMU = 值 => Math.round(值 * 12700)
 const 转像素 = 值 => Number(值) / 12700
 
@@ -169,7 +169,7 @@ async function 读取图片对象(包, 路径, xml) {
     if (['l','t','r','b'].some(名称 => Number(属性(填充区域, 名称) ?? 0) !== 0)) 警告.push('图片填充区域未完整导入')
     const 几何值 = [属性(位置,'x'),属性(位置,'y'),属性(尺寸,'cx'),属性(尺寸,'cy')].map(Number)
     if (!几何值.every(Number.isFinite) || 几何值[2] <= 0 || 几何值[3] <= 0 || !Number.isFinite(旋转) || Object.values(裁剪值).some(值 => !Number.isFinite(值) || 值 < 0 || 值 >= 1) || 裁剪值.左 + 裁剪值.右 >= 1 || 裁剪值.上 + 裁剪值.下 >= 1) throw new Error('图片几何或裁剪数据损坏')
-    对象列表.push({ id: 解码标识(属性(属性标签, 'name'), `image-${路径}-${属性(属性标签, 'id')}`), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识 })
+    对象列表.push({ id: 读取对象标识(属性(属性标签, 'name'), 路径, 属性(属性标签, 'id')), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识 })
   }
   // 组合按原生对象树读取；非恒等坐标变换保留风险提示，不能覆盖来源。
   const 栈 = [], 组合列表 = [], 顺序 = []
@@ -178,7 +178,7 @@ async function 读取图片对象(包, 路径, xml) {
   解析器.onopentag = 标签 => {
     if (标签.name === 'p:grpSpPr') 组合属性 = true
     if (组合属性 && !['p:grpSpPr','a:xfrm','a:off','a:ext','a:chOff','a:chExt'].includes(标签.name)) 警告.push('组合外观未完整导入')
-    if (标签.name === 'p:cNvPr') 顺序.push(解码标识(标签.attributes.name, `image-${路径}-${标签.attributes.id}`))
+    if (标签.name === 'p:cNvPr') 顺序.push(读取对象标识(标签.attributes.name, 路径, 标签.attributes.id))
     if (标签.name === 'p:grpSp') {
       const 组合 = { id: '', 类型: '组合', x: 0, y: 0, width: 0, height: 0, 子对象标识: [] }
       if (栈.length) 栈[栈.length - 1].子对象标识.push(组合)
@@ -191,7 +191,7 @@ async function 读取图片对象(包, 路径, xml) {
       if (锁定属性未保真(标签.attributes)) 警告.push('组合锁定属性未完整导入')
     }
     if (标签.name === 'p:cNvPr') {
-      const 标识 = 解码标识(标签.attributes.name, `image-${路径}-${标签.attributes.id}`)
+      const 标识 = 读取对象标识(标签.attributes.name, 路径, 标签.attributes.id)
       if (!当前.id) { 当前.id = 标识; const 语义 = 标签.attributes.descr?.replace(/^seal-diagram:/, ''); if (['流程','层级','循环','脑图'].includes(语义)) 当前.语义类型 = 语义 }
       else 当前.子对象标识.push(标识)
     }
