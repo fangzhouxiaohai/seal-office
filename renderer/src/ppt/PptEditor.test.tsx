@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+const 播放编解码器 = createRequire(import.meta.url)('../../../main/office/pptxCodec.js')
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -520,13 +522,28 @@ describe('演示文稿编辑器容器', () => {
     expect(写入.mock.calls[0][0].幻灯片[0].过渡效果).toBe('淡入淡出')
   })
 
-  it('尚未可靠保存的动画入口禁用并说明原因', async () => {
-    渲染演示()
-    await userEvent.click(screen.getByRole('tab', { name: '动画' }))
-    const 按钮 = screen.getByRole('button', { name: '出现' })
-    expect(按钮).toBeDisabled()
-    expect(按钮).toHaveAttribute('title', '此操作尚未完成文件保存与重新打开验证')
-    expect(screen.queryByText('已设置动画效果：出现')).toBeNull()
+  it('出现动画可以应用、撤销重做并经过真实编码器保存重开', async () => {
+    let 字节 = '', 状态: AppState | null = null
+    const 保存=vi.fn(async (_路径:string,内容:string)=>{字节=内容;return {成功:true}})
+    Object.defineProperty(window,'electronAPI',{configurable:true,value:{
+      backupLoad:vi.fn(async()=>({成功:true,内容:null})), saveToFile:保存,
+      showOpenDialog:vi.fn(async()=> 'E:\\Temp\\任务5重开.pptx'), readFile:vi.fn(async()=>({成功:true,二进制:true,内容:字节})), recentAdd:vi.fn(async()=>({成功:true})),
+      office:{writePptx:vi.fn(async(模型:unknown)=>({成功:true,数据:(await 播放编解码器.写入pptx(模型)).toString('base64')})),readPptx:vi.fn(async(数据:string)=>({成功:true,...await 播放编解码器.读取pptx(Buffer.from(数据,'base64'))}))}
+    }})
+    const 入口=()=>{状态=useAppStore();return <><button onClick={()=>状态!.createDoc('ppt',创建演示文稿(),{路径:'E:\\Temp\\任务5.pptx'})}>启动动画演示</button>{状态.module==='ppt'&&<PptEditor/>}</>}
+    const {container}=render(<ConfigProvider button={{autoInsertSpace:false}}><AntdApp><AppProvider><入口/></AppProvider></AntdApp></ConfigProvider>)
+    await userEvent.click(screen.getByText('启动动画演示'))
+    await userEvent.click(container.querySelector('.wps-ppt-box')!)
+    await userEvent.click(screen.getByRole('tab',{name:'动画'}))
+    const 按钮=screen.getByRole('button',{name:'出现'});expect(按钮).toBeEnabled();await userEvent.click(按钮)
+    const 取页=()=>状态!.演示文档模型[状态!.activeDocumentId!].幻灯片列表[0]
+    expect(取页().动画序列?.[0]).toMatchObject({效果:'出现',触发:'单击',对象标识:取页().文本框列表[0].id})
+    const 序列=取页().动画序列
+    await userEvent.click(screen.getByRole('tab',{name:'开始'}));await userEvent.click(screen.getByRole('button',{name:'撤销'}));expect(取页().动画序列).toBeUndefined()
+    await userEvent.click(screen.getByRole('button',{name:'重做'}));expect(取页().动画序列).toEqual(序列)
+    await userEvent.click(screen.getByRole('button',{name:'保存'}));await waitFor(()=>expect(保存).toHaveBeenCalled());expect(Buffer.from(字节,'base64').subarray(0,2).toString()).toBe('PK')
+    await userEvent.click(screen.getByRole('button',{name:'打开'}));await waitFor(()=>expect(状态!.documents.find(d=>d.id===状态!.activeDocumentId)?.name).toBe('任务5重开.pptx'))
+    expect(取页().动画序列).toEqual(序列)
   })
 
   it('渲染 Ribbon 八标签', () => {

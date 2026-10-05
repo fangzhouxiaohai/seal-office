@@ -58,7 +58,7 @@ export function SlideSorterView({ 文稿, on选中, on重排, on打开, 图片�
           onDoubleClick={() => { on选中(索引); on打开() }}
         ><SlidePreview 幻灯片={页} 图片地址={图片地址} /></button>
         <div className="wps-ppt-sorter__footer">
-          <span>第 {索引 + 1} 张</span>
+          <span>第 {索引 + 1} 张{页.隐藏 ? ' 已隐藏' : ''}</span>
           <div className="wps-ppt-sorter__actions">
             <button type="button" disabled={只读 || 索引 === 0} aria-label={`第 ${索引 + 1} 张上移`}
               onClick={(事件) => { 事件.stopPropagation(); on重排(索引, 索引 - 1) }}>上移</button>

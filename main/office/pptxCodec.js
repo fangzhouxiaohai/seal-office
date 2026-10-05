@@ -1,3 +1,5 @@
+const { 写入切换, 读取切换 } = require('./pptx/transitions')
+const { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展 } = require('./pptx/animations')
 const { 读取原生对象 } = require('./pptx/elements')
 const JSZip = require('jszip')
 const pptxgen = require('pptxgenjs')
@@ -94,18 +96,7 @@ function 收集幻灯片警告(xml, 警告) {
   }
 }
 
-function 解析过渡效果(xml) {
-  const 匹配 = xml.match(/<p:transition\b[^>]*(?:\/>|>([\s\S]*?)<\/p:transition>)/i)
-  if (!匹配) return { 存在: false, 效果: null, 风险: false }
-  const 起始标签 = 匹配[0].match(/^<p:transition\b[^>]*>/i)?.[0] ?? ''
-  const 属性可保留 = Array.from(起始标签.matchAll(/\b([\w:]+)\s*=\s*(["'])(.*?)\2/g))
-    .every((属性) => (属性[1] === 'spd' && 属性[3] === 'med') || (属性[1] === 'advClick' && 属性[3] === '1'))
-  const 内文 = (匹配[1] ?? '').trim()
-  if (!属性可保留) return { 存在: true, 效果: null, 风险: true }
-  if (/^<p:fade\s*\/>$/i.test(内文)) return { 存在: true, 效果: '淡入淡出', 风险: false }
-  if (/^<p:push\s+dir\s*=\s*(["'])l\1\s*\/>$/i.test(内文)) return { 存在: true, 效果: '推进', 风险: false }
-  return { 存在: true, 效果: null, 风险: true }
-}
+function 解析过渡效果(xml) { return 读取切换(xml) }
 
 /** 同一文本框仅能保存一套字符样式，片段之间的差异需要显式报告。 */
 function 存在混合文字样式(形状Xml) {
@@ -236,6 +227,13 @@ async function 读取pptx(数据) {
   const 幻灯片列表 = []
   const 警告 = new Set()
   const 资源表 = new Map()
+  const 放映属性 = await 压缩包.file('ppt/presProps.xml')?.async('string') ?? ''
+  const 放映节点 = 放映属性.match(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/)?.[0] ?? ''
+  if (放映节点) {
+    const 属性 = Object.fromEntries([...放映节点.slice(0,放映节点.indexOf('>')+1).matchAll(/([\w:]+)="([^"]*)"/g)].map(m=>[m[1],m[2]]))
+    const 内容 = 放映节点.replace(/^<p:showPr[^>]*>/,'').replace(/<\/p:showPr>$/,'').replace(/<p:(?:present|sldAll)\s*\/>/g,'').trim()
+    if (内容 || Object.keys(属性).some(k=>!['loop','useTimings'].includes(k)) || (属性.useTimings !== undefined && !['1','true'].includes(属性.useTimings)) || (属性.loop !== undefined && !['0','1','true','false'].includes(属性.loop))) 警告.add('全局放映设置未完整导入')
+  }
   const 尺寸标签 = 清单Xml.match(/<p:sldSz\b[^>]*\/?>/i)?.[0]
   if (尺寸标签) {
     const 宽 = Number(读取Xml属性(尺寸标签, 'cx'))
@@ -252,8 +250,14 @@ async function 读取pptx(数据) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
     const 图片 = await 读取图片对象(压缩包, 名称, xml)
-    收集幻灯片警告(读取原生对象(图片.图表剩余).剩余, 警告)
+    const 动画序列 = 读取动画(xml)
+    收集幻灯片警告(动画序列 ? 读取原生对象(图片.图表剩余).剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 读取原生对象(图片.图表剩余).剩余, 警告)
     const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识)
+    if (动画序列) 幻灯片.动画序列 = 动画序列
+    const 原生切换 = 读取切换(xml), 扩展 = 读取播放扩展(xml)
+    if (原生切换.切换 && 扩展.切换) {
+      try { if (写入切换({ 切换: 扩展.切换, 换片: 原生切换.换片 }) === 写入切换({ 切换: 原生切换.切换, 换片: 原生切换.换片 })) 幻灯片.切换 = 扩展.切换 } catch { 警告.add('幻灯片切换效果未完整导入') }
+    }
     if (图片.对象列表.length) 幻灯片.对象列表 = 图片.对象列表
     for (const 资源 of 图片.资源条目) 资源表.set(资源.标识, 资源)
     for (const 原因 of 图片.警告) 警告.add(原因)
@@ -265,6 +269,7 @@ async function 读取pptx(数据) {
   return {
     演示文稿: {
       id: 'deck-imported',
+      循环放映: /<p:showPr\b[^>]*loop="(?:1|true)"/.test(放映属性),
       name: '导入演示文稿',
       幻灯片列表,
       当前索引: 0,
@@ -302,6 +307,8 @@ function 解析幻灯片Xml(xml, 序号, 页面标识) {
     版式: 文本框列表.length > 1 ? '标题和内容' : '标题幻灯片',
     背景色,
     ...(过渡效果 ? { 过渡效果 } : {}),
+    ...(读取切换(xml).切换 ? { 切换: 读取切换(xml).切换, 换片: 读取切换(xml).换片 } : {}),
+    ...(/<p:sld\b[^>]*show="(?:0|false)"/.test(xml) ? { 隐藏: true } : {}),
     文本框列表,
   }
 }
@@ -450,36 +457,27 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.some((项) => 项.过渡效果 || 项.id || 项.文本框?.some((框) => 框.id) || 项.对象列表?.length)) return 原文件
+  if (!幻灯片列表.length && !模型.循环放映) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
-    const 效果 = 幻灯片列表[索引].过渡效果
-    const 过渡Xml = !效果 ? null : 效果 === '淡入淡出'
-      ? '<p:transition spd="med"><p:fade/></p:transition>'
-      : 效果 === '推进'
-        ? '<p:transition spd="med"><p:push dir="l"/></p:transition>'
-        : null
-    if (效果 && !过渡Xml) throw new Error(`不支持的幻灯片切换效果：${效果}`)
+    const 过渡Xml = 写入切换(幻灯片列表[索引])
     const 名称 = `ppt/slides/slide${索引 + 1}.xml`
     const 文件 = 压缩包.file(名称)
     if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
     let xml = 写入稳定标识(await 文件.async('string'), 幻灯片列表[索引], 索引)
     if (幻灯片列表[索引].对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 幻灯片列表[索引].对象列表, 模型.资源条目 ?? [])
-    if (!过渡Xml) {
-      压缩包.file(名称, xml)
-      continue
-    }
-    const 覆盖结束 = xml.lastIndexOf('</p:clrMapOvr>')
-    const 覆盖自闭合 = xml.match(/<p:clrMapOvr\b[^>]*\/>/i)
-    const 内容结束 = xml.lastIndexOf('</p:cSld>')
-    const 插入位置 = 覆盖结束 >= 0
-      ? 覆盖结束 + '</p:clrMapOvr>'.length
-      : 覆盖自闭合
-        ? 覆盖自闭合.index + 覆盖自闭合[0].length
-        : 内容结束 >= 0 ? 内容结束 + '</p:cSld>'.length : -1
-    if (插入位置 < 0 || !/<\/p:sld>/i.test(xml)) throw new Error(`生成幻灯片失败：第 ${索引 + 1} 张结构无效`)
-    xml = xml.slice(0, 插入位置) + 过渡Xml + xml.slice(插入位置)
+    const 页 = 幻灯片列表[索引]
+    if (页.隐藏 !== undefined && typeof 页.隐藏 !== 'boolean') throw new Error('隐藏页面状态无效')
+    if (页.隐藏) xml = xml.replace('<p:sld ', '<p:sld show="0" ')
+    const 动画Xml = 写入动画(xml, 页.动画序列)
+    xml = xml.replace('</p:sld>', `${过渡Xml}${动画Xml}${页.切换 || 页.动画序列 ? 写入播放扩展(页) : ''}</p:sld>`)
     压缩包.file(名称, xml)
+  }
+  if (模型.循环放映 !== undefined && typeof 模型.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
+  const 属性 = 压缩包.file('ppt/presProps.xml')
+  if (属性 && 模型.循环放映 !== undefined) {
+    const 内容 = (await 属性.async('string')).replace(/<p:presentationPr([^>]*)\/>/, '<p:presentationPr$1></p:presentationPr>').replace(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/g, '')
+    压缩包.file('ppt/presProps.xml', 内容.replace('</p:presentationPr>', `<p:showPr loop="${模型.循环放映 ? 1 : 0}" useTimings="1"><p:present/><p:sldAll/></p:showPr></p:presentationPr>`))
   }
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }

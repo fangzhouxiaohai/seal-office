@@ -32,7 +32,7 @@ export const ThumbnailList = ({ 文稿, on选中, on新建, 图片地址 }: List
             }
           },
         },
-        React.createElement('span', { className: 'wps-ppt-thumb__index' }, 索引 + 1),
+        React.createElement('span', { className: 'wps-ppt-thumb__index' }, `${索引 + 1}${幻灯片.隐藏 ? ' 已隐藏' : ''}`),
         React.createElement(
           'div',
           { className: 'wps-ppt-thumb__canvas', style: { background: 幻灯片.背景色 } },

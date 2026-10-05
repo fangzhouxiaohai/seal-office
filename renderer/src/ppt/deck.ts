@@ -1,6 +1,8 @@
 // 演示文稿数据模型：幻灯片与文本框的增删改。
 // 全部为纯函数，返回新对象，便于配合撤销重做使用。
 import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './model/elements'
+import type { 切换设置, 换片设置 } from './model/transitions'
+import type { 对象动画 } from './model/animations'
 
 export interface 文本片段 {
   文本: string
@@ -31,6 +33,10 @@ export interface 文本框 {
 export type 版式类型 = '标题幻灯片' | '标题和内容' | '空白'
 
 export interface 幻灯片 {
+  切换?: 切换设置
+  换片?: 换片设置
+  隐藏?: boolean
+  动画序列?: 对象动画[]
   id: string
   title: string
   版式: 版式类型
@@ -72,6 +78,7 @@ export interface 演示资源 {
 }
 
 export interface 演示文稿 {
+  循环放映?: boolean
   模型版本?: 2
   id: string
   name: string
@@ -179,11 +186,13 @@ export function 复制幻灯片(文稿: 演示文稿, 标识: string): 演示文
   }
   const 原幻灯片 = 文稿.幻灯片列表[下标]
   const 对象标识映射 = new Map((原幻灯片.对象列表 ?? []).map((对象) => [对象.id, 生成标识('element')]))
+  原幻灯片.文本框列表.forEach(框 => 对象标识映射.set(框.id, 生成标识('box')))
   const 副本: 幻灯片 = {
     ...原幻灯片,
+    动画序列: 原幻灯片.动画序列?.map(a => ({ ...a, id: 生成标识('animation'), 对象标识: 对象标识映射.get(a.对象标识)! })),
     id: 生成标识('slide'),
     title: `${原幻灯片.title} 副本`,
-    文本框列表: 原幻灯片.文本框列表.map((框) => ({ ...框, id: 生成标识('box') })),
+    文本框列表: 原幻灯片.文本框列表.map((框) => ({ ...框, id: 对象标识映射.get(框.id)! })),
     对象列表: 原幻灯片.对象列表?.map((对象) => ({
       ...对象,
       id: 对象标识映射.get(对象.id)!,
@@ -259,7 +268,8 @@ export function 更新幻灯片(
 
 /** 应用版式：重置文本框为该版式的初始内容 */
 export function 应用版式(文稿: 演示文稿, 标识: string, 版式: 版式类型): 演示文稿 {
-  return 更新幻灯片(文稿, 标识, { 版式, 文本框列表: 版式初始文本框(版式) })
+  const 页 = 文稿.幻灯片列表.find(项 => 项.id === 标识)
+  return 更新幻灯片(文稿, 标识, { 版式, 文本框列表: 版式初始文本框(版式), 动画序列: 页?.动画序列?.filter(a => !页.文本框列表.some(框 => 框.id === a.对象标识)) })
 }
 
 export function 添加文本框(幻灯片: 幻灯片, 文本框: 文本框): 幻灯片 {
@@ -278,7 +288,7 @@ export function 更新文本框(
 }
 
 export function 删除文本框(幻灯片: 幻灯片, 标识: string): 幻灯片 {
-  return { ...幻灯片, 文本框列表: 幻灯片.文本框列表.filter((项) => 项.id !== 标识) }
+  return { ...幻灯片, 动画序列: 幻灯片.动画序列?.filter(a => a.对象标识 !== 标识), 文本框列表: 幻灯片.文本框列表.filter((项) => 项.id !== 标识) }
 }
 
 /** 把文本框约束在画布范围内 */

@@ -21,6 +21,17 @@ function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, �
 const 渲染放映 = (on退出 = vi.fn()) => render(<AntdApp><SlideshowView 文稿={创建演示文稿()} 当前索引={0} on翻页={vi.fn()} on退出={on退出} /></AntdApp>)
 
 describe('本机幻灯片切换', () => {
+  it('切换到后台窗口暂停，回到前台后继续', () => {
+    安装全屏接口();渲染放映();fireEvent(window,new Event('blur'))
+    expect(screen.getByRole('button',{name:'继续放映'})).toBeInTheDocument()
+    fireEvent(window,new Event('focus'));expect(screen.getByRole('button',{name:'暂停放映'})).toBeInTheDocument()
+  })
+  it('暂停按钮可用键盘聚焦，Tab 不被放映快捷键阻止', () => {
+    安装全屏接口(); 渲染放映()
+    const 事件=new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}); document.dispatchEvent(事件)
+    expect(事件.defaultPrevented).toBe(false)
+    fireEvent.click(screen.getByRole('button',{name:'暂停放映'}));expect(screen.getByRole('button',{name:'继续放映'})).toBeInTheDocument()
+  })
   it('零页模型直接进入放映时安全退出并显示原因', async () => {
     const { 进入 } = 安装全屏接口()
     const 退出 = vi.fn()

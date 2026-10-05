@@ -1,3 +1,4 @@
+import AnimationPanel from './panels/AnimationPanel'
 import { 对象允许编辑, 要求对象可编辑 } from './model/objectPermissions'
 import { 添加语义节点, 添加语义连线 } from './model/elements'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
@@ -554,6 +555,7 @@ const PptEditor = () => {
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
+            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
@@ -581,7 +583,7 @@ const PptEditor = () => {
           }))
           const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = { 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
+          const 模型 = { 循环放映: 文稿.循环放映, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
@@ -637,6 +639,7 @@ const PptEditor = () => {
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
+            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
@@ -664,7 +667,7 @@ const PptEditor = () => {
           }))
           const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = { 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
+          const 模型 = { 循环放映: 文稿.循环放映, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
@@ -899,7 +902,7 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }

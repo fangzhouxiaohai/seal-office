@@ -1,12 +1,15 @@
+import { 监听播放后台 } from './playback/background'
+import { 播放控制器, type 播放快照 } from './playback/controller'
+import { 播放画面 } from './playback/PlaybackPage'
 // 全屏放映视图：黑底全屏展示幻灯片，点击或方向键翻页，Esc 退出。
 // 文本框沿用画布的绝对坐标（960×540），按窗口尺寸等比缩放并居中。
 import React from 'react'
-import { SlideObjects, type 图片地址表 } from './render/SlideObjects'
+import { type 图片地址表 } from './render/SlideObjects'
 import { createPortal } from 'react-dom'
 import { App as AntdApp } from 'antd'
 import { 桥接 } from '../ipc/bridge'
 import { 标记放映开始 } from './presentationState'
-import { 画布宽, 画布高, type 演示文稿, type 幻灯片 } from './deck'
+import { 画布宽, 画布高, type 演示文稿 } from './deck'
 
 interface Props {
   图片地址?: 图片地址表
@@ -14,25 +17,6 @@ interface Props {
   当前索引: number
   on翻页: (目标索引: number) => void
   on退出: () => void
-}
-
-/** 单页幻灯片的只读渲染；缩放比由容器按窗口计算后传入 */
-function 放映页({ 幻灯片, 缩放, 图片地址 }: { 幻灯片: 幻灯片; 缩放: number; 图片地址?: 图片地址表 }) {
-  const 过渡类名 = 幻灯片.过渡效果 === '淡入淡出' ? ' wps-slideshow__page--fade'
-    : 幻灯片.过渡效果 === '推进' ? ' wps-slideshow__page--push' : ''
-  return React.createElement(
-    'div',
-    {
-      className: `wps-slideshow__page${过渡类名}`,
-      style: {
-        width: `${画布宽}px`,
-        height: `${画布高}px`,
-        background: 幻灯片.背景色,
-        transform: `scale(${缩放})`,
-      },
-    },
-    React.createElement(SlideObjects, { 幻灯片, 图片地址 })
-  )
 }
 
 const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址 }: Props) => {
@@ -114,28 +98,30 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址 }
     return () => window.removeEventListener('resize', 处理缩放)
   }, [])
 
+  const [状态, set状态] = React.useState<播放快照 | null>(null)
+  const 控制器 = React.useRef<播放控制器 | null>(null)
+  const 翻页引用 = React.useRef(on翻页); 翻页引用.current = on翻页
+  React.useEffect(() => {
+    let 实例: 播放控制器
+    try {
+      实例 = new 播放控制器(文稿, 当前索引, { 更新: set状态, 翻页: i => 翻页引用.current(i), 结束: () => 退出引用.current(), 停止媒体: () => 放映根.current?.querySelectorAll('audio,video').forEach(节点 => { const 媒体 = 节点 as HTMLMediaElement; 媒体.pause(); 媒体.currentTime = 0 }) }, window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+      控制器.current = 实例; 实例.开始()
+    } catch (错误) { 退出引用.current(); modal.error({ title: '无法开始放映', content: 错误 instanceof Error ? 错误.message : '播放参数无效' }); return }
+    const 释放后台 = 监听播放后台(值 => 实例.后台(值))
+    return () => { 释放后台(); 实例.销毁(); 控制器.current = null }
+  }, [])
   const 总页数 = 文稿.幻灯片列表.length
-  const 安全索引 = Math.min(Math.max(当前索引, 0), Math.max(0, 总页数 - 1))
+  const 安全索引 = 状态?.索引 ?? Math.min(Math.max(当前索引, 0), Math.max(0, 总页数 - 1))
   const 缩放 = Math.min(视口尺寸.宽 / 画布宽, 视口尺寸.高 / 画布高)
 
-  const 前进 = () => {
-    if (安全索引 < 总页数 - 1) {
-      on翻页(安全索引 + 1)
-    } else {
-      // 最后一页再点击/翻页即结束放映
-      on退出()
-    }
-  }
-  const 后退 = () => {
-    if (安全索引 > 0) {
-      on翻页(安全索引 - 1)
-    }
-  }
+  const 前进 = () => 控制器.current?.单击()
+  const 后退 = () => 控制器.current?.后退()
 
   React.useEffect(() => {
     const 处理按键 = (事件: KeyboardEvent) => {
       // 隔离隐藏编辑器的保存、增删页和标签切换快捷键。
       事件.stopImmediatePropagation()
+      if (事件.key === 'Tab' || (事件.target instanceof HTMLButtonElement && ['Enter',' '].includes(事件.key))) return
       事件.preventDefault()
       if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(事件.key)) {
         事件.preventDefault()
@@ -143,15 +129,17 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址 }
       } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(事件.key)) {
         事件.preventDefault()
         后退()
+      } else if (事件.key.toLowerCase() === 'p') {
+        控制器.current?.暂停(!控制器.current.快照.暂停)
       } else if (事件.key === 'Escape') {
         事件.preventDefault()
         on退出()
       } else if (事件.key === 'Home') {
         事件.preventDefault()
-        on翻页(0)
+        控制器.current?.首尾(false)
       } else if (事件.key === 'End') {
         事件.preventDefault()
-        on翻页(总页数 - 1)
+        控制器.current?.首尾(true)
       }
     }
     document.addEventListener('keydown', 处理按键, true)
@@ -170,24 +158,25 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址 }
       onClick: 前进,
       onContextMenu: (事件: React.MouseEvent) => 事件.preventDefault(),
     },
-    React.createElement(放映页, { 图片地址, key: 文稿.幻灯片列表[安全索引].id, 幻灯片: 文稿.幻灯片列表[安全索引], 缩放 }),
+    状态 && React.createElement(播放画面, { 图片地址, 文稿, 状态, 缩放 }),
     React.createElement(
       'div',
       { className: 'wps-slideshow__indicator' },
-      `${安全索引 + 1} / ${总页数}`
+      `${安全索引 + 1} / ${总页数}${状态?.暂停 ? '　已暂停' : ''}`
     )
+    , React.createElement('button', { type: 'button', className: 'wps-slideshow__pause', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 控制器.current?.暂停(!状态?.暂停) } }, 状态?.暂停 ? '继续放映' : '暂停放映')
   ), document.body)
 }
 
 const SlideshowView = (props: Props) => {
   const { modal } = AntdApp.useApp()
-  const 空文稿 = props.文稿.幻灯片列表.length === 0
+  const 空文稿 = props.文稿.幻灯片列表.length === 0 || props.文稿.幻灯片列表.every(页 => 页.隐藏)
   const 退出引用 = React.useRef(props.on退出)
   退出引用.current = props.on退出
   React.useEffect(() => {
     if (!空文稿) return
     退出引用.current()
-    modal.warning({ title: '无法开始放映', content: '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })
+    modal.warning({ title: '无法开始放映', content: props.文稿.幻灯片列表.length ? '所有幻灯片均已隐藏，请取消至少一页的隐藏状态。' : '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })
   }, [空文稿, modal])
   return 空文稿 ? null : React.createElement(放映内容, props)
 }

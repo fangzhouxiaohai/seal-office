@@ -3241,3 +3241,31 @@ button {
     gap: 8px;
   }
 }
+
+/* 切换与动画沿用现有属性面板令牌；舞台缩放与效果平移分层。 */
+.wps-playback-stage { position: relative; transform-origin: center; flex: none; overflow: hidden; }
+.wps-playback-layer { position: absolute; inset: 0; overflow: hidden; }
+.wps-playback-layer.wps-slideshow__page { animation: none; transform-origin: center; }
+.wps-slideshow__pause { position: fixed; right: var(--space-4); bottom: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-slideshow__pause:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-slideshow__pause:hover { background: var(--bg-hover); }
+.wps-animation-panel label { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+.wps-animation-panel .wps-animation-check { flex-direction: row; align-items: center; gap: var(--space-2); }
+.wps-animation-panel select { min-width: 0; width: 100%; min-height: 32px; border: 1px solid var(--border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); background: var(--bg-card); color: var(--text-1); font: inherit; }
+.wps-animation-panel select:hover { border-color: var(--brand); }
+.wps-animation-panel select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-animation-panel select:disabled { opacity: .55; }
+.wps-animation-panel input { min-width: 0; max-width: 100%; }
+.wps-animation-panel button { min-height: 32px; line-height: 1.5; text-align: left; }
+.wps-animation-panel p { color: var(--text-2); line-height: 1.6; margin: var(--space-2) 0 var(--space-4); }
+.wps-animation-list { margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+.wps-animation-list li { border-top: 1px solid var(--border); padding-top: var(--space-3); margin-top: var(--space-4); }
+.wps-animation-list li > span { display: block; overflow-wrap: anywhere; margin-bottom: var(--space-2); font-weight: 600; }
+.wps-animation-preview { display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg-app); margin-bottom: var(--space-4); }
+
+.wps-slideshow__indicator { left: var(--space-4); right: auto; }
+
+.wps-animation-dialog .wps-ppt-properties__actions button { min-height: 32px; padding: var(--space-1) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-control); color: var(--text-1); background: var(--bg-card); font: inherit; }
+.wps-animation-dialog .wps-ppt-properties__actions button:hover { background: var(--bg-hover); border-color: var(--brand); }
+.wps-animation-dialog .wps-ppt-properties__actions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-animation-dialog .wps-ppt-properties__actions button:disabled { opacity: .55; cursor: default; }

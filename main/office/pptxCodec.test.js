@@ -164,17 +164,17 @@ describe('幻灯片切换效果往返', () => {
   })
 
   it('遇到暂不支持的切换效果时发出具体保真警告', async () => {
-    const XML = 空白幻灯片.replace('</p:sld>', '<p:transition><p:wipe dir="l"/></p:transition></p:sld>')
+    const XML = 空白幻灯片.replace('</p:sld>', '<p:transition><p:ripple/></p:transition></p:sld>')
     const 结果 = await 读取pptx(await 构造有效演示([XML]))
     expect(结果.演示文稿.幻灯片列表[0].过渡效果).toBeUndefined()
     expect(结果.警告).toContain('幻灯片切换效果未完整导入')
   })
 
-  it('不能把不同方向或持续时间的推进误判为可完整往返', async () => {
+  it('导入推进方向及传统速度对应的持续时间', async () => {
     const XML = 空白幻灯片.replace('</p:sld>', '<p:transition spd="slow"><p:push dir="r"/></p:transition></p:sld>')
     const 结果 = await 读取pptx(await 构造有效演示([XML]))
-    expect(结果.演示文稿.幻灯片列表[0].过渡效果).toBeUndefined()
-    expect(结果.警告).toContain('幻灯片切换效果未完整导入')
+    expect(结果.演示文稿.幻灯片列表[0].切换).toMatchObject({效果:'推进',方向:'右',持续毫秒:1000})
+    expect(结果.警告).not.toContain('幻灯片切换效果未完整导入')
   })
 })
 
@@ -372,7 +372,7 @@ describe('读取 PPTX 的保真警告', () => {
 
   it('只对幻灯片实际包含的媒体、动画和切换效果生成警告', async () => {
     const 数据 = await 构造演示(
-      '<p:sld><p:cSld><p:spTree/></p:cSld><p:video/><p:timing/><p:transition/></p:sld>',
+      '<p:sld><p:cSld><p:spTree/></p:cSld><p:video/><p:timing/><p:transition><p:ripple/></p:transition></p:sld>',
       { 'ppt/media/orphan.mp4': '孤立媒体' }
     )
     const 结果 = await 读取pptx(数据)

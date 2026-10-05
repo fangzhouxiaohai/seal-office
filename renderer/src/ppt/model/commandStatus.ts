@@ -2,7 +2,7 @@ export type 命令能力状态 = '可用' | '缺少配置' | '只读' | '正在�
 
 const 尚未实现 = new Set([
   'insert.media',
-  'animation.appear', 'animation.fade', 'review.spell', 'review.comment',
+  'review.spell', 'review.comment',
 ])
 
 export function 读取演示命令状态(

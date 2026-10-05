@@ -178,12 +178,10 @@ describe('演示命令：右键菜单版式与背景', () => {
   })
 })
 
-describe('演示命令：动画限制', () => {
-  it.each(['animation.appear', 'animation.fade'])('%s 不写入无法保存的动画模型并提示限制', (标识) => {
+describe('演示命令：基础动画', () => {
+  it.each(['animation.appear', 'animation.fade'])('%s 写入选中对象的单击动画', (标识) => {
     const { 上下文, 取最新 } = 构造上下文()
-    const 提示限制 = vi.fn()
-    查找演示命令(标识)?.run({ ...上下文, 提示功能限制: 提示限制 })
-    expect(取最新()).toBe(上下文.文稿)
-    expect(提示限制).toHaveBeenCalledWith('动画功能受限', expect.stringContaining('无法可靠保存'))
+    查找演示命令(标识)?.run(上下文)
+    expect(取最新().幻灯片列表[0].动画序列?.[0]).toMatchObject({ 对象标识: 上下文.选中框标识, 触发:'单击', 效果: 标识==='animation.appear'?'出现':'淡出' })
   })
 })

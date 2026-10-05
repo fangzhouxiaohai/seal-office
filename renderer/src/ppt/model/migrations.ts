@@ -1,3 +1,5 @@
+import { 校验播放参数 } from './transitions'
+import { 校验动画 } from './animations'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
 
@@ -35,6 +37,7 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       throw new Error(`演示文稿资源索引无效：${标识}`)
     }
   }
+  if (输入.循环放映 !== undefined && typeof 输入.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
   for (const [序号, 原页] of 输入.幻灯片列表.entries()) {
@@ -81,6 +84,8 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
         throw new Error(`对象 ${对象.id} 缺失资源`)
       }
     }
+    校验播放参数(原页 as unknown as 演示文稿['幻灯片列表'][number])
+    if (!原页.动画) 校验动画(原页 as unknown as 演示文稿['幻灯片列表'][number])
     const 父对象 = new Map<string, string>()
     const 访问 = (标识: string, 路径: Set<string>) => {
       if (路径.has(标识)) throw new Error(`组合对象存在循环引用：${标识}`)
@@ -118,7 +123,7 @@ export function 演示内容快照(文稿: 演示文稿): string {
 /** 仅放行已通过真实文件及 PowerPoint 核验的文字、位图和恒等坐标组合。 */
 export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   迁移演示文稿(文稿)
-  文稿.幻灯片列表.forEach(页 => 页.对象列表?.forEach(校验原生元素))
+  文稿.幻灯片列表.forEach(页 => { 校验动画(页); 页.对象列表?.forEach(校验原生元素) })
   if (文稿.幻灯片列表.some(页面 => 页面.对象列表?.some(对象 =>
     !['图片','组合','图形','表格','图表'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
     (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? ''))))) {

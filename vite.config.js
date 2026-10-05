@@ -2,13 +2,16 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import pkg from './package.json'
+import { 共享校验模块 } from './scripts/shared-validation-plugin.mjs'
 
 export default defineConfig({
   // 渲染进程源码位于 renderer 目录，因此将 root 指向该目录
   root: 'renderer',
+  // 调用方配置开发缓存后，共享模块预构建与测试缓存也使用同一磁盘。
+  cacheDir: process.env.npm_config_cache ? `${process.env.npm_config_cache}/../vite/seal-office` : undefined,
   // 使用相对路径，保证 Electron 以 file:// 加载构建产物时静态资源可正确解析
   base: './',
-  plugins: [react()],
+  plugins: [共享校验模块(), react()],
   // PDF 阅读器的兼容工作线程需先补齐浏览器接口，再动态装载解析模块。
   worker: { format: 'es' },
   // 注入应用版本号，供设置页/关于页/页脚统一读取，避免多处硬编码不一致
