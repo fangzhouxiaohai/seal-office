@@ -26,6 +26,8 @@ describe('多窗口管理', () => {
     const 结果 = 管理器.新建窗口('文稿甲', '视图二')
     expect(结果).toMatchObject({ 成功: true, 窗口标识: '窗口1' })
     expect(已创建[0].选项).toMatchObject({ 入口: '应用入口地址' })
+    // 新窗口必须带上文稿与视图身份，主进程据此登记会话身份，渲染端才能接管同一文稿
+    expect(已创建[0].选项).toMatchObject({ 文稿标识: '文稿甲', 视图标识: '视图二' })
     expect(会话.列出视图('文稿甲').sort()).toEqual(['视图一', '视图二'])
     expect(管理器.列出窗口()).toHaveLength(1)
   })

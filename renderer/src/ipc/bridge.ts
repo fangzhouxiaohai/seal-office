@@ -93,6 +93,10 @@ export interface 电子接口 {
   presentationBatch?: {
     check: (任务列表: Array<{ 标识: string; 名称?: string; 路径: string }>) => Promise<{ 成功: boolean; 结果?: Array<{ 标识: string; 名称?: string; 路径?: string; 成功: boolean; 已取消?: boolean; 错误?: string; 页数?: number }>; 汇总?: { 总数: number; 成功: number; 失败: number; 已取消: number }; 错误?: string }>
   }
+  presentationTools?: {
+    writeResources: (条目列表: Array<{ 标识: string; 类型?: string; 数据: string; 名称?: string }>, 目录: string) => Promise<{ 成功: boolean; 结果?: Array<{ 标识: string; 类型?: string; 路径?: string; 字节数?: number; 成功: boolean; 错误?: string }>; 汇总?: { 总数: number; 成功: number; 失败: number }; 错误?: string }>
+    compressImage: (输入: { 数据: string; 类型: string }, 选项: { 质量?: number; 最大边?: number }) => Promise<{ 成功: boolean; 数据?: string; 类型?: string; 原字节数?: number; 新字节数?: number; 宽?: number; 高?: number; 错误?: string }>
+  }
   newPresentationWindow?: (文稿标识: string, 视图标识: string) => Promise<{ 成功: boolean; 窗口标识?: string; 错误?: string }>
   tilePresentationWindows?: (布局: '平铺' | '层叠') => Promise<{ 成功: boolean; 布局?: string; 位置?: Array<{ x: number; y: number; 宽: number; 高: number }>; 错误?: string }>
   presentationCompare?: 演示比对接口
@@ -203,6 +207,12 @@ export const 桥接 = {
   presentationBatch: {
     check: (任务列表: Array<{ 标识: string; 名称?: string; 路径: string }>) =>
       取后端()?.presentationBatch?.check(任务列表) ?? 失败('当前环境不支持批量工具'),
+  },
+  presentationTools: {
+    writeResources: (条目列表: Array<{ 标识: string; 类型?: string; 数据: string; 名称?: string }>, 目录: string) =>
+      取后端()?.presentationTools?.writeResources(条目列表, 目录) ?? 失败('当前环境不支持资源提取'),
+    compressImage: (输入: { 数据: string; 类型: string }, 选项: { 质量?: number; 最大边?: number }) =>
+      取后端()?.presentationTools?.compressImage(输入, 选项) ?? 失败('当前环境不支持图片压缩'),
   },
   newPresentationWindow: (文稿标识: string, 视图标识: string) =>
     取后端()?.newPresentationWindow?.(文稿标识, 视图标识) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持新建窗口' }),
