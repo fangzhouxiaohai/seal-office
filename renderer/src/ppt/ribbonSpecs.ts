@@ -24,6 +24,16 @@ const 下拉 = (
   currentValue?: string
 ) => ({ kind: 'dropdown' as const, commandId, label, icon, options, currentValue })
 
+/** 内置主题选项：应用与预览共用同一份列表，避免两处漂移 */
+const 主题选项 = [
+  { label: '海豹默认', value: '海豹-默认' },
+  { label: '海豹锐蓝', value: '海豹-锐蓝' },
+  { label: '海豹墨绿', value: '海豹-墨绿' },
+  { label: '海豹暖橙', value: '海豹-暖橙' },
+  { label: '海豹石板', value: '海豹-石板' },
+  { label: '海豹深色', value: '海豹-深色' },
+]
+
 const 开始标签: RibbonTabSpec = {
   key: 'start',
   label: '开始',
@@ -144,15 +154,15 @@ const 设计标签: RibbonTabSpec = {
       name: '主题',
       items: [
         大('design.theme', '主题面板', 'page-color'),
-        下拉('design.theme.apply', '应用主题', 'page-color', [
-          { label: '海豹默认', value: '海豹-默认' },
-          { label: '海豹锐蓝', value: '海豹-锐蓝' },
-          { label: '海豹墨绿', value: '海豹-墨绿' },
-          { label: '海豹暖橙', value: '海豹-暖橙' },
-          { label: '海豹石板', value: '海豹-石板' },
-          { label: '海豹深色', value: '海豹-深色' },
-        ], '海豹-默认'),
+        下拉('design.theme.preview', '预览主题', 'page-view', 主题选项, '海豹-默认'),
+        下拉('design.theme.apply', '应用主题', 'page-color', 主题选项, '海豹-默认'),
         下拉('design.color.apply', '配色方案', 'language', ['默认', '锐蓝', '墨绿', '暖橙', '石板', '深色'], '默认'),
+      ],
+    },
+    {
+      name: '母版',
+      items: [
+        大('design.layout.create', '新增版式', 'page-view'),
       ],
     },
     {

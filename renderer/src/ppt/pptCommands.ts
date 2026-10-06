@@ -339,7 +339,6 @@ const 命令列表: 演示命令[] = [
     },
   },
   { id: 'design.background', label: '背景色', run: 应用背景色命令 },
-  { id: 'design.layout', label: '版式', run: 应用版式命令 },
   // 右键菜单命令：与设计标签行为一致，但命令标识不同，需单独注册
   { id: 'slide.background', label: '设置背景', run: 应用背景色命令 },
   { id: 'slide.layout', label: '版式', run: 应用版式命令 },
@@ -510,13 +509,8 @@ const 命令列表: 演示命令[] = [
       上下文.notify('已准备从当前幻灯片开始放映，请在放映视图播放')
     },
   },
-  // 图表、表格与图片由 commands/insert.ts 的原生插入命令和编辑器的文件选择分支实现，
+  // 图表、表格、图片与音视频由 commands/insert.ts 的原生插入命令和编辑器的文件选择分支实现，
   // 这里不再保留「将在后续版本接入」的占位实现，避免出现被标为可用却只会弹提示的空命令。
-  {
-    id: 'insert.media',
-    label: '音频与视频',
-    run: (上下文) => 上下文.notify('音视频插入需要媒体播放与嵌入能力，将在后续版本接入'),
-  },
   {
     id: 'view.normal',
     label: '普通',
