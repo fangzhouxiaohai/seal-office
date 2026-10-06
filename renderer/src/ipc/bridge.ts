@@ -39,6 +39,34 @@ export interface 演示资源接口 {
   export: (标识列表: string[]) => Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }>
   restore: (条目列表: 演示资源条目[]) => Promise<{ 成功: boolean; 错误?: string }>
 }
+export type 演示服务种类 = '翻译' | '语音' | '识别'
+export interface 演示服务配置 { 名称?: string; 地址: string; 模型?: string; 已配置密钥?: boolean; 目标语言?: string; 术语表?: Array<{ 原文: string; 译文: string }>; 声线?: string; 语速?: number; 识别模式?: '图像理解' | '文字识别'; 密钥?: string; 清除密钥?: boolean }
+export interface 演示能力项 { 状态: '可用' | '缺少配置'; 原因?: string; 模型?: string; 声线?: string; 名称?: string }
+export interface 演示能力表 { 文本: 演示能力项; 语音合成: 演示能力项; 图像识别: 演示能力项; 图像生成: 演示能力项 }
+export interface 翻译条目输入 { 对象标识: string; 原文: string; 来源?: string }
+export interface 翻译候选 { 对象标识: string; 原文: string; 译文: string }
+export interface 校对建议 { 对象标识: string; 原文: string; 问题类型: string; 说明: string; 建议文本: string }
+export interface 讲稿项 { 页标识: string; 讲稿: string }
+export interface 讲解音频项 { 页标识: string; 缓存键?: string; 类型?: string; 字节数?: number; 命中缓存?: boolean; 音频?: string }
+export interface 演示智能接口 {
+  capabilities: () => Promise<{ 成功: boolean; 数据?: 演示能力表; 错误?: string }>
+  getService: (种类: 演示服务种类) => Promise<{ 成功: boolean; 数据?: 演示服务配置 | null; 错误?: string }>
+  saveService: (种类: 演示服务种类, 配置: 演示服务配置) => Promise<{ 成功: boolean; 数据?: 演示服务配置; 错误?: string }>
+  clearService: (种类: 演示服务种类) => Promise<{ 成功: boolean; 错误?: string }>
+  listServiceKinds: () => Promise<{ 成功: boolean; 数据?: 演示服务种类[]; 错误?: string }>
+  migrateLegacyTranslate: (旧配置: { 地址: string; 密钥?: string; 目标语言?: string }) => Promise<{ 成功: boolean; 数据?: { 成功: boolean; 目标语言?: string; 原因?: string }; 错误?: string }>
+  probeService: (种类: 演示服务种类, 配置?: Partial<演示服务配置>) => Promise<{ 成功: boolean; 数据?: { 可用: boolean; 原因?: string; 模型列表?: string[]; 警告?: string }; 错误?: string }>
+  translate: (输入: { 请求标识: string; 条目: 翻译条目输入[]; 目标语言: string; 术语表?: Array<{ 原文: string; 译文: string }>; 每批条数?: number }) => Promise<{ 成功: boolean; 数据?: { 译文: 翻译候选[]; 批次: number; 跳过: number }; 错误?: string }>
+  proofread: (输入: { 请求标识: string; 条目: 翻译条目输入[]; 每批条数?: number }) => Promise<{ 成功: boolean; 数据?: { 建议: 校对建议[]; 批次: number; 检查对象数: number }; 错误?: string }>
+  validateTranslation: (候选: 翻译候选[], 当前条目: Array<{ 对象标识: string; 原文: string }>) => Promise<{ 成功: boolean; 数据?: 翻译候选[]; 错误?: string }>
+  validateSuggestion: (建议: Array<{ 对象标识: string; 原文: string; 建议文本: string }>, 当前条目: Array<{ 对象标识: string; 原文: string }>) => Promise<{ 成功: boolean; 数据?: Array<{ 对象标识: string; 原文: string; 建议文本: string }>; 错误?: string }>
+  voices: () => Promise<{ 成功: boolean; 数据?: Array<{ 标识: string; 名称: string }>; 错误?: string }>
+  speak: (输入: { 文本: string }) => Promise<{ 成功: boolean; 数据?: { 音频: string; 类型: string; 字节数: number; 命中缓存: boolean; 缓存键?: string }; 错误?: string }>
+  generateScript: (输入: { 请求标识: string; 页列表: Array<{ 页标识: string; 标题?: string; 文本: string; 备注?: string }>; 风格?: string }) => Promise<{ 成功: boolean; 数据?: { 讲稿: 讲稿项[]; 批次: number }; 错误?: string }>
+  narrate: (输入: { 请求标识?: string; 讲稿: 讲稿项[] }) => Promise<{ 成功: boolean; 数据?: { 音频: 讲解音频项[]; 失败: Array<{ 页标识: string; 原因: string }> }; 错误?: string }>
+  clearAudioCache: () => Promise<{ 成功: boolean; 错误?: string }>
+  onStream: (回调: (片段: { 请求标识: string; 类型: string; 内容: string }) => void) => () => void
+}
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -85,6 +113,7 @@ export interface 电子接口 {
     onToolCall?: (回调: (请求: 助手工具请求) => void) => () => void
     submitToolResult?: (结果: 助手工具结果) => Promise<助手结果<never>>
   }
+  presentationAi?: 演示智能接口
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
@@ -162,6 +191,26 @@ export const 桥接 = {
     discardSessionProposal: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.discardSessionProposal?.(标识) ?? 失败('当前环境不支持候选记忆更新'),
     onToolCall: (回调: (请求: 助手工具请求) => void): (() => void) => 取后端()?.ai?.onToolCall?.(回调) ?? (() => {}),
     submitToolResult: (结果: 助手工具结果): Promise<助手结果<never>> => 取后端()?.ai?.submitToolResult?.(结果) ?? 失败('当前环境不支持助手工具'),
+  },
+  presentationAi: {
+    get 可用() { return typeof 取后端()?.presentationAi?.capabilities === 'function' },
+    capabilities: (): Promise<{ 成功: boolean; 数据?: 演示能力表; 错误?: string }> => 取后端()?.presentationAi?.capabilities() ?? 失败('当前环境不支持演示智能服务核验'),
+    getService: (种类: 演示服务种类) => 取后端()?.presentationAi?.getService(种类) ?? 失败('当前环境不支持演示智能服务设置'),
+    saveService: (种类: 演示服务种类, 配置: 演示服务配置) => 取后端()?.presentationAi?.saveService(种类, 配置) ?? 失败('当前环境不支持演示智能服务设置'),
+    clearService: (种类: 演示服务种类) => 取后端()?.presentationAi?.clearService(种类) ?? 失败('当前环境不支持演示智能服务设置'),
+    listServiceKinds: () => 取后端()?.presentationAi?.listServiceKinds() ?? 失败('当前环境不支持演示智能服务设置'),
+    migrateLegacyTranslate: (旧配置: { 地址: string; 密钥?: string; 目标语言?: string }) => 取后端()?.presentationAi?.migrateLegacyTranslate(旧配置) ?? 失败('当前环境不支持旧翻译设置迁移'),
+    probeService: (种类: 演示服务种类, 配置?: Partial<演示服务配置>) => 取后端()?.presentationAi?.probeService(种类, 配置) ?? 失败('当前环境不支持服务探测'),
+    translate: (输入: Parameters<演示智能接口['translate']>[0]) => 取后端()?.presentationAi?.translate(输入) ?? 失败('当前环境不支持演示翻译'),
+    proofread: (输入: Parameters<演示智能接口['proofread']>[0]) => 取后端()?.presentationAi?.proofread(输入) ?? 失败('当前环境不支持语义校对'),
+    validateTranslation: (候选: 翻译候选[], 当前条目: Array<{ 对象标识: string; 原文: string }>) => 取后端()?.presentationAi?.validateTranslation(候选, 当前条目) ?? 失败('当前环境不支持译文核对'),
+    validateSuggestion: (建议: Array<{ 对象标识: string; 原文: string; 建议文本: string }>, 当前条目: Array<{ 对象标识: string; 原文: string }>) => 取后端()?.presentationAi?.validateSuggestion(建议, 当前条目) ?? 失败('当前环境不支持建议核对'),
+    voices: () => 取后端()?.presentationAi?.voices() ?? 失败('当前环境不支持声线列表'),
+    speak: (输入: { 文本: string }) => 取后端()?.presentationAi?.speak(输入) ?? 失败('当前环境不支持语音合成'),
+    generateScript: (输入: Parameters<演示智能接口['generateScript']>[0]) => 取后端()?.presentationAi?.generateScript(输入) ?? 失败('当前环境不支持讲稿生成'),
+    narrate: (输入: { 请求标识?: string; 讲稿: 讲稿项[] }) => 取后端()?.presentationAi?.narrate(输入) ?? 失败('当前环境不支持讲解音频合成'),
+    clearAudioCache: () => 取后端()?.presentationAi?.clearAudioCache() ?? 失败('当前环境不支持音频缓存清理'),
+    onStream: (回调: (片段: { 请求标识: string; 类型: string; 内容: string }) => void): (() => void) => 取后端()?.presentationAi?.onStream?.(回调) ?? (() => {}),
   },
   office: {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
