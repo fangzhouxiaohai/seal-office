@@ -63,6 +63,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   presentationBatch: {
     check: (任务列表) => ipcRenderer.invoke('presentation.batchCheck', 任务列表),
   },
+  presentationTools: {
+    writeResources: (条目列表, 目录) => ipcRenderer.invoke('presentation.tools.writeResources', 条目列表, 目录),
+    compressImage: (输入, 选项) => ipcRenderer.invoke('presentation.tools.compressImage', 输入, 选项),
+  },
   newPresentationWindow: (文稿标识, 视图标识) => ipcRenderer.invoke('system.newPresentationWindow', 文稿标识, 视图标识),
   tilePresentationWindows: (布局) => ipcRenderer.invoke('system.tilePresentationWindows', 布局),
   recentList: () => ipcRenderer.invoke('file.recent.list'),

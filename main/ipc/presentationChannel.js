@@ -5,6 +5,7 @@ const { 读取pptx } = require('../office/pptxCodec')
 const { 比较演示文稿 } = require('../office/pptx/compare')
 const { 创建文稿会话服务 } = require('../ppt/session')
 const { 批量检查 } = require('../ppt/batch')
+const { 提取资源, 压缩图片 } = require('../ppt/resourceTools')
 const fs = require('fs')
 
 function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 服务 = {}) {
@@ -115,6 +116,17 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 服务
 
   // 批量工具：逐文件独立结果，失败不撤销其他文件
   ipcMain.handle('presentation.batchCheck', (_事件, 任务列表) => 异步执行(async () => ({ 成功: true, ...(await 批量检查(任务列表)) })))
+
+  // 便捷工具：资源提取到目录与图片重采样压缩
+  ipcMain.handle('presentation.tools.writeResources', (_事件, 条目列表, 目录) => 异步执行(async () => {
+    const 提取 = await 提取资源(条目列表, 目录)
+    return { 成功: true, 结果: 提取.结果, 汇总: 提取.汇总 }
+  }))
+  ipcMain.handle('presentation.tools.compressImage', (_事件, 输入, 选项) => 异步执行(async () => {
+    const 压缩 = await 压缩图片(输入, 选项)
+    if (!压缩.成功) return { 成功: false, 错误: 压缩.原因, 原字节数: 压缩.原字节数, 新字节数: 压缩.新字节数 }
+    return { 成功: true, 数据: 压缩.字节.toString('base64'), 类型: 压缩.类型, 原字节数: 压缩.原字节数, 新字节数: 压缩.新字节数, 宽: 压缩.宽, 高: 压缩.高 }
+  }))
 }
 
 module.exports = { 注册演示通道 }

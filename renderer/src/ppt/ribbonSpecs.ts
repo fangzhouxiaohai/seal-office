@@ -364,6 +364,9 @@ const 视图标签: RibbonTabSpec = {
       items: [
         大('view.handoutMaster', '讲义母版', 'doc-empty'),
         大('tools.batch', '批量工具', 'sliders'),
+        大('tools.pageMerge', '合并演示文稿', 'toc'),
+        大('tools.pageSplit', '拆分页面', 'columns'),
+        大('tools.resourceTools', '便捷工具', 'export-file'),
       ],
     },
     {
