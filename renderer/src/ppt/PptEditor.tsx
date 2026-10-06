@@ -1,4 +1,5 @@
 import AnimationPanel from './panels/AnimationPanel'
+import ReviewPanel from './panels/ReviewPanel'
 import { 对象允许编辑, 要求对象可编辑 } from './model/objectPermissions'
 import { 添加语义节点, 添加语义连线 } from './model/elements'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
@@ -76,7 +77,10 @@ const PptEditor = () => {
   const [选中对象, set选中对象] = useState<string[]>([])
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
-  const [只读, set只读] = useState(false)
+  const [手动只读, set只读] = useState(false)
+  const [审阅视图, set审阅视图] = useState<'定稿' | '比对'>('定稿')
+  /** 定稿为可恢复的只读标记：与手动只读一起决定编辑权限，不代表加密保护。 */
+  const 只读 = 手动只读 || Boolean(文稿.定稿)
   const [参考线, set参考线] = useState({ 垂直: [] as number[], 水平: [] as number[] })
   const [适应, set适应] = useState(false)
   const 适应比例 = useRef(1)
@@ -283,7 +287,8 @@ const PptEditor = () => {
 
   /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新文稿 = (新文稿: 演示文稿) => {
-    if (只读) return
+    // 定稿后只放行「解除定稿」这一项修改，其余编辑一律拒绝，避免绕过只读标记。
+    if (只读 && !(文稿.定稿 && !新文稿.定稿)) return
     历史.record(新文稿)
     同步历史资源()
     set文稿(新文稿)
@@ -411,6 +416,7 @@ const PptEditor = () => {
     切换视图: set当前视图,
     撤销,
     重做,
+    打开审阅面板: (视图) => { set审阅视图(视图); set当前标签('review') },
   }
 
   const 处理文本选择 = (标识: string, 起始: number, 结束: number) => {
@@ -814,7 +820,7 @@ const PptEditor = () => {
       onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement('div', { className: 'wps-ppt-object-toolbar' },
-      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null) } }), '只读查看'),
+      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, disabled: Boolean(文稿.定稿), onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null) } }), 文稿.定稿 ? '只读查看（本文稿已定稿）' : '只读查看'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 显示标尺, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set显示标尺(事件.target.checked) }), '标尺'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 吸附, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set吸附(事件.target.checked) }), '吸附'),
       React.createElement('button', { type: 'button', onClick: () => set参考线({ 垂直: [480], 水平: [270] }) }, '中心参考线'),
@@ -902,7 +908,7 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前标签 === 'review' ? React.createElement(ReviewPanel, { key: 审阅视图, 文稿, 只读, on修改: 更新文稿, 当前路径: 文档路径 ?? undefined, 初始视图: 审阅视图 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }

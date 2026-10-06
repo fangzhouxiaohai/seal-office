@@ -204,6 +204,13 @@ const 审阅标签: RibbonTabSpec = {
       name: '批注',
       items: [大('review.comment', '新建批注', 'comment')],
     },
+    {
+      name: '文档',
+      items: [
+        大('review.finalize', '文档定稿', 'track'),
+        大('review.compare', '文档比对', 'compare'),
+      ],
+    },
   ],
 }
 

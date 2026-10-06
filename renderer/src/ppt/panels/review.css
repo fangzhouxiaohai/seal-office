@@ -1,0 +1,139 @@
+/* 审阅相关面板：文档比对与文档定稿。沿用现有设计令牌，不引入新的配色与圆角。 */
+.wps-review__tabs {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-bottom: var(--space-3, 12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.wps-review__tab {
+  padding: 4px 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.wps-review__tab.is-active {
+  color: var(--text-1);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+.wps-review__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.wps-compare label,
+.wps-security label {
+  display: block;
+  margin-bottom: var(--space-2, 8px);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-compare input,
+.wps-security input {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-1, 4px);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-size: 12px;
+}
+
+.wps-compare button,
+.wps-security button {
+  margin-bottom: var(--space-2, 8px);
+}
+
+.wps-compare__result {
+  margin-top: var(--space-4, 16px);
+}
+
+.wps-compare__summary,
+.wps-compare__warning {
+  margin: var(--space-2, 8px) 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wps-compare__warning {
+  color: var(--text-1);
+  border-left: 2px solid var(--brand);
+  padding-left: var(--space-2, 8px);
+}
+
+.wps-compare__pages {
+  margin: 0;
+  padding-left: var(--space-4, 16px);
+}
+
+.wps-compare__pages > li {
+  margin-bottom: var(--space-3, 12px);
+}
+
+.wps-compare__group h4 {
+  margin: var(--space-2, 8px) 0 var(--space-1, 4px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.wps-compare__diffs {
+  margin: 0;
+  padding-left: var(--space-4, 16px);
+  font-size: 12px;
+}
+
+.wps-compare__diffs > li {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.wps-compare__target {
+  color: var(--text-2);
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wps-compare__field {
+  color: var(--text-2);
+  min-width: 56px;
+}
+
+.wps-compare__value {
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+.wps-security__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1, 4px) var(--space-2, 8px);
+  margin: var(--space-2, 8px) 0;
+  font-size: 12px;
+}
+
+.wps-security__meta dt {
+  color: var(--text-2);
+}
+
+.wps-security__notice {
+  margin-top: var(--space-3, 12px);
+  padding-left: var(--space-2, 8px);
+  border-left: 2px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+}
