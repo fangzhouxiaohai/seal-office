@@ -29,6 +29,13 @@ it('麦克风流失败时返回真实原因，系统音频不可用时明确报�
   await expect(创建麦克风流({ 媒体设备 })).rejects.toThrow('麦克风不可用：麦克风被占用')
 })
 
+it('系统隐私授权未处理导致取流不返回时，屏幕与麦克风都在有限时间内报错', async () => {
+  const 永不返回 = { getUserMedia: vi.fn(() => new Promise<MediaStream>(() => {})) }
+  await expect(创建屏幕流('screen:0:0', { 媒体设备: 永不返回, 屏幕超时毫秒: 30 })).rejects.toThrow('屏幕捕获等待超时')
+  await expect(创建麦克风流({ 媒体设备: 永不返回, 麦克风超时毫秒: 30 })).rejects.toThrow('麦克风等待授权超时')
+  await expect(创建麦克风流({ 媒体设备: 永不返回, 麦克风超时毫秒: 30 })).rejects.toThrow('系统隐私设置')
+})
+
 it('录制媒体类型只报告本机真实支持的编码', () => {
   const 支持 = { isTypeSupported: (类型: string) => 类型.includes('vp8') }
   expect(录制媒体类型({ 录制器构造: class { static isTypeSupported = 支持.isTypeSupported } as never })).toMatchObject({ 支持: true, 媒体类型: expect.stringContaining('webm') })

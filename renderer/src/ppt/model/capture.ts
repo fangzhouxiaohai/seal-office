@@ -29,6 +29,9 @@ export interface 捕获依赖 {
   画布工厂?: () => 画布接口
   视频工厂?: () => 视频接口
   现在?: () => number
+  /** 取流等待上限；系统隐私授权弹窗未处理时不能无限等待 */
+  屏幕超时毫秒?: number
+  麦克风超时毫秒?: number
 }
 
 export interface 裁剪区域 { x: number; y: number; 宽: number; 高: number }
@@ -53,13 +56,25 @@ function 取录制器构造(依赖: 捕获依赖): 录制器构造接口 | null 
   return typeof globalThis.MediaRecorder !== 'undefined' ? (globalThis.MediaRecorder as unknown as 录制器构造接口) : null
 }
 
+const 默认屏幕超时 = 15000
+const 默认麦克风超时 = 10000
+
+/** 系统隐私弹窗未处理时 getUserMedia 可能一直不返回，这里给出有限等待与真实指引。 */
+function 有限等待<T>(任务: Promise<T>, 超时毫秒: number, 超时消息: string): Promise<T> {
+  if (!Number.isFinite(超时毫秒) || 超时毫秒 <= 0) return 任务
+  return new Promise<T>((完成, 失败) => {
+    const 计时 = setTimeout(() => 失败(new Error(超时消息)), 超时毫秒)
+    任务.then(值 => { clearTimeout(计时); 完成(值) }, 错误 => { clearTimeout(计时); 失败(错误) })
+  })
+}
+
 /** 桌面捕获使用 chromeMediaSource 约束；失败原因原样上抛，便于界面显示。 */
 export async function 创建屏幕流(源标识: unknown, 依赖: 捕获依赖 = {}): Promise<MediaStream> {
   const { 标识 } = 解析捕获源标识(源标识)
   const 媒体设备 = 取媒体设备(依赖)
   if (!媒体设备) throw new Error('当前环境不支持屏幕捕获，请使用 Windows 桌面版')
   try {
-    return await 媒体设备.getUserMedia({
+    return await 有限等待(媒体设备.getUserMedia({
       audio: false,
       video: {
         mandatory: {
@@ -70,7 +85,7 @@ export async function 创建屏幕流(源标识: unknown, 依赖: 捕获依赖 =
           maxFrameRate: 30,
         },
       },
-    })
+    }), 依赖.屏幕超时毫秒 ?? 默认屏幕超时, '屏幕捕获等待超时：请确认已允许屏幕录制权限后重试')
   } catch (错误) {
     throw new Error(`屏幕捕获失败：${错误 instanceof Error ? 错误.message : '系统未授权或该窗口已关闭'}`)
   }
@@ -80,7 +95,9 @@ export async function 创建麦克风流(依赖: 捕获依赖 = {}): Promise<Med
   const 媒体设备 = 取媒体设备(依赖)
   if (!媒体设备) throw new Error('当前环境不支持麦克风采集')
   try {
-    return await 媒体设备.getUserMedia({ audio: true, video: false })
+    return await 有限等待(媒体设备.getUserMedia({ audio: true, video: false }),
+      依赖.麦克风超时毫秒 ?? 默认麦克风超时,
+      '麦克风等待授权超时：请在系统隐私设置中允许本应用使用麦克风后重试')
   } catch (错误) {
     throw new Error(`麦克风不可用：${错误 instanceof Error ? 错误.message : '系统未授权或被其他程序占用'}`)
   }

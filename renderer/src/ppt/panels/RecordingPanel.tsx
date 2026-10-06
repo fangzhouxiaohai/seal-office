@@ -25,6 +25,7 @@ const RecordingPanel = ({ 只读, 依赖 = {}, on提示 }: Props) => {
   const [错误, set错误] = React.useState('')
   const [预览, set预览] = React.useState<{ 地址: string; 数据块: Blob; 时长毫秒: number; 媒体类型: string } | null>(null)
   const [保存中, set保存中] = React.useState(false)
+  const [准备提示, set准备提示] = React.useState('')
   const [已用毫秒, set已用毫秒] = React.useState(0)
   const 会话 = React.useRef<ReturnType<typeof 创建录制会话> | null>(null)
   const 视频流 = React.useRef<MediaStream | null>(null)
@@ -69,6 +70,7 @@ const RecordingPanel = ({ 只读, 依赖 = {}, on提示 }: Props) => {
 
   const 开始录制 = async () => {
     set错误('')
+    set准备提示('正在请求屏幕与麦克风权限…')
     try {
       解析捕获源标识(选中)
       if (!本机编码.支持) throw new Error(本机编码.原因 ?? '当前环境不支持 WebM 录制编码')
@@ -78,19 +80,21 @@ const RecordingPanel = ({ 只读, 依赖 = {}, on提示 }: Props) => {
       const 屏幕 = await 创建屏幕流(选中, 依赖)
       视频流.current = 屏幕
       if (使用麦克风) {
+        set准备提示('正在等待麦克风授权…')
         try { 音频流.current = await 创建麦克风流(依赖) }
         catch (异常) { message.warning(异常 instanceof Error ? 异常.message : '麦克风不可用，已改为仅录制画面') }
       }
       会话.current = 创建录制会话({ 视频流: 屏幕, 音频流: 音频流.current, 依赖 })
       会话.current.开始()
       开始时刻.current = Date.now()
+      set准备提示('')
       set状态('录制中')
     } catch (异常) {
       const 消息 = 异常 instanceof Error ? 异常.message : '无法开始录制'
       set错误(消息)
       on提示?.('无法开始录制', 消息)
       释放设备()
-    }
+    } finally { set准备提示('') }
   }
 
   const 停止录制 = async () => {
@@ -167,6 +171,7 @@ const RecordingPanel = ({ 只读, 依赖 = {}, on提示 }: Props) => {
           <button type="button" onClick={() => void 停止录制()} disabled={状态 !== '录制中' && 状态 !== '已暂停'}>停止录制</button>
         </div>
         <p className="wps-recording-panel__status" role="status">状态：{状态}{状态 === '录制中' || 状态 === '已暂停' ? `　已录制 ${时长文本(已用毫秒)}` : ''}</p>
+        {准备提示 && <p className="wps-recording-panel__status" role="status">{准备提示}</p>}
         {预览 && (
           <div className="wps-recording-panel__preview">
             {预览.地址
