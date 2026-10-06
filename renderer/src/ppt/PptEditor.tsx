@@ -18,8 +18,8 @@ import { 查找演示命令, type 演示命令上下文 } from './pptCommands'
 import { 读取演示命令状态 } from './model/commandStatus'
 import { 校验当前Pptx写入能力, 收集演示资源标识 } from './model/migrations'
 import {
-  创建演示文稿,
   创建文本框,
+  创建演示文稿,
   切换幻灯片,
   约束位置,
   读取当前幻灯片,
@@ -56,6 +56,7 @@ import {
 import { 解析页面背景, 标记占位符覆盖 } from './model/masters'
 import TranslationPanel from './panels/TranslationPanel'
 import NarrationPanel from './panels/NarrationPanel'
+import ToolsPanel, { type 工具区 } from './panels/ToolsPanel'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 创建媒体对象, 创建墨迹对象, 校验音效数据 } from './model/mediaObjects'
@@ -100,6 +101,8 @@ const PptEditor = () => {
   const [编辑框标识, set编辑框标识] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
+  const [工具区, set工具区] = useState<工具区>('截屏')
+  const [识别状态, set识别状态] = useState<{ 可用: boolean; 原因?: string }>({ 可用: false, 原因: '正在读取识别服务状态' })
   const [当前视图, set当前视图] = useState<'普通' | '浏览' | '备注'>('普通')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
@@ -151,6 +154,22 @@ const PptEditor = () => {
   useEffect(() => {
     set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)
   }, [activeDocumentId, 已知文档路径])
+
+  // 识别能力来自共用助手服务设置；这里只读取状态，不复制第二套配置。
+  useEffect(() => {
+    let 取消 = false
+    void (async () => {
+      try {
+        const 结果 = await 桥接.presentationCapture.recognitionStatus()
+        if (取消) return
+        if (结果.成功) set识别状态({ 可用: Boolean(结果.可用), 原因: 结果.原因 })
+        else set识别状态({ 可用: false, 原因: 结果.错误 ?? '识别服务不可用' })
+      } catch (错误) {
+        if (!取消) set识别状态({ 可用: false, 原因: 错误 instanceof Error ? 错误.message : '识别服务不可用' })
+      }
+    })()
+    return () => { 取消 = true }
+  }, [activeDocumentId])
 
   const 记录当前路径 = (路径: string, 文件指纹?: string) => {
     set文档路径(路径)
@@ -368,12 +387,12 @@ const PptEditor = () => {
       if (页 !== 当前幻灯片) 更新文稿(更新幻灯片(文稿, 页.id, 页))
     } catch (错误) { 显示文件错误('对象操作失败', 错误 instanceof Error ? 错误.message : '对象操作失败') }
   }
-  const 插入图片 = async (文件列表: File[]) => {
-    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !文件列表.length || 插入中.current) return
+  /** 插入已经解码好的图片（本机文件、粘贴、截屏共用同一条资源与撤销链路）。 */
+  const 插入图片资源 = async (解码列表: Array<{ 数据: string; 类型: string; 宽: number; 高: number }>) => {
+    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !解码列表.length || 插入中.current) return
     插入中.current = true
     const 临时引用: string[] = []
     try {
-      const 解码列表 = await Promise.all(文件列表.map(解码图片文件))
       const 资源索引 = { ...文稿.资源索引 }, 对象列表 = [...当前幻灯片.对象列表 ?? []], 新标识: string[] = []
       for (const 图片 of 解码列表) {
         const 结果 = await 桥接.presentationResources.add(图片.数据, 图片.类型)
@@ -524,6 +543,25 @@ const PptEditor = () => {
     } catch (错误) { 显示文件错误('笔迹保存失败', 错误 instanceof Error ? 错误.message : '笔迹数据无效') }
   }
 
+  const 插入图片 = async (文件列表: File[]) => {
+    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !文件列表.length || 插入中.current) return
+    try {
+      await 插入图片资源(await Promise.all(文件列表.map(解码图片文件)))
+    } catch (错误) { 显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败') }
+  }
+
+  /** 识别文字插入为文本框，走同一撤销与保存链路。 */
+  const 插入识别文字 = (文本: string) => {
+    if (只读 || !当前幻灯片) return
+    const 内容 = typeof 文本 === 'string' ? 文本.trim() : ''
+    if (!内容) { 显示文件错误('插入识别文字失败', '识别结果为空，未插入任何内容'); return }
+    try {
+      const 新框 = 创建文本框(80, 220, 800, 260, 内容, 18)
+      更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 文本框列表: [...当前幻灯片.文本框列表, 新框] }))
+      set选中框标识(新框.id); set选中对象([])
+    } catch (错误) { 显示文件错误('插入识别文字失败', 错误 instanceof Error ? 错误.message : '文本框创建失败') }
+  }
+
   const 图片粘贴引用 = useRef(插入图片); 图片粘贴引用.current = 插入图片
   useEffect(() => {
     const 粘贴 = (事件: ClipboardEvent) => {
@@ -606,6 +644,8 @@ const PptEditor = () => {
     切换视图: set当前视图,
     打开设计面板: (面板) => set设计面板(面板),
     通知预览: (主题) => set预览主题候选(主题),
+    切换标签: (标签: string) => set当前标签(标签),
+    切换工具区: (区) => set工具区(区),
     撤销,
     重做,
     打开审阅: (区域, 参数) => {
@@ -1073,8 +1113,17 @@ const PptEditor = () => {
       tabs: 演示标签,
       onCommand: 执行命令,
       获取激活态: 取激活态,
-      获取禁用态: (标识: string) => 读取演示命令状态(标识, { 只读: 只读 && !只读可放行(标识) }).状态 !== '可用',
-      获取禁用原因: (标识: string) => 读取演示命令状态(标识, { 只读 }).原因,
+      获取禁用态: (标识: string) => 读取演示命令状态(标识, {
+        只读: 只读 && !只读可放行(标识),
+        需要配置: 标识 === 'tools.ocr',
+        已配置: 识别状态.可用,
+      }).状态 !== '可用',
+      获取禁用原因: (标识: string) => 读取演示命令状态(标识, {
+        只读,
+        需要配置: 标识 === 'tools.ocr',
+        已配置: 识别状态.可用,
+        ...(识别状态.原因 !== undefined ? { 缺少配置原因: 识别状态.原因 } : {}),
+      }).原因,
       onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement('div', { className: 'wps-ppt-object-toolbar' },
@@ -1177,7 +1226,7 @@ const PptEditor = () => {
             },
           })
         ),
-        设计面板 === '主题' ? React.createElement(ThemePanel, {
+        当前标签 === 'design' && 设计面板 === '主题' ? React.createElement(ThemePanel, {
           文稿,
           只读,
           on应用: (新文稿: 演示文稿) => { set预览主题候选(null); 更新文稿(新文稿) },
@@ -1190,15 +1239,20 @@ const PptEditor = () => {
             if (!读取.成功 || !读取.内容) { 显示文件错误('导入主题失败', 读取.错误 ?? '主题文件读取失败'); return null }
             return 读取.内容
           },
-        }) : 设计面板 === '母版' ? React.createElement(MasterPanel, {
+        }) : 当前标签 === 'design' && 设计面板 === '母版' ? React.createElement(MasterPanel, {
           文稿,
           只读,
           on应用: 更新文稿,
-        }) : 设计面板 === '检查' ? React.createElement(DesignCheckPanel, {
+        }) : 当前标签 === 'design' && 设计面板 === '检查' ? React.createElement(DesignCheckPanel, {
           文稿,
           只读,
           on应用: 更新文稿,
           检测字体: 默认字体检测,
+        }) : 当前标签 === 'tools' ? React.createElement(ToolsPanel, {
+          只读, 区: 工具区, on切换区: set工具区,
+          on插入图片: (图片: { 数据: string; 类型: string; 宽: number; 高: number }) => { void 插入图片资源([图片]) },
+          on插入文字: 插入识别文字,
+          on提示: 显示文件错误,
         }) : 当前标签 === 'slideshow' && 智能面板 === '讲稿' ? React.createElement(NarrationPanel, { 文稿, 只读, on修改: 更新文稿 })
           : 当前幻灯片 && 当前标签 === 'review'
           ? (审阅区域 === '批注'
@@ -1213,9 +1267,9 @@ const PptEditor = () => {
                     文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向, 当前路径: 文档路径 ?? undefined,
                     on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
                   }))
-          : 当前幻灯片 && 插入面板 === '公式' ? React.createElement(FormulaPanel, { 对象: 选中对象数据, 只读, on插入: 插入公式对象, on替换: 替换选中对象 })
-          : 当前幻灯片 && 插入面板 === '符号' ? React.createElement(SymbolPanel, { 只读, on插入: 插入符号 })
-          : 当前幻灯片 && 插入面板 === '附件' ? React.createElement(AttachmentPanel, { 对象: 选中对象数据, 只读, on选择文件: (文件: File) => { void 插入附件(文件) }, on导出: (对象: 演示对象) => { void 导出附件(对象) }, on替换: 替换选中对象 })
+          : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '公式' ? React.createElement(FormulaPanel, { 对象: 选中对象数据, 只读, on插入: 插入公式对象, on替换: 替换选中对象 })
+          : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '符号' ? React.createElement(SymbolPanel, { 只读, on插入: 插入符号 })
+          : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '附件' ? React.createElement(AttachmentPanel, { 对象: 选中对象数据, 只读, on选择文件: (文件: File) => { void 插入附件(文件) }, on导出: (对象: 演示对象) => { void 导出附件(对象) }, on替换: 替换选中对象 })
           : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址, on更换音效: () => 音效输入.current?.click(), on移除音效: () => { if (!只读) 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 音效: undefined })) } }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, 文稿, on提示: (标题: string, 内容: string) => 显示文件错误(标题, 内容), on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on选择封面: () => 图片输入.current?.click(), on替换: 替换选中对象 }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),

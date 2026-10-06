@@ -38,6 +38,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   presentationCompare: {
     compareFiles: (左路径, 右路径) => ipcRenderer.invoke('presentation.compareFiles', 左路径, 右路径),
   },
+  presentationCapture: {
+    sources: (类型列表) => ipcRenderer.invoke('presentation.capture.sources', 类型列表),
+    support: () => ipcRenderer.invoke('presentation.recording.support'),
+    saveRecording: (数据, 格式, 建议名) => ipcRenderer.invoke('presentation.recording.save', 数据, 格式, 建议名),
+    recognitionStatus: () => ipcRenderer.invoke('presentation.recognition.status'),
+    recognize: (数据, 类型) => ipcRenderer.invoke('presentation.recognition.recognize', 数据, 类型),
+  },
   recentList: () => ipcRenderer.invoke('file.recent.list'),
   recentAdd: (条目) => ipcRenderer.invoke('file.recent.add', 条目),
   recentRemove: (路径) => ipcRenderer.invoke('file.recent.remove', 路径),

@@ -5,11 +5,12 @@ const { 读取pptx } = require('../office/pptxCodec')
 const { 比较演示文稿 } = require('../office/pptx/compare')
 const fs = require('fs')
 
-function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
+function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 服务 = {}) {
   const 执行 = (任务) => {
     try { return { 成功: true, ...任务() } }
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示资源操作失败' } }
   }
+  /** 任务自带「成功」字段的异步包装 */
   const 异步执行 = async (任务) => {
     try { return await 任务() }
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示操作失败' } }
@@ -32,6 +33,19 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
       警告: { 左: 左.警告 ?? [], 右: 右.警告 ?? [] },
     }
   }))
+  /** 只返回载荷的异步包装：由包装器补齐「成功」字段 */
+  const 执行异步 = async (任务) => {
+    try { return { 成功: true, ...(await 任务()) } }
+    catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示操作失败' } }
+  }
+  const 取录制服务 = () => {
+    if (!服务.录制服务) throw new Error('当前环境不支持录屏：请使用 Windows 桌面版')
+    return 服务.录制服务
+  }
+  const 取识别服务 = () => {
+    if (!服务.识别服务) throw new Error('当前环境不支持文字识别：识别服务未接入')
+    return 服务.识别服务
+  }
   ipcMain.handle('presentation.resource.add', (_事件, 数据, 类型) => 执行(() => {
     if (typeof 数据 !== 'string' || 数据.length === 0 || 数据.length > 70 * 1024 * 1024 ||
         !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(数据)) {
@@ -67,6 +81,12 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
     const 目录 = await 选择导出目录()
     return 目录 ? { 成功: true, 目录 } : { 成功: false, 已取消: true }
   }))
+  // 截屏、录屏与文字识别：服务缺失时给出真实原因
+  ipcMain.handle('presentation.capture.sources', (_事件, 类型列表) => 执行异步(async () => 取录制服务().列出捕获源(类型列表)))
+  ipcMain.handle('presentation.recording.save', (_事件, 数据, 格式, 建议名) => 执行异步(async () => 取录制服务().保存录制({ 数据, 格式, 建议名 })))
+  ipcMain.handle('presentation.recording.support', () => 执行(() => 取录制服务().读取支持情况()))
+  ipcMain.handle('presentation.recognition.status', () => 执行异步(async () => 取识别服务().读取状态()))
+  ipcMain.handle('presentation.recognition.recognize', (_事件, 数据, 类型) => 执行异步(async () => 取识别服务().识别({ 数据, 类型 })))
 }
 
 module.exports = { 注册演示通道 }

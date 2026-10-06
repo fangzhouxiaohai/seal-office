@@ -2,6 +2,19 @@ import { 读取切换, 校验播放参数, 全部切换, type 切换效果 } fro
 import { 原生插入命令 } from './commands/insert'
 import { 审阅命令 } from './commands/review'
 import { 设计命令 } from './commands/design'
+// 工具标签入口：只切换容器标签与分区，不修改文稿内容。
+export const 工具命令: 演示命令[] = ([
+  ['tools.capture', '截屏', '截屏'],
+  ['tools.record', '屏幕录制', '录屏'],
+  ['tools.ocr', '图片转文字', '识别'],
+] as const).map(([id, label, 区]) => ({
+  id,
+  label,
+  run: (上下文) => {
+    上下文.切换标签?.('tools')
+    上下文.切换工具区?.(区)
+  },
+}))
 // 演示文稿命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
 import {
   创建文本框,
@@ -46,11 +59,14 @@ export interface 演示命令上下文 {
   撤销: () => void
   重做: () => void
   /** 打开审阅面板；参数用于预置转换方向等初始状态 */
-  打开审阅?: (区域: '检查' | '批注' | '转换' | '定稿' | '比对', 参数?: string) => void
+  打开审阅?: (区域: '检查' | '批注' | '转换' | '定稿' | '比对' | '翻译', 参数?: string) => void
   /** 按页面顺序跳到上一条或下一条批注 */
   跳转批注?: (方向: -1 | 1) => void
   /** 切换画布批注标记的显示状态，只改变视图 */
   切换批注显示?: () => void
+  /** 工具入口由容器切换到工具标签与对应分区 */
+  切换标签?: (标签: string) => void
+  切换工具区?: (区: '截屏' | '录屏' | '识别') => void
 }
 
 export interface 演示命令 {
@@ -550,6 +566,7 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
 原生插入命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 审阅命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 设计命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
+工具命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
 /** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
 export const 演示未实现清单: Array<[string, string]> = []

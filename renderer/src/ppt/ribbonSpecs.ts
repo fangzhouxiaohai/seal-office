@@ -348,6 +348,24 @@ const 视图标签: RibbonTabSpec = {
   ],
 }
 
+const 工具标签: RibbonTabSpec = {
+  key: 'tools',
+  label: '工具',
+  groups: [
+    {
+      name: '捕获',
+      items: [
+        大('tools.capture', '截屏', 'image'),
+        大('tools.record', '屏幕录制', 'flow'),
+      ],
+    },
+    {
+      name: '识别',
+      items: [大('tools.ocr', '图片转文字', 'spell-check')],
+    },
+  ],
+}
+
 export const 演示标签: RibbonTabSpec[] = [
   开始标签,
   插入标签,
@@ -357,4 +375,5 @@ export const 演示标签: RibbonTabSpec[] = [
   放映标签,
   审阅标签,
   视图标签,
+  工具标签,
 ]

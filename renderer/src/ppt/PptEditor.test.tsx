@@ -598,4 +598,45 @@ describe('演示文稿编辑器容器', () => {
     await userEvent.click(screen.getByRole('button', { name: '加粗' }))
     expect(await screen.findByText('请先在画布中选中一个文本框')).toBeInTheDocument()
   })
+
+  it('工具标签提供截屏、录屏与图片转文字入口，并显示识别与编码的真实状态', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
+      presentationCapture: {
+        sources: vi.fn(async () => ({ 成功: true, 源列表: [] })),
+        support: vi.fn(async () => ({ 成功: true, WebM: true, 媒体类型: 'video/webm;codecs=vp8,opus', MP4: false, MP4原因: 'MP4 需要额外编码器与分发授权' })),
+        recognitionStatus: vi.fn(async () => ({ 成功: true, 可用: false, 原因: '请先在设置中心配置模型服务，并选择支持图像输入的模型' })),
+        saveRecording: vi.fn(),
+        recognize: vi.fn(),
+      },
+    } })
+    渲染演示()
+    await userEvent.click(await screen.findByRole('tab', { name: '工具' }))
+    expect(await screen.findByRole('tab', { name: '截屏' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '录屏' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '图片转文字' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: '图片转文字' }))
+    expect(await screen.findByText(/请先在设置中心配置模型服务/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: '录屏' }))
+    expect(await screen.findByText(/MP4 需要额外编码器与分发授权/)).toBeInTheDocument()
+  })
+
+  it('图片转文字未配置时功能按钮禁用并给出原因', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
+      presentationCapture: {
+        sources: vi.fn(async () => ({ 成功: true, 源列表: [] })),
+        support: vi.fn(async () => ({ 成功: true, WebM: true, MP4: false, MP4原因: 'MP4 未开放' })),
+        recognitionStatus: vi.fn(async () => ({ 成功: true, 可用: false, 原因: '请先在设置中心配置模型服务' })),
+        saveRecording: vi.fn(),
+        recognize: vi.fn(),
+      },
+    } })
+    渲染演示()
+    await userEvent.click(await screen.findByRole('tab', { name: '工具' }))
+    await screen.findByRole('tab', { name: '图片转文字' })
+    const 识别按钮 = screen.getByRole('button', { name: '图片转文字' })
+    expect(识别按钮).toBeDisabled()
+    expect(识别按钮.getAttribute('title') ?? '').toContain('请先在设置中心配置模型服务')
+  })
 })
