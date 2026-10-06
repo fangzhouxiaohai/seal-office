@@ -59,4 +59,30 @@ describe('帮助手册', () => {
     expect(screen.getByText(/幻灯片浏览/)).toBeInTheDocument()
     expect(screen.getByText(/备注页/)).toBeInTheDocument()
   })
+
+  it('覆盖演示进阶能力，并如实写明外部兼容与未交付项', () => {
+    render(<HelpManual />)
+
+    fireEvent.click(screen.getByRole('button', { name: '主题、母版与页面设置' }))
+    expect(screen.getByText(/预览不会修改文稿/)).toBeInTheDocument()
+    expect(screen.getByText(/母版与版式背景目前只支持纯色/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '切换、动画与放映设置' }))
+    expect(screen.getByText(/不能宣称这些效果可跨软件播放/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '批注、校对、定稿与比对' }))
+    expect(screen.getByText(/本版本不提供文档密码加密/)).toBeInTheDocument()
+    expect(screen.getByText(/外部软件另存会丢失/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '截屏、录屏与图片转文字' }))
+    expect(screen.getByText(/本版本只交付 WebM 录制/)).toBeInTheDocument()
+    expect(screen.getByText(/不会用空结果或规则模拟代替识别/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '演示智能服务：翻译、校对与讲稿' }))
+    expect(screen.getByText(/真实模型效果需要你配置密钥后自测/)).toBeInTheDocument()
+    expect(screen.getByText(/密钥保存在系统安全存储中/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '演讲者视图与阅读视图' }))
+    expect(screen.getByText(/未做真实双屏验证/)).toBeInTheDocument()
+  })
 })
