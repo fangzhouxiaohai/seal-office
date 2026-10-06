@@ -119,7 +119,7 @@ export interface 电子接口 {
 }
 declare global { interface Window { electronAPI?: 电子接口 } }
 const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? window.electronAPI ?? null : null
-const 失败 = (提示: string) => Promise.resolve({ 成功: false, 错误: 提示 })
+const 失败 = <T = never>(提示: string): Promise<{ 成功: boolean; 数据?: T; 错误: string }> => Promise.resolve({ 成功: false, 错误: 提示 })
 export const 桥接 = {
   get 可用() { return 取后端() !== null },
   get 放映全屏可用() { return typeof 取后端()?.enterSlideshowFullscreen === 'function' },

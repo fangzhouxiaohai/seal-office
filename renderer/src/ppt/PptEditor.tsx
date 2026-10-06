@@ -35,6 +35,8 @@ import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
+import TranslationPanel from './panels/TranslationPanel'
+import NarrationPanel from './panels/NarrationPanel'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
@@ -432,6 +434,9 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    // 智能面板入口只切换右侧面板，不属于正文修改，只读状态同样允许查看。
+    if (标识 === 'review.translate' || 标识 === 'review.proofread') { set当前标签('review'); return }
+    if (标识 === 'slideshow.narrate') { set当前标签('slideshow'); return }
     if (只读 && !标识.startsWith('view.') && !标识.startsWith('slideshow.') && !标识.startsWith('file.')) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
     if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
@@ -902,7 +907,7 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      当前幻灯片 && ['transition','animation'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前标签 === 'slideshow' ? React.createElement(NarrationPanel, { 文稿, 只读, on修改: 更新文稿 }) : 当前标签 === 'review' ? React.createElement(TranslationPanel, { 文稿, 当前索引: 文稿.当前索引, 选中: 选中框标识 ? [选中框标识, ...选中对象] : 选中对象, 只读, on修改: 更新文稿 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }

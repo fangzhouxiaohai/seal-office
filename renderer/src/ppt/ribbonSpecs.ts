@@ -189,6 +189,10 @@ const 放映标签: RibbonTabSpec = {
         大('slideshow.current', '从当前开始', 'page-view'),
       ],
     },
+    {
+      name: '智能讲 PPT',
+      items: [大('slideshow.narrate', '讲稿与讲解音频', 'comment')],
+    },
   ],
 }
 
@@ -199,6 +203,13 @@ const 审阅标签: RibbonTabSpec = {
     {
       name: '校对',
       items: [大('review.spell', '拼写检查', 'spell-check')],
+    },
+    {
+      name: '智能审阅',
+      items: [
+        小('review.translate', '翻译', 'language'),
+        小('review.proofread', '语义校对', 'comment'),
+      ],
     },
     {
       name: '批注',
