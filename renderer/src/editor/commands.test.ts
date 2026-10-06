@@ -1,5 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
-import { 命令表, 查找命令, 未实现命令, 命令标识列表, type CommandContext } from './commands'
+import { 命令表, 查找命令, 未实现命令, 命令标识列表, htmlToDocxModel, type CommandContext } from './commands'
+
+it('保存模型包含已导入的页眉页脚与水平线', () => {
+  const 模型 = htmlToDocxModel('<p>正文</p><hr>', {
+    纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无',
+    页面边框: '无', 页面颜色: '无', 文字方向: '横排',
+    页眉Html: '<p>公司页眉</p>', 页脚Html: '<p>公司页脚</p>',
+  })
+  expect(模型.段落[模型.段落.length - 1]?.类型).toBe('水平线')
+  expect(模型.页眉?.[0]).toMatchObject({ 类型: '段落', 文字: [{ 文本: '公司页眉' }] })
+  expect(模型.页脚?.[0]).toMatchObject({ 类型: '段落', 文字: [{ 文本: '公司页脚' }] })
+  expect(模型.未覆盖).toEqual([])
+})
 
 /** 构造一个最小上下文，仅提供被测命令会用到的字段 */
 const 构造上下文 = (部分: Partial<CommandContext> = {}): CommandContext =>

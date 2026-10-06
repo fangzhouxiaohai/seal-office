@@ -2,8 +2,9 @@ const fs = require('fs')
 const path = require('path')
 const { once } = require('events')
 
-const [页面端口, 主端口, 数据目录, 注册表位置, 阶段, 报告路径, 截图目录参数 = '', 系统新建清单 = '', 关联打开文件 = '-'] = process.argv.slice(2)
+const [页面端口, 主端口, 数据目录, 注册表位置, 阶段, 报告路径, 截图目录参数 = '', 系统新建清单参数 = '', 关联打开文件 = '-'] = process.argv.slice(2)
 const 截图目录 = 截图目录参数 === '-' ? '' : 截图目录参数
+const 系统新建清单 = 系统新建清单参数 === '-' ? '' : 系统新建清单参数
 const 等待片刻 = 毫秒 => new Promise(完成 => setTimeout(完成, 毫秒))
 const 连接列表 = [], 核验 = []
 const 检查 = (条件, 说明) => { if (!条件) throw new Error(说明); 核验.push(说明) }

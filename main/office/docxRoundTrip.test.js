@@ -419,6 +419,34 @@ describe('读取时的保真警告', () => {
     expect(结果.警告).toEqual([])
   })
 
+  it('缺省页边距、空页眉页脚和 VML 水平线不误报内容丢失', async () => {
+    const 水平线 = '<w:p><w:r><w:pict><v:rect o:hr="t"><v:imagedata o:title=""/></v:rect></w:pict></w:r></w:p>'
+    const 数据 = await 构造文档(`<w:p><w:r><w:t>正文</w:t></w:r></w:p>${水平线}<w:sectPr><w:headerReference r:id="rId1"/><w:footerReference r:id="rId2"/><w:pgSz w:w="11905" w:h="16840"/></w:sectPr>`, {
+      'word/_rels/document.xml.rels': '<Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>',
+      'word/header1.xml': '<w:hdr><w:p/></w:hdr>',
+      'word/footer1.xml': '<w:ftr><w:p/></w:ftr>',
+    })
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.html).toContain('<hr>')
+    expect(结果.页面设置).toMatchObject({ 纸张: 'A4', 原始页边距: { 上: 1440, 右: 1440, 下: 1440, 左: 1440 } })
+  })
+
+  it('有内容的页眉页脚及页眉图片可以读取并写回', async () => {
+    const 段落 = (文字) => ({ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字 })
+    const 图片 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLytQAAAABJRU5ErkJggg=='
+    const 数据 = await 生成docx({
+      段落: [段落([{ 文本: '正文' }])],
+      页眉: [段落([{ 文本: '公司名称', 加粗: true }, { 文本: '', 图片: { 数据: 图片, 格式: 'png', 宽: 20, 高: 20, 说明: '标志' } }])],
+      页脚: [段落([{ 文本: '联系地址' }])],
+    })
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.页面设置.页眉Html).toContain('公司名称')
+    expect(结果.页面设置.页眉Html).toContain('data:image/png;base64,')
+    expect(结果.页面设置.页脚Html).toContain('联系地址')
+  })
+
   it('正文含图片和图形时分别指出未导入对象', async () => {
     const 数据 = await 构造文档(
       '<w:p><w:r><w:t>正文</w:t></w:r><w:r><w:drawing><a:blip r:embed="rId1"/></w:drawing></w:r>' +
@@ -440,8 +468,8 @@ describe('读取时的保真警告', () => {
       { 'word/header1.xml': '<w:hdr/>', 'word/footer1.xml': '<w:ftr/>' }
     )
     const 结果 = await 读取docx(数据)
-    expect(结果.警告).toContain('页眉未导入')
-    expect(结果.警告).toContain('页脚未导入')
+    expect(结果.警告).toContain('页眉未导入：引用关系缺失或无效')
+    expect(结果.警告).toContain('页脚未导入：引用关系缺失或无效')
   })
 
   it('正文引用音视频和批注时列出对应丢失项', async () => {

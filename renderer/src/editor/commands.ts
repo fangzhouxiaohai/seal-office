@@ -39,6 +39,8 @@ export interface ViewState {
   文字方向: '横排' | '竖排'
   原始纸张?: { 宽: number; 高: number }
   原始页边距?: { 上: number; 右: number; 下: number; 左: number }
+  页眉Html?: string
+  页脚Html?: string
   显示批注: boolean
   修订模式: boolean
   /** 文档保护：开启后编辑区转为只读 */
@@ -972,10 +974,19 @@ function 从视图提取页面设置(视图: ViewState): 文字页面设置 {
     页面颜色: 视图.页面颜色, 文字方向: 视图.文字方向,
     ...(视图.原始纸张 ? { 原始纸张: 视图.原始纸张 } : {}),
     ...(视图.原始页边距 ? { 原始页边距: 视图.原始页边距 } : {}),
+    ...(视图.页眉Html ? { 页眉Html: 视图.页眉Html } : {}),
+    ...(视图.页脚Html ? { 页脚Html: 视图.页脚Html } : {}),
   }
 }
 
 export function htmlToDocxModel(html: string, 页面设置?: 文字页面设置): 文档模型 {
-  return { ...解析文档(html), ...(页面设置 ? { 页面设置 } : {}) }
+  const 模型 = 解析文档(html)
+  for (const [键, 内容] of [['页眉', 页面设置?.页眉Html], ['页脚', 页面设置?.页脚Html]] as const) {
+    if (!内容) continue
+    const 部分 = 解析文档(内容)
+    模型.未覆盖.push(...部分.未覆盖.map((项) => `${键}中的${项}`))
+    模型[键] = 部分.段落
+  }
+  return { ...模型, ...(页面设置 ? { 页面设置 } : {}) }
 }
 

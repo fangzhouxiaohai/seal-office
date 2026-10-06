@@ -1234,6 +1234,24 @@ button {
   transition: transform 0.15s ease;
 }
 
+.wps-editor-canvas__header,
+.wps-editor-canvas__footer {
+  position: absolute;
+  min-height: 24px;
+  color: var(--document-ink);
+  font-size: 12px;
+  line-height: 1.4;
+  outline: none;
+  z-index: 2;
+}
+
+.wps-editor-canvas__header { top: 24px; }
+.wps-editor-canvas__footer { bottom: 24px; }
+.wps-editor-canvas__header:focus,
+.wps-editor-canvas__footer:focus { outline: 1px dashed #8ca9d2; }
+.wps-editor-canvas__header p,
+.wps-editor-canvas__footer p { margin: 0; }
+
 /* 页面水印：居中斜置、不拦截交互 */
 .wps-editor-canvas__watermark {
   position: absolute;

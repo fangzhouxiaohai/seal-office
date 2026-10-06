@@ -1,16 +1,24 @@
 // 导出文档：拼装独立 HTML 文件，或从编辑区 HTML 抽取纯文本。
 // 下载通过浏览器原生 Blob 触发，不依赖主进程。
 
-export function 导出为Html(标题: string, 正文Html: string): string {
+export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '', 页脚Html = ''): string {
   const 安全标题 = 标题.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const 附加样式 = 页眉Html || 页脚Html ? `<style>
+@page { margin: 25mm 20mm; }
+.seal-print-header { position: fixed; top: -18mm; left: 0; right: 0; font-size: 10pt; }
+.seal-print-footer { position: fixed; bottom: -18mm; left: 0; right: 0; font-size: 10pt; }
+</style>` : ''
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="generator" content="海豹办公 Seal Office">
 <title>${安全标题}</title>
+${附加样式}
 </head>
 <body>
+${页眉Html ? `<div class="seal-print-header">${页眉Html}</div>` : ''}
+${页脚Html ? `<div class="seal-print-footer">${页脚Html}</div>` : ''}
 ${正文Html}
 </body>
 </html>

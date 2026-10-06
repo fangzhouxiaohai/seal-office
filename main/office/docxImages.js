@@ -49,8 +49,8 @@ function 选择兼容分支(正文, 图片) {
 }
 
 /** 只读取包内真实引用的图片，关系与尺寸异常均加入导入风险。 */
-async function 读取正文图片(压缩包, 正文, 警告) {
-  const 文件 = 压缩包.file('word/_rels/document.xml.rels')
+async function 读取正文图片(压缩包, 正文, 警告, 部件 = 'word/document.xml') {
+  const 文件 = 压缩包.file(path.posix.join(path.posix.dirname(部件), '_rels', `${path.posix.basename(部件)}.rels`))
   const 关系Xml = 文件 ? await 文件.async('string') : ''
   const 关系 = new Map()
   for (const 匹配 of 关系Xml.matchAll(/<(?:[\w]+:)?Relationship(?=[\s/>])[^>]*>/g)) {
@@ -64,6 +64,13 @@ async function 读取正文图片(压缩包, 正文, 警告) {
   for (const 匹配 of 正文.matchAll(绘图正则())) {
     const 内容 = 匹配[0]
     if (!/<(?:a:blip|v:imagedata)(?=[\s/>])/.test(内容)) continue
+    // Word 用没有 r:id 的 v:imagedata 占位节点表示 VML 水平线，它并非丢失的图片。
+    if (/<v:rect(?=[\s>])[^>]*\bo:hr=["']t["']/i.test(内容) &&
+        /<v:imagedata(?=[\s/>])[^>]*\/?>(?:<\/v:imagedata>)?/i.test(内容) &&
+        !/\br:(?:id|embed|link)\s*=/.test(内容)) {
+      结果.set(内容, '<hr>')
+      continue
+    }
     const 当前警告 = []
     对象警告.set(内容, 当前警告)
     try {
@@ -73,7 +80,7 @@ async function 读取正文图片(压缩包, 正文, 警告) {
       const 引用 = 关系.get(标识)
       if (属性(图像, 'r:link') || 引用?.模式 === 'External') throw new Error('外部链接图片未导入')
       if (!引用?.路径 || !引用.类型?.endsWith('/image')) throw new Error('图片未导入：图片关系缺失或无效')
-      const 包内路径 = path.posix.normalize(引用.路径.startsWith('/') ? 引用.路径.slice(1) : `word/${引用.路径}`)
+      const 包内路径 = path.posix.normalize(引用.路径.startsWith('/') ? 引用.路径.slice(1) : path.posix.join(path.posix.dirname(部件), 引用.路径))
       const 图片文件 = 压缩包.file(包内路径)
       if (!图片文件) throw new Error('图片未导入：图片资源缺失')
       let 信息 = 缓存.get(包内路径)

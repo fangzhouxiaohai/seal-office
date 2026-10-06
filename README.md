@@ -1,18 +1,18 @@
 # 海豹办公 Seal Office
 
-海豹办公是面向 Windows 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面参考 WPS 常见的布局与操作习惯；Office 文件只支持部分格式和对象往返，基础功能范围见[WPS 对标与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，本版新建弹窗、打印和模板内容见[1.8.1 升级说明](docs/v1.8.1-打印与模板升级.md)。
+海豹办公是面向 Windows 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面参考 WPS 常见的布局与操作习惯；Office 文件只支持部分格式和对象往返，基础功能范围见[WPS 对标与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，新建弹窗、打印和模板内容见[1.8.1 升级说明](docs/v1.8.1-打印与模板升级.md)，DOCX 导入修复见[1.8.2 升级说明](docs/v1.8.2-DOCX导入修复.md)。
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
 ## Windows 下载
 
-当前版本：**1.8.1**，适用于 Windows x64。
+当前版本：**1.8.2**，适用于 Windows x64。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice 1.8.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.1/SealOffice%201.8.1.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice Setup 1.8.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.1/SealOffice%20Setup%201.8.1.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
-| 发布说明 | [v1.8.1 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.8.1)，包含新建弹窗、打印与模板升级。 |
+| 便携版 | [SealOffice 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice%201.8.2.exe)，下载后直接运行。 |
+| 安装版 | [SealOffice Setup 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice%20Setup%201.8.2.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
+| 发布说明 | [v1.8.2 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.8.2)，包含新建弹窗、打印、模板与 DOCX 导入修复。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -220,7 +220,7 @@ PDF 正文居中显示，右侧工具栏默认收起为图标，支持展开页�
 | HTML、HTM、TXT、MD | 可打开文字内容；文字编辑器另提供 HTML、TXT 导出。 |
 | CSV、JSON | CSV 可导入表格并另存为 XLSX；兼容旧版办公 JSON 数据及普通 JSON 文字。 |
 
-旧式 DOC、XLS、PPT、WPS 专用 WPS/ET/DPS、RTF 和 ODF 格式当前未接入。DOCX 内的浮动、裁剪、旋转或特效图片、组合图形、SVG/WebP 图片、页眉页脚、脚注尾注、批注、修订、超链接目标、合并单元格、多分节与精确分页仍不能完整往返；远程链接图片不自动下载，不能写回的编辑对象会在保存前明确提示。字符单位、行单位和自动段距的屏幕呈现不等同于 Word/WPS 的精确排版引擎。详细范围见[最新格式说明](docs/v1.6.6-文档图片保存修复.md#格式与排版边界)。
+旧式 DOC、XLS、PPT、WPS 专用 WPS/ET/DPS、RTF 和 ODF 格式当前未接入。DOCX 已支持普通页眉页脚中的文字、表格和嵌入图片，以及 VML 水平线；首页与奇偶页不同的页眉页脚、域和页码、浮动或裁剪图片、组合图形、SVG/WebP 图片、脚注尾注、批注、修订、超链接目标、合并单元格、多分节与精确分页仍不能完整往返，读取时会报告实际损失风险。远程链接图片不自动下载。字符单位、行单位和自动段距的屏幕呈现不等同于 Word/WPS 的精确排版引擎。详细范围见[1.8.2 导入修复与边界](docs/v1.8.2-DOCX导入修复.md)。
 
 ## 环境与命令
 

@@ -51,7 +51,7 @@ const 默认视图: ViewState = {
   文档保护: false,
 }
 
-const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距'] as const
+const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距', '页眉Html', '页脚Html'] as const
 
 function 提取页面设置(视图: ViewState): 文字页面设置 {
   return Object.fromEntries(布局字段.map((字段) => [字段, 视图[字段]])) as unknown as 文字页面设置
@@ -215,7 +215,7 @@ const DocEditor = () => {
   当前文档标识引用.current = 文档标识
 
   useEffect(() => {
-    set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, ...(当前文档?.页面设置 ?? {}) }))
+    set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
   }, [文档标识])
 
   // 助手等外部更新直接写入状态层；把新内容加入当前文档历史，保留撤销入口。
@@ -402,6 +402,31 @@ const DocEditor = () => {
 
   const 插入资源 = (类型: InsertableKind): void => {
     switch (类型) {
+      case '页眉':
+      case '页脚': {
+        const 键 = 类型 === '页眉' ? '页眉Html' : '页脚Html'
+        const 当前 = 视图[键] ?? ''
+        const 解析容器 = document.createElement('div')
+        解析容器.innerHTML = 当前
+        let 输入 = 解析容器.textContent ?? ''
+        modal.confirm({
+          title: `编辑${类型}`,
+          content: React.createElement('textarea', {
+            defaultValue: 输入,
+            rows: 4,
+            style: { width: '100%' },
+            onChange: (事件: React.ChangeEvent<HTMLTextAreaElement>) => { 输入 = 事件.target.value },
+          }),
+          okText: '应用', cancelText: '取消',
+          onOk: () => {
+            const 安全 = 输入.replace(/[&<>"']/g, (字符) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[字符] ?? 字符)
+            const 下一个 = { ...视图, [键]: 安全 ? `<p>${安全}</p>` : undefined }
+            set视图(下一个)
+            if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+          },
+        })
+        break
+      }
       case '封面':
         插入内容(封面模板())
         break
@@ -714,7 +739,7 @@ const DocEditor = () => {
       const 正文 = 编辑区引用.current?.innerHTML
       if (!正文) { message.warning('文档为空，无法打印'); return }
       const 名称 = 当前文档?.name ?? '未命名文档'
-      void 桥接.printDocument(导出为Html(名称, 正文), 'html').then((结果) => {
+      void 桥接.printDocument(导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html), 'html').then((结果) => {
         if (!结果.成功 && !结果.已取消) modal.error({ title: '打印失败', content: 结果.错误 || '无法启动打印任务' })
       }).catch((错误: unknown) => { modal.error({ title: '打印失败', content: 错误 instanceof Error ? 错误.message : '无法启动打印任务' }) })
       return
@@ -1003,6 +1028,18 @@ const DocEditor = () => {
         pageColor: 视图.页面颜色,
         customPaper: 视图.原始纸张,
         customMargin: 视图.原始页边距,
+        headerHtml: 视图.页眉Html,
+        footerHtml: 视图.页脚Html,
+        onHeaderChange: (html: string) => {
+          const 下一个 = { ...视图, 页眉Html: html || undefined }
+          set视图(下一个)
+          if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+        },
+        onFooterChange: (html: string) => {
+          const 下一个 = { ...视图, 页脚Html: html || undefined }
+          set视图(下一个)
+          if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+        },
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素
           取历史().record({ html: 元素.innerHTML, selection: null })

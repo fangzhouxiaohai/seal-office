@@ -2,6 +2,7 @@
 // 相比 mammoth 的语义化输出，直接解析保留颜色、字号、字体、加粗、斜体、
 // 下划线、删除线、对齐、标题与列表，使「保存后再次打开」的格式不丢失。
 const JSZip = require('jszip')
+const path = require('path')
 const { 缩进字段, 间距字段, 扩展字段, 属性有效 } = require('./paragraphProperties')
 const { 读取正文图片 } = require('./docxImages')
 
@@ -35,12 +36,9 @@ const 存在 = (片段, 标签) => new RegExp(`<w:${标签}[\\s/>]`, 'i').test(�
 function 解析页面设置(documentXml, 警告) {
   const 节 = documentXml.match(/<w:sectPr(?:\s[^>]*)?>([\s\S]*?)<\/w:sectPr>/i)?.[1]
   if (节 === undefined) return undefined
-  const 尺寸标签 = 节.match(/<w:pgSz(?=[\s/>])[^>]*>/i)?.[0] ?? ''
-  const 边距标签 = 节.match(/<w:pgMar(?=[\s/>])[^>]*>/i)?.[0] ?? ''
-  if (!尺寸标签 || !边距标签) {
-    警告.push('自定义页面设置未完整导入')
-    return undefined
-  }
+  // OOXML 允许省略页面尺寸和页边距，省略表示使用 Word 默认值。
+  const 尺寸标签 = 节.match(/<w:pgSz(?=[\s/>])[^>]*>/i)?.[0] ?? '<w:pgSz w:w="12240" w:h="15840"/>'
+  const 边距标签 = 节.match(/<w:pgMar(?=[\s/>])[^>]*>/i)?.[0] ?? '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>'
   const 方向 = 取属性(尺寸标签, 'w:pgSz', 'w:orient') === 'landscape' ? '横向' : '纵向'
   const 宽 = Number(取属性(尺寸标签, 'w:pgSz', 'w:w'))
   const 高 = Number(取属性(尺寸标签, 'w:pgSz', 'w:h'))
@@ -440,6 +438,18 @@ function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
       结束列表()
       输出.push('<div class="wps-page-break"></div>')
     }
+    if (样式定义?.图片 && /<w:pict(?=[\s>])/.test(块Xml) &&
+        [...块Xml.matchAll(/<w:pict(?=[\s>])[^>]*>[\s\S]*?<\/w:pict>/gi)].some((项) => 样式定义.图片.get(项[0]) === '<hr>') &&
+        !/<w:t(?=[\s/>])/.test(块Xml)) {
+      结束列表()
+      输出.push('<hr>')
+      continue
+    }
+    if (/<w:pBdr(?=[\s>])[\s\S]*?<w:bottom(?=[\s/>])/.test(块Xml) && !/<w:t(?=[\s/>])/.test(块Xml)) {
+      结束列表()
+      输出.push('<hr>')
+      continue
+    }
     const 渲染 = 渲染段落Xml(块Xml, undefined, 编号映射, 样式定义)
     if (渲染.列表项) {
       if (当前列表 !== 渲染.列表标签) {
@@ -508,8 +518,6 @@ function 收集未导入警告(bodyXml, 图片) {
     警告.push('图形未导入')
   }
   if (有标签('a:videoFile') || 有标签('a:audioFile') || 有标签('w:movie')) 警告.push('媒体未导入')
-  if (有标签('w:headerReference')) 警告.push('页眉未导入')
-  if (有标签('w:footerReference')) 警告.push('页脚未导入')
   if (有标签('w:footnoteReference')) 警告.push('脚注未导入')
   if (有标签('w:endnoteReference')) 警告.push('尾注未导入')
   if (有标签('w:commentReference')) 警告.push('批注未导入')
@@ -522,6 +530,53 @@ function 收集未导入警告(bodyXml, 图片) {
   if (有标签('w:hyperlink')) 警告.push('超链接目标未导入')
   if (有标签('w:gridSpan') || 有标签('w:vMerge')) 警告.push('表格合并单元格未导入')
   return 警告
+}
+
+/** 解析当前分节引用的页眉页脚；空部件是 Word 的正常占位，不应报丢失。 */
+async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式定义, 警告) {
+  const 节 = [...documentXml.matchAll(/<w:sectPr(?=[\s>])[^>]*>([\s\S]*?)<\/w:sectPr>/gi)].at(-1)?.[1] ?? ''
+  if (!节) return {}
+  const 关系Xml = await 压缩包.file('word/_rels/document.xml.rels')?.async('string') ?? ''
+  const 关系 = new Map([...关系Xml.matchAll(/<(?:[\w]+:)?Relationship(?=[\s/>])[^>]*>/gi)].map((项) => {
+    const 标签 = 项[0].match(/^<([\w:]+)/)[1]
+    return [取属性(项[0], 标签, 'Id'), {
+      路径: 取属性(项[0], 标签, 'Target'),
+      类型: 取属性(项[0], 标签, 'Type'),
+      外部: 取属性(项[0], 标签, 'TargetMode') === 'External',
+    }]
+  }))
+  const 结果 = {}
+  for (const [种类, 键] of [['header', '页眉Html'], ['footer', '页脚Html']]) {
+    const 引用 = [...节.matchAll(new RegExp(`<w:${种类}Reference(?=[\\s/>])[^>]*>`, 'gi'))]
+    const 候选 = []
+    for (const 项 of 引用) {
+      const 编号 = 取属性(项[0], `w:${种类}Reference`, 'r:id')
+      const 关系项 = 关系.get(编号)
+      const 名称 = 种类 === 'header' ? '页眉' : '页脚'
+      if (!关系项?.路径 || !关系项.类型?.endsWith(`/${种类}`) || 关系项.外部) {
+        警告.push(`${名称}未导入：引用关系缺失或无效`)
+        continue
+      }
+      const 部件 = path.posix.normalize(关系项.路径.startsWith('/') ? 关系项.路径.slice(1) : `word/${关系项.路径}`)
+      if (!部件.startsWith('word/') || !压缩包.file(部件)) {
+        警告.push(`${名称}未导入：部件缺失`)
+        continue
+      }
+      const xml = await 压缩包.file(部件).async('string')
+      const 内容 = xml.match(new RegExp(`<w:${种类 === 'header' ? 'hdr' : 'ftr'}(?=[\\s>])[^>]*>([\\s\\S]*?)<\\/w:${种类 === 'header' ? 'hdr' : 'ftr'}>`, 'i'))?.[1] ?? ''
+      if (!/<w:(?:t|drawing|pict|fldChar|instrText|tab|br|tbl)(?=[\s/>])/i.test(内容)) continue
+      const 图片读取 = await 读取正文图片(压缩包, 内容, 警告, 部件)
+      const 局部样式 = { ...样式定义, 图片: 图片读取.图片 }
+      const html = 渲染Body(图片读取.正文, 编号映射, 局部样式)
+      if (/<w:(?:fldChar|instrText|fldSimple|tab)(?=[\s/>])/i.test(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
+      警告.push(...收集未导入警告(图片读取.正文, 图片读取.图片).map((项) => `${名称}：${项}`))
+      候选.push({ 类型: 取属性(项[0], `w:${种类}Reference`, 'w:type') ?? 'default', html })
+    }
+    const 首选 = 候选.find((项) => 项.类型 === 'default') ?? 候选[0]
+    if (首选?.html) 结果[键] = 首选.html
+    if (候选.some((项) => 项 !== 首选 && 项.html !== 首选?.html)) 警告.push(`${种类 === 'header' ? '页眉' : '页脚'}的首页或奇偶页版本未完整导入`)
+  }
+  return 结果
 }
 
 /**
@@ -554,6 +609,8 @@ async function 读取docx(数据) {
   const bodyXml = 图片读取.正文
   样式定义.图片 = 图片读取.图片
   const 页面设置 = 解析页面设置(documentXml, 警告)
+  const 页眉页脚 = await 读取页眉页脚(压缩包, documentXml, 编号映射, 样式定义, 警告)
+  if (页面设置) Object.assign(页面设置, 页眉页脚)
   警告.push(...收集未导入警告(bodyXml, 样式定义.图片))
   const html = 渲染Body(bodyXml, 编号映射, 样式定义)
   if (html.trim() === '') {

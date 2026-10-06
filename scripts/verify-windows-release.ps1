@@ -1,4 +1,4 @@
-﻿param([switch]$Portable, [string]$ShellFilesManifest = '', [string]$InstalledExecutable = '')
+﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw | ConvertFrom-Json).version
@@ -15,7 +15,7 @@ try {
   foreach ($taskPhase in @('first', 'repeat', 'confirm')) {
     $taskArguments = @("--user-data-dir=`"$taskDirectory`"", '--remote-debugging-address=127.0.0.1', "--remote-debugging-port=$taskPagePort", "--inspect=127.0.0.1:$taskMainPort")
     $taskAssociationFile = '-'
-    if ($InstalledExecutable -and $ShellFilesManifest) {
+    if ($InstalledExecutable -and $ShellFilesManifest -ne '-') {
       $taskAssociationFile = ((Get-Content -LiteralPath $ShellFilesManifest -Raw -Encoding UTF8 | ConvertFrom-Json).文件 | Where-Object { $_.扩展名 -eq 'docx' }).路径
       if (-not $taskAssociationFile) { throw '实际新建清单缺少命令行打开文件' }
       if ($taskPhase -eq 'first') { $taskArguments += ('"' + $taskAssociationFile + '"') }

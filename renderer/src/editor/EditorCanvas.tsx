@@ -62,6 +62,10 @@ interface Props {
   pageColor?: string
   customPaper?: { 宽: number; 高: number }
   customMargin?: { 上: number; 右: number; 下: number; 左: number }
+  headerHtml?: string
+  footerHtml?: string
+  onHeaderChange?: (html: string) => void
+  onFooterChange?: (html: string) => void
   onChange?: (html: string) => void
   onReady?: (元素: HTMLDivElement) => void
   /** 右键点击回调，返回坐标 */
@@ -85,11 +89,17 @@ const EditorCanvas = ({
   pageColor = '无',
   customPaper,
   customMargin,
+  headerHtml,
+  footerHtml,
+  onHeaderChange,
+  onFooterChange,
   onChange,
   onReady,
   onContextMenu,
 }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
+  const 页眉引用 = useRef<HTMLDivElement>(null)
+  const 页脚引用 = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const 元素 = 引用.current
@@ -98,6 +108,15 @@ const EditorCanvas = ({
       元素.innerHTML = 安全内容
     }
   }, [html])
+
+  useEffect(() => {
+    for (const [元素, 内容] of [[页眉引用.current, headerHtml], [页脚引用.current, footerHtml]] as const) {
+      if (元素) {
+        const 安全内容 = 净化富文本(内容 ?? '')
+        if (元素.innerHTML !== 安全内容) 元素.innerHTML = 安全内容
+      }
+    }
+  }, [headerHtml, footerHtml])
 
   useEffect(() => {
     if (引用.current !== null && onReady !== undefined) {
@@ -136,6 +155,10 @@ const EditorCanvas = ({
     ? `${customMargin.上 / 15}px ${customMargin.右 / 15}px ${customMargin.下 / 15}px ${customMargin.左 / 15}px`
     : `${边距上下}px ${边距左右}px`
   const 栏数 = 分栏映射[columns] ?? 1
+  const 页眉页脚样式: React.CSSProperties = {
+    left: margin === '自定义' && customMargin ? customMargin.左 / 15 : 边距左右,
+    right: margin === '自定义' && customMargin ? customMargin.右 / 15 : 边距左右,
+  }
   const 纸张样式: React.CSSProperties = {
     transform: `scale(${scale})`,
     width: 页面宽,
@@ -174,6 +197,16 @@ const EditorCanvas = ({
             水印文本
           )
         : null,
+      headerHtml !== undefined || onHeaderChange
+        ? React.createElement('div', {
+            ref: 页眉引用,
+            className: 'wps-editor-canvas__header',
+            style: 页眉页脚样式,
+            contentEditable: editable,
+            suppressContentEditableWarning: true,
+            'aria-label': '页眉',
+            onInput: (event: React.FormEvent<HTMLDivElement>) => onHeaderChange?.(净化富文本(event.currentTarget.innerHTML)),
+          }) : null,
       React.createElement('div', {
         ref: 引用,
         className: 'wps-editor-canvas__content',
@@ -183,7 +216,17 @@ const EditorCanvas = ({
         style: 栏数 > 1 ? { columnCount: 栏数, columnGap: '24px' } : undefined,
         onInput: 处理输入,
         onContextMenu: 处理右键,
-      })
+      }),
+      footerHtml !== undefined || onFooterChange
+        ? React.createElement('div', {
+            ref: 页脚引用,
+            className: 'wps-editor-canvas__footer',
+            style: 页眉页脚样式,
+            contentEditable: editable,
+            suppressContentEditableWarning: true,
+            'aria-label': '页脚',
+            onInput: (event: React.FormEvent<HTMLDivElement>) => onFooterChange?.(净化富文本(event.currentTarget.innerHTML)),
+          }) : null
     )
   )
 }

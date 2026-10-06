@@ -19,6 +19,8 @@ const {
   PageTextDirectionType,
   PageBreak,
   ImageRun,
+  Header,
+  Footer,
 } = require('docx')
 const JSZip = require('jszip')
 const { 验证段落属性 } = require('./paragraphProperties')
@@ -290,6 +292,16 @@ exports.生成docx = async (文档模型) => {
   const 子元素 = []
   const 原生排版列表 = []
   const 图片预算 = { 字节数: 0 }
+  const 构建页眉页脚 = (段落) => {
+    const 局部排版 = []
+    const children = (段落 || []).map((项) => {
+      if (项.类型 === '表格') return 建表格(项, 局部排版, 图片预算)
+      if (项.类型 === '分页符') return new Paragraph({ children: [new PageBreak()] })
+      if (项.类型 === '水平线') return new Paragraph({ children: [], border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: '777777' } } })
+      return 建段落(项, 局部排版, 图片预算)
+    })
+    return children.length ? children : [new Paragraph({ children: [] })]
+  }
   段落列表.forEach((项) => {
     if (项.类型 === '表格') {
       子元素.push(建表格(项, 原生排版列表, 图片预算))
@@ -298,6 +310,9 @@ exports.生成docx = async (文档模型) => {
       原生排版列表.push({ ind: {}, spacing: {} })
     } else if (项.类型 === '分页符') {
       子元素.push(new Paragraph({ children: [new PageBreak()] }))
+      原生排版列表.push({ ind: {}, spacing: {} })
+    } else if (项.类型 === '水平线') {
+      子元素.push(new Paragraph({ children: [], border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: '777777' } } }))
       原生排版列表.push({ ind: {}, spacing: {} })
     } else {
       子元素.push(建段落(项, 原生排版列表, 图片预算))
@@ -314,7 +329,12 @@ exports.生成docx = async (文档模型) => {
     styles: { default: 标题默认样式 },
     numbering: 编号配置,
     background: 页面底色(文档模型?.页面设置),
-    sections: [{ properties: 构建页面属性(文档模型?.页面设置), children: 子元素 }],
+    sections: [{
+      properties: 构建页面属性(文档模型?.页面设置),
+      children: 子元素,
+      ...(文档模型?.页眉?.length ? { headers: { default: new Header({ children: 构建页眉页脚(文档模型.页眉) }) } } : {}),
+      ...(文档模型?.页脚?.length ? { footers: { default: new Footer({ children: 构建页眉页脚(文档模型.页脚) }) } } : {}),
+    }],
   })
 
   return 补充原生排版(await Packer.toBuffer(文档), 原生排版列表, 图片预算.字节数 > 0)
