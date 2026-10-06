@@ -59,7 +59,8 @@ export interface 演示资源接口 {
 }
 export interface 比对差异项 { 类型: string; 标识: string; 字段: string; 左: unknown; 右: unknown }
 export interface 比对页结果 { 标识: string; 类型: '新增' | '删除' | '移动' | '修改'; 标题?: string; 左索引?: number; 右索引?: number; 位置变化?: boolean; 差异?: 比对差异项[] }
-export interface 比对结果 { 成功: boolean; 汇总?: { 新增页: number; 删除页: number; 移动页: number; 修改页: number; 差异项: number }; 页面?: 比对页结果[]; 警告?: { 左: string[]; 右: string[] }; 错误?: string }
+export interface 比对批注结果 { 数量: number; 差异: (比对差异项 & { 页标识?: string })[]; 未归属页面: (比对差异项 & { 页标识?: string })[] }
+export interface 比对结果 { 成功: boolean; 汇总?: { 新增页: number; 删除页: number; 移动页: number; 修改页: number; 差异项: number }; 页面?: 比对页结果[]; 批注?: 比对批注结果; 警告?: { 左: string[]; 右: string[] }; 错误?: string }
 export interface 演示比对接口 {
   compareFiles: (左路径: string, 右路径: string) => Promise<比对结果>
 }

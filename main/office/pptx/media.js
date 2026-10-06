@@ -213,7 +213,9 @@ async function 读取图片对象(包, 路径, xml) {
     if (标签.name === 'a:xfrm' && !当前.子对象标识.length && (Number(标签.attributes.rot ?? 0) || ['1','true'].includes(标签.attributes.flipH) || ['1','true'].includes(标签.attributes.flipV))) 警告.push('组合旋转未完整导入')
   }
   解析器.onclosetag = 名称 => { if (名称 === 'p:grpSp') 栈.pop(); if (名称 === 'p:grpSpPr') 组合属性 = false }
-  解析器.write(xml).close()
+  // 结构损坏时报可读的真实原因，不把解析器内部错误（如 Unexpected close tag）直接抛给用户
+  try { 解析器.write(xml).close() }
+  catch { throw new Error(`演示文件无效：幻灯片 XML 结构损坏（${路径}）`) }
   for (const 组合 of 组合列表) {
     组合.子对象标识 = 组合.子对象标识.map(项 => typeof 项 === 'string' ? 项 : 项.id)
     if (!组合.子对象标识.length || 组合.子对象标识.some(id => !对象列表.some(项 => 项.id === id) && !组合列表.some(项 => 项.id === id))) 警告.push('组合非图片成员未完整导入')

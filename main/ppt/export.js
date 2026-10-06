@@ -98,11 +98,27 @@ function 原子写入(目标路径, 数据, 文件系统) {
   return 数据.length
 }
 
+/** 导出基础名净化：去掉目录分隔、控制字符与 Windows 保留字符，确保只写在目标目录内。 */
+function 净化基础名(输入) {
+  const 清理 = String(输入 ?? '')
+    .replace(/[\\/]+/g, '-')
+    .replace(/[\x00-\x1f\x7f<>:"|?*]/g, '')
+    .trim()
+  const 去扩展 = 清理.replace(/\.[^.]+$/, '').trim().replace(/[. ]+$/g, '').trim()
+  if (!去扩展) return '演示文稿'
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(去扩展)) return `${去扩展}-演示文稿`
+  return 去扩展
+}
+
 /** 写盘：多页图片进入独立目录，单文件格式使用确定名称 */
 function 写入导出文件(目录, 基础名, 格式, 条目, 文件系统 = fs) {
   if (!文件名表[格式]) throw new Error('导出格式不受支持')
   if (!Array.isArray(条目) || 条目.length === 0) throw new Error('没有可导出的页面')
-  const 基准 = String(基础名 ?? '').trim().replace(/\.[^.]+$/, '').trim() || '演示文稿'
+  const 基准 = 净化基础名(基础名)
+  const 校验位置 = (目标) => {
+    if (!path.resolve(目标).startsWith(path.resolve(目录) + path.sep)) throw new Error('导出文件名超出目标目录，已阻止写入')
+    return 目标
+  }
   if (格式 === 'PNG' || 格式 === 'JPEG') {
     // 单页导出写一个文件；多页导出进入独立目录，目录内按页码命名
     const 多页 = 条目.length > 1
@@ -111,12 +127,12 @@ function 写入导出文件(目录, 基础名, 格式, 条目, 文件系统 = fs
     return 条目.map((项, i) => {
       const 页码 = Number.isInteger(项.序号) ? 项.序号 + 1 : i + 1
       const 文件名 = 多页 ? 文件名表.页内图片(页码, 格式) : 文件名表[格式](基准, 页码)
-      const 目标 = 唯一路径(目标目录, 文件名, 文件系统)
+      const 目标 = 校验位置(唯一路径(目标目录, 文件名, 文件系统))
       return { 路径: 目标, 字节数: 原子写入(目标, 项.数据, 文件系统) }
     })
   }
   文件系统.mkdirSync(目录, { recursive: true })
-  const 目标 = 唯一路径(目录, 文件名表[格式](基准), 文件系统)
+  const 目标 = 校验位置(唯一路径(目录, 文件名表[格式](基准), 文件系统))
   return [{ 路径: 目标, 字节数: 原子写入(目标, 条目[0].数据, 文件系统) }]
 }
 
