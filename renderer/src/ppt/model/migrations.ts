@@ -1,5 +1,6 @@
 import { 校验播放参数 } from './transitions'
 import { 校验动画 } from './animations'
+import { 校验批注列表 } from './comments'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
 
@@ -106,6 +107,11 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       校验原生元素(对象)
       if (对象.连接 && [对象.连接.起点,对象.连接.终点].some(端 => !页面对象.get(端.对象)?.形状 || 页面对象.get(端.对象)?.连接)) throw new Error('连接线引用的节点不存在或无效')
     }
+  }
+  // 批注与备注相互独立：批注必须引向真实存在的页面，且正文结构完整
+  校验批注列表(输入.批注列表)
+  for (const 批注 of (输入.批注列表 ?? []) as Array<{ 页标识: string }>) {
+    if (!页面标识.has(批注.页标识)) throw new Error(`批注引用的页面不存在：${批注.页标识}`)
   }
 }
 

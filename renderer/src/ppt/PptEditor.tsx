@@ -35,6 +35,9 @@ import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
+import CommentsPanel from './panels/CommentsPanel'
+import ReviewPanel from './panels/ReviewPanel'
+import { 读取页面批注, 批注导航, 批注对象失效, type 批注位置 } from './model/comments'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
@@ -48,6 +51,14 @@ const 基准名 = (路径: string): string => {
 
 const 是同一路径 = (左: string, 右: string): boolean =>
   左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
+
+/** 只读状态下仍可使用的命令：查看、放映、文件与审阅查看类入口 */
+const 只读可放行命令 = new Set([
+  'review.comment', 'review.spell', 'review.commentPrevious', 'review.commentNext',
+  'review.commentToggle', 'review.langToSimplified', 'review.langToTraditional',
+])
+const 只读可放行 = (标识: string): boolean =>
+  标识.startsWith('view.') || 标识.startsWith('slideshow.') || 标识.startsWith('file.') || 只读可放行命令.has(标识)
 
 const 规范演示保存路径 = (路径: string): string | null => {
   const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
@@ -77,6 +88,9 @@ const PptEditor = () => {
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
   const [只读, set只读] = useState(false)
+  const [显示批注, set显示批注] = useState(true)
+  const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换'>('检查')
+  const [转换方向, set转换方向] = useState<'简' | '繁'>('繁')
   const [参考线, set参考线] = useState({ 垂直: [] as number[], 水平: [] as number[] })
   const [适应, set适应] = useState(false)
   const 适应比例 = useRef(1)
@@ -399,6 +413,27 @@ const PptEditor = () => {
     message.success('已重做')
   }
 
+  /** 跳到上一条或下一条批注：切换页面并选中对应对象，不修改正文 */
+  const 跳转批注 = (方向: -1 | 1) => 定位批注(批注导航(文稿, 当前幻灯片?.id ?? '', 方向))
+
+  /** 定位到指定批注位置；位置为空时给出提示，不修改文稿 */
+  const 定位批注 = (位置: 批注位置 | null) => {
+    if (位置 === null) {
+      message.info('没有更多批注')
+      return
+    }
+    const 索引 = 文稿.幻灯片列表.findIndex((页) => 页.id === 位置.页标识)
+    if (索引 < 0) {
+      modal.warning({ title: '无法定位批注', content: '批注引用的页面已不存在，请检查批注列表。', okText: '我知道了' })
+      return
+    }
+    if (索引 !== 文稿.当前索引) 更新文稿(切换幻灯片(文稿, 索引))
+    set选中框标识(位置.对象标识 ?? null)
+    set选中对象(位置.对象标识 ? [位置.对象标识] : [])
+    set当前标签('review')
+    set审阅区域('批注')
+  }
+
   const 上下文: 演示命令上下文 = {
     文稿,
     选中框标识: 选中框标识 ?? 最近选中框标识.current,
@@ -411,6 +446,13 @@ const PptEditor = () => {
     切换视图: set当前视图,
     撤销,
     重做,
+    打开审阅: (区域, 参数) => {
+      set当前标签('review')
+      set审阅区域(区域)
+      if (参数 === '简' || 参数 === '繁') set转换方向(参数)
+    },
+    跳转批注,
+    切换批注显示: () => set显示批注((值) => !值),
   }
 
   const 处理文本选择 = (标识: string, 起始: number, 结束: number) => {
@@ -432,7 +474,7 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
-    if (只读 && !标识.startsWith('view.') && !标识.startsWith('slideshow.') && !标识.startsWith('file.')) return
+    if (只读 && !只读可放行(标识)) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
     if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
     // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
@@ -727,6 +769,7 @@ const PptEditor = () => {
   }
 
   const 取激活态 = (标识: string): boolean => {
+    if (标识 === 'review.commentToggle') return 显示批注
     const 当前框标识 = 选中框标识 ?? 最近选中框标识.current
     if (当前幻灯片 === null || 当前框标识 === null) {
       return false
@@ -799,6 +842,18 @@ const PptEditor = () => {
     ]
   }
 
+  /** 批注标记：关联对象时贴在对象左上角，整页批注沿画布左上角竖排；只影响显示 */
+  const 批注标记 = !显示批注 || 当前幻灯片 === null ? [] : 读取页面批注(文稿, 当前幻灯片.id).map((批注, 序号) => {
+    const 目标 = 当前幻灯片.文本框列表.find((项) => 项.id === 批注.对象标识) ?? 当前幻灯片.对象列表?.find((项) => 项.id === 批注.对象标识)
+    return {
+      键: 批注.id,
+      序号: 序号 + 1,
+      x: 目标 ? Math.max(0, 目标.x - 6) : 10,
+      y: 目标 ? Math.max(0, 目标.y - 6) : 10 + 序号 * 24,
+      标题: `${批注.作者}：${批注.内容}${批注.已解决 ? '（已解决）' : ''}${批注对象失效(文稿, 批注) ? '（对象已删除）' : ''}`,
+    }
+  })
+
   return React.createElement(
     React.Fragment,
     null,
@@ -809,7 +864,7 @@ const PptEditor = () => {
       tabs: 演示标签,
       onCommand: 执行命令,
       获取激活态: 取激活态,
-      获取禁用态: (标识: string) => 读取演示命令状态(标识, { 只读: 只读 && !标识.startsWith('view.') && !标识.startsWith('slideshow.') && !标识.startsWith('file.') }).状态 !== '可用',
+      获取禁用态: (标识: string) => 读取演示命令状态(标识, { 只读: 只读 && !只读可放行(标识) }).状态 !== '可用',
       获取禁用原因: (标识: string) => 读取演示命令状态(标识, { 只读 }).原因,
       onDropdownOpen: 处理下拉框打开,
     }),
@@ -863,6 +918,7 @@ const PptEditor = () => {
             图片地址,
             key: 历史标识,
             幻灯片: 当前幻灯片,
+            批注标记,
             选中框标识,
             缩放,
             编辑框标识,
@@ -902,7 +958,18 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      当前幻灯片 && 当前标签 === 'review'
+        ? (审阅区域 === '批注'
+            ? React.createElement(CommentsPanel, {
+                文稿, 页: 当前幻灯片, 只读, 选中: 选中框标识 ?? 选中对象[0] ?? null, 显示批注,
+                on显示变化: set显示批注, on修改: 更新文稿, 跳转: 定位批注,
+                on切换区域: (区域) => set审阅区域(区域),
+              })
+            : React.createElement(ReviewPanel, {
+                文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向,
+                on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
+              }))
+        : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }

@@ -1,5 +1,6 @@
 import { 读取切换 } from './model/transitions'
 import { 原生插入命令 } from './commands/insert'
+import { 审阅命令 } from './commands/review'
 // 演示文稿命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
 import {
   创建文本框,
@@ -39,6 +40,12 @@ export interface 演示命令上下文 {
   /** 撤销与重做由容器实现，命令只负责派发 */
   撤销: () => void
   重做: () => void
+  /** 打开审阅面板；参数用于预置转换方向等初始状态 */
+  打开审阅?: (区域: '检查' | '批注' | '转换', 参数?: string) => void
+  /** 按页面顺序跳到上一条或下一条批注 */
+  跳转批注?: (方向: -1 | 1) => void
+  /** 切换画布批注标记的显示状态，只改变视图 */
+  切换批注显示?: () => void
 }
 
 export interface 演示命令 {
@@ -477,16 +484,6 @@ const 命令列表: 演示命令[] = [
     },
   },
   {
-    id: 'review.spell',
-    label: '拼写检查',
-    run: (上下文) => 上下文.notify('拼写检查功能将在后续版本接入，将逐词校验幻灯片文本并给出建议'),
-  },
-  {
-    id: 'review.comment',
-    label: '新建批注',
-    run: (上下文) => 上下文.notify('新建批注功能将在后续版本接入，可在幻灯片任意位置添加批注'),
-  },
-  {
     id: 'insert.chart',
     label: '图表',
     run: (上下文) => 上下文.notify('图表功能需要高级图表编辑能力，将在后续版本接入'),
@@ -530,6 +527,7 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
   return 累计
 }, {})
 原生插入命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
+审阅命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
 /** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
 export const 演示未实现清单: Array<[string, string]> = []
