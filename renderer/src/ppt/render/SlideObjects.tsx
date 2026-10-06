@@ -5,11 +5,15 @@ import type { 幻灯片, 文本框, 演示对象 } from '../deck'
 import { 读取对象树顺序 } from '../model/objectOperations'
 import { ShapeRenderer } from './ShapeRenderer'
 import { TableRenderer } from './TableRenderer'
+import { 公式内容, 附件内容, 图示内容 } from './FormulaRenderer'
 export function 对象内容({ 对象, 图片地址 = {} }: { 对象: 演示对象; 图片地址?: 图片地址表 }) {
   if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
   if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
   if (对象.类型 === '图表') return <ChartRenderer 对象={对象}/>
   if (对象.类型 === '表格') return <TableRenderer 对象={对象}/>
+  if (对象.类型 === '公式') return <公式内容 对象={对象}/>
+  if (对象.类型 === '附件') return <附件内容 对象={对象}/>
+  if (对象.类型 === '图示') return <图示内容 对象={对象}/>
   return null
 }
 export type 图片地址表 = Record<string, string>

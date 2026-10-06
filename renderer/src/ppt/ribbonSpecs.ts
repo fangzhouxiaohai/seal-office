@@ -121,6 +121,14 @@ const 插入标签: RibbonTabSpec = {
       items: [大('box.new', '文本框', 'textbox')],
     },
     {
+      name: '符号与对象',
+      items: [
+        大('insert.formula', '公式', 'textbox'),
+        大('insert.symbol', '符号', 'textbox'),
+        大('insert.attachment', '附件', 'export-file'),
+      ],
+    },
+    {
       name: '媒体',
       items: [大('insert.media', '音频与视频', 'image')],
     },

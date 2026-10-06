@@ -1,4 +1,8 @@
 import AnimationPanel from './panels/AnimationPanel'
+import FormulaPanel from './panels/FormulaPanel'
+import SymbolPanel from './panels/SymbolPanel'
+import AttachmentPanel from './panels/AttachmentPanel'
+import { 附件资源类型, 创建附件, 读取文件Base64, 下载二进制Base64 } from './model/attachments'
 import { 对象允许编辑, 要求对象可编辑 } from './model/objectPermissions'
 import { 添加语义节点, 添加语义连线 } from './model/elements'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
@@ -15,6 +19,7 @@ import { 读取演示命令状态 } from './model/commandStatus'
 import { 校验当前Pptx写入能力, 收集演示资源标识 } from './model/migrations'
 import {
   创建演示文稿,
+  创建文本框,
   切换幻灯片,
   约束位置,
   读取当前幻灯片,
@@ -100,6 +105,8 @@ const PptEditor = () => {
   const [适应, set适应] = useState(false)
   const 适应比例 = useRef(1)
   const 图片输入 = useRef<HTMLInputElement>(null)
+  const 附件输入 = useRef<HTMLInputElement>(null)
+  const [插入面板, set插入面板] = useState<'公式' | '符号' | '附件' | null>(null)
   const 插入中 = useRef(false)
   const 当前标识引用 = useRef(activeDocumentId); 当前标识引用.current = activeDocumentId
   const 图片引用键 = JSON.stringify([...new Set(收集演示资源标识(文稿))])
@@ -370,6 +377,64 @@ const PptEditor = () => {
     }
   }
 
+  /** 插入公式：进入撤销历史，随文稿保存为原生数学部件。 */
+  const 插入公式对象 = (对象: 演示对象) => {
+    if (只读 || !当前幻灯片) return
+    try {
+      更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 对象列表: [...当前幻灯片.对象列表 ?? [], 对象] }))
+      set选中对象([对象.id]); set选中框标识(null)
+      message.success('已插入公式')
+    } catch (错误) { 显示文件错误('公式插入失败', 错误 instanceof Error ? 错误.message : '公式数据无效') }
+  }
+
+  /** 符号按普通文字写入文本框：可继续编辑、设置字体并原生保存。 */
+  const 插入符号 = (字符: string, 字体: string) => {
+    if (只读 || !当前幻灯片) return
+    try {
+      const 框 = 创建文本框(200, 240, 160, 80, 字符, 36)
+      框.字体 = 字体; 框.对齐 = 'center'
+      更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 文本框列表: [...当前幻灯片.文本框列表, 框] }))
+      set选中框标识(框.id); set选中对象([])
+      message.success(`已插入符号 ${字符}`)
+    } catch (错误) { 显示文件错误('符号插入失败', 错误 instanceof Error ? 错误.message : '符号无法插入') }
+  }
+
+  /** 插入附件：保存真实字节并进入资源链路，本机不执行附件内容。 */
+  const 插入附件 = async (文件: File) => {
+    if (只读 || !当前幻灯片) return
+    const 临时引用: string[] = []
+    try {
+      const 数据 = await 读取文件Base64(文件)
+      const 结果 = await 桥接.presentationResources.add(数据, 附件资源类型)
+      if (!结果.成功 || !('标识' in 结果) || !结果.标识 || !结果.字节数) throw new Error(结果.错误 ?? '附件资源加入失败')
+      临时引用.push(结果.标识)
+      if (当前标识引用.current !== activeDocumentId) throw new Error('附件处理期间文档已切换，请重新插入')
+      const 对象 = 创建附件(文件.name, 文件.name, 结果.标识, 结果.字节数)
+      const 资源索引 = { ...文稿.资源索引, [结果.标识]: { 指纹: 结果.标识, 类型: 附件资源类型, 字节数: 结果.字节数 } }
+      更新文稿({ ...更新幻灯片(文稿, 当前幻灯片.id, { 对象列表: [...当前幻灯片.对象列表 ?? [], 对象] }), 资源索引 })
+      set选中对象([对象.id]); set选中框标识(null); set插入面板('附件')
+      临时引用.length = 0
+      message.success(`已嵌入附件 ${文件.name}`)
+    } catch (错误) { 显示文件错误('附件插入失败', 错误 instanceof Error ? 错误.message : '附件读取失败') }
+    finally {
+      for (const 标识 of 临时引用) {
+        const 结果 = await 桥接.presentationResources.dropTemporary(标识)
+        if (!结果.成功) 显示文件错误('附件资源释放失败', 结果.错误 ?? '临时引用释放失败')
+      }
+    }
+  }
+
+  /** 导出附件原字节；读取失败时显示真实原因，不生成空文件。 */
+  const 导出附件 = async (对象: 演示对象) => {
+    try {
+      if (对象.类型 !== '附件' || !对象.附件) throw new Error('请选择附件对象')
+      const 结果 = await 桥接.presentationResources.read(对象.附件.资源标识)
+      if (!结果.成功 || !('数据' in 结果) || !结果.数据) throw new Error(结果.错误 ?? '附件字节读取失败')
+      下载二进制Base64(结果.数据, 对象.附件.文件名)
+      message.success(`已导出 ${对象.附件.文件名}`)
+    } catch (错误) { 显示文件错误('附件导出失败', 错误 instanceof Error ? 错误.message : '附件读取失败') }
+  }
+
   const 图片粘贴引用 = useRef(插入图片); 图片粘贴引用.current = 插入图片
   useEffect(() => {
     const 粘贴 = (事件: ClipboardEvent) => {
@@ -482,6 +547,9 @@ const PptEditor = () => {
   const 执行命令 = (标识: string, 参数?: string) => {
     if (只读 && !只读可放行(标识)) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
+    if (标识 === 'insert.attachment') { set当前标签('insert'); set插入面板('附件'); 附件输入.current?.click(); return }
+    if (标识 === 'insert.formula') { set当前标签('insert'); set插入面板('公式'); return }
+    if (标识 === 'insert.symbol') { set当前标签('insert'); set插入面板('符号'); return }
     if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
     // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
     if (标识 === 'edit.cut' || 标识 === 'edit.copy') {
@@ -864,10 +932,18 @@ const PptEditor = () => {
     }
   })
 
+  /** 替换对象内容：公式、附件显示名称与图形文字共用同一提交入口。 */
+  const 替换选中对象 = (对象: 演示对象) => {
+    if (只读 || !当前幻灯片) return
+    try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
+    catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }
+  }
+  const 选中对象数据 = 选中对象.length === 1 ? 当前幻灯片?.对象列表?.find(项 => 项.id === 选中对象[0]) : undefined
   return React.createElement(
     React.Fragment,
     null,
     React.createElement('input', { ref: 图片输入, type: 'file', accept: 'image/png,image/jpeg', multiple: true, hidden: true, 'aria-label': '选择图片文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入图片(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
+    React.createElement('input', { ref: 附件输入, type: 'file', hidden: true, 'aria-label': '选择附件文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { const 文件 = 事件.target.files?.[0]; if (文件) void 插入附件(文件); 事件.target.value = '' } }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
@@ -979,11 +1055,10 @@ const PptEditor = () => {
                 文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向, 当前路径: 文档路径 ?? undefined,
                 on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
               }))
-        : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
-        if (只读) return
-        try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
-        catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }
-      } }) : null
+        : 当前幻灯片 && 插入面板 === '公式' ? React.createElement(FormulaPanel, { 对象: 选中对象数据, 只读, on插入: 插入公式对象, on替换: 替换选中对象 })
+        : 当前幻灯片 && 插入面板 === '符号' ? React.createElement(SymbolPanel, { 只读, on插入: 插入符号 })
+        : 当前幻灯片 && 插入面板 === '附件' ? React.createElement(AttachmentPanel, { 对象: 选中对象数据, 只读, on选择文件: (文件: File) => { void 插入附件(文件) }, on导出: (对象: 演示对象) => { void 导出附件(对象) }, on替换: 替换选中对象 })
+        : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: 替换选中对象 }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
     React.createElement(ExportPanel, { 文稿, 图片地址, 打开: 导出打开, on关闭: () => set导出打开(false) }),

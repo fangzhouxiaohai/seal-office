@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
-const 目标 = new Set(['../main/office/imageData.js','../main/office/pptx/chartData.js'].map(路径 => fileURLToPath(new URL(路径, import.meta.url)).replaceAll('\\','/')))
-/** 两个纯校验模块没有运行环境依赖，开发服务仅转换其静态导出声明。 */
+const 目标 = new Set(['../main/office/imageData.js','../main/office/pptx/chartData.js','../main/office/pptx/formulaSyntax.js'].map(路径 => fileURLToPath(new URL(路径, import.meta.url)).replaceAll('\\','/')))
+/** 三个纯校验模块没有运行环境依赖，开发服务仅转换其静态导出声明。 */
 export function 共享校验模块() {
   return {
     name: 'seal-shared-validation', apply: 'serve', enforce: 'pre',
