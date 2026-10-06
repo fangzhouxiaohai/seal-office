@@ -4,6 +4,7 @@ import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './m
 import type { 切换设置, 换片设置 } from './model/transitions'
 import type { 对象动画 } from './model/animations'
 import type { 批注 } from './model/comments'
+import type { 备注设置, 讲义设置 } from './model/handout'
 
 export interface 文本片段 {
   文本: string
@@ -115,6 +116,10 @@ export interface 演示文稿 {
   批注列表?: 批注[]
   /** 定稿标记：可恢复的只读状态，不是加密保护。 */
   定稿?: { 时间: string; 标记人?: string }
+  /** 讲义母版设置：每页张数、页眉页脚、日期与页码 */
+  讲义设置?: 讲义设置
+  /** 备注母版设置：备注排版与页眉页脚 */
+  备注设置?: 备注设置
 }
 
 /** 画布基准尺寸，按 16:9 比例 */

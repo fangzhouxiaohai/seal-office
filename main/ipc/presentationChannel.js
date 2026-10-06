@@ -3,9 +3,13 @@ const { 检查图片字节 } = require('../office/pptx/media')
 const { 导出演示, 选择导出目录 } = require('../ppt/export')
 const { 读取pptx } = require('../office/pptxCodec')
 const { 比较演示文稿 } = require('../office/pptx/compare')
+const { 创建文稿会话服务 } = require('../ppt/session')
+const { 批量检查 } = require('../ppt/batch')
 const fs = require('fs')
 
-function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
+function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 依赖 = {}) {
+  const 会话 = 依赖.会话 ?? 创建文稿会话服务()
+  const 广播 = 依赖.广播 ?? (() => {})
   const 执行 = (任务) => {
     try { return { 成功: true, ...任务() } }
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示资源操作失败' } }
@@ -63,6 +67,30 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
     const 目录 = await 选择导出目录()
     return 目录 ? { 成功: true, 目录 } : { 成功: false, 已取消: true }
   }))
+
+  // 文稿会话：同文件多个编辑窗口共享内容、版本与保存结果
+  ipcMain.handle('presentation.session.register', (_事件, 文稿标识, 视图标识, 初始内容, 路径) => 异步执行(async () => {
+    const 注册 = 会话.注册视图(文稿标识, 视图标识, 初始内容, 路径)
+    广播(文稿标识, { 类型: '会话变更', 版本: 注册.版本, 内容: 注册.内容 }, 视图标识)
+    return { 成功: true, ...注册 }
+  }))
+  ipcMain.handle('presentation.session.read', (_事件, 文稿标识) => 异步执行(async () => ({ ...会话.读取(文稿标识) })))
+  ipcMain.handle('presentation.session.commit', (_事件, 文稿标识, 期望版本, 内容, 视图标识) => 异步执行(async () => {
+    const 提交 = 会话.提交修改(文稿标识, 期望版本, 内容)
+    if (提交.成功) 广播(文稿标识, { 类型: '会话变更', 版本: 提交.版本, 内容 }, 视图标识)
+    return 提交
+  }))
+  ipcMain.handle('presentation.session.saved', (_事件, 文稿标识, 路径, 视图标识) => 异步执行(async () => {
+    const 保存 = 会话.标记已保存(文稿标识, 路径)
+    if (保存.成功) 广播(文稿标识, { 类型: '已保存', 版本: 保存.版本, 路径: 保存.路径 }, 视图标识)
+    return 保存
+  }))
+  ipcMain.handle('presentation.session.claimPath', (_事件, 文稿标识, 路径) => 异步执行(async () => ({ ...会话.认领路径(文稿标识, 路径) })))
+  ipcMain.handle('presentation.session.releasePath', (_事件, 文稿标识, 路径) => 异步执行(async () => ({ ...会话.释放路径(文稿标识, 路径) })))
+  ipcMain.handle('presentation.session.unregister', (_事件, 文稿标识, 视图标识) => 异步执行(async () => ({ ...会话.注销视图(文稿标识, 视图标识) })))
+
+  // 批量工具：逐文件独立结果，失败不撤销其他文件
+  ipcMain.handle('presentation.batchCheck', (_事件, 任务列表) => 异步执行(async () => ({ 成功: true, ...(await 批量检查(任务列表)) })))
 }
 
 module.exports = { 注册演示通道 }

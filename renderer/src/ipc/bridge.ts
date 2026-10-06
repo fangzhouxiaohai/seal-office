@@ -66,7 +66,7 @@ export interface 演示比对接口 {
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
-  showOpenDialogMany: (打开类型: 'pdf') => Promise<string[]>
+  showOpenDialogMany: (打开类型: 'pdf' | 'ppt') => Promise<string[]>
   takePendingAssociatedFiles: () => Promise<关联文件领取结果>
   onAssociatedFilesAvailable: (回调: () => void) => () => void
   listKnownFolder: (位置: 'desktop' | 'document' | 'download') => Promise<本机文件夹结果>
@@ -79,6 +79,22 @@ export interface 电子接口 {
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
   presentationResources?: 演示资源接口
   presentationExport?: 演示导出接口
+  presentationSession?: {
+    register: (文稿标识: string, 视图标识: string, 初始内容?: unknown, 路径?: string) => Promise<{ 成功: boolean; 版本?: number; 内容?: unknown; 路径?: string; 已保存?: boolean; 错误?: string }>
+    read: (文稿标识: string) => Promise<{ 成功: boolean; 版本?: number; 内容?: unknown; 路径?: string; 已保存?: boolean; 错误?: string }>
+    commit: (文稿标识: string, 期望版本: number, 内容: unknown, 视图标识: string) => Promise<{ 成功: boolean; 版本?: number; 错误?: string }>
+    saved: (文稿标识: string, 路径: string, 视图标识: string) => Promise<{ 成功: boolean; 版本?: number; 错误?: string }>
+    claimPath: (文稿标识: string, 路径: string) => Promise<{ 成功: boolean; 错误?: string }>
+    releasePath: (文稿标识: string, 路径: string) => Promise<{ 成功: boolean; 错误?: string }>
+    unregister: (文稿标识: string, 视图标识: string) => Promise<{ 成功: boolean; 是否最后视图?: boolean; 错误?: string }>
+    onChanged: (回调: (消息: { 类型: '会话变更' | '已保存'; 版本?: number; 内容?: unknown; 路径?: string }) => void) => () => void
+    identity: () => Promise<{ 成功: boolean; 文稿标识?: string; 视图标识?: string }>
+  }
+  presentationBatch?: {
+    check: (任务列表: Array<{ 标识: string; 名称?: string; 路径: string }>) => Promise<{ 成功: boolean; 结果?: Array<{ 标识: string; 名称?: string; 路径?: string; 成功: boolean; 已取消?: boolean; 错误?: string; 页数?: number }>; 汇总?: { 总数: number; 成功: number; 失败: number; 已取消: number }; 错误?: string }>
+  }
+  newPresentationWindow?: (文稿标识: string, 视图标识: string) => Promise<{ 成功: boolean; 窗口标识?: string; 错误?: string }>
+  tilePresentationWindows?: (布局: '平铺' | '层叠') => Promise<{ 成功: boolean; 布局?: string; 位置?: Array<{ x: number; y: number; 宽: number; 高: number }>; 错误?: string }>
   presentationCompare?: 演示比对接口
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -126,7 +142,7 @@ export const 桥接 = {
   get 关联文件可用() { return typeof 取后端()?.takePendingAssociatedFiles === 'function' && typeof 取后端()?.onAssociatedFilesAvailable === 'function' },
   showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showOpenDialog(打开类型) ?? Promise.resolve(null),
-  showOpenDialogMany: (打开类型: 'pdf') => 取后端()?.showOpenDialogMany(打开类型) ?? Promise.resolve([]),
+  showOpenDialogMany: (打开类型: 'pdf' | 'ppt') => 取后端()?.showOpenDialogMany(打开类型) ?? Promise.resolve([]),
   takePendingAssociatedFiles: (): Promise<关联文件领取结果> => 取后端()?.takePendingAssociatedFiles?.() ?? 失败('当前环境不支持从系统文件关联打开文件'),
   onAssociatedFilesAvailable: (回调: () => void): (() => void) => 取后端()?.onAssociatedFilesAvailable?.(回调) ?? (() => {}),
   listKnownFolder: (位置: 'desktop' | 'document' | 'download'): Promise<本机文件夹结果> => 取后端()?.listKnownFolder(位置) ?? 失败('请使用 Windows 桌面版浏览本机文件夹'),
@@ -169,8 +185,30 @@ export const 桥接 = {
     compareFiles: (左路径: string, 右路径: string): Promise<比对结果> =>
       取后端()?.presentationCompare?.compareFiles(左路径, 右路径) ?? 失败('当前环境不支持演示文稿比对'),
   },
-  recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
-  recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
+  presentationSession: {
+    register: (文稿标识: string, 视图标识: string, 初始内容?: unknown, 路径?: string) =>
+      取后端()?.presentationSession?.register(文稿标识, 视图标识, 初始内容, 路径) ?? 失败('当前环境不支持文稿会话'),
+    read: (文稿标识: string) => 取后端()?.presentationSession?.read(文稿标识) ?? 失败('当前环境不支持文稿会话'),
+    commit: (文稿标识: string, 期望版本: number, 内容: unknown, 视图标识: string) =>
+      取后端()?.presentationSession?.commit(文稿标识, 期望版本, 内容, 视图标识) ?? 失败('当前环境不支持文稿会话'),
+    saved: (文稿标识: string, 路径: string, 视图标识: string) =>
+      取后端()?.presentationSession?.saved(文稿标识, 路径, 视图标识) ?? 失败('当前环境不支持文稿会话'),
+    claimPath: (文稿标识: string, 路径: string) => 取后端()?.presentationSession?.claimPath(文稿标识, 路径) ?? 失败('当前环境不支持文稿会话'),
+    releasePath: (文稿标识: string, 路径: string) => 取后端()?.presentationSession?.releasePath(文稿标识, 路径) ?? 失败('当前环境不支持文稿会话'),
+    unregister: (文稿标识: string, 视图标识: string) => 取后端()?.presentationSession?.unregister(文稿标识, 视图标识) ?? 失败('当前环境不支持文稿会话'),
+    onChanged: (回调: (消息: { 类型: '会话变更' | '已保存'; 版本?: number; 内容?: unknown; 路径?: string }) => void): (() => void) =>
+      取后端()?.presentationSession?.onChanged?.(回调) ?? (() => {}),
+    identity: () => 取后端()?.presentationSession?.identity() ?? Promise.resolve({ 成功: false }),
+  },
+  presentationBatch: {
+    check: (任务列表: Array<{ 标识: string; 名称?: string; 路径: string }>) =>
+      取后端()?.presentationBatch?.check(任务列表) ?? 失败('当前环境不支持批量工具'),
+  },
+  newPresentationWindow: (文稿标识: string, 视图标识: string) =>
+    取后端()?.newPresentationWindow?.(文稿标识, 视图标识) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持新建窗口' }),
+  tilePresentationWindows: (布局: '平铺' | '层叠') =>
+    取后端()?.tilePresentationWindows?.(布局) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持重排窗口' }),
+  recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),  recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
   recentRemove: (路径: string) => 取后端()?.recentRemove?.(路径) ?? 失败('当前环境不支持最近文档移除'),
   revealInFolder: (路径: string) => 取后端()?.revealInFolder?.(路径) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持该操作' }),
   exportToPdf: (html: string, 名称: string) => 取后端()?.exportToPdf(html, 名称) ?? 失败('当前环境不支持 PDF 导出'),

@@ -5,6 +5,8 @@ const { pathToFileURL } = require('url')
 const { 注册全部通道 } = require('./ipc')
 const { 获取未保存风险数量, 查询实时关闭状态 } = require('./ipc/systemChannel')
 const { 创建关联文件入口 } = require('./fileAssociation')
+const { 创建文稿会话服务 } = require('./ppt/session')
+const { 创建窗口管理器 } = require('./ppt/windowManager')
 
 const DEV_SERVER_URL = 'http://localhost:5172'
 const MAX_LOAD_RETRY = 30
@@ -13,6 +15,11 @@ const RETRY_INTERVAL = 500
 // 单实例锁：二次启动唤起已有窗口，避免同一文档被两个实例并发打开
 const 获得单实例锁 = app.requestSingleInstanceLock()
 let 主窗口 = null
+// 演示文稿会话：同文件多个窗口共享内容、版本与保存结果
+const 演示会话 = 创建文稿会话服务()
+/** webContents.id -> { 文稿标识, 视图标识 }，新窗口据此接管同一份文稿 */
+const 窗口身份表 = new Map()
+let 窗口管理器 = null
 const 关联文件入口 = 创建关联文件入口(() => 主窗口)
 if (process.platform === 'win32') 关联文件入口.加入命令行(process.argv)
 
@@ -115,7 +122,7 @@ function 安装导航保护(窗口) {
   窗口.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 }
 
-function 创建窗口() {
+function 创建窗口(选项 = {}) {
   const 窗口 = new BrowserWindow({
     width: 1920,
     height: 1080,
@@ -124,7 +131,9 @@ function 创建窗口() {
     backgroundColor: '#f0f0f0',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), nodeIntegration: false, contextIsolation: true, sandbox: true },
   })
-  主窗口 = 窗口
+  if (!主窗口) 主窗口 = 窗口
+  // 新窗口登记会话身份：渲染端启动后据此接管同一份文稿
+  if (选项.文稿标识 && 窗口.webContents) 窗口身份表.set(窗口.webContents.id, { 文稿标识: 选项.文稿标识, 视图标识: 选项.视图标识 })
   安装关闭保护(窗口)
   安装导航保护(窗口)
   Menu.setApplicationMenu(null)
@@ -138,9 +147,40 @@ function 创建窗口() {
   if (app.isPackaged) 窗口.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   else 加载开发服务(窗口, 0)
   窗口.on('closed', () => {
-    if (主窗口 === 窗口) 主窗口 = null
-    app.isWindowClosed = true
+    窗口身份表.delete(窗口.webContents?.id)
+    if (主窗口 === 窗口) 主窗口 = BrowserWindow.getAllWindows()[0] ?? null
+    if (BrowserWindow.getAllWindows().length === 0) app.isWindowClosed = true
   })
+  return 窗口
+}
+
+/** 会话变更广播：只发给同一文稿的其他窗口，来源窗口由会话调用方标识 */
+function 广播会话变更(文稿标识, 消息, 来源视图标识) {
+  for (const 窗口 of BrowserWindow.getAllWindows()) {
+    if (窗口.isDestroyed?.() || 窗口.webContents?.isDestroyed?.()) continue
+    const 身份 = 窗口身份表.get(窗口.webContents.id)
+    if (!身份 || 身份.文稿标识 !== 文稿标识) continue
+    if (来源视图标识 && 身份.视图标识 === 来源视图标识) continue
+    窗口.webContents.send('system.presentationSessionChanged', { ...消息, 文稿标识 })
+  }
+}
+
+/** 屏幕工作区：重排窗口只使用工作区，不覆盖任务栏 */
+function 工作区尺寸() {
+  const { screen } = require('electron')
+  const 区域 = screen.getPrimaryDisplay().workArea
+  return { x: 区域.x, y: 区域.y, 宽: 区域.width, 高: 区域.height }
+}
+
+function 建立窗口管理器() {
+  if (窗口管理器) return 窗口管理器
+  窗口管理器 = 创建窗口管理器({
+    会话: 演示会话,
+    创建浏览器窗口: 选项 => 创建窗口(选项),
+    屏幕尺寸: 工作区尺寸,
+    应用入口: () => (app.isPackaged ? pathToFileURL(path.join(__dirname, '..', 'dist', 'index.html')).href : DEV_SERVER_URL),
+  })
+  return 窗口管理器
 }
 
 if (!获得单实例锁) {
@@ -158,10 +198,15 @@ if (!获得单实例锁) {
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
   app.whenReady().then(() => {
     const 主进程通道 = require('electron').ipcMain
-    注册全部通道(主进程通道)
+    注册全部通道(主进程通道, {
+      会话: 演示会话,
+      广播: 广播会话变更,
+      窗口管理器: 建立窗口管理器(),
+      窗口身份表,
+    })
     关联文件入口.注册读取通道(主进程通道)
     创建窗口()
   })
 }
 
-module.exports = { 安装关闭保护, 安装导航保护 }
+module.exports = { 安装关闭保护, 安装导航保护, 创建窗口, 广播会话变更, 建立窗口管理器 }

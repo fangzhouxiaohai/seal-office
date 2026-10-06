@@ -1,9 +1,10 @@
 // 导出页面规划与命名：纯函数，供导出面板、主进程请求与回归测试共用。
 import type { 演示文稿, 幻灯片 } from '../deck'
+import { 校验备注设置, 校验讲义设置, type 备注设置, type 讲义设置 } from './handout'
 
 export type 导出格式 = 'PNG' | 'JPEG' | 'PDF' | '扫描件PDF' | '图片型PPTX' | 'HTML'
 export type 导出范围 = '全部' | '当前页' | '选定页'
-export type 讲义张数 = 1 | 2 | 3 | 6
+export type 讲义张数 = 1 | 2 | 3 | 4 | 6 | 9
 
 export interface 导出选项 {
   格式: 导出格式
@@ -14,6 +15,10 @@ export interface 导出选项 {
   JPEG质量: number
   讲义每页张数: 讲义张数
   输出备注: boolean
+  /** 讲义母版设置；提供时必须与「讲义每页张数」一致 */
+  讲义设置?: 讲义设置
+  /** 备注母版设置；仅在输出备注时生效 */
+  备注设置?: 备注设置
 }
 
 export const 导出格式列表: 导出格式[] = ['PNG', 'JPEG', 'PDF', '扫描件PDF', '图片型PPTX', 'HTML']
@@ -39,9 +44,14 @@ export function 校验导出选项(选项: 导出选项): void {
   if (typeof 选项.JPEG质量 !== 'number' || !Number.isFinite(选项.JPEG质量) || 选项.JPEG质量 <= 0 || 选项.JPEG质量 > 1) {
     throw new Error('图片画质须在 0 到 1 之间')
   }
-  if (![1, 2, 3, 6].includes(选项.讲义每页张数)) throw new Error('讲义每页张数只支持 1、2、3、6')
+  if (![1, 2, 3, 4, 6, 9].includes(选项.讲义每页张数)) throw new Error('讲义每页张数只支持 1、2、3、4、6、9')
   if (选项.讲义每页张数 !== 1 && 选项.格式 !== 'PDF') throw new Error('讲义排版只用于 PDF 导出')
   if (选项.输出备注 && 选项.格式 !== 'PDF') throw new Error('备注输出只用于 PDF 导出')
+  if (选项.讲义设置 !== undefined) {
+    校验讲义设置(选项.讲义设置)
+    if (选项.讲义设置.每页张数 !== 选项.讲义每页张数) throw new Error('讲义设置与每页张数不一致，请统一后再导出')
+  }
+  if (选项.备注设置 !== undefined) 校验备注设置(选项.备注设置)
   if (!Array.isArray(选项.选定页)) throw new Error('选定页面列表无效')
 }
 

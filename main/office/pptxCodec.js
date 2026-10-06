@@ -9,6 +9,7 @@ const sax = require('sax')
 const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
 const { 写入批注, 读取批注 } = require('./pptx/comments')
 const { 写入定稿, 读取定稿, 校验定稿 } = require('./pptx/finalize')
+const { 写入讲义母版, 读取讲义母版, 写入备注母版页眉页脚, 读取备注母版页眉页脚 } = require('./pptx/handoutMasters')
 const { 读取附件对象, 读取图示对象 } = require('./pptx/embeddedObjects')
 const { 读取剩余公式 } = require('./pptx/formulas')
 
@@ -283,6 +284,9 @@ async function 读取pptx(数据) {
   const 批注列表 = await 读取批注(压缩包, 幻灯片列表, 警告)
   let 定稿
   try { 定稿 = await 读取定稿(压缩包) ?? undefined } catch { 警告.add('定稿信息未完整导入') }
+  let 讲义设置, 备注设置
+  try { 讲义设置 = await 读取讲义母版(压缩包) ?? undefined } catch { 警告.add('讲义母版设置未完整导入') }
+  try { 备注设置 = await 读取备注母版页眉页脚(压缩包) ?? undefined } catch { 警告.add('备注母版设置未完整导入') }
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -292,6 +296,8 @@ async function 读取pptx(数据) {
       当前索引: 0,
       模型版本: 2,
       ...(定稿 ? { 定稿 } : {}),
+      ...(讲义设置 ? { 讲义设置 } : {}),
+      ...(备注设置 ? { 备注设置 } : {}),
       资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
       ...(批注列表.length ? { 批注列表 } : {}),
     },
@@ -503,6 +509,8 @@ async function 写入pptx(模型) {
     校验定稿(模型.定稿)
     await 写入定稿(压缩包, 模型.定稿)
   }
+  if (模型.讲义设置 !== undefined) await 写入讲义母版(压缩包, 模型.讲义设置)
+  if (模型.备注设置 !== undefined) await 写入备注母版页眉页脚(压缩包, 模型.备注设置)
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }
 

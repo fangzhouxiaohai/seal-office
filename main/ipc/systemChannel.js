@@ -36,13 +36,31 @@ function 查询实时关闭状态(窗口, 超时毫秒 = 15000) {
   })
 }
 
-function 注册系统通道(ipcMain) {
+function 注册系统通道(ipcMain, 依赖 = {}) {
   let 默认程序服务
   const 获取默认程序服务 = () => {
     if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: 获取关联程序路径(app.isPackaged, app.getPath('exe')), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址) })
     return 默认程序服务
   }
   require('./slideshowFullscreen').注册放映全屏通道(ipcMain)
+  const 窗口管理器 = 依赖.窗口管理器
+  const 身份表 = 依赖.窗口身份表
+  // 新建演示窗口：沿用同一应用入口，并把视图登记到文稿会话
+  ipcMain.handle('system.newPresentationWindow', async (_事件, 文稿标识, 视图标识) => {
+    if (!窗口管理器) return { 成功: false, 错误: '当前环境不支持新建窗口' }
+    return 窗口管理器.新建窗口(文稿标识, 视图标识)
+  })
+  // 重排演示窗口：只改变显示位置，不改动文稿内容
+  ipcMain.handle('system.tilePresentationWindows', async (_事件, 布局) => {
+    if (!窗口管理器) return { 成功: false, 错误: '当前环境不支持重排窗口' }
+    return 窗口管理器.重排窗口(布局)
+  })
+  // 当前窗口的会话身份：新窗口据此接管同一份文稿
+  ipcMain.handle('system.presentationSessionIdentity', async (事件) => {
+    const 标识 = 事件?.sender?.id
+    const 身份 = 身份表 && 标识 !== undefined ? 身份表.get(标识) : undefined
+    return 身份 ? { 成功: true, ...身份 } : { 成功: false }
+  })
   ipcMain.handle('system.reportUnsavedCount', async (事件, 数量) => {
     if (!Number.isSafeInteger(数量) || 数量 < 0) {
       return { 成功: false, 错误: '未保存文档数量无效' }

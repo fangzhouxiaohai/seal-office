@@ -6,7 +6,7 @@ const path = require('path')
 const { PDFDocument } = require('pdf-lib')
 
 const 允许格式 = new Set(['PNG', 'JPEG', 'PDF', '扫描件PDF', '图片型PPTX', 'HTML'])
-const 讲义张数表 = new Set([1, 2, 3, 6])
+const 讲义张数表 = new Set([1, 2, 3, 4, 6, 9])
 
 /** 讲义与备注由渲染端排版进页面 HTML，主进程只按页栅格化 */
 const 需栅格化 = new Set(['PNG', 'JPEG', 'PDF', '扫描件PDF', '图片型PPTX'])
@@ -19,7 +19,7 @@ function 校验导出请求(请求) {
   const 质量 = 请求.JPEG质量 ?? 0.92
   if (typeof 质量 !== 'number' || !Number.isFinite(质量) || 质量 <= 0 || 质量 > 1) throw new Error('图片画质须在 0 到 1 之间')
   const 张数 = 请求.讲义每页张数 ?? 1
-  if (!讲义张数表.has(张数)) throw new Error('讲义每页张数只支持 1、2、3、6')
+  if (!讲义张数表.has(张数)) throw new Error('讲义每页张数只支持 1、2、3、4、6、9')
   if (张数 !== 1 && 请求.格式 !== 'PDF') throw new Error('讲义排版只用于 PDF 导出')
   if (请求.输出备注 && 请求.格式 !== 'PDF') throw new Error('备注输出只用于 PDF 导出')
   const 尺寸 = 请求.页面尺寸

@@ -1,6 +1,7 @@
 import { 校验播放参数 } from './transitions'
 import { 校验动画 } from './animations'
 import { 校验批注列表 } from './comments'
+import { 校验备注设置, 校验讲义设置, type 备注设置, type 讲义设置 } from './handout'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
 
@@ -48,6 +49,8 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       throw new Error('演示文稿定稿信息无效：标记人无效')
     }
   }
+  if (输入.讲义设置 !== undefined) 校验讲义设置(输入.讲义设置 as unknown as 讲义设置)
+  if (输入.备注设置 !== undefined) 校验备注设置(输入.备注设置 as unknown as 备注设置)
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
   for (const [序号, 原页] of 输入.幻灯片列表.entries()) {

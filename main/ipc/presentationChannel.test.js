@@ -1,5 +1,6 @@
 const { 注册演示通道 } = require('./presentationChannel')
 const { 创建资源存储 } = require('../ppt/resources')
+const { 创建文稿会话服务 } = require('../ppt/session')
 const { 写入pptx } = require('../office/pptxCodec')
 const fs = require('fs')
 const path = require('path')
@@ -90,5 +91,54 @@ describe('演示资源通道', () => {
     expect(资源.同步快照).toHaveBeenCalledWith('文稿一', ['指纹', '指纹'])
     资源.导出.mockImplementation(() => { throw new Error('资源字节缺失') })
     expect(调用('presentation.resource.export', ['指纹'])).toMatchObject({ 成功: false, 错误: '资源字节缺失' })
+  })
+})
+
+describe('演示文稿会话与批量检查通道', () => {
+  const 建通道 = (依赖 = {}) => {
+    const 处理 = new Map()
+    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储(), 依赖)
+    return (名称, ...参数) => 处理.get(名称)(null, ...参数)
+  }
+  const 内容 = (文本) => ({ 幻灯片: [页('页一', 文本)] })
+
+  it('登记、读取、提交与保存状态通过通道对外可用，并在提交后广播', async () => {
+    const 会话 = 创建文稿会话服务()
+    const 广播 = vi.fn()
+    const 调用 = 建通道({ 会话, 广播 })
+    expect(await 调用('presentation.session.register', '文稿甲', '窗口一', 内容('初始'), 'E:\\资料\\甲.pptx')).toMatchObject({ 成功: true, 版本: 1 })
+    expect(广播).toHaveBeenCalledWith('文稿甲', expect.objectContaining({ 类型: '会话变更' }), '窗口一')
+    expect(await 调用('presentation.session.read', '文稿甲')).toMatchObject({ 成功: true, 版本: 1 })
+    const 提交 = await 调用('presentation.session.commit', '文稿甲', 1, 内容('改过'), '窗口一')
+    expect(提交).toMatchObject({ 成功: true, 版本: 2 })
+    const 冲突 = await 调用('presentation.session.commit', '文稿甲', 1, 内容('旧版本'), '窗口二')
+    expect(冲突.成功).toBe(false)
+    expect(冲突.错误).toContain('版本')
+    expect(await 调用('presentation.session.saved', '文稿甲', 'E:\\资料\\甲.pptx')).toMatchObject({ 成功: true })
+    expect((await 调用('presentation.session.read', '文稿甲')).已保存).toBe(true)
+    expect(await 调用('presentation.session.unregister', '文稿甲', '窗口一')).toMatchObject({ 成功: true, 是否最后视图: true })
+  })
+
+  it('会话操作失败时返回真实原因而不是空结果', async () => {
+    const 调用 = 建通道({ 会话: 创建文稿会话服务(), 广播: vi.fn() })
+    expect(await 调用('presentation.session.read', '不存在')).toMatchObject({ 成功: false, 错误: expect.stringContaining('不存在') })
+    expect(await 调用('presentation.session.register', '', '窗口一', 内容('x'))).toMatchObject({ 成功: false })
+    expect(await 调用('presentation.session.claimPath', '不存在', 'E:\\资料\\甲.pptx')).toMatchObject({ 成功: false })
+  })
+
+  it('批量资源检查逐文件返回结果，损坏文件不影响其他文件', async () => {
+    const 好文件 = await 临时文件('批量好.pptx', { 幻灯片: [页('页一', '内容')] })
+    const 目录 = path.dirname(好文件)
+    const 坏文件 = path.join(目录, '批量坏.pptx')
+    fs.writeFileSync(坏文件, '坏内容')
+    const 调用 = 建通道({ 会话: 创建文稿会话服务(), 广播: vi.fn() })
+    const 结果 = await 调用('presentation.batchCheck', [
+      { 标识: '好', 名称: '批量好.pptx', 路径: 好文件 },
+      { 标识: '坏', 名称: '批量坏.pptx', 路径: 坏文件 },
+    ])
+    expect(结果.成功).toBe(true)
+    expect(结果.结果[0]).toMatchObject({ 标识: '好', 成功: true, 页数: 1 })
+    expect(结果.结果[1]).toMatchObject({ 标识: '坏', 成功: false })
+    expect(结果.汇总).toMatchObject({ 总数: 2, 成功: 1, 失败: 1 })
   })
 })
