@@ -5,7 +5,6 @@ import { App as AntdApp, Modal } from 'antd'
 import SettingsPage from './SettingsPage'
 import { AppProvider } from '../store'
 import { SettingsProvider } from '../store/settingsStore'
-import { 保存翻译配置 } from '../editor/translateSettings'
 import { 桥接 } from '../ipc/bridge'
 
 describe('设置页状态与真实能力一致', () => {
@@ -109,6 +108,25 @@ describe('设置页状态与真实能力一致', () => {
     }
   })
 
+  it('设置页保存翻译密钥时只写系统安全存储，不写本机明文', async () => {
+    const 保存服务 = vi.fn(async () => ({ 成功: true, 数据: { 地址: 'https://a.example.com', 已配置密钥: true } }))
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: { presentationAi: { capabilities: vi.fn(), getService: vi.fn(async () => ({ 成功: true, 数据: null })), saveService: 保存服务, migrateLegacyTranslate: vi.fn() } },
+    })
+    try {
+      render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
+      await userEvent.type(screen.getByRole('textbox', { name: '翻译服务地址' }), 'https://a.example.com')
+      await userEvent.type(screen.getByLabelText('翻译服务密钥'), 'sk-明文密钥')
+      await userEvent.click(screen.getByRole('button', { name: '保存翻译设置' }))
+      expect(await screen.findByText(/密钥已写入系统安全存储/)).toBeInTheDocument()
+      expect(保存服务).toHaveBeenCalledWith('翻译', expect.objectContaining({ 密钥: 'sk-明文密钥' }))
+      expect(localStorage.getItem('seal.office.translate') ?? '').not.toContain('sk-明文密钥')
+    } finally {
+      Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
   it('翻译配置读取失败时弹窗并阻止空配置覆盖原设置', async () => {
     const 原读取 = Storage.prototype.getItem
     const 读取 = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, 键: string) {
@@ -132,7 +150,7 @@ describe('设置页状态与真实能力一致', () => {
   })
 
   it('恢复默认时清除已保存的翻译配置并更新页面内容', async () => {
-    保存翻译配置({ 地址: 'https://a.example.com', 密钥: '旧密钥' })
+    localStorage.setItem('seal.office.translate', JSON.stringify({ 地址: 'https://a.example.com', 目标语言: 'zh' }))
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '恢复默认' }))
     expect(await screen.findByRole('dialog', { name: '确认恢复初始设置' })).toBeInTheDocument()

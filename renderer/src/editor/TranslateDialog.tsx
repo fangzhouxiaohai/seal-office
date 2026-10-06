@@ -1,9 +1,9 @@
-// 翻译面板：输入源文本，选择目标语言，调用外部翻译服务完成翻译。
-// 未配置服务地址时给出明确中文指引，不伪造结果。
+// 翻译面板：输入源文本，选择目标语言，经主进程安全服务完成翻译。
+// 密钥只存在于主进程系统安全存储，渲染端不接触明文；未配置服务地址时给出明确中文指引，不伪造结果。
 import React, { useState } from 'react'
 import { App as AntdApp, Button, Input, Modal, Select, Spin } from 'antd'
-import { 翻译文本 } from './translate'
-import { 读取翻译配置, 已配置翻译服务 } from './translateSettings'
+import { 桥接 } from '../ipc/bridge'
+import { 读取翻译配置, 已配置翻译服务, type 翻译设置 } from './translateSettings'
 
 interface Props {
   open: boolean
@@ -40,9 +40,9 @@ const TranslateDialog = ({ open, onClose }: Props) => {
       set结果('')
       return
     }
-    let 配置: ReturnType<typeof 读取翻译配置>
+    let 配置: 翻译设置
     try {
-      配置 = 读取翻译配置()
+      配置 = await 读取翻译配置()
     } catch (错误) {
       set结果('')
       modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
@@ -53,11 +53,24 @@ const TranslateDialog = ({ open, onClose }: Props) => {
       set结果('')
       return
     }
+    if (!桥接.presentationAi.可用) {
+      set结果('')
+      set提示('')
+      modal.error({ title: '翻译失败', content: '当前环境不支持系统安全翻译服务，翻译密钥只保存在 Windows 桌面版的系统安全存储中', okText: '确定' })
+      return
+    }
     set翻译中(true)
     set提示('')
     try {
-      const 译文 = await 翻译文本(文本, { ...配置, 目标语言 })
-      set结果(译文)
+      const 返回 = await 桥接.presentationAi.translate({
+        请求标识: `文字翻译-${Date.now()}`,
+        条目: [{ 对象标识: '文字翻译', 原文: 文本 }],
+        目标语言,
+      })
+      if (!返回.成功 || !返回.数据?.译文?.length) throw new Error(返回.错误 ?? '翻译服务未返回有效内容')
+      const 命中 = 返回.数据.译文.find(项 => 项.对象标识 === '文字翻译') ?? 返回.数据.译文[0]
+      if (!命中?.译文) throw new Error('翻译服务未返回有效内容')
+      set结果(命中.译文)
     } catch (错误) {
       const 消息 = 错误 instanceof Error ? 错误.message : '翻译失败，请稍后重试'
       set结果('')

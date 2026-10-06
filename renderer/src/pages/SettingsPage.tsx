@@ -16,6 +16,8 @@ const SettingsPage = () => {
   const { goHome } = useAppStore()
   const [翻译地址, 设翻译地址] = useState('')
   const [翻译密钥, 设翻译密钥] = useState('')
+  const [已配置翻译密钥, 设已配置翻译密钥] = useState(false)
+  const [翻译目标语言, 设翻译目标语言] = useState('zh')
   const [翻译读取失败, 设翻译读取失败] = useState(false)
   const [恢复工作状态, 设恢复工作状态] = useState(true)
   const [双击关闭标签, 设双击关闭标签] = useState(false)
@@ -27,14 +29,23 @@ const SettingsPage = () => {
   const [提醒读取失败, 设提醒读取失败] = useState(false)
 
   useEffect(() => {
-    try {
-      const 配置 = 读取翻译配置()
-      设翻译地址(配置.地址)
-      设翻译密钥(配置.密钥 ?? '')
-    } catch (错误) {
-      设翻译读取失败(true)
-      modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
-    }
+    let 取消 = false
+    void (async () => {
+      try {
+        const 配置 = await 读取翻译配置()
+        if (取消) return
+        设翻译地址(配置.地址)
+        设翻译目标语言(配置.目标语言 ?? 'zh')
+        // 密钥只显示「是否已配置」，不回显明文；输入框留给用户填写新密钥
+        设翻译密钥('')
+        设已配置翻译密钥(配置.已配置密钥)
+      } catch (错误) {
+        if (取消) return
+        设翻译读取失败(true)
+        modal.error({ title: '读取翻译设置失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机翻译设置', okText: '确定' })
+      }
+    })()
+    return () => { 取消 = true }
   }, [modal])
 
   useEffect(() => {
@@ -105,10 +116,12 @@ const SettingsPage = () => {
     }
   }
 
-  const 保存翻译设置 = () => {
+  const 保存翻译设置 = async () => {
     try {
-      保存翻译配置({ 地址: 翻译地址, 密钥: 翻译密钥 })
-      message.success('翻译设置已保存')
+      await 保存翻译配置({ 地址: 翻译地址, 目标语言: 翻译目标语言, ...(翻译密钥.trim().length > 0 ? { 密钥: 翻译密钥 } : {}) })
+      设翻译密钥('')
+      设已配置翻译密钥(翻译密钥.trim().length > 0 || 已配置翻译密钥)
+      message.success(翻译密钥.trim().length > 0 ? '翻译设置已保存，密钥已写入系统安全存储' : '翻译设置已保存')
     } catch (错误) {
       modal.error({
         title: '保存翻译设置失败',
@@ -132,7 +145,7 @@ const SettingsPage = () => {
       localStorage.removeItem('seal-session-restore')
       localStorage.removeItem('seal-tab-double-click-close')
       保存提醒目录(null)
-      清除翻译配置()
+      await 清除翻译配置()
     } catch (错误) {
       if (模型配置已清除) window.dispatchEvent(new Event('seal-ai-setting-changed'))
       modal.error({ title: '恢复设置失败', content: `${模型配置已清除 ? '模型设置已清除，' : ''}部分本地设置可能已恢复，请检查当前选项。${错误 instanceof Error ? 错误.message : '本地设置无法写入'}`, okText: '确定' })
@@ -143,6 +156,7 @@ const SettingsPage = () => {
     恢复默认主题()
     设翻译地址('')
     设翻译密钥('')
+    设已配置翻译密钥(false)
     设翻译读取失败(false)
     设恢复工作状态(true)
     设双击关闭标签(false)
@@ -268,17 +282,17 @@ const SettingsPage = () => {
           )}
           {设置行(
             '翻译服务密钥',
-            '调用翻译服务所需的密钥，填写后用于接口鉴权',
+            已配置翻译密钥 ? '密钥已保存在系统安全存储；留空保存不修改，填写新密钥将覆盖，界面不回显明文' : '调用翻译服务所需的密钥，只写入系统安全存储，不写入本机普通设置',
             <Input.Password
               aria-label="翻译服务密钥"
               className="settings-wps-row__input"
-              placeholder="请输入密钥"
+              placeholder={已配置翻译密钥 ? '已配置密钥（留空不修改）' : '请输入密钥'}
               value={翻译密钥}
               onChange={(事件: React.ChangeEvent<HTMLInputElement>) => 设翻译密钥(事件.target.value)}
             />
           )}
           <div className="settings-wps-row">
-            <Button type="primary" size="small" onClick={保存翻译设置} disabled={翻译读取失败}>保存翻译设置</Button>
+            <Button type="primary" size="small" onClick={() => void 保存翻译设置()} disabled={翻译读取失败}>保存翻译设置</Button>
           </div>
         </div>
 
