@@ -1,5 +1,57 @@
 const { 注册演示通道 } = require('./presentationChannel')
 const { 创建资源存储 } = require('../ppt/resources')
+const { 写入pptx } = require('../office/pptxCodec')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
+
+const 页 = (标识, 文本) => ({ id: 标识, 背景色: '#FFFFFF', 文本框: [{ id: `${标识}-文字`, text: 文本, x: 40, y: 40, width: 400, height: 80, 字号: 20 }] })
+const 临时文件 = async (名称, 模型) => {
+  const 目录 = fs.mkdtempSync(path.join(process.env.TEMP ?? os.tmpdir(), 'seal-compare-'))
+  const 路径 = path.join(目录, 名称)
+  fs.writeFileSync(路径, await 写入pptx(模型))
+  return 路径
+}
+
+describe('演示文稿比对通道', () => {
+  it('比较两份真实文件并返回结构化差异，且不修改被比较文件', async () => {
+    const 甲 = await 临时文件('甲.pptx', { 幻灯片: [页('页一', '原文')] })
+    const 乙 = await 临时文件('乙.pptx', { 幻灯片: [页('页一', '改后'), 页('页二', '新增页')] })
+    const 甲快照 = fs.readFileSync(甲), 乙快照 = fs.readFileSync(乙)
+    const 处理 = new Map()
+    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储())
+    const 结果 = await 处理.get('presentation.compareFiles')(null, 甲, 乙)
+    expect(结果.成功).toBe(true)
+    expect(结果.汇总).toMatchObject({ 新增页: 1, 删除页: 0, 修改页: 1 })
+    expect(结果.页面.flatMap(项 => 项.差异 ?? []).some(项 => 项.类型 === '文本' && 项.字段 === 'text')).toBe(true)
+    expect(fs.readFileSync(甲).equals(甲快照)).toBe(true)
+    expect(fs.readFileSync(乙).equals(乙快照)).toBe(true)
+  })
+
+  it('同一份文件比较没有差异', async () => {
+    const 文件 = await 临时文件('同一.pptx', { 幻灯片: [页('页一', '内容')] })
+    const 处理 = new Map()
+    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储())
+    const 结果 = await 处理.get('presentation.compareFiles')(null, 文件, 文件)
+    expect(结果.成功).toBe(true)
+    expect(结果.汇总).toEqual({ 新增页: 0, 删除页: 0, 移动页: 0, 修改页: 0, 差异项: 0 })
+  })
+
+  it('路径无效、文件缺失或内容不是演示文稿时返回真实原因', async () => {
+    const 处理 = new Map()
+    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储())
+    const 比较 = (甲, 乙) => 处理.get('presentation.compareFiles')(null, 甲, 乙)
+    expect(await 比较('', 'x.pptx')).toMatchObject({ 成功: false, 错误: expect.stringContaining('路径') })
+    const 缺失 = path.join(os.tmpdir(), 'seal-不存在-' + Date.now() + '.pptx')
+    expect(await 比较(缺失, 缺失)).toMatchObject({ 成功: false, 错误: expect.stringContaining('无法读取') })
+    const 坏文件 = path.join(os.tmpdir(), 'seal-坏文件-' + Date.now() + '.pptx')
+    fs.writeFileSync(坏文件, '这不是演示文稿')
+    const 结果 = await 比较(坏文件, 坏文件)
+    expect(结果.成功).toBe(false)
+    expect(结果.错误.length).toBeGreaterThan(0)
+    fs.rmSync(坏文件, { force: true })
+  })
+})
 
 describe('演示资源通道', () => {
   it('实际通道释放文稿和历史后能插入新资源，不残留总容量占用', () => {

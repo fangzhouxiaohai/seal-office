@@ -3,14 +3,18 @@ import { App } from 'antd'
 import { 更新幻灯片, type 幻灯片, type 演示文稿 } from '../deck'
 import { 应用检查修正, 可自动修正, 执行本机检查, 忽略检查项, 类型清单, type 检查项 } from '../model/proofing'
 import { 差异片段, 单字表规模, 转换幻灯片, 转换简繁词组, 词组表规模, type 转换方向 } from '../model/langConvert'
+import ComparePanel from './ComparePanel'
+import DocumentSecurityPanel from './DocumentSecurityPanel'
+import './review.css'
 
 interface Props {
   文稿: 演示文稿
   页: 幻灯片
   只读: boolean
-  区域: '检查' | '转换'
+  区域: '检查' | '转换' | '定稿' | '比对'
   转换方向: 转换方向
-  on区域变化: (区域: '检查' | '转换') => void
+  当前路径?: string
+  on区域变化: (区域: '检查' | '转换' | '定稿' | '比对') => void
   on方向变化: (方向: 转换方向) => void
   on修改: (文稿: 演示文稿) => void
 }
@@ -20,8 +24,15 @@ const 类型提示: Record<string, string> = {
   格式: '字号设置', 文字溢出: '文字可能超出文本框', 缺失资源: '对象引用的资源缺失', 链接: '链接协议不安全',
 }
 
-/** 审阅面板：本机排版检查与繁简转换差异预览；智能语义校对属于模型服务，不在此冒充。 */
-export default function ReviewPanel({ 文稿, 页, 只读, 区域, 转换方向, on区域变化, on方向变化, on修改 }: Props) {
+const 区域名称: Array<{ 值: Props['区域']; 文案: string }> = [
+  { 值: '检查', 文案: '排版检查' },
+  { 值: '转换', 文案: '繁简转换' },
+  { 值: '定稿', 文案: '文档定稿' },
+  { 值: '比对', 文案: '文档比对' },
+]
+
+/** 审阅面板：本机排版检查、繁简转换、文档定稿与文档比对；智能语义校对属于模型服务，不在此冒充。 */
+export default function ReviewPanel({ 文稿, 页, 只读, 区域, 转换方向, 当前路径, on区域变化, on方向变化, on修改 }: Props) {
   const { modal } = App.useApp()
   const [忽略集, set忽略集] = useState<Set<string>>(new Set())
   const [范围, set范围] = useState<'当前页' | '全部页'>('当前页')
@@ -50,8 +61,7 @@ export default function ReviewPanel({ 文稿, 页, 只读, 区域, 转换方向,
   return <aside className="wps-ppt-properties wps-ppt-review" aria-label="审阅">
     <h2>审阅</h2>
     <div className="wps-ppt-properties__actions">
-      <button type="button" aria-pressed={区域 === '检查'} onClick={() => on区域变化('检查')}>排版检查</button>
-      <button type="button" aria-pressed={区域 === '转换'} onClick={() => on区域变化('转换')}>繁简转换</button>
+      {区域名称.map(项 => <button key={项.值} type="button" aria-pressed={区域 === 项.值} onClick={() => on区域变化(项.值)}>{项.文案}</button>)}
     </div>
     {区域 === '检查'
       ? <fieldset><legend>本机排版检查（{检查项列表.length}）</legend>
@@ -71,19 +81,23 @@ export default function ReviewPanel({ 文稿, 页, 只读, 区域, 转换方向,
             })}
           </ol>
         </fieldset>
-      : <fieldset disabled={只读}><legend>繁简转换差异预览</legend>
-          <label>方向<select aria-label="转换方向" value={转换方向} onChange={事件 => on方向变化(事件.target.value as 转换方向)}><option value="繁">简转繁</option><option value="简">繁转简</option></select></label>
-          <label>范围<select aria-label="转换范围" value={范围} onChange={事件 => set范围(事件.target.value as '当前页' | '全部页')}><option value="当前页">当前页</option><option value="全部页">全部页</option></select></label>
-          <p>本机词组转换覆盖 {词组表规模} 个词组和 {单字表规模} 个单字；未收录的字词保持原样，不会猜测替换。转换保留段落与片段格式，应用后可用一次撤销还原。</p>
-          {改动数 === 0 && <p>没有可转换的文本框。</p>}
-          <ol className="wps-review-list">
-            {预览.flatMap(({ 页项, 条目 }) => 条目.map(({ 框, 结果, 片段 }) => <li key={`${页项.id}-${框.id}`}>
-              <p className="wps-review-list__meta">第 {文稿.幻灯片列表.findIndex(候选 => 候选.id === 页项.id) + 1} 页 · {框.text.slice(0, 12) || '空文本'}</p>
-              <p className="wps-review-list__text">{片段.map((段, 索引) => 段.改变 ? <mark key={索引}>{段.文本}</mark> : <span key={索引}>{段.文本}</span>)}</p>
-              <p className="wps-review-list__meta">共 {结果.转换数} 处转换</p>
-            </li>))}
-          </ol>
-          <div className="wps-ppt-properties__actions"><button type="button" disabled={只读 || 改动数 === 0} onClick={应用转换}>应用转换</button></div>
-        </fieldset>}
+      : 区域 === '转换'
+        ? <fieldset disabled={只读}><legend>繁简转换差异预览</legend>
+            <label>方向<select aria-label="转换方向" value={转换方向} onChange={事件 => on方向变化(事件.target.value as 转换方向)}><option value="繁">简转繁</option><option value="简">繁转简</option></select></label>
+            <label>范围<select aria-label="转换范围" value={范围} onChange={事件 => set范围(事件.target.value as '当前页' | '全部页')}><option value="当前页">当前页</option><option value="全部页">全部页</option></select></label>
+            <p>本机词组转换覆盖 {词组表规模} 个词组和 {单字表规模} 个单字；未收录的字词保持原样，不会猜测替换。转换保留段落与片段格式，应用后可用一次撤销还原。</p>
+            {改动数 === 0 && <p>没有可转换的文本框。</p>}
+            <ol className="wps-review-list">
+              {预览.flatMap(({ 页项, 条目 }) => 条目.map(({ 框, 结果, 片段 }) => <li key={`${页项.id}-${框.id}`}>
+                <p className="wps-review-list__meta">第 {文稿.幻灯片列表.findIndex(候选 => 候选.id === 页项.id) + 1} 页 · {框.text.slice(0, 12) || '空文本'}</p>
+                <p className="wps-review-list__text">{片段.map((段, 索引) => 段.改变 ? <mark key={索引}>{段.文本}</mark> : <span key={索引}>{段.文本}</span>)}</p>
+                <p className="wps-review-list__meta">共 {结果.转换数} 处转换</p>
+              </li>))}
+            </ol>
+            <div className="wps-ppt-properties__actions"><button type="button" disabled={只读 || 改动数 === 0} onClick={应用转换}>应用转换</button></div>
+          </fieldset>
+        : 区域 === '定稿'
+          ? <DocumentSecurityPanel 文稿={文稿} 只读={只读} on修改={on修改} />
+          : <ComparePanel 当前路径={当前路径} />}
   </aside>
 }

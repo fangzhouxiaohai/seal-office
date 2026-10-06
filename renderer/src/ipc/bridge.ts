@@ -57,6 +57,12 @@ export interface 演示资源接口 {
   export: (标识列表: string[]) => Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }>
   restore: (条目列表: 演示资源条目[]) => Promise<{ 成功: boolean; 错误?: string }>
 }
+export interface 比对差异项 { 类型: string; 标识: string; 字段: string; 左: unknown; 右: unknown }
+export interface 比对页结果 { 标识: string; 类型: '新增' | '删除' | '移动' | '修改'; 标题?: string; 左索引?: number; 右索引?: number; 位置变化?: boolean; 差异?: 比对差异项[] }
+export interface 比对结果 { 成功: boolean; 汇总?: { 新增页: number; 删除页: number; 移动页: number; 修改页: number; 差异项: number }; 页面?: 比对页结果[]; 警告?: { 左: string[]; 右: string[] }; 错误?: string }
+export interface 演示比对接口 {
+  compareFiles: (左路径: string, 右路径: string) => Promise<比对结果>
+}
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -73,6 +79,7 @@ export interface 电子接口 {
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
   presentationResources?: 演示资源接口
   presentationExport?: 演示导出接口
+  presentationCompare?: 演示比对接口
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentRemove: (路径: string) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -157,6 +164,10 @@ export const 桥接 = {
     run: (请求: 演示导出请求): Promise<演示导出结果> => 取后端()?.presentationExport?.run(请求) ?? 失败('当前环境不支持演示导出，请使用 Windows 桌面版'),
     pickDirectory: (): Promise<{ 成功: boolean; 目录?: string; 已取消?: boolean; 错误?: string }> =>
       取后端()?.presentationExport?.pickDirectory?.() ?? Promise.resolve({ 成功: false, 已取消: true }),
+  },
+  presentationCompare: {
+    compareFiles: (左路径: string, 右路径: string): Promise<比对结果> =>
+      取后端()?.presentationCompare?.compareFiles(左路径, 右路径) ?? 失败('当前环境不支持演示文稿比对'),
   },
   recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
   recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),

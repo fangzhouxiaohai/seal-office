@@ -216,6 +216,13 @@ const 审阅标签: RibbonTabSpec = {
         大('review.langToTraditional', '简转繁', 'language'),
       ],
     },
+    {
+      name: '文档',
+      items: [
+        大('review.finalize', '文档定稿', 'track'),
+        大('review.compare', '文档比对', 'compare'),
+      ],
+    },
   ],
 }
 

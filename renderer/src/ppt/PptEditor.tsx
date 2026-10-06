@@ -90,9 +90,11 @@ const PptEditor = () => {
   const [选中对象, set选中对象] = useState<string[]>([])
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
-  const [只读, set只读] = useState(false)
+  const [手动只读, set只读] = useState(false)
+  /** 定稿为可恢复的只读标记：与手动只读一起决定编辑权限，不代表加密保护。 */
+  const 只读 = 手动只读 || Boolean(文稿.定稿)
   const [显示批注, set显示批注] = useState(true)
-  const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换'>('检查')
+  const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对'>('检查')
   const [转换方向, set转换方向] = useState<'简' | '繁'>('繁')
   const [参考线, set参考线] = useState({ 垂直: [] as number[], 水平: [] as number[] })
   const [适应, set适应] = useState(false)
@@ -300,7 +302,8 @@ const PptEditor = () => {
 
   /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新文稿 = (新文稿: 演示文稿) => {
-    if (只读) return
+    // 定稿后只放行「解除定稿」这一项修改，其余编辑一律拒绝，避免绕过只读标记。
+    if (只读 && !(文稿.定稿 && !新文稿.定稿)) return
     历史.record(新文稿)
     同步历史资源()
     set文稿(新文稿)
@@ -876,7 +879,7 @@ const PptEditor = () => {
       onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement('div', { className: 'wps-ppt-object-toolbar' },
-      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null) } }), '只读查看'),
+      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, disabled: Boolean(文稿.定稿), onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null) } }), 文稿.定稿 ? '只读查看（本文稿已定稿）' : '只读查看'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 显示标尺, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set显示标尺(事件.target.checked) }), '标尺'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 吸附, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set吸附(事件.target.checked) }), '吸附'),
       React.createElement('button', { type: 'button', onClick: () => set参考线({ 垂直: [480], 水平: [270] }) }, '中心参考线'),
@@ -973,7 +976,7 @@ const PptEditor = () => {
                 on切换区域: (区域) => set审阅区域(区域),
               })
             : React.createElement(ReviewPanel, {
-                文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向,
+                文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向, 当前路径: 文档路径 ?? undefined,
                 on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
               }))
         : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
