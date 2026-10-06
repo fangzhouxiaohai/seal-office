@@ -38,6 +38,15 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
     }
   }
   if (输入.循环放映 !== undefined && typeof 输入.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
+  if (输入.定稿 !== undefined) {
+    const 定稿 = 输入.定稿
+    if (!是记录(定稿) || typeof 定稿.时间 !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(定稿.时间)) {
+      throw new Error('演示文稿定稿信息无效：缺少有效的定稿时间')
+    }
+    if (定稿.标记人 !== undefined && (typeof 定稿.标记人 !== 'string' || 定稿.标记人.trim().length === 0 || 定稿.标记人.trim().length > 64)) {
+      throw new Error('演示文稿定稿信息无效：标记人无效')
+    }
+  }
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
   for (const [序号, 原页] of 输入.幻灯片列表.entries()) {

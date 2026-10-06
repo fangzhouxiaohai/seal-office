@@ -7,6 +7,7 @@ const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 写入定稿, 读取定稿, 校验定稿 } = require('./pptx/finalize')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -270,6 +271,8 @@ async function 读取pptx(数据) {
     幻灯片列表.push(幻灯片)
   }
   await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
+  let 定稿
+  try { 定稿 = await 读取定稿(压缩包) ?? undefined } catch { 警告.add('定稿信息未完整导入') }
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -278,6 +281,7 @@ async function 读取pptx(数据) {
       幻灯片列表,
       当前索引: 0,
       模型版本: 2,
+      ...(定稿 ? { 定稿 } : {}),
       资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
     },
     警告: Array.from(警告),
@@ -461,7 +465,7 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.length && !模型.循环放映) return 原文件
+  if (!幻灯片列表.length && !模型.循环放映 && 模型.定稿 === undefined) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 过渡Xml = 写入切换(幻灯片列表[索引])
@@ -482,6 +486,10 @@ async function 写入pptx(模型) {
   if (属性 && 模型.循环放映 !== undefined) {
     const 内容 = (await 属性.async('string')).replace(/<p:presentationPr([^>]*)\/>/, '<p:presentationPr$1></p:presentationPr>').replace(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/g, '')
     压缩包.file('ppt/presProps.xml', 内容.replace('</p:presentationPr>', `<p:showPr loop="${模型.循环放映 ? 1 : 0}" useTimings="1"><p:present/><p:sldAll/></p:showPr></p:presentationPr>`))
+  }
+  if (模型.定稿 !== undefined) {
+    校验定稿(模型.定稿)
+    await 写入定稿(压缩包, 模型.定稿)
   }
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }
