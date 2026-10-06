@@ -11,7 +11,8 @@ function 写入切换(页) {
 function 读取切换(xml) {
   const 匹配 = xml.match(/<p:transition\b[^>]*(?:\/>|>[\s\S]*?<\/p:transition>)/)
   if (!匹配) return { 存在: false, 风险: false }
-  const 文本 = 匹配[0], 头 = 文本.slice(0,文本.indexOf('>')+1), 属性 = Object.fromEntries([...头.matchAll(/([\w:]+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1],m[3]])), 子 = 文本.match(/<p:(fade|push|cut|wipe|zoom|pull|split)\b([^>]*)\/>/)
+  // 切换音效与切换效果共存于同一个 p:transition，音效单独读取，不参与切换风险判定。
+  const 文本 = 匹配[0].replace(/<p:sndAc\b[^>]*>[\s\S]*?<\/p:sndAc>/g, ''), 头 = 文本.slice(0,文本.indexOf('>')+1), 属性 = Object.fromEntries([...头.matchAll(/([\w:]+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1],m[3]])), 子 = 文本.match(/<p:(fade|push|cut|wipe|zoom|pull|split)\b([^>]*)\/>/)
   const 内文 = 文本.replace(/^<p:transition[^>]*>/,'').replace(/<\/p:transition>$/,'').trim()
   if (Object.keys(属性).some(k=>!['spd','advClick','advTm','p14:dur','xmlns:p14'].includes(k)) || (内文 && (!子 || 子[0] !== 内文))) return { 存在: true, 风险: true }
   const a = Object.fromEntries([...((子?.[2])??'').matchAll(/(\w+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1],m[3]])), 名称 = 子?.[1] ?? ''

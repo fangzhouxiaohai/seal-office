@@ -32,11 +32,43 @@ export interface 文本框 {
 
 export type 版式类型 = '标题幻灯片' | '标题和内容' | '空白'
 
+/** 媒体播放参数：播放范围、音量、循环与进入页面自动播放。 */
+export interface 媒体数据 {
+  种类: '音频' | '视频'
+  封面资源标识?: string
+  开始毫秒?: number
+  结束毫秒?: number
+  音量: number
+  循环: boolean
+  自动播放: boolean
+}
+
+/** 对象动作与超链接：打开网页、跳转到指定页面、结束放映。 */
+export interface 链接数据 {
+  类型: '网页' | '页' | '结束'
+  目标: string
+}
+
+/** 永久笔迹：以页面坐标保存的笔画集合。 */
+export interface 墨迹数据 {
+  颜色: string
+  笔宽: number
+  笔画: Array<Array<{ x: number; y: number }>>
+}
+
+/** 切换音效：进入页面时播放的音频资源。 */
+export interface 音效数据 {
+  资源标识: string
+  音量: number
+  循环: boolean
+}
+
 export interface 幻灯片 {
   切换?: 切换设置
   换片?: 换片设置
   隐藏?: boolean
   动画序列?: 对象动画[]
+  音效?: 音效数据
   id: string
   title: string
   版式: 版式类型
@@ -54,7 +86,7 @@ export interface 幻灯片 {
 
 export type 演示对象 = {
   id: string
-  类型: '图片' | '图形' | '表格' | '图表' | '媒体' | '组合'
+  类型: '图片' | '图形' | '表格' | '图表' | '媒体' | '组合' | '墨迹'
   x: number
   y: number
   width: number
@@ -69,6 +101,9 @@ export type 演示对象 = {
   图表?: 图表数据
   连接?: 连接数据
   语义类型?: '流程'|'层级'|'循环'|'脑图'
+  媒体?: 媒体数据
+  链接?: 链接数据
+  墨迹?: 墨迹数据
 }
 
 export interface 演示资源 {

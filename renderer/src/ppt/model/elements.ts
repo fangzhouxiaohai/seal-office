@@ -2,6 +2,7 @@ import { 校验图表, 图表配色 } from '../../../../main/office/pptx/chartDa
 export { 图表配色 }
 import type { 演示对象, 幻灯片 } from '../deck'
 import { 要求对象可编辑 } from './objectPermissions'
+import { 校验媒体数据, 校验墨迹数据, 校验链接数据 } from './mediaObjects'
 export type 图形种类 = '矩形'|'圆角矩形'|'椭圆'|'菱形'|'三角形'|'箭头'|'星形'|'爱心'|'艺术字'|'连接线'
 export interface 形状数据 { 种类: 图形种类; 文本: string; 填充: string; 线条: string; 线宽: number; 颜色: string; 字号: number; 加粗: boolean }
 export interface 单元格 { 文本: string; 背景: string; 颜色: string; 字号: number; 加粗: boolean; 对齐: 'left'|'center'|'right' }
@@ -100,6 +101,23 @@ export function 校验原生元素(对象: 演示对象): void {
   if (对象.类型 === '图表') 校验图表数据(对象)
   const 颜色 = (值: unknown) => typeof 值 === 'string' && /^#[0-9a-f]{6}$/i.test(值)
   const 字段 = (值: unknown, 允许: string[]) => { if (!值 || typeof 值 !== 'object' || Object.keys(值).some(键 => !允许.includes(键))) throw new Error('原生对象含未知属性，已阻止有损保存') }
+  if (对象.类型 === '媒体') {
+    字段(对象, ['id','类型','x','y','width','height','旋转','锁定','资源标识','媒体','链接'])
+    if (对象.旋转) throw new Error('媒体暂不支持旋转')
+    if (对象.子对象标识 !== undefined) throw new Error('媒体不能携带组合成员')
+    if (typeof 对象.资源标识 !== 'string' || !对象.资源标识) throw new Error('媒体缺少资源引用')
+    校验媒体数据(对象.媒体)
+    if (对象.链接) 校验链接数据(对象.链接)
+  }
+  if (对象.类型 === '墨迹') {
+    字段(对象, ['id','类型','x','y','width','height','旋转','锁定','墨迹'])
+    if (对象.旋转) throw new Error('笔迹暂不支持旋转')
+    if (对象.子对象标识 !== undefined) throw new Error('笔迹不能携带组合成员')
+    if (对象.链接) throw new Error('笔迹不支持超链接动作')
+    const 数据 = 校验墨迹数据(对象.墨迹)
+    if (对象.width <= 0 || 对象.height <= 0) throw new Error('笔迹尺寸无效')
+    if (数据.笔画.some(笔画 => 笔画.some(点 => 点.x < 对象.x - 1 || 点.y < 对象.y - 1 || 点.x > 对象.x + 对象.width + 1 || 点.y > 对象.y + 对象.height + 1))) throw new Error('笔迹坐标超出对象范围')
+  }
   if (对象.类型 === '图形') {
     字段(对象,['id','类型','x','y','width','height','旋转','锁定','形状','连接','子对象标识'])
     if (对象.子对象标识 !== undefined) throw new Error('图形不能携带组合成员')

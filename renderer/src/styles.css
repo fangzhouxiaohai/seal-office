@@ -3269,3 +3269,19 @@ button {
 .wps-animation-dialog .wps-ppt-properties__actions button:hover { background: var(--bg-hover); border-color: var(--brand); }
 .wps-animation-dialog .wps-ppt-properties__actions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-animation-dialog .wps-ppt-properties__actions button:disabled { opacity: .55; cursor: default; }
+
+/* 媒体封面、媒体元素与放映工具：沿用现有令牌，不引入新的装饰色。 */
+.wps-media-poster { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--bg-app); color: var(--text-2); font-size: 12px; }
+.wps-media-poster__mark { font-size: 16px; font-weight: 600; color: var(--text-1); }
+.wps-media-poster__hint { font-size: 12px; }
+.wps-media-audio { position: relative; display: block; }
+.wps-media-audio audio { position: absolute; left: 0; right: 0; bottom: var(--space-2); width: auto; height: 32px; margin: 0 var(--space-2); }
+.wps-slideshow__tools { position: fixed; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); }
+.wps-slideshow__tool { min-height: 32px; padding: var(--space-1) var(--space-3); border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--text-1); font: inherit; font-size: 12px; }
+.wps-slideshow__tool:hover { background: var(--bg-hover); }
+.wps-slideshow__tool:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-slideshow__tool.is-active { border-color: var(--brand); color: var(--brand); font-weight: 600; }
+.wps-slideshow__screen { position: fixed; inset: 0; z-index: 5; }
+.wps-slideshow__screen[data-屏幕='黑'] { background: #000000; }
+.wps-slideshow__screen[data-屏幕='白'] { background: #FFFFFF; }
+.wps-slideshow.is-tool-active { cursor: crosshair; }

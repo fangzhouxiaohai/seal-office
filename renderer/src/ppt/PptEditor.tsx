@@ -37,6 +37,8 @@ import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
+import { 创建媒体对象, 创建墨迹对象, 校验音效数据 } from './model/mediaObjects'
+import { 读取媒体文件 } from './model/mediaImport'
 import { 使用放映状态 } from './presentationState'
 
 /** 取路径中的文件名，供最近文档记录使用 */
@@ -81,6 +83,10 @@ const PptEditor = () => {
   const [适应, set适应] = useState(false)
   const 适应比例 = useRef(1)
   const 图片输入 = useRef<HTMLInputElement>(null)
+  const 媒体输入 = useRef<HTMLInputElement>(null)
+  const 音效输入 = useRef<HTMLInputElement>(null)
+  const 媒体选择类型 = 'audio/wav,audio/mpeg,audio/mp4,audio/ogg,audio/webm,video/mp4,video/webm'
+  const 音频选择类型 = 'audio/wav,audio/mpeg,audio/mp4,audio/ogg,audio/webm'
   const 插入中 = useRef(false)
   const 当前标识引用 = useRef(activeDocumentId); 当前标识引用.current = activeDocumentId
   const 图片引用键 = JSON.stringify([...new Set(收集演示资源标识(文稿))])
@@ -350,6 +356,73 @@ const PptEditor = () => {
     }
   }
 
+  /** 媒体插入：真实探测可解码后才写入资源与对象，取消或失败不修改文稿。 */
+  const 插入媒体 = async (文件列表: File[]) => {
+    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !文件列表.length || 插入中.current) return
+    插入中.current = true
+    const 临时引用: string[] = []
+    try {
+      const 资源索引 = { ...文稿.资源索引 }, 对象列表 = [...当前幻灯片.对象列表 ?? []], 新标识: string[] = []
+      for (const 文件 of 文件列表) {
+        const 媒体 = await 读取媒体文件(文件)
+        const 结果 = await 桥接.presentationResources.add(媒体.数据, 媒体.类型)
+        if (!结果.成功 || !('标识' in 结果) || !结果.标识 || !结果.字节数) throw new Error(结果.错误 ?? '媒体资源加入失败')
+        临时引用.push(结果.标识)
+        资源索引[结果.标识] = { 指纹: 结果.标识, 类型: 媒体.类型, 字节数: 结果.字节数 }
+        const 对象 = 创建媒体对象(结果.标识, 媒体.种类)
+        对象列表.push(对象); 新标识.push(对象.id)
+      }
+      if (当前标识引用.current !== activeDocumentId) throw new Error('媒体处理期间文档已切换，请重新插入')
+      if (插图状态.current.禁止插图) throw new Error('媒体处理期间已进入放映或预览，请返回编辑后重新插入')
+      if (插图状态.current.只读) throw new Error('媒体处理期间已开启只读，请关闭只读后重新插入')
+      if (插图状态.current.文稿 !== 文稿 || !插图状态.current.文稿.幻灯片列表.some(页 => 页.id === 当前幻灯片.id)) throw new Error('媒体处理期间文稿已变化，请重新插入')
+      更新文稿({ ...更新幻灯片(文稿, 当前幻灯片.id, { 对象列表 }), 资源索引 })
+      set选中对象(新标识); set选中框标识(null)
+    } catch (错误) { 显示文件错误('媒体插入失败', 错误 instanceof Error ? 错误.message : '媒体读取失败') }
+    finally {
+      for (const 标识 of 临时引用) {
+        const 结果 = await 桥接.presentationResources.dropTemporary(标识)
+        if (!结果.成功) 显示文件错误('媒体资源释放失败', 结果.错误 ?? '临时引用释放失败')
+      }
+      插入中.current = false
+    }
+  }
+
+  /** 切换音效：选择、替换与移除都经同一资源链路，音量与循环随页面保存。 */
+  const 更换音效 = async (文件列表: File[]) => {
+    const 页 = 当前幻灯片
+    if (只读 || !页 || !文件列表.length) return
+    const 临时引用: string[] = []
+    try {
+      const 音效文件 = 文件列表[0]
+      const 媒体 = await 读取媒体文件(音效文件)
+      if (媒体.种类 !== '音频') throw new Error('切换音效只能使用音频文件')
+      const 结果 = await 桥接.presentationResources.add(媒体.数据, 媒体.类型)
+      if (!结果.成功 || !('标识' in 结果) || !结果.标识 || !结果.字节数) throw new Error(结果.错误 ?? '音效资源加入失败')
+      临时引用.push(结果.标识)
+      const 音效 = 校验音效数据({ 资源标识: 结果.标识, 音量: 页.音效?.音量 ?? 80, 循环: 页.音效?.循环 ?? false })
+      更新文稿({ ...更新幻灯片(文稿, 页.id, { 音效 }), 资源索引: { ...文稿.资源索引, [结果.标识]: { 指纹: 结果.标识, 类型: 媒体.类型, 字节数: 结果.字节数 } } })
+    } catch (错误) { 显示文件错误('切换音效设置失败', 错误 instanceof Error ? 错误.message : '音效读取失败') }
+    finally {
+      for (const 标识 of 临时引用) {
+        const 结果 = await 桥接.presentationResources.dropTemporary(标识)
+        if (!结果.成功) 显示文件错误('音效资源释放失败', 结果.错误 ?? '临时引用释放失败')
+      }
+    }
+  }
+
+  /** 放映结束时用户明确选择保留笔迹，才写入当前放映页并进入撤销历史。 */
+  const 保留放映笔迹 = (批迹: { 颜色: string; 笔宽: number; 笔画: Array<Array<{ x: number; y: number }>> }) => {
+    const 页 = 文稿.幻灯片列表[放映索引] ?? 当前幻灯片
+    if (!页) return
+    if (只读) { modal.warning({ title: '无法保留笔迹', content: '当前演示文稿为只读状态，请关闭只读后重试。' }); return }
+    try {
+      const 对象 = 创建墨迹对象(批迹.笔画, 批迹.颜色, 批迹.笔宽)
+      更新文稿(更新幻灯片(文稿, 页.id, { 对象列表: [...页.对象列表 ?? [], 对象] }))
+      set选中对象([对象.id])
+    } catch (错误) { 显示文件错误('笔迹保存失败', 错误 instanceof Error ? 错误.message : '笔迹数据无效') }
+  }
+
   const 图片粘贴引用 = useRef(插入图片); 图片粘贴引用.current = 插入图片
   useEffect(() => {
     const 粘贴 = (事件: ClipboardEvent) => {
@@ -434,6 +507,7 @@ const PptEditor = () => {
   const 执行命令 = (标识: string, 参数?: string) => {
     if (只读 && !标识.startsWith('view.') && !标识.startsWith('slideshow.') && !标识.startsWith('file.')) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
+    if (标识 === 'insert.media') { 媒体输入.current?.click(); return }
     if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
     // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
     if (标识 === 'edit.cut' || 标识 === 'edit.copy') {
@@ -555,7 +629,7 @@ const PptEditor = () => {
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
-            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
+            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列, 音效: 幻灯片.音效,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
@@ -639,7 +713,7 @@ const PptEditor = () => {
             背景色: 幻灯片.背景色,
             过渡效果: 幻灯片.过渡效果,
             动画: 幻灯片.动画,
-            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
+            切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列, 音效: 幻灯片.音效,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
             文本框: 幻灯片.文本框列表.map((框) => ({
@@ -803,6 +877,8 @@ const PptEditor = () => {
     React.Fragment,
     null,
     React.createElement('input', { ref: 图片输入, type: 'file', accept: 'image/png,image/jpeg', multiple: true, hidden: true, 'aria-label': '选择图片文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入图片(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
+    React.createElement('input', { ref: 媒体输入, type: 'file', accept: 媒体选择类型, hidden: true, 'aria-label': '选择音频或视频文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入媒体(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
+    React.createElement('input', { ref: 音效输入, type: 'file', accept: 音频选择类型, hidden: true, 'aria-label': '选择切换音效文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 更换音效(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
@@ -902,7 +978,7 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址, on更换音效: () => 音效输入.current?.click(), on移除音效: () => { if (!只读) 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 音效: undefined })) } }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, 文稿, on提示: (标题: string, 内容: string) => 显示文件错误(标题, 内容), on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on选择封面: () => 图片输入.current?.click(), on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }
@@ -930,6 +1006,7 @@ const PptEditor = () => {
           当前索引: 放映索引,
           on翻页: 放映翻页,
           on退出: 退出放映,
+          on保留笔迹: 保留放映笔迹,
         })
       : null
   )

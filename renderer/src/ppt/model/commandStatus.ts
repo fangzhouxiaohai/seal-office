@@ -1,7 +1,6 @@
 export type 命令能力状态 = '可用' | '缺少配置' | '只读' | '正在执行' | '暂不可用'
 
 const 尚未实现 = new Set([
-  'insert.media',
   'review.spell', 'review.comment',
 ])
 

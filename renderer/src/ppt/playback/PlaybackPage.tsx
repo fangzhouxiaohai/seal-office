@@ -5,7 +5,7 @@ import { 读取切换 } from '../model/transitions'
 import { 切换帧, 离页帧, 动画帧, 运行帧 } from './transitionEngine'
 import type { 播放快照 } from './controller'
 
-function 对象画面({ 页, 状态, 图片地址 }: { 页: 幻灯片; 状态: 播放快照; 图片地址?: 图片地址表 }) {
+function 对象画面({ 页, 状态, 图片地址, 放映 = true, on媒体失败 }: { 页: 幻灯片; 状态: 播放快照; 图片地址?: 图片地址表; 放映?: boolean; on媒体失败?: (错误: unknown) => void }) {
   const 根 = React.useRef<HTMLDivElement>(null), 活动 = React.useRef<Animation[]>([])
   const 减少动态 = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   React.useLayoutEffect(() => {
@@ -29,9 +29,9 @@ function 对象画面({ 页, 状态, 图片地址 }: { 页: 幻灯片; 状态: �
     return () => { 活动.current.forEach(a => a.cancel()); 活动.current = [] }
   }, [状态.活动动画.join(','), 状态.页代次, 页, 减少动态])
   React.useLayoutEffect(() => { 活动.current.forEach(a => 状态.暂停 ? a.pause() : a.play()) }, [状态.暂停, 状态.活动动画])
-  return <div ref={根}><SlideObjects 幻灯片={页} 图片地址={图片地址}/></div>
+  return <div ref={根}><SlideObjects 幻灯片={页} 图片地址={图片地址} 放映={放映} on媒体失败={on媒体失败}/></div>
 }
-export function 播放画面({ 文稿, 状态, 缩放, 图片地址 }: { 文稿: 演示文稿; 状态: 播放快照; 缩放: number; 图片地址?: 图片地址表 }) {
+export function 播放画面({ 文稿, 状态, 缩放, 图片地址, on媒体失败 }: { 文稿: 演示文稿; 状态: 播放快照; 缩放: number; 图片地址?: 图片地址表; on媒体失败?: (错误: unknown) => void }) {
   const 当前 = React.useRef<HTMLDivElement>(null), 旧页 = React.useRef<HTMLDivElement>(null), 动画 = React.useRef<Animation[]>([])
   const 最近 = React.useRef(状态), 前页 = React.useRef<播放快照 | null>(null)
   if (最近.current.页代次 !== 状态.页代次) 前页.current = 最近.current
@@ -48,7 +48,7 @@ export function 播放画面({ 文稿, 状态, 缩放, 图片地址 }: { 文稿:
   const 样式 = { width:画布宽, height:画布高, background:页.背景色 }
   const 前景旧页 = 设置.效果 === '抽出' || (['分割','形状'].includes(设置.效果) && 设置.方式 === '内')
   return <div className="wps-playback-stage" style={{ width:画布宽, height:画布高, transform:`scale(${缩放})` }}>
-    {状态.阶段 === '切换' && <div ref={旧页} className="wps-playback-layer" style={{ ...样式, background:前页.current ? 文稿.幻灯片列表[前页.current.索引].背景色 : 'black', zIndex:前景旧页 ? 2 : 0 }}>{前页.current && <对象画面 页={文稿.幻灯片列表[前页.current.索引]} 状态={{...前页.current,活动动画:[]}} 图片地址={图片地址}/>}</div>}
-    <div ref={当前} className={`wps-playback-layer wps-slideshow__page${设置.效果==='推进' ? ' wps-slideshow__page--push':设置.效果==='淡入淡出'?' wps-slideshow__page--fade':''}`} style={{ ...样式, zIndex:1 }}><对象画面 key={状态.页代次} 页={页} 状态={状态} 图片地址={图片地址}/></div>
+    {状态.阶段 === '切换' && <div ref={旧页} className="wps-playback-layer" style={{ ...样式, background:前页.current ? 文稿.幻灯片列表[前页.current.索引].背景色 : 'black', zIndex:前景旧页 ? 2 : 0 }}>{前页.current && <对象画面 页={文稿.幻灯片列表[前页.current.索引]} 状态={{...前页.current,活动动画:[]}} 图片地址={图片地址} on媒体失败={on媒体失败}/>}</div>}
+    <div ref={当前} className={`wps-playback-layer wps-slideshow__page${设置.效果==='推进' ? ' wps-slideshow__page--push':设置.效果==='淡入淡出'?' wps-slideshow__page--fade':''}`} style={{ ...样式, zIndex:1 }}><对象画面 key={状态.页代次} 页={页} 状态={状态} 图片地址={图片地址} on媒体失败={on媒体失败}/></div>
   </div>
 }

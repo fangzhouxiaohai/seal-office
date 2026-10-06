@@ -5,11 +5,26 @@ function 对象编号(xml) {
     return 名称 && 编号 ? [[Buffer.from(名称,'base64url').toString('utf8'),编号]] : []
   }))
 }
-function 写入动画(xml, 序列 = []) {
+/** 媒体播放节点：音量、循环与自动播放按 PowerPoint 的计时媒体节点写入。 */
+function 媒体计时(项, spid, id) {
+  const 参数 = 项.参数 ?? {}
+  const 音量 = Math.round(Math.min(100, Math.max(0, Number.isFinite(参数.音量) ? 参数.音量 : 100)) * 1000)
+  const 节点 = 项.种类 === '视频' ? 'video' : 'audio'
+  const 条件 = 延迟 => `<p:stCondLst><p:cond delay="${延迟}"/></p:stCondLst>`
+  const 媒体 = `<p:${节点}><p:cMediaNode vol="${音量}" mute="0" loop="${参数.循环 ? 1 : 0}" showWhenStopped="0" numSld="0"><p:cTn id="${id()}" fill="hold" display="0">${条件(0)}</p:cTn><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cMediaNode></p:${节点}>`
+  return `<p:par><p:cTn id="${id()}" fill="hold">${条件(参数.自动播放 ? 0 : 'indefinite')}<p:childTnLst>${媒体}</p:childTnLst></p:cTn></p:par>`
+}
+function 写入动画(xml, 序列 = [], 媒体列表 = []) {
   if (!Array.isArray(序列)) throw new Error('动画序列无效')
-  if (!序列.length) return ''
+  if (!Array.isArray(媒体列表)) throw new Error('媒体列表无效')
+  if (!序列.length && !媒体列表.length) return ''
   const 编号 = 对象编号(xml), 标识 = new Set(); let n = 2
   const id = () => ++n, 条件 = delay => `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst>`
+  const 媒体节点 = []
+  for (const 项 of 媒体列表) {
+    if (!项 || !项.对象标识 || !编号.has(项.对象标识)) throw new Error('媒体计时目标无效')
+    媒体节点.push(媒体计时(项, 编号.get(项.对象标识), id))
+  }
   const 组 = []; let 组内 = [], 偏移 = 0, 上段长度 = 0
   for (const a of 序列) {
     if (!a || !a.id || 标识.has(a.id) || !编号.has(a.对象标识) || !['出现','淡入','淡出','进入','退出'].includes(a.效果) || !['单击','同时','之后'].includes(a.触发) || !Number.isInteger(a.持续毫秒) || a.持续毫秒 < 0 || a.持续毫秒 > 60000) throw new Error('动画参数或目标无效')
@@ -24,17 +39,18 @@ function 写入动画(xml, 序列 = []) {
     else if (a.效果 !== '出现') 动作 += `<p:animEffect transition="${出 ? 'out':'in'}" filter="fade"><p:cBhvr><p:cTn id="${id()}" dur="${时长}"/>${目标}</p:cBhvr></p:animEffect>`
     组内.push(`<p:par><p:cTn id="${id()}" fill="hold">${条件(偏移)}<p:childTnLst><p:par><p:cTn id="${id()}" presetID="${飞 ? 2 : a.效果==='出现' ? 1 : 10}" presetClass="${出 ? 'exit':'entr'}" presetSubtype="${飞 ? 4 : 0}" fill="hold" grpId="0" nodeType="${a.触发==='单击' ? 'clickEffect':a.触发==='同时' ? 'withEffect':'afterEffect'}">${条件(0)}<p:childTnLst>${动作}</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>`)
   }
-  return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>${组.map(g=>`<p:par><p:cTn id="${id()}" fill="hold">${条件(g.等待 ? 'indefinite':0)}<p:childTnLst>${g.内容.join('')}</p:childTnLst></p:cTn></p:par>`).join('')}</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`
+  return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>${媒体节点.join('')}${组.map(g=>`<p:par><p:cTn id="${id()}" fill="hold">${条件(g.等待 ? 'indefinite':0)}<p:childTnLst>${g.内容.join('')}</p:childTnLst></p:cTn></p:par>`).join('')}</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`
 }
-function 写入播放扩展(页) { return `<p:extLst><p:ext uri="${标记}"><seal:playback xmlns:seal="urn:seal-office:playback">${Buffer.from(JSON.stringify({ 切换: 页.切换, 动画序列: 页.动画序列 })).toString('base64')}</seal:playback></p:ext></p:extLst>` }
+function 写入播放扩展(页) { return `<p:extLst><p:ext uri="${标记}"><seal:playback xmlns:seal="urn:seal-office:playback">${Buffer.from(JSON.stringify({ 切换: 页.切换, 动画序列: 页.动画序列, 音效: 页.音效 })).toString('base64')}</seal:playback></p:ext></p:extLst>` }
 function 读取播放扩展(xml) {
   const 数据 = xml.match(/<seal:playback xmlns:seal="urn:seal-office:playback">([A-Za-z0-9+/=]+)<\/seal:playback>/)?.[1]
   if (!数据) return {}
   try { const 值 = JSON.parse(Buffer.from(数据,'base64').toString('utf8')); return 值 && typeof 值==='object' ? 值 : {} } catch { return {} }
 }
-function 读取动画(xml) {
+function 读取动画(xml, 媒体列表 = []) {
   const 序列 = 读取播放扩展(xml).动画序列, 实际 = xml.match(/<p:timing>[\s\S]*?<\/p:timing>/)?.[0] ?? ''
-  try { if (序列 && 写入动画(xml,序列) === 实际) return 序列 } catch {}
-  return 实际 ? null : undefined
+  if (!实际) return undefined
+  try { if (写入动画(xml, Array.isArray(序列) ? 序列 : [], 媒体列表) === 实际) return Array.isArray(序列) ? 序列 : [] } catch {}
+  return null
 }
-module.exports = { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展 }
+module.exports = { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展, 媒体计时 }

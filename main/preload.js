@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('system.slideshowEnded', 处理)
   },
   checkIntegrity: () => ipcRenderer.invoke('system.checkIntegrity'),
+  openExternal: (地址) => ipcRenderer.invoke('system.openExternal', 地址),
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),
   getAppInfo: () => ipcRenderer.invoke('app.getInfo'),
   ai: {

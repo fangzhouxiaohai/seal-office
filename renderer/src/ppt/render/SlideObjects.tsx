@@ -5,12 +5,24 @@ import type { 幻灯片, 文本框, 演示对象 } from '../deck'
 import { 读取对象树顺序 } from '../model/objectOperations'
 import { ShapeRenderer } from './ShapeRenderer'
 import { TableRenderer } from './TableRenderer'
-export function 对象内容({ 对象, 图片地址 = {} }: { 对象: 演示对象; 图片地址?: 图片地址表 }) {
+import { MediaRenderer } from './MediaRenderer'
+export function 对象内容({ 对象, 图片地址 = {}, 放映 = false, on媒体失败 }: { 对象: 演示对象; 图片地址?: 图片地址表; 放映?: boolean; on媒体失败?: (错误: unknown) => void }) {
   if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
   if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
   if (对象.类型 === '图表') return <ChartRenderer 对象={对象}/>
   if (对象.类型 === '表格') return <TableRenderer 对象={对象}/>
+  if (对象.类型 === '媒体') return <MediaRenderer 对象={对象} 图片地址={图片地址} 放映={放映} on失败={on媒体失败}/>
+  if (对象.类型 === '墨迹') return <墨迹内容 对象={对象}/>
   return null
+}
+/** 永久笔迹按页面坐标绘制为矢量折线，缩放与放映共用同一数据。 */
+export function 墨迹内容({ 对象 }: { 对象: 演示对象 }) {
+  const 墨迹 = 对象.墨迹
+  if (!墨迹?.笔画?.length) return null
+  const 视图 = `${-对象.x} ${-对象.y} ${Math.max(1, 对象.width)} ${Math.max(1, 对象.height)}`
+  return <svg viewBox={视图} width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }} aria-label="手写笔迹">
+    {墨迹.笔画.map((笔画, 序号) => <polyline key={序号} points={笔画.map(点 => `${点.x},${点.y}`).join(' ')} fill="none" stroke={墨迹.颜色} strokeWidth={墨迹.笔宽} strokeLinecap="round" strokeLinejoin="round" />)}
+  </svg>
 }
 export type 图片地址表 = Record<string, string>
 export function 读取绘制对象(列表: 演示对象[]): 演示对象[] {
@@ -32,6 +44,6 @@ export function 对象样式(对象: 演示对象): React.CSSProperties {
   return { position: 'absolute', left: 对象.x, top: 对象.y, width: 对象.width, height: 对象.height, transform: `rotate(${对象.旋转 ?? 0}deg)`, transformOrigin: 'center' }
 }
 /** 编辑画布、缩略预览与放映共享相同坐标、文字片段和图片裁剪规则。 */
-export function SlideObjects({ 幻灯片, 图片地址 = {} }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表 }) {
-  return <>{幻灯片.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} /></div>)}</>
+export function SlideObjects({ 幻灯片, 图片地址 = {}, 放映 = false, on媒体失败 }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表; 放映?: boolean; on媒体失败?: (错误: unknown) => void }) {
+  return <>{幻灯片.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} 放映={放映} on媒体失败={on媒体失败} /></div>)}</>
 }

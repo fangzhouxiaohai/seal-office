@@ -6,7 +6,8 @@ const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
-const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 读取图片对象, 写入图片对象, 写入音效, 读取音效 } = require('./pptx/media')
+const { 检查媒体字节 } = require('./pptx/mediaTypes')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -254,7 +255,13 @@ async function 读取pptx(数据) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
     const 图片 = await 读取图片对象(压缩包, 名称, xml)
-    const 动画序列 = 读取动画(xml)
+    const 媒体列表 = (图片.对象列表 ?? []).filter(项 => 项.类型 === '媒体').map(项 => {
+      const 资源 = 图片.资源条目.find(条目 => 条目.标识 === 项.资源标识)
+      let 种类 = '视频'
+      try { if (资源) 种类 = 检查媒体字节(Buffer.from(资源.数据, 'base64'), 资源.类型).种类 } catch { 种类 = '视频' }
+      return { 对象标识: 项.id, 种类, 参数: 项.媒体 ?? {} }
+    })
+    const 动画序列 = 读取动画(xml, 媒体列表)
     收集幻灯片警告(动画序列 ? 读取原生对象(图片.图表剩余).剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 读取原生对象(图片.图表剩余).剩余, 警告)
     const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识)
     if (动画序列) 幻灯片.动画序列 = 动画序列
@@ -267,9 +274,26 @@ async function 读取pptx(数据) {
     for (const 原因 of 图片.警告) 警告.add(原因)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
+    const 原生音效 = await 读取音效(压缩包, 名称, xml)
+    for (const 资源 of 原生音效.资源条目) 资源表.set(资源.标识, 资源)
+    for (const 原因 of 原生音效.警告) 警告.add(原因)
+    const 扩展音效 = 读取播放扩展(xml).音效
+    if (原生音效.资源标识) {
+      if (扩展音效 && 扩展音效.资源标识 === 原生音效.资源标识) 幻灯片.音效 = 扩展音效
+      else 警告.add('切换音效未完整导入')
+    } else if (扩展音效) 警告.add('切换音效未完整导入')
     幻灯片列表.push(幻灯片)
   }
   await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
+  // 页跳转链接按幻灯片顺序换算成稳定页面标识，目标页缺失时明确告警而不是保留死链。
+  for (const 幻灯片 of 幻灯片列表) {
+    for (const 对象 of 幻灯片.对象列表 ?? []) {
+      if (对象.链接?.类型 !== '页' || !对象.链接.目标路径) continue
+      const 位置 = 文件名.findIndex((项) => 项.路径 === 对象.链接.目标路径)
+      if (位置 >= 0) 对象.链接 = { 类型: '页', 目标: 幻灯片列表[位置].id }
+      else { delete 对象.链接; 警告.add('页面跳转目标不存在，链接未完整导入') }
+    }
+  }
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -380,7 +404,7 @@ async function 写入pptx(模型) {
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
   }
-  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表', '媒体', '墨迹'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
       (Array.isArray(项.图片) && 项.图片.length > 0) ||
       (Array.isArray(项.图表) && 项.图表.length > 0) ||
       (Array.isArray(项.媒体) && 项.媒体.length > 0))) {
@@ -463,18 +487,31 @@ async function 写入pptx(模型) {
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
   if (!幻灯片列表.length && !模型.循环放映) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
+  // 幻灯片之间的关系目标与来源同目录，写成 slideN.xml，避免被解析成越界路径。
+  const 页面路径 = (标识) => {
+    const 位置 = 幻灯片列表.findIndex((项) => 项?.id === 标识)
+    return 位置 < 0 ? null : `slide${位置 + 1}.xml`
+  }
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 过渡Xml = 写入切换(幻灯片列表[索引])
     const 名称 = `ppt/slides/slide${索引 + 1}.xml`
     const 文件 = 压缩包.file(名称)
     if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
     let xml = 写入稳定标识(await 文件.async('string'), 幻灯片列表[索引], 索引)
-    if (幻灯片列表[索引].对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 幻灯片列表[索引].对象列表, 模型.资源条目 ?? [])
+    if (幻灯片列表[索引].对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 幻灯片列表[索引].对象列表, 模型.资源条目 ?? [], 页面路径)
     const 页 = 幻灯片列表[索引]
     if (页.隐藏 !== undefined && typeof 页.隐藏 !== 'boolean') throw new Error('隐藏页面状态无效')
     if (页.隐藏) xml = xml.replace('<p:sld ', '<p:sld show="0" ')
-    const 动画Xml = 写入动画(xml, 页.动画序列)
-    xml = xml.replace('</p:sld>', `${过渡Xml}${动画Xml}${页.切换 || 页.动画序列 ? 写入播放扩展(页) : ''}</p:sld>`)
+    const 媒体列表 = (页.对象列表 ?? []).filter(项 => 项.类型 === '媒体').map(项 => {
+      const 资源 = (模型.资源条目 ?? []).find(条目 => 条目.标识 === 项.资源标识)
+      if (!资源?.数据) throw new Error(`媒体资源字节缺失：${项.资源标识}`)
+      const 信息 = 检查媒体字节(Buffer.from(资源.数据, 'base64'), 资源.类型)
+      return { 对象标识: 项.id, 种类: 信息.种类, 参数: 项.媒体 ?? {} }
+    })
+    const 动画Xml = 写入动画(xml, 页.动画序列, 媒体列表)
+    const 音效Xml = 页.音效 ? await 写入音效(压缩包, 名称, 页.音效, 模型.资源条目 ?? []) : ''
+    const 合并过渡Xml = 音效Xml ? (过渡Xml ? 过渡Xml.replace('</p:transition>', `${音效Xml}</p:transition>`) : `<p:transition>${音效Xml}</p:transition>`) : 过渡Xml
+    xml = xml.replace('</p:sld>', `${合并过渡Xml}${动画Xml}${页.切换 || 页.动画序列 || 页.音效 ? 写入播放扩展(页) : ''}</p:sld>`)
     压缩包.file(名称, xml)
   }
   if (模型.循环放映 !== undefined && typeof 模型.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
