@@ -1,5 +1,5 @@
 const { 校验字段, 非视觉, 转EMU } = require('./shapes')
-const { 解析公式表达式, 校验公式, 生成数学Xml, 宏表 } = require('./formulaSyntax')
+const { 解析公式表达式, 校验公式, 生成数学Xml, 宏表, 规范数学字符 } = require('./formulaSyntax')
 
 // 公式：受限线性语法（formulaSyntax.js，渲染端与主进程共用）与原生 Office 数学部件（OMML）互转。
 // 只支持能够一一映射回原表达式的结构：文本、上下标、分数、根号。
@@ -9,7 +9,7 @@ const { 解析公式表达式, 校验公式, 生成数学Xml, 宏表 } = require
 const 单字符参数 = (文本) => 文本.length === 1 && /[0-9A-Za-z\u4e00-\u9fa5π]/.test(文本)
 const 带花括号 = (文本) => (单字符参数(文本) ? 文本 : `{${文本}}`)
 const 取子 = (节点, 名称) => 节点.子.find((项) => 项.名称 === 名称)
-const 取文本 = (节点) => (节点 ? 节点.子.filter((项) => 项.名称 === 'm:t').map((项) => 项.文本).join('') : '')
+const 取文本 = (节点) => (节点 ? 规范数学字符(节点.子.filter((项) => 项.名称 === 'm:t').map((项) => 项.文本).join('')) : '')
 const 转像素 = (值) => Number(值) / 12700
 const 属性 = (标签, 键) => 标签?.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
 

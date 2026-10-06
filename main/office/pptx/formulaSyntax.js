@@ -11,6 +11,30 @@ const 宏表 = {
 const 支持的宏 = Object.keys(宏表).sort((甲, 乙) => 乙.length - 甲.length)
 const 单字符参数 = (文本) => 文本.length === 1 && /[0-9A-Za-z\u4e00-\u9fa5π]/.test(文本)
 
+// 外部办公软件把数学变量写成「数学字母数字符号」区段（如 𝑎=U+1D44E、𝜋=U+1D70B）。
+// 读取时规范回基础字符，保证恢复出的表达式可继续编辑，并让本机再次写入后保持稳定。
+const 数学字母区段 = [
+  [0x1D400, '大写'], [0x1D41A, '小写'], [0x1D434, '大写'], [0x1D44E, '小写'],
+  [0x1D468, '大写'], [0x1D482, '小写'], [0x1D5A0, '大写'], [0x1D5BA, '小写'],
+  [0x1D5D4, '大写'], [0x1D5EE, '小写'], [0x1D670, '大写'], [0x1D68A, '小写'],
+  [0x1D7CE, '数字'], [0x1D7D8, '数字'], [0x1D7E2, '数字'], [0x1D7EC, '数字'], [0x1D7F6, '数字'],
+]
+const 数学字符表 = new Map()
+for (const [起始, 类别] of 数学字母区段) {
+  const 基数 = 类别 === '大写' ? 0x41 : 类别 === '小写' ? 0x61 : 0x30
+  const 数量 = 类别 === '数字' ? 10 : 26
+  for (let i = 0; i < 数量; i++) 数学字符表.set(起始 + i, String.fromCharCode(基数 + i))
+}
+for (let i = 0; i < 25; i++) 数学字符表.set(0x1D6FC + i, String.fromCodePoint(0x3B1 + i))
+
+/** 把数学字母数字符号规范为基础字符；未收录的区段保持原样。 */
+function 规范数学字符(文本) {
+  if (typeof 文本 !== 'string' || !文本) return 文本
+  let 结果 = ''
+  for (const 字符 of 文本) 结果 += 数学字符表.get(字符.codePointAt(0)) ?? 字符
+  return 结果
+}
+
 /** 宏名必须是完整命令：`\int` 不能被当成 `\in` 加字母 t。 */
 function 匹配宏(文本, 位置) {
   return 支持的宏.find((项) => 文本.startsWith(项, 位置) && !/[A-Za-z]/.test(文本[位置 + 项.length] ?? '')) ?? null
@@ -135,4 +159,4 @@ function 生成数学Xml(表达式) {
   return `<a14:m xmlns:a14="${扩展命名空间}" xmlns:m="${数学命名空间}"><m:oMathPara><m:oMath>${列表Xml(节点)}</m:oMath></m:oMathPara></a14:m>`
 }
 
-module.exports = { 解析公式表达式, 校验公式, 生成数学Xml, 宏表, 单字符参数 }
+module.exports = { 解析公式表达式, 校验公式, 生成数学Xml, 宏表, 单字符参数, 规范数学字符 }

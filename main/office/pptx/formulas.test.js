@@ -62,6 +62,11 @@ it('读取本机不支持的原生数学结构返回空并给出原因，不伪�
   expect(读取数学表达式(空)).toBeNull()
 })
 
+it('外部软件的数学字母符号按基础字符恢复，便于继续编辑', () => {
+  const 外部 = '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:r><m:t>𝑎</m:t></m:r><m:sSup><m:e><m:r><m:t>𝑏</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup><m:r><m:t>+𝜋</m:t></m:r></m:oMath>'
+  expect(读取数学表达式(外部)).toBe('ab^2+π')
+})
+
 it('解析结果可用于界面回显（节点结构稳定）', () => {
   const 节点 = 解析公式表达式('\\frac{a}{b}')
   expect(节点).toEqual([{ 类型: '分数', 分子: [{ 类型: '文本', 文本: 'a' }], 分母: [{ 类型: '文本', 文本: 'b' }] }])
