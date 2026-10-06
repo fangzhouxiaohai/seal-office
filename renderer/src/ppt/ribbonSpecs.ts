@@ -1,5 +1,6 @@
 // 演示文稿 Ribbon 八标签声明。
 import type { RibbonTabSpec } from '../editor/ribbon/tabSpecs'
+import { 全部切换 } from './model/transitions'
 
 const 大 = (commandId: string, label: string, icon: string) => ({
   kind: 'large' as const,
@@ -159,6 +160,7 @@ const 切换标签: RibbonTabSpec = {
       items: [
         大('transition.fade', '淡入淡出', 'flow'),
         大('transition.push', '推进', 'arrow-left'),
+        下拉('transition.effect', '切换效果库', 'flow', [...全部切换], '淡入淡出'),
       ],
     },
   ],
