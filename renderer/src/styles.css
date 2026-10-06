@@ -3269,3 +3269,33 @@ button {
 .wps-animation-dialog .wps-ppt-properties__actions button:hover { background: var(--bg-hover); border-color: var(--brand); }
 .wps-animation-dialog .wps-ppt-properties__actions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-animation-dialog .wps-ppt-properties__actions button:disabled { opacity: .55; cursor: default; }
+
+/* 工具面板：截屏、录屏与图片转文字共用右侧任务窗格 */
+.wps-tools-panel__tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
+.wps-tools-panel__tabs button { min-height: 32px; padding: var(--space-1) var(--space-2); border: 1px solid transparent; border-bottom: 0; border-radius: var(--radius-control) var(--radius-control) 0 0; background: transparent; color: var(--text-2); font: inherit; }
+.wps-tools-panel__tabs button:hover { background: var(--bg-hover); color: var(--text-1); }
+.wps-tools-panel__tabs button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-tools-panel__tabs button.is-active { background: var(--bg-card); border-color: var(--border); color: var(--text-1); font-weight: 600; }
+.wps-capture-panel legend, .wps-recording-panel legend, .wps-recognition-panel legend { color: var(--text-2); margin-bottom: var(--space-2); }
+.wps-capture-panel__row, .wps-recording-panel__row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.wps-capture-panel__check, .wps-recording-panel__check { display: flex; align-items: center; gap: var(--space-1); }
+.wps-capture-panel button, .wps-recording-panel button, .wps-recognition-panel button { min-height: 32px; margin: var(--space-1) var(--space-1) var(--space-2) 0; }
+.wps-capture-panel__sources, .wps-recording-panel__sources { list-style: none; margin: 0 0 var(--space-3); padding: 0; max-height: 200px; overflow: auto; }
+.wps-capture-panel__sources li, .wps-recording-panel__sources li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) 0; border-top: 1px solid var(--border); }
+.wps-capture-panel__sources label, .wps-recording-panel__sources label { display: flex; align-items: center; gap: var(--space-1); min-width: 0; flex: 1 1 auto; }
+.wps-capture-panel__sources span, .wps-recording-panel__sources span { overflow-wrap: anywhere; }
+.wps-capture-panel__sources img { flex: 0 0 auto; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.wps-capture-panel__preview label, .wps-recognition-panel__result label { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
+.wps-capture-panel__actions, .wps-recognition-panel__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.wps-capture-panel__error, .wps-recording-panel__error, .wps-recognition-panel__error { color: var(--text-1); background: var(--bg-hover); border-left: 2px solid var(--brand); padding: var(--space-2); margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.wps-capture-panel__empty, .wps-recording-panel__note, .wps-recognition-panel__note { color: var(--text-2); }
+.wps-recording-panel__support { color: var(--text-1); margin: 0 0 var(--space-1); overflow-wrap: anywhere; }
+.wps-recording-panel__note, .wps-recognition-panel__note { margin: 0 0 var(--space-3); line-height: 1.6; }
+.wps-recording-panel__status, .wps-recognition-panel__status { color: var(--text-2); margin: var(--space-2) 0; overflow-wrap: anywhere; }
+.wps-recording-panel__preview video, .wps-recognition-panel textarea { width: 100%; max-width: 100%; }
+.wps-recording-panel__preview video { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-app); }
+.wps-recognition-panel textarea { min-height: 96px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); font: inherit; padding: var(--space-2); resize: vertical; }
+.wps-recognition-panel__file { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
+.wps-recognition-panel__file input { max-width: 100%; }
+.wps-recognition-panel__file-name { color: var(--text-2); margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+@media (max-width: 768px) { .wps-tools-panel__tabs { flex-wrap: wrap; } .wps-capture-panel__sources, .wps-recording-panel__sources { max-height: 160px; } }

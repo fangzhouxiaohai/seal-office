@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const { randomUUID, createHash } = require('crypto')
 const { 读取模型响应 } = require('./streamResponse')
+const { 是合法base64, base64字节数 } = require('../ppt/base64')
 const { 预设列表, 思考档位, 参数模式列表, 生成思考参数 } = require('./reasoning')
 const { 创建会话存储 } = require('./sessionMemory')
 const { 执行助手任务, 校验计划 } = require('./agentRuntime')
@@ -46,6 +47,26 @@ function 公开配置(配置) {
   return { 名称: 配置.名称, 地址: 配置.地址, 模型: 配置.模型, 已配置密钥: Boolean(配置.密钥), 服务商: 配置.服务商, 思考强度: 配置.思考强度, 参数模式: 配置.参数模式, 上下文令牌: 配置.上下文令牌 }
 }
 
+const 允许图像类型 = ['image/png', 'image/jpeg', 'image/webp']
+const 最大图像数量 = 3
+const 最大图像字节 = 8 * 1024 * 1024
+const 允许用途 = ['识别']
+
+/** 图像内容随对话消息发送，必须先校验类型、编码与真实字节数。 */
+function 校验图像列表(列表) {
+  if (!Array.isArray(列表) || 列表.length < 1 || 列表.length > 最大图像数量) throw new Error('对话图像格式无效：单次最多 3 张图片')
+  return 列表.map((项) => {
+    if (!项 || typeof 项 !== 'object' || !允许图像类型.includes(项.类型) || typeof 项.数据 !== 'string' || 项.数据.length === 0) {
+      throw new Error('对话图像格式无效：只支持 PNG、JPEG 或 WebP')
+    }
+    const 字节数 = base64字节数(项.数据)
+    if (字节数 <= 0) throw new Error('对话图像格式无效：图片内容为空')
+    if (字节数 > 最大图像字节) throw new Error('对话图像超过大小限制')
+    if (!是合法base64(项.数据)) throw new Error('对话图像编码无效')
+    return { 类型: 项.类型, 数据: 项.数据 }
+  })
+}
+
 function 校验对话(输入) {
   if (!输入 || typeof 输入 !== 'object') throw new Error('对话内容无效')
   const 消息 = 输入.消息
@@ -59,7 +80,9 @@ function 校验对话(输入) {
   if (typeof 文档上下文 !== 'string') throw new Error('当前文件上下文格式无效')
   if (输入.自动执行 !== undefined && typeof 输入.自动执行 !== 'boolean') throw new Error('助手执行模式无效')
   if (输入.文件快照 !== undefined && typeof 输入.文件快照 !== 'string') throw new Error('当前文件快照格式无效')
-  return { 消息, 文档上下文 }
+  if (输入.用途 !== undefined && !允许用途.includes(输入.用途)) throw new Error('对话用途无效')
+  const 规整消息 = 消息.map((项) => 项.图像 === undefined ? 项 : { ...项, 图像: 校验图像列表(项.图像) })
+  return { 消息: 规整消息, 文档上下文, 用途: 输入.用途 }
 }
 
 function 创建助手服务({ 配置路径, 存储 = fs.promises, 安全存储, 请求 = globalThis.fetch, 会话存储 }) {
@@ -120,9 +143,14 @@ function 创建助手服务({ 配置路径, 存储 = fs.promises, 安全存储, 
     const 配置 = await 读取内部配置()
     if (!配置.地址 || !配置.模型) throw new Error('请先在设置中心配置模型服务')
     if (配置.服务商 !== 'custom' && !配置.密钥) throw new Error('请先填写所选服务商的 API 密钥')
-    const { 消息, 文档上下文 } = 校验对话(输入)
+    const { 消息, 文档上下文, 用途 } = 校验对话(输入)
     if (输入.会话标识 && 使用中会话.has(输入.会话标识)) throw new Error('该文件对话正在另一个窗口执行，请等待或停止原任务')
-    const 系统指令 = [
+    const 识别指令 = [
+      '你是海豹办公的文字识别助手。只输出图片中识别到的文字，保持原有换行与顺序。',
+      '看不清或无法确定的内容不要猜测，不得编造；确实没有文字时只回复“未识别到文字”。',
+      '不要输出解释、标题、Markdown 代码块或任何文件修改协议。',
+    ].join('\n')
+    const 系统指令 = 用途 === '识别' ? 识别指令 : [
       '你是海豹办公的内置助手。仅根据用户要求和所提供的当前文件内容回答，不得声称已经直接修改磁盘文件。',
       输入.会话标识 ? '对话用中文正文回复；文件修改通过原生工具提交，不能把修改协议显示给用户。' : '只输出一个 JSON 对象，字段为“回复”（中文字符串）和“修改”（数组）。没有修改时返回空数组。',
       '修改只允许以下四种。回复字段放在修改字段之前，使用中文概述建议与操作；不得输出思考过程到回复字段。',
@@ -182,7 +210,12 @@ function 创建助手服务({ 配置路径, 存储 = fs.promises, 安全存储, 
         使用中会话.add(输入.会话标识)
         return await 执行助手任务({ 输入, 配置, 系统指令, 请求模型, 会话存储: 记忆存储, 执行工具, 推送, 信号: 控制器.signal })
       }
-      return await 请求模型([{ role: 'system', content: 系统指令 }, ...(文档上下文 ? [{ role: 'user', content: `当前文件引用资料：${JSON.stringify(文档上下文)}` }] : []), ...消息.map((项) => ({ role: 项.角色, content: 项.内容 }))])
+      return await 请求模型([{ role: 'system', content: 系统指令 }, ...(文档上下文 ? [{ role: 'user', content: `当前文件引用资料：${JSON.stringify(文档上下文)}` }] : []), ...消息.map((项) => ({
+        role: 项.角色,
+        content: 项.图像?.length
+          ? [{ type: 'text', text: 项.内容 }, ...项.图像.map((图) => ({ type: 'image_url', image_url: { url: `data:${图.类型};base64,${图.数据}` } }))]
+          : 项.内容,
+      }))])
     } catch (错误) {
       if (信号?.aborted && !超时) return { 内容: '', 思考: '', 已停止: true }
       if (控制器.signal.aborted) throw new Error('模型服务响应超时，请检查网络或服务状态')

@@ -14,4 +14,12 @@ describe('演示命令能力状态', () => {
     expect(读取演示命令状态('slide.new', { 正在执行: true }).状态).toBe('正在执行')
     expect(读取演示命令状态('ai.generate', { 需要配置: true, 已配置: false }).状态).toBe('缺少配置')
   })
+
+  it('缺少配置时给出调用方提供的具体原因，配置完成后恢复可用', () => {
+    expect(读取演示命令状态('tools.ocr', { 需要配置: true, 已配置: false, 缺少配置原因: '请先在设置中心配置支持图像输入的模型' }))
+      .toEqual({ 状态: '缺少配置', 原因: '请先在设置中心配置支持图像输入的模型' })
+    expect(读取演示命令状态('tools.ocr', { 需要配置: true, 已配置: true }).状态).toBe('可用')
+    expect(读取演示命令状态('tools.capture').状态).toBe('可用')
+    expect(读取演示命令状态('tools.record').状态).toBe('可用')
+  })
 })

@@ -39,6 +39,16 @@ export interface 演示资源接口 {
   export: (标识列表: string[]) => Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }>
   restore: (条目列表: 演示资源条目[]) => Promise<{ 成功: boolean; 错误?: string }>
 }
+export interface 捕获源条目 { 标识: string; 名称: string; 类型: string; 显示器标识: string; 缩略图: string }
+export interface 录制支持结果 { 成功: boolean; WebM?: boolean; 媒体类型?: string; MP4?: boolean; MP4原因?: string; 错误?: string }
+export interface 识别状态结果 { 成功: boolean; 可用?: boolean; 模型?: string; 说明?: string; 原因?: string; 错误?: string }
+export interface 演示捕获接口 {
+  sources: (类型列表: string[]) => Promise<{ 成功: boolean; 源列表?: 捕获源条目[]; 错误?: string }>
+  support: () => Promise<录制支持结果>
+  saveRecording: (数据: string, 格式: string, 建议名: string) => Promise<{ 成功: boolean; 路径?: string; 字节数?: number; 已取消?: boolean; 错误?: string }>
+  recognitionStatus: () => Promise<识别状态结果>
+  recognize: (数据: string, 类型: string) => Promise<{ 成功: boolean; 文本?: string; 错误?: string }>
+}
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -54,6 +64,7 @@ export interface 电子接口 {
   backupPreserve: (已读取内容?: string) => Promise<{ 成功: boolean; 路径?: string; 错误?: string }>
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
   presentationResources?: 演示资源接口
+  presentationCapture?: 演示捕获接口
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentRemove: (路径: string) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -133,8 +144,14 @@ export const 桥接 = {
       取后端()?.presentationResources?.export(标识列表) ?? 失败('当前环境不支持演示资源备份'),
     restore: (条目列表: 演示资源条目[]) => 取后端()?.presentationResources?.restore(条目列表) ?? 失败('当前环境不支持演示资源恢复'),
   },
-  recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
-  recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
+  presentationCapture: {
+    sources: (类型列表: string[]): Promise<{ 成功: boolean; 源列表?: 捕获源条目[]; 错误?: string }> => 取后端()?.presentationCapture?.sources(类型列表) ?? 失败('当前环境不支持屏幕捕获，请使用 Windows 桌面版'),
+    support: (): Promise<录制支持结果> => 取后端()?.presentationCapture?.support() ?? 失败('当前环境不支持屏幕录制，请使用 Windows 桌面版'),
+    saveRecording: (数据: string, 格式: string, 建议名: string): Promise<{ 成功: boolean; 路径?: string; 字节数?: number; 已取消?: boolean; 错误?: string }> => 取后端()?.presentationCapture?.saveRecording(数据, 格式, 建议名) ?? 失败('当前环境不支持录制保存'),
+    recognitionStatus: (): Promise<识别状态结果> => 取后端()?.presentationCapture?.recognitionStatus() ?? 失败('当前环境不支持文字识别'),
+    recognize: (数据: string, 类型: string): Promise<{ 成功: boolean; 文本?: string; 错误?: string }> => 取后端()?.presentationCapture?.recognize(数据, 类型) ?? 失败('当前环境不支持文字识别'),
+  },
+  recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),  recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),
   recentRemove: (路径: string) => 取后端()?.recentRemove?.(路径) ?? 失败('当前环境不支持最近文档移除'),
   revealInFolder: (路径: string) => 取后端()?.revealInFolder?.(路径) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持该操作' }),
   exportToPdf: (html: string, 名称: string) => 取后端()?.exportToPdf(html, 名称) ?? 失败('当前环境不支持 PDF 导出'),

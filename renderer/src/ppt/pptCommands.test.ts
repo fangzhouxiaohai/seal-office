@@ -185,3 +185,23 @@ describe('演示命令：基础动画', () => {
     expect(取最新().幻灯片列表[0].动画序列?.[0]).toMatchObject({ 对象标识: 上下文.选中框标识, 触发:'单击', 效果: 标识==='animation.appear'?'出现':'淡出' })
   })
 })
+
+describe('演示命令：工具入口', () => {
+  it('截屏、录屏与图片转文字命令已注册并切换到工具标签', () => {
+    expect(演示命令标识列表).toEqual(expect.arrayContaining(['tools.capture', 'tools.record', 'tools.ocr']))
+    for (const [标识, 期望区] of [['tools.capture', '截屏'], ['tools.record', '录屏'], ['tools.ocr', '识别']] as const) {
+      const 切换标签 = vi.fn()
+      const 切换工具区 = vi.fn()
+      const { 上下文 } = 构造上下文()
+      查找演示命令(标识)?.run({ ...上下文, 切换标签, 切换工具区 })
+      expect(切换标签).toHaveBeenCalledWith('tools')
+      expect(切换工具区).toHaveBeenCalledWith(期望区)
+    }
+  })
+
+  it('工具命令不修改文稿内容', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找演示命令('tools.record')?.run(上下文)
+    expect(取最新()).toBe(上下文.文稿)
+  })
+})

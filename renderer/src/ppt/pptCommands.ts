@@ -1,5 +1,18 @@
 import { 读取切换 } from './model/transitions'
 import { 原生插入命令 } from './commands/insert'
+// 工具标签入口：只切换容器标签与分区，不修改文稿内容。
+export const 工具命令: 演示命令[] = ([
+  ['tools.capture', '截屏', '截屏'],
+  ['tools.record', '屏幕录制', '录屏'],
+  ['tools.ocr', '图片转文字', '识别'],
+] as const).map(([id, label, 区]) => ({
+  id,
+  label,
+  run: (上下文) => {
+    上下文.切换标签?.('tools')
+    上下文.切换工具区?.(区)
+  },
+}))
 // 演示文稿命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
 import {
   创建文本框,
@@ -39,6 +52,9 @@ export interface 演示命令上下文 {
   /** 撤销与重做由容器实现，命令只负责派发 */
   撤销: () => void
   重做: () => void
+  /** 工具入口由容器切换到工具标签与对应分区 */
+  切换标签?: (标签: string) => void
+  切换工具区?: (区: '截屏' | '录屏' | '识别') => void
 }
 
 export interface 演示命令 {
@@ -530,6 +546,7 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
   return 累计
 }, {})
 原生插入命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
+工具命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
 /** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
 export const 演示未实现清单: Array<[string, string]> = []
