@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     export: (标识列表) => ipcRenderer.invoke('presentation.resource.export', 标识列表),
     restore: (条目列表) => ipcRenderer.invoke('presentation.resource.restore', 条目列表),
   },
+  presentationCompare: {
+    compareFiles: (左路径, 右路径) => ipcRenderer.invoke('presentation.compareFiles', 左路径, 右路径),
+  },
   recentList: () => ipcRenderer.invoke('file.recent.list'),
   recentAdd: (条目) => ipcRenderer.invoke('file.recent.add', 条目),
   recentRemove: (路径) => ipcRenderer.invoke('file.recent.remove', 路径),
