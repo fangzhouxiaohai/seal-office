@@ -1,7 +1,7 @@
 {
   "版本": "1.8.0",
   "日期": "2026-10-06",
-  "提交": "7c1a303",
+  "提交": "ae3b9ab",
   "类型检查": "通过",
   "生产构建": "通过（完整性清单 82 个文件）",
   "自动化测试": {
@@ -54,26 +54,26 @@
   "附件": [
     {
       "文件": "SealOffice Setup 1.8.0.exe",
-      "字节数": 88575105,
+      "字节数": 88574348,
       "兆字节": 84.47,
-      "SHA256": "263E3121691E867F469D23D2C53966DFF21809EFA849696284BFF24EC4DC5EAA"
+      "SHA256": "E90078776E49D30F6B378731830E6C104FD5A9C887AFA0C98C769373568C68B2"
     },
     {
       "文件": "SealOffice 1.8.0.exe",
-      "字节数": 88349702,
+      "字节数": 88348944,
       "兆字节": 84.26,
-      "SHA256": "B44F08944258AFCB264A924F17003F80C85EC07CE29769ED49C05A141A026002"
+      "SHA256": "71783EC7D56A8228E88C3D3B2277E61B52D5E2B2B9C9941296B5BFAC3885A883"
     },
     {
       "文件": "win-unpacked/SealOffice.exe",
       "字节数": 163326464,
       "兆字节": 155.76,
-      "SHA256": "A36810499D548AD958F44DD2841668E2012348AB8642AC06964D78860273181D"
+      "SHA256": "A30A1A2AE4C1345BB4FF1F6B624DC33CCB9E0777D2CB4656A29664D5CC44C8A2"
     }
   ],
   "发布": {
     "结果": "已推送到 origin（gitcode）；github 因网络不可达未推送",
-    "提交": "25b1cdc",
+    "提交": "ae3b9ab",
     "标签": "v1.8.0",
     "origin": {
       "远端": "https://gitcode.com/gcw_pGfMiWVg/seal-office.git",
@@ -87,7 +87,7 @@
       "原因": "本机无法连接 github.com:443（Test-NetConnection 返回 False，两次推送均在约 21 秒后连接超时）；属环境网络限制，非仓库问题",
       "后续": "网络可达时执行 git push github main --tags，并把安装版与便携版上传到发布页"
     },
-    "附件位置": "E:\\DevCache\\worktrees\\ppt-integration\\release\\v1.8.0（SealOffice Setup 1.8.0.exe、SealOffice 1.8.0.exe）"
+    "附件位置": "E:\\seal-office\\release（官方 npm run dist 输出目录：SealOffice Setup 1.8.0.exe、SealOffice 1.8.0.exe、win-unpacked）"
   },
   "限制": {
     "外部办公软件": "本机未安装 Microsoft PowerPoint；外部核验一律为 WPS Office（兼容接口自报名称 Microsoft PowerPoint，Version 12.0 / Build 12.1.0.26895）。",
