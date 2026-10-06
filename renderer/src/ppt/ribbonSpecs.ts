@@ -285,6 +285,14 @@ const 放映标签: RibbonTabSpec = {
       items: [
         大('slideshow.start', '从头开始', 'page-view'),
         大('slideshow.current', '从当前开始', 'page-view'),
+        大('slideshow.presenter', '演讲者视图', 'doc-empty'),
+      ],
+    },
+    {
+      name: '设置',
+      items: [
+        大('slideshow.settings', '放映设置', 'grid'),
+        大('slideshow.customShow', '自定义放映', 'gridlines'),
       ],
     },
     {
@@ -345,6 +353,7 @@ const 视图标签: RibbonTabSpec = {
         大('view.normal', '普通', 'page-view'),
         大('view.slideSorter', '幻灯片浏览', 'grid'),
         大('view.notes', '备注页', 'doc-empty'),
+        大('view.reading', '阅读视图', 'page-view'),
       ],
     },
     {

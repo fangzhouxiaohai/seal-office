@@ -3,14 +3,27 @@ import { 动画分组, 校验动画 } from '../model/animations'
 import { 读取切换, 校验播放参数 } from '../model/transitions'
 export interface 播放快照 { 索引: number; 阶段: '切换'|'等待'|'动画'|'结束'; 暂停: boolean; 活动动画: string[]; 完成动画: string[]; 页代次: number }
 interface 回调 { 更新: (状态: 播放快照) => void; 翻页: (索引: number) => void; 结束: () => void; 停止媒体: () => void }
+/** 显式放映序列（自定义放映或页码范围）必须非空、无重复且在页面范围内。 */
+export function 校验放映索引序列(序列: unknown, 页面总数: number): number[] {
+  if (!Array.isArray(序列) || 序列.length === 0) throw new Error('没有可放映的页面，请检查放映范围设置')
+  const 结果: number[] = []
+  for (const 索引 of 序列) {
+    if (!Number.isInteger(索引) || (索引 as number) < 0 || (索引 as number) >= 页面总数) throw new Error('放映序列越界：包含不存在的页面')
+    if (结果.includes(索引 as number)) throw new Error('放映序列重复：同一页面不能出现多次')
+    结果.push(索引 as number)
+  }
+  return 结果
+}
 /** 每次离页均取消计时；暂停与后台独立持有暂停原因，恢复只消费剩余时间。 */
 export class 播放控制器 {
   快照: 播放快照
   private 可见: number[]; private 组 = 0; private 手动暂停 = false; private 后台暂停 = false
   private 任务?: ReturnType<typeof setTimeout>; private 剩余 = 0; private 到期 = 0; private 待执行?: () => void; private 已销毁 = false
-  constructor(private 文稿: 演示文稿, 索引: number, private 回调: 回调, private 减少动态 = false) {
+  constructor(private 文稿: 演示文稿, 索引: number, private 回调: 回调, private 减少动态 = false, 选项: { 序列?: number[] } = {}) {
     文稿.幻灯片列表.forEach(页 => { 校验播放参数(页); 校验动画(页) })
-    this.可见 = 文稿.幻灯片列表.flatMap((页, i) => 页.隐藏 ? [] : [i])
+    this.可见 = 选项.序列 === undefined
+      ? 文稿.幻灯片列表.flatMap((页, i) => 页.隐藏 ? [] : [i])
+      : 校验放映索引序列(选项.序列, 文稿.幻灯片列表.length)
     if (!this.可见.length) throw new Error('没有可放映的页面，请取消至少一页的隐藏状态')
     this.快照 = { 索引: this.可见.find(i => i >= 索引) ?? this.可见[0], 阶段: '等待', 暂停: false, 活动动画: [], 完成动画: [], 页代次: 0 }
   }

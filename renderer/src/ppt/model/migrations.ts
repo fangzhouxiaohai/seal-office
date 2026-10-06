@@ -7,6 +7,7 @@ import { 校验原生元素 } from './elements'
 import { 主题色槽列表, 校验背景填充, 校验主题定义, 校验页脚设置, 校验页面尺寸 } from './themes'
 import { 占位符类型列表, 校验母版列表 } from './masters'
 import { 校验媒体数据, 校验墨迹数据, 校验链接数据, 校验音效数据 } from './mediaObjects'
+import { 校验自定义放映, 校验放映设置 } from './show'
 
 const 是记录 = (值: unknown): 值 is Record<string, unknown> =>
   typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -195,6 +196,9 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
   for (const 批注 of (输入.批注列表 ?? []) as Array<{ 页标识: string }>) {
     if (!页面标识.has(批注.页标识)) throw new Error(`批注引用的页面不存在：${批注.页标识}`)
   }
+  // 自定义放映按稳定页面标识引用；页面删除后由 修复自定义放映引用 维护
+  if (输入.自定义放映 !== undefined) 校验自定义放映(输入.自定义放映, 页面标识)
+  if (输入.放映设置 !== undefined) 校验放映设置(输入.放映设置)
 }
 
 /** 排除浏览状态并稳定排序键值，供保存基线和撤销记录比较。 */

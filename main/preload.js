@@ -90,6 +90,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('system.slideshowEnded', 处理)
     return () => ipcRenderer.removeListener('system.slideshowEnded', 处理)
   },
+  presenter: {
+    screens: () => ipcRenderer.invoke('system.presenter.screens'),
+    open: (选项) => ipcRenderer.invoke('system.presenter.open', 选项),
+    update: (会话标识, 数据) => ipcRenderer.invoke('system.presenter.update', 会话标识, 数据),
+    close: (会话标识) => ipcRenderer.invoke('system.presenter.close', 会话标识),
+    control: (会话标识, 动作) => ipcRenderer.invoke('system.presenter.control', 会话标识, 动作),
+    state: () => ipcRenderer.invoke('system.presenter.state'),
+    onUpdate: (回调) => {
+      const 处理 = (_事件, 数据) => { if (数据 && typeof 数据 === 'object') 回调(数据) }
+      ipcRenderer.on('system.presenterState', 处理)
+      return () => ipcRenderer.removeListener('system.presenterState', 处理)
+    },
+    onControl: (回调) => {
+      const 处理 = (_事件, 数据) => { if (数据 && typeof 数据.会话标识 === 'string' && typeof 数据.动作 === 'string') 回调(数据) }
+      ipcRenderer.on('system.presenterControl', 处理)
+      return () => ipcRenderer.removeListener('system.presenterControl', 处理)
+    },
+    onClosed: (回调) => {
+      const 处理 = (_事件, 数据) => { if (数据 && typeof 数据.会话标识 === 'string' && typeof 数据.原因 === 'string') 回调(数据) }
+      ipcRenderer.on('system.presenterClosed', 处理)
+      return () => ipcRenderer.removeListener('system.presenterClosed', 处理)
+    },
+    onDisplayChanged: (回调) => {
+      const 处理 = (_事件, 数据) => { if (数据 && typeof 数据.会话标识 === 'string' && typeof 数据.原因 === 'string') 回调(数据) }
+      ipcRenderer.on('system.presenterDisplayChanged', 处理)
+      return () => ipcRenderer.removeListener('system.presenterDisplayChanged', 处理)
+    },
+  },
   checkIntegrity: () => ipcRenderer.invoke('system.checkIntegrity'),
   openExternal: (地址) => ipcRenderer.invoke('system.openExternal', 地址),
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),

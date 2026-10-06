@@ -3409,3 +3409,39 @@ button {
 .wps-recognition-panel__file input { max-width: 100%; }
 .wps-recognition-panel__file-name { color: var(--text-2); margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
 @media (max-width: 768px) { .wps-tools-panel__tabs { flex-wrap: wrap; } .wps-capture-panel__sources, .wps-recording-panel__sources { max-height: 160px; } }
+/* ==================== 演讲者视图与阅读视图（任务 7） ==================== */
+.wps-slideshow__presenter { position: fixed; right: calc(var(--space-4) + 132px); bottom: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-slideshow__presenter:hover { background: var(--bg-hover); }
+.wps-slideshow__presenter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-presenter { display: flex; flex-direction: column; min-height: 100vh; margin: 0; background: var(--presentation-bg); color: #FFFFFF; font-size: 14px; }
+.wps-presenter__bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); background: var(--bg-card); color: var(--text-1); }
+.wps-presenter__page { font-weight: 600; }
+.wps-presenter__timer { font-variant-numeric: tabular-nums; color: var(--text-2); }
+.wps-presenter__screen { margin-left: auto; color: var(--text-2); }
+.wps-presenter__hint { margin: 0; padding: var(--space-3) var(--space-4); background: var(--bg-hover); color: var(--text-1); border-bottom: 1px solid var(--border); }
+.wps-presenter__error { margin: 0; padding: var(--space-3) var(--space-4); background: var(--bg-card); color: #E34D59; }
+.wps-presenter__empty { padding: var(--space-6); color: var(--presentation-caption); }
+.wps-presenter__body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-6); padding: var(--space-6); flex: 1; }
+.wps-presenter__current h2 { margin: 0 0 var(--space-4); font-size: 16px; font-weight: 600; }
+.wps-presenter__notes h3, .wps-presenter__next h3 { margin: 0 0 var(--space-2); font-size: 12px; font-weight: 600; color: var(--presentation-caption); }
+.wps-presenter__notes p { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+.wps-presenter__next p { margin: 0; font-size: 16px; }
+.wps-presenter__controls { display: flex; gap: var(--space-3); padding: var(--space-4); border-top: 1px solid var(--border); background: var(--bg-card); }
+.wps-presenter__controls button { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-presenter__controls button:hover:not(:disabled) { background: var(--bg-hover); }
+.wps-presenter__controls button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-presenter__controls button:disabled { color: var(--text-2); cursor: not-allowed; }
+.wps-reading { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--presentation-bg); }
+.wps-reading__bar { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) var(--space-4); color: var(--presentation-caption); border-bottom: 1px solid var(--border); }
+.wps-reading__stage { position: relative; width: 100%; max-height: calc(100vh - 96px); overflow: hidden; }
+.wps-reading__error { margin: 0; padding: var(--space-4); color: #E34D59; }
+.wps-reading__controls { display: flex; justify-content: center; gap: var(--space-3); padding: var(--space-3); background: var(--bg-card); }
+.wps-reading__controls button { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-reading__controls button:hover:not(:disabled) { background: var(--bg-hover); }
+.wps-reading__controls button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-reading__controls button:disabled { color: var(--text-2); cursor: not-allowed; }
+.wps-show-settings__note { color: var(--text-2); font-size: 12px; line-height: 1.6; }
+.wps-show-settings__error { color: #E34D59; font-size: 12px; }
+.wps-show-settings__readonly { color: var(--text-2); font-size: 12px; }
+.wps-show-settings__shows { margin: var(--space-2) 0 0; padding-left: var(--space-4); }
+.wps-show-settings__pages { margin: var(--space-1) 0; padding-left: var(--space-4); }

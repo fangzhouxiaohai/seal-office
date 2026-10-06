@@ -7,6 +7,8 @@ import type { 批注 } from './model/comments'
 import type { 背景填充, 页脚设置, 页面尺寸, 主题定义, 主题色槽 } from './model/themes'
 import type { 占位符类型, 母版定义 } from './model/masters'
 import type { 备注设置, 讲义设置 } from './model/handout'
+import type { 自定义放映, 放映设置 } from './model/show'
+import { 修复自定义放映引用 } from './model/show'
 
 export interface 文本片段 {
   文本: string
@@ -165,6 +167,10 @@ export interface 演示资源 {
 export interface 演示文稿 {
   循环放映?: boolean
   模型版本?: 2
+  /** 一组或多组自定义放映顺序，按页面稳定标识引用 */
+  自定义放映?: 自定义放映[]
+  /** 放映范围与换片方式；屏幕、指针等属于本机偏好，不写入文稿 */
+  放映设置?: 放映设置
   id: string
   name: string
   幻灯片列表: 幻灯片[]
@@ -346,7 +352,8 @@ export function 删除幻灯片(文稿: 演示文稿, 标识: string): 演示文
   const 列表 = 文稿.幻灯片列表.filter((项) => 项.id !== 标识)
   // 页面删除时同步移除该页批注，避免留下悬挂引用；撤销由整体快照负责
   const 批注列表 = 文稿.批注列表?.filter(批注 => 批注.页标识 !== 标识)
-  return { ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1), ...(文稿.批注列表 === undefined ? {} : { 批注列表 }) }
+  // 删除页面后修复自定义放映引用，避免留下指向已删除页面的序列
+  return 修复自定义放映引用({ ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1), ...(文稿.批注列表 === undefined ? {} : { 批注列表 }) })
 }
 
 /** 切换当前幻灯片；索引越界时保持不变 */

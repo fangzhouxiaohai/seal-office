@@ -20,6 +20,78 @@ function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, �
 
 const 渲染放映 = (on退出 = vi.fn()) => render(<AntdApp><SlideshowView 文稿={创建演示文稿()} 当前索引={0} on翻页={vi.fn()} on退出={on退出} /></AntdApp>)
 
+describe('演讲者视图接入', () => {
+  function 安装演讲者接口(打开结果: Record<string, unknown> = { 成功: true, 会话标识: '演讲者会话', 显示器名称: '扩展显示器 2（1920×1080）' }) {
+    const 打开 = vi.fn().mockResolvedValue(打开结果)
+    const 更新 = vi.fn().mockResolvedValue({ 成功: true })
+    const 关闭 = vi.fn().mockResolvedValue({ 成功: true })
+    let 控制: ((数据: { 会话标识: string; 动作: string }) => void) | undefined
+    let 已关闭: ((数据: { 会话标识: string; 原因: string }) => void) | undefined
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      enterSlideshowFullscreen: vi.fn().mockResolvedValue({ 成功: true, 会话标识: '放映会话' }),
+      exitSlideshowFullscreen: vi.fn().mockResolvedValue({ 成功: true }),
+      onSlideshowEnded: () => () => {},
+      presenter: {
+        open: 打开, update: 更新, close: 关闭,
+        onControl: (回调: typeof 控制) => { 控制 = 回调; return () => { 控制 = undefined } },
+        onClosed: (回调: typeof 已关闭) => { 已关闭 = 回调; return () => { 已关闭 = undefined } },
+        onDisplayChanged: () => () => {},
+      },
+    } })
+    return { 打开, 更新, 关闭, 控制: (动作: string) => 控制?.({ 会话标识: '演讲者会话', 动作 }), 已关闭: (原因: string) => 已关闭?.({ 会话标识: '演讲者会话', 原因 }) }
+  }
+
+  it('请求演讲者时打开只读窗口并推送快照，控制命令回传到播放控制器', async () => {
+    const 接口 = 安装演讲者接口()
+    const 翻页 = vi.fn()
+    const 文稿 = 添加幻灯片(创建演示文稿())
+    render(<AntdApp><SlideshowView 文稿={文稿} 当前索引={0} 请求演讲者 on翻页={翻页} on退出={vi.fn()} /></AntdApp>)
+    await waitFor(() => expect(接口.打开).toHaveBeenCalledWith({ 显示器: '主屏' }))
+    await waitFor(() => expect(接口.更新).toHaveBeenCalled())
+    expect(接口.更新.mock.calls[0][1].快照.页码).toBe(1)
+    act(() => 接口.控制('下一页'))
+    expect(翻页).toHaveBeenCalledWith(1)
+    act(() => 接口.控制('暂停'))
+    expect(screen.getByRole('button', { name: '继续放映' })).toBeInTheDocument()
+    act(() => 接口.控制('结束'))
+    act(() => 接口.已关闭('演讲者窗口已关闭'))
+    expect(await screen.findByText('演讲者窗口已关闭')).toBeInTheDocument()
+  })
+
+  it('演讲者窗口打开后观众画面不因窗口失焦而暂停', async () => {
+    安装演讲者接口()
+    render(<AntdApp><SlideshowView 文稿={添加幻灯片(创建演示文稿())} 当前索引={0} 请求演讲者 on翻页={vi.fn()} on退出={vi.fn()} /></AntdApp>)
+    await waitFor(() => expect(document.querySelector('.wps-slideshow__presenter')).not.toBeNull())
+    fireEvent(window, new Event('blur'))
+    expect(screen.getByRole('button', { name: '暂停放映' })).toBeInTheDocument()
+    fireEvent(window, new Event('focus'))
+    expect(screen.getByRole('button', { name: '暂停放映' })).toBeInTheDocument()
+  })
+
+  it('单显示器时打开演讲者视图给出真实提示并保留放映', async () => {
+    const 接口 = 安装演讲者接口({ 成功: true, 会话标识: '演讲者会话', 显示器名称: '主显示器 1（1920×1080）', 提示: '本机只有一台显示器：演讲者窗口与观众画面位于同一台显示器，切到演讲者视图时观众会看到演讲者窗口内容' })
+    render(<AntdApp><SlideshowView 文稿={添加幻灯片(创建演示文稿())} 当前索引={0} 请求演讲者 on翻页={vi.fn()} on退出={vi.fn()} /></AntdApp>)
+    expect(await screen.findByText(/同一台显示器/)).toBeInTheDocument()
+    expect(接口.打开).toHaveBeenCalled()
+    expect(document.querySelector('.wps-slideshow')).not.toBeNull()
+  })
+
+  it('打开演讲者视图失败时展示真实原因，观众画面继续放映', async () => {
+    安装演讲者接口({ 成功: false, 错误: '本机只检测到 1 台显示器，没有可用的第二屏' })
+    render(<AntdApp><SlideshowView 文稿={添加幻灯片(创建演示文稿())} 当前索引={0} 请求演讲者 on翻页={vi.fn()} on退出={vi.fn()} /></AntdApp>)
+    expect(await screen.findByText(/没有可用的第二屏/)).toBeInTheDocument()
+    expect(document.querySelector('.wps-slideshow')).not.toBeNull()
+  })
+
+  it('退出放映时关闭演讲者窗口', async () => {
+    const 接口 = 安装演讲者接口()
+    const { unmount } = render(<AntdApp><SlideshowView 文稿={添加幻灯片(创建演示文稿())} 当前索引={0} 请求演讲者 on翻页={vi.fn()} on退出={vi.fn()} /></AntdApp>)
+    await waitFor(() => expect(接口.更新).toHaveBeenCalled())
+    unmount()
+    expect(接口.关闭).toHaveBeenCalledWith('演讲者会话')
+  })
+})
+
 describe('本机幻灯片切换', () => {
   it('切换到后台窗口暂停，回到前台后继续', () => {
     安装全屏接口();渲染放映();fireEvent(window,new Event('blur'))

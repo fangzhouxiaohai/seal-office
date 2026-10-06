@@ -12,18 +12,27 @@ it.each(["'", '"'])('合法引号 %s 与属性空白保留循环和隐藏状态'
   expect(结果.演示文稿.幻灯片列表[0].隐藏).toBe(true)
   expect(结果.警告).toEqual([])
 })
-it.each(["useTimings = '0'", "useTimings = 'false'", "useTimings='1' showAnimation = '0'"])('单引号全局风险属性 %s 必须告警', async 属性 => {
+it.each(["useTimings = '0'", "useTimings = 'false'"])('单引号换片方式 %s 现在能完整导入，不再告警', async 属性 => {
   const zip = await JSZip.loadAsync(await 写入pptx({幻灯片:[页('无')],循环放映:true}))
   zip.file('ppt/presProps.xml',(await zip.file('ppt/presProps.xml').async('string')).replace('useTimings="1"',属性))
+  const 结果 = await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))
+  expect(结果.警告).toEqual([])
+  expect(结果.演示文稿.放映设置).toEqual({ 范围: { 类型: '全部' }, 换片方式: '手动' })
+})
+it('单引号未知全局属性 showAnimation 仍必须告警', async () => {
+  const zip = await JSZip.loadAsync(await 写入pptx({幻灯片:[页('无')],循环放映:true}))
+  zip.file('ppt/presProps.xml',(await zip.file('ppt/presProps.xml').async('string')).replace('useTimings="1"',"useTimings='1' showAnimation = '0'"))
   expect((await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))).警告).toContain('全局放映设置未完整导入')
 })
 it.each(['切换','换片'])('写入时拒绝显式空%s设置', async 键 => {
   await expect(写入pptx({幻灯片:[{...页('无'),[键]:null}]})).rejects.toThrow('参数')
 })
-it('外部全局放映范围与禁用计时不能被静默忽略', async () => {
+it('外部放映范围与禁用计时现在按内容导入，不再一律告警', async () => {
   const zip=await JSZip.loadAsync(await 写入pptx({幻灯片:[页('无')],循环放映:true}))
   const p=await zip.file('ppt/presProps.xml').async('string');zip.file('ppt/presProps.xml',p.replace('useTimings="1"','useTimings="0"').replace('<p:sldAll/>','<p:sldRg st="1" end="1"/>'))
-  expect((await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))).警告).toContain('全局放映设置未完整导入')
+  const 结果 = await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))
+  expect(结果.警告).toEqual([])
+  expect(结果.演示文稿.放映设置).toEqual({ 范围: { 类型: '页码范围', 起始: 1, 结束: 1 }, 换片方式: '手动' })
 })
 it('单引号外部切换属性也能保留方向与时长', async () => {
   const zip=await JSZip.loadAsync(await 写入pptx({幻灯片:[页('擦除')]})), 路径='ppt/slides/slide1.xml', 原=await zip.file(路径).async('string')

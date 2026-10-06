@@ -3,8 +3,12 @@ import FormulaPanel from './panels/FormulaPanel'
 import SymbolPanel from './panels/SymbolPanel'
 import AttachmentPanel from './panels/AttachmentPanel'
 import { 附件资源类型, 创建附件, 读取文件Base64, 下载二进制Base64 } from './model/attachments'
+import 放映设置面板 from './panels/SlideshowSettingsPanel'
 import { 对象允许编辑, 要求对象可编辑 } from './model/objectPermissions'
 import { 添加语义节点, 添加语义连线 } from './model/elements'
+import { 计算放映序列 } from './model/show'
+import 阅读视图 from './playback/ReadingView'
+import { 读取放映偏好, 保存放映偏好, type 放映偏好 } from './playback/放映偏好'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
 import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
@@ -235,8 +239,13 @@ const PptEditor = () => {
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
   const [选中起始, set选中起始] = useState<number | undefined>(undefined)
   const [选中结束, set选中结束] = useState<number | undefined>(undefined)
-  /** 放映状态：放映中显示全屏视图，索引独立于编辑器的当前页 */
-  const [放映中, set放映中] = useState(false)
+  /** 放映状态：无 / 全屏放映 / 窗口阅读视图；索引独立于编辑器的当前页 */
+  const [放映模式, set放映模式] = useState<'无' | '全屏' | '阅读'>('无')
+  const [放映序列, set放映序列] = useState<number[] | null>(null)
+  const [请求演讲者, set请求演讲者] = useState(false)
+  const [放映偏好, set放映偏好] = useState<放映偏好>(() => 读取放映偏好())
+  const [显示器列表, set显示器列表] = useState<Array<{ 标识: string; 名称: string; 主屏: boolean }>>([])
+  const 放映中 = 放映模式 !== '无'
   const 活动预览 = 使用放映状态()
   const 插图状态 = useRef({ 文稿, 只读, 禁止插图: 放映中 || 活动预览 })
   插图状态.current = { 文稿, 只读, 禁止插图: 放映中 || 活动预览 }
@@ -328,7 +337,9 @@ const PptEditor = () => {
     set选中起始(undefined)
     set选中结束(undefined)
     set菜单可见(false)
-    set放映中(false)
+    set放映模式('无')
+    set放映序列(null)
+    set请求演讲者(false)
     set放映索引(0)
     set选中对象([])
     set参考线({ 垂直: [], 水平: [] })
@@ -363,13 +374,22 @@ const PptEditor = () => {
   }, [历史, 文稿])
 
   // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
-  const 开始放映 = (索引: number) => {
+  const 开始放映 = (索引: number, 模式: '全屏' | '阅读' = '全屏', 请求演讲者 = false) => {
     if (文稿.幻灯片列表.length === 0) {
       modal.warning({ title: '无法开始放映', content: '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })
       return
     }
+    let 序列: number[]
+    try {
+      序列 = 计算放映序列(文稿)
+    } catch (错误) {
+      modal.warning({ title: '无法开始放映', content: 错误 instanceof Error ? 错误.message : '放映范围设置无效', okText: '我知道了' })
+      return
+    }
+    set放映序列(序列)
+    set请求演讲者(请求演讲者)
     set放映索引(索引)
-    set放映中(true)
+    set放映模式(模式)
   }
   const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
   放映键处理引用.current = (事件: KeyboardEvent) => {
@@ -391,9 +411,27 @@ const PptEditor = () => {
     set文稿((当前) => ({ ...当前, 当前索引: 目标索引 }))
   }
 
-  /** 退出放映：停留于最后浏览的页面 */
+  /** 退出放映或阅读视图：停留于最后浏览的页面，不改写正文内容 */
   const 退出放映 = () => {
-    set放映中(false)
+    set放映模式('无')
+    set请求演讲者(false)
+  }
+
+  /** 读取真实显示器列表，供放映设置选择演讲者屏；失败时展示真实原因 */
+  useEffect(() => {
+    if (!桥接.presenter.可用) return
+    let 活动 = true
+    void 桥接.presenter.screens().then((结果) => {
+      if (!活动) return
+      if (!结果.成功) { set显示器列表([]); return }
+      set显示器列表((结果.显示器 ?? []).map((项) => ({ 标识: 项.标识, 名称: 项.名称, 主屏: 项.主屏 })))
+    }).catch(() => { if (活动) set显示器列表([]) })
+    return () => { 活动 = false }
+  }, [])
+
+  const 修改放映偏好 = (新偏好: 放映偏好) => {
+    set放映偏好(新偏好)
+    保存放映偏好(新偏好)
   }
 
   const 当前幻灯片 = 读取当前幻灯片(文稿)
@@ -698,6 +736,8 @@ const PptEditor = () => {
     通知预览: (主题) => set预览主题候选(主题),
     切换标签: (标签: string) => set当前标签(标签),
     切换工具区: (区) => set工具区(区),
+    开始放映: (模式, 请求演讲者) => 开始放映(文稿.当前索引, 模式, 请求演讲者),
+    打开放映设置: () => set当前标签('slideshow'),
     撤销,
     重做,
     打开审阅: (区域, 参数) => {
@@ -772,6 +812,9 @@ const PptEditor = () => {
       开始放映(标识 === 'slideshow.start' ? 0 : 文稿.当前索引)
       return
     }
+    if (标识 === 'slideshow.presenter') { 开始放映(文稿.当前索引, '全屏', true); return }
+    if (标识 === 'slideshow.settings' || 标识 === 'slideshow.customShow') { set当前标签('slideshow'); return }
+    if (标识 === 'view.reading') { 开始放映(文稿.当前索引, '阅读'); return }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
       set适应(false)
       set缩放((当前) =>
@@ -1349,7 +1392,9 @@ const PptEditor = () => {
           : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '公式' ? React.createElement(FormulaPanel, { 对象: 选中对象数据, 只读, on插入: 插入公式对象, on替换: 替换选中对象 })
           : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '符号' ? React.createElement(SymbolPanel, { 只读, on插入: 插入符号 })
           : 当前幻灯片 && 当前标签 === 'insert' && 插入面板 === '附件' ? React.createElement(AttachmentPanel, { 对象: 选中对象数据, 只读, on选择文件: (文件: File) => { void 插入附件(文件) }, on导出: (对象: 演示对象) => { void 导出附件(对象) }, on替换: 替换选中对象 })
-          : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址, on更换音效: () => 音效输入.current?.click(), on移除音效: () => { if (!只读) 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 音效: undefined })) } }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, 文稿, on提示: (标题: string, 内容: string) => 显示文件错误(标题, 内容), on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on选择封面: () => 图片输入.current?.click(), on替换: 替换选中对象 }) : null
+          : 当前幻灯片 && ['transition','animation'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址, on更换音效: () => 音效输入.current?.click(), on移除音效: () => { if (!只读) 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 音效: undefined })) } })
+          : 当前标签 === 'slideshow' ? React.createElement(放映设置面板, { 文稿, 只读, on修改: 更新文稿, 偏好: 放映偏好, on偏好修改: 修改放映偏好, 显示器: 显示器列表 })
+          : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, 文稿, on提示: (标题: string, 内容: string) => 显示文件错误(标题, 内容), on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on选择封面: () => 图片输入.current?.click(), on替换: 替换选中对象 }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
     React.createElement(HandoutPanel, { 文稿, 只读, on修改: 更新文稿, 打开: 讲义面板打开, on关闭: () => set讲义面板打开(false) }),
@@ -1379,14 +1424,26 @@ const PptEditor = () => {
         关闭菜单()
       },
     }),
-    放映中
+    放映模式 === '全屏'
       ? React.createElement(SlideshowView, {
-            图片地址,
+          图片地址,
           文稿,
           当前索引: 放映索引,
+          ...(放映序列 ? { 序列: 放映序列 } : {}),
+          偏好: 放映偏好,
+          请求演讲者,
           on翻页: 放映翻页,
           on退出: 退出放映,
           on保留笔迹: 保留放映笔迹,
+        })
+      : null,
+    放映模式 === '阅读'
+      ? React.createElement(阅读视图, {
+          图片地址,
+          文稿,
+          起始索引: 放映索引,
+          ...(放映序列 ? { 序列: 放映序列 } : {}),
+          on退出: 退出放映,
         })
       : null
   )
