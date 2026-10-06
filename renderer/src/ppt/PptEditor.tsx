@@ -1398,7 +1398,7 @@ const PptEditor = () => {
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
     React.createElement(HandoutPanel, { 文稿, 只读, on修改: 更新文稿, 打开: 讲义面板打开, on关闭: () => set讲义面板打开(false) }),
-    React.createElement(BatchToolsPanel, { 文稿, 图片地址, 打开: 批量面板打开, on关闭: () => set批量面板打开(false) }),
+    React.createElement(BatchToolsPanel, { 文稿, 图片地址, 打开: 批量面板打开, 只读, on关闭: () => set批量面板打开(false) }),
     React.createElement(PageToolsPanel, {
       文稿,
       只读,
