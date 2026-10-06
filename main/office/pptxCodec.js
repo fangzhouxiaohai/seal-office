@@ -7,6 +7,7 @@ const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 写入自定义放映, 写入放映设置, 读取放映设置, 读取自定义放映 } = require('./pptx/show')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -214,7 +215,7 @@ async function 读取幻灯片路径(压缩包) {
     }
     读取部件(压缩包, 路径)
     const 页面标识 = 读取Xml属性(匹配[0], 'id')
-    幻灯片路径.push({ 路径, 页面标识 })
+    幻灯片路径.push({ 路径, 页面标识, 关系标识: 标识 })
   }
   return { 幻灯片路径, 清单Xml }
 }
@@ -232,12 +233,6 @@ async function 读取pptx(数据) {
   const 资源表 = new Map()
   const 放映属性 = await 压缩包.file('ppt/presProps.xml')?.async('string') ?? ''
   const 放映节点 = 放映属性.match(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/)?.[0] ?? ''
-  const 放映设置 = 读取Xml属性表(放映节点.slice(0,放映节点.indexOf('>')+1))
-  if (放映节点) {
-    const 属性 = 放映设置
-    const 内容 = 放映节点.replace(/^<p:showPr[^>]*>/,'').replace(/<\/p:showPr>$/,'').replace(/<p:(?:present|sldAll)\s*\/>/g,'').trim()
-    if (内容 || Object.keys(属性).some(k=>!['loop','useTimings'].includes(k)) || (属性.useTimings !== undefined && !['1','true'].includes(属性.useTimings)) || (属性.loop !== undefined && !['0','1','true','false'].includes(属性.loop))) 警告.add('全局放映设置未完整导入')
-  }
   const 尺寸标签 = 清单Xml.match(/<p:sldSz\b[^>]*\/?>/i)?.[0]
   if (尺寸标签) {
     const 宽 = Number(读取Xml属性(尺寸标签, 'cx'))
@@ -270,14 +265,19 @@ async function 读取pptx(数据) {
     幻灯片列表.push(幻灯片)
   }
   await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
+  const 关系映射 = new Map(文件名.map((项, 索引) => [项.关系标识, 索引]))
+  const { 自定义放映, 原生标识映射 } = 读取自定义放映(清单Xml, 关系映射, 幻灯片列表.map((页) => 页.id), 警告)
+  const 放映解析 = 读取放映设置(放映节点, 原生标识映射, 警告)
   return {
     演示文稿: {
       id: 'deck-imported',
-      循环放映: ['1','true'].includes(放映设置.loop),
+      循环放映: 放映解析.循环放映 === true,
       name: '导入演示文稿',
       幻灯片列表,
       当前索引: 0,
       模型版本: 2,
+      ...(自定义放映 === undefined ? {} : { 自定义放映 }),
+      ...(放映解析.放映设置 === undefined ? {} : { 放映设置: 放映解析.放映设置 }),
       资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
     },
     警告: Array.from(警告),
@@ -461,7 +461,7 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.length && !模型.循环放映) return 原文件
+  if (!幻灯片列表.length && !模型.循环放映 && 模型.放映设置 === undefined && !模型.自定义放映?.length) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 过渡Xml = 写入切换(幻灯片列表[索引])
@@ -478,10 +478,20 @@ async function 写入pptx(模型) {
     压缩包.file(名称, xml)
   }
   if (模型.循环放映 !== undefined && typeof 模型.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
+  if (模型.自定义放映 !== undefined && !Array.isArray(模型.自定义放映)) throw new Error('自定义放映参数无效')
+  if (模型.放映设置 !== undefined && (typeof 模型.放映设置 !== 'object' || 模型.放映设置 === null || Array.isArray(模型.放映设置))) throw new Error('放映设置参数无效')
+  if (模型.自定义放映?.length) {
+    const 清单文件 = 压缩包.file('ppt/presentation.xml'), 关系文件 = 压缩包.file('ppt/_rels/presentation.xml.rels')
+    if (!清单文件 || !关系文件) throw new Error('生成演示文稿失败：缺少演示清单或关系文件')
+    压缩包.file('ppt/presentation.xml', 写入自定义放映(
+      await 清单文件.async('string'), 幻灯片列表, await 关系文件.async('string'), 模型.自定义放映))
+  }
+  const 放映Xml = 写入放映设置(模型, 模型.自定义放映 ?? [])
   const 属性 = 压缩包.file('ppt/presProps.xml')
-  if (属性 && 模型.循环放映 !== undefined) {
+  if (放映Xml !== null) {
+    if (!属性) throw new Error('生成演示文稿失败：缺少放映属性部件')
     const 内容 = (await 属性.async('string')).replace(/<p:presentationPr([^>]*)\/>/, '<p:presentationPr$1></p:presentationPr>').replace(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/g, '')
-    压缩包.file('ppt/presProps.xml', 内容.replace('</p:presentationPr>', `<p:showPr loop="${模型.循环放映 ? 1 : 0}" useTimings="1"><p:present/><p:sldAll/></p:showPr></p:presentationPr>`))
+    压缩包.file('ppt/presProps.xml', 内容.replace('</p:presentationPr>', `${放映Xml}</p:presentationPr>`))
   }
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
 }

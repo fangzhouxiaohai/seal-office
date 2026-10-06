@@ -599,3 +599,75 @@ describe('演示文稿编辑器容器', () => {
     expect(await screen.findByText('请先在画布中选中一个文本框')).toBeInTheDocument()
   })
 })
+
+describe('任务 7 放映视图与自定义放映', () => {
+  const 三页文稿 = () => {
+    const 文稿 = 添加幻灯片(添加幻灯片(创建演示文稿()))
+    文稿.幻灯片列表.forEach((页, 索引) => { 页.title = ['甲页', '乙页', '丙页'][索引] })
+    return 文稿
+  }
+  const 放映入口 = ({ 文稿 }: { 文稿: ReturnType<typeof 三页文稿> }) => {
+    const 状态 = useAppStore()
+    return <>
+      <button onClick={() => 状态.createDoc('ppt', 文稿)}>打开放映演示</button>
+      {状态.module === 'ppt' ? <PptEditor /> : null}
+    </>
+  }
+  const 静默桥接 = { backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) }
+
+  it('放映设置入口打开面板并可写入自定义放映', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: 静默桥接 })
+    render(<AntdApp><AppProvider><放映入口 文稿={三页文稿()} /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
+    await userEvent.click(screen.getByRole('tab', { name: '幻灯片放映' }))
+    await userEvent.click(screen.getByRole('button', { name: '放映设置' }))
+    const 面板 = await screen.findByRole('complementary', { name: '放映设置' })
+    expect(面板).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('新自定义放映名称'), '验收放映')
+    await userEvent.click(screen.getByRole('button', { name: '新建自定义放映' }))
+    expect(面板.querySelectorAll('.wps-show-settings__pages li')).toHaveLength(3)
+  })
+
+  it('阅读视图在窗口内播放并返回编辑，不进入系统全屏', async () => {
+    const 进入全屏 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ...静默桥接, enterSlideshowFullscreen: 进入全屏 } })
+    render(<AntdApp><AppProvider><放映入口 文稿={三页文稿()} /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
+    await userEvent.click(screen.getByRole('tab', { name: '视图' }))
+    await userEvent.click(screen.getByRole('button', { name: '阅读视图' }))
+    const 视图 = await screen.findByRole('region', { name: '阅读视图' })
+    // 由当前页开始（新建演示停在第 3 页），末页时下一页禁用
+    expect(视图).toHaveTextContent('3 / 3')
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled()
+    expect(进入全屏).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: '返回编辑' }))
+    await waitFor(() => expect(screen.queryByRole('region', { name: '阅读视图' })).toBeNull())
+  })
+
+  it('自定义放映顺序决定整屏放映的页码与页数', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ...静默桥接, enterSlideshowFullscreen: vi.fn().mockResolvedValue({ 成功: true, 会话标识: '会话' }), exitSlideshowFullscreen: vi.fn().mockResolvedValue({ 成功: true }) } })
+    const 文稿 = 三页文稿()
+    const [甲, 乙, 丙] = 文稿.幻灯片列表
+    文稿.自定义放映 = [{ id: '放映甲', 名称: '验收甲', 页面标识列表: [丙.id, 甲.id] }]
+    文稿.放映设置 = { 范围: { 类型: '自定义放映', 放映标识: '放映甲' }, 换片方式: '使用计时' }
+    render(<AntdApp><AppProvider><放映入口 文稿={文稿} /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
+    await userEvent.click(screen.getByRole('tab', { name: '幻灯片放映' }))
+    await userEvent.click(screen.getByRole('button', { name: '从头开始' }))
+    expect(await screen.findByText(/1 \/ 2/)).toBeInTheDocument()
+    expect(乙.id).not.toBe('')
+  })
+
+  it('自定义放映没有页面时拒绝进入放映并说明原因', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ...静默桥接, enterSlideshowFullscreen: vi.fn() } })
+    const 文稿 = 三页文稿()
+    文稿.自定义放映 = [{ id: '空放映', 名称: '空', 页面标识列表: [] }]
+    文稿.放映设置 = { 范围: { 类型: '自定义放映', 放映标识: '空放映' }, 换片方式: '使用计时' }
+    render(<AntdApp><AppProvider><放映入口 文稿={文稿} /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
+    await userEvent.click(screen.getByRole('tab', { name: '幻灯片放映' }))
+    await userEvent.click(screen.getByRole('button', { name: '从头开始' }))
+    expect(await screen.findByText(/自定义放映没有页面/)).toBeInTheDocument()
+    expect(document.querySelector('.wps-slideshow')).toBeNull()
+  })
+})

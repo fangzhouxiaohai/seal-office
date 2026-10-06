@@ -43,6 +43,17 @@ function 注册系统通道(ipcMain) {
     return 默认程序服务
   }
   require('./slideshowFullscreen').注册放映全屏通道(ipcMain)
+  require('./presenterWindow').注册演讲者通道(ipcMain, {
+    BrowserWindow,
+    screen: require('electron').screen,
+    载入演讲者窗口: (窗口, 标识) => {
+      if (app.isPackaged) {
+        void 窗口.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'), { query: { 'seal-presenter': 标识 } })
+        return
+      }
+      void 窗口.loadURL(`http://localhost:5172/?seal-presenter=${encodeURIComponent(标识)}`)
+    },
+  })
   ipcMain.handle('system.reportUnsavedCount', async (事件, 数量) => {
     if (!Number.isSafeInteger(数量) || 数量 < 0) {
       return { 成功: false, 错误: '未保存文档数量无效' }

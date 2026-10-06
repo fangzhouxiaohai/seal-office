@@ -47,3 +47,17 @@ it('减少动态效果保留单击门槛，即时完成动画且保留自动等�
 it('单击关闭时动画仍可触发，末页主动退出会取消所有任务', () => {
   const t=设置();t.文稿.幻灯片列表[0].换片={单击:false};const c=t.创建();c.开始();c.单击();expect(c.快照.索引).toBe(0);c.首尾(true);expect(c.快照.索引).toBe(2);c.结束();expect(vi.getTimerCount()).toBe(0);c.销毁()
 })
+it('自定义放映序列决定翻页顺序，隐藏页在显式序列中仍会播放', () => {
+  const t = 设置(); t.文稿.幻灯片列表[1].隐藏 = true
+  const c = new 播放模块.播放控制器(t.文稿, 2, { 更新: vi.fn(), 翻页: t.翻页, 结束: t.结束, 停止媒体: t.停止媒体 }, false, { 序列: [2, 1] })
+  c.开始(); expect(c.快照.索引).toBe(2)
+  c.单击(); expect(c.快照.索引).toBe(1)
+  c.单击(); expect(t.结束).toHaveBeenCalledTimes(1)
+  c.销毁()
+})
+it('自定义序列非法时拒绝播放并说明原因', () => {
+  const t = 设置()
+  expect(() => new 播放模块.播放控制器(t.文稿, 0, { 更新: vi.fn(), 翻页: vi.fn(), 结束: vi.fn(), 停止媒体: vi.fn() }, false, { 序列: [] })).toThrow('可放映')
+  expect(() => new 播放模块.播放控制器(t.文稿, 0, { 更新: vi.fn(), 翻页: vi.fn(), 结束: vi.fn(), 停止媒体: vi.fn() }, false, { 序列: [0, 0] })).toThrow('重复')
+  expect(() => new 播放模块.播放控制器(t.文稿, 0, { 更新: vi.fn(), 翻页: vi.fn(), 结束: vi.fn(), 停止媒体: vi.fn() }, false, { 序列: [5] })).toThrow('越界')
+})

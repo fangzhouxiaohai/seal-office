@@ -3,6 +3,8 @@
 import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './model/elements'
 import type { 切换设置, 换片设置 } from './model/transitions'
 import type { 对象动画 } from './model/animations'
+import type { 自定义放映, 放映设置 } from './model/show'
+import { 修复自定义放映引用 } from './model/show'
 
 export interface 文本片段 {
   文本: string
@@ -80,6 +82,10 @@ export interface 演示资源 {
 export interface 演示文稿 {
   循环放映?: boolean
   模型版本?: 2
+  /** 一组或多组自定义放映顺序，按页面稳定标识引用 */
+  自定义放映?: 自定义放映[]
+  /** 放映范围与换片方式；屏幕、指针等属于本机偏好，不写入文稿 */
+  放映设置?: 放映设置
   id: string
   name: string
   幻灯片列表: 幻灯片[]
@@ -243,7 +249,7 @@ export function 删除幻灯片(文稿: 演示文稿, 标识: string): 演示文
     return 文稿
   }
   const 列表 = 文稿.幻灯片列表.filter((项) => 项.id !== 标识)
-  return { ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1) }
+  return 修复自定义放映引用({ ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1) })
 }
 
 /** 切换当前幻灯片；索引越界时保持不变 */

@@ -28,6 +28,22 @@ export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文�
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
 export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
+export interface 显示器信息 { 标识: string; 名称: string; 主屏: boolean; 宽?: number; 高?: number; 缩放?: number }
+export interface 演讲者打开结果 { 成功: boolean; 会话标识?: string; 显示器名称?: string; 提示?: string; 已有窗口?: boolean; 错误?: string }
+export interface 演讲者推送数据 { 快照: unknown; 显示器名称?: string; 提示?: string }
+export interface 演讲者状态结果 { 成功: boolean; 状态?: unknown; 会话标识?: string; 显示器名称?: string; 提示?: string; 错误?: string }
+export interface 演讲者接口 {
+  screens: () => Promise<{ 成功: boolean; 显示器?: 显示器信息[]; 错误?: string }>
+  open: (选项: { 显示器?: string }) => Promise<演讲者打开结果>
+  update: (会话标识: string, 数据: 演讲者推送数据) => Promise<{ 成功: boolean; 错误?: string }>
+  close: (会话标识: string) => Promise<{ 成功: boolean; 错误?: string }>
+  control: (会话标识: string | undefined, 动作: string) => Promise<{ 成功: boolean; 错误?: string }>
+  state: () => Promise<演讲者状态结果>
+  onUpdate: (回调: (数据: 演讲者推送数据) => void) => () => void
+  onControl: (回调: (数据: { 会话标识: string; 动作: string }) => void) => () => void
+  onClosed: (回调: (数据: { 会话标识: string; 原因: string }) => void) => () => void
+  onDisplayChanged: (回调: (数据: { 会话标识: string; 原因: string }) => void) => () => void
+}
 export interface 默认程序提示结果 { 成功: boolean; 需要询问?: boolean; 错误?: string }
 export interface 演示资源条目 { 标识: string; 类型: string; 数据: string }
 export interface 演示资源接口 {
@@ -63,6 +79,7 @@ export interface 电子接口 {
   enterSlideshowFullscreen: () => Promise<放映全屏结果>
   exitSlideshowFullscreen: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
   onSlideshowEnded: (回调: (标识: string) => void) => () => void
+  presenter?: 演讲者接口
   onCloseStateRequested: (回调: (标识: string) => void) => () => void
   respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
   setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
@@ -97,6 +114,23 @@ export const 桥接 = {
   enterSlideshowFullscreen: (): Promise<放映全屏结果> => 取后端()?.enterSlideshowFullscreen?.() ?? 失败('当前环境不支持系统全屏'),
   exitSlideshowFullscreen: (标识: string) => 取后端()?.exitSlideshowFullscreen?.(标识) ?? 失败('当前环境不支持恢复窗口'),
   onSlideshowEnded: (回调: (标识: string) => void): (() => void) => 取后端()?.onSlideshowEnded?.(回调) ?? (() => {}),
+  presenter: {
+    get 可用() { return typeof 取后端()?.presenter?.open === 'function' },
+    screens: (): Promise<{ 成功: boolean; 显示器?: 显示器信息[]; 错误?: string }> => 取后端()?.presenter?.screens() ?? 失败('当前环境不支持显示器检测'),
+    open: (选项: { 显示器?: string }): Promise<演讲者打开结果> => 取后端()?.presenter?.open(选项) ?? 失败('当前环境不支持演讲者视图'),
+    update: (会话标识: string, 数据: 演讲者推送数据) => 取后端()?.presenter?.update(会话标识, 数据) ?? 失败('当前环境不支持演讲者视图'),
+    close: (会话标识: string) => 取后端()?.presenter?.close(会话标识) ?? 失败('当前环境不支持演讲者视图'),
+    control: (会话标识: string | undefined, 动作: string) => 取后端()?.presenter?.control(会话标识, 动作) ?? 失败('当前环境不支持演讲者控制'),
+    state: (): Promise<演讲者状态结果> => 取后端()?.presenter?.state() ?? 失败('当前环境不支持演讲者视图'),
+    onUpdate: (回调: (数据: 演讲者推送数据) => void): (() => void) => 取后端()?.presenter?.onUpdate?.(回调) ?? (() => {}),
+    onControl: (回调: (数据: { 会话标识: string; 动作: string }) => void): (() => void) => 取后端()?.presenter?.onControl?.(回调) ?? (() => {}),
+    onClosed: (回调: (数据: { 会话标识: string; 原因: string }) => void): (() => void) => 取后端()?.presenter?.onClosed?.(回调) ?? (() => {}),
+    onDisplayChanged: (回调: (数据: { 会话标识: string; 原因: string }) => void): (() => void) => 取后端()?.presenter?.onDisplayChanged?.(回调) ?? (() => {}),
+  },
+  /** 演讲者窗口使用：按发送者解析会话，无需自行持有会话标识 */
+  getPresenterViewState: (): Promise<演讲者状态结果> => 取后端()?.presenter?.state() ?? 失败('当前环境不支持演讲者视图'),
+  sendPresenterControl: (动作: string): Promise<{ 成功: boolean; 错误?: string }> => 取后端()?.presenter?.control(undefined, 动作) ?? 失败('当前环境不支持演讲者控制'),
+  onPresenterUpdate: (回调: (数据: 演讲者推送数据) => void): (() => void) => 取后端()?.presenter?.onUpdate?.(回调) ?? (() => {}),
   get 关联文件可用() { return typeof 取后端()?.takePendingAssociatedFiles === 'function' && typeof 取后端()?.onAssociatedFilesAvailable === 'function' },
   showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showOpenDialog(打开类型) ?? Promise.resolve(null),

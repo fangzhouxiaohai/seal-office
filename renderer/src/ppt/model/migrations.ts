@@ -2,6 +2,7 @@ import { 校验播放参数 } from './transitions'
 import { 校验动画 } from './animations'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
+import { 校验自定义放映, 校验放映设置 } from './show'
 
 const 是记录 = (值: unknown): 值 is Record<string, unknown> =>
   typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -107,6 +108,8 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       if (对象.连接 && [对象.连接.起点,对象.连接.终点].some(端 => !页面对象.get(端.对象)?.形状 || 页面对象.get(端.对象)?.连接)) throw new Error('连接线引用的节点不存在或无效')
     }
   }
+  if (输入.自定义放映 !== undefined) 校验自定义放映(输入.自定义放映, 页面标识)
+  if (输入.放映设置 !== undefined) 校验放映设置(输入.放映设置)
 }
 
 /** 排除浏览状态并稳定排序键值，供保存基线和撤销记录比较。 */
