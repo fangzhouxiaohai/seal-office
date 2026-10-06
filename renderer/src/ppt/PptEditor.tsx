@@ -26,6 +26,7 @@ import {
 } from './deck'
 import { 导出为Html预览, 生成演示文件名 } from './deckExport'
 import { PptStatusBar, ThumbnailList } from './PptChrome'
+import ExportPanel from './panels/ExportPanel'
 import SlideCanvas from './SlideCanvas'
 import SlideshowView from './SlideshowView'
 import { NotesView, SlideSorterView } from './PptViews'
@@ -84,6 +85,8 @@ const PptEditor = () => {
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
   const [图片地址, set图片地址] = useState<图片地址表>({})
+  // 导出面板：范围、格式与分辨率，写盘完成后才报告成功
+  const [导出打开, set导出打开] = useState(false)
   const [选中对象, set选中对象] = useState<string[]>([])
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
@@ -499,6 +502,10 @@ const PptEditor = () => {
       set缩放((当前) =>
         Math.min(4, Math.max(0.1, Number((当前 + (标识 === 'view.zoomIn' ? 0.1 : -0.1)).toFixed(2))))
       )
+      return
+    }
+    if (标识 === 'file.exportDialog') {
+      set导出打开(true)
       return
     }
     if (标识 === 'file.exportHtml') {
@@ -976,6 +983,7 @@ const PptEditor = () => {
       } }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
+    React.createElement(ExportPanel, { 文稿, 图片地址, 打开: 导出打开, on关闭: () => set导出打开(false) }),
     React.createElement(ContextMenu, {
       open: 菜单可见,
       x: 菜单坐标.x,

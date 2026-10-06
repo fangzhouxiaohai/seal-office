@@ -1,10 +1,15 @@
 const { 创建资源存储 } = require('../ppt/resources')
 const { 检查图片字节 } = require('../office/pptx/media')
+const { 导出演示, 选择导出目录 } = require('../ppt/export')
 
 function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
   const 执行 = (任务) => {
     try { return { 成功: true, ...任务() } }
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示资源操作失败' } }
+  }
+  const 异步执行 = async (任务) => {
+    try { return await 任务() }
+    catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示操作失败' } }
   }
   ipcMain.handle('presentation.resource.add', (_事件, 数据, 类型) => 执行(() => {
     if (typeof 数据 !== 'string' || 数据.length === 0 || 数据.length > 70 * 1024 * 1024 ||
@@ -34,6 +39,12 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储()) {
   ipcMain.handle('presentation.resource.restore', (_事件, 条目列表) => 执行(() => {
     资源存储.恢复(条目列表)
     return {}
+  }))
+  // 导出：栅格化与写盘都在主进程完成，写盘成功后才返回真实文件列表
+  ipcMain.handle('presentation.export.run', (_事件, 请求) => 异步执行(() => 导出演示(请求)))
+  ipcMain.handle('presentation.export.pickDirectory', () => 异步执行(async () => {
+    const 目录 = await 选择导出目录()
+    return 目录 ? { 成功: true, 目录 } : { 成功: false, 已取消: true }
   }))
 }
 

@@ -3285,3 +3285,18 @@ button {
 .wps-comment-list__stale { margin: 0 0 var(--space-1); color: var(--text-2); }
 .wps-review-list__text mark { background: var(--bg-hover); color: var(--brand); }
 @media (max-width: 768px) { .wps-ppt-review label { flex-direction: row; align-items: center; flex-wrap: wrap; } }
+/* 导出面板：沿用现有设计令牌，控件整行排布，窄窗口不横向溢出 */
+.wps-export-dialog .wps-export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
+.wps-export-dialog .wps-export-grid label { display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; color: var(--text-2); }
+.wps-export-dialog .wps-export-grid select { min-height: 28px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-1) var(--space-2); font: inherit; }
+.wps-export-dialog .wps-export-grid select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-export-dialog .wps-export-grid span { font-size: 12px; color: var(--text-1); }
+.wps-export-dialog .wps-export-checks { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-3); font-size: 12px; color: var(--text-1); }
+.wps-export-dialog .wps-export-checks label, .wps-export-dialog .wps-export-pages label { display: inline-flex; align-items: center; gap: var(--space-1); }
+.wps-export-dialog .wps-export-pages { margin-top: var(--space-3); max-height: 160px; overflow: auto; display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; color: var(--text-1); }
+.wps-export-dialog .wps-export-pages p { margin: 0 0 var(--space-1); color: var(--text-2); }
+.wps-export-dialog .wps-export-summary { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-3); }
+.wps-export-dialog .wps-export-hint { font-size: 12px; color: var(--text-2); }
+.wps-export-dialog .wps-export-warning { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-hover); color: var(--text-1); font-size: 12px; }
+.wps-export-dialog .wps-export-result { margin-top: var(--space-3); }
+.wps-export-dialog .wps-export-result p { margin: 0 0 var(--space-1); font-size: 12px; color: var(--text-2); }
