@@ -1,0 +1,74 @@
+/* 讲义母版与批量工具面板样式：沿用现有设计令牌，不引入新的配色与圆角。 */
+.wps-tools__group {
+  margin-bottom: var(--space-4, 16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  padding: var(--space-3, 12px);
+}
+
+.wps-tools__group legend {
+  padding: 0 var(--space-2, 8px);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-tools__group label {
+  display: block;
+  margin-bottom: var(--space-2, 8px);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-tools__group input[type='text'],
+.wps-tools__group input:not([type]),
+.wps-tools__group select {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-1, 4px);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-size: 12px;
+}
+
+.wps-tools__group input[type='checkbox'] {
+  margin-right: var(--space-1, 4px);
+}
+
+.wps-tools__hint {
+  margin: var(--space-2, 8px) 0 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-tools__files {
+  margin: 0 0 var(--space-2, 8px);
+  padding-left: var(--space-4, 16px);
+  font-size: 12px;
+  color: var(--text-1);
+  max-height: 120px;
+  overflow: auto;
+}
+
+.wps-tools__results {
+  margin: 0;
+  padding-left: var(--space-4, 16px);
+  font-size: 12px;
+}
+
+.wps-tools__results > li {
+  margin-bottom: var(--space-1, 4px);
+  overflow-wrap: anywhere;
+}
+
+.wps-tools__ok {
+  color: var(--text-1);
+}
+
+.wps-tools__fail {
+  color: var(--text-1);
+  border-left: 2px solid var(--brand);
+  padding-left: var(--space-2, 8px);
+}

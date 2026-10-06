@@ -224,11 +224,11 @@ function 注册文件通道(ipcMain) {
   })
 
   ipcMain.handle('file.showOpenDialogMany', async (event, 打开类型) => {
-    if (打开类型 !== 'pdf') throw new Error('当前仅支持批量打开 PDF 文件')
+    if (打开类型 !== 'pdf' && 打开类型 !== 'ppt') throw new Error('当前仅支持批量打开 PDF 或演示文稿文件')
     const 窗口 = require('electron').BrowserWindow.fromWebContents(event.sender)
     const 结果 = await dialog.showOpenDialog(窗口, {
-      title: '添加 PDF 文件',
-      filters: 打开过滤器映射.pdf,
+      title: 打开类型 === 'ppt' ? '添加演示文稿' : '添加 PDF 文件',
+      filters: 打开过滤器映射[打开类型],
       properties: ['openFile', 'multiSelections'],
     })
     return 结果.canceled ? [] : 结果.filePaths

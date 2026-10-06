@@ -45,6 +45,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     recognitionStatus: () => ipcRenderer.invoke('presentation.recognition.status'),
     recognize: (数据, 类型) => ipcRenderer.invoke('presentation.recognition.recognize', 数据, 类型),
   },
+  presentationSession: {
+    register: (文稿标识, 视图标识, 初始内容, 路径) => ipcRenderer.invoke('presentation.session.register', 文稿标识, 视图标识, 初始内容, 路径),
+    read: (文稿标识) => ipcRenderer.invoke('presentation.session.read', 文稿标识),
+    commit: (文稿标识, 期望版本, 内容, 视图标识) => ipcRenderer.invoke('presentation.session.commit', 文稿标识, 期望版本, 内容, 视图标识),
+    saved: (文稿标识, 路径, 视图标识) => ipcRenderer.invoke('presentation.session.saved', 文稿标识, 路径, 视图标识),
+    claimPath: (文稿标识, 路径) => ipcRenderer.invoke('presentation.session.claimPath', 文稿标识, 路径),
+    releasePath: (文稿标识, 路径) => ipcRenderer.invoke('presentation.session.releasePath', 文稿标识, 路径),
+    unregister: (文稿标识, 视图标识) => ipcRenderer.invoke('presentation.session.unregister', 文稿标识, 视图标识),
+    onChanged: (回调) => {
+      const 处理 = (_事件, 消息) => { if (消息 && typeof 消息 === 'object') 回调(消息) }
+      ipcRenderer.on('system.presentationSessionChanged', 处理)
+      return () => ipcRenderer.removeListener('system.presentationSessionChanged', 处理)
+    },
+    identity: () => ipcRenderer.invoke('system.presentationSessionIdentity'),
+  },
+  presentationBatch: {
+    check: (任务列表) => ipcRenderer.invoke('presentation.batchCheck', 任务列表),
+  },
+  newPresentationWindow: (文稿标识, 视图标识) => ipcRenderer.invoke('system.newPresentationWindow', 文稿标识, 视图标识),
+  tilePresentationWindows: (布局) => ipcRenderer.invoke('system.tilePresentationWindows', 布局),
   recentList: () => ipcRenderer.invoke('file.recent.list'),
   recentAdd: (条目) => ipcRenderer.invoke('file.recent.add', 条目),
   recentRemove: (路径) => ipcRenderer.invoke('file.recent.remove', 路径),

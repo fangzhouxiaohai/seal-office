@@ -1,6 +1,7 @@
 import { 校验播放参数 } from './transitions'
 import { 校验动画 } from './animations'
 import { 校验批注列表 } from './comments'
+import { 校验备注设置, 校验讲义设置, type 备注设置, type 讲义设置 } from './handout'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
 import { 主题色槽列表, 校验背景填充, 校验主题定义, 校验页脚设置, 校验页面尺寸 } from './themes'
@@ -56,6 +57,8 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
   if (输入.母版列表 !== undefined) 校验母版列表(输入.母版列表)
   if (输入.页面尺寸 !== undefined) 校验页面尺寸(输入.页面尺寸)
   if (输入.页脚设置 !== undefined) 校验页脚设置(输入.页脚设置)
+  if (输入.讲义设置 !== undefined) 校验讲义设置(输入.讲义设置 as unknown as 讲义设置)
+  if (输入.备注设置 !== undefined) 校验备注设置(输入.备注设置 as unknown as 备注设置)
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
   // 页跳转链接在整篇范围内解析，未知目标一律拒绝而不是留下死链。

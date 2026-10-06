@@ -359,6 +359,21 @@ const 视图标签: RibbonTabSpec = {
       name: '导出',
       items: [大('file.exportDialog', '导出', 'export-file'), 大('file.exportHtml', '导出为网页', 'export-file')],
     },
+    {
+      name: '母版与工具',
+      items: [
+        大('view.handoutMaster', '讲义母版', 'doc-empty'),
+        大('tools.batch', '批量工具', 'sliders'),
+      ],
+    },
+    {
+      name: '窗口',
+      items: [
+        大('window.new', '新建窗口', 'copy'),
+        大('window.tile', '重排窗口', 'grid'),
+        大('window.cascade', '层叠窗口', 'list'),
+      ],
+    },
   ],
 }
 

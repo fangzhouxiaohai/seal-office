@@ -43,6 +43,9 @@ import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import CommentsPanel from './panels/CommentsPanel'
 import ReviewPanel from './panels/ReviewPanel'
+import HandoutPanel from './panels/HandoutPanel'
+import BatchToolsPanel from './panels/BatchToolsPanel'
+import { 创建会话同步, type 会话同步 } from './sessionSync'
 import { 读取页面批注, 批注导航, 批注对象失效, type 批注位置 } from './model/comments'
 import ThemePanel, { 默认字体检测 } from './panels/ThemePanel'
 import MasterPanel from './panels/MasterPanel'
@@ -107,6 +110,10 @@ const PptEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [工具区, set工具区] = useState<工具区>('截屏')
   const [识别状态, set识别状态] = useState<{ 可用: boolean; 原因?: string }>({ 可用: false, 原因: '正在读取识别服务状态' })
+  // 讲义母版与批量工具面板；会话引用用于把本地修改同步到同文稿的其他窗口
+  const [讲义面板打开, set讲义面板打开] = useState(false)
+  const [批量面板打开, set批量面板打开] = useState(false)
+  const 会话引用 = useRef<会话同步 | null>(null)
   const [当前视图, set当前视图] = useState<'普通' | '浏览' | '备注'>('普通')
   const [缩放, set缩放] = useState(1)
   const [显示网格线, set显示网格线] = useState(false)
@@ -173,6 +180,31 @@ const PptEditor = () => {
       }
     })()
     return () => { 取消 = true }
+  }, [])
+
+  /**
+   * 文稿会话：新窗口接管主进程登记的身份并载入共享内容；普通窗口首次注册本文稿。
+   * 远端修改作为新基线载入（不并入本地撤销栈），版本冲突时提示重新读取。
+   */
+  useEffect(() => {
+    if (!桥接.presentationSession) return
+    const 同步 = 创建会话同步({
+      会话: 桥接.presentationSession,
+      on内容: (内容) => { if (内容 && typeof 内容 === 'object') set文稿(内容 as 演示文稿) },
+      on冲突: () => { modal.warning({ title: '内容已在其他窗口更新', content: '另一窗口已修改本文稿，已载入最新内容；刚才的修改没有覆盖远端内容，请确认后重新编辑。', okText: '我知道了' }) },
+    })
+    会话引用.current = 同步
+    void (async () => {
+      const 接管 = await 同步.接管()
+      if (接管.成功) {
+        if (接管.内容 && typeof 接管.内容 === 'object') set文稿(接管.内容 as 演示文稿)
+        return
+      }
+      if (activeDocumentId) await 同步.注册(activeDocumentId, 文稿, 文档路径 ?? undefined)
+    })()
+    return () => { void 同步.注销(); 会话引用.current = null }
+    // 仅在文稿身份变化时重新加入会话
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDocumentId])
 
   const 记录当前路径 = (路径: string, 文件指纹?: string) => {
@@ -185,6 +217,8 @@ const PptEditor = () => {
       if (文件指纹) 更新文件指纹(activeDocumentId, 文件指纹)
       markDocumentSaved(activeDocumentId, '', JSON.stringify(已保存文稿))
     }
+    // 保存成功后通知文稿会话：同一文稿的其他窗口同步为已保存
+    void 会话引用.current?.已保存(路径)
   }
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
@@ -359,6 +393,8 @@ const PptEditor = () => {
     历史.record(新文稿)
     同步历史资源()
     set文稿(新文稿)
+    // 把本地修改提交到文稿会话：其他窗口收到广播后同步，版本过期时提示重新读取
+    void 会话引用.current?.提交(新文稿)
   }
   const 对象提交 = (修改: Record<string, 几何修改>) => {
     if (只读 || !当前幻灯片) return
@@ -659,6 +695,18 @@ const PptEditor = () => {
     },
     跳转批注,
     切换批注显示: () => set显示批注((值) => !值),
+    打开讲义母版: () => set讲义面板打开(true),
+    打开批量工具: () => set批量面板打开(true),
+    新建窗口: () => {
+      void 桥接.newPresentationWindow(activeDocumentId ?? '文稿', `视图-${Date.now().toString(36)}`).then((结果) => {
+        if (!结果?.成功) modal.error({ title: '无法新建窗口', content: 结果?.错误 ?? '当前环境不支持新建窗口' })
+      })
+    },
+    重排窗口: (布局) => {
+      void 桥接.tilePresentationWindows(布局).then((结果) => {
+        if (!结果?.成功) modal.error({ title: '无法重排窗口', content: 结果?.错误 ?? '当前环境不支持重排窗口' })
+      })
+    },
   }
 
   const 处理文本选择 = (标识: string, 起始: number, 结束: number) => {
@@ -1290,6 +1338,8 @@ const PptEditor = () => {
           : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址, on更换音效: () => 音效输入.current?.click(), on移除音效: () => { if (!只读) 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 音效: undefined })) } }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, 文稿, on提示: (标题: string, 内容: string) => 显示文件错误(标题, 内容), on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on选择封面: () => 图片输入.current?.click(), on替换: 替换选中对象 }) : null
     ),
     React.createElement(PptStatusBar, { 文稿, 缩放, on缩放变化: (值: number) => { set适应(false); set缩放(值) } }),
+    React.createElement(HandoutPanel, { 文稿, 只读, on修改: 更新文稿, 打开: 讲义面板打开, on关闭: () => set讲义面板打开(false) }),
+    React.createElement(BatchToolsPanel, { 文稿, 图片地址, 打开: 批量面板打开, on关闭: () => set批量面板打开(false) }),
     React.createElement(ExportPanel, { 文稿, 图片地址, 打开: 导出打开, on关闭: () => set导出打开(false) }),
     React.createElement(ContextMenu, {
       open: 菜单可见,

@@ -35,7 +35,13 @@ function 字节转文本(字节数: number): string {
 /** 导出面板：范围、格式、分辨率与输出位置，写盘完成后才报告成功 */
 export default function ExportPanel({ 文稿, 图片地址, 选定页 = [], 打开, on关闭 }: Props) {
   const { modal, message } = AntdApp.useApp()
-  const [选项, set选项] = React.useState<导出选项>({ ...默认导出选项, 选定页 })
+  const [选项, set选项] = React.useState<导出选项>(() => ({
+    ...默认导出选项,
+    选定页,
+    // 文稿已保存的讲义/备注母版设置作为默认值，导出时与母版保持一致
+    ...(文稿.讲义设置 ? { 讲义设置: 文稿.讲义设置, 讲义每页张数: 文稿.讲义设置.每页张数 } : {}),
+    ...(文稿.备注设置 ? { 备注设置: 文稿.备注设置 } : {}),
+  }))
   const [目录, set目录] = React.useState<string | undefined>(undefined)
   const [执行中, set执行中] = React.useState(false)
   const [结果, set结果] = React.useState<演示导出文件[] | null>(null)
@@ -137,11 +143,8 @@ export default function ExportPanel({ 文稿, 图片地址, 选定页 = [], 打�
         )}
         {选项.格式 === 'PDF' && (
           <label>讲义每页张数
-            <select aria-label="讲义每页张数" value={选项.讲义每页张数} onChange={事件 => 更新({ 讲义每页张数: Number(事件.target.value) as 1 | 2 | 3 | 6 })}>
-              <option value={1}>每页一张（默认）</option>
-              <option value={2}>2 张</option>
-              <option value={3}>3 张</option>
-              <option value={6}>6 张</option>
+            <select aria-label="讲义每页张数" value={选项.讲义每页张数} onChange={事件 => 更新({ 讲义每页张数: Number(事件.target.value) as 1 | 2 | 3 | 4 | 6 | 9 })}>
+              {[1, 2, 3, 4, 6, 9].map(张数 => <option key={张数} value={张数}>{张数 === 1 ? '每页一张（默认）' : `${张数} 张`}</option>)}
             </select>
           </label>
         )}

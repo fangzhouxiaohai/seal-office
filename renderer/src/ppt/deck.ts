@@ -6,6 +6,7 @@ import type { 对象动画 } from './model/animations'
 import type { 批注 } from './model/comments'
 import type { 背景填充, 页脚设置, 页面尺寸, 主题定义, 主题色槽 } from './model/themes'
 import type { 占位符类型, 母版定义 } from './model/masters'
+import type { 备注设置, 讲义设置 } from './model/handout'
 
 export interface 文本片段 {
   文本: string
@@ -181,6 +182,10 @@ export interface 演示文稿 {
   页面尺寸?: 页面尺寸
   /** 整篇页脚、日期与页码设置；单页可用 页脚 覆盖 */
   页脚设置?: 页脚设置
+  /** 讲义母版设置：每页张数、页眉页脚、日期与页码 */
+  讲义设置?: 讲义设置
+  /** 备注母版设置：备注排版与页眉页脚 */
+  备注设置?: 备注设置
 }
 
 /** 画布基准尺寸，按 16:9 比例 */
