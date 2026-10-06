@@ -122,6 +122,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('presentation.ai.stream', 处理)
     },
   },
+  presentationGeneration: {
+    outline: (输入) => ipcRenderer.invoke('presentation.generate.outline', 输入),
+    pages: (输入) => ipcRenderer.invoke('presentation.generate.pages', 输入),
+    singlePage: (输入) => ipcRenderer.invoke('presentation.generate.singlePage', 输入),
+    beautify: (输入) => ipcRenderer.invoke('presentation.generate.beautify', 输入),
+    diagram: (输入) => ipcRenderer.invoke('presentation.generate.diagram', 输入),
+    validateCandidates: (候选, 当前页面列表, 版本表) => ipcRenderer.invoke('presentation.generate.validateCandidates', 候选, 当前页面列表, 版本表),
+    readOutline: (输入) => ipcRenderer.invoke('presentation.generate.readOutline', 输入),
+    assets: {
+      list: () => ipcRenderer.invoke('presentation.assets.list'),
+      search: (关键词) => ipcRenderer.invoke('presentation.assets.search', 关键词),
+      read: (标识) => ipcRenderer.invoke('presentation.assets.read', 标识),
+      import: (输入) => ipcRenderer.invoke('presentation.assets.import', 输入),
+      updateMeta: (标识, 修改) => ipcRenderer.invoke('presentation.assets.updateMeta', 标识, 修改),
+      remove: (标识) => ipcRenderer.invoke('presentation.assets.remove', 标识),
+      semanticSearch: (输入) => ipcRenderer.invoke('presentation.assets.semanticSearch', 输入),
+    },
+  },
   office: {
     writeDocx: (模型) => ipcRenderer.invoke('office.writeDocx', 模型),
     readDocx: (数据) => ipcRenderer.invoke('office.readDocx', 数据),

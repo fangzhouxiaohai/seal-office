@@ -143,6 +143,13 @@ const 插入标签: RibbonTabSpec = {
       name: '媒体',
       items: [大('insert.media', '音频与视频', 'image')],
     },
+    {
+      name: '智能素材',
+      items: [
+        大('insert.generate', '智能生成', 'aippt'),
+        大('insert.assets', '素材库', 'image'),
+      ],
+    },
   ],
 }
 
@@ -184,6 +191,13 @@ const 设计标签: RibbonTabSpec = {
         小('design.background.image', '图片背景', 'image'),
         小('design.background.all', '应用到全部', 'copy'),
         小('design.background.clear', '清除背景', 'close'),
+      ],
+    },
+    {
+      name: '智能美化',
+      items: [
+        大('design.beautify', '智能美化', 'aippt'),
+        大('insert.generate', '生成与美化', 'ai'),
       ],
     },
     {

@@ -10,6 +10,7 @@ const { 注册演示智能通道 } = require('./presentationAiChannel')
 const { 创建助手服务 } = require('../ai/assistant')
 const { 创建录制服务 } = require('../ppt/recording')
 const { 创建识别服务 } = require('../ppt/recognition')
+const { 注册演示生成通道 } = require('./presentationGenerationChannel')
 
 /** 助手服务在同一个进程内只创建一次，演示识别与其他智能功能共用同一份设置与密钥。 */
 function 创建共用助手服务(依赖 = {}) {
@@ -33,6 +34,7 @@ function 注册全部通道(ipcMain, 依赖 = {}) {
     识别服务: 依赖.识别服务 ?? 创建识别服务({ 助手服务 }),
   })
   注册演示智能通道(ipcMain, { 助手服务, 用户数据目录: app.getPath('userData') })
+  注册演示生成通道(ipcMain, { 助手服务, 用户数据目录: app.getPath('userData') })
 }
 
 module.exports = { 注册全部通道, 创建共用助手服务 }
