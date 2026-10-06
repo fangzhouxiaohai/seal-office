@@ -2204,6 +2204,21 @@ button {
 @media (max-width: 768px) { .wps-ppt-body:has(.wps-ppt-properties) { flex-wrap: wrap; } .wps-ppt-properties { flex: 1 1 100%; border-left: 0; border-top: 1px solid var(--border); max-height: 240px; } .wps-ppt-properties__fields { grid-template-columns: repeat(4, minmax(0,1fr)); } .wps-ppt-object-toolbar span { display: none; } }
 @media (max-width: 480px) { .wps-ppt-properties__fields { grid-template-columns: 1fr 1fr; } .wps-ppt-object-toolbar { gap: var(--space-2); } }
 
+/* 演示智能面板：翻译、语义校对与智能讲 PPT */
+.wps-ppt-properties h3, .wps-ppt-properties h4 { font-size: 14px; font-weight: 600; margin: 0 0 var(--space-4); }
+.wps-ppt-properties__hint { color: var(--text-2); margin: 0 0 var(--space-4); line-height: 1.5; }
+.wps-ppt-properties__capabilities, .wps-ppt-properties__candidates, .wps-ppt-properties__suggestions, .wps-ppt-narration-list { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.wps-ppt-properties__candidates > li, .wps-ppt-properties__suggestions > li, .wps-ppt-narration-list > li { border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3); background: var(--bg-card); }
+.wps-ppt-properties__original { color: var(--text-2); text-decoration: line-through; margin: var(--space-1) 0; word-break: break-word; }
+.wps-ppt-properties__translated { color: var(--text-1); margin: var(--space-1) 0; word-break: break-word; }
+.wps-ppt-service-settings { border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.wps-ppt-service-settings label { display: flex; flex-direction: column; gap: var(--space-1); }
+.wps-ppt-service-settings input, .wps-ppt-service-settings select { width: 100%; }
+.wps-ppt-properties[aria-label="翻译与语义校对"] button, .wps-ppt-properties[aria-label="智能讲 PPT"] button { min-height: 32px; padding: var(--space-1) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-control); color: var(--text-1); background: var(--bg-card); font: inherit; }
+.wps-ppt-properties[aria-label="翻译与语义校对"] button:hover, .wps-ppt-properties[aria-label="智能讲 PPT"] button:hover { background: var(--bg-hover); border-color: var(--brand); }
+.wps-ppt-properties[aria-label="翻译与语义校对"] button:focus-visible, .wps-ppt-properties[aria-label="智能讲 PPT"] button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-ppt-properties[aria-label="翻译与语义校对"] button:disabled, .wps-ppt-properties[aria-label="智能讲 PPT"] button:disabled { opacity: .55; cursor: default; }
+
 .wps-ppt-canvas {
   position: relative;
   flex: 0 0 auto;

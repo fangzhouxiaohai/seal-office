@@ -91,6 +91,7 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
     任务.控制器.abort()
     return { 成功: true }
   })
+  return 服务
 }
 
 module.exports = { 注册智能助手通道 }

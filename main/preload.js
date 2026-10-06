@@ -89,6 +89,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('ai.stream', 处理)
     },
   },
+  presentationAi: {
+    capabilities: () => ipcRenderer.invoke('presentation.ai.capabilities'),
+    getService: (种类) => ipcRenderer.invoke('presentation.ai.getService', 种类),
+    saveService: (种类, 配置) => ipcRenderer.invoke('presentation.ai.saveService', 种类, 配置),
+    clearService: (种类) => ipcRenderer.invoke('presentation.ai.clearService', 种类),
+    listServiceKinds: () => ipcRenderer.invoke('presentation.ai.listServiceKinds'),
+    migrateLegacyTranslate: (旧配置) => ipcRenderer.invoke('presentation.ai.migrateLegacyTranslate', 旧配置),
+    probeService: (种类, 配置) => ipcRenderer.invoke('presentation.ai.probeService', 种类, 配置),
+    translate: (输入) => ipcRenderer.invoke('presentation.ai.translate', 输入),
+    proofread: (输入) => ipcRenderer.invoke('presentation.ai.proofread', 输入),
+    validateTranslation: (候选, 当前条目) => ipcRenderer.invoke('presentation.ai.validateTranslation', 候选, 当前条目),
+    validateSuggestion: (建议, 当前条目) => ipcRenderer.invoke('presentation.ai.validateSuggestion', 建议, 当前条目),
+    voices: () => ipcRenderer.invoke('presentation.ai.voices'),
+    speak: (输入) => ipcRenderer.invoke('presentation.ai.speak', 输入),
+    generateScript: (输入) => ipcRenderer.invoke('presentation.ai.generateScript', 输入),
+    narrate: (输入) => ipcRenderer.invoke('presentation.ai.narrate', 输入),
+    clearAudioCache: () => ipcRenderer.invoke('presentation.ai.clearAudioCache'),
+    onStream: (回调) => {
+      const 处理 = (_事件, 片段) => {
+        if (片段 && typeof 片段.请求标识 === 'string' && 片段.类型 === '状态' && typeof 片段.内容 === 'string') 回调(片段)
+      }
+      ipcRenderer.on('presentation.ai.stream', 处理)
+      return () => ipcRenderer.removeListener('presentation.ai.stream', 处理)
+    },
+  },
   office: {
     writeDocx: (模型) => ipcRenderer.invoke('office.writeDocx', 模型),
     readDocx: (数据) => ipcRenderer.invoke('office.readDocx', 数据),

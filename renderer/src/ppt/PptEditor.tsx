@@ -54,6 +54,8 @@ import {
   type 主题定义,
 } from './model/themes'
 import { 解析页面背景, 标记占位符覆盖 } from './model/masters'
+import TranslationPanel from './panels/TranslationPanel'
+import NarrationPanel from './panels/NarrationPanel'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
@@ -109,7 +111,9 @@ const PptEditor = () => {
   /** 定稿为可恢复的只读标记：与手动只读一起决定编辑权限，不代表加密保护。 */
   const 只读 = 手动只读 || Boolean(文稿.定稿)
   const [显示批注, set显示批注] = useState(true)
-  const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对'>('检查')
+  const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对' | '翻译'>('检查')
+  /** 智能服务面板：讲稿与讲解音频；其余智能入口复用审阅面板的翻译与校对视图。 */
+  const [智能面板, set智能面板] = useState<'讲稿' | null>(null)
   const [转换方向, set转换方向] = useState<'简' | '繁'>('繁')
   const [设计面板, set设计面板] = useState<'主题' | '母版' | '检查' | null>(null)
   const [预览主题候选, set预览主题候选] = useState<主题定义 | null>(null)
@@ -559,6 +563,10 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    // 智能面板入口只切换右侧面板，不属于正文修改，只读状态同样允许查看。
+    if (标识 === 'review.translate' || 标识 === 'review.proofread') { set当前标签('review'); set审阅区域('翻译'); return }
+    if (标识 === 'slideshow.narrate') { set当前标签('slideshow'); set智能面板('讲稿'); return }
+    if (!标识.startsWith('slideshow.')) set智能面板(null)
     if (只读 && !只读可放行(标识)) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
     if (标识 === 'insert.attachment') { set当前标签('insert'); set插入面板('附件'); 附件输入.current?.click(); return }
@@ -1115,17 +1123,20 @@ const PptEditor = () => {
         只读,
         on应用: 更新文稿,
         检测字体: 默认字体检测,
-      }) : 当前幻灯片 && 当前标签 === 'review'
+      }) : 当前标签 === 'slideshow' && 智能面板 === '讲稿' ? React.createElement(NarrationPanel, { 文稿, 只读, on修改: 更新文稿 })
+        : 当前幻灯片 && 当前标签 === 'review'
         ? (审阅区域 === '批注'
             ? React.createElement(CommentsPanel, {
                 文稿, 页: 当前幻灯片, 只读, 选中: 选中框标识 ?? 选中对象[0] ?? null, 显示批注,
                 on显示变化: set显示批注, on修改: 更新文稿, 跳转: 定位批注,
                 on切换区域: (区域) => set审阅区域(区域),
               })
-            : React.createElement(ReviewPanel, {
-                文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向, 当前路径: 文档路径 ?? undefined,
-                on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
-              }))
+            : 审阅区域 === '翻译'
+              ? React.createElement(TranslationPanel, { 文稿, 当前索引: 文稿.当前索引, 选中: 选中框标识 ? [选中框标识, ...选中对象] : 选中对象, 只读, on修改: 更新文稿 })
+              : React.createElement(ReviewPanel, {
+                  文稿, 页: 当前幻灯片, 只读, 区域: 审阅区域, 转换方向, 当前路径: 文档路径 ?? undefined,
+                  on区域变化: set审阅区域, on方向变化: set转换方向, on修改: 更新文稿,
+                }))
         : 当前幻灯片 && 插入面板 === '公式' ? React.createElement(FormulaPanel, { 对象: 选中对象数据, 只读, on插入: 插入公式对象, on替换: 替换选中对象 })
         : 当前幻灯片 && 插入面板 === '符号' ? React.createElement(SymbolPanel, { 只读, on插入: 插入符号 })
         : 当前幻灯片 && 插入面板 === '附件' ? React.createElement(AttachmentPanel, { 对象: 选中对象数据, 只读, on选择文件: (文件: File) => { void 插入附件(文件) }, on导出: (对象: 演示对象) => { void 导出附件(对象) }, on替换: 替换选中对象 })
