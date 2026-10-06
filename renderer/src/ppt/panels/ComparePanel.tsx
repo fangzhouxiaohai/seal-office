@@ -109,7 +109,23 @@ export default function ComparePanel({ 当前路径 }: Props) {
               导入风险：{[...(结果.警告?.左 ?? []).map(项 => `左侧：${项}`), ...(结果.警告?.右 ?? []).map(项 => `右侧：${项}`)].join('；')}
             </p>
           ) : null}
-          {(结果.页面 ?? []).length === 0
+          {(结果.批注?.未归属页面.length ?? 0) > 0 ? (
+            <div className="wps-compare__group">
+              <h4>批注（未归属到现存页面，{结果.批注!.未归属页面.length}）</h4>
+              <ul className="wps-compare__diffs">
+                {结果.批注!.未归属页面.map((项, 序号) => (
+                  <li key={`${项.标识}-${项.字段}-${序号}`}>
+                    <span className="wps-compare__target">{项.页标识 ? `${项.页标识} · ${项.标识}` : 项.标识}</span>
+                    <span className="wps-compare__field">{项.字段 === '存在' ? '批注存在性' : 项.字段}</span>
+                    <span className="wps-compare__value">{格式化差异值(项.左)}</span>
+                    <span aria-hidden="true">→</span>
+                    <span className="wps-compare__value">{格式化差异值(项.右)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {(结果.页面 ?? []).length === 0 && !(结果.批注?.数量 ?? 0)
             ? <p>两份文稿没有可报告的差异。</p>
             : (
               <ol className="wps-compare__pages">

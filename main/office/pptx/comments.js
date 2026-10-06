@@ -162,12 +162,24 @@ async function 读取扩展(压缩包, 警告) {
   const 表 = new Map()
   for (const 匹配 of xml.matchAll(/<seal:comment\b([^>]*?)(?:\/>|>([\s\S]*?)<\/seal:comment>)/g)) {
     const 属性 = 读取属性表(`<seal:comment${匹配[1]}>`)
+    if (!属性.slide || !属性.idx || !属性.id) { 警告.add('批注未完整导入'); continue }
+    if (Object.keys(属性).some(键 => !['slide', 'idx', 'id', 'object', 'resolved'].includes(键))) 警告.add('批注未完整导入')
     const 回复 = [...(匹配[2] ?? '').matchAll(/<seal:reply\b([^>]*?)(?:\/>|>([\s\S]*?)<\/seal:reply>)/g)].map(项 => {
       const 回复属性 = 读取属性表(`<seal:reply${项[1]}>`)
+      if (Object.keys(回复属性).some(键 => !['id', 'author', 'dt'].includes(键))) 警告.add('批注未完整导入')
+      if (!回复属性.id || !回复属性.author || !回复属性.dt) 警告.add('批注未完整导入')
       return { id: 回复属性.id ?? '', 作者: 回复属性.author ?? '', 内容: 解码(项[2] ?? ''), 时间: 回复属性.dt ?? '' }
     })
-    表.set(`${属性.slide ?? ''}|${属性.idx ?? ''}`, { id: 属性.id ?? '', 对象标识: 属性.object, 已解决: 属性.resolved === '1', 回复 })
+    // 声明的回复数与解析出的回复数不一致说明存在未闭合或结构异常的条目
+    const 声明回复数 = (匹配[2] ?? '').match(/<seal:reply\b/g)?.length ?? 0
+    if (声明回复数 !== 回复.length) 警告.add('批注未完整导入')
+    const 键 = `${属性.slide}|${属性.idx}`
+    if (表.has(键)) 警告.add('批注未完整导入')
+    表.set(键, { id: 属性.id, 对象标识: 属性.object, 已解决: 属性.resolved === '1', 回复 })
   }
+  // 声明的批注条目数与成功解析数不一致（未闭合、缺少必需属性或重复键）时提示风险
+  const 声明批注数 = xml.match(/<seal:comment\b/g)?.length ?? 0
+  if (声明批注数 !== (xml.match(/<seal:comment\b[^>]*?(?:\/>|>[\s\S]*?<\/seal:comment>)/g) ?? []).length) 警告.add('批注未完整导入')
   return 表
 }
 
@@ -177,6 +189,7 @@ async function 读取批注(压缩包, 幻灯片列表, 警告) {
   const 作者表 = await 读取作者表(压缩包, 警告)
   const 扩展表 = await 读取扩展(压缩包, 警告)
   const 结果 = []
+  const 已用扩展键 = new Set()
   for (let 序号 = 0; 序号 < 幻灯片列表.length; 序号++) {
     const 幻灯片路径 = `ppt/slides/slide${序号 + 1}.xml`
     const 目标 = await 关联目标(压缩包, 幻灯片路径, 'comments')
@@ -187,7 +200,13 @@ async function 读取批注(压缩包, 幻灯片列表, 警告) {
       const 解析 = 解析批注Xml(xml)
       if (解析.警告) 警告.add('批注未完整导入')
       for (const 项 of 解析.列表) {
-        const 元数据 = 扩展表.get(`${序号 + 1}|${项.索引}`)
+        const 扩展键 = `${序号 + 1}|${项.索引}`
+        const 元数据 = 扩展表.get(扩展键)
+        if (元数据) {
+          已用扩展键.add(扩展键)
+          // 回复缺少时间会被模型拒绝，这里必须提示而不是静默少一条回复
+          if ((元数据.回复 ?? []).some(回复 => !回复.时间)) 警告.add('批注未完整导入')
+        }
         结果.push({
           id: 元数据?.id || `批注-s${序号 + 1}-${项.索引}`,
           页标识: 幻灯片列表[序号].id,
@@ -201,6 +220,8 @@ async function 读取批注(压缩包, 幻灯片列表, 警告) {
       }
     }
   }
+  // 扩展部件里存在无法对应到原生批注的条目（外部改写、索引变化或引用已删除页面）时必须提示风险
+  if ([...扩展表.keys()].some(键 => !已用扩展键.has(键))) 警告.add('批注未完整导入')
   return 结果
 }
 

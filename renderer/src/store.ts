@@ -924,7 +924,17 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       if (!原值) throw new Error('演示编辑状态缺失，已阻止覆盖文件')
       const 新值 = typeof 更新 === 'function' ? 更新(原值) : 更新
       try {
-        return { ...当前, [标识]: 迁移演示文稿(新值) }
+        const 迁移后 = 迁移演示文稿(新值)
+        // 定稿是只读标记：只放行「定稿标记本身的解除」（以及文件名、浏览页码一类非正文变化），
+        // 其他直接写库的正文修改一律阻止，避免助手或其它入口绕过编辑器只读状态。
+        if (原值.定稿) {
+          const 归一 = (模型: 演示文稿) => ({ ...模型, 定稿: 原值.定稿, name: 原值.name })
+          if (演示内容快照(归一(迁移后)) !== 演示内容快照(归一(原值))) {
+            弹窗.warning({ title: '演示修改已阻止', content: '本文稿已标记定稿，请先在审阅面板选择「继续编辑」再修改正文' })
+            return 当前
+          }
+        }
+        return { ...当前, [标识]: 迁移后 }
       } catch (错误) {
         弹窗.warning({ title: '演示修改已阻止', content: 错误 instanceof Error ? 错误.message : '演示模型无效' })
         return 当前
