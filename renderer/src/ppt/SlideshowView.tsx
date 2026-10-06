@@ -9,7 +9,8 @@ import { createPortal } from 'react-dom'
 import { App as AntdApp } from 'antd'
 import { 桥接 } from '../ipc/bridge'
 import { 标记放映开始 } from './presentationState'
-import { 画布宽, 画布高, type 演示文稿 } from './deck'
+import type { 演示文稿 } from './deck'
+import { 读取页面尺寸 } from './model/themes'
 
 interface Props {
   图片地址?: 图片地址表
@@ -112,7 +113,8 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址 }
   }, [])
   const 总页数 = 文稿.幻灯片列表.length
   const 安全索引 = 状态?.索引 ?? Math.min(Math.max(当前索引, 0), Math.max(0, 总页数 - 1))
-  const 缩放 = Math.min(视口尺寸.宽 / 画布宽, 视口尺寸.高 / 画布高)
+  const 页面尺寸 = 读取页面尺寸(文稿)
+  const 缩放 = Math.min(视口尺寸.宽 / 页面尺寸.宽, 视口尺寸.高 / 页面尺寸.高)
 
   const 前进 = () => 控制器.current?.单击()
   const 后退 = () => 控制器.current?.后退()

@@ -1,7 +1,7 @@
 // 幻灯片缩略图列表与演示状态栏。
 import React from 'react'
 import Icon from '../components/Icon'
-import { SlidePreview } from './PptViews'
+import { SlidePreview, 预览页属性 } from './PptViews'
 import type { 图片地址表 } from './render/SlideObjects'
 import { 读取当前幻灯片, type 演示文稿 } from './deck'
 
@@ -36,7 +36,7 @@ export const ThumbnailList = ({ 文稿, on选中, on新建, 图片地址 }: List
         React.createElement(
           'div',
           { className: 'wps-ppt-thumb__canvas', style: { background: 幻灯片.背景色 } },
-          React.createElement(SlidePreview, { 幻灯片, 图片地址 })
+          React.createElement(SlidePreview, { 幻灯片, 图片地址, ...预览页属性(文稿, 幻灯片, 索引) })
         )
       )
     ),

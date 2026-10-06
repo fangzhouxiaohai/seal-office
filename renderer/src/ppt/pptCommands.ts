@@ -1,6 +1,7 @@
 import { 读取切换 } from './model/transitions'
 import { 原生插入命令 } from './commands/insert'
 import { 审阅命令 } from './commands/review'
+import { 设计命令 } from './commands/design'
 // 演示文稿命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
 import {
   创建文本框,
@@ -37,6 +38,10 @@ export interface 演示命令上下文 {
   /** 当前功能无法可靠保存时，用统一弹窗说明限制。 */
   提示功能限制?: (标题: string, 内容: string) => void
   切换视图?: (视图: '普通' | '浏览' | '备注') => void
+  /** 打开右侧设计面板；预览类结果只进入面板，不写入文稿 */
+  打开设计面板?: (面板: '主题' | '母版' | '检查' | null) => void
+  /** 预览回调：主题悬停与美化预览都只更新界面候选，不产生未保存标记 */
+  通知预览?: (主题: import('./model/themes').主题定义 | null, 数量: number) => void
   /** 撤销与重做由容器实现，命令只负责派发 */
   撤销: () => void
   重做: () => void
@@ -541,6 +546,7 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
 }, {})
 原生插入命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 审阅命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
+设计命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
 /** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
 export const 演示未实现清单: Array<[string, string]> = []

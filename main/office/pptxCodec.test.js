@@ -128,12 +128,21 @@ describe('演示文稿格式保真', () => {
   })
 
   it.each([
-    ['非宽屏', '9144000', '6858000'],
-    ['同宽高比但物理尺寸不同', '9144000', '5143500'],
-  ])('%s演示需提示尺寸无法完整导入', async (_名称, 宽, 高) => {
+    ['4:3 尺寸', '9144000', '6858000', { 宽: 720, 高: 540 }],
+    ['相同宽高比但物理尺寸不同', '9144000', '5143500', { 宽: 720, 高: 405 }],
+  ])('%s演示按实际页面尺寸完整导入', async (_名称, 宽, 高, 期望尺寸) => {
     const 压缩包 = await JSZip.loadAsync(await 构造有效演示([空白幻灯片]))
     const 清单 = await 压缩包.file('ppt/presentation.xml').async('string')
     压缩包.file('ppt/presentation.xml', 清单.replace('</p:presentation>', `<p:sldSz cx="${宽}" cy="${高}"/></p:presentation>`))
+    const 结果 = await 读取pptx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.警告).not.toContain('页面尺寸未完整导入')
+    expect(结果.演示文稿.页面尺寸).toEqual(期望尺寸)
+  })
+
+  it('页面尺寸节点损坏时保留明确警告', async () => {
+    const 压缩包 = await JSZip.loadAsync(await 构造有效演示([空白幻灯片]))
+    const 清单 = await 压缩包.file('ppt/presentation.xml').async('string')
+    压缩包.file('ppt/presentation.xml', 清单.replace('</p:presentation>', '<p:sldSz cx="0" cy="0"/></p:presentation>'))
     const 结果 = await 读取pptx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
     expect(结果.警告).toContain('页面尺寸未完整导入')
   })
