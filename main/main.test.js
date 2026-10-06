@@ -19,7 +19,7 @@ function 加载关闭保护(打包状态 = false, 关闭状态查询 = null) {
       whenReady: () => new Promise(() => {}),
       getVersion: () => '1.6.3',
     },
-    BrowserWindow: { fromWebContents: (网页) => 窗口映射.get(网页) ?? null },
+    BrowserWindow: { fromWebContents: (网页) => 窗口映射.get(网页) ?? null, getAllWindows: () => [] },
     Menu: { setApplicationMenu: vi.fn() },
     dialog: { showMessageBoxSync: 系统默认弹窗 },
   }
@@ -72,6 +72,18 @@ function 创建测试窗口(窗口映射) {
 }
 
 describe('主进程窗口关闭保护', () => {
+  it('窗口销毁后访问 webContents 抛错也不会中断退出链路', () => {
+    const { 主进程 } = 加载关闭保护(false, null)
+    const 已销毁窗口 = {
+      // 真实 Electron 在窗口销毁后访问 webContents 会抛「Object has been destroyed」
+      get webContents() { throw new Error('Object has been destroyed') },
+      isDestroyed: () => true,
+    }
+    let 结果
+    expect(() => { 结果 = 主进程.清理已关闭窗口(已销毁窗口) }).not.toThrow()
+    expect(结果).toEqual({ 视图编号: null, 剩余窗口数: 0 })
+  })
+
   it('自定义确认仍在等待时连续关闭不重复核验或弹窗，取消后可再次检查', async () => {
     const 查询 = vi.fn().mockResolvedValue({ 未保存数量: 1, 备份成功: true })
     const { 主进程, 窗口映射, 显示确认框 } = 加载关闭保护(false, 查询)

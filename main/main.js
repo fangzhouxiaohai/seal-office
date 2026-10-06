@@ -147,11 +147,24 @@ function 创建窗口(选项 = {}) {
   if (app.isPackaged) 窗口.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   else 加载开发服务(窗口, 0)
   窗口.on('closed', () => {
-    窗口身份表.delete(窗口.webContents?.id)
-    if (主窗口 === 窗口) 主窗口 = BrowserWindow.getAllWindows()[0] ?? null
-    if (BrowserWindow.getAllWindows().length === 0) app.isWindowClosed = true
+    清理已关闭窗口(窗口)
   })
   return 窗口
+}
+
+/**
+ * 窗口关闭后的收尾：注销会话身份、更新主窗口引用与退出标志。
+ * 关闭后再访问 webContents 会抛出「对象已被销毁」；在退出链路上抛异常会让进程无法结束
+ * （真实成品实测：1.7.3 关闭后 2 秒退出，带该异常时进程一直驻留），因此这里必须容错。
+ */
+function 清理已关闭窗口(窗口) {
+  let 视图编号
+  try { 视图编号 = 窗口.webContents?.id } catch { 视图编号 = undefined }
+  if (视图编号 !== undefined) 窗口身份表.delete(视图编号)
+  const 剩余窗口 = BrowserWindow.getAllWindows().filter((项) => !项.isDestroyed?.())
+  if (主窗口 === 窗口) 主窗口 = 剩余窗口[0] ?? null
+  if (剩余窗口.length === 0) app.isWindowClosed = true
+  return { 视图编号: 视图编号 ?? null, 剩余窗口数: 剩余窗口.length }
 }
 
 /** 会话变更广播：只发给同一文稿的其他窗口，来源窗口由会话调用方标识 */
@@ -209,4 +222,4 @@ if (!获得单实例锁) {
   })
 }
 
-module.exports = { 安装关闭保护, 安装导航保护, 创建窗口, 广播会话变更, 建立窗口管理器 }
+module.exports = { 安装关闭保护, 安装导航保护, 创建窗口, 广播会话变更, 建立窗口管理器, 清理已关闭窗口 }
