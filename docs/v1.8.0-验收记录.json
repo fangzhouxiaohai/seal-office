@@ -72,8 +72,22 @@
     }
   ],
   "发布": {
-    "结果": "待推送",
-    "说明": "阻塞缺陷已修复并复验，三个成品形态通过；下一步快进 main 并打标签推送。"
+    "结果": "已推送到 origin（gitcode）；github 因网络不可达未推送",
+    "提交": "25b1cdc",
+    "标签": "v1.8.0",
+    "origin": {
+      "远端": "https://gitcode.com/gcw_pGfMiWVg/seal-office.git",
+      "main": "25b1cdcbc3cb8fc3083699eca1bd474cd1424ae3",
+      "标签对象": "16a6bbb3ad83f6c4bf3a2f32ff100c09186f733f",
+      "结果": "已推送并复核"
+    },
+    "github": {
+      "远端": "https://github.com/fangzhouxiaohai/seal-office.git",
+      "结果": "未推送",
+      "原因": "本机无法连接 github.com:443（Test-NetConnection 返回 False，两次推送均在约 21 秒后连接超时）；属环境网络限制，非仓库问题",
+      "后续": "网络可达时执行 git push github main --tags，并把安装版与便携版上传到发布页"
+    },
+    "附件位置": "E:\\DevCache\\worktrees\\ppt-integration\\release\\v1.8.0（SealOffice Setup 1.8.0.exe、SealOffice 1.8.0.exe）"
   },
   "限制": {
     "外部办公软件": "本机未安装 Microsoft PowerPoint；外部核验一律为 WPS Office（兼容接口自报名称 Microsoft PowerPoint，Version 12.0 / Build 12.1.0.26895）。",
