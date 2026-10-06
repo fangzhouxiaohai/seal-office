@@ -90,6 +90,23 @@ it('只读状态下批注面板仍可查看，但不可改写', async () => {
   expect(screen.getByLabelText('批注内容')).toBeDisabled()
 })
 
+it('设计面板不会泄漏到其它标签页，切回后仍可使用', async () => {
+  准备桥接()
+  渲染演示()
+  fireEvent.click(screen.getByRole('tab', { name: '设计' }))
+  fireEvent.click(功能区按钮('主题面板'))
+  expect(await screen.findByRole('complementary', { name: '设计主题面板' })).toBeInTheDocument()
+
+  // 切到工具标签：设计面板必须让位给工具面板，不能继续占着右侧区域
+  fireEvent.click(screen.getByRole('tab', { name: '工具' }))
+  expect(screen.queryByRole('complementary', { name: '设计主题面板' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('complementary', { name: '工具面板' })).toBeInTheDocument()
+
+  // 切回设计标签：仍是之前打开的主题面板
+  fireEvent.click(screen.getByRole('tab', { name: '设计' }))
+  expect(await screen.findByRole('complementary', { name: '设计主题面板' })).toBeInTheDocument()
+})
+
 it('功能区「文档定稿」打开定稿面板，定稿后编辑器进入只读并可继续编辑', async () => {
   const { 状态, 标识 } = await 准备编辑器()
   await userEvent.click(await screen.findByRole('tab', { name: '审阅' }))
