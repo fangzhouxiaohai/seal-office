@@ -18,3 +18,22 @@ it('复制页面重映射动画目标，删除目标同步清除动画', () => {
   const 文稿=创建演示文稿(), 页=文稿.幻灯片列表[0]; 页.动画序列=[{id:'动画',对象标识:页.文本框列表[0].id,效果:'出现',触发:'单击',持续毫秒:0}]
   const 副本=复制幻灯片(文稿,页.id).幻灯片列表[1]; expect(副本.动画序列![0].对象标识).toBe(副本.文本框列表[0].id); expect(删除文本框(页,页.文本框列表[0].id).动画序列).toEqual([])
 })
+it('旧动画预览局部提示，可明确清除后重新设置', async () => {
+  const 文稿=创建演示文稿(), 页=文稿.幻灯片列表[0], 修改=vi.fn(); 页.动画='淡入'
+  const {rerender}=render(<App><AnimationPanel 文稿={文稿} 页={页} 选中={页.文本框列表[0].id} 只读={false} on修改={修改}/></App>)
+  fireEvent.click(screen.getByRole('button',{name:'预览当前页切换与动画'}))
+  expect((await screen.findAllByText('播放预览失败')).length).toBeGreaterThan(0)
+  expect(screen.getByRole('complementary',{name:'切换与动画设置'})).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button',{name:'清除旧动画设置'}))
+  const 新稿=修改.mock.calls[0][0]
+  expect(新稿.幻灯片列表[0].动画).toBeUndefined()
+  rerender(<App><AnimationPanel 文稿={新稿} 页={新稿.幻灯片列表[0]} 选中={页.文本框列表[0].id} 只读={false} on修改={修改}/></App>)
+  fireEvent.click(screen.getByRole('button',{name:'添加对象动画'}))
+  expect(修改.mock.calls[1][0].幻灯片列表[0].动画序列).toHaveLength(1)
+})
+it('只读旧动画不能清除', () => {
+  const 文稿=创建演示文稿(), 页=文稿.幻灯片列表[0], 修改=vi.fn(); 页.动画='淡入'
+  render(<App><AnimationPanel 文稿={文稿} 页={页} 只读 on修改={修改}/></App>)
+  const 清除=screen.getByRole('button',{name:'清除旧动画设置'})
+  expect(清除).toBeDisabled();fireEvent.click(清除);expect(修改).not.toHaveBeenCalled()
+})

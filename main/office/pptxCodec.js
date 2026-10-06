@@ -161,8 +161,11 @@ async function 读取幻灯片备注(压缩包, 幻灯片路径, 警告) {
   return 段落.join('\n').replace(/\r\n?/g, '\n')
 }
 
+function 读取Xml属性表(标签) {
+  return Object.fromEntries([...标签.matchAll(/\s([\w:.-]+)\s*=\s*(["'])([\s\S]*?)\2/g)].map(匹配 => [匹配[1], 解码(匹配[3])]))
+}
 function 读取Xml属性(标签, 名称) {
-  return 标签.match(new RegExp(`\\b${名称}\\s*=\\s*(["'])(.*?)\\1`, 'i'))?.[2] ?? null
+  return 读取Xml属性表(标签)[名称] ?? null
 }
 
 /** 严格检查完整清单，零页演示也必须拥有唯一、配对的根节点。 */
@@ -229,8 +232,9 @@ async function 读取pptx(数据) {
   const 资源表 = new Map()
   const 放映属性 = await 压缩包.file('ppt/presProps.xml')?.async('string') ?? ''
   const 放映节点 = 放映属性.match(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/)?.[0] ?? ''
+  const 放映设置 = 读取Xml属性表(放映节点.slice(0,放映节点.indexOf('>')+1))
   if (放映节点) {
-    const 属性 = Object.fromEntries([...放映节点.slice(0,放映节点.indexOf('>')+1).matchAll(/([\w:]+)="([^"]*)"/g)].map(m=>[m[1],m[2]]))
+    const 属性 = 放映设置
     const 内容 = 放映节点.replace(/^<p:showPr[^>]*>/,'').replace(/<\/p:showPr>$/,'').replace(/<p:(?:present|sldAll)\s*\/>/g,'').trim()
     if (内容 || Object.keys(属性).some(k=>!['loop','useTimings'].includes(k)) || (属性.useTimings !== undefined && !['1','true'].includes(属性.useTimings)) || (属性.loop !== undefined && !['0','1','true','false'].includes(属性.loop))) 警告.add('全局放映设置未完整导入')
   }
@@ -269,7 +273,7 @@ async function 读取pptx(数据) {
   return {
     演示文稿: {
       id: 'deck-imported',
-      循环放映: /<p:showPr\b[^>]*loop="(?:1|true)"/.test(放映属性),
+      循环放映: ['1','true'].includes(放映设置.loop),
       name: '导入演示文稿',
       幻灯片列表,
       当前索引: 0,
@@ -308,7 +312,7 @@ function 解析幻灯片Xml(xml, 序号, 页面标识) {
     背景色,
     ...(过渡效果 ? { 过渡效果 } : {}),
     ...(读取切换(xml).切换 ? { 切换: 读取切换(xml).切换, 换片: 读取切换(xml).换片 } : {}),
-    ...(/<p:sld\b[^>]*show="(?:0|false)"/.test(xml) ? { 隐藏: true } : {}),
+    ...(['0','false'].includes(读取Xml属性(xml.match(/<p:sld\b[^>]*>/)?.[0] ?? '', 'show')) ? { 隐藏: true } : {}),
     文本框列表,
   }
 }

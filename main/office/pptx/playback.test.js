@@ -1,6 +1,22 @@
 const { 写入pptx, 读取pptx } = require('../pptxCodec')
 const JSZip = require('jszip')
 const 页 = (效果) => ({ id: '页', 背景色: '#FFFFFF', 文本框: [{ id: '文字', text: '播放核验', x: 50, y: 60, width: 300, height: 100, 字号: 24 }], 切换: { 效果, 持续毫秒: 750, 方向: '右', 方式: '内', 轴: '垂直' }, 换片: { 单击: false, 自动毫秒: 2300 }, 隐藏: true })
+it.each(["'", '"'])('合法引号 %s 与属性空白保留循环和隐藏状态', async 引号 => {
+  const zip = await JSZip.loadAsync(await 写入pptx({幻灯片:[页('无')],循环放映:true}))
+  for (const 路径 of ['ppt/presProps.xml','ppt/slides/slide1.xml']) {
+    const xml = await zip.file(路径).async('string')
+    zip.file(路径, xml.replace(/\b(loop|useTimings|show)="([^"]*)"/g, (_, 名称, 值) => `${名称} \n=\t${引号}${值}${引号}`))
+  }
+  const 结果 = await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))
+  expect(结果.演示文稿.循环放映).toBe(true)
+  expect(结果.演示文稿.幻灯片列表[0].隐藏).toBe(true)
+  expect(结果.警告).toEqual([])
+})
+it.each(["useTimings = '0'", "useTimings = 'false'", "useTimings='1' showAnimation = '0'"])('单引号全局风险属性 %s 必须告警', async 属性 => {
+  const zip = await JSZip.loadAsync(await 写入pptx({幻灯片:[页('无')],循环放映:true}))
+  zip.file('ppt/presProps.xml',(await zip.file('ppt/presProps.xml').async('string')).replace('useTimings="1"',属性))
+  expect((await 读取pptx(await zip.generateAsync({type:'nodebuffer'}))).警告).toContain('全局放映设置未完整导入')
+})
 it.each(['切换','换片'])('写入时拒绝显式空%s设置', async 键 => {
   await expect(写入pptx({幻灯片:[{...页('无'),[键]:null}]})).rejects.toThrow('参数')
 })

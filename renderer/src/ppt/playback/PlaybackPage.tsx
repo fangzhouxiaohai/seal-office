@@ -24,7 +24,7 @@ function 对象画面({ 页, 状态, 图片地址 }: { 页: 幻灯片; 状态: �
     const 节点 = Array.from(根.current?.querySelectorAll<HTMLElement>('[data-框标识],[data-对象标识]') ?? [])
     for (const a of 页.动画序列 ?? []) if (状态.活动动画.includes(a.id)) {
       const 元素 = 节点.find(n => (n.getAttribute('data-框标识') ?? n.getAttribute('data-对象标识')) === a.对象标识)
-      if (元素) { const 动画 = 运行帧(元素, 动画帧(a.效果,减少动态,画布高-parseFloat(元素.style.top)),a.持续毫秒); if (动画) 活动.current.push(动画) }
+      if (元素) { const 动画 = 运行帧(元素, 动画帧(a.效果,减少动态,画布高-parseFloat(元素.style.top)),a.持续毫秒); if (动画) { if (状态.暂停) 动画.pause(); 活动.current.push(动画) } }
     }
     return () => { 活动.current.forEach(a => a.cancel()); 活动.current = [] }
   }, [状态.活动动画.join(','), 状态.页代次, 页, 减少动态])
@@ -40,7 +40,7 @@ export function 播放画面({ 文稿, 状态, 缩放, 图片地址 }: { 文稿:
   React.useLayoutEffect(() => {
     if (状态.阶段 !== '切换') return
     for (const [元素, 帧] of [[当前.current, 切换帧(设置,减少动态)], [旧页.current, 离页帧(设置,减少动态)]] as const) {
-      if (元素) { const a = 运行帧(元素,帧,设置.持续毫秒); if (a) 动画.current.push(a) }
+      if (元素) { const a = 运行帧(元素,帧,设置.持续毫秒); if (a) { if (状态.暂停) a.pause(); 动画.current.push(a) } }
     }
     return () => { 动画.current.forEach(a=>a.cancel()); 动画.current=[] }
   }, [状态.页代次, 状态.阶段 === '切换'])
