@@ -1,18 +1,18 @@
 # 海豹办公 Seal Office
 
-海豹办公是面向 Windows 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面参考 WPS 常见的布局与操作习惯；Office 文件只支持部分格式和对象往返，基础功能范围见[WPS 对标与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，段落排版支持见[1.6.5 修复说明](docs/v1.6.5-段落排版保存修复.md)，图片支持见[1.6.6 修复说明](docs/v1.6.6-文档图片保存修复.md)，最新弹窗行为见[1.6.7 修复说明](docs/v1.6.7-打开恢复与统一弹窗.md)。
+海豹办公是面向 Windows 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面参考 WPS 常见的布局与操作习惯；Office 文件只支持部分格式和对象往返，基础功能范围见[WPS 对标与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，本版新建弹窗、打印和模板内容见[1.8.1 升级说明](docs/v1.8.1-打印与模板升级.md)。
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
 ## Windows 下载
 
-当前版本：**1.7.3**，适用于 Windows x64。
+当前版本：**1.8.1**，适用于 Windows x64。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice.1.7.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.3/SealOffice.1.7.3.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice.Setup.1.7.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.7.3/SealOffice.Setup.1.7.3.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
-| 发布说明 | [v1.7.3 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.7.3)，包含右键新建修复与文件校验值。 |
+| 便携版 | [SealOffice 1.8.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.1/SealOffice%201.8.1.exe)，下载后直接运行。 |
+| 安装版 | [SealOffice Setup 1.8.1.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.1/SealOffice%20Setup%201.8.1.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
+| 发布说明 | [v1.8.1 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.8.1)，包含新建弹窗、打印与模板升级。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -24,7 +24,7 @@
 
 Windows 资源管理器可能缓存旧的新建方式；安装或升级后若仍生成旧式空文件，请先结束正在进行的文件操作，再重启资源管理器或注销 Windows。已经生成的零字节办公文件不含文档结构，需在菜单更新后重新新建；程序明确说明原因，不用空白正文掩盖损坏。
 
-本版本通过 1,577 项自动化测试、77 项原生注册检查，并对解包版、便携版和本机安装目录分别执行三次启动验收。七类文件均由资源管理器实际新建；DOCX、XLSX、PPTX 验证实际编辑、保存与重开，安装目录额外验证带文件冷启动及向已有窗口打开文件。详见[1.7.3 验收记录](docs/v1.7.3-验收记录.json)。
+1.7.3 通过 1,577 项自动化测试、77 项原生注册检查，并对解包版、便携版和本机安装目录分别执行三次启动验收。七类文件均由资源管理器实际新建；DOCX、XLSX、PPTX 验证实际编辑、保存与重开，安装目录额外验证带文件冷启动及向已有窗口打开文件。详见[1.7.3 验收记录](docs/v1.7.3-验收记录.json)。
 
 仅安装后第一次启动检查 DOCX、XLSX、PPTX、PDF 的实际默认程序。尚未全部关联时显示统一确认弹窗；确认进入海豹办公的系统默认程序页面，取消直接继续使用。两种选择之后均不再主动询问，升级不重复提示，卸载后重新安装可重新检查一次。
 

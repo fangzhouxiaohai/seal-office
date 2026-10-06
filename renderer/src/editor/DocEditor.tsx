@@ -8,6 +8,7 @@ import { 命令表, type CommandContext, type InsertableKind, type ViewState, ty
 import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
+import { 桥接 } from '../ipc/bridge'
 import { 检查文本 } from './spellCheck'
 import { 提取大纲 } from './toc'
 import NavigationPane from './NavigationPane'
@@ -709,6 +710,15 @@ const DocEditor = () => {
   }
 
   const 执行命令 = (命令标识: string, 参数?: string): void => {
+    if (命令标识 === 'file.print') {
+      const 正文 = 编辑区引用.current?.innerHTML
+      if (!正文) { message.warning('文档为空，无法打印'); return }
+      const 名称 = 当前文档?.name ?? '未命名文档'
+      void 桥接.printDocument(导出为Html(名称, 正文), 'html').then((结果) => {
+        if (!结果.成功 && !结果.已取消) modal.error({ title: '打印失败', content: 结果.错误 || '无法启动打印任务' })
+      }).catch((错误: unknown) => { modal.error({ title: '打印失败', content: 错误 instanceof Error ? 错误.message : '无法启动打印任务' }) })
+      return
+    }
     const 命令 = 命令表[命令标识]
     if (命令 === undefined) {
       modal.error({ title: '操作失败', content: '该功能未正确加载，请重新打开文档后重试。', okText: '确定' })
@@ -729,10 +739,14 @@ const DocEditor = () => {
     const 在输入框 = 目标 !== null && (目标.tagName === 'INPUT' || 目标.tagName === 'TEXTAREA')
     const 小写键 = 事件.key.toLowerCase()
     // 查找面板等输入框内只放行保存，格式类快捷键不作用于输入文字
-    if (在输入框 && 小写键 !== 's') {
+    if (在输入框 && 小写键 !== 's' && 小写键 !== 'p') {
       return
     }
     switch (小写键) {
+      case 'p':
+        事件.preventDefault()
+        执行命令('file.print')
+        break
       case 'b':
         事件.preventDefault()
         执行格式化('bold')

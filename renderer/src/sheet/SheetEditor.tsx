@@ -540,6 +540,14 @@ const SheetEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    if (标识 === 'file.print') {
+      const 内容 = 导出为Html表格(工作表, 工作表.name)
+      if (!内容) { message.warning('当前工作表为空，无法打印'); return }
+      void 桥接.printDocument(内容, 'html').then((结果) => {
+        if (!结果.成功 && !结果.已取消) 提示文件错误('打印失败', 结果.错误 || '无法启动打印任务')
+      }).catch((错误: unknown) => { 提示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法启动打印任务') })
+      return
+    }
     if (工作表.保护 && !(
       标识 === 'review.protect' || 标识 === 'clipboard.copy' ||
       标识 === 'edit.undo' || 标识 === 'edit.redo' || 标识 === 'edit.find' || 标识 === 'edit.selectAll' || 标识 === 'spell.check' ||
@@ -950,6 +958,13 @@ const SheetEditor = () => {
         }
         break
       // ---- 保存 / 查找 ----
+      case 'p':
+        if (事件.ctrlKey || 事件.metaKey) {
+          事件.preventDefault()
+          执行命令('file.print')
+          return
+        }
+        break
       case 's':
         if (事件.ctrlKey || 事件.metaKey) {
           事件.preventDefault()

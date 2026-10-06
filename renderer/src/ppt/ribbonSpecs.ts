@@ -44,6 +44,7 @@ const 开始标签: RibbonTabSpec = {
         大('file.open', '打开', 'open'),
         大('file.save', '保存', 'save'),
         大('file.saveAs', '另存为', 'save-as'),
+        大('file.print', '打印', 'pdf'),
       ],
     },
     {

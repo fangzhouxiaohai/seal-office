@@ -1,6 +1,6 @@
 // 首页左侧导航栏：新建/打开按钮、最近/星标/共享及本地工具。
-import React from 'react'
-import { Button, Dropdown } from 'antd'
+import React, { useState } from 'react'
+import { Button, Modal } from 'antd'
 import Icon from './Icon'
 
 interface Props {
@@ -34,22 +34,12 @@ const 本地项 = [
 ]
 
 const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile, onNotify, onOpenPdf, onOpenHelp }: Props) => {
-  const 新建菜单 = {
-    items: [
-      { key: 'word', label: '新建文字' },
-      { key: 'table', label: '新建表格' },
-      { key: 'ppt', label: '新建演示' },
-      { type: 'divider' as const },
-      { key: 'template', label: '从模板新建' },
-    ],
-    onClick: ({ key }: { key: string }) => {
-      if (key === 'template') {
-        onOpenTemplate()
-        return
-      }
-      onNewDoc(key as 'word' | 'table' | 'ppt')
-    },
-  }
+  const [新建弹窗打开, 设新建弹窗打开] = useState(false)
+  const 新建选项 = [
+    { 类型: 'word' as const, 标题: '文字文档', 描述: '撰写报告、简历和公文', 图标: 'doc-word' },
+    { 类型: 'table' as const, 标题: '电子表格', 描述: '整理数据、计算和统计', 图标: 'doc-table' },
+    { 类型: 'ppt' as const, 标题: '演示文稿', 描述: '制作汇报和培训课件', 图标: 'doc-ppt' },
+  ]
 
   const 渲染导航项 = (项: { key: string; label: string; icon: string }, 占位: boolean) =>
     React.createElement(
@@ -81,15 +71,11 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
     React.createElement(
       'div',
       { className: 'wps-homesidebar__actions' },
-      React.createElement(
-        Dropdown,
-        { menu: 新建菜单, trigger: ['click'] },
-        React.createElement(
-          Button,
-          { type: 'primary', size: 'large', block: true, icon: React.createElement(Icon, { name: 'plus', size: 14 }) },
-          '新建'
-        )
-      ),
+      React.createElement(Button, {
+        type: 'primary', size: 'large', block: true,
+        icon: React.createElement(Icon, { name: 'plus', size: 14 }),
+        onClick: () => 设新建弹窗打开(true),
+      }, '新建'),
       React.createElement(
         Button,
         {
@@ -170,7 +156,22 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
       { className: 'wps-homesidebar__local-note' },
       React.createElement('strong', null, '本地文档'),
       React.createElement('span', null, '当前文件保存在本机，请定期备份。')
-    )
+    ),
+    React.createElement(Modal, {
+      title: '新建文档', open: 新建弹窗打开, centered: true, footer: null,
+      width: 640, onCancel: () => 设新建弹窗打开(false),
+      destroyOnHidden: true,
+    }, React.createElement('div', { className: 'wps-newdoc-options' },
+      ...新建选项.map((选项) => React.createElement('button', {
+        key: 选项.类型, type: 'button', className: 'wps-newdoc-option',
+        onClick: () => { 设新建弹窗打开(false); onNewDoc(选项.类型) },
+      }, React.createElement(Icon, { name: 选项.图标, size: 32 }),
+      React.createElement('strong', null, 选项.标题), React.createElement('span', null, 选项.描述))),
+      React.createElement('button', { type: 'button', className: 'wps-newdoc-option wps-newdoc-option--template',
+        onClick: () => { 设新建弹窗打开(false); onOpenTemplate() },
+      }, React.createElement(Icon, { name: 'grid', size: 32 }),
+      React.createElement('strong', null, '模板库'), React.createElement('span', null, '从现成内容开始编辑'))
+    ))
   )
 }
 

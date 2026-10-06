@@ -393,6 +393,11 @@ const PptEditor = () => {
   }
   const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
   放映键处理引用.current = (事件: KeyboardEvent) => {
+    if ((事件.ctrlKey || 事件.metaKey) && 事件.key.toLowerCase() === 'p') {
+      事件.preventDefault()
+      执行命令('file.print')
+      return
+    }
     if (事件.key !== 'F5') {
       return
     }
@@ -782,6 +787,16 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    if (标识 === 'file.print') {
+      try {
+        const 内容 = 导出为Html预览(文稿, 文稿.name, 图片地址)
+        if (!内容) { message.warning('演示文稿为空，无法打印'); return }
+        void 桥接.printDocument(内容, 'html').then((结果) => {
+          if (!结果.成功 && !结果.已取消) 显示文件错误('打印失败', 结果.错误 || '无法启动打印任务')
+        }).catch((错误: unknown) => 显示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法启动打印任务'))
+      } catch (错误) { 显示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法准备打印内容') }
+      return
+    }
     // 智能面板入口只切换右侧面板，不属于正文修改，只读状态同样允许查看。
     if (标识 === 'review.translate' || 标识 === 'review.proofread') { set当前标签('review'); set审阅区域('翻译'); return }
     if (标识 === 'slideshow.narrate') { set当前标签('slideshow'); set智能面板('讲稿'); return }

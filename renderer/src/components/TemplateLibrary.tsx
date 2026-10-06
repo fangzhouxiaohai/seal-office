@@ -48,6 +48,7 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
         <Button type="link" onClick={() => set预览模板(null)}>返回模板库</Button>
         <h3>{预览模板.名称}</h3>
         <p>{预览模板.描述}</p>
+        {预览模板.分类 === 'ppt' && <p>使用后将创建含封面、内容和行动页的可编辑演示文稿。</p>}
         <div className="template-library__document" dangerouslySetInnerHTML={{ __html: 净化富文本(预览模板.内容) }} />
       </div> : <div className="template-library">
         <div className="template-library__filters" role="group" aria-label="模板分类">
@@ -58,6 +59,9 @@ const TemplateLibrary = ({ 打开 = false, 关闭, onSelect }: 模板库Props) =
         <div className="template-library__grid">
           {过滤模板.map((模板) => (
             <article className="template-library__card" key={模板.id}>
+              <div className={`template-library__thumb template-library__thumb--${模板.分类}`} aria-hidden="true">
+                <div dangerouslySetInnerHTML={{ __html: 净化富文本(模板.内容) }} />
+              </div>
               <div className="template-library__tags"><Tag>{分类名称[模板.分类]}</Tag>{模板.标签?.map((标签) => <Tag key={标签}>{标签}</Tag>)}</div>
               <button type="button" className="template-library__preview-trigger" onClick={() => set预览模板(模板)} aria-label={`预览${模板.名称}`}>
                 <strong>{模板.名称}</strong>

@@ -189,6 +189,7 @@ export interface 电子接口 {
   recentRemove: (路径: string) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   revealInFolder: (路径: string) => Promise<{ 成功: boolean; 错误?: string }>
   exportToPdf: (html: string, 默认文件名: string) => Promise<文件保存结果 & { 已取消?: boolean }>
+  printDocument?: (内容: string, 格式: 'html' | 'pdf') => Promise<{ 成功: boolean; 已取消?: boolean; 错误?: string }>
   reportUnsavedCount: (数量: number) => Promise<{ 成功: boolean; 错误?: string }>
   enterSlideshowFullscreen: () => Promise<放映全屏结果>
   exitSlideshowFullscreen: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
@@ -336,6 +337,8 @@ export const 桥接 = {
   recentRemove: (路径: string) => 取后端()?.recentRemove?.(路径) ?? 失败('当前环境不支持最近文档移除'),
   revealInFolder: (路径: string) => 取后端()?.revealInFolder?.(路径) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持该操作' }),
   exportToPdf: (html: string, 名称: string) => 取后端()?.exportToPdf(html, 名称) ?? 失败('当前环境不支持 PDF 导出'),
+  printDocument: (内容: string, 格式: 'html' | 'pdf'): Promise<{ 成功: boolean; 已取消?: boolean; 错误?: string }> =>
+    取后端()?.printDocument?.(内容, 格式) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持打印' }),
   reportUnsavedCount: (数量: number) => 取后端()?.reportUnsavedCount(数量) ?? 失败('当前环境不支持关闭保护'),
   onCloseStateRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onCloseStateRequested?.(回调) ?? (() => {}),
   respondCloseState: (标识: string, 状态: 关闭状态) => 取后端()?.respondCloseState?.(标识, 状态) ?? 失败('当前环境不支持关闭前核验'),

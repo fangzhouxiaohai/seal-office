@@ -49,14 +49,16 @@ async function 验收() {
       if (错误) throw new Error('成品错误弹窗：' + 错误)
       await 等待片刻(100)
     }
-    throw new Error('成品未达到预期状态：' + 表达式)
+    const 弹窗标题 = await 执行("[...document.querySelectorAll('.ant-modal')].filter(项=>项.getClientRects().length>0).map(项=>项.querySelector('.ant-modal-title,.ant-modal-confirm-title')?.textContent||项.textContent?.slice(0,100))")
+    throw new Error('成品未达到预期状态：' + 表达式 + '；可见弹窗：' + JSON.stringify(弹窗标题))
   }
   const 找按钮 = 名称 => `[...document.querySelectorAll('button')].find(项=>项.textContent.trim()===${JSON.stringify(名称)}||项.getAttribute('aria-label')===${JSON.stringify(名称)})`
+  const 可见弹窗 = "[...document.querySelectorAll('.ant-modal')].some(项=>项.getClientRects().length>0)"
   const 点击 = async 名称 => { await 等待(`Boolean(${找按钮(名称)})&&!(${找按钮(名称)}).disabled`); await 执行(`(${找按钮(名称)}).click()`); await 等待片刻(120) }
   const 截图 = async 名称 => {
     if (!截图目录) return
     fs.mkdirSync(截图目录, { recursive: true })
-    await 等待("!document.querySelector('.ant-message-notice')")
+    for (let 次数 = 0; 次数 < 20 && await 执行("Boolean(document.querySelector('.ant-message-notice'))"); 次数++) await 等待片刻(250)
     await 等待("document.fonts.status==='loaded'"); await 等待片刻(300)
     await 主.执行(`(async()=>{const 图=await globalThis.验收窗口.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});if(图.isEmpty())throw new Error('成品截图为空');process.mainModule.require('fs').writeFileSync(${JSON.stringify(path.join(截图目录, 名称 + '.png'))},图.toPNG());return 图.getSize()})()`)
   }
@@ -109,7 +111,7 @@ async function 验收() {
     检查((await 执行("[...document.querySelectorAll('.wps-recommend__cell [data-file-type]')].map(图=>图.dataset.fileType)")).join(',') === 'word,table,ppt,pdf', '首页四类快捷入口显示专属文件图标')
     if (阶段 === 'repeat') {
       await 等待片刻(1800)
-      检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), '取消后真实进程重启不再弹窗')
+      检查(!await 执行(可见弹窗), '取消后真实进程重启不再弹窗')
       const 调用 = await 主.执行('globalThis.验收关联调用')
       检查(!调用.includes('InspectDefaults'), '后续启动不重复查询默认状态')
     } else {
@@ -117,13 +119,28 @@ async function 验收() {
       检查(true, 阶段 === 'confirm' ? '重新安装新标识恢复一次首次询问' : '首次安装非默认显示自定义确认弹窗')
       await 截图('first-launch-default-app')
       await 点击(阶段 === 'confirm' ? '设为默认程序' : '暂不设置')
-      await 等待("!document.querySelector('.ant-modal')")
+      await 等待(`!(${可见弹窗})`)
       const 地址 = await 主.执行('globalThis.验收默认地址')
       检查(阶段 === 'confirm' ? 地址.length === 1 && 地址[0] === 'ms-settings:defaultapps?registeredAppUser=SealOffice' : 地址.length === 0, 阶段 === 'confirm' ? '确认完成真实应用注册并交给系统专属页面' : '取消没有执行设置默认程序动作')
       const 后续 = await 执行('window.electronAPI.checkDefaultAppPrompt()')
       检查(后续.成功 && !后续.需要询问, '首次选择后不再主动询问')
     }
     if (阶段 === 'first') await 截图('home-file-icons')
+    if (阶段 === 'first') {
+      await 点击('新建')
+      await 等待("document.querySelector('.ant-modal-title')?.textContent==='新建文档'")
+      检查(await 执行("Boolean(document.querySelector('.ant-modal-centered .wps-newdoc-options'))"), '首页新建使用居中弹窗而非下拉菜单')
+      await 截图('new-document-modal')
+      await 执行("document.querySelector('.wps-newdoc-option--template').click()")
+      await 等待("document.querySelector('.ant-drawer-title')?.textContent==='模板库'")
+      检查(await 执行("document.querySelectorAll('.template-library__card').length>=20"), '成品模板库包含丰富的文字、表格和演示模板')
+      await 截图('template-library')
+      await 执行("document.querySelector('button[aria-label=\"预览个人简历\"]').click()")
+      await 等待("document.querySelector('.template-library__document')?.textContent.includes('教育背景')")
+      检查(true, '成品文字模板预览含真实正文')
+      await 执行("document.querySelector('.ant-drawer-close').click()")
+      await 等待("!document.querySelector('.ant-drawer-open')")
+    }
     if (阶段 === 'confirm') {
       await 点击('全局设置')
       await 等待("Boolean([...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='设置'))")
@@ -146,7 +163,9 @@ async function 验收() {
         } else await 点击('打开')
         await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
         await 等待片刻(300)
-        检查(!await 执行("Boolean(document.querySelector('.ant-modal'))||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))"), `${扩展} ${实际新建 ? '资源管理器实际新建文件' : '空白模板'}打开无警告且未误标修改`)
+        检查(!await 执行(`(${可见弹窗})||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))`), `${扩展} ${实际新建 ? '资源管理器实际新建文件' : '空白模板'}打开无警告且未误标修改`)
+        const 打印名称 = 扩展 === 'xlsx' ? '打印当前工作表' : 扩展 === 'pdf' ? '打印 PDF' : '打印'
+        检查(await 执行(`Boolean(${找按钮(打印名称)})`), `${扩展} 打印入口已连接到成品界面`)
         if (关联打开文件 !== '-') 检查(true, `${扩展} 真实安装程序二次启动交给已有窗口打开`)
         if (扩展 !== 'pdf') {
           const 文本 = `右键新建验收：${扩展} 编辑后保存重开`
@@ -172,11 +191,11 @@ async function 验收() {
           await 等待("Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))")
           if (扩展 === 'pptx') await 点击('开始')
           await 点击('保存'); await 等待("!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')")
-          检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), `${扩展} 实际编辑后保存成功`)
+          检查(!await 执行(可见弹窗), `${扩展} 实际编辑后保存成功`)
           await 点击(`关闭 ${名称}`)
           await 执行("document.querySelector('.wps-global-tabs__home').click()")
           await 点击('打开'); await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
-          检查(!await 执行("Boolean(document.querySelector('.ant-modal'))||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))"), `${扩展} 保存重开无导入及未保存误报`)
+          检查(!await 执行(`(${可见弹窗})||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))`), `${扩展} 保存重开无导入及未保存误报`)
           await 等待(内容表达式)
           检查(true, `${扩展} 编辑内容保存重开后完整保留`)
           await 截图('shell-new-' + 扩展)
@@ -191,14 +210,14 @@ async function 验收() {
       await 执行("document.dispatchEvent(new KeyboardEvent('keydown',{key:'F5',bubbles:true}));true")
       await 等待("document.querySelector('.ant-modal-confirm-content')?.textContent==='请先添加至少一张幻灯片，再开始放映。'")
       检查(!await 执行("Boolean(document.querySelector('.wps-slideshow'))"), '零页演示放映友好提示且没有崩溃或进入全屏')
-      await 点击('我知道了'); await 等待("!document.querySelector('.ant-modal')")
+      await 点击('我知道了'); await 等待(`!(${可见弹窗})`)
       await 点击('新建幻灯片'); await 等待("Boolean(document.querySelector('.wps-ppt-canvas'))")
       await 点击('开始')
       await 点击('保存'); await 等待("!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')")
       await 点击('关闭 合法零页演示.pptx')
       await 执行("document.querySelector('.wps-global-tabs__home').click()")
       await 点击('打开'); await 等待("document.body.textContent.includes('第 1 张')")
-      检查(!await 执行("Boolean(document.querySelector('.ant-modal'))"), '零页演示新增后保存重开保留真实一页')
+      检查(!await 执行(可见弹窗), '零页演示新增后保存重开保留真实一页')
     }
     const 信息 = await 执行('window.electronAPI.getAppInfo()'), 完整性 = await 执行('window.electronAPI.checkIntegrity()')
     检查(完整性.成功 && 完整性.完整, '最终成品完整性校验通过')

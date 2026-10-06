@@ -142,6 +142,15 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     }
   }
 
+  const 打印当前文件 = async () => {
+    const 文件 = 文件列表.find((项) => 项.标识 === 预览标识)
+    if (!文件) { 显示错误('无法打印', '请先添加并选择 PDF 文件。'); return }
+    try {
+      const 结果 = await 桥接.printDocument(文件.数据, 'pdf')
+      if (!结果.成功 && !结果.已取消) 显示错误('打印失败', 结果.错误 || '无法启动打印任务')
+    } catch (错误) { 显示错误('打印失败', 错误 instanceof Error ? 错误.message : '无法启动打印任务') }
+  }
+
   const 移除文件 = (标识: string) => {
     const 剩余 = 文件列表.filter((文件) => 文件.标识 !== 标识)
     set文件列表(剩余)
@@ -224,6 +233,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         <div className="pdf-workbench__rail" aria-label="PDF 工具栏">
           <button type="button" className="pdf-workbench__rail-button" aria-label={工具展开 ? '收起 PDF 工具' : '展开 PDF 工具'} title={工具展开 ? '收起工具' : '展开工具'} aria-expanded={工具展开} onClick={() => set工具展开((当前) => !当前)}><Icon name="sliders" size={18} /></button>
           <button type="button" className="pdf-workbench__rail-button" aria-label="添加 PDF 文件" title="添加 PDF 文件" onClick={() => void 添加PDF文件()}><Icon name="plus" size={18} /></button>
+          <button type="button" className="pdf-workbench__rail-button" aria-label="打印 PDF" title="打印 PDF" disabled={!当前文件} onClick={() => void 打印当前文件()}><Icon name="pdf" size={18} /></button>
           {([
             ['extract', 'export-file'],
             ['merge', 'copy'],

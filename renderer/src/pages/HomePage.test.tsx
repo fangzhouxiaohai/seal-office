@@ -16,6 +16,17 @@ const 渲染首页 = () =>
   )
 
 describe('首页（WPS 版式）', () => {
+  it('使用文字模板时正文不是空白文档', async () => {
+    const 状态 = () => {
+      const { activeDocumentId, documents } = useAppStore()
+      const 文档 = documents.find((项) => 项.id === activeDocumentId)
+      return <output data-testid="模板文字">{文档?.html ?? ''}</output>
+    }
+    render(<AntdApp><AppProvider><HomePage 模板库打开 /><状态 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getAllByRole('button', { name: '使用模板' })[0])
+    expect(screen.getByTestId('模板文字')).toHaveTextContent('个人简历')
+    expect(screen.getByTestId('模板文字')).toHaveTextContent('教育背景')
+  })
   it('使用演示模板时创建可编辑的演示文稿', async () => {
     const 状态 = () => {
       const { module, activeDocumentId, 演示文档模型, documents } = useAppStore()

@@ -13,10 +13,11 @@ const 加载模块 = createRequire(import.meta.url)
 const { 生成docx } = 加载模块('../../main/office/docxWriter.js')
 const { 读取docx } = 加载模块('../../main/office/docxReader.js')
 
-/** 通过「新建」下拉选择文档类型（WPS 首页的新建入口为下拉菜单） */
+/** 通过首页居中新建弹窗选择文档类型。 */
 const 通过新建菜单创建 = async (名称: string) => {
-  await userEvent.click(screen.getByText('新建'))
-  await userEvent.click(await screen.findByText(名称))
+  const 选项: Record<string, string> = { 新建文字: '文字文档', 新建表格: '电子表格', 新建演示: '演示文稿' }
+  await userEvent.click(screen.getByRole('button', { name: '新建' }))
+  await userEvent.click(await screen.findByRole('button', { name: new RegExp(选项[名称] ?? 名称) }))
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
@@ -302,7 +303,7 @@ describe('应用外壳（WPS 版式首页）', () => {
   it('从新建菜单打开模板库', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByRole('button', { name: '新建' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: '从模板新建' }))
+    await userEvent.click(await screen.findByRole('button', { name: /模板库/ }))
     expect(await screen.findByRole('dialog', { name: '模板库' })).toBeInTheDocument()
   })
 
@@ -337,7 +338,7 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(screen.getByText('暂无最近文档')).toBeInTheDocument()
   })
 
-  it('通过新建下拉进入文字编辑器并可返回首页', async () => {
+  it('通过新建弹窗进入文字编辑器并可返回首页', async () => {
     const { container } = render(<App 初始最近文档={RECENT_DOCS} />)
     await 通过新建菜单创建('新建文字')
     // 文档模块已由占位页升级为完整编辑器
