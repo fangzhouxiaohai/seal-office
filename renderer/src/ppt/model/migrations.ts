@@ -2,6 +2,8 @@ import { 校验播放参数 } from './transitions'
 import { 校验动画 } from './animations'
 import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
+import { 主题色槽列表, 校验背景填充, 校验主题定义, 校验页脚设置, 校验页面尺寸 } from './themes'
+import { 占位符类型列表, 校验母版列表 } from './masters'
 
 const 是记录 = (值: unknown): 值 is Record<string, unknown> =>
   typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -38,6 +40,11 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
     }
   }
   if (输入.循环放映 !== undefined && typeof 输入.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
+  // 主题、母版、页面尺寸与页脚是可选增量字段：缺失时保持 1.6.9 旧文稿行为
+  if (输入.主题 !== undefined) 校验主题定义(输入.主题)
+  if (输入.母版列表 !== undefined) 校验母版列表(输入.母版列表)
+  if (输入.页面尺寸 !== undefined) 校验页面尺寸(输入.页面尺寸)
+  if (输入.页脚设置 !== undefined) 校验页脚设置(输入.页脚设置)
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
   for (const [序号, 原页] of 输入.幻灯片列表.entries()) {
@@ -45,6 +52,15 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       !['标题幻灯片', '标题和内容', '空白'].includes(String(原页.版式)) ||
       !颜色有效(原页.背景色) || !Array.isArray(原页.文本框列表)) {
       throw new Error(`第 ${序号 + 1} 页模型无效：页面字段或文本框列表缺失`)
+    }
+    if (原页.母版标识 !== undefined && !非空文字(原页.母版标识)) throw new Error(`第 ${序号 + 1} 页母版引用无效`)
+    if (原页.版式标识 !== undefined && !非空文字(原页.版式标识)) throw new Error(`第 ${序号 + 1} 页版式引用无效`)
+    if (原页.主题标识 !== undefined && !非空文字(原页.主题标识)) throw new Error(`第 ${序号 + 1} 页主题引用无效`)
+    if (原页.背景填充 !== undefined) 校验背景填充(原页.背景填充)
+    if (原页.背景继承 !== undefined && typeof 原页.背景继承 !== 'boolean') throw new Error(`第 ${序号 + 1} 页背景继承状态无效`)
+    if (原页.页脚 !== undefined && 原页.页脚 !== null) 校验页脚设置(原页.页脚)
+    if (原页.背景填充?.类型 === '图片' && !Object.prototype.hasOwnProperty.call(输入.资源索引, 原页.背景填充.资源标识)) {
+      throw new Error(`第 ${序号 + 1} 页背景图片缺失资源`)
     }
     if (页面标识.has(原页.id)) throw new Error(`页面标识重复：${原页.id}`)
     页面标识.add(原页.id)
@@ -59,6 +75,12 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       }
       if (全部对象标识.has(框.id)) throw new Error(`对象标识重复：${框.id}`)
       全部对象标识.add(框.id)
+      if (框.占位符 !== undefined && !占位符类型列表.includes(框.占位符 as never)) throw new Error(`第 ${序号 + 1} 页占位符类型无效`)
+      if (框.占位符标识 !== undefined && !非空文字(框.占位符标识)) throw new Error(`第 ${序号 + 1} 页占位符引用无效`)
+      if (框.占位符继承 !== undefined && typeof 框.占位符继承 !== 'boolean') throw new Error(`第 ${序号 + 1} 页占位符继承状态无效`)
+      if (框.颜色引用 !== undefined && !主题色槽列表.includes(框.颜色引用 as never)) throw new Error(`第 ${序号 + 1} 页主题色引用无效`)
+      if (框.字体引用 !== undefined && !['标题', '正文'].includes(String(框.字体引用))) throw new Error(`第 ${序号 + 1} 页字体引用无效`)
+      if (框.字体显式 !== undefined && typeof 框.字体显式 !== 'boolean') throw new Error(`第 ${序号 + 1} 页字体显式状态无效`)
       if (框.片段列表 !== undefined && (!Array.isArray(框.片段列表) ||
         框.片段列表.some((片段) => !是记录(片段) || typeof 片段.文本 !== 'string'))) {
         throw new Error(`第 ${序号 + 1} 页文本片段无效`)
@@ -131,13 +153,22 @@ export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   }
 }
 
-/** 每次出现都算一次引用，复制页面后的引用计数由正文实际结构确定。 */
+/** 每次出现都算一次引用；背景图片与对象图片共用同一资源链路。 */
 export function 收集演示资源标识(文稿: 演示文稿): string[] {
   const 结果: string[] = []
+  const 加入填充 = (填充?: { 类型: string; 资源标识?: string }) => {
+    if (填充?.类型 === '图片' && 填充.资源标识) 结果.push(填充.资源标识)
+  }
   for (const 页面 of 文稿.幻灯片列表) {
     for (const 对象 of 页面.对象列表 ?? []) {
       if (对象.资源标识) 结果.push(对象.资源标识)
     }
+    加入填充(页面.背景填充 as never)
+  }
+  加入填充(文稿.主题?.背景 as never)
+  for (const 母版 of 文稿.母版列表 ?? []) {
+    加入填充(母版.背景填充 as never)
+    for (const 版式 of 母版.版式列表) 加入填充(版式.背景填充 as never)
   }
   return 结果
 }

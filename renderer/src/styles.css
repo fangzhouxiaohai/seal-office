@@ -3269,3 +3269,54 @@ button {
 .wps-animation-dialog .wps-ppt-properties__actions button:hover { background: var(--bg-hover); border-color: var(--brand); }
 .wps-animation-dialog .wps-ppt-properties__actions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-animation-dialog .wps-ppt-properties__actions button:disabled { opacity: .55; cursor: default; }
+
+/* ==================== 设计面板（主题、母版、检查与美化） ==================== */
+.wps-ppt-design {
+  flex: 0 0 320px;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-4);
+  border-left: 1px solid var(--border);
+  background: var(--bg-card);
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 12px;
+  color: var(--text-1);
+}
+
+.wps-ppt-design--collapsed { flex: 0 0 44px; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+.wps-ppt-design__collapsed-label { color: var(--text-2); writing-mode: vertical-rl; }
+.wps-ppt-design__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.wps-ppt-design__header h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-1); }
+.wps-ppt-design__section { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.wps-ppt-design__section h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.wps-ppt-design__field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; font-size: 12px; color: var(--text-2); }
+.wps-ppt-design__field input,
+.wps-ppt-design__field select { width: 100%; min-width: 0; box-sizing: border-box; height: 28px; padding: 0 var(--space-2); font-size: 12px; color: var(--text-1); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.wps-ppt-design__inline { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--text-2); }
+.wps-ppt-design__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; }
+.wps-ppt-design button { min-height: 28px; padding: 0 var(--space-2); font-size: 12px; font-weight: 400; color: var(--text-1); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-control); cursor: pointer; }
+.wps-ppt-design button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.wps-ppt-design button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.wps-ppt-design button:disabled { color: var(--text-2); background: var(--bg-app); cursor: not-allowed; }
+.wps-ppt-design__themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: var(--space-2); }
+.wps-ppt-design__theme { display: flex; align-items: center; gap: var(--space-2); text-align: left; overflow-wrap: anywhere; }
+.wps-ppt-design__theme--active { border-color: var(--brand); color: var(--brand); }
+.wps-ppt-design__swatches { display: inline-flex; gap: var(--space-1); }
+.wps-ppt-design__swatches i { width: 12px; height: 12px; border: 1px solid var(--border); border-radius: 2px; }
+.wps-ppt-design__list { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.wps-ppt-design__list li { display: flex; align-items: center; gap: var(--space-2); overflow-wrap: anywhere; }
+.wps-ppt-design__problems { margin: 0; padding-left: var(--space-4); font-size: 12px; color: var(--text-2); overflow-wrap: anywhere; }
+.wps-ppt-design__confirm { display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--bg-app); border-radius: var(--radius-control); }
+.wps-ppt-design__preview,
+.wps-ppt-design__hint,
+.wps-ppt-design__check,
+.wps-ppt-design__status { margin: 0; font-size: 12px; color: var(--text-2); overflow-wrap: anywhere; }
+.wps-ppt-design__status { min-height: 16px; }
+.wps-ppt-footer { font-size: 12px; }
+
+@media (max-width: 1023px) { .wps-ppt-design { flex: 0 0 280px; } }
+@media (max-width: 767px) {
+  .wps-ppt-body { flex-wrap: wrap; }
+  .wps-ppt-design { flex: 1 1 100%; border-left: 0; border-top: 1px solid var(--border); }
+}

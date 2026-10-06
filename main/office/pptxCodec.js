@@ -6,7 +6,15 @@ const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
-const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 读取图片对象, 写入图片对象, 检查图片字节 } = require('./pptx/media')
+const { 主题Xml, 读取主题, 写入主题, 写入主题色引用, 读取主题色引用, 槽到方案色, 方案色到槽, 匹配主题标识 } = require('./pptx/theme')
+const { 版式转母版参数, 读取母版结构, 写入多母版, 移除占位符提示形状 } = require('./pptx/masters')
+const {
+  读取页面尺寸, 写入页面尺寸, 写入背景填充, 读取背景填充,
+  写入页脚形状, 读取页脚形状, 移除字段形状, 字段前缀, 页脚区域,
+} = require('./pptx/pageSetup')
+
+const 默认页面尺寸 = { 宽: 960, 高: 540 }
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -91,7 +99,7 @@ function 收集幻灯片警告(xml, 警告) {
     if (/<a:(?:ea|latin)\b[^>]*typeface="\+/i.test(形状)) 警告.add('主题字体未完整导入')
   }
   const 背景 = xml.match(/<p:bg\b[^>]*>([\s\S]*?)<\/p:bg>/i)?.[1] ?? ''
-  if (/<a:(?:gradFill|blipFill|schemeClr)\b/i.test(背景)) {
+  if (/<a:(?:pattFill|bgRef)\b/i.test(背景) || (/<a:schemeClr\b/i.test(背景) && !/<a:(?:solidFill|gradFill|blipFill)\b/i.test(背景))) {
     警告.add('背景样式未完整导入')
   }
 }
@@ -238,14 +246,18 @@ async function 读取pptx(数据) {
     const 内容 = 放映节点.replace(/^<p:showPr[^>]*>/,'').replace(/<\/p:showPr>$/,'').replace(/<p:(?:present|sldAll)\s*\/>/g,'').trim()
     if (内容 || Object.keys(属性).some(k=>!['loop','useTimings'].includes(k)) || (属性.useTimings !== undefined && !['1','true'].includes(属性.useTimings)) || (属性.loop !== undefined && !['0','1','true','false'].includes(属性.loop))) 警告.add('全局放映设置未完整导入')
   }
+  // 页面尺寸：可变尺寸已完整支持；节点存在但无法解析（损坏）时给出明确警告
   const 尺寸标签 = 清单Xml.match(/<p:sldSz\b[^>]*\/?>/i)?.[0]
-  if (尺寸标签) {
-    const 宽 = Number(读取Xml属性(尺寸标签, 'cx'))
-    const 高 = Number(读取Xml属性(尺寸标签, 'cy'))
-    if (宽 > 0 && 高 > 0 && (Math.abs(宽 - 12192000) > 12700 || Math.abs(高 - 6858000) > 12700)) {
-      警告.add('页面尺寸未完整导入')
-    }
+  const 页面尺寸 = 读取页面尺寸(清单Xml)
+  if (尺寸标签 && !页面尺寸) 警告.add('页面尺寸未完整导入')
+  // 主题与母版：真实部件解析，结构损坏时保留警告并继续保护来源文件
+  let 主题 = null
+  const 主题文件 = 压缩包.file('ppt/theme/theme1.xml')
+  if (主题文件) {
+    主题 = 读取主题(await 主题文件.async('string'))
+    if (!主题) 警告.add('主题未完整导入')
   }
+  const 母版结构 = await 读取母版结构(压缩包)
   for (const { 路径: 名称, 页面标识 } of 文件名) {
     const xml = await 读取部件(压缩包, 名称).async('string')
     if (!/<p:sld\b[^>]*>[\s\S]*<\/p:sld>\s*$/i.test(xml) ||
@@ -253,12 +265,14 @@ async function 读取pptx(数据) {
         !/(?:<p:spTree\b[^>]*\/>|<p:spTree\b[^>]*>[\s\S]*<\/p:spTree>)/i.test(xml)) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
-    const 图片 = await 读取图片对象(压缩包, 名称, xml)
-    const 动画序列 = 读取动画(xml)
+    const 页脚字段 = 读取页脚形状(xml)
+    const 正文Xml = 移除字段形状(xml)
+    const 图片 = await 读取图片对象(压缩包, 名称, 正文Xml)
+    const 动画序列 = 读取动画(正文Xml)
     收集幻灯片警告(动画序列 ? 读取原生对象(图片.图表剩余).剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 读取原生对象(图片.图表剩余).剩余, 警告)
-    const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识)
+    const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识, 主题)
     if (动画序列) 幻灯片.动画序列 = 动画序列
-    const 原生切换 = 读取切换(xml), 扩展 = 读取播放扩展(xml)
+    const 原生切换 = 读取切换(正文Xml), 扩展 = 读取播放扩展(正文Xml)
     if (原生切换.切换 && 扩展.切换) {
       try { if (写入切换({ 切换: 扩展.切换, 换片: 原生切换.换片 }) === 写入切换({ 切换: 原生切换.切换, 换片: 原生切换.换片 })) 幻灯片.切换 = 扩展.切换 } catch { 警告.add('幻灯片切换效果未完整导入') }
     }
@@ -267,7 +281,32 @@ async function 读取pptx(数据) {
     for (const 原因 of 图片.警告) 警告.add(原因)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
+    // 版式归属：按关系还原母版与版式标识，不使用文件名推断
+    const 归属 = 母版结构.幻灯片位置[名称]
+    if (归属) { 幻灯片.母版标识 = 归属.母版标识; 幻灯片.版式标识 = 归属.版式标识 }
+    // 背景：纯色、渐变与图片均已支持；图片背景进入同一资源链路
+    const 背景填充 = 读取背景填充(正文Xml)
+    if (背景填充 && 背景填充.类型 !== '纯色') {
+      if (背景填充.类型 === '图片') {
+        const 资源标识 = await 解析背景图片资源(压缩包, 名称, 背景填充.关系标识, 资源表, 警告)
+        if (资源标识) { 幻灯片.背景填充 = { 类型: '图片', 资源标识 }; 幻灯片.背景色 = '#FFFFFF' }
+        else 警告.add('背景图片未完整导入')
+      } else {
+        幻灯片.背景填充 = 背景填充
+        幻灯片.背景色 = 背景填充.起始色
+      }
+    } else if (背景填充) {
+      幻灯片.背景色 = 背景填充.颜色
+    }
+    if (页脚字段) 幻灯片.页脚 = 页脚字段
     幻灯片列表.push(幻灯片)
+  }
+  // 页脚设置：任一页存在页脚字段即视为整篇设置了页脚
+  const 页脚设置 = 页脚字段汇总(幻灯片列表)
+  if (页脚设置) {
+    for (const 页 of 幻灯片列表) {
+      if (页.页脚 === undefined) 页.页脚 = null
+    }
   }
   await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
   return {
@@ -279,14 +318,40 @@ async function 读取pptx(数据) {
       当前索引: 0,
       模型版本: 2,
       资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
+      ...(主题 ? { 主题 } : {}),
+      ...(母版结构.母版列表.length ? { 母版列表: 母版结构.母版列表 } : {}),
+      ...(页面尺寸 ? { 页面尺寸 } : {}),
+      ...(页脚设置 ? { 页脚设置 } : {}),
     },
     警告: Array.from(警告),
     资源条目: Array.from(资源表.values()),
   }
 }
 
+/** 汇总各页页脚字段为整篇设置：首页没有页脚即记录"首页不显示"。 */
+function 页脚字段汇总(幻灯片列表) {
+  const 有页脚的页 = 幻灯片列表.filter((页) => 页.页脚)
+  if (有页脚的页.length === 0) return null
+  const 合并 = {}
+  for (const 页 of 有页脚的页) Object.assign(合并, 页.页脚)
+  return { ...合并, ...(幻灯片列表[0] && !幻灯片列表[0].页脚 ? { 首页不显示: true } : {}) }
+}
+
+/** 背景图片进入资源链路：关系 → 媒体部件 → 内容指纹。 */
+async function 解析背景图片资源(压缩包, 幻灯片路径, 关系标识, 资源表, 警告) {
+  if (!关系标识) return null
+  const 关系 = await 读取关系(压缩包, 幻灯片路径)
+  const 项 = 关系.get(关系标识)
+  if (!项 || 项.外部 || !项.类型.endsWith('/image')) return null
+  const 数据 = await 读取部件(压缩包, 项.目标).async('nodebuffer')
+  const { 类型 } = 检查图片字节(数据)
+  const 标识 = require('crypto').createHash('sha256').update(数据).digest('hex')
+  资源表.set(标识, { 标识, 类型, 数据: 数据.toString('base64') })
+  return 标识
+}
+
 /** 解析单张幻灯片 XML：背景色 + 各形状的位置与文字样式 */
-function 解析幻灯片Xml(xml, 序号, 页面标识) {
+function 解析幻灯片Xml(xml, 序号, 页面标识, 主题 = null) {
   // 幻灯片背景色
   let 背景色 = '#FFFFFF'
   const 背景匹配 = xml.match(/<p:bg>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"[\s\S]*?<\/p:bg>/)
@@ -299,7 +364,7 @@ function 解析幻灯片Xml(xml, 序号, 页面标识) {
   const 形状正则 = /<p:sp\b[^>]*>([\s\S]*?)<\/p:sp>/gi
   let 形状匹配
   while ((形状匹配 = 形状正则.exec(xml)) !== null) {
-    const 解析 = 解析形状Xml(形状匹配[1], 稳定页面标识, 文本框列表.length)
+    const 解析 = 解析形状Xml(形状匹配[1], 稳定页面标识, 文本框列表.length, 主题)
     if (解析 !== null) 文本框列表.push(解析)
   }
   const 首框 = 文本框列表[0]
@@ -318,7 +383,7 @@ function 解析幻灯片Xml(xml, 序号, 页面标识) {
 }
 
 /** 解析单个 <p:sp> 形状；无文字时返回 null */
-function 解析形状Xml(形状Xml, 页面标识, 框序号) {
+function 解析形状Xml(形状Xml, 页面标识, 框序号, 主题 = null) {
   const 段落列表 = Array.from(形状Xml.matchAll(/<a:p\b[^>]*>([\s\S]*?)<\/a:p>/gi), (匹配) => 匹配[1])
   // 无文字的装饰形状不导入为文本框
   const 合并文本 = 段落列表.map((段落) => {
@@ -338,11 +403,21 @@ function 解析形状Xml(形状Xml, 页面标识, 框序号) {
   const 字体 = 形状Xml.match(/<a:ea\b[^>]*typeface="([^"]+)"/i)?.[1]
     ?? 形状Xml.match(/<a:latin\b[^>]*typeface="([^"]+)"/i)?.[1]
   const 下划线 = 首个rPr?.[1].match(/\bu="([^"]+)"/i)?.[1]
+  // 主题色引用优先于显式颜色：schemeClr 表示这段文字仍由主题驱动
+  const 引用槽 = 读取主题色引用(形状Xml)
   const 颜色匹配 = 形状Xml.match(/<a:rPr[^>]*>[\s\S]{0,400}?<a:srgbClr val="([0-9A-Fa-f]{6})"/)
   const 对齐匹配 = 形状Xml.match(/<a:pPr[^>]*algn="(\w+)"/)
   const 属性标签 = 形状Xml.match(/<p:cNvPr\b[^>]*>/i)?.[0] ?? ''
   const 形状标识 = 读取Xml属性(属性标签, 'id') ?? String(框序号)
   const 框标识 = 解码标识(读取Xml属性(属性标签, 'name')) ?? `box-${页面标识}-${形状标识}`
+  // 占位符：原生 p:ph 类型 + 海豹办公标记（占位符标识与单页覆盖状态）
+  const 占位符标签 = 形状Xml.match(/<p:ph\b[^>]*\/?>/i)?.[0] ?? ''
+  const 占位符类型 = 读取Xml属性(占位符标签, 'type')
+  const 占位符 = 占位符类型 === 'title' ? '标题' : 占位符类型 === 'body' ? '正文'
+    : 占位符类型 === 'sldNum' ? '页码' : 占位符类型 === 'dt' ? '日期' : 占位符类型 === 'ftr' ? '页脚' : undefined
+  const 描述 = 读取Xml属性(属性标签, 'descr') ?? ''
+  const 占位标记 = 描述.match(/seal-ph:(inherit|own)/)?.[1]
+  const 占位标识 = 描述.match(/seal-ph-id:([^;]+)/)?.[1]
   return {
     id: 框标识,
     x: 位置 !== null ? EMU转像素(位置[1]) : 80,
@@ -355,8 +430,17 @@ function 解析形状Xml(形状Xml, 页面标识, 框序号) {
     加粗: 首个rPr !== null && /b="1"/.test(首个rPr[1]),
     斜体: 首个rPr !== null && /i="1"/.test(首个rPr[1]),
     下划线: Boolean(下划线 && 下划线 !== 'none'),
-    颜色: 颜色匹配 !== null ? `#${颜色匹配[1].toUpperCase()}` : '#1A1D24',
+    ...(引用槽
+      ? { 颜色引用: 引用槽, 颜色: 主题?.配色?.[引用槽] ?? (颜色匹配 !== null ? `#${颜色匹配[1].toUpperCase()}` : '#1A1D24') }
+      : { 颜色: 颜色匹配 !== null ? `#${颜色匹配[1].toUpperCase()}` : '#1A1D24' }),
     对齐: 对齐匹配 !== null ? 对齐映射(对齐匹配[1]) : 'left',
+    ...(占位符 && (占位符 === '标题' || 占位符 === '正文')
+      ? {
+        占位符,
+        ...(占位标识 ? { 占位符标识: 占位标识 } : {}),
+        ...(占位标记 === 'own' ? { 占位符继承: false } : 占位标记 === 'inherit' ? { 占位符继承: true } : {}),
+      }
+      : {}),
   }
 }
 
@@ -368,7 +452,6 @@ const 对齐映射 = (algn) => {
 
 async function 写入pptx(模型) {
   const 文稿 = new pptxgen()
-  文稿.layout = 'LAYOUT_WIDE'
   // 富格式契约：{ 幻灯片: [{ 背景色, 文本框: [{ x, y, width, height, text, 字号, 加粗, 斜体, 颜色, 对齐, 片段 }] }] }
   // 旧契约 { 幻灯片: [{ 文本 }] } 与 { 幻灯片列表: [{ 标题, 内容 }] } 仍兼容。
   let 幻灯片列表 = []
@@ -389,8 +472,28 @@ async function 写入pptx(模型) {
   if (幻灯片列表.some((项) => 项.动画)) {
     throw new Error('动画无法可靠保存为 PPTX，请先移除动画效果')
   }
+  // 页面尺寸与母版：尺寸来自模型，版式由真实 slideMaster / slideLayout 部件承载
+  const 页面尺寸 = 模型.页面尺寸 && Number.isFinite(模型.页面尺寸.宽) && Number.isFinite(模型.页面尺寸.高)
+    ? { 宽: Math.round(模型.页面尺寸.宽), 高: Math.round(模型.页面尺寸.高) }
+    : { ...默认页面尺寸 }
+  文稿.defineLayout({ name: 'SEAL_PAGE', width: 页面尺寸.宽 / 72, height: 页面尺寸.高 / 72 })
+  文稿.layout = 'SEAL_PAGE'
+  const 主题 = 模型.主题 ?? null
+  const 母版列表 = Array.isArray(模型.母版列表) ? 模型.母版列表 : []
+  const 版式索引 = new Map()
+  if (母版列表.length > 0) {
+    for (const 母版 of 母版列表) {
+      for (const 版式 of 母版.版式列表) {
+        const 参数 = 版式转母版参数(母版, 版式, 主题)
+        文稿.defineSlideMaster(参数)
+        版式索引.set(版式.标识, 版式)
+      }
+    }
+  }
+  const 资源条目 = new Map((模型.资源条目 ?? []).map((项) => [项.标识, 项]))
   幻灯片列表.forEach((幻灯片数据) => {
-    const 页面 = 文稿.addSlide()
+    const 目标版式 = 幻灯片数据.版式标识 && 版式索引.has(幻灯片数据.版式标识) ? 幻灯片数据.版式标识 : null
+    const 页面 = 目标版式 ? 文稿.addSlide({ masterName: 目标版式 }) : 文稿.addSlide()
     if (typeof 幻灯片数据.备注 === 'string' && 幻灯片数据.备注.length > 0) {
       页面.addNotes(幻灯片数据.备注)
     }
@@ -461,16 +564,32 @@ async function 写入pptx(模型) {
     }
   })
   const 原文件 = Buffer.from(await 文稿.write({ outputType: 'arraybuffer' }))
-  if (!幻灯片列表.length && !模型.循环放映) return 原文件
+  if (!幻灯片列表.length && !模型.循环放映 && !主题 && !母版列表.length) return 原文件
   const 压缩包 = await JSZip.loadAsync(原文件)
+  // 主题、母版与页面尺寸先落到真实部件，再逐页补丁
+  if (主题) await 写入主题(压缩包, 主题)
+  if (母版列表.length > 0) await 写入多母版(压缩包, 母版列表)
+  if (页面尺寸.宽 !== 默认页面尺寸.宽 || 页面尺寸.高 !== 默认页面尺寸.高) await 写入页面尺寸(压缩包, 页面尺寸)
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
-    const 过渡Xml = 写入切换(幻灯片列表[索引])
+    const 页 = 幻灯片列表[索引]
+    const 过渡Xml = 写入切换(页)
     const 名称 = `ppt/slides/slide${索引 + 1}.xml`
     const 文件 = 压缩包.file(名称)
     if (!文件) throw new Error(`生成幻灯片失败：缺少第 ${索引 + 1} 张幻灯片`)
-    let xml = 写入稳定标识(await 文件.async('string'), 幻灯片列表[索引], 索引)
-    if (幻灯片列表[索引].对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 幻灯片列表[索引].对象列表, 模型.资源条目 ?? [])
-    const 页 = 幻灯片列表[索引]
+    let xml = 移除占位符提示形状(写入稳定标识(await 文件.async('string'), 页, 索引))
+    const 颜色引用列表 = (页.文本框 ?? [])
+      .filter((框) => 框.颜色引用)
+      .map((框) => ({ 框标识: 框.id, 槽: 框.颜色引用, 颜色: 框.颜色 }))
+    if (颜色引用列表.length) xml = 写入主题色引用(xml, 颜色引用列表, 编码标识)
+    const 占位符列表 = (页.文本框 ?? []).filter((框) => 框.占位符 === '标题' || 框.占位符 === '正文')
+    if (占位符列表.length) xml = 写入占位符绑定(xml, 占位符列表, 版式索引.get(页.版式标识) ?? null)
+    if (页.对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 页.对象列表, 模型.资源条目 ?? [])
+    if (页.背景填充) {
+      const 资源 = 页.背景填充.类型 === '图片' ? 资源条目.get(页.背景填充.资源标识) : null
+      xml = await 写入背景填充(压缩包, 名称, xml, 页.背景填充, 资源)
+    }
+    const 页脚 = 复合页脚(模型.页脚设置, 页.页脚)
+    if (页脚) xml = 写入页脚形状(xml, 页脚, 索引 + 1, 页面尺寸)
     if (页.隐藏 !== undefined && typeof 页.隐藏 !== 'boolean') throw new Error('隐藏页面状态无效')
     if (页.隐藏) xml = xml.replace('<p:sld ', '<p:sld show="0" ')
     const 动画Xml = 写入动画(xml, 页.动画序列)
@@ -484,6 +603,42 @@ async function 写入pptx(模型) {
     压缩包.file('ppt/presProps.xml', 内容.replace('</p:presentationPr>', `<p:showPr loop="${模型.循环放映 ? 1 : 0}" useTimings="1"><p:present/><p:sldAll/></p:showPr></p:presentationPr>`))
   }
   return Buffer.from(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+}
+
+/** 整篇页脚设置与单页覆盖合并；单页明确为 null 时本页不显示页脚。 */
+function 复合页脚(整篇设置, 单页覆盖) {
+  if (单页覆盖 === null) return null
+  const 合并 = { ...(整篇设置 ?? {}), ...(单页覆盖 ?? {}) }
+  if (!合并.页脚文本 && !合并.显示日期 && !合并.显示页码) return null
+  return 合并
+}
+
+/**
+ * 写入占位符绑定：加入原生 p:ph 类型并在 cNvPr 上记录占位符标识与继承状态。
+ * 位置与文字样式仍为显式值，因此单页覆盖不会被版式重置。
+ */
+function 写入占位符绑定(xml, 占位符列表, 版式) {
+  const 表 = new Map(占位符列表.map((框) => [编码标识(框.id), 框]))
+  return xml.replace(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/gi, (形状) => {
+    const 名称标签 = 形状.match(/<p:cNvPr\b[^>]*>/i)
+    if (!名称标签) return 形状
+    const 名称 = 读取Xml属性(名称标签[0], 'name')
+    const 框 = 表.get(名称)
+    if (!框) return 形状
+    const 类型 = 框.占位符 === '标题' ? 'title' : 'body'
+    const 序号 = 版式 ? 版式.占位符列表.findIndex((项) => 项.标识 === 框.占位符标识 || 项.类型 === 框.占位符) : -1
+    const idx = 100 + (序号 >= 0 ? 序号 : 类型 === 'title' ? 0 : 1)
+    const 标记 = `seal-ph:${框.占位符继承 === false ? 'own' : 'inherit'}${框.占位符标识 ? `;seal-ph-id:${框.占位符标识}` : ''}`
+    let 更新 = 形状.replace(/<p:cNvPr\b[^>]*>/i, (标签) => (/\bdescr="[^"]*"/.test(标签)
+      ? 标签.replace(/\bdescr="[^"]*"/, `descr="${标记}"`)
+      : 标签.replace(/\/?>$/, (结束) => ` descr="${标记}"${结束}`)))
+    const 占位节点 = `<p:ph type="${类型}" idx="${idx}"/>`
+    if (/<p:nvPr\b[^>]*\/>/i.test(更新)) 更新 = 更新.replace(/<p:nvPr\b[^>]*\/>/i, `<p:nvPr>${占位节点}</p:nvPr>`)
+    else if (/<p:nvPr\b[^>]*>\s*<\/p:nvPr>/i.test(更新)) 更新 = 更新.replace(/<p:nvPr\b[^>]*>\s*<\/p:nvPr>/i, `<p:nvPr>${占位节点}</p:nvPr>`)
+    else if (/<p:nvPr\b[^>]*>/i.test(更新)) 更新 = 更新.replace(/(<p:nvPr\b[^>]*>)/i, `$1${占位节点}`)
+    else 更新 = 更新.replace(/(<\/p:nvSpPr>)/i, `<p:nvPr>${占位节点}</p:nvPr>$1`)
+    return 更新
+  })
 }
 
 function 解码(文本) {

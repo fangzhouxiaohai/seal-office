@@ -35,6 +35,16 @@ import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
+import ThemePanel, { 默认字体检测 } from './panels/ThemePanel'
+import MasterPanel from './panels/MasterPanel'
+import DesignCheckPanel from './panels/DesignCheckPanel'
+import {
+  匹配内置主题,
+  读取有效页脚,
+  读取页面尺寸,
+  type 主题定义,
+} from './model/themes'
+import { 解析页面背景, 标记占位符覆盖 } from './model/masters'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
@@ -77,6 +87,8 @@ const PptEditor = () => {
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
   const [只读, set只读] = useState(false)
+  const [设计面板, set设计面板] = useState<'主题' | '母版' | '检查' | null>(null)
+  const [预览主题候选, set预览主题候选] = useState<主题定义 | null>(null)
   const [参考线, set参考线] = useState({ 垂直: [] as number[], 水平: [] as number[] })
   const [适应, set适应] = useState(false)
   const 适应比例 = useRef(1)
@@ -409,6 +421,8 @@ const PptEditor = () => {
     notify: (文本: string) => message.info(文本),
     提示功能限制: (标题: string, 内容: string) => modal.warning({ title: 标题, content: 内容, okText: '我知道了' }),
     切换视图: set当前视图,
+    打开设计面板: (面板) => set设计面板(面板),
+    通知预览: (主题) => set预览主题候选(主题),
     撤销,
     重做,
   }
@@ -487,7 +501,10 @@ const PptEditor = () => {
                 桥接.office.readPptx(读取结果.内容).then(async (解析结果) => {
                   if (解析结果 && 解析结果.演示文稿) {
                     const 警告 = Array.isArray(解析结果.警告) ? 解析结果.警告 as string[] : []
-                    createDoc('ppt', await 恢复导入图片(解析结果), { 路径: 文件路径, 警告, 文件指纹: 读取结果.文件指纹 })
+                    const 恢复文稿 = await 恢复导入图片(解析结果)
+                    const 恢复主题 = 恢复文稿.主题 ? 匹配内置主题(恢复文稿.主题 as 主题定义) : undefined
+                    恢复文稿.主题 = 恢复主题
+                    createDoc('ppt', 恢复文稿, { 路径: 文件路径, 警告, 文件指纹: 读取结果.文件指纹 })
                     void 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
                   } else {
                     显示文件错误('打开文件失败', 解析结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
@@ -558,6 +575,12 @@ const PptEditor = () => {
             切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
+            背景填充: 幻灯片.背景填充,
+            背景继承: 幻灯片.背景继承,
+            母版标识: 幻灯片.母版标识,
+            版式标识: 幻灯片.版式标识,
+            主题标识: 幻灯片.主题标识,
+            页脚: 幻灯片.页脚,
             文本框: 幻灯片.文本框列表.map((框) => ({
               id: 框.id,
               x: 框.x,
@@ -572,6 +595,11 @@ const PptEditor = () => {
               下划线: 框.下划线,
               颜色: 框.颜色,
               对齐: 框.对齐,
+              颜色引用: 框.颜色引用,
+              字体引用: 框.字体引用,
+              占位符: 框.占位符,
+              占位符标识: 框.占位符标识,
+              占位符继承: 框.占位符继承,
               片段: (框.片段列表 ?? []).map((片段) => ({
                 文本: 片段.文本,
                 加粗: 片段.加粗 === true,
@@ -583,7 +611,7 @@ const PptEditor = () => {
           }))
           const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = { 循环放映: 文稿.循环放映, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
+          const 模型 = { 循环放映: 文稿.循环放映, 主题: 文稿.主题, 母版列表: 文稿.母版列表, 页面尺寸: 文稿.页面尺寸, 页脚设置: 文稿.页脚设置, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
@@ -642,6 +670,12 @@ const PptEditor = () => {
             切换: 幻灯片.切换, 换片: 幻灯片.换片, 隐藏: 幻灯片.隐藏, 动画序列: 幻灯片.动画序列,
             对象列表: 幻灯片.对象列表,
             备注: 幻灯片.备注,
+            背景填充: 幻灯片.背景填充,
+            背景继承: 幻灯片.背景继承,
+            母版标识: 幻灯片.母版标识,
+            版式标识: 幻灯片.版式标识,
+            主题标识: 幻灯片.主题标识,
+            页脚: 幻灯片.页脚,
             文本框: 幻灯片.文本框列表.map((框) => ({
               id: 框.id,
               x: 框.x,
@@ -656,6 +690,11 @@ const PptEditor = () => {
               下划线: 框.下划线,
               颜色: 框.颜色,
               对齐: 框.对齐,
+              颜色引用: 框.颜色引用,
+              字体引用: 框.字体引用,
+              占位符: 框.占位符,
+              占位符标识: 框.占位符标识,
+              占位符继承: 框.占位符继承,
               片段: (框.片段列表 ?? []).map((片段) => ({
                 文本: 片段.文本,
                 加粗: 片段.加粗 === true,
@@ -667,7 +706,7 @@ const PptEditor = () => {
           }))
           const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = { 循环放映: 文稿.循环放映, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
+          const 模型 = { 循环放映: 文稿.循环放映, 主题: 文稿.主题, 母版列表: 文稿.母版列表, 页面尺寸: 文稿.页面尺寸, 页脚设置: 文稿.页脚设置, 幻灯片: 幻灯片模型, 资源条目: 资源结果.条目 }
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           桥接.office.writePptx(模型).then((结果: any) => {
@@ -853,6 +892,7 @@ const PptEditor = () => {
         ? React.createElement(NotesView, {
             只读,
             图片地址,
+            文稿,
             幻灯片: 当前幻灯片,
             索引: 文稿.当前索引,
             on编辑: (内容: string) => 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 备注: 内容 })),
@@ -869,6 +909,11 @@ const PptEditor = () => {
             编辑值,
             显示网格线,
             只读, 选中对象, 显示标尺, 吸附, 参考线,
+            // 页面尺寸、解析后的背景与页脚：预览不写入模型
+            页面尺寸: 读取页面尺寸(文稿),
+            背景: 预览主题候选 ? 解析页面背景({ ...文稿, 主题: 预览主题候选 }, 当前幻灯片) : 解析页面背景(文稿, 当前幻灯片),
+            页脚: 读取有效页脚(文稿, 当前幻灯片, 文稿.当前索引),
+            页序号: 文稿.当前索引,
             on参考线: set参考线,
             on选中对象: (标识: string[]) => { set选中对象(标识); if (标识.length) 最近选中框标识.current = null },
             on对象提交: 对象提交,
@@ -887,11 +932,15 @@ const PptEditor = () => {
               if (框 === undefined) {
                 return
               }
-              const 位置 = 约束位置(x, y, 框.width, 框.height)
+              const 位置 = 约束位置(x, y, 框.width, 框.height, 读取页面尺寸(文稿))
+              // 拖动占位符文本框即形成单页覆盖，之后不再跟随版式占位符
+              const 更新页 = 框.占位符标识
+                ? 标记占位符覆盖(更新文本框(当前幻灯片, 标识, 位置), 标识)
+                : 更新文本框(当前幻灯片, 标识, 位置)
               // 拖动过程中不逐帧记录历史，避免撤销栈被拖动事件占满
               set文稿(
                 更新幻灯片(文稿, 当前幻灯片.id, {
-                  文本框列表: 更新文本框(当前幻灯片, 标识, 位置).文本框列表,
+                  文本框列表: 更新页.文本框列表,
                 })
               )
             },
@@ -902,7 +951,29 @@ const PptEditor = () => {
             },
           })
         ),
-      当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
+      设计面板 === '主题' ? React.createElement(ThemePanel, {
+        文稿,
+        只读,
+        on应用: (新文稿: 演示文稿) => { set预览主题候选(null); 更新文稿(新文稿) },
+        检测字体: 默认字体检测,
+        on导出文本: (文本: string, 文件名: string) => 下载文本(文本, 文件名, 'application/json'),
+        on读取文件: async () => {
+          const 路径 = await 桥接.showOpenDialog('ppt' as const)
+          if (!路径) return null
+          const 读取 = await 桥接.readFile(路径)
+          if (!读取.成功 || !读取.内容) { 显示文件错误('导入主题失败', 读取.错误 ?? '主题文件读取失败'); return null }
+          return 读取.内容
+        },
+      }) : 设计面板 === '母版' ? React.createElement(MasterPanel, {
+        文稿,
+        只读,
+        on应用: 更新文稿,
+      }) : 设计面板 === '检查' ? React.createElement(DesignCheckPanel, {
+        文稿,
+        只读,
+        on应用: 更新文稿,
+        检测字体: 默认字体检测,
+      }) : 当前幻灯片 && ['transition','animation','slideshow'].includes(当前标签) ? React.createElement(AnimationPanel, { 文稿, 页: 当前幻灯片, 选中: 选中框标识 ?? 选中对象[0], 只读, on修改: 更新文稿, 图片地址 }) : 当前幻灯片 && 当前视图 === '普通' ? React.createElement(ObjectPropertiesPanel, { 页: 当前幻灯片, 选中: 选中对象, 只读, on修改: (修改: 几何修改) => 对象提交(Object.fromEntries(选中对象.map(id => [id, 修改]))), on操作: 对象操作, on选中: set选中对象, on替换: (对象: 演示对象) => {
         if (只读) return
         try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 替换对象内容(当前幻灯片,对象))) }
         catch (错误) { 显示文件错误('对象编辑失败', 错误 instanceof Error ? 错误.message : '对象无法编辑') }

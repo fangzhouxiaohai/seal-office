@@ -3,6 +3,8 @@
 import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './model/elements'
 import type { 切换设置, 换片设置 } from './model/transitions'
 import type { 对象动画 } from './model/animations'
+import type { 背景填充, 页脚设置, 页面尺寸, 主题定义, 主题色槽 } from './model/themes'
+import type { 占位符类型, 母版定义 } from './model/masters'
 
 export interface 文本片段 {
   文本: string
@@ -28,6 +30,18 @@ export interface 文本框 {
   对齐: 'left' | 'center' | 'right'
   /** 富文本片段列表，为空时退化为统一样式渲染 */
   片段列表?: 文本片段[]
+  /** 占位符类型：与母版版式占位符继承联动 */
+  占位符?: 占位符类型
+  /** 来源版式占位符标识；有值时该框参与占位符继承 */
+  占位符标识?: string
+  /** false 表示单页覆盖，不再跟随版式占位符 */
+  占位符继承?: boolean
+  /** 使用主题色槽；显式改色后应用主题会保留显式颜色并解除引用 */
+  颜色引用?: 主题色槽
+  /** 跟随主题字体；设置后统一字体与应用主题都会更新该框字体 */
+  字体引用?: '标题' | '正文'
+  /** 用户显式指定的字体，统一字体默认跳过 */
+  字体显式?: boolean
 }
 
 export type 版式类型 = '标题幻灯片' | '标题和内容' | '空白'
@@ -47,6 +61,15 @@ export interface 幻灯片 {
   动画?: string
   /** 当前页的演讲备注，随演示文稿保存 */
   备注?: string
+  /** 母版与版式引用；缺失时按 版式 名称回退到默认母版 */
+  母版标识?: string
+  版式标识?: string
+  主题标识?: string
+  /** 单页显式背景；背景继承为 false 时不再读取版式与母版背景 */
+  背景填充?: 背景填充
+  背景继承?: boolean
+  /** 单页页脚覆盖；null 表示本页不显示页脚、日期与页码 */
+  页脚?: 页脚设置 | null
   文本框列表: 文本框[]
   /** 扩展对象在完成 PPTX 往返能力前仍须接受校验并禁止有损保存。 */
   对象列表?: 演示对象[]
@@ -85,6 +108,14 @@ export interface 演示文稿 {
   幻灯片列表: 幻灯片[]
   当前索引: number
   资源索引?: Record<string, 演示资源>
+  /** 当前应用的主题；缺失时界面回退到内置默认主题 */
+  主题?: 主题定义
+  /** 母版与版式定义；缺失时回退到默认母版 */
+  母版列表?: 母版定义[]
+  /** 页面实际尺寸（画布像素）；缺失时按 960×540 处理 */
+  页面尺寸?: 页面尺寸
+  /** 整篇页脚、日期与页码设置；单页可用 页脚 覆盖 */
+  页脚设置?: 页脚设置
 }
 
 /** 画布基准尺寸，按 16:9 比例 */
@@ -291,15 +322,16 @@ export function 删除文本框(幻灯片: 幻灯片, 标识: string): 幻灯片
   return { ...幻灯片, 动画序列: 幻灯片.动画序列?.filter(a => a.对象标识 !== 标识), 文本框列表: 幻灯片.文本框列表.filter((项) => 项.id !== 标识) }
 }
 
-/** 把文本框约束在画布范围内 */
+/** 把文本框约束在画布范围内；页面尺寸可变，默认使用 16:9 基准画布 */
 export function 约束位置(
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
+  尺寸: 页面尺寸 = { 宽: 画布宽, 高: 画布高 }
 ): { x: number; y: number } {
-  const 最大x = Math.max(0, 画布宽 - width)
-  const 最大y = Math.max(0, 画布高 - height)
+  const 最大x = Math.max(0, 尺寸.宽 - width)
+  const 最大y = Math.max(0, 尺寸.高 - height)
   return {
     x: Math.min(Math.max(0, x), 最大x),
     y: Math.min(Math.max(0, y), 最大y),
