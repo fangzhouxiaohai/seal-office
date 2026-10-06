@@ -1,4 +1,4 @@
-import { 读取切换 } from './model/transitions'
+import { 读取切换, 校验播放参数, 全部切换, type 切换效果 } from './model/transitions'
 import { 原生插入命令 } from './commands/insert'
 import { 审阅命令 } from './commands/review'
 import { 设计命令 } from './commands/design'
@@ -433,6 +433,28 @@ const 命令列表: 演示命令[] = [
         })
       )
       上下文.notify('已粘贴文本框')
+    },
+  },
+  {
+    id: 'transition.effect',
+    label: '切换效果库',
+    run: (上下文, 参数?: string) => {
+      const 当前 = 读取当前幻灯片(上下文.文稿)
+      if (当前 === null) return
+      const 效果 = 参数 ?? ''
+      if (!(全部切换 as readonly string[]).includes(效果)) {
+        上下文.notify(`切换效果无效：${效果 || '未选择效果'}`)
+        return
+      }
+      try {
+        // 经读取切换统一补齐效果专属参数（例如轮辐的默认辐条根数）。
+        const 切换 = 读取切换({ ...当前, 切换: { ...读取切换(当前), 效果: 效果 as 切换效果 } })
+        校验播放参数({ ...当前, 切换 })
+        上下文.更新文稿(更新幻灯片(上下文.文稿, 当前.id, { 过渡效果: undefined, 切换 }))
+        上下文.notify(`已设置切换效果：${效果}`)
+      } catch (错误) {
+        上下文.notify(错误 instanceof Error ? 错误.message : '切换设置失败')
+      }
     },
   },
   {

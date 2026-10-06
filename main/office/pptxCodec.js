@@ -1,5 +1,5 @@
 const { 写入切换, 读取切换 } = require('./pptx/transitions')
-const { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展 } = require('./pptx/animations')
+const { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展, 收集图表构建 } = require('./pptx/animations')
 const { 读取原生对象 } = require('./pptx/elements')
 const JSZip = require('jszip')
 const pptxgen = require('pptxgenjs')
@@ -287,6 +287,19 @@ async function 读取pptx(数据) {
     }
     const 对象列表 = [...图片.对象列表, ...公式补充.对象列表, ...嵌入.对象列表, ...图示.对象列表]
     if (对象列表.length) 幻灯片.对象列表 = 对象列表
+    // 图表动态播放参数与原生构建清单一起读回；构建项缺失时明确告警并丢弃对应分步动画。
+    const 图表构建 = 扩展.图表构建 && typeof 扩展.图表构建 === 'object' ? 扩展.图表构建 : {}
+    for (const 对象 of 幻灯片.对象列表 ?? []) {
+      const 构建 = 图表构建[对象.id]
+      if (对象.类型 === '图表' && 构建?.动态) 对象.图表 = { ...对象.图表, 动态: 构建.动态 }
+    }
+    const 分步动画 = (幻灯片.动画序列 ?? []).filter(项 => 项.效果 === '图表分步')
+    const 缺动态 = 分步动画.filter(项 => !(幻灯片.对象列表 ?? []).some(对象 => 对象.id === 项.对象标识 && 对象.类型 === '图表' && 对象.图表?.动态))
+    if (缺动态.length) {
+      警告.add('图表动态播放未完整导入')
+      幻灯片.动画序列 = (幻灯片.动画序列 ?? []).filter(项 => !缺动态.includes(项))
+      if (!幻灯片.动画序列.length) delete 幻灯片.动画序列
+    }
     for (const 资源 of [...图片.资源条目, ...嵌入.资源条目, ...图示.资源条目]) 资源表.set(资源.标识, 资源)
     for (const 原因 of [...图片.警告, ...公式补充.警告, ...嵌入.警告, ...图示.警告]) 警告.add(原因)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
@@ -607,7 +620,7 @@ async function 写入pptx(模型) {
     if (页脚) xml = 写入页脚形状(xml, 页脚, 索引 + 1, 页面尺寸)
     if (页.隐藏 !== undefined && typeof 页.隐藏 !== 'boolean') throw new Error('隐藏页面状态无效')
     if (页.隐藏) xml = xml.replace('<p:sld ', '<p:sld show="0" ')
-    const 动画Xml = 写入动画(xml, 页.动画序列)
+    const 动画Xml = 写入动画(xml, 页.动画序列, 收集图表构建(页))
     xml = xml.replace('</p:sld>', `${过渡Xml}${动画Xml}${页.切换 || 页.动画序列 ? 写入播放扩展(页) : ''}</p:sld>`)
     压缩包.file(名称, xml)
   }

@@ -138,7 +138,12 @@ export function 校验原生元素(对象: 演示对象): void {
 
 export type 图表种类 = '柱状图'|'折线图'|'饼图'
 export interface 图表系列 { id: string; 名称: string; 数值: number[]; 颜色: string }
-export interface 图表数据 { 种类: 图表种类; 标题: string; 分类: string[]; 系列: 图表系列[]; 图例: '下'|'右'|'无'; 横轴标题: string; 纵轴标题: string; 显示横轴: boolean; 显示纵轴: boolean; 数值格式: '0'|'0.00'|'0%'|'0.00%'|'#,##0' }
+export type 图表动态步进 = '按系列'|'按分类'|'按系列与数据点'
+/** 动态图表播放参数：与图表数据分开保存，不写入数据工作簿，不覆盖可编辑数值。 */
+export interface 图表动态 { 步进: 图表动态步进; 每步毫秒: number }
+/** 分步播放时的显示范围：点数[i] 表示第 i 个系列当前显示的数值个数。 */
+export interface 图表显示 { 点数: number[] }
+export interface 图表数据 { 种类: 图表种类; 标题: string; 分类: string[]; 系列: 图表系列[]; 图例: '下'|'右'|'无'; 横轴标题: string; 纵轴标题: string; 显示横轴: boolean; 显示纵轴: boolean; 数值格式: '0'|'0.00'|'0%'|'0.00%'|'#,##0'; 动态?: 图表动态 }
 export function 创建图表(种类: 图表种类): 演示对象 {
   const 对象: 演示对象 = { id: 标识(), 类型: '图表', x: 120, y: 80, width: 600, height: 360, 图表: { 种类, 标题: '季度收入', 分类: ['第一季度','第二季度','第三季度'], 系列: [{id:'series-0',名称:'收入',数值:[12,24,18],颜色:图表配色[0]}], 图例:'下', 横轴标题:'',纵轴标题:'',显示横轴:true,显示纵轴:true,数值格式:'0' } }
   校验图表数据(对象)
@@ -148,6 +153,34 @@ export function 校验图表数据(对象: 演示对象): void { 校验图表(�
 export function 修改图表(对象: 演示对象, 图表: 图表数据): 演示对象 {
   if (对象.类型 !== '图表') throw new Error('请选择图表')
   const 新对象 = { ...对象, 图表 }; 校验图表数据(新对象); return 新对象
+}
+/** 设置或关闭图表动态播放；关闭时只移除动态参数，图表数据保持不变。 */
+export function 设置图表动态(对象: 演示对象, 动态?: 图表动态): 演示对象 {
+  if (对象.类型 !== '图表' || !对象.图表) throw new Error('请选择图表')
+  if (动态 === undefined) {
+    const { 动态: _省略, ...其余 } = 对象.图表
+    return 修改图表(对象, 其余 as 图表数据)
+  }
+  if (!['按系列', '按分类', '按系列与数据点'].includes(动态.步进)) throw new Error('图表动态步进无效')
+  if (!Number.isInteger(动态.每步毫秒) || 动态.每步毫秒 < 100 || 动态.每步毫秒 > 60000) throw new Error('图表动态每步时长无效：须为 0.1 至 60 秒')
+  return 修改图表(对象, { ...对象.图表, 动态 })
+}
+/** 动态播放总步数；未设置动态时为 0，表示始终显示最终状态。 */
+export function 图表步数(图: 图表数据): number {
+  if (!图.动态) return 0
+  if (图.动态.步进 === '按系列') return 图.系列.length
+  if (图.动态.步进 === '按分类') return 图.分类.length
+  return 图.系列.length * 图.分类.length
+}
+/** 已完成步数对应的显示范围；未设置动态时返回 undefined（静态导出与编辑区使用最终状态）。 */
+export function 读取图表显示(图: 图表数据, 已完成步数: number): 图表显示 | undefined {
+  if (!图.动态) return undefined
+  const 完成 = Math.max(0, Math.min(图表步数(图), Math.floor(已完成步数)))
+  const 分类数 = 图.分类.length, 系列数 = 图.系列.length
+  if (图.动态.步进 === '按系列') return { 点数: Array.from({ length: Math.min(完成, 系列数) }, () => 分类数) }
+  if (图.动态.步进 === '按分类') return { 点数: Array.from({ length: 系列数 }, () => Math.min(完成, 分类数)) }
+  const 完整 = Math.min(Math.floor(完成 / 分类数), 系列数), 余 = 完成 % 分类数
+  return { 点数: [...Array.from({ length: 完整 }, () => 分类数), ...(完整 < 系列数 && 余 ? [余] : [])] }
 }
 export function 添加图表系列(对象: 演示对象): 演示对象 {
   const 图 = 对象.图表

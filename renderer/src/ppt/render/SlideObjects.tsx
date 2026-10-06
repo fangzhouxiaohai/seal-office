@@ -3,14 +3,15 @@ import React from 'react'
 import { App as AntdApp } from 'antd'
 import type { 幻灯片, 文本框, 演示对象 } from '../deck'
 import { 读取对象树顺序 } from '../model/objectOperations'
+import type { 图表显示 } from '../model/elements'
 import { ShapeRenderer } from './ShapeRenderer'
 import { TableRenderer } from './TableRenderer'
 import { 公式内容, 附件内容, 图示内容 } from './FormulaRenderer'
 import { 默认页面尺寸, 页脚位置, type 背景填充, type 页脚设置, type 页面尺寸 } from '../model/themes'
-export function 对象内容({ 对象, 图片地址 = {} }: { 对象: 演示对象; 图片地址?: 图片地址表 }) {
+export function 对象内容({ 对象, 图片地址 = {}, 显示 }: { 对象: 演示对象; 图片地址?: 图片地址表; 显示?: 图表显示 }) {
   if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
   if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
-  if (对象.类型 === '图表') return <ChartRenderer 对象={对象}/>
+  if (对象.类型 === '图表') return <ChartRenderer 对象={对象} 显示={显示}/>
   if (对象.类型 === '表格') return <TableRenderer 对象={对象}/>
   if (对象.类型 === '公式') return <公式内容 对象={对象}/>
   if (对象.类型 === '附件') return <附件内容 对象={对象}/>
@@ -72,7 +73,8 @@ export function 页脚图层({ 页脚, 页序号, 尺寸 }: { 页脚?: 页脚设
   ))}</>
 }
 
-/** 编辑画布、缩略预览、放映与导出共享相同坐标、文字片段、背景与页脚规则。 */
-export function SlideObjects({ 幻灯片, 图片地址 = {}, 页脚, 页序号 = 0, 页面尺寸 = 默认页面尺寸 }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表; 页脚?: 页脚设置 | null; 页序号?: number; 页面尺寸?: 页面尺寸 }) {
-  return <>{幻灯片.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} /></div>)}<页脚图层 页脚={页脚} 页序号={页序号} 尺寸={页面尺寸} /></>
+/** 编辑画布、缩略预览、放映与导出共享相同坐标、文字片段、背景、页脚与图表显示范围。 */
+export function SlideObjects({ 幻灯片, 图片地址 = {}, 图表显示 = {}, 仅标识, 页脚, 页序号 = 0, 页面尺寸 = 默认页面尺寸 }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表; 图表显示?: Record<string, 图表显示>; 仅标识?: string[]; 页脚?: 页脚设置 | null; 页序号?: number; 页面尺寸?: 页面尺寸 }) {
+  const 显示该项 = (标识: string) => !仅标识 || 仅标识.includes(标识)
+  return <>{幻灯片.文本框列表.filter(框 => 显示该项(框.id)).map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).filter(对象 => 显示该项(对象.id)).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} 显示={图表显示[对象.id]} /></div>)}<页脚图层 页脚={页脚} 页序号={页序号} 尺寸={页面尺寸} /></>
 }
