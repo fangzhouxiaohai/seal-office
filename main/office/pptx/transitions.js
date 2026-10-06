@@ -32,7 +32,8 @@ function 写入切换(页) {
 function 读取切换(xml) {
   const 匹配 = xml.match(/<p:transition\b[^>]*(?:\/>|>[\s\S]*?<\/p:transition>)/)
   if (!匹配) return { 存在: false, 风险: false }
-  const 文本 = 匹配[0], 头 = 文本.slice(0, 文本.indexOf('>') + 1), 属性 = Object.fromEntries([...头.matchAll(/([\w:]+)\s*=\s*(["'])(.*?)\2/g)].map(m => [m[1], m[3]]))
+  // 切换音效与切换效果共存于同一个 p:transition，音效单独读取，不参与切换风险判定。
+  const 文本 = 匹配[0].replace(/<p:sndAc\b[^>]*>[\s\S]*?<\/p:sndAc>/g, ''), 头 = 文本.slice(0, 文本.indexOf('>') + 1), 属性 = Object.fromEntries([...头.matchAll(/([\w:]+)\s*=\s*(["'])(.*?)\2/g)].map(m => [m[1], m[3]]))
   const 子 = 文本.match(new RegExp(子标签))
   const 内文 = 文本.replace(/^<p:transition[^>]*>/, '').replace(/<\/p:transition>$/, '').trim()
   const 风险返回 = { 存在: true, 风险: true }

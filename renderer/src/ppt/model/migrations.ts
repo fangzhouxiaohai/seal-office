@@ -5,6 +5,7 @@ import type { 演示文稿, 演示对象 } from '../deck'
 import { 校验原生元素 } from './elements'
 import { 主题色槽列表, 校验背景填充, 校验主题定义, 校验页脚设置, 校验页面尺寸 } from './themes'
 import { 占位符类型列表, 校验母版列表 } from './masters'
+import { 校验媒体数据, 校验墨迹数据, 校验链接数据, 校验音效数据 } from './mediaObjects'
 
 const 是记录 = (值: unknown): 值 is Record<string, unknown> =>
   typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -57,6 +58,8 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
   if (输入.页脚设置 !== undefined) 校验页脚设置(输入.页脚设置)
   const 页面标识 = new Set<string>()
   const 全部对象标识 = new Set<string>()
+  // 页跳转链接在整篇范围内解析，未知目标一律拒绝而不是留下死链。
+  const 页面标识全集 = (输入.幻灯片列表 as unknown[]).map(页 => (是记录(页) && typeof 页.id === 'string' ? 页.id : '')).filter(Boolean)
   for (const [序号, 原页] of 输入.幻灯片列表.entries()) {
     if (!是记录(原页) || !非空文字(原页.id) || typeof 原页.title !== 'string' ||
       !['标题幻灯片', '标题和内容', '空白'].includes(String(原页.版式)) ||
@@ -99,7 +102,7 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
     if (原页.对象列表 !== undefined && !Array.isArray(原页.对象列表)) throw new Error(`第 ${序号 + 1} 页对象列表无效`)
     for (const 对象 of (原页.对象列表 ?? []) as unknown[]) {
       if (!是记录(对象) || !非空文字(对象.id) ||
-        !['图片', '图形', '表格', '图表', '媒体', '组合', '公式', '附件', '图示'].includes(String(对象.类型)) ||
+        !['图片', '图形', '表格', '图表', '媒体', '组合', '公式', '附件', '图示', '墨迹'].includes(String(对象.类型)) ||
         !有限数(对象.x) || !有限数(对象.y) || !非负数(对象.width) || !非负数(对象.height) ||
         (对象.旋转 !== undefined && !有限数(对象.旋转))) throw new Error(`第 ${序号 + 1} 页对象无效`)
       if (全部对象标识.has(对象.id)) throw new Error(`对象标识重复：${对象.id}`)
@@ -145,9 +148,24 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
         }
         if (!(图示.关系 as Array<{ 角色: string }>).some((项) => 项.角色 === 'dm')) throw new Error(`对象 ${对象.id} 图示缺少数据部件`)
       }
+      if (对象.类型 === '媒体') {
+        const 媒体 = 校验媒体数据(对象.媒体 as never)
+        if (媒体.封面资源标识 !== undefined && !Object.prototype.hasOwnProperty.call(输入.资源索引, 媒体.封面资源标识)) {
+          throw new Error(`对象 ${对象.id} 缺失封面资源`)
+        }
+      }
+      if (对象.类型 === '墨迹') 校验墨迹数据(对象.墨迹 as never)
+      if (对象.链接 !== undefined) {
+        if (!['图片', '媒体'].includes(String(对象.类型))) throw new Error(`对象 ${对象.id} 的类型暂不支持超链接动作`)
+        校验链接数据(对象.链接 as never, 页面标识全集)
+      }
     }
     校验播放参数(原页 as unknown as 演示文稿['幻灯片列表'][number])
     if (!原页.动画) 校验动画(原页 as unknown as 演示文稿['幻灯片列表'][number])
+    if (原页.音效 !== undefined) {
+      const 音效 = 校验音效数据(原页.音效 as never)
+      if (!Object.prototype.hasOwnProperty.call(输入.资源索引, 音效.资源标识)) throw new Error(`第 ${序号 + 1} 页切换音效缺少音频资源`)
+    }
     const 父对象 = new Map<string, string>()
     const 访问 = (标识: string, 路径: Set<string>) => {
       if (路径.has(标识)) throw new Error(`组合对象存在循环引用：${标识}`)
@@ -187,14 +205,16 @@ export function 演示内容快照(文稿: 演示文稿): string {
   return JSON.stringify(规整(正文))
 }
 
-/** 仅放行已通过真实文件及 PowerPoint 核验的文字、位图和恒等坐标组合。 */
+/** 仅放行已通过真实文件及外部软件核验的文字、位图、媒体与恒等坐标组合。 */
 export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   迁移演示文稿(文稿)
   文稿.幻灯片列表.forEach(页 => { 校验动画(页); 页.对象列表?.forEach(校验原生元素) })
+  const 媒体类型 = ['audio/wav','audio/mpeg','audio/mp4','audio/ogg','audio/webm','video/mp4','video/webm']
   if (文稿.幻灯片列表.some(页面 => 页面.对象列表?.some(对象 =>
-    !['图片','组合','图形','表格','图表','公式','附件','图示'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
-    (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '公式' && !!对象.旋转) || (对象.类型 === '图示' && !!对象.旋转) ||
+    !['图片','组合','图形','表格','图表','公式','附件','图示','媒体','墨迹'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
+    (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '公式' && !!对象.旋转) || (对象.类型 === '图示' && !!对象.旋转) || ((对象.类型 === '媒体' || 对象.类型 === '墨迹') && !!对象.旋转) ||
     (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? '')) ||
+    (对象.类型 === '媒体' && !媒体类型.includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? '')) ||
     (对象.类型 === '附件' && 文稿.资源索引?.[对象.附件?.资源标识 ?? '']?.类型 !== 'application/vnd.openxmlformats-officedocument.oleObject') ||
     (对象.类型 === '图示' && 文稿.资源索引?.[对象.图示?.资源标识 ?? '']?.类型 !== 'application/vnd.seal.diagram+json')))) {
     throw new Error('当前版本尚不能完整写入此演示的对象或图片格式，已阻止有损保存')
@@ -212,7 +232,9 @@ export function 收集演示资源标识(文稿: 演示文稿): string[] {
       if (对象.资源标识) 结果.push(对象.资源标识)
       if (对象.附件?.资源标识) 结果.push(对象.附件.资源标识)
       if (对象.图示?.资源标识) 结果.push(对象.图示.资源标识)
+      if (对象.类型 === '媒体' && 对象.媒体?.封面资源标识) 结果.push(对象.媒体.封面资源标识)
     }
+    if (页面.音效?.资源标识) 结果.push(页面.音效.资源标识)
     加入填充(页面.背景填充 as never)
   }
   加入填充(文稿.主题?.背景 as never)

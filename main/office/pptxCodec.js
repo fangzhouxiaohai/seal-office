@@ -6,7 +6,8 @@ const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
-const { 读取图片对象, 写入图片对象, 检查图片字节 } = require('./pptx/media')
+const { 读取图片对象, 写入图片对象, 检查图片字节, 写入音效, 读取音效 } = require('./pptx/media')
+const { 检查媒体字节 } = require('./pptx/mediaTypes')
 const { 写入批注, 读取批注 } = require('./pptx/comments')
 const { 写入定稿, 读取定稿, 校验定稿 } = require('./pptx/finalize')
 const { 读取附件对象, 读取图示对象 } = require('./pptx/embeddedObjects')
@@ -277,7 +278,14 @@ async function 读取pptx(数据) {
     // 已识别的原生对象（含本机写入的公式）先被消费；剩余片段可能是外部改写过的公式。
     const 原生剩余 = 读取原生对象(图片.图表剩余)
     const 公式补充 = 读取剩余公式(原生剩余.剩余)
-    const 动画序列 = 读取动画(正文Xml)
+    // 媒体计时节点按对象种类与播放参数重写比对，先从已识别的媒体对象推导列表。
+    const 媒体列表 = (图片.对象列表 ?? []).filter(项 => 项.类型 === '媒体').map(项 => {
+      const 资源 = 图片.资源条目.find(条目 => 条目.标识 === 项.资源标识)
+      let 种类 = '视频'
+      try { if (资源) 种类 = 检查媒体字节(Buffer.from(资源.数据, 'base64'), 资源.类型).种类 } catch { 种类 = '视频' }
+      return { 对象标识: 项.id, 种类, 参数: 项.媒体 ?? {} }
+    })
+    const 动画序列 = 读取动画(正文Xml, 媒体列表)
     收集幻灯片警告(动画序列 ? 公式补充.剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 公式补充.剩余, 警告)
     const 幻灯片 = 解析幻灯片Xml(公式补充.剩余, 幻灯片列表.length, 页面标识, 主题)
     if (动画序列) 幻灯片.动画序列 = 动画序列
@@ -322,6 +330,15 @@ async function 读取pptx(数据) {
       幻灯片.背景色 = 背景填充.颜色
     }
     if (页脚字段) 幻灯片.页脚 = 页脚字段
+    // 切换音效与切换效果共存于同一个 p:transition，音效需与扩展记录一致才认为完整导入。
+    const 原生音效 = await 读取音效(压缩包, 名称, 正文Xml)
+    for (const 资源 of 原生音效.资源条目) 资源表.set(资源.标识, 资源)
+    for (const 原因 of 原生音效.警告) 警告.add(原因)
+    const 扩展音效 = 读取播放扩展(正文Xml).音效
+    if (原生音效.资源标识) {
+      if (扩展音效 && 扩展音效.资源标识 === 原生音效.资源标识) 幻灯片.音效 = 扩展音效
+      else 警告.add('切换音效未完整导入')
+    } else if (扩展音效) 警告.add('切换音效未完整导入')
     幻灯片列表.push(幻灯片)
   }
   // 页脚设置：任一页存在页脚字段即视为整篇设置了页脚
@@ -335,6 +352,15 @@ async function 读取pptx(数据) {
   const 批注列表 = await 读取批注(压缩包, 幻灯片列表, 警告)
   let 定稿
   try { 定稿 = await 读取定稿(压缩包) ?? undefined } catch { 警告.add('定稿信息未完整导入') }
+  // 页跳转链接按幻灯片顺序换算成稳定页面标识，目标页缺失时明确告警而不是保留死链。
+  for (const 幻灯片 of 幻灯片列表) {
+    for (const 对象 of 幻灯片.对象列表 ?? []) {
+      if (对象.链接?.类型 !== '页' || !对象.链接.目标路径) continue
+      const 位置 = 文件名.findIndex((项) => 项.路径 === 对象.链接.目标路径)
+      if (位置 >= 0) 对象.链接 = { 类型: '页', 目标: 幻灯片列表[位置].id }
+      else { delete 对象.链接; 警告.add('页面跳转目标不存在，链接未完整导入') }
+    }
+  }
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -491,7 +517,7 @@ async function 写入pptx(模型) {
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
   }
-  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表', '公式', '附件', '图示'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表', '公式', '附件', '图示', '媒体', '墨迹'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
       (Array.isArray(项.图片) && 项.图片.length > 0) ||
       (Array.isArray(项.图表) && 项.图表.length > 0) ||
       (Array.isArray(项.媒体) && 项.媒体.length > 0))) {
@@ -598,6 +624,11 @@ async function 写入pptx(模型) {
   if (主题) await 写入主题(压缩包, 主题)
   if (母版列表.length > 0) await 写入多母版(压缩包, 母版列表)
   if (页面尺寸.宽 !== 默认页面尺寸.宽 || 页面尺寸.高 !== 默认页面尺寸.高) await 写入页面尺寸(压缩包, 页面尺寸)
+  // 幻灯片之间的关系目标与来源同目录，写成 slideN.xml，避免被解析成越界路径。
+  const 页面路径 = (标识) => {
+    const 位置 = 幻灯片列表.findIndex((项) => 项?.id === 标识)
+    return 位置 < 0 ? null : `slide${位置 + 1}.xml`
+  }
   for (let 索引 = 0; 索引 < 幻灯片列表.length; 索引 += 1) {
     const 页 = 幻灯片列表[索引]
     const 过渡Xml = 写入切换(页)
@@ -611,7 +642,7 @@ async function 写入pptx(模型) {
     if (颜色引用列表.length) xml = 写入主题色引用(xml, 颜色引用列表, 编码标识)
     const 占位符列表 = (页.文本框 ?? []).filter((框) => 框.占位符 === '标题' || 框.占位符 === '正文')
     if (占位符列表.length) xml = 写入占位符绑定(xml, 占位符列表, 版式索引.get(页.版式标识) ?? null)
-    if (页.对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 页.对象列表, 模型.资源条目 ?? [])
+    if (页.对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 页.对象列表, 模型.资源条目 ?? [], 页面路径)
     if (页.背景填充) {
       const 资源 = 页.背景填充.类型 === '图片' ? 资源条目.get(页.背景填充.资源标识) : null
       xml = await 写入背景填充(压缩包, 名称, xml, 页.背景填充, 资源)
@@ -620,8 +651,17 @@ async function 写入pptx(模型) {
     if (页脚) xml = 写入页脚形状(xml, 页脚, 索引 + 1, 页面尺寸)
     if (页.隐藏 !== undefined && typeof 页.隐藏 !== 'boolean') throw new Error('隐藏页面状态无效')
     if (页.隐藏) xml = xml.replace('<p:sld ', '<p:sld show="0" ')
-    const 动画Xml = 写入动画(xml, 页.动画序列, 收集图表构建(页))
-    xml = xml.replace('</p:sld>', `${过渡Xml}${动画Xml}${页.切换 || 页.动画序列 ? 写入播放扩展(页) : ''}</p:sld>`)
+    // 媒体计时节点需要真实种类与播放参数；缺失字节一律拒绝写入。
+    const 媒体列表 = (页.对象列表 ?? []).filter(项 => 项.类型 === '媒体').map(项 => {
+      const 资源 = (模型.资源条目 ?? []).find(条目 => 条目.标识 === 项.资源标识)
+      if (!资源?.数据) throw new Error(`媒体资源字节缺失：${项.资源标识}`)
+      const 信息 = 检查媒体字节(Buffer.from(资源.数据, 'base64'), 资源.类型)
+      return { 对象标识: 项.id, 种类: 信息.种类, 参数: 项.媒体 ?? {} }
+    })
+    const 动画Xml = 写入动画(xml, 页.动画序列, 媒体列表, 收集图表构建(页))
+    const 音效Xml = 页.音效 ? await 写入音效(压缩包, 名称, 页.音效, 模型.资源条目 ?? []) : ''
+    const 合并过渡Xml = 音效Xml ? (过渡Xml ? 过渡Xml.replace('</p:transition>', `${音效Xml}</p:transition>`) : `<p:transition>${音效Xml}</p:transition>`) : 过渡Xml
+    xml = xml.replace('</p:sld>', `${合并过渡Xml}${动画Xml}${页.切换 || 页.动画序列 || 页.音效 ? 写入播放扩展(页) : ''}</p:sld>`)
     压缩包.file(名称, xml)
   }
   if (模型.循环放映 !== undefined && typeof 模型.循环放映 !== 'boolean') throw new Error('循环放映状态无效')

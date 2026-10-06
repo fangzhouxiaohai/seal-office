@@ -2,6 +2,8 @@ const { 读取对象标识 } = require('./objectIds')
 const { 准备图表, 图框Xml, 读取图表 } = require('./charts')
 const { 写入原生对象, 读取原生对象 } = require('./elements')
 const { 写入附件对象, 写入图示对象 } = require('./embeddedObjects')
+const { 检查媒体字节, 生成封面占位图, 按种类校正类型 } = require('./mediaTypes')
+const { 构建链接, 解析链接, 构建媒体Xml, 解析媒体片段, 构建墨迹Xml, 解析墨迹片段, 视频扩展, 音频扩展, 图片扩展 } = require('./audioVideo')
 const crypto = require('crypto')
 const path = require('path')
 const zlib = require('zlib')
@@ -10,6 +12,7 @@ const { 读取关系 } = require('./relations')
 const { 读取部件 } = require('./parts')
 
 const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
+const 转义Xml = 值 => String(值).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const 布尔真值 = 值 => ['1','true'].includes(值)
 const 锁定属性未保真 = 属性表 => Object.entries(属性表).some(([键,值]) => !['noMove','noResize'].includes(键) || !['0','1','false','true'].includes(值)) || 布尔真值(属性表.noMove) !== 布尔真值(属性表.noResize)
 const 编码标识 = 标识 => `seal-id:${Buffer.from(标识, 'utf8').toString('base64url')}`
@@ -62,7 +65,7 @@ function 检查图片字节(数据, 声明类型) {
   return { 类型, 宽, 高 }
 }
 
-async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) {
+async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表, 页面路径 = () => null) {
   const 标识表 = new Set(), 父表 = new Map()
   for (const 对象 of 对象列表) {
     if (!对象.id || 标识表.has(对象.id)) throw new Error('图片对象标识为空或重复')
@@ -104,6 +107,50 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   对象列表.filter(项 => !成员.has(项.id)).forEach(分配标识)
   const 生成 = 对象 => {
     if (预生成.has(对象.id)) return 预生成.get(对象.id)
+    if (对象.链接 && !['图片','媒体'].includes(对象.类型)) throw new Error('当前只有图片与媒体对象支持保真写入超链接动作，已阻止有损保存')
+    const 链接 = 对象.链接 ? 构建链接(对象.链接, 编号, 页面路径) : null
+    if (链接?.关系.length) 关系Xml = 关系Xml.replace('</Relationships>', `${链接.关系.map(项 => 项.外部
+      ? `<Relationship Id="${项.标识}" Type="${项.类型}" Target="${转义Xml(项.目标)}" TargetMode="External"/>`
+      : `<Relationship Id="${项.标识}" Type="${项.类型}" Target="${项.目标}"/>`).join('')}</Relationships>`)
+    const 链接子元素 = 链接?.子元素 ?? ''
+    if (对象.类型 === '媒体') {
+      const 资源 = 资源表.get(对象.资源标识)
+      if (!资源 || !资源.数据) throw new Error(`媒体资源字节缺失：${对象.资源标识}`)
+      const 数据 = Buffer.from(资源.数据, 'base64')
+      const 媒体信息 = 检查媒体字节(数据, 资源.类型)
+      if (crypto.createHash('sha256').update(数据).digest('hex') !== 资源.标识) throw new Error('媒体资源指纹不匹配')
+      const 媒体路径 = `ppt/media/${资源.标识}.${媒体信息.扩展}`
+      包.file(媒体路径, 数据)
+      if (!new RegExp(`Extension="${媒体信息.扩展}"`).test(类型Xml)) 类型Xml = 类型Xml.replace('</Types>', `<Default Extension="${媒体信息.扩展}" ContentType="${媒体信息.类型}"/></Types>`)
+      const 编号值 = 编号++
+      const 媒体关系标识 = `sealMedia${编号值}`
+      关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${媒体关系标识}" Type="${媒体信息.种类 === '视频' ? 视频扩展 : 音频扩展}" Target="../media/${资源.标识}.${媒体信息.扩展}"/></Relationships>`)
+      let 封面标识, 封面扩展
+      const 封面资源 = 对象.媒体?.封面资源标识 ? 资源表.get(对象.媒体.封面资源标识) : null
+      if (封面资源) {
+        if (!封面资源.数据) throw new Error(`媒体封面资源字节缺失：${对象.媒体.封面资源标识}`)
+        const 封面字节 = Buffer.from(封面资源.数据, 'base64')
+        if (crypto.createHash('sha256').update(封面字节).digest('hex') !== 封面资源.标识) throw new Error('媒体封面资源指纹不匹配')
+        const 封面类型 = 检查图片字节(封面字节, 封面资源.类型).类型
+        封面扩展 = 封面类型 === 'image/png' ? 'png' : 'jpg'
+        封面标识 = 封面资源.标识
+        包.file(`ppt/media/${封面标识}.${封面扩展}`, 封面字节)
+        if (!new RegExp(`Extension="${封面扩展}"`).test(类型Xml)) 类型Xml = 类型Xml.replace('</Types>', `<Default Extension="${封面扩展}" ContentType="${封面类型}"/></Types>`)
+      } else {
+        const 占位 = 生成封面占位图(媒体信息.种类)
+        封面标识 = crypto.createHash('sha256').update(占位).digest('hex')
+        封面扩展 = 'png'
+        包.file(`ppt/media/${封面标识}.png`, 占位)
+        if (!/Extension="png"/.test(类型Xml)) 类型Xml = 类型Xml.replace('</Types>', '<Default Extension="png" ContentType="image/png"/></Types>')
+      }
+      const 封面关系标识 = `sealPoster${编号值}`
+      关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${封面关系标识}" Type="${图片扩展}" Target="../media/${封面标识}.${封面扩展}"/></Relationships>`)
+      return 构建媒体Xml({ 对象, 编号: 编号值, 媒体关系标识, 封面关系标识, 媒体种类: 媒体信息.种类, 锁定: 对象.锁定 === true, 链接: 链接子元素 })
+    }
+    if (对象.类型 === '墨迹') {
+      if (链接子元素) throw new Error('笔迹不支持超链接动作')
+      return 构建墨迹Xml(对象, 编号++)
+    }
     if (对象.类型 === '组合') {
       if (对象.旋转) throw new Error('当前不能保真保存旋转组合，已阻止有损保存')
       const 子对象 = (对象.子对象标识 ?? []).map(id => 对象列表.find(项 => 项.id === id))
@@ -131,7 +178,8 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
     const 关系标识 = `sealImage${编号}`
     关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${关系标识}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${资源.标识}.${扩展}"/></Relationships>`)
     const 裁剪 = 对象.裁剪 ?? { 左: 0, 上: 0, 右: 0, 下: 0 }
-    return `<p:pic><p:nvPicPr><p:cNvPr id="${编号++}" name="${编码标识(对象.id)}"/><p:cNvPicPr><a:picLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${关系标识}"/><a:srcRect l="${Math.round(裁剪.左 * 100000)}" t="${Math.round(裁剪.上 * 100000)}" r="${Math.round(裁剪.右 * 100000)}" b="${Math.round(裁剪.下 * 100000)}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm rot="${Math.round((对象.旋转 ?? 0) * 60000)}"><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
+    const 编号值 = 编号++
+    return `<p:pic><p:nvPicPr><p:cNvPr id="${编号值}" name="${编码标识(对象.id)}"${链接子元素 ? `>${链接子元素}</p:cNvPr>` : '/>'}<p:cNvPicPr><a:picLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${关系标识}"/><a:srcRect l="${Math.round(裁剪.左 * 100000)}" t="${Math.round(裁剪.上 * 100000)}" r="${Math.round(裁剪.右 * 100000)}" b="${Math.round(裁剪.下 * 100000)}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm rot="${Math.round((对象.旋转 ?? 0) * 60000)}"><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
   }
   const 内容 = 对象列表.filter(项 => !成员.has(项.id)).map(生成).join('')
   包.file(关系路径, 关系Xml); 包.file('[Content_Types].xml', 类型Xml)
@@ -139,17 +187,111 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   return xml.replace('</p:spTree>', `${内容}</p:spTree>`)
 }
 
+/** 切换音效：音频部件 + 音频关系 + 原生 p:sndAc 节点。 */
+async function 写入音效(包, 路径, 音效, 资源列表) {
+  if (!音效 || typeof 音效 !== 'object' || Array.isArray(音效)) throw new Error('切换音效设置无效')
+  if (Object.keys(音效).some(键 => !['资源标识','音量','循环'].includes(键))) throw new Error('切换音效含未知属性，已阻止有损保存')
+  if (typeof 音效.资源标识 !== 'string' || !音效.资源标识) throw new Error('切换音效资源标识无效')
+  if (音效.音量 !== undefined && (!Number.isFinite(音效.音量) || 音效.音量 < 0 || 音效.音量 > 100)) throw new Error('切换音效音量无效')
+  if (音效.循环 !== undefined && typeof 音效.循环 !== 'boolean') throw new Error('切换音效循环设置无效')
+  const 资源 = new Map(资源列表.map(项 => [项.标识, 项])).get(音效.资源标识)
+  if (!资源?.数据) throw new Error(`切换音效资源字节缺失：${音效.资源标识}`)
+  const 数据 = Buffer.from(资源.数据, 'base64')
+  const 信息 = 检查媒体字节(数据, 资源.类型)
+  if (信息.种类 !== '音频') throw new Error('切换音效必须使用音频文件')
+  if (crypto.createHash('sha256').update(数据).digest('hex') !== 资源.标识) throw new Error('切换音效资源指纹不匹配')
+  const 关系路径 = path.posix.join(path.posix.dirname(路径), '_rels', `${path.posix.basename(路径)}.rels`)
+  let 关系Xml = 包.file(关系路径) ? await 包.file(关系路径).async('string') : '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
+  let 类型Xml = await 读取部件(包, '[Content_Types].xml').async('string')
+  包.file(`ppt/media/${资源.标识}.${信息.扩展}`, 数据)
+  if (!new RegExp(`Extension="${信息.扩展}"`).test(类型Xml)) 类型Xml = 类型Xml.replace('</Types>', `<Default Extension="${信息.扩展}" ContentType="${信息.类型}"/></Types>`)
+  const 关系标识 = 'sealSound1'
+  const 已有 = [...关系Xml.matchAll(/Id="([^"]+)"/g)].map(项 => 项[1])
+  const 唯一标识 = 已有.includes(关系标识) ? `sealSound${已有.length + 1}` : 关系标识
+  关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${唯一标识}" Type="${音频扩展}" Target="../media/${资源.标识}.${信息.扩展}"/></Relationships>`)
+  包.file(关系路径, 关系Xml); 包.file('[Content_Types].xml', 类型Xml)
+  return `<p:sndAc><p:stSnd><p:snd r:embed="${唯一标识}"/><p:endSnd/></p:stSnd></p:sndAc>`
+}
+
+/** 读取原生切换音效，只返回资源标识；音量等本机参数由播放扩展核验。 */
+async function 读取音效(包, 路径, xml) {
+  const 匹配 = xml.match(/<p:sndAc\b[^>]*>[\s\S]*?<\/p:sndAc>/)
+  if (!匹配) return { 资源条目: [], 警告: [] }
+  const 音频标签 = 匹配[0].match(/<p:snd\b[^>]*>/)?.[0] ?? ''
+  const 关系标识 = 属性(音频标签, 'r:embed')
+  const 关系 = await 读取关系(包, 路径)
+  const 关联 = 关系.get(关系标识)
+  if (!关联 || 关联.外部 || !关联.类型.endsWith('/audio')) return { 资源条目: [], 警告: ['切换音效未完整导入'] }
+  try {
+    const 数据 = await 读取部件(包, 关联.目标).async('nodebuffer')
+    const 信息 = 检查媒体字节(数据)
+    const 标识 = crypto.createHash('sha256').update(数据).digest('hex')
+    return { 资源标识: 标识, 资源条目: [{ 标识, 类型: 信息.类型, 数据: 数据.toString('base64') }], 警告: [] }
+  } catch {
+    return { 资源条目: [], 警告: ['切换音效字节损坏或格式不受支持，未完整导入'] }
+  }
+}
+
 async function 读取图片对象(包, 路径, xml) {
   const 关系 = await 读取关系(包, 路径)
   const 原生 = 读取原生对象(xml)
   const 图表 = await 读取图表(包, 路径, xml)
   const 对象列表 = [...原生.对象列表,...图表.对象列表], 资源表 = new Map(), 警告 = [...原生.警告,...图表.警告]
-  const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b/g), 项 => 项.index)
+  const 已识别媒体片段 = []
+  const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/g)).filter(项 => !项[0].includes('descr="seal-ink:')).map(项 => 项.index)
   if (首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)) 警告.push('图片与文字图层未完整导入')
   if (/<p:pic\b[^>]*\/>/.test(xml)) 警告.push('图片未导入')
   for (const 匹配 of xml.matchAll(/<p:pic\b[^>]*>([\s\S]*?)<\/p:pic>/g)) {
     const 内容 = 匹配[1]
-    const 支持标签 = new Set(['p:pic','p:nvPicPr','p:cNvPr','p:cNvPicPr','p:nvPr','p:blipFill','p:spPr','a:picLocks','a:blip','a:srcRect','a:stretch','a:fillRect','a:xfrm','a:off','a:ext','a:prstGeom','a:avLst'])
+    if (/<a:(?:videoFile|audioFile)\b/.test(内容) || /<p14:media\b/.test(内容)) {
+      const 解析 = 解析媒体片段(内容)
+      if (!解析) { 警告.push('媒体对象未完整导入'); continue }
+      if (解析.警告) { 警告.push(解析.警告); continue }
+      const 媒体关联 = 关系.get(解析.媒体关系)
+      if (!媒体关联 || 媒体关联.外部 || !/\/(?:video|audio)$/.test(媒体关联.类型)) { 警告.push('媒体关系缺失或类型不符，媒体未完整导入'); continue }
+      let 数据, 信息
+      try {
+        数据 = await 读取部件(包, 媒体关联.目标).async('nodebuffer')
+        信息 = 检查媒体字节(数据)
+      } catch { 警告.push('媒体字节损坏或格式不受支持，媒体未完整导入'); continue }
+      // WebM 与 ISO BMFF 同时承载音频和视频，读取时按原生节点种类校正媒体类型。
+      const 校正类型 = 按种类校正类型(信息, 解析.种类)
+      if (!校正类型) { 警告.push('媒体声明类型与实际字节不符，媒体未完整导入'); continue }
+      信息 = { ...信息, 类型: 校正类型 }
+      const 媒体标识 = crypto.createHash('sha256').update(数据).digest('hex')
+      资源表.set(媒体标识, { 标识: 媒体标识, 类型: 信息.类型, 数据: 数据.toString('base64') })
+      let 封面标识
+      if (解析.封面关系) {
+        const 封面关联 = 关系.get(解析.封面关系)
+        if (!封面关联 || 封面关联.外部 || !封面关联.类型.endsWith('/image')) 警告.push('媒体封面关系无效，封面未完整导入')
+        else {
+          try {
+            const 封面数据 = await 读取部件(包, 封面关联.目标).async('nodebuffer')
+            const 封面信息 = 检查图片字节(封面数据)
+            const 候选 = crypto.createHash('sha256').update(封面数据).digest('hex')
+            const 占位 = crypto.createHash('sha256').update(生成封面占位图(解析.种类)).digest('hex')
+            if (候选 !== 占位) {
+              封面标识 = 候选
+              资源表.set(候选, { 标识: 候选, 类型: 封面信息.类型, 数据: 封面数据.toString('base64') })
+            }
+          } catch { 警告.push('媒体封面字节损坏，封面未完整导入') }
+        }
+      } else 警告.push('媒体封面缺失，封面未完整导入')
+      const 链接解析 = 解析链接(内容.match(/<p:cNvPr\b[^>]*>[\s\S]*?<\/p:cNvPr>/)?.[0] ?? '', 关系)
+      if (链接解析.警告) 警告.push(链接解析.警告)
+      对象列表.push({
+        id: 读取对象标识(属性(内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? '', 'name'), 路径, 属性(内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? '', 'id')),
+        类型: '媒体',
+        x: 转像素(解析.几何[0]), y: 转像素(解析.几何[1]), width: 转像素(解析.几何[2]), height: 转像素(解析.几何[3]),
+        ...(解析.锁定 ? { 锁定: true } : {}),
+        资源标识: 媒体标识,
+        媒体: { ...(封面标识 ? { 封面资源标识: 封面标识 } : {}), ...解析.参数 },
+        ...(链接解析.链接 ? { 链接: 链接解析.链接 } : {}),
+      })
+      已识别媒体片段.push(匹配[0])
+      continue
+    }
+    const 支持标签 = new Set(['p:pic','p:nvPicPr','p:cNvPr','p:cNvPicPr','p:nvPr','p:blipFill','p:spPr','a:picLocks','a:blip','a:srcRect','a:stretch','a:fillRect','a:xfrm','a:off','a:ext','a:prstGeom','a:avLst','a:hlinkClick'])
     if (Array.from(内容.matchAll(/<([\w:]+)\b/g), 项 => 项[1]).some(标签 => !支持标签.has(标签))) 警告.push('图片效果未完整导入')
     const 支持属性 = { 'p:cNvPr': ['id','name'], 'a:picLocks': ['noMove','noResize'], 'a:blip': ['r:embed'], 'a:srcRect': ['l','t','r','b'], 'a:fillRect': ['l','t','r','b'], 'a:xfrm': ['rot','flipH','flipV'], 'a:off': ['x','y'], 'a:ext': ['cx','cy'], 'a:prstGeom': ['prst'] }
     const 属性解析器 = sax.parser(true)
@@ -173,6 +315,8 @@ async function 读取图片对象(包, 路径, xml) {
     const 属性标签 = 内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? ''
     const 锁标签 = 内容.match(/<a:picLocks\b[^>]*>/)?.[0] ?? ''
     const 锁定值 = 键 => 布尔真值(属性(锁标签, 键))
+    const 链接解析 = 解析链接(内容.match(/<p:cNvPr\b[^>]*>[\s\S]*?<\/p:cNvPr>/)?.[0] ?? '', 关系)
+    if (链接解析.警告) 警告.push(链接解析.警告)
     if (锁定属性未保真(Object.fromEntries(Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g),项=>[项[1],项[2]])))) 警告.push('图片锁定属性未完整导入')
     const 旋转 = Number(属性(变换, 'rot') ?? 0) / 60000
     if (/\bflip[HV]="(?:1|true)"|<a:(?:effectLst|effectDag|tile|duotone|lum|alphaModFix|ln|custGeom)\b|<a:prstGeom\b[^>]*prst="(?!rect")/.test(内容)) 警告.push('图片效果未完整导入')
@@ -180,7 +324,7 @@ async function 读取图片对象(包, 路径, xml) {
     if (['l','t','r','b'].some(名称 => Number(属性(填充区域, 名称) ?? 0) !== 0)) 警告.push('图片填充区域未完整导入')
     const 几何值 = [属性(位置,'x'),属性(位置,'y'),属性(尺寸,'cx'),属性(尺寸,'cy')].map(Number)
     if (!几何值.every(Number.isFinite) || 几何值[2] <= 0 || 几何值[3] <= 0 || !Number.isFinite(旋转) || Object.values(裁剪值).some(值 => !Number.isFinite(值) || 值 < 0 || 值 >= 1) || 裁剪值.左 + 裁剪值.右 >= 1 || 裁剪值.上 + 裁剪值.下 >= 1) throw new Error('图片几何或裁剪数据损坏')
-    对象列表.push({ id: 读取对象标识(属性(属性标签, 'name'), 路径, 属性(属性标签, 'id')), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识 })
+    对象列表.push({ id: 读取对象标识(属性(属性标签, 'name'), 路径, 属性(属性标签, 'id')), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识, ...(链接解析.链接 ? { 链接: 链接解析.链接 } : {}) })
   }
   // 组合按原生对象树读取；非恒等坐标变换保留风险提示，不能覆盖来源。
   const 栈 = [], 组合列表 = [], 顺序 = []
@@ -220,7 +364,26 @@ async function 读取图片对象(包, 路径, xml) {
     else 对象列表.push(组合)
   }
   对象列表.sort((甲, 乙) => 顺序.indexOf(甲.id) - 顺序.indexOf(乙.id))
-  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告, 图表剩余: 图表.剩余 }
+  // 永久笔迹：只认带私有标记的自由曲线，其余形状继续交给文字与语义结构解析。
+  let 剩余Xml = 图表.剩余
+  for (const 匹配 of [...剩余Xml.matchAll(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/g)]) {
+    const 片段 = 匹配[0]
+    if (!片段.includes('descr="seal-ink:')) continue
+    const 解析 = 解析墨迹片段(片段)
+    if (!解析) continue
+    if (解析.警告) { 警告.push(解析.警告); continue }
+    const 标签 = 片段.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? ''
+    对象列表.push({
+      id: 读取对象标识(属性(标签, 'name'), 路径, 属性(标签, 'id')),
+      类型: '墨迹',
+      x: 转像素(解析.几何[0]), y: 转像素(解析.几何[1]), width: 转像素(解析.几何[2]), height: 转像素(解析.几何[3]),
+      墨迹: 解析.墨迹,
+    })
+    剩余Xml = 剩余Xml.replace(片段, '')
+  }
+  // 已识别的媒体与笔迹不再参与「未导入内容」扫描，避免重复告警。
+  for (const 片段 of 已识别媒体片段) 剩余Xml = 剩余Xml.replace(片段, '')
+  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告, 图表剩余: 剩余Xml }
 }
 
-module.exports = { 检查图片字节, 读取图片对象, 写入图片对象 }
+module.exports = { 检查图片字节, 读取图片对象, 写入图片对象, 写入音效, 读取音效 }

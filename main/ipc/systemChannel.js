@@ -91,6 +91,19 @@ function 注册系统通道(ipcMain) {
     文件保存: '首次保存会选择路径，之后可直接使用保存命令。',
     PDF导出: '在文件菜单中选择导出为 PDF。',
   }))
+  ipcMain.handle('system.openExternal', async (_事件, 地址) => {
+    // 协议白名单在渲染端与主进程各校验一次，避免任意协议被系统打开。
+    if (typeof 地址 !== 'string' || !地址 || 地址.length > 2048) return { 成功: false, 错误: '链接地址无效' }
+    let 网址
+    try { 网址 = new URL(地址) } catch { return { 成功: false, 错误: '链接地址格式无效' } }
+    if (!['http:', 'https:', 'mailto:'].includes(网址.protocol)) return { 成功: false, 错误: `链接协议不受支持：${网址.protocol}` }
+    try {
+      await shell.openExternal(网址.toString())
+      return { 成功: true }
+    } catch (错误) {
+      return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '系统无法打开该链接' }
+    }
+  })
   ipcMain.handle('app.getInfo', async () => ({
     名称: '海豹办公', 英文名称: 'Seal Office', 版本: app.getVersion(), 作者: '饮风一笑',
     邮箱: '24519660@qq.com', 说明: '本程序永久免费开源',

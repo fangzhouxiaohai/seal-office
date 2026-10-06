@@ -1,8 +1,7 @@
 export type 命令能力状态 = '可用' | '缺少配置' | '只读' | '正在执行' | '暂不可用'
 
-const 尚未实现 = new Set([
-  'insert.media',
-])
+// 任务 8 已交付拼写检查与批注，任务 9 已交付媒体插入：集合为空表示当前没有「提示即完成」的入口。
+const 尚未实现 = new Set<string>([])
 
 export function 读取演示命令状态(
   标识: string,
