@@ -10,8 +10,8 @@
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice%201.8.2.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice Setup 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice%20Setup%201.8.2.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
+| 便携版 | [SealOffice 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice.1.8.2.exe)，下载后直接运行。 |
+| 安装版 | [SealOffice Setup 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice.Setup.1.8.2.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
 | 发布说明 | [v1.8.2 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.8.2)，包含新建弹窗、打印、模板与 DOCX 导入修复。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
