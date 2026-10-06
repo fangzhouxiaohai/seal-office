@@ -91,6 +91,34 @@ export interface 演示智能接口 {
   clearAudioCache: () => Promise<{ 成功: boolean; 错误?: string }>
   onStream: (回调: (片段: { 请求标识: string; 类型: string; 内容: string }) => void) => () => void
 }
+export type 生成版式 = '标题幻灯片' | '标题和内容' | '空白'
+export interface 生成提纲项 { 页标识: string; 标题: string; 版式: 生成版式; 要点: string[] }
+export interface 生成页面项 { 页标识: string; 标题: string; 正文: string; 版式?: 生成版式; 要点: string[] }
+export interface 美化建议项 { 页标识: string; 对齐: '左对齐' | '居中' | '右对齐'; 字号建议: number; 要点上限: number; 背景建议: '浅色' | '深色' | '保持不变'; 版式建议: 生成版式; 说明?: string }
+export interface 生成图形节点 { 标识: string; 文本: string }
+export interface 生成图形连线 { 起点: string; 终点: string; 文本?: string }
+export interface 素材条目 { 标识: string; 名称: string; 分类: string; 类型: string; 字节数: number; 来源?: string; 授权: string; 导入时间: string }
+export interface 提纲遗漏项 { 类型: string; 说明: string }
+export interface 导入提纲结果 { 提纲: Array<{ 标题: string; 要点: string[] }>; 遗漏: 提纲遗漏项[]; 来源: { 名称: string; 类型: string; 字节数: number } }
+export interface 素材搜索结果 { 结果: Array<{ 标识: string; 相关度: number; 理由: string }> }
+export interface 演示生成接口 {
+  outline: (输入: { 请求标识: string; 主题: string; 受众?: string; 页数: number; 风格?: string; 素材约束?: string }) => Promise<{ 成功: boolean; 数据?: { 提纲: 生成提纲项[] }; 错误?: string }>
+  pages: (输入: { 请求标识: string; 提纲: 生成提纲项[] }) => Promise<{ 成功: boolean; 数据?: { 页面: 生成页面项[] }; 错误?: string }>
+  singlePage: (输入: { 请求标识: string; 内容: string; 版式?: 生成版式 }) => Promise<{ 成功: boolean; 数据?: { 页面: 生成页面项 }; 错误?: string }>
+  beautify: (输入: { 请求标识: string; 页面列表: Array<{ 页标识: string; 版式?: string }>; 主题摘要?: string }) => Promise<{ 成功: boolean; 数据?: { 建议: 美化建议项[] }; 错误?: string }>
+  diagram: (输入: { 请求标识: string; 主题: string; 类型: '流程' | '层级' | '循环' | '脑图' }) => Promise<{ 成功: boolean; 数据?: { 节点: 生成图形节点[]; 连线: 生成图形连线[] }; 错误?: string }>
+  validateCandidates: (候选: Array<{ 页标识: string }>, 当前页面列表: Array<{ 页标识: string; 版本: string }>, 版本表: Record<string, string>) => Promise<{ 成功: boolean; 数据?: Array<{ 页标识: string }>; 错误?: string }>
+  readOutline: (输入: { 名称: string; 数据: string }) => Promise<{ 成功: boolean; 数据?: 导入提纲结果; 错误?: string }>
+  assets: {
+    list: () => Promise<{ 成功: boolean; 数据?: 素材条目[]; 错误?: string }>
+    search: (关键词: string) => Promise<{ 成功: boolean; 数据?: 素材条目[]; 错误?: string }>
+    read: (标识: string) => Promise<{ 成功: boolean; 数据?: { 数据: string }; 错误?: string }>
+    import: (输入: { 数据: string; 类型: string; 名称: string; 分类: string; 来源?: string; 授权: string }) => Promise<{ 成功: boolean; 数据?: { 素材: 素材条目; 去重: boolean }; 错误?: string }>
+    updateMeta: (标识: string, 修改: { 名称?: string; 分类?: string; 来源?: string; 授权?: string }) => Promise<{ 成功: boolean; 数据?: { 素材: 素材条目 }; 错误?: string }>
+    remove: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
+    semanticSearch: (输入: { 请求标识: string; 查询: string }) => Promise<{ 成功: boolean; 数据?: 素材搜索结果; 错误?: string }>
+  }
+}
 export interface 电子接口 {
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
@@ -140,6 +168,7 @@ export interface 电子接口 {
     submitToolResult?: (结果: 助手工具结果) => Promise<助手结果<never>>
   }
   presentationAi?: 演示智能接口
+  presentationGeneration?: 演示生成接口
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
@@ -247,6 +276,25 @@ export const 桥接 = {
     narrate: (输入: { 请求标识?: string; 讲稿: 讲稿项[] }) => 取后端()?.presentationAi?.narrate(输入) ?? 失败('当前环境不支持讲解音频合成'),
     clearAudioCache: () => 取后端()?.presentationAi?.clearAudioCache() ?? 失败('当前环境不支持音频缓存清理'),
     onStream: (回调: (片段: { 请求标识: string; 类型: string; 内容: string }) => void): (() => void) => 取后端()?.presentationAi?.onStream?.(回调) ?? (() => {}),
+  },
+  presentationGeneration: {
+    outline: (输入: Parameters<演示生成接口['outline']>[0]) => 取后端()?.presentationGeneration?.outline(输入) ?? 失败('当前环境不支持演示提纲生成'),
+    pages: (输入: Parameters<演示生成接口['pages']>[0]) => 取后端()?.presentationGeneration?.pages(输入) ?? 失败('当前环境不支持演示正文生成'),
+    singlePage: (输入: Parameters<演示生成接口['singlePage']>[0]) => 取后端()?.presentationGeneration?.singlePage(输入) ?? 失败('当前环境不支持单页生成'),
+    beautify: (输入: Parameters<演示生成接口['beautify']>[0]) => 取后端()?.presentationGeneration?.beautify(输入) ?? 失败('当前环境不支持智能美化'),
+    diagram: (输入: Parameters<演示生成接口['diagram']>[0]) => 取后端()?.presentationGeneration?.diagram(输入) ?? 失败('当前环境不支持智能图形生成'),
+    validateCandidates: (候选: Parameters<演示生成接口['validateCandidates']>[0], 当前页面列表: Parameters<演示生成接口['validateCandidates']>[1], 版本表: Parameters<演示生成接口['validateCandidates']>[2]) =>
+      取后端()?.presentationGeneration?.validateCandidates(候选, 当前页面列表, 版本表) ?? 失败('当前环境不支持候选核对'),
+    readOutline: (输入: Parameters<演示生成接口['readOutline']>[0]) => 取后端()?.presentationGeneration?.readOutline(输入) ?? 失败('当前环境不支持文档提纲导入'),
+    assets: {
+      list: () => 取后端()?.presentationGeneration?.assets.list() ?? 失败('当前环境不支持素材库'),
+      search: (关键词: string) => 取后端()?.presentationGeneration?.assets.search(关键词) ?? 失败('当前环境不支持素材检索'),
+      read: (标识: string) => 取后端()?.presentationGeneration?.assets.read(标识) ?? 失败('当前环境不支持素材读取'),
+      import: (输入: Parameters<演示生成接口['assets']['import']>[0]) => 取后端()?.presentationGeneration?.assets.import(输入) ?? 失败('当前环境不支持素材导入'),
+      updateMeta: (标识: string, 修改: Parameters<演示生成接口['assets']['updateMeta']>[1]) => 取后端()?.presentationGeneration?.assets.updateMeta(标识, 修改) ?? 失败('当前环境不支持素材信息更新'),
+      remove: (标识: string) => 取后端()?.presentationGeneration?.assets.remove(标识) ?? 失败('当前环境不支持素材删除'),
+      semanticSearch: (输入: Parameters<演示生成接口['assets']['semanticSearch']>[0]) => 取后端()?.presentationGeneration?.assets.semanticSearch(输入) ?? 失败('当前环境不支持素材智能检索'),
+    },
   },
   office: {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),

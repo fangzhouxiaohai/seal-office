@@ -6,6 +6,7 @@ const { 注册系统通道 } = require('./systemChannel')
 const { 注册智能助手通道 } = require('./aiChannel')
 const { 注册演示通道 } = require('./presentationChannel')
 const { 注册演示智能通道 } = require('./presentationAiChannel')
+const { 注册演示生成通道 } = require('./presentationGenerationChannel')
 
 function 注册全部通道(ipcMain) {
   注册文件通道(ipcMain)
@@ -16,6 +17,7 @@ function 注册全部通道(ipcMain) {
   const 助手服务 = 注册智能助手通道(ipcMain)
   注册演示通道(ipcMain)
   注册演示智能通道(ipcMain, { 助手服务, 用户数据目录: app.getPath('userData') })
+  注册演示生成通道(ipcMain, { 助手服务, 用户数据目录: app.getPath('userData') })
 }
 
 module.exports = { 注册全部通道 }

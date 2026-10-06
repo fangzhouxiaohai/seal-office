@@ -1,3 +1,26 @@
+/* 智能生成与素材库面板：沿用既有令牌，仅补充面板级提示与预览样式。 */
+.wps-generation__hint {
+  margin: var(--space-2, 8px) 0;
+  padding-left: var(--space-2, 8px);
+  border-left: 2px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-generation h3,
+.wps-assets h3 {
+  margin: var(--space-3, 12px) 0 var(--space-1, 4px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.wps-assets img {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+}
+
 /* 审阅相关面板：文档比对与文档定稿。沿用现有设计令牌，不引入新的配色与圆角。 */
 .wps-review__tabs {
   display: flex;

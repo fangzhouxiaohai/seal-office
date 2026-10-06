@@ -56,6 +56,8 @@ import {
 import { 解析页面背景, 标记占位符覆盖 } from './model/masters'
 import TranslationPanel from './panels/TranslationPanel'
 import NarrationPanel from './panels/NarrationPanel'
+import GenerationPanel from './panels/GenerationPanel'
+import AssetLibraryPanel from './panels/AssetLibraryPanel'
 import { 删除对象, 替换对象内容, 修改对象, 对齐对象, 分布对象, 组合对象, 解除组合, 调整图层, type 几何修改 } from './model/objectOperations'
 import { 解码图片文件 } from './model/imageImport'
 import { 使用放映状态 } from './presentationState'
@@ -74,6 +76,8 @@ const 是同一路径 = (左: string, 右: string): boolean =>
 const 只读可放行命令 = new Set([
   'review.comment', 'review.spell', 'review.commentPrevious', 'review.commentNext',
   'review.commentToggle', 'review.langToSimplified', 'review.langToTraditional',
+  // 智能面板与素材库只打开右侧面板用于查看，不修改正文，定稿/只读状态下同样放行。
+  'review.translate', 'review.proofread', 'slideshow.narrate', 'insert.generate', 'insert.assets', 'design.beautify',
 ])
 const 只读可放行 = (标识: string): boolean =>
   标识.startsWith('view.') || 标识.startsWith('slideshow.') || 标识.startsWith('file.') || 只读可放行命令.has(标识)
@@ -112,8 +116,8 @@ const PptEditor = () => {
   const 只读 = 手动只读 || Boolean(文稿.定稿)
   const [显示批注, set显示批注] = useState(true)
   const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对' | '翻译'>('检查')
-  /** 智能服务面板：讲稿与讲解音频；其余智能入口复用审阅面板的翻译与校对视图。 */
-  const [智能面板, set智能面板] = useState<'讲稿' | null>(null)
+  /** 智能面板：讲稿与讲解音频、生成与美化、素材库；翻译与校对复用审阅面板视图。 */
+  const [智能面板, set智能面板] = useState<'讲稿' | '生成' | '素材库' | null>(null)
   const [转换方向, set转换方向] = useState<'简' | '繁'>('繁')
   const [设计面板, set设计面板] = useState<'主题' | '母版' | '检查' | null>(null)
   const [预览主题候选, set预览主题候选] = useState<主题定义 | null>(null)
@@ -566,6 +570,8 @@ const PptEditor = () => {
     // 智能面板入口只切换右侧面板，不属于正文修改，只读状态同样允许查看。
     if (标识 === 'review.translate' || 标识 === 'review.proofread') { set当前标签('review'); set审阅区域('翻译'); return }
     if (标识 === 'slideshow.narrate') { set当前标签('slideshow'); set智能面板('讲稿'); return }
+    if (标识 === 'insert.generate' || 标识 === 'design.beautify') { set当前标签('insert'); set智能面板('生成'); return }
+    if (标识 === 'insert.assets') { set当前标签('insert'); set智能面板('素材库'); return }
     if (!标识.startsWith('slideshow.')) set智能面板(null)
     if (只读 && !只读可放行(标识)) return
     if (标识 === 'insert.picture') { 图片输入.current?.click(); return }
@@ -1124,6 +1130,17 @@ const PptEditor = () => {
         on应用: 更新文稿,
         检测字体: 默认字体检测,
       }) : 当前标签 === 'slideshow' && 智能面板 === '讲稿' ? React.createElement(NarrationPanel, { 文稿, 只读, on修改: 更新文稿 })
+        : 智能面板 === '生成' ? React.createElement(GenerationPanel, { 文稿, 页: 当前幻灯片 ?? 文稿.幻灯片列表[0], 只读, on修改: 更新文稿 })
+        : 智能面板 === '素材库' ? React.createElement(AssetLibraryPanel, {
+            文稿, 页: 当前幻灯片 ?? 文稿.幻灯片列表[0], 只读, on修改: 更新文稿,
+            on插入图片: (素材, 数据) => {
+              try {
+                const 二进制 = atob(数据)
+                const 字节 = Uint8Array.from(二进制, (字符) => 字符.charCodeAt(0))
+                void 插入图片([new File([字节], 素材.名称, { type: 素材.类型 })])
+              } catch (错误) { 显示文件错误('素材插入失败', 错误 instanceof Error ? 错误.message : '无法读取素材字节') }
+            },
+          })
         : 当前幻灯片 && 当前标签 === 'review'
         ? (审阅区域 === '批注'
             ? React.createElement(CommentsPanel, {
