@@ -7,6 +7,7 @@ const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 写入批注, 读取批注 } = require('./pptx/comments')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -270,6 +271,7 @@ async function 读取pptx(数据) {
     幻灯片列表.push(幻灯片)
   }
   await 收集母版警告(压缩包, 文件名.map((项) => 项.路径), 警告)
+  const 批注列表 = await 读取批注(压缩包, 幻灯片列表, 警告)
   return {
     演示文稿: {
       id: 'deck-imported',
@@ -279,6 +281,7 @@ async function 读取pptx(数据) {
       当前索引: 0,
       模型版本: 2,
       资源索引: Object.fromEntries(Array.from(资源表, ([标识, 资源]) => [标识, { 指纹: 标识, 类型: 资源.类型, 字节数: Buffer.from(资源.数据, 'base64').length }])),
+      ...(批注列表.length ? { 批注列表 } : {}),
     },
     警告: Array.from(警告),
     资源条目: Array.from(资源表.values()),
@@ -478,6 +481,7 @@ async function 写入pptx(模型) {
     压缩包.file(名称, xml)
   }
   if (模型.循环放映 !== undefined && typeof 模型.循环放映 !== 'boolean') throw new Error('循环放映状态无效')
+  await 写入批注(压缩包, 模型.批注列表, 幻灯片列表)
   const 属性 = 压缩包.file('ppt/presProps.xml')
   if (属性 && 模型.循环放映 !== undefined) {
     const 内容 = (await 属性.async('string')).replace(/<p:presentationPr([^>]*)\/>/, '<p:presentationPr$1></p:presentationPr>').replace(/<p:showPr\b[^>]*(?:\/>|>[\s\S]*?<\/p:showPr>)/g, '')

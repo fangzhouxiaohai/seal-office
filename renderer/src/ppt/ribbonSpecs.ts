@@ -198,11 +198,23 @@ const 审阅标签: RibbonTabSpec = {
   groups: [
     {
       name: '校对',
-      items: [大('review.spell', '拼写检查', 'spell-check')],
+      items: [大('review.spell', '排版检查', 'spell-check')],
     },
     {
       name: '批注',
-      items: [大('review.comment', '新建批注', 'comment')],
+      items: [
+        大('review.comment', '新建批注', 'comment'),
+        小('review.commentPrevious', '上一条', 'arrow-left'),
+        小('review.commentNext', '下一条', 'arrow-left'),
+        小('review.commentToggle', '显示批注', 'navigation'),
+      ],
+    },
+    {
+      name: '中文简繁',
+      items: [
+        大('review.langToSimplified', '繁转简', 'language'),
+        大('review.langToTraditional', '简转繁', 'language'),
+      ],
     },
   ],
 }

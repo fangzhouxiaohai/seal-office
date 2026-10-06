@@ -3,6 +3,7 @@
 import type { 形状数据, 表格数据, 连接数据, 图表数据 } from './model/elements'
 import type { 切换设置, 换片设置 } from './model/transitions'
 import type { 对象动画 } from './model/animations'
+import type { 批注 } from './model/comments'
 
 export interface 文本片段 {
   文本: string
@@ -85,6 +86,8 @@ export interface 演示文稿 {
   幻灯片列表: 幻灯片[]
   当前索引: number
   资源索引?: Record<string, 演示资源>
+  /** 批注线程；与逐页备注相互独立，按页面稳定标识关联 */
+  批注列表?: 批注[]
 }
 
 /** 画布基准尺寸，按 16:9 比例 */
@@ -243,7 +246,9 @@ export function 删除幻灯片(文稿: 演示文稿, 标识: string): 演示文
     return 文稿
   }
   const 列表 = 文稿.幻灯片列表.filter((项) => 项.id !== 标识)
-  return { ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1) }
+  // 页面删除时同步移除该页批注，避免留下悬挂引用；撤销由整体快照负责
+  const 批注列表 = 文稿.批注列表?.filter(批注 => 批注.页标识 !== 标识)
+  return { ...文稿, 幻灯片列表: 列表, 当前索引: Math.min(下标, 列表.length - 1), ...(文稿.批注列表 === undefined ? {} : { 批注列表 }) }
 }
 
 /** 切换当前幻灯片；索引越界时保持不变 */

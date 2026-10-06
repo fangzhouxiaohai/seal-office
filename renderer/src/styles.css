@@ -3269,3 +3269,19 @@ button {
 .wps-animation-dialog .wps-ppt-properties__actions button:hover { background: var(--bg-hover); border-color: var(--brand); }
 .wps-animation-dialog .wps-ppt-properties__actions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-animation-dialog .wps-ppt-properties__actions button:disabled { opacity: .55; cursor: default; }
+
+/* 审阅：画布批注标记、批注线程、排版检查与繁简转换列表 */
+.wps-ppt-comment-marker { position: absolute; z-index: 3; min-width: 18px; height: 18px; padding: 0 var(--space-1); border: 1px solid var(--brand); border-radius: var(--radius-control); background: var(--bg-card); color: var(--brand); font-size: 12px; line-height: 16px; text-align: center; pointer-events: none; }
+.wps-ppt-review label { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); color: var(--text-2); }
+.wps-ppt-review input, .wps-ppt-review textarea, .wps-ppt-review select { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-1) var(--space-2); font: inherit; min-height: 28px; }
+.wps-ppt-review textarea { min-height: 64px; resize: vertical; }
+.wps-ppt-review p { color: var(--text-2); line-height: 1.6; margin: var(--space-2) 0; }
+.wps-ppt-review button[aria-pressed="true"] { border-color: var(--brand); color: var(--brand); }
+.wps-comment-list, .wps-review-list { list-style: none; margin: 0; padding: 0; }
+.wps-comment-list li, .wps-review-list li { border-top: 1px solid var(--border); padding-top: var(--space-3); margin-top: var(--space-3); }
+.wps-comment-list__meta, .wps-review-list__meta { color: var(--text-2); margin: 0 0 var(--space-1); overflow-wrap: anywhere; }
+.wps-comment-list__text, .wps-review-list__text { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+.wps-comment-list__reply { margin: 0 0 var(--space-1); color: var(--text-2); overflow-wrap: anywhere; }
+.wps-comment-list__stale { margin: 0 0 var(--space-1); color: var(--text-2); }
+.wps-review-list__text mark { background: var(--bg-hover); color: var(--brand); }
+@media (max-width: 768px) { .wps-ppt-review label { flex-direction: row; align-items: center; flex-wrap: wrap; } }

@@ -14,6 +14,8 @@ interface Props {
   on拖动框: (标识: string, x: number, y: number) => void
   on文本选择: (标识: string, 起始: number, 结束: number) => void
   onContextMenu?: (x: number, y: number) => void
+  /** 批注标记位置；是否显示由上层根据显示开关决定 */
+  批注标记?: Array<{ 键: string; 序号: number; x: number; y: number; 标题: string }>
 }
 export default function SlideCanvas(属性: Props) {
   const { 幻灯片: 页, 缩放, 图片地址 = {}, 选中对象 = [], 只读 = false } = 属性
@@ -100,6 +102,7 @@ export default function SlideCanvas(属性: Props) {
         })}
         {属性.参考线?.垂直.map((x,i) => <div key={`竖${i}`} className="wps-ppt-guide wps-ppt-guide--vertical" style={{ left: x }} />)}
         {属性.参考线?.水平.map((y,i) => <div key={`横${i}`} className="wps-ppt-guide wps-ppt-guide--horizontal" style={{ top: y }} />)}
+        {属性.批注标记?.map(标记 => <div key={标记.键} data-批注标记={标记.键} className="wps-ppt-comment-marker" title={标记.标题} aria-label={`批注 ${标记.序号}：${标记.标题}`} style={{ left: 标记.x, top: 标记.y }}>{标记.序号}</div>)}
       </div>
     </div>
   </div>
