@@ -29,3 +29,46 @@
 .wps-ppt-chart-panel .wps-ppt-chart-panel__apply { background: var(--brand); color: var(--text-inverse, #fff); }
 
 .wps-ppt-chart-panel .wps-ppt-chart-panel__apply:hover:enabled { background: var(--brand); color: var(--text-inverse, #fff); }
+
+/* 公式、符号与附件面板：沿用既有令牌与间距，不新增装饰色。 */
+.wps-ppt-formula-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: var(--space-2, 8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+  overflow: auto;
+}
+
+.wps-ppt-symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: var(--space-1, 4px);
+  max-height: 260px;
+  overflow: auto;
+  padding: var(--space-1, 4px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+}
+
+.wps-ppt-symbol-grid button {
+  min-height: 44px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.wps-ppt-attachment-picker {
+  display: block;
+  padding: var(--space-2, 8px);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-control, 6px);
+}
+
+.wps-ppt-attachment-warning {
+  color: var(--text-1);
+  border-left: 3px solid var(--brand);
+  padding-left: var(--space-2, 8px);
+}

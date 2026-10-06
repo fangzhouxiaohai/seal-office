@@ -1,6 +1,7 @@
 const { 读取对象标识 } = require('./objectIds')
 const { 准备图表, 图框Xml, 读取图表 } = require('./charts')
 const { 写入原生对象, 读取原生对象 } = require('./elements')
+const { 写入附件对象, 写入图示对象 } = require('./embeddedObjects')
 const crypto = require('crypto')
 const path = require('path')
 const zlib = require('zlib')
@@ -87,12 +88,22 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
   let 类型Xml = await 读取部件(包, '[Content_Types].xml').async('string')
   const 图表部件 = await 准备图表(包, 路径, 对象列表)
   let 编号 = Math.max(1, ...Array.from(xml.matchAll(/<p:cNvPr\b[^>]*id="(\d+)"/g), 项 => Number(项[1]))) + 1
+  // 附件与原生图示需要新增压缩包部件与关系，先统一生成，再按对象取用。
+  const 预生成 = new Map()
+  for (const 对象 of 对象列表.filter(项 => !对象列表.some(父 => 父.类型 === '组合' && 父.子对象标识?.includes(项.id)))) {
+    if (对象.类型 !== '附件' && 对象.类型 !== '图示') continue
+    const 结果 = 对象.类型 === '附件'
+      ? await 写入附件对象(对象, 编号++, { 包, 关系Xml, 类型Xml, 资源表 })
+      : await 写入图示对象(对象, 编号++, { 包, 关系Xml, 类型Xml, 资源表 })
+    关系Xml = 结果.关系Xml; 类型Xml = 结果.类型Xml; 预生成.set(对象.id, 结果.xml)
+  }
   const 成员 = new Set(对象列表.flatMap(项 => 项.类型 === '组合' ? 项.子对象标识 ?? [] : []))
   const 原生标识 = new Map()
   let 预分配 = 编号
   const 分配标识 = 对象 => { 原生标识.set(对象.id,预分配++); for (const id of 对象.子对象标识 ?? []) 分配标识(对象列表.find(项 => 项.id === id)) }
   对象列表.filter(项 => !成员.has(项.id)).forEach(分配标识)
   const 生成 = 对象 => {
+    if (预生成.has(对象.id)) return 预生成.get(对象.id)
     if (对象.类型 === '组合') {
       if (对象.旋转) throw new Error('当前不能保真保存旋转组合，已阻止有损保存')
       const 子对象 = (对象.子对象标识 ?? []).map(id => 对象列表.find(项 => 项.id === id))
@@ -106,7 +117,7 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表) 
       if (!类型Xml.includes('Extension="xlsx"')) 类型Xml = 类型Xml.replace('</Types>', '<Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/></Types>')
       return 图框Xml(对象,编号++,关系标识)
     }
-    if (['图形','表格'].includes(对象.类型)) return 写入原生对象(对象, 编号++, 原生标识)
+    if (['图形','表格','公式'].includes(对象.类型)) return 写入原生对象(对象, 编号++, 原生标识)
     if (对象.类型 !== '图片') throw new Error('当前不能保真保存此对象，已阻止有损保存')
     const 资源 = 资源表.get(对象.资源标识)
     if (!资源 || !资源.数据) throw new Error(`图片资源字节缺失：${对象.资源标识}`)

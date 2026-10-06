@@ -1,0 +1,126 @@
+/* 公式、附件与原生图示的呈现样式：沿用既有设计令牌，不引入新的装饰色。 */
+.wps-ppt-formula {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.2;
+  font-family: 'Cambria Math', 'Microsoft YaHei', serif;
+  white-space: nowrap;
+}
+
+.wps-ppt-formula__sup,
+.wps-ppt-formula__sub {
+  font-size: 0.68em;
+  line-height: 1;
+}
+
+.wps-ppt-formula__scripts {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 1px;
+}
+
+.wps-ppt-formula__frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 2px;
+  font-size: 0.92em;
+}
+
+.wps-ppt-formula__num {
+  border-bottom: 1px solid currentColor;
+  padding: 0 3px;
+}
+
+.wps-ppt-formula__den {
+  padding: 0 3px;
+}
+
+.wps-ppt-formula__root {
+  display: inline-flex;
+  align-items: stretch;
+  margin: 0 1px;
+}
+
+.wps-ppt-formula__radical {
+  align-self: flex-start;
+}
+
+.wps-ppt-formula__radicand {
+  border-top: 1px solid currentColor;
+  padding: 0 2px;
+}
+
+.wps-ppt-formula__broken {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wps-ppt-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-2, 8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.wps-ppt-attachment__badge,
+.wps-ppt-diagram__badge {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 6px);
+  padding: 0 6px;
+}
+
+.wps-ppt-attachment__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+.wps-ppt-attachment__meta,
+.wps-ppt-diagram__meta {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.wps-ppt-attachment__risk {
+  font-size: 12px;
+  color: var(--text-1);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1, 4px);
+}
+
+.wps-ppt-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-2, 8px);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-control, 6px);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.wps-ppt-diagram__text {
+  font-size: 14px;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}

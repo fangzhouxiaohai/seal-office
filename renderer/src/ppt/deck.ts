@@ -52,9 +52,31 @@ export interface 幻灯片 {
   对象列表?: 演示对象[]
 }
 
+export interface 公式数据 {
+  表达式: string
+  字号: number
+  颜色: string
+}
+
+export interface 附件数据 {
+  文件名: string
+  显示名称: string
+  资源标识: string
+  字节数: number
+}
+
+/** 原生图示（SmartArt）按部件与关系原样保留，本机不提供语义编辑。 */
+export interface 图示数据 {
+  显示文本: string
+  资源标识: string
+  关系: Array<{ 角色: 'dm' | 'lo' | 'qs' | 'cs'; 部件路径: string }>
+}
+
+export type 演示对象类型 = '图片' | '图形' | '表格' | '图表' | '媒体' | '组合' | '公式' | '附件' | '图示'
+
 export type 演示对象 = {
   id: string
-  类型: '图片' | '图形' | '表格' | '图表' | '媒体' | '组合'
+  类型: 演示对象类型
   x: number
   y: number
   width: number
@@ -69,6 +91,9 @@ export type 演示对象 = {
   图表?: 图表数据
   连接?: 连接数据
   语义类型?: '流程'|'层级'|'循环'|'脑图'
+  公式?: 公式数据
+  附件?: 附件数据
+  图示?: 图示数据
 }
 
 export interface 演示资源 {

@@ -7,6 +7,8 @@ const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 const { 读取图片对象, 写入图片对象 } = require('./pptx/media')
+const { 读取附件对象, 读取图示对象 } = require('./pptx/embeddedObjects')
+const { 读取剩余公式 } = require('./pptx/formulas')
 
 // 画布 960×540 像素按 72dpi 折算为 13.33×7.5 英寸（LAYOUT_WIDE）
 const 像素转英寸 = (像素) => Math.round((像素 / 72) * 10000) / 10000
@@ -253,18 +255,24 @@ async function 读取pptx(数据) {
         !/(?:<p:spTree\b[^>]*\/>|<p:spTree\b[^>]*>[\s\S]*<\/p:spTree>)/i.test(xml)) {
       throw new Error(`演示文件无效：幻灯片内容损坏（${名称}）`)
     }
-    const 图片 = await 读取图片对象(压缩包, 名称, xml)
+    const 嵌入 = await 读取附件对象(压缩包, 名称, xml)
+    const 图示 = await 读取图示对象(压缩包, 名称, 嵌入.剩余)
+    const 图片 = await 读取图片对象(压缩包, 名称, 图示.剩余)
+    // 已识别的原生对象（含本机写入的公式）先被消费；剩余片段可能是外部改写过的公式。
+    const 原生剩余 = 读取原生对象(图片.图表剩余)
+    const 公式补充 = 读取剩余公式(原生剩余.剩余)
     const 动画序列 = 读取动画(xml)
-    收集幻灯片警告(动画序列 ? 读取原生对象(图片.图表剩余).剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 读取原生对象(图片.图表剩余).剩余, 警告)
-    const 幻灯片 = 解析幻灯片Xml(读取原生对象(图片.图表剩余).剩余, 幻灯片列表.length, 页面标识)
+    收集幻灯片警告(动画序列 ? 公式补充.剩余.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '') : 公式补充.剩余, 警告)
+    const 幻灯片 = 解析幻灯片Xml(公式补充.剩余, 幻灯片列表.length, 页面标识)
     if (动画序列) 幻灯片.动画序列 = 动画序列
     const 原生切换 = 读取切换(xml), 扩展 = 读取播放扩展(xml)
     if (原生切换.切换 && 扩展.切换) {
       try { if (写入切换({ 切换: 扩展.切换, 换片: 原生切换.换片 }) === 写入切换({ 切换: 原生切换.切换, 换片: 原生切换.换片 })) 幻灯片.切换 = 扩展.切换 } catch { 警告.add('幻灯片切换效果未完整导入') }
     }
-    if (图片.对象列表.length) 幻灯片.对象列表 = 图片.对象列表
-    for (const 资源 of 图片.资源条目) 资源表.set(资源.标识, 资源)
-    for (const 原因 of 图片.警告) 警告.add(原因)
+    const 对象列表 = [...图片.对象列表, ...公式补充.对象列表, ...嵌入.对象列表, ...图示.对象列表]
+    if (对象列表.length) 幻灯片.对象列表 = 对象列表
+    for (const 资源 of [...图片.资源条目, ...嵌入.资源条目, ...图示.资源条目]) 资源表.set(资源.标识, 资源)
+    for (const 原因 of [...图片.警告, ...公式补充.警告, ...嵌入.警告, ...图示.警告]) 警告.add(原因)
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
     幻灯片列表.push(幻灯片)
@@ -380,7 +388,7 @@ async function 写入pptx(模型) {
   if (!模型 || (!Array.isArray(模型.幻灯片) && !Array.isArray(模型.幻灯片列表))) {
     throw new Error('演示文稿保存模型无效：缺少幻灯片列表')
   }
-  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
+  if (幻灯片列表.some((项) => (Array.isArray(项.对象列表) && 项.对象列表.some(对象 => !['图片', '组合', '图形', '表格', '图表', '公式', '附件', '图示'].includes(对象.类型) || !对象.id || !Number.isFinite(对象.x) || !Number.isFinite(对象.y) || !(对象.width > 0) || !(对象.height > 0))) ||
       (Array.isArray(项.图片) && 项.图片.length > 0) ||
       (Array.isArray(项.图表) && 项.图表.length > 0) ||
       (Array.isArray(项.媒体) && 项.媒体.length > 0))) {

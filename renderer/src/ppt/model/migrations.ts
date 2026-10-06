@@ -67,7 +67,7 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
     if (原页.对象列表 !== undefined && !Array.isArray(原页.对象列表)) throw new Error(`第 ${序号 + 1} 页对象列表无效`)
     for (const 对象 of (原页.对象列表 ?? []) as unknown[]) {
       if (!是记录(对象) || !非空文字(对象.id) ||
-        !['图片', '图形', '表格', '图表', '媒体', '组合'].includes(String(对象.类型)) ||
+        !['图片', '图形', '表格', '图表', '媒体', '组合', '公式', '附件', '图示'].includes(String(对象.类型)) ||
         !有限数(对象.x) || !有限数(对象.y) || !非负数(对象.width) || !非负数(对象.height) ||
         (对象.旋转 !== undefined && !有限数(对象.旋转))) throw new Error(`第 ${序号 + 1} 页对象无效`)
       if (全部对象标识.has(对象.id)) throw new Error(`对象标识重复：${对象.id}`)
@@ -82,6 +82,36 @@ export function 校验演示文稿(输入: unknown): asserts 输入 is 演示文
       if ((对象.类型 === '图片' || 对象.类型 === '媒体') &&
         (!非空文字(对象.资源标识) || !Object.prototype.hasOwnProperty.call(输入.资源索引, 对象.资源标识))) {
         throw new Error(`对象 ${对象.id} 缺失资源`)
+      }
+      if (对象.类型 === '公式') {
+        const 公式 = 对象.公式
+        if (!是记录(公式) || typeof 公式.表达式 !== 'string' || 公式.表达式.trim().length === 0 || 公式.表达式.length > 1000 ||
+          !有限数(公式.字号) || (公式.字号 as number) <= 0 || !颜色有效(公式.颜色) || 对象.旋转 !== undefined) {
+          throw new Error(`对象 ${对象.id} 公式数据无效`)
+        }
+      }
+      if (对象.类型 === '附件') {
+        const 附件 = 对象.附件
+        if (!是记录(附件) || !非空文字(附件.文件名) || !非空文字(附件.显示名称) || !非空文字(附件.资源标识) ||
+          !Object.prototype.hasOwnProperty.call(输入.资源索引, 附件.资源标识) ||
+          !Number.isSafeInteger(附件.字节数) || (附件.字节数 as number) <= 0 ||
+          (输入.资源索引 as Record<string, { 字节数: number }>)[附件.资源标识 as string].字节数 !== 附件.字节数) {
+          throw new Error(`对象 ${对象.id} 附件数据或资源无效`)
+        }
+      }
+      if (对象.类型 === '图示') {
+        const 图示 = 对象.图示
+        if (!是记录(图示) || typeof 图示.显示文本 !== 'string' || !非空文字(图示.资源标识) ||
+          !Object.prototype.hasOwnProperty.call(输入.资源索引, 图示.资源标识) || !Array.isArray(图示.关系)) {
+          throw new Error(`对象 ${对象.id} 图示数据或资源无效`)
+        }
+        for (const 项 of 图示.关系 as unknown[]) {
+          if (!是记录(项) || !['dm', 'lo', 'qs', 'cs'].includes(String(项.角色)) ||
+            typeof 项.部件路径 !== 'string' || !/^ppt\/diagrams\/[^/]+\.xml$/i.test(项.部件路径)) {
+            throw new Error(`对象 ${对象.id} 图示部件关系无效`)
+          }
+        }
+        if (!(图示.关系 as Array<{ 角色: string }>).some((项) => 项.角色 === 'dm')) throw new Error(`对象 ${对象.id} 图示缺少数据部件`)
       }
     }
     校验播放参数(原页 as unknown as 演示文稿['幻灯片列表'][number])
@@ -125,8 +155,11 @@ export function 校验当前Pptx写入能力(文稿: 演示文稿): void {
   迁移演示文稿(文稿)
   文稿.幻灯片列表.forEach(页 => { 校验动画(页); 页.对象列表?.forEach(校验原生元素) })
   if (文稿.幻灯片列表.some(页面 => 页面.对象列表?.some(对象 =>
-    !['图片','组合','图形','表格','图表'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
-    (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? ''))))) {
+    !['图片','组合','图形','表格','图表','公式','附件','图示'].includes(对象.类型) || 对象.width <= 0 || 对象.height <= 0 ||
+    (对象.类型 === '组合' && !!对象.旋转) || (对象.类型 === '公式' && !!对象.旋转) || (对象.类型 === '图示' && !!对象.旋转) ||
+    (对象.类型 === '图片' && !['image/png','image/jpeg'].includes(文稿.资源索引?.[对象.资源标识 ?? '']?.类型 ?? '')) ||
+    (对象.类型 === '附件' && 文稿.资源索引?.[对象.附件?.资源标识 ?? '']?.类型 !== 'application/vnd.openxmlformats-officedocument.oleObject') ||
+    (对象.类型 === '图示' && 文稿.资源索引?.[对象.图示?.资源标识 ?? '']?.类型 !== 'application/vnd.seal.diagram+json')))) {
     throw new Error('当前版本尚不能完整写入此演示的对象或图片格式，已阻止有损保存')
   }
 }
@@ -137,6 +170,8 @@ export function 收集演示资源标识(文稿: 演示文稿): string[] {
   for (const 页面 of 文稿.幻灯片列表) {
     for (const 对象 of 页面.对象列表 ?? []) {
       if (对象.资源标识) 结果.push(对象.资源标识)
+      if (对象.附件?.资源标识) 结果.push(对象.附件.资源标识)
+      if (对象.图示?.资源标识) 结果.push(对象.图示.资源标识)
     }
   }
   return 结果
