@@ -3445,3 +3445,18 @@ button {
 .wps-show-settings__readonly { color: var(--text-2); font-size: 12px; }
 .wps-show-settings__shows { margin: var(--space-2) 0 0; padding-left: var(--space-4); }
 .wps-show-settings__pages { margin: var(--space-1) 0; padding-left: var(--space-4); }
+/* 放映设置面板较窄：自定义放映的名称与页面行改为换行布局，避免面板内出现横向滚动条 */
+.wps-show-settings__shows > li { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.wps-show-settings__shows label { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.wps-show-settings__shows input { width: 100%; min-width: 0; }
+.wps-show-settings__pages > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+.wps-show-settings__pages > li > span { flex: 1 1 100%; overflow-wrap: anywhere; }
+.wps-show-settings__pages > li > button { flex: 0 0 auto; }
+/* 四断点实测（480/768/1024/1280）发现两处横向溢出，这里统一收敛：缩略图不得超出栏宽，
+   放映设置面板的下拉框与输入框不得超出面板宽度（面板本身 overflow:auto，避免出现横向滚动条）。 */
+.wps-ppt-thumb { max-width: 100%; }
+.wps-show-settings label { min-width: 0; }
+.wps-show-settings select,
+.wps-show-settings input,
+.wps-show-settings button { max-width: 100%; }
+.wps-show-settings select { width: 100%; }
