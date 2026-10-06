@@ -30,6 +30,24 @@ export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 
 export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
 export interface 默认程序提示结果 { 成功: boolean; 需要询问?: boolean; 错误?: string }
 export interface 演示资源条目 { 标识: string; 类型: string; 数据: string }
+export interface 演示导出请求 {
+  html: string
+  格式: string
+  页面尺寸: { 宽: number; 高: number }
+  条目: Array<{ 序号: number }>
+  基础名: string
+  目录?: string
+  分辨率倍数?: number
+  JPEG质量?: number
+  讲义每页张数?: number
+  输出备注?: boolean
+}
+export interface 演示导出文件 { 路径: string; 字节数: number }
+export interface 演示导出结果 { 成功: boolean; 错误?: string; 已取消?: boolean; 文件列表?: 演示导出文件[]; 页数?: number }
+export interface 演示导出接口 {
+  run: (请求: 演示导出请求) => Promise<演示导出结果>
+  pickDirectory: () => Promise<{ 成功: boolean; 目录?: string; 已取消?: boolean; 错误?: string }>
+}
 export interface 演示资源接口 {
   add: (数据: string, 类型: string) => Promise<{ 成功: boolean; 标识?: string; 字节数?: number; 类型?: string; 错误?: string }>
   read: (标识: string) => Promise<{ 成功: boolean; 数据?: string; 错误?: string }>
@@ -54,6 +72,7 @@ export interface 电子接口 {
   backupPreserve: (已读取内容?: string) => Promise<{ 成功: boolean; 路径?: string; 错误?: string }>
   backupClear: () => Promise<{ 成功: boolean; 错误?: string }>
   presentationResources?: 演示资源接口
+  presentationExport?: 演示导出接口
   recentList: () => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentAdd: (条目: 最近文档记录) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
   recentRemove: (路径: string) => Promise<{ 成功: boolean; 数据?: Array<最近文档记录>; 错误?: string }>
@@ -132,6 +151,12 @@ export const 桥接 = {
     export: (标识列表: string[]): Promise<{ 成功: boolean; 条目?: 演示资源条目[]; 错误?: string }> =>
       取后端()?.presentationResources?.export(标识列表) ?? 失败('当前环境不支持演示资源备份'),
     restore: (条目列表: 演示资源条目[]) => 取后端()?.presentationResources?.restore(条目列表) ?? 失败('当前环境不支持演示资源恢复'),
+  },
+  presentationExport: {
+    get 可用() { return typeof 取后端()?.presentationExport?.run === 'function' },
+    run: (请求: 演示导出请求): Promise<演示导出结果> => 取后端()?.presentationExport?.run(请求) ?? 失败('当前环境不支持演示导出，请使用 Windows 桌面版'),
+    pickDirectory: (): Promise<{ 成功: boolean; 目录?: string; 已取消?: boolean; 错误?: string }> =>
+      取后端()?.presentationExport?.pickDirectory?.() ?? Promise.resolve({ 成功: false, 已取消: true }),
   },
   recentList: (): Promise<{ 成功: boolean; 数据?: 最近文档记录[]; 错误?: string }> => 取后端()?.recentList?.() ?? 失败('当前环境不支持最近文档读取'),
   recentAdd: (条目: 最近文档记录) => 取后端()?.recentAdd?.(条目) ?? 失败('当前环境不支持最近文档记录'),

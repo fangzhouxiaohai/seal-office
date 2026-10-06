@@ -229,7 +229,7 @@ const 视图标签: RibbonTabSpec = {
     },
     {
       name: '导出',
-      items: [大('file.exportHtml', '导出为网页', 'export-file')],
+      items: [大('file.exportDialog', '导出', 'export-file'), 大('file.exportHtml', '导出为网页', 'export-file')],
     },
   ],
 }
