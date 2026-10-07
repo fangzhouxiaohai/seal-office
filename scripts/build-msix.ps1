@@ -23,7 +23,7 @@ param(
   [string]$MakeAppx = 'E:\Temp\sdkbuildtools\bin\10.0.28000.0\x64\makeappx.exe',
   [string]$Assets = '',
   [switch]$Sign,
-  [string]$CertSubject = 'CN=SealOfficeLocalTest'
+  [string]$CertSubject = ''
 )
 $ErrorActionPreference = 'Stop'
 $根 = Split-Path -Parent $PSScriptRoot
@@ -105,18 +105,28 @@ Write-Host ("  SHA-256：{0}" -f (Get-FileHash -LiteralPath $Output -Algorithm S
 
 if ($Sign) {
   Write-Host '=== 5) 自签名（仅供本机试用；提交商店不需要，商店会代签）==='
+  # SignTool 要求证书主题与清单里的 Publisher 完全一致，否则报 SignerSign() failed(0x8007000B)
+  if (-not $CertSubject) { $CertSubject = $Publisher }
   $证书 = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $CertSubject } | Select-Object -First 1
   if (-not $证书) {
     $证书 = New-SelfSignedCertificate -Type Custom -Subject $CertSubject -KeyUsage DigitalSignature `
       -FriendlyName 'SealOffice 本机测试' -CertStoreLocation 'Cert:\CurrentUser\My' `
       -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
-    Write-Host "  已创建自签名证书：$($证书.Thumbprint)"
+    Write-Host "  已创建自签名证书：$($证书.Thumbprint)（主题 $CertSubject）"
+  }
+  # 信任该证书，Add-AppxPackage 才允许安装自签名包
+  $已信任 = Get-ChildItem Cert:\CurrentUser\TrustedPeople | Where-Object { $_.Thumbprint -eq $证书.Thumbprint }
+  if (-not $已信任) {
+    Export-Certificate -Cert $证书 -FilePath (Join-Path $env:TEMP 'sealoffice-msix-test.cer') | Out-Null
+    Import-Certificate -FilePath (Join-Path $env:TEMP 'sealoffice-msix-test.cer') -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
+    Write-Host '  已将证书导入本机“受信任人”'
   }
   $密码 = ConvertTo-SecureString -String 'sealoffice' -Force -AsPlainText
   $pfx = Join-Path $env:TEMP 'sealoffice-msix-test.pfx'
   Export-PfxCertificate -Cert $证书 -FilePath $pfx -Password $密码 | Out-Null
   $signtool = Join-Path (Split-Path $MakeAppx -Parent) 'signtool.exe'
   & $signtool sign /fd SHA256 /f $pfx /p 'sealoffice' $Output 2>&1 | Select-Object -Last 3 | ForEach-Object { "  $_" }
-  Write-Host '  已签名（把证书导入“受信任人”后即可 Add-AppxPackage 试用）'
+  $签名结果 = Get-AuthenticodeSignature -LiteralPath $Output
+  Write-Host ("  包签名状态：{0}" -f $签名结果.Status)
 }
 Write-Host '完成'
