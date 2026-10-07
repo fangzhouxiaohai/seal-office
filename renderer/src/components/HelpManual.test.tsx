@@ -21,6 +21,15 @@ describe('帮助手册', () => {
     expect(screen.getByRole('status')).toHaveTextContent('没有找到相关内容')
   })
 
+  it('说明隐私与数据的存放位置、外发范围与清除方式', () => {
+    render(<HelpManual />)
+    fireEvent.click(screen.getByRole('button', { name: '隐私与数据在哪里' }))
+    expect(screen.getByText(/密钥、对话与记忆加密保存在本机/)).toBeInTheDocument()
+    expect(screen.getByText(/只把完成该次请求所需的片段发送到你自己配置的服务地址/)).toBeInTheDocument()
+    expect(screen.getByText(/%APPDATA%\\SealOffice/)).toBeInTheDocument()
+    expect(screen.getByText(/服务商如何留存与使用你发送的内容/)).toBeInTheDocument()
+  })
+
   it('覆盖本机日历、图形工具、文件夹和新文件提醒的操作路径', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '本机日历' }))
