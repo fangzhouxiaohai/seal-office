@@ -4,7 +4,7 @@ import Icon from '../components/Icon'
 import { SlidePreview, 预览页属性 } from './PptViews'
 import type { 图片地址表 } from './render/SlideObjects'
 import { 读取当前幻灯片, type 演示文稿 } from './deck'
-import { 演示缩放范围 } from '../editor/wheelZoom'
+import { 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 
 interface ListProps {
   图片地址?: 图片地址表
@@ -56,8 +56,8 @@ interface StatusProps {
 
 export const PptStatusBar = ({ 文稿, 缩放, on缩放变化 }: StatusProps) => {
   const 当前 = 读取当前幻灯片(文稿)
-  const 放大 = () => on缩放变化(Math.min(演示缩放范围.上限, Number((缩放 + 演示缩放范围.步长).toFixed(2))))
-  const 缩小 = () => on缩放变化(Math.max(演示缩放范围.下限, Number((缩放 - 演示缩放范围.步长).toFixed(2))))
+  const 放大 = () => { const 下一个 = 放大一档(缩放); if (下一个 !== null) on缩放变化(下一个) }
+  const 缩小 = () => { const 下一个 = 缩小一档(缩放); if (下一个 !== null) on缩放变化(下一个) }
   const 框数 = 当前 === null ? 0 : 当前.文本框列表.length
 
   return React.createElement(
@@ -88,7 +88,7 @@ export const PptStatusBar = ({ 文稿, 缩放, on缩放变化 }: StatusProps) =>
           'aria-label': '恢复百分之百',
           onClick: () => on缩放变化(1),
         },
-        `${Math.round(缩放 * 100)}%`
+        `${缩放百分比文本(缩放)}`
       ),
       React.createElement(
         'button',

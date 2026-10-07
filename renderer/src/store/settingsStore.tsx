@@ -10,6 +10,9 @@ export interface SettingsState {
   恢复默认主题: () => void
   语言: string
   设置语言: (语言: string) => void
+  /** 每次启动检查默认程序：打开时启动即校验，不是默认程序就静默设为默认 */
+  启动时检查默认程序: boolean
+  设置启动时检查默认程序: (开启: boolean) => void
 }
 
 const SettingsContext = createContext<SettingsState | null>(null)
@@ -46,6 +49,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const [语言, set语言] = useState<string>('zh-CN')
 
+  // 默认打开：与 WPS 一样，启动时发现不是默认程序就自动设为默认（可在设置中心关闭）
+  const [启动时检查默认程序, set启动时检查默认程序] = useState<boolean>(() => {
+    try { return localStorage.getItem('seal-default-app-auto') !== '关闭' }
+    catch { return true }
+  })
+
   const 切换主题 = () => {
     const 新主题 = 主题 === '浅色' ? '深色' : '浅色'
     try {
@@ -74,9 +83,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     应用主题(主题)
   }, [主题])
 
+  const 保存启动检查 = (开启: boolean) => {
+    try {
+      localStorage.setItem('seal-default-app-auto', 开启 ? '开启' : '关闭')
+    } catch (原因) {
+      set错误({ 标题: '保存默认程序设置失败', 内容: 原因 instanceof Error ? 原因.message : '无法写入本机设置' })
+      return
+    }
+    set启动时检查默认程序(开启)
+  }
+
   return (
     <设置错误上下文.Provider value={{ 错误, 清除错误: () => set错误(null) }}>
-      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言 }}>
+      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查 }}>
         {children}
       </SettingsContext.Provider>
     </设置错误上下文.Provider>

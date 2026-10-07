@@ -139,9 +139,29 @@ describe('编辑器状态栏', () => {
 
   it('缩放不超过上下限', async () => {
     const 回调 = vi.fn()
-    render(<EditorStatusBar 页码={1} 总页数={1} 字数={0} 缩放={2} on缩放变化={回调} />)
+    // 上限 6400%、下限 8.33%：到边界后点击不再回传
+    render(<EditorStatusBar 页码={1} 总页数={1} 字数={0} 缩放={64} on缩放变化={回调} />)
     await userEvent.click(screen.getByRole('button', { name: '放大' }))
-    expect(回调).toHaveBeenCalledWith(2)
+    expect(回调).not.toHaveBeenCalled()
+  })
+
+  it('按档位放大缩小，8.33% 与 6400% 都能正确显示', async () => {
+    const 回调 = vi.fn()
+    const { unmount } = render(<EditorStatusBar 页码={1} 总页数={1} 字数={0} 缩放={1} on缩放变化={回调} />)
+    await userEvent.click(screen.getByRole('button', { name: '放大' }))
+    expect(回调).toHaveBeenCalledWith(1.1)
+    unmount()
+
+    const 底 = render(<EditorStatusBar 页码={1} 总页数={1} 字数={0} 缩放={0.0833} on缩放变化={回调} />)
+    expect(底.getByText('8.33%')).toBeInTheDocument()
+    await userEvent.click(底.getByRole('button', { name: '放大' }))
+    expect(回调).toHaveBeenLastCalledWith(0.125)
+    底.unmount()
+
+    const 顶 = render(<EditorStatusBar 页码={1} 总页数={1} 字数={0} 缩放={64} on缩放变化={回调} />)
+    expect(顶.getByText('6400%')).toBeInTheDocument()
+    await userEvent.click(顶.getByRole('button', { name: '缩小' }))
+    expect(回调).toHaveBeenLastCalledWith(48)
   })
 
   it('点击百分比复位为一倍', async () => {

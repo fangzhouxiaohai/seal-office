@@ -12,7 +12,7 @@ import './settings.css'
 
 const SettingsPage = () => {
   const { message, modal } = AntdApp.useApp()
-  const { 主题, 切换主题, 恢复默认主题 } = useSettings()
+  const { 主题, 切换主题, 恢复默认主题, 启动时检查默认程序, 设置启动时检查默认程序 } = useSettings()
   const { goHome } = useAppStore()
   const [翻译地址, 设翻译地址] = useState('')
   const [翻译密钥, 设翻译密钥] = useState('')
@@ -90,8 +90,10 @@ const SettingsPage = () => {
     设默认设置中(true)
     try {
       const 结果 = await 桥接.setDefaultApp()
-      if (!结果.成功) throw new Error(('错误' in 结果 ? 结果.错误 : undefined) || 结果.提示 || '无法打开系统设置')
-      message.info(结果.提示 || '已打开系统默认应用设置')
+      if (!结果.成功) throw new Error(('错误' in 结果 ? 结果.错误 : undefined) || 结果.提示 || '无法设置默认程序')
+      // 全自动关联成功时只提示一句；系统仍要求手动确认时同样用提示，避免无谓的阻塞弹窗（系统页面会同时打开）
+      if (结果.已全部默认 === false) message.warning(结果.提示 || 'Windows 未允许自动关联全部格式，请在系统默认应用页面确认。', 6)
+      else message.success(结果.提示 || 'DOCX、XLSX、PPTX 与 PDF 已使用海豹办公打开')
     } catch (错误) {
       modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '请检查系统设置是否可用', okText: '确定' })
     }
@@ -253,8 +255,13 @@ const SettingsPage = () => {
         <div className="settings-wps-card">
           {设置行(
             '文件格式关联',
-            '将海豹办公用于 DOCX、XLSX、PPTX 和 PDF；点击后在系统专属页面确认关联',
+            '把 DOCX、XLSX、PPTX 和 PDF 交给海豹办公打开；点击后自动完成关联，无需逐项在系统页面选择',
             <Button size="small" loading={默认设置中} disabled={!桥接.可用 || 默认设置中} onClick={() => void 打开默认应用设置()}>设为默认程序</Button>
+          )}
+          {设置行(
+            '启动时检查默认程序',
+            '每次启动检查这四类格式是否仍由海豹办公打开；发现不是默认程序就自动设为默认（与 WPS 行为一致）',
+            <Switch aria-label="启动时检查默认程序" checked={启动时检查默认程序} onChange={设置启动时检查默认程序} />
           )}
         </div>
 

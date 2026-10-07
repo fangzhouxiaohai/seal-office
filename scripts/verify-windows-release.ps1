@@ -13,7 +13,8 @@ $taskMainPort = $taskPagePort + 1
 New-Item -ItemType Directory -Path $taskDirectory | Out-Null
 try {
   foreach ($taskPhase in @('first', 'repeat', 'confirm')) {
-    $taskArguments = @("--user-data-dir=`"$taskDirectory`"", '--remote-debugging-address=127.0.0.1', "--remote-debugging-port=$taskPagePort", "--inspect=127.0.0.1:$taskMainPort")
+    # --skip-default-app-check：验收不得改动本机真实的文件关联，并保留首次询问弹窗供截图
+    $taskArguments = @("--user-data-dir=`"$taskDirectory`"", '--remote-debugging-address=127.0.0.1', "--remote-debugging-port=$taskPagePort", "--inspect=127.0.0.1:$taskMainPort", '--skip-default-app-check')
     $taskAssociationFile = '-'
     if ($InstalledExecutable -and $ShellFilesManifest -ne '-') {
       $taskAssociationFile = ((Get-Content -LiteralPath $ShellFilesManifest -Raw -Encoding UTF8 | ConvertFrom-Json).文件 | Where-Object { $_.扩展名 -eq 'docx' }).路径

@@ -40,6 +40,45 @@ describe('设置页状态与真实能力一致', () => {
     }
   })
 
+  it('启动时检查默认程序开关可保存，设为默认程序走全自动路径', async () => {
+    const 桌面桥接 = vi.spyOn(桥接, '可用', 'get').mockReturnValue(true)
+    const 设置默认 = vi.spyOn(桥接, 'setDefaultApp').mockResolvedValue({ 成功: true, 已全部默认: true, 提示: '已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开' })
+    localStorage.removeItem('seal-default-app-auto')
+    try {
+      render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
+      // 默认打开：与 WPS 一致，启动时自动检查并设为默认
+      const 开关 = screen.getByRole('switch', { name: '启动时检查默认程序' })
+      expect(开关).toHaveAttribute('aria-checked', 'true')
+      await userEvent.click(开关)
+      expect(localStorage.getItem('seal-default-app-auto')).toBe('关闭')
+      expect(开关).toHaveAttribute('aria-checked', 'false')
+
+      await userEvent.click(screen.getByRole('button', { name: '设为默认程序' }))
+      expect(设置默认).toHaveBeenCalledOnce()
+      // 全自动生效时只提示一句，不再弹窗要求去系统页面确认
+      expect(await screen.findByText('已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')).toBeInTheDocument()
+      expect(screen.queryByText('仍有格式需要手动确认')).not.toBeInTheDocument()
+    } finally {
+      设置默认.mockRestore()
+      桌面桥接.mockRestore()
+      localStorage.removeItem('seal-default-app-auto')
+    }
+  })
+
+  it('自动关联未全部生效时提示剩余格式并引导系统页面', async () => {
+    const 桌面桥接 = vi.spyOn(桥接, '可用', 'get').mockReturnValue(true)
+    const 设置默认 = vi.spyOn(桥接, 'setDefaultApp').mockResolvedValue({ 成功: true, 已全部默认: false, 未生效: ['pdf'], 提示: 'Windows 仍要求手动确认：.pdf' })
+    try {
+      render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
+      await userEvent.click(screen.getByRole('button', { name: '设为默认程序' }))
+      expect(await screen.findByText(/Windows 仍要求手动确认：\.pdf/)).toBeInTheDocument()
+      expect(screen.queryByText('仍有格式需要手动确认')).not.toBeInTheDocument()
+    } finally {
+      设置默认.mockRestore()
+      桌面桥接.mockRestore()
+    }
+  })
+
   it('浏览器预览中不能启用依赖本机文件通道的新文件提醒', () => {
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
     expect(screen.getByRole('switch', { name: '新文件接收提醒' })).toBeDisabled()

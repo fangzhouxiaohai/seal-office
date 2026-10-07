@@ -1024,8 +1024,10 @@ describe('表格缩放', () => {
     // 未按 Ctrl 时不缩放
     滚(-100, false)
     await waitFor(() => expect(百分比()).toBe('110%'))
-    // 连续放大到上限
+    // 按档位放大：110%/125%/150%…连续滚动到上限 6400%
     for (let 次 = 0; 次 < 12; 次 += 1) 滚(-100)
-    await waitFor(() => expect(百分比()).toBe('200%'))
+    await waitFor(() => expect(百分比()).toBe('1200%'))
+    for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
+    await waitFor(() => expect(百分比()).toBe('6400%'))
   })
 })

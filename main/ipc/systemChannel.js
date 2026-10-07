@@ -68,8 +68,15 @@ function 请求保存全部(窗口, 超时毫秒 = 120000) {
 
 function 注册系统通道(ipcMain, 依赖 = {}) {
   let 默认程序服务
+  // 验收专用：把关联写入限制在沙箱注册表项下，绝不能改到本机真实关联
+  const 关联测试根 = (() => {
+    const 项 = process.argv.find((值) => typeof 值 === 'string' && 值.startsWith('--default-app-test-root='))
+    if (!项) return ''
+    const 值 = 项.slice('--default-app-test-root='.length)
+    return /^Software\\SealOfficeIntegrationTests\\[a-f0-9-]{36}$/.test(值) ? 值 : ''
+  })()
   const 获取默认程序服务 = () => {
-    if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: 获取关联程序路径(app.isPackaged, app.getPath('exe')), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址) })
+    if (!默认程序服务) 默认程序服务 = 创建默认程序服务({ 已打包: app.isPackaged, 可执行文件: 获取关联程序路径(app.isPackaged, app.getPath('exe')), 数据目录: app.getPath('userData'), 资源目录: process.resourcesPath, 打开地址: 地址 => shell.openExternal(地址), 测试根: 关联测试根 })
     return 默认程序服务
   }
   require('./slideshowFullscreen').注册放映全屏通道(ipcMain)
@@ -139,7 +146,35 @@ function 注册系统通道(ipcMain, 依赖 = {}) {
     请求.结束(结果)
     return { 成功: true }
   })
+  // 验收专用：带 --skip-default-app-check 启动时不做任何默认程序改动，避免测试改写本机真实文件关联
+  const 验收禁用关联 = process.argv.includes('--skip-default-app-check')
+  ipcMain.handle('system.defaultAppCheckState', async () => ({
+    成功: true,
+    已禁用: 验收禁用关联,
+  }))
+  // 验收且未给沙箱根时，所有关联写入都只回结果、不落盘
+  const 只读关联 = 验收禁用关联 && !关联测试根
+  const 只读结果 = { 成功: true, 已全部默认: true, 未生效: [], 清除用户选择的格式: [], 测试模式: true, 提示: '验收模式：未改动系统文件关联' }
+  // 全自动设为默认程序：不打开系统设置页面，直接写关联并回读结果
+  ipcMain.handle('system.applyDefaultApp', async () => {
+    if (只读关联) return 只读结果
+    try {
+      return await 获取默认程序服务().应用默认程序()
+    } catch (错误) {
+      return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '系统默认程序设置失败' }
+    }
+  })
+  // 启动时检查：开关打开时由渲染端调用，不是默认程序就静默设为默认
+  ipcMain.handle('system.checkDefaultAppOnStartup', async () => {
+    if (只读关联) return { 成功: true, 已全部默认: true, 已处理: false, 测试模式: true }
+    try {
+      return await 获取默认程序服务().启动检查默认程序()
+    } catch (错误) {
+      return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '系统默认程序检查失败' }
+    }
+  })
   ipcMain.handle('system.setDefaultApp', async () => {
+    if (只读关联) return 只读结果
     try {
       return await 获取默认程序服务().设置默认程序()
     } catch (错误) {

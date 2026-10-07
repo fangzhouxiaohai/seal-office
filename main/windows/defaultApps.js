@@ -10,14 +10,16 @@ function 获取关联程序路径(已打包, 当前路径, 环境 = process.env)
   return path.win32.normalize(便携路径)
 }
 
-function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 便携版 = Boolean(process.env.PORTABLE_EXECUTABLE_FILE) }) {
+function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 便携版 = Boolean(process.env.PORTABLE_EXECUTABLE_FILE), 测试根 = '' }) {
   return async 操作 => {
     const 脚本 = path.join(资源目录, 'shell-integration', 'shellIntegration.ps1')
     const 原脚本 = fs.readFileSync(path.join(__dirname, 'shellIntegration.ps1'))
     if (!原脚本.equals(fs.readFileSync(脚本))) throw new Error('系统关联组件已缺失或修改，请重新安装可信版本')
     const 命令 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
     const 参数 = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', 脚本, '-Action', 操作, '-ExecutableFile', 可执行文件]
-    if (操作 === 'RegisterApplication') 参数.push('-Icons', await 准备关联文件图标({ 资源目录, 数据目录, 便携版 }))
+    // 注册与全自动关联都需要图标路径；验收时用测试根把写入限制在沙箱注册表项下
+    if (操作 === 'RegisterApplication' || 操作 === 'ApplyDefaults') 参数.push('-Icons', await 准备关联文件图标({ 资源目录, 数据目录, 便携版 }))
+    if (测试根) 参数.push('-TestRoot', 测试根)
     const 输出 = await new Promise((完成, 拒绝) => execFile(命令, 参数, { windowsHide: true, timeout: 30000, encoding: 'utf8' }, (错误, stdout, stderr) => {
       if (错误) {
         let 说明
@@ -33,16 +35,46 @@ function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, �
   }
 }
 
-function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执行文件, 数据目录, 资源目录, 执行注册, 打开地址 }) {
-  const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录, 数据目录 })
+function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执行文件, 数据目录, 资源目录, 执行注册, 打开地址, 测试根 = '' }) {
+  const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 测试根 })
   const 状态路径 = path.join(数据目录, 'default-app-prompt.json')
   let 队列 = Promise.resolve()
-  async function 设置默认程序() {
+  /** 全自动设为默认程序：注册 ProgID、写扩展名默认值并清掉阻止生效的 UserChoice */
+  async function 应用默认程序() {
     if (平台 !== 'win32') throw new Error('默认程序设置仅支持 Windows')
     if (!已打包) throw new Error('请使用 Windows 打包版本设置默认程序')
-    await 执行('RegisterApplication')
+    const 结果 = await 执行('ApplyDefaults')
+    if (typeof 结果.已全部默认 !== 'boolean' || !Array.isArray(结果.格式)) throw new Error('系统默认程序查询结果无效')
+    const 未生效 = 结果.格式.filter((项) => !项.已默认).map((项) => 项.扩展名)
+    return {
+      成功: true,
+      已全部默认: 结果.已全部默认,
+      未生效,
+      清除用户选择的格式: Array.isArray(结果.清除用户选择的格式) ? 结果.清除用户选择的格式 : [],
+      格式: 结果.格式,
+    }
+  }
+  /** 设置默认程序：先尝试全自动，仍有格式未生效时再打开系统页面兜底 */
+  async function 设置默认程序() {
+    const 结果 = await 应用默认程序()
+    if (结果.已全部默认) return { 成功: true, 已全部默认: true, 提示: '已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开' }
     await 打开地址('ms-settings:defaultapps?registeredAppUser=SealOffice')
-    return { 成功: true, 提示: '请在海豹办公的默认应用页面确认文件关联' }
+    const 未生效 = 结果.未生效.map((项) => `.${项}`).join('、')
+    return {
+      成功: true,
+      已全部默认: false,
+      未生效: 结果.未生效,
+      提示: `已自动关联大部分格式；Windows 仍要求手动确认：${未生效}`,
+    }
+  }
+  /** 启动时检查：开关打开时调用，不是全部默认就静默设为默认 */
+  async function 启动检查默认程序() {
+    if (平台 !== 'win32' || !已打包) return { 成功: true, 已全部默认: true, 已处理: false }
+    const 当前 = await 执行('InspectDefaults')
+    if (typeof 当前.已全部默认 !== 'boolean') throw new Error('系统默认程序查询结果无效')
+    if (当前.已全部默认) return { 成功: true, 已全部默认: true, 已处理: false }
+    const 结果 = await 应用默认程序()
+    return { 成功: true, 已全部默认: 结果.已全部默认, 已处理: true, 未生效: 结果.未生效 }
   }
   async function 检查() {
     if (平台 !== 'win32' || !已打包) return { 成功: true, 需要询问: false }
@@ -68,6 +100,6 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
     队列 = 本次
     return 本次
   }
-  return { 设置默认程序, 检查首次提示 }
+  return { 设置默认程序, 检查首次提示, 应用默认程序, 启动检查默认程序 }
 }
 module.exports = { 创建默认程序服务, 创建注册执行器, 获取关联程序路径 }

@@ -111,6 +111,20 @@ try {
   }
   $inspect = Run-Action 'InspectDefaults'
   Check ($inspect.格式.Count -eq 4 -and $inspect.已全部默认 -is [bool]) '使用系统接口查询四种真实默认应用'
+  # 全自动关联：写扩展名默认 ProgID、清掉阻止生效的 UserChoice（测试模式全部落在沙箱根下）
+  $key = $taskBase.CreateSubKey("$taskClasses\.docx")
+  $key.SetValue('', 'WPS.Docx.6'); $key.Dispose()
+  $key = $taskBase.CreateSubKey("$taskRegistry\CurrentUser\FileExts\.docx\UserChoice")
+  $key.SetValue('ProgId', 'WPS.Docx.6'); $key.Dispose()
+  $apply = Run-Action 'ApplyDefaults'
+  Check ($apply.已全部默认 -is [bool] -and $apply.格式.Count -eq 4) '全自动关联返回四种格式的回读结果'
+  Check ((Read-TestValue "$taskClasses\.docx" '') -eq 'SealOffice.docx') '全自动关联把扩展名默认值指向本程序'
+  Check ((Read-TestValue "$taskClasses\.pdf" '') -eq 'SealOffice.pdf') '全自动关联覆盖原本已存在的默认值'
+  Check ((Read-TestValue "$taskRegistry\CurrentUser\FileExts\.docx\UserChoice" 'ProgId') -eq $null) '全自动关联清除阻止生效的用户选择项'
+  Check ($apply.清除用户选择的格式 -contains 'docx') '报告本次清除的用户选择格式'
+  [void](Run-Action 'Uninstall')
+  Check ((Read-TestValue "$taskClasses\.docx" '') -eq 'WPS.Docx.6') '卸载按覆盖记录还原其他程序的默认值'
+  Check ((Read-TestValue "$taskClasses\.pdf" '') -eq 'ExistingPDF.Document') '卸载恢复安装前已有的扩展名默认值'
   $taskScope = 'all'
   $key = $taskBase.CreateSubKey("$taskClasses\.docx\Word.Document.12\ShellNew")
   $key.SetValue('FileName', '机器原模板.docx'); $key.Dispose()

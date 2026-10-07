@@ -52,6 +52,10 @@ export interface 演讲者接口 {
   onDisplayChanged: (回调: (数据: { 会话标识: string; 原因: string }) => void) => () => void
 }
 export interface 默认程序提示结果 { 成功: boolean; 需要询问?: boolean; 错误?: string }
+/** 全自动关联结果：未生效列出仍被系统拦下的扩展名 */
+export interface 默认程序应用结果 { 成功: boolean; 已全部默认?: boolean; 未生效?: string[]; 清除用户选择的格式?: string[]; 错误?: string }
+/** 启动检查结果：已处理表示这次确实改写过程序关联 */
+export interface 默认程序启动结果 { 成功: boolean; 已全部默认?: boolean; 已处理?: boolean; 未生效?: string[]; 错误?: string }
 export interface 演示资源条目 { 标识: string; 类型: string; 数据: string }
 export interface 演示导出请求 {
   html: string
@@ -209,7 +213,10 @@ export interface 电子接口 {
   respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
   onSaveAllRequested?: (回调: (标识: string) => void) => () => void
   respondSaveAll?: (标识: string, 结果: 保存全部应答) => Promise<{ 成功: boolean; 错误?: string }>
-  setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
+  setDefaultApp: () => Promise<{ 成功: boolean; 已全部默认?: boolean; 未生效?: string[]; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
+  applyDefaultApp?: () => Promise<默认程序应用结果>
+  checkDefaultAppOnStartup?: () => Promise<默认程序启动结果>
+  defaultAppCheckState?: () => Promise<{ 成功: boolean; 已禁用?: boolean; 错误?: string }>
   checkDefaultAppPrompt?: () => Promise<默认程序提示结果>
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
@@ -357,6 +364,10 @@ export const 桥接 = {
   onSaveAllRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onSaveAllRequested?.(回调) ?? (() => {}),
   respondSaveAll: (标识: string, 结果: 保存全部应答) => 取后端()?.respondSaveAll?.(标识, 结果) ?? 失败('当前环境不支持保存后退出'),
   setDefaultApp: (): ReturnType<电子接口['setDefaultApp']> => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 错误: '请使用打包后的应用设置默认程序' }),
+  get 默认程序全自动可用() { return typeof 取后端()?.applyDefaultApp === 'function' },
+  applyDefaultApp: (): Promise<默认程序应用结果> => 取后端()?.applyDefaultApp?.() ?? 失败('当前环境不支持自动设置默认程序'),
+  checkDefaultAppOnStartup: (): Promise<默认程序启动结果> => 取后端()?.checkDefaultAppOnStartup?.() ?? 失败('当前环境不支持启动时检查默认程序'),
+  defaultAppCheckState: (): Promise<{ 成功: boolean; 已禁用?: boolean; 错误?: string }> => 取后端()?.defaultAppCheckState?.() ?? Promise.resolve({ 成功: true, 已禁用: false }),
   get 默认程序提示可用() { return typeof 取后端()?.checkDefaultAppPrompt === 'function' },
   checkDefaultAppPrompt: (): Promise<默认程序提示结果> => 取后端()?.checkDefaultAppPrompt?.() ?? 失败('当前环境不支持默认程序首次检查'),
   checkIntegrity: (): Promise<完整性检查结果> => 取后端()?.checkIntegrity() ?? 失败('请使用 Windows 打包版本检查安装目录'),

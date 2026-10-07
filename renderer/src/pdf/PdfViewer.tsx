@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
-import { use滚轮缩放, 阅读缩放范围 } from '../editor/wheelZoom'
+import { use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 
 interface Props {
   数据?: string
@@ -12,9 +12,6 @@ interface Props {
 
 type 阅读状态 = '空白' | '加载中' | '就绪' | '失败'
 interface 页面文字项 { 文本: string; x: number; y: number; 宽: number; 高: number }
-const 缩放下限 = 阅读缩放范围.下限
-const 缩放上限 = 阅读缩放范围.上限
-const 缩放步长 = 阅读缩放范围.步长
 
 const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
@@ -101,18 +98,23 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
         const 画笔 = 节点?.getContext('2d')
         if (!节点 || !画笔) throw new Error('无法创建页面画布')
         const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
-        节点.width = Math.floor(视口.width * 像素比)
-        节点.height = Math.floor(视口.height * 像素比)
         const 原始宽度 = 视口.width / 缩放
         const 显示宽度 = Math.min(原始宽度, 可用宽度 ?? 原始宽度) * 缩放
-        节点.style.width = `${显示宽度}px`
         const 显示高度 = 视口.height * 显示宽度 / 视口.width
+        // 高倍缩放（最高 6400%）不可能按显示尺寸分配画布，超过预算时降采样渲染再由 CSS 放大
+        const 画布像素上限 = 16_000_000
+        const 期望像素 = 显示宽度 * 显示高度 * 像素比 * 像素比
+        const 渲染比 = 期望像素 > 画布像素上限 ? Math.sqrt(画布像素上限 / 期望像素) : 1
+        const 渲染视口 = 渲染比 === 1 ? 视口 : 页面.getViewport({ scale: 缩放 * 渲染比 })
+        节点.width = Math.max(1, Math.floor(渲染视口.width * 像素比))
+        节点.height = Math.max(1, Math.floor(渲染视口.height * 像素比))
+        节点.style.width = `${显示宽度}px`
         节点.style.height = `${显示高度}px`
         set页面尺寸({ 宽: 显示宽度, 高: 显示高度 })
         渲染任务 = 页面.render({
           canvas: 节点,
           canvasContext: 画笔,
-          viewport: 视口,
+          viewport: 渲染视口,
           transform: 像素比 === 1 ? undefined : [像素比, 0, 0, 像素比, 0, 0],
         })
         await 渲染任务.promise
@@ -143,7 +145,10 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
 
   const 总页数 = 文档?.numPages ?? 0
   const 翻页 = (差值: number) => set当前页((页码) => Math.min(总页数, Math.max(1, 页码 + 差值)))
-  const 调整缩放 = (差值: number) => set缩放((当前) => Math.min(缩放上限, Math.max(缩放下限, 当前 + 差值)))
+  const 调整缩放 = (方向: '放大' | '缩小') => set缩放((当前) => {
+    const 下一个 = 方向 === '放大' ? 放大一档(当前) : 缩小一档(当前)
+    return 下一个 ?? 当前
+  })
   const 复制本页 = async () => {
     if (!页面文字.trim()) return
     try {
@@ -175,9 +180,9 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           <span className="pdf-viewer__counter" aria-live="polite">{总页数 > 0 ? `第 ${当前页} 页 / 共 ${总页数} 页` : '未打开文件'}</span>
           <button type="button" aria-label="下一页" title="下一页" disabled={状态 !== '就绪' || 当前页 >= 总页数} onClick={() => 翻页(1)}><Icon name="arrow-left" size={15} className="pdf-viewer__forward" /></button>
           <span className="pdf-viewer__divider" aria-hidden="true" />
-          <button type="button" aria-label="缩小" title="缩小" disabled={状态 !== '就绪' || 缩放 <= 缩放下限} onClick={() => 调整缩放(-缩放步长)}><Icon name="zoom-out" size={15} /></button>
-          <span className="pdf-viewer__zoom" aria-live="polite">{Math.round(缩放 * 100)}%</span>
-          <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 缩放 >= 缩放上限} onClick={() => 调整缩放(缩放步长)}><Icon name="zoom-in" size={15} /></button>
+          <button type="button" aria-label="缩小" title="缩小" disabled={状态 !== '就绪' || 缩小一档(缩放) === null} onClick={() => 调整缩放('缩小')}><Icon name="zoom-out" size={15} /></button>
+          <span className="pdf-viewer__zoom" aria-live="polite">{缩放百分比文本(缩放)}</span>
+          <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 放大一档(缩放) === null} onClick={() => 调整缩放('放大')}><Icon name="zoom-in" size={15} /></button>
           <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={!页面文字.trim()} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
           <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
         </div>

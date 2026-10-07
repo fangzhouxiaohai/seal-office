@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useState } from 'react'
-import { use滚轮缩放, 创建滚轮缩放, 是缩放滚轮, 折算滚动像素, 文字缩放范围, 阅读缩放范围 } from './wheelZoom'
+import { use滚轮缩放, 创建滚轮缩放, 是缩放滚轮, 折算滚动像素, 文字缩放范围, 表格缩放范围, 演示缩放范围, 阅读缩放范围, 缩放百分比文本, 吸附档位, 放大一档, 缩小一档 } from './wheelZoom'
 
 /** 造一个只有缩放相关字段的滚轮事件 */
 const 滚轮 = (deltaY: number, 额外: Partial<WheelEvent> = {}) =>
@@ -46,25 +46,51 @@ describe('Ctrl+滚轮缩放', () => {
 
   it('到达上下限后停在边界，不越界也不积压', () => {
     const 处理 = 创建滚轮缩放(文字缩放范围)
-    expect(处理({ deltaY: -100 }, 1.9)).toBe(2)
-    expect(处理({ deltaY: -100 }, 2)).toBeNull()
-    expect(处理({ deltaY: -100 }, 2)).toBeNull()
-    expect(处理({ deltaY: 100 }, 2)).toBe(1.9)
-    expect(处理({ deltaY: 100 }, 0.6)).toBe(0.5)
-    expect(处理({ deltaY: 100 }, 0.5)).toBeNull()
+    // 上限 6400%
+    expect(处理({ deltaY: -100 }, 48)).toBe(64)
+    expect(处理({ deltaY: -100 }, 64)).toBeNull()
+    expect(处理({ deltaY: -100 }, 64)).toBeNull()
+    expect(处理({ deltaY: 100 }, 64)).toBe(48)
+    // 下限 8.33%
+    expect(处理({ deltaY: 100 }, 0.125)).toBe(0.0833)
+    expect(处理({ deltaY: 100 }, 0.0833)).toBeNull()
   })
 
-  it('PDF 阅读按 0.25 步长缩放', () => {
+  it('四类文件共用同一档位表，高倍按档位跨越而不是每次 10%', () => {
+    expect(文字缩放范围.下限).toBeCloseTo(0.0833, 4)
+    expect(文字缩放范围.上限).toBe(64)
+    expect(表格缩放范围).toEqual(文字缩放范围)
+    expect(演示缩放范围).toEqual(文字缩放范围)
+    expect(阅读缩放范围).toEqual(文字缩放范围)
     const 处理 = 创建滚轮缩放(阅读缩放范围)
-    expect(处理({ deltaY: -100 }, 1)).toBe(1.25)
-    expect(处理({ deltaY: -100 }, 1.25)).toBe(1.5)
-    expect(处理({ deltaY: 100 }, 1.5)).toBe(1.25)
+    expect(处理({ deltaY: -100 }, 1)).toBe(1.1)
+    expect(处理({ deltaY: -100 }, 1.1)).toBe(1.25)
+    expect(处理({ deltaY: -100 }, 4)).toBe(5)
+    expect(处理({ deltaY: -100 }, 48)).toBe(64)
+    expect(处理({ deltaY: 100 }, 1)).toBe(0.9)
+    expect(处理({ deltaY: 100 }, 0.09)).toBe(0.0833)
+  })
+
+  it('百分比文本与档位吸附覆盖 8.33% 与 6400% 两端', () => {
+    expect(缩放百分比文本(0.0833)).toBe('8.33%')
+    expect(缩放百分比文本(0.125)).toBe('12.5%')
+    expect(缩放百分比文本(1)).toBe('100%')
+    expect(缩放百分比文本(1.25)).toBe('125%')
+    expect(缩放百分比文本(64)).toBe('6400%')
+    expect(缩放百分比文本(Number.NaN)).toBe('100%')
+    expect(吸附档位(0.99)).toBe(1)
+    expect(吸附档位(0.001)).toBe(0.0833)
+    expect(吸附档位(999)).toBe(64)
+    expect(放大一档(64)).toBeNull()
+    expect(缩小一档(0.0833)).toBeNull()
+    expect(放大一档(1)).toBe(1.1)
+    expect(缩小一档(1)).toBe(0.9)
   })
 
   it('缩放范围非法时立即报错，避免调用方拿到静默失效的处理器', () => {
-    expect(() => 创建滚轮缩放({ 下限: 0, 上限: 2, 步长: 0.1 })).toThrow('缩放范围无效')
-    expect(() => 创建滚轮缩放({ 下限: 1, 上限: 1, 步长: 0.1 })).toThrow('缩放范围无效')
-    expect(() => 创建滚轮缩放({ 下限: 0.5, 上限: 2, 步长: 0 })).toThrow('缩放范围无效')
+    expect(() => 创建滚轮缩放({ 下限: 0, 上限: 2, 步长: 0 })).toThrow('缩放范围无效')
+    expect(() => 创建滚轮缩放({ 下限: 1, 上限: 1, 步长: 0 })).toThrow('缩放范围无效')
+    expect(() => 创建滚轮缩放({ 下限: 2, 上限: 1, 步长: 0 })).toThrow('缩放范围无效')
   })
 })
 
@@ -104,10 +130,10 @@ describe('use滚轮缩放', () => {
   })
 
   it('连续滚动到上限后保持在上限', () => {
-    const { result } = 挂载(1.9)
+    const { result } = 挂载(48)
     act(() => { window.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true })) })
-    expect(result.current).toBe(2)
+    expect(result.current).toBe(64)
     act(() => { window.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true })) })
-    expect(result.current).toBe(2)
+    expect(result.current).toBe(64)
   })
 })

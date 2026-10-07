@@ -1,5 +1,5 @@
 ﻿param(
-  [ValidateSet('Install','Uninstall','RegisterApplication','GetInstallation','InspectDefaults')][string]$Action,
+  [ValidateSet('Install','Uninstall','RegisterApplication','GetInstallation','InspectDefaults','ApplyDefaults')][string]$Action,
   [string]$ExecutableFile,
   [string]$Templates,
   [string]$Icons,
@@ -25,6 +25,9 @@ $taskState = "$taskApplication\ShellIntegration"
 $taskUserClasses = if ($TestRoot) { "$TestRoot\CurrentUser\Classes" } else { 'Software\Classes' }
 $taskUserApplication = if ($TestRoot) { "$TestRoot\CurrentUser\Application" } else { 'Software\SealOffice' }
 $taskUserRegistered = if ($TestRoot) { "$TestRoot\CurrentUser\RegisteredApplications" } else { 'Software\RegisteredApplications' }
+# 系统记录的“用户已选默认程序”：Windows 只允许通过设置界面写带哈希的 UserChoice，
+# 但它允许删除；删掉后系统回落到 HKCU\Software\Classes\.<ext> 的默认 ProgID。
+$taskFileExts = if ($TestRoot) { "$TestRoot\CurrentUser\FileExts" } else { 'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts' }
 $taskTypes = @('doc','docx','ppt','pptx','pdf','xls','xlsx')
 $taskSupported = @('docx','xlsx','pptx','pdf')
 $taskLabels = @{doc='DOC 文档';docx='DOCX 文档';ppt='PPT 演示文稿';pptx='PPTX 演示文稿';pdf='PDF 文档';xls='XLS 工作表';xlsx='XLSX 工作表'}
@@ -177,6 +180,53 @@ function Notify-Shell {
     [void][SealShellNotify]::SendMessageTimeout([IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'Software\Classes', 2, 2000, [ref]$output)
   }
 }
+# 用系统接口回读四种格式当前实际生效的处理程序
+function Get-DefaultState {
+  if (-not ('SealAssoc' -as [type])) {
+    Add-Type 'using System; using System.Text; using System.Runtime.InteropServices; public static class SealAssoc { [DllImport("shlwapi.dll", CharSet=CharSet.Unicode)] public static extern int AssocQueryString(uint flags, uint kind, string assoc, string extra, StringBuilder output, ref uint len); }'
+  }
+  $items = @($taskSupported | ForEach-Object {
+    $len = [uint32]32768; $text = [System.Text.StringBuilder]::new(32768)
+    $code = [SealAssoc]::AssocQueryString(0, 2, ".$_", 'open', $text, [ref]$len)
+    if ($code -ne 0 -and $code -ne -2147024894 -and $code -ne -2147023728 -and $code -ne -2147023741) { throw "默认程序查询失败：$_，系统状态 $code" }
+    @{ 扩展名=$_; 默认程序=$text.ToString(); 已默认=($code -eq 0 -and [string]::Equals($text.ToString(), $ExecutableFile, [StringComparison]::OrdinalIgnoreCase)) }
+  })
+  return $items
+}
+# 全自动设为默认程序：注册 ProgID、把扩展名默认值指向本程序，并清掉阻止生效的 UserChoice
+function Apply-Defaults {
+  if (-not (Test-Path -LiteralPath $ExecutableFile -PathType Leaf)) { throw '程序可执行文件不存在' }
+  Register-Application
+  # 记录被覆盖掉的其他程序默认值，卸载时按记录还原，避免留下指向已删除程序的关联
+  $原值 = [pscustomobject]@{}
+  $已记录 = Read-Value $taskState 'AppliedDefaults'
+  if ($已记录) {
+    $解析 = $已记录 | ConvertFrom-Json
+    foreach ($属性 in $解析.PSObject.Properties) { $原值 | Add-Member -NotePropertyName $属性.Name -NotePropertyValue $属性.Value -Force }
+  }
+  $已设置 = @()
+  foreach ($ext in $taskSupported) {
+    $当前 = Read-Value "$taskClasses\.$ext" ''
+    if ($当前 -and $当前 -ne "SealOffice.$ext" -and -not ($原值.PSObject.Properties.Name -contains $ext)) {
+      $原值 | Add-Member -NotePropertyName $ext -NotePropertyValue $当前 -Force
+    }
+    Set-Value "$taskClasses\.$ext" '' "SealOffice.$ext"
+    $choicePath = "$taskFileExts\.$ext"
+    $key = $taskUserBase.OpenSubKey($choicePath, $true)
+    if ($key) {
+      try {
+        if ($key.GetSubKeyNames() -contains 'UserChoice') {
+          $key.DeleteSubKeyTree('UserChoice', $false)
+          $已设置 += $ext
+        }
+      } finally { $key.Dispose() }
+    }
+  }
+  Set-Value $taskState 'AppliedDefaults' ($原值 | ConvertTo-Json -Depth 30 -Compress)
+  Notify-Shell
+  $items = Get-DefaultState
+  return @{ 成功=$true; 已全部默认=(@($items | Where-Object { -not $_.已默认 }).Count -eq 0); 清除用户选择的格式=$已设置; 格式=$items }
+}
 try {
   switch ($Action) {
     'RegisterApplication' { Register-Application; Notify-Shell; $result = @{ 成功=$true } }
@@ -297,6 +347,14 @@ try {
       }
       $userDefaultsRaw = Read-Value $taskState 'UserCreatedDefaults'
       if ($Scope -eq 'all' -and $userDefaultsRaw) { Remove-CreatedDefaults ($userDefaultsRaw | ConvertFrom-Json) $taskUserBase $taskUserClasses }
+      # 全自动关联覆盖过的其他程序默认值按记录还原（仅当当前值仍是本程序时才动）
+      $appliedRaw = Read-Value $taskState 'AppliedDefaults'
+      if ($appliedRaw) {
+        foreach ($项 in ($appliedRaw | ConvertFrom-Json).PSObject.Properties) {
+          if ($项.Name -notin $taskSupported) { throw '默认程序覆盖记录无效' }
+          if ((Read-Value "$taskClasses\.$($项.Name)" '') -eq "SealOffice.$($项.Name)") { Set-Value "$taskClasses\.$($项.Name)" '' $项.Value }
+        }
+      }
       Remove-ApplicationRegistration $taskBase $taskClasses $taskApplication $taskRegistered
       if ($Scope -eq 'all') { Remove-ApplicationRegistration $taskUserBase $taskUserClasses $taskUserApplication $taskUserRegistered }
       $taskBase.DeleteSubKeyTree($taskState, $false)
@@ -321,15 +379,10 @@ try {
       $result = @{ 成功=$true; 已安装=[bool]$id; 安装标识=$id; 可执行文件=$exe }
     }
     'InspectDefaults' {
-      Add-Type 'using System; using System.Text; using System.Runtime.InteropServices; public static class SealAssoc { [DllImport("shlwapi.dll", CharSet=CharSet.Unicode)] public static extern int AssocQueryString(uint flags, uint kind, string assoc, string extra, StringBuilder output, ref uint len); }'
-      $items = @($taskSupported | ForEach-Object {
-        $len = [uint32]32768; $text = [System.Text.StringBuilder]::new(32768)
-        $code = [SealAssoc]::AssocQueryString(0, 2, ".$_", 'open', $text, [ref]$len)
-        if ($code -ne 0 -and $code -ne -2147024894 -and $code -ne -2147023728 -and $code -ne -2147023741) { throw "默认程序查询失败：$_，系统状态 $code" }
-        @{ 扩展名=$_; 默认程序=$text.ToString(); 已默认=($code -eq 0 -and [string]::Equals($text.ToString(), $ExecutableFile, [StringComparison]::OrdinalIgnoreCase)) }
-      })
+      $items = Get-DefaultState
       $result = @{ 成功=$true; 已全部默认=(@($items | Where-Object { -not $_.已默认 }).Count -eq 0); 格式=$items }
     }
+    'ApplyDefaults' { $result = Apply-Defaults }
   }
   $result | ConvertTo-Json -Depth 10 -Compress
 } catch { @{ 成功=$false; 错误=$_.Exception.Message } | ConvertTo-Json -Compress; exit 1 }

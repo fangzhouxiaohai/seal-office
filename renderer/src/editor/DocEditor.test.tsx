@@ -404,7 +404,7 @@ describe('编辑器容器', () => {
     await waitFor(() => expect(百分比()).toBe('110%'))
     expect(纸张().style.transform).toContain('scale(1.1)')
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('120%'))
+    await waitFor(() => expect(百分比()).toBe('125%'))
     // 向下滚缩小
     滚(100)
     await waitFor(() => expect(百分比()).toBe('110%'))
@@ -417,11 +417,17 @@ describe('编辑器容器', () => {
     const { container } = 渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
     const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
+    // 按档位放大：12 档到 1000%，继续滚到上限 6400%
     for (let 次 = 0; 次 < 12; 次 += 1) {
       fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     }
-    await waitFor(() => expect(百分比()).toBe('200%'))
-    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.transform).toContain('scale(2)')
+    await waitFor(() => expect(百分比()).toBe('1000%'))
+    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.transform).toContain('scale(10)')
+    for (let 次 = 0; 次 < 40; 次 += 1) {
+      fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
+    }
+    await waitFor(() => expect(百分比()).toBe('6400%'))
+    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.transform).toContain('scale(64)')
     await userEvent.click(screen.getByRole('button', { name: '恢复百分之百' }))
     await waitFor(() => expect(百分比()).toBe('100%'))
   })

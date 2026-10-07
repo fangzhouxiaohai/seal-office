@@ -30,8 +30,8 @@ describe('PDF 阅读预览', () => {
     fireEvent.click(screen.getByRole('button', { name: '下一页' }))
     await waitFor(() => expect(取页面).toHaveBeenCalledWith(2))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.25 }))
-    expect(screen.getByText('125%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.1 }))
+    expect(screen.getByText('110%')).toBeInTheDocument()
   })
 
   it('窄阅读区先适配页面宽度，放大后允许横向滚动', async () => {
@@ -48,7 +48,7 @@ describe('PDF 阅读预览', () => {
     const 画布 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
     await waitFor(() => expect(画布.style.width).toBe('352px'))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(画布.style.width).toBe('440px'))
+    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(387.2, 1))
   })
 
   it('解析失败时通知工作台并显示失败状态', async () => {
@@ -103,13 +103,32 @@ describe('PDF 阅读预览', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
     滚(-100)
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.25 }))
-    expect(screen.getByText('125%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.1 }))
+    expect(screen.getByText('110%')).toBeInTheDocument()
     // 未按 Ctrl 时不缩放
     滚(-100, false)
-    await waitFor(() => expect(screen.getByText('125%')).toBeInTheDocument())
-    // 到达上限后停在 200%
-    for (let 次 = 0; 次 < 8; 次 += 1) 滚(-100)
-    await waitFor(() => expect(screen.getByText('200%')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('110%')).toBeInTheDocument())
+    // 按档位放大：110% → 125% → 150%，连续滚动最终停在上限 6400%
+    for (let 次 = 0; 次 < 2; 次 += 1) 滚(-100)
+    await waitFor(() => expect(screen.getByText('150%')).toBeInTheDocument())
+    for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
+    await waitFor(() => expect(screen.getByText('6400%')).toBeInTheDocument())
+  })
+
+  it('高倍缩放的渲染画布受像素预算限制，显示尺寸仍按缩放', async () => {
+    const 渲染 = vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() }))
+    const 取视口 = vi.fn(({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }))
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({ numPages: 1, getPage: vi.fn(async () => ({ getViewport: 取视口, render: 渲染, getTextContent: async () => ({ items: [] }) })) }),
+      destroy: vi.fn(),
+    })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={vi.fn()} />)
+    await screen.findByText('第 1 页 / 共 1 页')
+    for (let 次 = 0; 次 < 40; 次 += 1) fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
+    await waitFor(() => expect(screen.getByText('6400%')).toBeInTheDocument())
+    const 画布 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
+    // 6400% 下按显示尺寸分配画布会申请数亿像素，实际渲染按预算降采样
+    expect(画布.width * 画布.height).toBeLessThanOrEqual(16_000_000)
+    expect(Number.parseFloat(画布.style.width)).toBeCloseTo(600 * 64, 0)
   })
 })

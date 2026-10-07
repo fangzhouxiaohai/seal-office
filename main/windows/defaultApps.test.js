@@ -56,6 +56,18 @@ describe('默认程序注册执行链路', () => {
       expect(调用).not.toHaveBeenCalled()
     })
   })
+  it('全自动关联同样准备图标，并支持把写入限制在测试根内', async () => {
+    await 拦截注册(async ({ 调用, 资源目录, 数据目录 }) => {
+      const 注册 = require('./defaultApps').创建注册执行器({ 可执行文件: 'E:\\办公工具\\海豹办公.exe', 资源目录, 数据目录, 测试根: 'Software\\SealOfficeIntegrationTests\\11111111-2222-3333-4444-555555555555' })
+      await 注册('ApplyDefaults')
+      const 参数 = 调用.mock.calls.at(-1)[1]
+      expect(参数[参数.indexOf('-Action') + 1]).toBe('ApplyDefaults')
+      const 图标目录 = 参数[参数.indexOf('-Icons') + 1]
+      expect(图标目录.endsWith('file-icons')).toBe(true)
+      expect(fs.existsSync(path.join(图标目录, 'word.ico'))).toBe(true)
+      expect(参数[参数.indexOf('-TestRoot') + 1]).toBe('Software\\SealOfficeIntegrationTests\\11111111-2222-3333-4444-555555555555')
+    })
+  })
 })
 
 describe('默认程序与安装后首次提醒', () => {
@@ -65,21 +77,84 @@ describe('默认程序与安装后首次提醒', () => {
     安装 = { 已安装: true, 安装标识: '首次安装', 可执行文件: 'C:\\海豹办公\\SealOffice.exe' }
     默认 = false
     系统打开 = vi.fn().mockResolvedValue(undefined)
-    调用 = vi.fn(async (操作) => 操作 === 'GetInstallation' ? 安装 : 操作 === 'InspectDefaults' ? { 已全部默认: 默认 } : { 成功: true })
+    调用 = vi.fn(async (操作) => {
+      if (操作 === 'GetInstallation') return 安装
+      if (操作 === 'InspectDefaults') return { 已全部默认: 默认, 格式: 全部格式(默认) }
+      if (操作 === 'ApplyDefaults') { 默认 = true; return { 已全部默认: true, 清除用户选择的格式: ['docx'], 格式: 全部格式(true) } }
+      return { 成功: true }
+    })
     服务 = 创建默认程序服务({ 平台: 'win32', 已打包: true, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
   })
+  /** 按扩展名构造系统回读结果 */
+  function 全部格式(已默认) {
+    return ['docx', 'xlsx', 'pptx', 'pdf'].map((扩展名) => ({ 扩展名, 默认程序: 已默认 ? 安装.可执行文件 : 'C:\\别的程序.exe', 已默认 }))
+  }
   afterEach(() => { fs.rmSync(目录, { recursive: true, force: true }) })
 
-  it('注册真实应用后进入海豹办公专属默认程序页', async () => {
-    expect(await 服务.设置默认程序()).toMatchObject({ 成功: true })
-    expect(调用).toHaveBeenCalledWith('RegisterApplication')
-    expect(系统打开).toHaveBeenCalledWith('ms-settings:defaultapps?registeredAppUser=SealOffice')
-  })
-  it('注册失败时保留真实错误且不打开设置', async () => {
-    调用.mockRejectedValue(new Error('注册表不可写'))
-    await expect(服务.设置默认程序()).rejects.toThrow('注册表不可写')
+  it('全自动设为默认程序：写关联、清掉用户选择并回读结果', async () => {
+    const 结果 = await 服务.应用默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 未生效: [], 清除用户选择的格式: ['docx'] })
+    expect(调用).toHaveBeenCalledWith('ApplyDefaults')
     expect(系统打开).not.toHaveBeenCalled()
   })
+
+  it('系统仍拦下部分格式时如实列出未生效的扩展名', async () => {
+    调用.mockImplementation(async (操作) => 操作 === 'ApplyDefaults'
+      ? { 已全部默认: false, 格式: 全部格式(false).map((项, 下标) => 下标 === 0 ? { ...项, 扩展名: 'docx' } : { ...项, 已默认: true, 默认程序: 安装.可执行文件 }) }
+      : { 成功: true })
+    const 结果 = await 服务.应用默认程序()
+    expect(结果.已全部默认).toBe(false)
+    expect(结果.未生效).toEqual(['docx'])
+  })
+
+  it('设置默认程序优先全自动，全部生效时不再打开系统页面', async () => {
+    const 结果 = await 服务.设置默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: true })
+    expect(结果.提示).toContain('DOCX')
+    expect(系统打开).not.toHaveBeenCalled()
+  })
+
+  it('自动关联未全部生效时才打开系统页面兜底并列出剩余格式', async () => {
+    调用.mockImplementation(async (操作) => 操作 === 'ApplyDefaults'
+      ? { 已全部默认: false, 格式: [{ 扩展名: 'pdf', 默认程序: '', 已默认: false }, { 扩展名: 'docx', 默认程序: 安装.可执行文件, 已默认: true }] }
+      : { 成功: true })
+    const 结果 = await 服务.设置默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 未生效: ['pdf'] })
+    expect(结果.提示).toContain('.pdf')
+    expect(系统打开).toHaveBeenCalledWith('ms-settings:defaultapps?registeredAppUser=SealOffice')
+  })
+
+  it('启动检查：已经是默认程序时不改写系统状态', async () => {
+    默认 = true
+    const 结果 = await 服务.启动检查默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 已处理: false })
+    expect(调用).not.toHaveBeenCalledWith('ApplyDefaults')
+  })
+
+  it('启动检查：不是默认程序时静默设为默认', async () => {
+    const 结果 = await 服务.启动检查默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 已处理: true })
+    expect(调用).toHaveBeenCalledWith('ApplyDefaults')
+    expect(系统打开).not.toHaveBeenCalled()
+  })
+
+  it('启动检查：系统仍拦下时回报未生效清单', async () => {
+    调用.mockImplementation(async (操作) => 操作 === 'InspectDefaults'
+      ? { 已全部默认: false, 格式: 全部格式(false) }
+      : { 已全部默认: false, 格式: 全部格式(false) })
+    const 结果 = await 服务.启动检查默认程序()
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 已处理: true })
+    expect(结果.未生效).toEqual(['docx', 'xlsx', 'pptx', 'pdf'])
+  })
+
+  it('开发版与打包版之外不检查默认程序', async () => {
+    const 开发服务 = 创建默认程序服务({ 平台: 'win32', 已打包: false, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
+    expect(await 开发服务.启动检查默认程序()).toMatchObject({ 成功: true, 已处理: false })
+    const 其他平台 = 创建默认程序服务({ 平台: 'darwin', 已打包: true, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
+    expect(await 其他平台.启动检查默认程序()).toMatchObject({ 成功: true, 已处理: false })
+    await expect(开发服务.应用默认程序()).rejects.toThrow('请使用 Windows 打包版本')
+  })
+
   it('首次非默认才询问，后续启动不再检查默认状态', async () => {
     expect(await 服务.检查首次提示()).toMatchObject({ 成功: true, 需要询问: true })
     expect(await 服务.检查首次提示()).toMatchObject({ 成功: true, 需要询问: false })

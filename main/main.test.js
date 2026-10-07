@@ -314,6 +314,33 @@ describe('主进程窗口关闭保护', () => {
     expect(窗口.webContents.send).not.toHaveBeenCalledWith('system.requestSaveAll', expect.any(String))
   })
 
+  it('验收参数下不改动系统关联', async () => {
+    process.argv.push('--skip-default-app-check')
+    try {
+      const { 系统通道 } = 加载关闭保护()
+      const 处理器 = new Map()
+      系统通道.注册系统通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) })
+      expect(await 处理器.get('system.defaultAppCheckState')({})).toMatchObject({ 成功: true, 已禁用: true })
+      // 三个写入口都只回结果：测试模式标记只在这条只读分支上产生，系统关联不会被碰到
+      expect(await 处理器.get('system.applyDefaultApp')({})).toMatchObject({ 成功: true, 测试模式: true })
+      expect(await 处理器.get('system.setDefaultApp')({})).toMatchObject({ 成功: true, 测试模式: true })
+      expect(await 处理器.get('system.checkDefaultAppOnStartup')({})).toMatchObject({ 成功: true, 已处理: false, 测试模式: true })
+    } finally {
+      process.argv.splice(process.argv.indexOf('--skip-default-app-check'), 1)
+    }
+  })
+
+  it('未带验收参数时正常走默认程序服务', async () => {
+    const { 系统通道 } = 加载关闭保护()
+    const 处理器 = new Map()
+    系统通道.注册系统通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) })
+    expect(await 处理器.get('system.defaultAppCheckState')({})).toMatchObject({ 成功: true, 已禁用: false })
+    // 开发态下服务直接拒绝写关联，证明走到了真实服务而不是只读分支
+    const 结果 = await 处理器.get('system.applyDefaultApp')({})
+    expect(结果.测试模式).toBeUndefined()
+    expect(结果.成功).toBe(false)
+  })
+
   it('拒绝非窗口来源及无效数量的上报', async () => {
     const { 系统通道, 窗口映射 } = 加载关闭保护()
     const { 窗口 } = 创建测试窗口(窗口映射)

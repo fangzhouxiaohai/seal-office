@@ -712,7 +712,7 @@ describe('任务 7 放映视图与自定义放映', () => {
     expect(document.querySelector('.wps-slideshow')).toBeNull()
   })
 
-  it('Ctrl+滚轮缩放画布，范围到 10% 与 400% 后停住', async () => {
+  it('Ctrl+滚轮缩放画布，按档位到 8.33% 与 6400% 后停住', async () => {
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ...静默桥接 } })
     render(<AntdApp><AppProvider><放映入口 文稿={三页文稿()} /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
@@ -726,11 +726,10 @@ describe('任务 7 放映视图与自定义放映', () => {
     // 未按 Ctrl 时不缩放
     滚(-100, false)
     await waitFor(() => expect(百分比()).toBe('110%'))
-    // 演示的缩放范围比其他模块宽：可放到 400%
-    for (let 次 = 0; 次 < 30; 次 += 1) 滚(-100)
-    await waitFor(() => expect(百分比()).toBe('400%'))
-    // 连续缩小停在 10%
+    // 四类文件共用同一区间：放大到 6400%，缩小到 8.33%
+    for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
+    await waitFor(() => expect(百分比()).toBe('6400%'))
     for (let 次 = 0; 次 < 40; 次 += 1) 滚(100)
-    await waitFor(() => expect(百分比()).toBe('10%'))
+    await waitFor(() => expect(百分比()).toBe('8.33%'))
   })
 })

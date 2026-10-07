@@ -2,7 +2,7 @@
 import React from 'react'
 import Icon from '../components/Icon'
 import { type 选区统计 } from './selectionStats'
-import { 表格缩放范围 } from '../editor/wheelZoom'
+import { 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 
 export interface 工作表标签项 {
   id: string
@@ -68,8 +68,8 @@ interface StatusProps {
 }
 
 export const SheetStatusBar = ({ 统计, 缩放, on缩放变化 }: StatusProps) => {
-  const 放大 = () => on缩放变化(Math.min(表格缩放范围.上限, Number((缩放 + 表格缩放范围.步长).toFixed(2))))
-  const 缩小 = () => on缩放变化(Math.max(表格缩放范围.下限, Number((缩放 - 表格缩放范围.步长).toFixed(2))))
+  const 放大 = () => { const 下一个 = 放大一档(缩放); if (下一个 !== null) on缩放变化(下一个) }
+  const 缩小 = () => { const 下一个 = 缩小一档(缩放); if (下一个 !== null) on缩放变化(下一个) }
 
   return React.createElement(
     'footer',
@@ -99,7 +99,7 @@ export const SheetStatusBar = ({ 统计, 缩放, on缩放变化 }: StatusProps) 
           'aria-label': '恢复百分之百',
           onClick: () => on缩放变化(1),
         },
-        `${Math.round(缩放 * 100)}%`
+        `${缩放百分比文本(缩放)}`
       ),
       React.createElement(
         'button',
