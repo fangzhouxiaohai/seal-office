@@ -3492,3 +3492,144 @@ button {
 .wps-home__search-results button:hover { border-color: var(--brand); }
 .wps-home__search-results button strong { flex: 0 0 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
 .wps-home__search-results button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 最近文档批量管理 */
+.wps-batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.wps-batch-bar__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: var(--text-1);
+}
+
+.wps-batch-bar__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+
+.wps-batch-bar__hint {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.wps-batch-bar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.wps-batch-bar__danger,
+.wps-batch-bar__done {
+  padding: 5px 12px;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.wps-batch-bar__danger {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+.wps-batch-bar__danger:disabled {
+  border-color: var(--border);
+  background: var(--bg-hover);
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.wps-batch-bar__done {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-2);
+}
+
+.wps-batch-bar__done:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.wps-check {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.wps-doc-row__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wps-doc-card__check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+}
+
+.wps-doc-card--selectable {
+  cursor: pointer;
+}
+
+.wps-doc-card--selected,
+.wps-doc-row--selected {
+  border-color: var(--brand);
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 1px var(--brand) inset;
+}
+
+/* 拖入文件时的全窗口提示层 */
+.wps-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 22, 36, 0.42);
+  pointer-events: none;
+}
+
+.wps-drop-overlay__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 38px;
+  border: 2px dashed var(--brand);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text-1);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.wps-drop-overlay__panel strong {
+  font-size: 17px;
+}
+
+.wps-drop-overlay__panel span {
+  color: var(--text-2);
+  font-size: 13px;
+}

@@ -146,6 +146,47 @@ describe('应用状态层', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
+  it('批量移除最近记录时逐条持久化，全部成功才清空对应条目', async () => {
+    const 三条 = [
+      { ...RECENT_DOCS[0], id: 'a1', name: '甲.docx', 路径: 'C:\\资料\\甲.docx' },
+      { ...RECENT_DOCS[0], id: 'a2', name: '乙.docx', 路径: 'C:\\资料\\乙.docx' },
+      { ...RECENT_DOCS[0], id: 'a3', name: '丙.docx', 路径: 'C:\\资料\\丙.docx' },
+    ]
+    const 移除 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { recentRemove: 移除 } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return <span data-testid="记录数">{状态.docs.length}</span> }
+    render(<AppProvider 初始最近文档={三条}><读取 /></AppProvider>)
+    let 结果: Awaited<ReturnType<AppState['removeDocs']>> | null = null
+    await act(async () => { 结果 = await 状态!.removeDocs(['a1', 'a3']) })
+    expect(移除).toHaveBeenCalledTimes(2)
+    expect(结果!.已移除).toEqual(['a1', 'a3'])
+    expect(结果!.失败).toEqual([])
+    expect(screen.getByTestId('记录数')).toHaveTextContent('1')
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
+  it('批量移除部分失败时只移除成功的条目，失败项保留并可重试', async () => {
+    const 三条 = [
+      { ...RECENT_DOCS[0], id: 'b1', name: '甲.docx', 路径: 'C:\\资料\\甲.docx' },
+      { ...RECENT_DOCS[0], id: 'b2', name: '乙.docx', 路径: 'C:\\资料\\乙.docx' },
+    ]
+    const 移除 = vi.fn()
+      .mockResolvedValueOnce({ 成功: true })
+      .mockResolvedValueOnce({ 成功: false, 错误: '记录文件只读' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { recentRemove: 移除 } })
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return <span data-testid="记录数">{状态.docs.length}</span> }
+    render(<AppProvider 初始最近文档={三条}><读取 /></AppProvider>)
+    let 结果: Awaited<ReturnType<AppState['removeDocs']>> | null = null
+    await act(async () => { 结果 = await 状态!.removeDocs(['b1', 'b2']) })
+    expect(结果!.已移除).toEqual(['b1'])
+    expect(结果!.失败).toEqual([{ 标识: 'b2', 名称: '乙.docx', 错误: '记录文件只读' }])
+    expect(screen.getByTestId('记录数')).toHaveTextContent('1')
+    expect(状态!.docs[0].id).toBe('b2')
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
   it('真实应用无最近记录时不显示演示文件', () => {
     render(<AppProvider><探针 /></AppProvider>)
     expect(screen.getByTestId('total-count')).toHaveTextContent('0')

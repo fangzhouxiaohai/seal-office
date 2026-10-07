@@ -60,8 +60,70 @@ describe('应用外壳（WPS 版式首页）', () => {
     }
   })
 
-  it('自动恢复未保存工作区时保留正文和标记，不显示恢复提示', async () => {
+  it('拖入本机文件即打开，拖入过程中显示提示层', async () => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    const 路径 = 'C:\\资料\\拖入.docx'
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'YQ==', 二进制: true, 扩展名: '.docx' }),
+      office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>拖入正文</p>' }) },
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      const { container } = render(<App 初始最近文档={[]} />)
+      const 文件 = Object.assign(new File(['字节'], '拖入.docx'), { path: 路径 })
+      const 拖放数据 = { types: ['Files'], files: [文件], dropEffect: '' } as unknown as DataTransfer
+      fireEvent.dragEnter(window, { dataTransfer: 拖放数据 })
+      expect(await screen.findByText('松开鼠标即可打开文件')).toBeInTheDocument()
+      fireEvent.dragOver(window, { dataTransfer: 拖放数据 })
+      fireEvent.drop(window, { dataTransfer: 拖放数据 })
+      await screen.findByRole('tab', { name: '拖入.docx' })
+      expect(container.querySelector('.wps-editor-canvas__content')).toHaveTextContent('拖入正文')
+      await waitFor(() => expect(screen.queryByText('松开鼠标即可打开文件')).toBeNull())
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
+  it('拖入不支持的文件时如实提示且不新建标签', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'YQ==', 二进制: true, 扩展名: '.exe' }),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      render(<App 初始最近文档={[]} />)
+      const 文件 = Object.assign(new File(['字节'], '安装程序.exe'), { path: 'C:\\资料\\安装程序.exe' })
+      const 拖放数据 = { types: ['Files'], files: [文件], dropEffect: '' } as unknown as DataTransfer
+      fireEvent.drop(window, { dataTransfer: 拖放数据 })
+      // antd 确认弹窗会同时渲染标题的可访问副本，这里按内容断言
+      expect(await screen.findByText(/暂不支持以下格式：安装程序\.exe/)).toBeInTheDocument()
+      expect(screen.getAllByText('部分文件无法打开').length).toBeGreaterThan(0)
+      expect(screen.queryByRole('tab', { name: '安装程序.exe' })).toBeNull()
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
+  it('页面内拖动（如幻灯片排序、图片移动）不触发打开文件', async () => {
+    render(<App 初始最近文档={[]} />)
+    const 拖放数据 = { types: ['text/plain', 'application/x-seal-image'], files: [] } as unknown as DataTransfer
+    fireEvent.dragEnter(window, { dataTransfer: 拖放数据 })
+    fireEvent.drop(window, { dataTransfer: 拖放数据 })
+    expect(screen.queryByText('松开鼠标即可打开文件')).toBeNull()
+    expect(screen.queryByText('无法打开拖入的内容')).toBeNull()
+  })
+
+  it('自动恢复未保存工作区时保留正文和标记，不显示恢复提示', async () => {    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     localStorage.setItem('seal-session-restore', 'true')
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
       backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: JSON.stringify({

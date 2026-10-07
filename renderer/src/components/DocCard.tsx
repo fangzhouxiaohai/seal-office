@@ -14,6 +14,10 @@ interface Props {
   onToggleStar?: (标识: string) => void
   onRename?: (标识: string, 名称: string) => Promise<void> | void
   onRemove?: (标识: string) => void
+  /** 批量管理：整卡改为勾选，不触发打开 */
+  selectable?: boolean
+  selected?: boolean
+  onToggleSelect?: (标识: string) => void
 }
 
 const DocCard = ({
@@ -24,6 +28,9 @@ const DocCard = ({
   onToggleStar,
   onRename,
   onRemove,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: Props) => {
   const { modal } = AntdApp.useApp()
   const [重命名中, set重命名中] = useState(false)
@@ -119,27 +126,40 @@ const DocCard = ({
     }
   }
 
+  const 切换选择 = () => onToggleSelect?.(doc.id)
+
   return React.createElement(
     React.Fragment,
     null,
     React.createElement(
       'div',
       {
-        className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}`,
+        className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}${selectable && selected ? ' wps-doc-card--selected' : ''}${selectable ? ' wps-doc-card--selectable' : ''}`,
         role: 'group',
         tabIndex: 0,
-        'aria-label': `文档 ${doc.name}，按回车打开`,
-        onClick: () => onSelect && onSelect(doc.id),
-        onDoubleClick: () => onOpen && onOpen(doc.id),
+        'aria-label': selectable ? `${selected ? '取消选择' : '选择'} ${doc.name}` : `文档 ${doc.name}，按回车打开`,
+        'aria-pressed': selectable ? selected : undefined,
+        onClick: () => (selectable ? 切换选择() : onSelect && onSelect(doc.id)),
+        onDoubleClick: () => (selectable ? 切换选择() : onOpen && onOpen(doc.id)),
         onKeyDown: (事件: React.KeyboardEvent<HTMLDivElement>) => {
           if (事件.target !== 事件.currentTarget) return
-          if (事件.key === 'Enter') { 事件.preventDefault(); onOpen?.(doc.id) }
-          if (事件.key === ' ') { 事件.preventDefault(); onSelect?.(doc.id) }
+          if (事件.key === 'Enter') { 事件.preventDefault(); if (selectable) 切换选择(); else onOpen?.(doc.id) }
+          if (事件.key === ' ') { 事件.preventDefault(); if (selectable) 切换选择(); else onSelect?.(doc.id) }
         },
       },
       React.createElement(
         'div',
         { className: 'wps-doc-card__thumb' },
+        selectable
+          ? React.createElement('input', {
+              type: 'checkbox',
+              className: 'wps-check wps-doc-card__check',
+              'aria-label': `${selected ? '取消选择' : '选择'} ${doc.name}`,
+              checked: selected,
+              onClick: 阻止冒泡,
+              onChange: 切换选择,
+            })
+          : null,
         React.createElement(Icon, {
           name: DOC_TYPE_ICON[doc.type],
           size: 40,

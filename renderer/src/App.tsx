@@ -11,7 +11,8 @@ import HomeRail from './components/HomeRail'
 import HomeSidebar from './components/HomeSidebar'
 import RecommendPanel from './components/RecommendPanel'
 import HomePage from './pages/HomePage'
-import { 注册最近文档错误弹窗, 通过对话框打开文件 } from './fileOpen'
+import { 基准文件名, 注册最近文档错误弹窗, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
+import { 分组拖入文件, 在局部投放区, 携带文件, 读取拖入路径 } from './fileDrop'
 import { 桥接 } from './ipc/bridge'
 import type { DocItem } from './mock/recentDocs'
 import HelpManual from './components/HelpManual'
@@ -91,6 +92,79 @@ const 外壳 = () => {
     void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告, 页面设置, 文件指纹) => createDoc(类型, 内容, { 路径, 警告, 页面设置, 文件指纹 }))
       .then((成功) => { if (成功) refreshRecents() })
   }
+
+  // 拖入文件打开：编辑区自身处理的拖放（插入图片、调整幻灯片顺序等）会先调用 preventDefault，这里不再接管。
+  const [拖入中, set拖入中] = useState(false)
+  const 拖入层级 = React.useRef(0)
+  const 最新拖入打开 = React.useRef<(路径列表: string[]) => Promise<void>>(async () => {})
+  最新拖入打开.current = async (路径列表: string[]) => {
+    const { 可打开, 不支持 } = 分组拖入文件(路径列表)
+    if (不支持.length > 0) {
+      modal.warning({
+        title: '部分文件无法打开',
+        content: `暂不支持以下格式：${不支持.map(基准文件名).join('、')}。可打开 DOCX、XLSX、PPTX、PDF、CSV、TXT、MD、HTML 等文件。`,
+        okText: '确定',
+      })
+    }
+    let 已打开 = 0
+    for (const 路径 of 可打开) {
+      if (await 通过路径打开文件(路径, message, modal, (类型, 内容, 文件路径, 警告, 页面设置, 文件指纹) =>
+        createDoc(类型, 内容, { 路径: 文件路径, 警告, 页面设置, 文件指纹 }))) 已打开 += 1
+    }
+    if (已打开 > 0) {
+      refreshRecents()
+      if (已打开 > 1) message.success(`已打开 ${已打开} 个文件`)
+    }
+  }
+  useEffect(() => {
+    // 落在编辑区自己的投放区（幻灯片舞台等）里时，交给该区域处理，窗口级拖入不介入
+    const 交给局部 = (事件: DragEvent) => 在局部投放区(事件.target)
+    const 进入 = (事件: DragEvent) => {
+      if (!携带文件(事件.dataTransfer) || 交给局部(事件)) return
+      拖入层级.current += 1
+      set拖入中(true)
+    }
+    const 离开 = (事件: DragEvent) => {
+      if (!携带文件(事件.dataTransfer) || 交给局部(事件)) return
+      拖入层级.current = Math.max(0, 拖入层级.current - 1)
+      if (拖入层级.current === 0) set拖入中(false)
+    }
+    const 经过 = (事件: DragEvent) => {
+      if (!携带文件(事件.dataTransfer)) return
+      if (交给局部(事件)) {
+        拖入层级.current = 0
+        set拖入中(false)
+        return
+      }
+      // 不阻止默认行为就收不到 drop；同时避免窗口把文件当作网页导航打开
+      事件.preventDefault()
+      if (事件.dataTransfer) 事件.dataTransfer.dropEffect = 'copy'
+    }
+    const 放下 = (事件: DragEvent) => {
+      if (!携带文件(事件.dataTransfer)) return
+      拖入层级.current = 0
+      set拖入中(false)
+      // 编辑区内的拖放（插入图片、调整幻灯片顺序）会先调用 preventDefault，这里不接管
+      if (事件.defaultPrevented || 交给局部(事件)) return
+      事件.preventDefault()
+      const 路径列表 = 读取拖入路径(事件.dataTransfer)
+      if (路径列表.length === 0) {
+        modal.warning({ title: '无法打开拖入的内容', content: '只能打开本机磁盘上的文件，请从资源管理器拖入。', okText: '确定' })
+        return
+      }
+      void 最新拖入打开.current(路径列表)
+    }
+    window.addEventListener('dragenter', 进入)
+    window.addEventListener('dragleave', 离开)
+    window.addEventListener('dragover', 经过)
+    window.addEventListener('drop', 放下)
+    return () => {
+      window.removeEventListener('dragenter', 进入)
+      window.removeEventListener('dragleave', 离开)
+      window.removeEventListener('dragover', 经过)
+      window.removeEventListener('drop', 放下)
+    }
+  }, [modal])
 
   // 关闭时先等待最新工作区备份，再答复当前标签状态；平时的异步上报仅供核验失败时提示先前风险。
   const 风险文档数 = workspaceTabs.filter((标签) => 标签.dirty).length
@@ -285,6 +359,10 @@ const 外壳 = () => {
             React.createElement('p', null, 通知.内容)
           )))
     ),
+    拖入中 ? React.createElement('div', { className: 'wps-drop-overlay', role: 'status', 'aria-live': 'polite' },
+      React.createElement('div', { className: 'wps-drop-overlay__panel' },
+        React.createElement('strong', null, '松开鼠标即可打开文件'),
+        React.createElement('span', null, '支持 DOCX、XLSX、PPTX、PDF、CSV、TXT、MD、HTML，可一次拖入多个'))) : null,
     React.createElement(AiAssistant, null),
     React.createElement(NewFileNotifier, null),
     React.createElement(AssociatedFileOpener, null),

@@ -103,6 +103,8 @@ export interface AppState {
   renameDoc: (标识: string, 名称: string) => Promise<void>
   /** 删除文档；若删除的是当前打开文档，同时清空选中标识 */
   removeDoc: (标识: string) => Promise<void>
+  /** 批量从最近列表移除；逐条持久化，返回实际移除与失败的条目，不删除磁盘文件 */
+  removeDocs: (标识列表: string[]) => Promise<{ 已移除: string[]; 失败: Array<{ 标识: string; 名称: string; 错误: string }> }>
   /** 处理首页导航点击：未实现项给出中文提示，不切换内容 */
   handleNav: (键: string, 提示: (文本: string) => void) => void
   /** 编辑器已打开的文档 */
@@ -1001,6 +1003,31 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     setActiveDocId((当前) => (当前 === 标识 ? null : 当前))
   }
 
+  const removeDocs = async (标识列表: string[]) => {
+    const 已移除: string[] = []
+    const 失败: Array<{ 标识: string; 名称: string; 错误: string }> = []
+    for (const 标识 of new Set(标识列表)) {
+      const 目标 = docs.find((文档) => 文档.id === 标识)
+      if (目标 === undefined) continue
+      try {
+        if (目标.路径) {
+          const 结果 = await 桥接.recentRemove(目标.路径)
+          if (!结果.成功) throw new Error(结果.错误 || '无法移除最近文档记录')
+        }
+        已移除.push(标识)
+      } catch (错误) {
+        失败.push({ 标识, 名称: 目标.name, 错误: 错误 instanceof Error ? 错误.message : '无法移除最近文档记录' })
+      }
+    }
+    // 只从界面移除已确认持久化成功的条目，失败项保留以便重试
+    if (已移除.length > 0) {
+      const 已移除集合 = new Set(已移除)
+      setDocs((当前) => 当前.filter((文档) => !已移除集合.has(文档.id)))
+      setActiveDocId((当前) => (当前 !== null && 已移除集合.has(当前) ? null : 当前))
+    }
+    return { 已移除, 失败 }
+  }
+
   const handleNav = (键: string, 提示: (文本: string) => void) => {
     const 目标项 = NAV_GROUPS.flat().find((项) => 项.key === 键)
     if (目标项 === undefined) {
@@ -1039,6 +1066,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       createDoc,
       renameDoc,
       removeDoc,
+      removeDocs,
       handleNav,
       documents,
       activeDocumentId,

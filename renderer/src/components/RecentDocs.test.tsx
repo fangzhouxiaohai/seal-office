@@ -77,4 +77,69 @@ describe('最近文档区块', () => {
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     expect(回调).toHaveBeenCalledTimes(1)
   })
+
+  describe('批量删除最近记录', () => {
+    it('没有批量回调时不显示批量管理入口', () => {
+      render(<RecentDocs docs={文档集} title="最近文档" />)
+      expect(screen.queryByRole('button', { name: '批量管理' })).toBeNull()
+    })
+
+    it('进入批量管理后可勾选并全选，移除时回传选中标识', async () => {
+      const 批量移除 = vi.fn().mockResolvedValue(true)
+      const { container } = render(<RecentDocs docs={文档集} title="最近文档" onRemoveMany={批量移除} />)
+      await userEvent.click(screen.getByRole('button', { name: '批量管理' }))
+      expect(screen.getByText('已选 0 项')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('checkbox', { name: '选择 报告.docx' }))
+      expect(screen.getByText('已选 1 项')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('checkbox', { name: '全选' }))
+      expect(screen.getByText('已选 2 项')).toBeInTheDocument()
+      // 全选后再次点击取消全选
+      await userEvent.click(screen.getByRole('checkbox', { name: '全选' }))
+      expect(screen.getByText('已选 0 项')).toBeInTheDocument()
+      expect(container.querySelector('.wps-doc-card--selected')).toBeNull()
+
+      await userEvent.click(screen.getByRole('checkbox', { name: '选择 预算.xlsx' }))
+      await userEvent.click(screen.getByRole('button', { name: /移除所选/ }))
+      expect(批量移除).toHaveBeenCalledWith(['d02'])
+    })
+
+    it('批量管理下点击卡片只勾选，不会打开文件', async () => {
+      const 打开 = vi.fn()
+      const 批量移除 = vi.fn().mockResolvedValue(false)
+      render(<RecentDocs docs={文档集} title="最近文档" onOpen={打开} onRemoveMany={批量移除} />)
+      await userEvent.click(screen.getByRole('button', { name: '批量管理' }))
+      await userEvent.click(screen.getByRole('group', { name: '选择 报告.docx' }))
+      expect(打开).not.toHaveBeenCalled()
+      expect(screen.getByText('已选 1 项')).toBeInTheDocument()
+    })
+
+    it('列表视图同样支持批量勾选', async () => {
+      const 批量移除 = vi.fn().mockResolvedValue(true)
+      render(<RecentDocs docs={文档集} title="最近文档" viewMode="list" onRemoveMany={批量移除} />)
+      await userEvent.click(screen.getByRole('button', { name: '批量管理' }))
+      await userEvent.click(screen.getByRole('checkbox', { name: '选择 报告.docx' }))
+      expect(screen.getByText('已选 1 项')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /移除所选/ }))
+      expect(批量移除).toHaveBeenCalledWith(['d01'])
+    })
+
+    it('未选中任何记录时移除按钮不可用', async () => {
+      render(<RecentDocs docs={文档集} title="最近文档" onRemoveMany={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: '批量管理' }))
+      expect(screen.getByRole('button', { name: /移除所选/ })).toBeDisabled()
+    })
+
+    it('列表清空后自动退出批量管理', async () => {
+      const 批量移除 = vi.fn().mockResolvedValue(true)
+      const { container } = render(<RecentDocs docs={文档集} title="最近文档" onRemoveMany={批量移除} />)
+      await userEvent.click(screen.getByRole('button', { name: '批量管理' }))
+      await userEvent.click(screen.getByRole('checkbox', { name: '全选' }))
+      await userEvent.click(screen.getByRole('button', { name: /移除所选/ }))
+      // 移除成功（返回 true）后退出批量管理
+      expect(screen.queryByText(/已选/)).toBeNull()
+      expect(container.querySelectorAll('.wps-doc-card')).toHaveLength(2)
+    })
+  })
 })

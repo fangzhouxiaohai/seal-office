@@ -54,6 +54,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     createDoc,
     renameDoc,
     removeDoc,
+    removeDocs,
   } = useAppStore()
 
   useEffect(() => {
@@ -149,6 +150,38 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     })
   }
 
+  /** 批量移除最近记录：确认后逐条持久化，返回 true 表示可以退出批量管理 */
+  const 处理批量删除 = (标识列表: string[]): Promise<boolean> => new Promise((完成) => {
+    const 目标列表 = docs.filter((文档) => 标识列表.includes(文档.id))
+    if (目标列表.length === 0) { 完成(false); return }
+    modal.confirm({
+      title: `移除 ${目标列表.length} 条最近记录`,
+      content: `共 ${目标列表.length} 条记录将从最近列表移除（勾选内容不会恢复）。磁盘中的文件不会被删除。`,
+      okText: '移除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const { 已移除, 失败 } = await removeDocs(目标列表.map((文档) => 文档.id))
+          if (已移除.length > 0) message.success(`已从最近列表移除 ${已移除.length} 条记录`)
+          if (失败.length > 0) {
+            modal.error({
+              title: '部分记录未能移除',
+              content: `以下记录仍保留在最近列表：${失败.map((项) => `${项.名称}（${项.错误}）`).join('；')}`,
+            })
+            完成(false)
+            return
+          }
+          完成(true)
+        } catch (错误) {
+          modal.error({ title: '移除最近文档失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })
+          完成(false)
+        }
+      },
+      onCancel: () => 完成(false),
+    })
+  })
+
   const 本地工具页面 = navKey === 'calendar' ? React.createElement(CalendarPage)
     : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })
       : navKey === 'flow' ? React.createElement(DiagramPage, { 类型: '流程图' })
@@ -230,6 +263,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
       onToggleStar: toggleStar,
       onRename: 处理重命名,
       onRemove: 处理删除,
+      onRemoveMany: 处理批量删除,
       onViewModeChange: setViewMode,
       onSortChange: setSortKey,
       onViewAll: () => setNavKey('recent'),

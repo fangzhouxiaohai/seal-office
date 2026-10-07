@@ -12,9 +12,13 @@ interface Props {
   onToggleStar?: (标识: string) => void
   onRename?: (标识: string, 名称: string) => Promise<void> | void
   onRemove?: (标识: string) => void
+  /** 批量管理：整行改为勾选，不触发打开 */
+  selectable?: boolean
+  selected?: boolean
+  onToggleSelect?: (标识: string) => void
 }
 
-const DocRow = ({ doc, onOpen, onToggleStar, onRename, onRemove }: Props) => {
+const DocRow = ({ doc, onOpen, onToggleStar, onRename, onRemove, selectable = false, selected = false, onToggleSelect }: Props) => {
   const { modal } = AntdApp.useApp()
   const [重命名中, 设重命名中] = useState(false)
   const [草稿名称, 设草稿名称] = useState(doc.name)
@@ -73,11 +77,29 @@ const DocRow = ({ doc, onOpen, onToggleStar, onRename, onRemove }: Props) => {
   }
 
   return <>
-    <div className="wps-doc-row">
-      <button type="button" className="wps-doc-row__name" aria-label={`打开 ${doc.name}`} title={doc.name} onClick={() => onOpen?.(doc.id)}>
-        <Icon name={DOC_TYPE_ICON[doc.type]} size={18} color={DOC_TYPE_COLOR[doc.type]} className="wps-doc-row__icon" />
-        {doc.name}
-      </button>
+    <div className={`wps-doc-row${selectable && selected ? ' wps-doc-row--selected' : ''}`}>
+      <span className="wps-doc-row__main">
+        {selectable
+          ? <input
+              type="checkbox"
+              className="wps-check"
+              aria-label={`${selected ? '取消选择' : '选择'} ${doc.name}`}
+              checked={selected}
+              onChange={() => onToggleSelect?.(doc.id)}
+            />
+          : null}
+        <button
+          type="button"
+          className="wps-doc-row__name"
+          aria-label={selectable ? `${selected ? '取消选择' : '选择'} ${doc.name}` : `打开 ${doc.name}`}
+          aria-pressed={selectable ? selected : undefined}
+          title={doc.name}
+          onClick={() => (selectable ? onToggleSelect?.(doc.id) : onOpen?.(doc.id))}
+        >
+          <Icon name={DOC_TYPE_ICON[doc.type]} size={18} color={DOC_TYPE_COLOR[doc.type]} className="wps-doc-row__icon" />
+          {doc.name}
+        </button>
+      </span>
       <span className="wps-doc-row__type">{DOC_TYPE_LABEL[doc.type]}</span>
       <span className="wps-doc-row__time">{formatTime(doc.updatedAt)}</span>
       <span className="wps-doc-row__size">{formatSize(doc.size)}</span>
