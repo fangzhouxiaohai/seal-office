@@ -199,8 +199,8 @@ const TitleBar = ({
       homeMode
         ? React.createElement(Input, {
             className: 'wps-titlebar__search wps-titlebar__search--home',
-            placeholder: '搜索最近文档名称',
-            'aria-label': '搜索最近文档名称',
+            placeholder: '搜索最近文档名称或内容',
+            'aria-label': '搜索最近文档名称或内容',
             allowClear: true,
             value: 搜索值,
             onChange: (事件: React.ChangeEvent<HTMLInputElement>) => 处理输入(事件.target.value),

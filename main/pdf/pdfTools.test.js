@@ -2,7 +2,7 @@
 const pdfTools = require('./pdfTools')
 const { PDFDocument } = require('pdf-lib')
 
-const { 提取页面, 合并文档, 删除页面, 旋转页面 } = pdfTools
+const { 提取页面, 合并文档, 删除页面, 旋转页面, 插入空白页, 插入文件页, 编辑页面 } = pdfTools
 
 // Create a test PDF with specified number of pages
 function createTestPDF(pageCount = 3) {
@@ -112,5 +112,26 @@ describe('PDF Tools', () => {
     it('should throw error for zero angle', async () => {
       await expect(旋转页面(testPDF, [1], 0)).rejects.toThrow()
     })
+  })
+
+  it('插入空白页和其他文件页面保持正确页数与顺序', async () => {
+    const 空白结果 = await PDFDocument.load(await 插入空白页(testPDF, 2))
+    expect(空白结果.getPageCount()).toBe(4)
+    const 来源 = await createTestPDF(2)()
+    const 插入结果 = await PDFDocument.load(await 插入文件页(testPDF, 来源, [2, 1], 2))
+    expect(插入结果.getPageCount()).toBe(5)
+    await expect(插入空白页(testPDF, 5)).rejects.toThrow('插入位置')
+  })
+
+  it('新增文字、图片、可见批注与遮盖后仍能重新载入 PDF', async () => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jR7sAAAAASUVORK5CYII=', 'base64').toString('base64')
+    for (const 操作 of [
+      { 类型: 'text', 页码: 1, x: 40, y: 40, 文字: 'Added text', 字号: 12, 颜色: '#000000' },
+      { 类型: 'note', 页码: 1, x: 40, y: 40, 文字: 'Review', 字号: 12, 颜色: '#000000' },
+      { 类型: 'image', 页码: 1, x: 40, y: 40, 宽: 20, 高: 20, 图片: png },
+      { 类型: 'cover', 页码: 1, x: 40, y: 40, 宽: 20, 高: 20, 颜色: '#ffffff' },
+      { 类型: 'replace', 页码: 1, x: 40, y: 40, 宽: 90, 高: 20, 文字: 'Updated', 字号: 12, 颜色: '#000000' },
+    ]) expect((await PDFDocument.load(await 编辑页面(testPDF, 操作))).getPageCount()).toBe(3)
+    await expect(编辑页面(testPDF, { 类型: 'text', 页码: 4, x: 0, y: 0, 文字: 'A' })).rejects.toThrow('页码')
   })
 })

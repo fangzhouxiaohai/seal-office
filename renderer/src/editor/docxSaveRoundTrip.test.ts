@@ -158,4 +158,60 @@ describe('编辑区到真实 DOCX 的段落格式往返', () => {
       expect.objectContaining({ 对齐: '右', 缩进: { 首行: 480 } }), expect.objectContaining({ 间距: { 段前: 240 } }),
     ] }]] })
   })
+
+  it('字间距、合并单元格与页脚页码域连续保存两次都完整保留', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body>' +
+      '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="exact"/><w:rPr><w:spacing w:val="-12"/></w:rPr></w:pPr>' +
+      '<w:r><w:rPr><w:spacing w:val="8"/></w:rPr><w:t>加宽字距</w:t></w:r></w:p>' +
+      '<w:tbl>' +
+      '<w:tr><w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>跨两列</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:tcPr><w:vMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>跨两行</w:t></w:r></w:p></w:tc></w:tr>' +
+      '<w:tr><w:tc><w:p><w:r><w:t>左下</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:p><w:r><w:t>中下</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc></w:tr>' +
+      '</w:tbl></w:body></w:document>')
+    压缩包.file('word/_rels/document.xml.rels', '<Relationships><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>')
+    压缩包.file('word/footer1.xml', '<w:ftr><w:p><w:r><w:t>第</w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+      '<w:r><w:instrText xml:space="preserve">PAGE  \\* MERGEFORMAT</w:instrText></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+      '<w:r><w:t>3</w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="end"/></w:r>' +
+      '<w:r><w:t>页</w:t></w:r></w:p></w:ftr>')
+    // 正文段落末尾的 sectPr 指向页脚
+    let 数据 = await 压缩包.generateAsync({ type: 'nodebuffer' })
+    const 补正 = await JSZip.loadAsync(数据)
+    const 正文 = await 补正.file('word/document.xml').async('string')
+    补正.file('word/document.xml', 正文.replace('</w:body>', '<w:sectPr><w:footerReference r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/></w:sectPr></w:body>'))
+    数据 = await 补正.generateAsync({ type: 'nodebuffer' })
+
+    for (let 次数 = 0; 次数 < 2; 次数++) {
+      const 读取 = await 读取docx(数据)
+      expect(读取.警告).toEqual([])
+      const html = 净化富文本(读取.html)
+      expect(html).toContain('letter-spacing:0.4pt')
+      expect(html).toContain('colspan="2"')
+      expect(html).toContain('rowspan="2"')
+      expect(读取.页面设置.页脚Html).toContain('data-seal-field="PAGE"')
+
+      const 模型 = htmlToDocxModel(html, {
+        ...读取.页面设置,
+        // 编辑区里的页脚 HTML 会先过净化，域标记必须能存活
+        页脚Html: 净化富文本(读取.页面设置?.页脚Html ?? ''),
+      })
+      expect(净化富文本(读取.页面设置?.页脚Html ?? '')).toContain('data-seal-field="PAGE"')
+      expect(模型.未覆盖).toEqual([])
+      expect(模型.页脚?.[0]).toMatchObject({ 文字: expect.arrayContaining([expect.objectContaining({ 域: 'PAGE' })]) })
+      const 表 = 模型.段落.find((段) => 段.类型 === '表格')
+      if (表?.类型 !== '表格') throw new Error('正文应保留表格')
+      expect(表.行).toHaveLength(2)
+      expect(表.行[0]).toMatchObject([
+        expect.objectContaining({ 跨列: 2 }),
+        expect.objectContaining({ 跨行: 2, 文字: [expect.objectContaining({ 文本: '跨两行' })] }),
+      ])
+      expect(表.行[1]).toHaveLength(2)
+      数据 = await 生成docx(模型)
+    }
+  })
 })

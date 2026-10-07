@@ -307,6 +307,14 @@
   box-shadow: var(--shadow-card);
 }
 
+.pdf-viewer__page { position: relative; flex: 0 0 auto; margin-inline: auto; align-self: flex-start; background: white; box-shadow: var(--shadow-card); }
+.pdf-viewer__page[hidden] { display: none; }
+.pdf-viewer__page .pdf-viewer__canvas { display: block; margin: 0; box-shadow: none; }
+.pdf-viewer__text-layer { position: absolute; inset: 0; overflow: hidden; user-select: text; }
+.pdf-viewer__text-layer span { position: absolute; display: block; white-space: pre; color: transparent; line-height: 1; user-select: text; cursor: text; }
+.pdf-viewer__text-layer span::selection { background: rgba(61, 124, 220, .35); }
+.pdf-viewer__copy-status { font-size: 12px; padding: 2px 16px; color: var(--brand); }
+
 .pdf-viewer__canvas[hidden] {
   display: none;
 }

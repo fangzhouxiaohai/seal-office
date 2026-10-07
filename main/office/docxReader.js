@@ -122,6 +122,9 @@ function 提取字符配置(rPr) {
   if (字体) 配置.字体 = 字体
   const 基线 = 取属性(rPr, 'w:vertAlign', 'w:val')
   if (基线 === 'superscript' || 基线 === 'subscript' || 基线 === 'baseline') 配置.基线 = 基线
+  // w:spacing 出现在字符属性里表示字间距（单位二十分之一磅），与段落间距同名不同义
+  const 字间距 = 取属性(rPr, 'w:spacing', 'w:val')
+  if (字间距 !== null && /^-?\d+$/.test(字间距) && Number(字间距) !== 0) 配置.字间距 = Number(字间距) / 20
   return 配置
 }
 
@@ -138,6 +141,7 @@ function 生成字符样式(配置) {
   if (配置.底纹) 样式 += `background-color:${配置.底纹};`
   if (配置.字号) 样式 += `font-size:${配置.字号}pt;`
   if (配置.字体) 样式 += `font-family:'${配置.字体}';`
+  if (配置.字间距) 样式 += `letter-spacing:${配置.字间距}pt;`
   if (配置.基线) 样式 += `vertical-align:${配置.基线 === 'superscript' ? 'super' : 配置.基线 === 'subscript' ? 'sub' : 'baseline'};`
   return 样式
 }
@@ -185,34 +189,49 @@ function 解析继承段落(样式定义, 标识, 已访问 = new Set()) {
   return [...继承, 样式.段落属性]
 }
 
-/** 同一组段落属性逐字段继承，避免只设左缩进时丢失继承的右缩进。 */
+/**
+ * 同一组段落属性逐字段继承，避免只设左缩进时丢失继承的右缩进。
+ * 段落标记自身的 w:rPr 里会出现同名的 w:spacing（字间距），
+ * 它属于字符格式，不参与段落排版合并，也不会被当作段落标签清除。
+ */
 function 合并段落排版(片段列表) {
+  const 字符属性正则 = /(<w:rPr(?=[\s>])[^>]*>[\s\S]*?<\/w:rPr>)/gi
+  const 段落标签正则 = /<w:(?:ind|spacing|jc)(?=[\s/>])[^>]*>\s*(?:<\/w:(?:ind|spacing|jc)>)?/gi
   const 定义 = new Map()
   for (const 片段 of 片段列表) {
-    for (const 匹配 of (片段 || '').matchAll(/<w:(ind|spacing|jc)(?=[\s/>])[^>]*>/gi)) {
-      const 标签 = 匹配[1]
-      const 属性 = 定义.get(标签) || {}
-      const 新属性 = Object.fromEntries([...匹配[0].matchAll(/\s(w:[\w]+)="([^"]*)"/g)].map((项) => [项[1], 项[2]]))
-      if ('w:firstLine' in 新属性 || 'w:firstLineChars' in 新属性) {
-        delete 属性['w:hanging']
-        delete 属性['w:hangingChars']
+    // split 带捕获组时会同时返回被捕获的 w:rPr 块，只取偶数下标即段落级片段
+    for (const 段落级 of (片段 || '').split(字符属性正则).filter((项, 序号) => 序号 % 2 === 0)) {
+      for (const 匹配 of 段落级.matchAll(/<w:(ind|spacing|jc)(?=[\s/>])[^>]*>/gi)) {
+        const 标签 = 匹配[1]
+        const 属性 = 定义.get(标签) || {}
+        const 新属性 = Object.fromEntries([...匹配[0].matchAll(/\s(w:[\w]+)="([^"]*)"/g)].map((项) => [项[1], 项[2]]))
+        if ('w:firstLine' in 新属性 || 'w:firstLineChars' in 新属性) {
+          delete 属性['w:hanging']
+          delete 属性['w:hangingChars']
+        }
+        if ('w:hanging' in 新属性 || 'w:hangingChars' in 新属性) {
+          delete 属性['w:firstLine']
+          delete 属性['w:firstLineChars']
+        }
+        Object.assign(属性, 新属性)
+        定义.set(标签, 属性)
       }
-      if ('w:hanging' in 新属性 || 'w:hangingChars' in 新属性) {
-        delete 属性['w:firstLine']
-        delete 属性['w:firstLineChars']
-      }
-      Object.assign(属性, 新属性)
-      定义.set(标签, 属性)
     }
   }
   const 合并 = [...定义].map(([标签, 属性]) => `<w:${标签}${Object.entries(属性).map(([键, 值]) => ` ${键}="${值}"`).join('')}/>`).join('')
-  const 正文属性 = (片段列表.at(-1) || '').replace(/<w:(?:ind|spacing|jc)(?=[\s/>])[^>]*>\s*(?:<\/w:(?:ind|spacing|jc)>)?/gi, '')
+  const 正文属性 = (片段列表.at(-1) || '')
+    .split(字符属性正则)
+    .map((块, 序号) => (序号 % 2 === 1 ? 块 : 块.replace(段落标签正则, '')))
+    .join('')
   return 合并 + 正文属性
 }
 
 function 收集段落格式警告(内容) {
   const 警告 = new Set()
-  for (const 匹配 of 内容.matchAll(/<w:(ind|spacing)(?=[\s/>])[^>]*>/gi)) {
+  // 段落标记自身的 w:rPr 里也会出现 w:spacing（字间距），
+  // 先剔除字符属性，避免把字间距误判为段落间距丢失。
+  const 段落级 = 内容.replace(/<w:rPr(?=[\s>])[^>]*>[\s\S]*?<\/w:rPr>/gi, '')
+  for (const 匹配 of 段落级.matchAll(/<w:(ind|spacing)(?=[\s/>])[^>]*>/gi)) {
     const 缩进 = 匹配[1] === 'ind'
     const 字段列表 = 缩进 ? 缩进字段 : 间距字段
     const 别名 = { start: 'left', end: 'right', startChars: 'leftChars', endChars: 'rightChars' }
@@ -328,8 +347,48 @@ function 解析段落属性(pPr, 编号映射) {
     来源排版: 有扩展 ? JSON.stringify({ ...格式, 样式 }) : null }
 }
 
+/** 当前版本能写回 DOCX 的域：页码与总页数。其余域代码仍按未导入如实提示。 */
+const 支持的域 = new Set(['PAGE', 'NUMPAGES'])
+
+/** 取域指令的关键字（PAGE、NUMPAGES、DATE 等），忽略 \* MERGEFORMAT 之类的开关 */
+function 域名称(指令) {
+  const 首个 = String(指令 ?? '').trim().split(/\s+/)[0]
+  return 首个 === '' ? '' : 首个.toUpperCase()
+}
+
+/**
+ * 把 <w:fldSimple> 展开成等价的 fldChar 序列，
+ * 使正文与页眉页脚共用同一套域解析路径。
+ */
+function 展开简单域(段落Xml) {
+  const 展开 = (指令, 内容) => '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+    `<w:r><w:instrText xml:space="preserve">${指令}</w:instrText></w:r>` +
+    '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+    内容 +
+    '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
+  return 段落Xml
+    .replace(/<w:fldSimple(?=[\s>])([^>]*)>([\s\S]*?)<\/w:fldSimple>/gi,
+      (整体, 属性, 内容) => 展开(属性.match(/\sw:instr="([^"]*)"/i)?.[1] ?? '', 内容))
+    // 没有缓存结果的空域写成自闭合标签，同样要保留成可写回的域
+    .replace(/<w:fldSimple(?=[\s>])([^>]*)\/>/gi,
+      (整体, 属性) => 展开(属性.match(/\sw:instr="([^"]*)"/i)?.[1] ?? '', ''))
+}
+
+/** 判断这段 XML 里是否存在当前无法保留的域代码或制表符 */
+function 存在未保留的域或制表符(内容) {
+  if (/<w:tab(?=[\s/>])/i.test(内容)) return true
+  for (const 匹配 of 内容.matchAll(/<w:fldSimple(?=[\s>])[^>]*\sw:instr="([^"]*)"/gi)) {
+    if (!支持的域.has(域名称(匹配[1]))) return true
+  }
+  for (const 匹配 of 内容.matchAll(/<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>/gi)) {
+    if (!支持的域.has(域名称(匹配[1]))) return true
+  }
+  return false
+}
+
 /** 解析一个 <w:p> 段落为 HTML；列表项返回 li 内容由外层聚合 */
 function 解析段落(段落Xml, 编号映射, 样式定义) {
+  段落Xml = 展开简单域(段落Xml)
   const pPr匹配 = 段落Xml.match(/<w:pPr(?:\s[^>]*)?>([\s\S]*?)<\/w:pPr>/i)
   const 段落样式 = pPr匹配 === null ? null : 取属性(pPr匹配[1], 'w:pStyle', 'w:val')
   const 实际段落属性 = 样式定义 === undefined ? pPr匹配?.[1] || '' : 合并段落排版([
@@ -342,6 +401,9 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     ...解析继承字符(样式定义, 段落样式 ?? 样式定义.默认段落样式),
   }
   const 片段列表 = []
+  // 页码域按 Word 的域结构解析：begin → instrText 指令 → separate → 缓存结果 → end。
+  // 能写回的域输出为带标记的占位，保存时重新写成域代码，页码不会被写死。
+  let 域 = null
   // 逐个 run 解析：rPr 决定字符样式，w:t 与 w:br 决定内容
   const run正则 = /<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/gi
   let run匹配
@@ -351,29 +413,58 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     const rPr = rPr匹配 === null ? null : rPr匹配[1]
     const 字符样式 = rPr === null || 样式定义 === undefined ? {} : 解析继承字符(样式定义, 取属性(rPr, 'w:rStyle', 'w:val'))
     const { 样式 } = 解析字符属性(rPr, { ...继承配置, ...字符样式 })
-    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?=[\s/>])[^>]*>/gi
+    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?=[\s/>])[^>]*>/gi
     let 文本匹配
     while ((文本匹配 = 文本正则.exec(runXml)) !== null) {
-      if (/^<w:(?:drawing|pict)/i.test(文本匹配[0])) {
-        片段列表.push(样式定义?.图片?.get(文本匹配[0]) || '')
-      } else if (/^<w:(?:br|cr)/i.test(文本匹配[0])) {
+      const 片段Xml = 文本匹配[0]
+      if (/^<w:fldChar/i.test(片段Xml)) {
+        const 类型 = 取属性(片段Xml, 'w:fldChar', 'w:fldCharType')
+        if (类型 === 'begin') 域 = { 指令: '', 阶段: '指令', 缓存: [], 缓存片段: [], 样式 }
+        else if (类型 === 'separate' && 域 !== null) 域.阶段 = '结果'
+        else if (类型 === 'end' && 域 !== null) {
+          const 名称 = 域名称(域.指令)
+          if (支持的域.has(名称)) {
+            片段列表.push(`<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`)
+          } else if (域.缓存片段.length > 0) {
+            // 无法写回的域至少保留它上次计算出的结果，同时如实提示
+            片段列表.push(域.缓存片段.join(''))
+          }
+          域 = null
+        }
+      } else if (/^<w:instrText/i.test(片段Xml)) {
+        if (域 !== null && 域.阶段 === '指令' && 文本匹配[1] !== undefined) 域.指令 += 文本匹配[1]
+      } else if (/^<w:(?:drawing|pict)/i.test(片段Xml)) {
+        片段列表.push(样式定义?.图片?.get(片段Xml) || '')
+      } else if (/^<w:(?:br|cr)/i.test(片段Xml)) {
         片段列表.push('<br>')
-      } else if (文本匹配[1] !== undefined) {
-        const 内容 = 转义(文本匹配[1])
-        片段列表.push(样式 === '' ? 内容 : `<span style="${样式}">${内容}</span>`)
+      } else if (文本匹配[2] !== undefined) {
+        if (域 !== null && 域.阶段 === '结果') {
+          const 缓存文本 = 转义(文本匹配[2])
+          域.缓存.push(缓存文本)
+          域.缓存片段.push(样式 === '' ? 缓存文本 : `<span style="${样式}">${缓存文本}</span>`)
+          域.样式 = 样式
+        } else {
+          const 内容 = 转义(文本匹配[2])
+          片段列表.push(样式 === '' ? 内容 : `<span style="${样式}">${内容}</span>`)
+        }
       }
     }
   }
   return { 段属性, 内容: 片段列表.join('') }
 }
 
-/** 解析表格：<w:tbl> → <table>，逐行逐格，单元格内部递归段落 */
+/**
+ * 解析表格：<w:tbl> → <table>，逐行逐格，单元格内部递归段落。
+ * 横向合并（w:gridSpan）写成 colspan；纵向合并（w:vMerge）写成起始单元格的
+ * rowspan，被覆盖的续格不再输出，与 HTML 表格表达合并的方式一致。
+ */
 function 解析表格(表Xml, 编号映射, 样式定义) {
-  const 行列表 = []
+  const 行网格 = []
   const 行正则 = /<w:tr(?:\s[^>]*)?>([\s\S]*?)<\/w:tr>/gi
   let 行匹配
   while ((行匹配 = 行正则.exec(表Xml)) !== null) {
     const 单元列表 = []
+    let 列起点 = 0
     const 单元正则 = /<w:tc(?:\s[^>]*)?>([\s\S]*?)<\/w:tc>/gi
     let 单元匹配
     while ((单元匹配 = 单元正则.exec(行匹配[1])) !== null) {
@@ -387,12 +478,39 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
       const 单元属性 = 单元Xml.match(/<w:tcPr(?:\s[^>]*)?>([\s\S]*?)<\/w:tcPr>/i)?.[1] ?? ''
       const 跨列原值 = 取属性(单元属性, 'w:gridSpan', 'w:val')
       const 跨列 = 跨列原值 !== null && /^\d+$/.test(跨列原值) ? Number(跨列原值) : 1
-      const 跨列属性 = Number.isSafeInteger(跨列) && 跨列 > 1 && 跨列 <= 256 ? ` colspan="${跨列}"` : ''
-      单元列表.push(`<td${跨列属性} style="border:1px solid #D5DBE3;padding:4px 8px">${段落列表.join('') || '<br>'}</td>`)
+      const 有效跨列 = Number.isSafeInteger(跨列) && 跨列 > 1 && 跨列 <= 256 ? 跨列 : 1
+      const 纵向合并 = !存在(单元属性, 'vMerge') ? null
+        : 取属性(单元属性, 'w:vMerge', 'w:val') === 'restart' ? 'restart' : 'continue'
+      单元列表.push({
+        列: 列起点,
+        跨列: 有效跨列,
+        纵向合并,
+        内容: 段落列表.join('') || '<br>',
+      })
+      列起点 += 有效跨列
     }
-    if (单元列表.length > 0) 行列表.push(`<tr>${单元列表.join('')}</tr>`)
+    if (单元列表.length > 0) 行网格.push(单元列表)
   }
-  if (行列表.length === 0) return ''
+  if (行网格.length === 0) return ''
+  // 续格由上方起始单元格的 rowspan 覆盖，先算清跨行数再输出
+  const 被覆盖 = new Set()
+  const 行列表 = 行网格.map((单元列表, 行号) => {
+    const 片段 = []
+    for (const 单元 of 单元列表) {
+      if (被覆盖.has(`${行号}:${单元.列}`)) continue
+      let 跨行 = 1
+      if (单元.纵向合并 === 'restart') {
+        while (行网格[行号 + 跨行]?.some((项) =>
+          项.列 === 单元.列 && 项.跨列 === 单元.跨列 && 项.纵向合并 === 'continue')) {
+          被覆盖.add(`${行号 + 跨行}:${单元.列}`)
+          跨行 += 1
+        }
+      }
+      const 合并属性 = (单元.跨列 > 1 ? ` colspan="${单元.跨列}"` : '') + (跨行 > 1 ? ` rowspan="${跨行}"` : '')
+      片段.push(`<td${合并属性} style="border:1px solid #D5DBE3;padding:4px 8px">${单元.内容}</td>`)
+    }
+    return `<tr>${片段.join('')}</tr>`
+  })
   return `<table style="border-collapse:collapse;width:100%">${行列表.join('')}</table>`
 }
 
@@ -528,7 +646,16 @@ function 收集未导入警告(bodyXml, 图片) {
     警告.push('段内分页或分栏换行未完整导入')
   }
   if (有标签('w:hyperlink')) 警告.push('超链接目标未导入')
-  if (有标签('w:gridSpan') || 有标签('w:vMerge')) 警告.push('表格合并单元格未导入')
+  // 合并单元格已按 colspan / rowspan 导入，只有越界或无法解析的跨度才无法保留
+  const 格子跨度异常 = [...bodyXml.matchAll(/<w:gridSpan(?=[\s/>])[^>]*>/gi)].some((项) => {
+    const 值 = 取属性(项[0], 'w:gridSpan', 'w:val')
+    return 值 === null || !/^\d+$/.test(值) || Number(值) < 1 || Number(值) > 256
+  })
+  const 纵向合并异常 = [...bodyXml.matchAll(/<w:vMerge(?=[\s/>])[^>]*>/gi)].some((项) => {
+    const 值 = 取属性(项[0], 'w:vMerge', 'w:val')
+    return 值 !== null && 值 !== 'restart' && 值 !== 'continue'
+  })
+  if (格子跨度异常 || 纵向合并异常) 警告.push('表格合并单元格未导入')
   return 警告
 }
 
@@ -537,6 +664,8 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
   const 节 = [...documentXml.matchAll(/<w:sectPr(?=[\s>])[^>]*>([\s\S]*?)<\/w:sectPr>/gi)].at(-1)?.[1] ?? ''
   if (!节) return {}
   const 关系Xml = await 压缩包.file('word/_rels/document.xml.rels')?.async('string') ?? ''
+  const 设置文件 = 压缩包.file('word/settings.xml')
+  const 设置Xml = 设置文件 === null || 设置文件 === undefined ? '' : await 设置文件.async('string')
   const 关系 = new Map([...关系Xml.matchAll(/<(?:[\w]+:)?Relationship(?=[\s/>])[^>]*>/gi)].map((项) => {
     const 标签 = 项[0].match(/^<([\w:]+)/)[1]
     return [取属性(项[0], 标签, 'Id'), {
@@ -564,17 +693,23 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
       }
       const xml = await 压缩包.file(部件).async('string')
       const 内容 = xml.match(new RegExp(`<w:${种类 === 'header' ? 'hdr' : 'ftr'}(?=[\\s>])[^>]*>([\\s\\S]*?)<\\/w:${种类 === 'header' ? 'hdr' : 'ftr'}>`, 'i'))?.[1] ?? ''
-      if (!/<w:(?:t|drawing|pict|fldChar|instrText|tab|br|tbl)(?=[\s/>])/i.test(内容)) continue
+      if (!/<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(内容)) continue
       const 图片读取 = await 读取正文图片(压缩包, 内容, 警告, 部件)
       const 局部样式 = { ...样式定义, 图片: 图片读取.图片 }
       const html = 渲染Body(图片读取.正文, 编号映射, 局部样式)
-      if (/<w:(?:fldChar|instrText|fldSimple|tab)(?=[\s/>])/i.test(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
+      if (存在未保留的域或制表符(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
       警告.push(...收集未导入警告(图片读取.正文, 图片读取.图片).map((项) => `${名称}：${项}`))
       候选.push({ 类型: 取属性(项[0], `w:${种类}Reference`, 'w:type') ?? 'default', html })
     }
-    const 首选 = 候选.find((项) => 项.类型 === 'default') ?? 候选[0]
+    // 首页页脚要有 w:titlePg、奇偶页页脚要有 settings.xml 的 w:evenAndOddHeaders 才会生效；
+    // 未生效的版本 Word 同样不显示，保留默认版本即为完整保真，不必报告丢失。
+    const 生效类型 = new Set(['default'])
+    if (/<w:titlePg(?=[\s/>])/i.test(节)) 生效类型.add('first')
+    if (/<w:evenAndOddHeaders(?=[\s/>])/i.test(设置Xml)) 生效类型.add('even')
+    const 生效候选 = 候选.filter((项) => 生效类型.has(项.类型))
+    const 首选 = 生效候选.find((项) => 项.类型 === 'default') ?? 生效候选[0] ?? 候选[0]
     if (首选?.html) 结果[键] = 首选.html
-    if (候选.some((项) => 项 !== 首选 && 项.html !== 首选?.html)) 警告.push(`${种类 === 'header' ? '页眉' : '页脚'}的首页或奇偶页版本未完整导入`)
+    if (生效候选.some((项) => 项 !== 首选 && 项.html !== 首选?.html)) 警告.push(`${种类 === 'header' ? '页眉' : '页脚'}的首页或奇偶页版本未完整导入`)
   }
   return 结果
 }

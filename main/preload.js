@@ -75,6 +75,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revealInFolder: (路径) => ipcRenderer.invoke('file.revealInFolder', 路径),
   exportToPdf: (html, 默认文件名) => ipcRenderer.invoke('pdf.export', html, 默认文件名),
   printDocument: (内容, 格式) => ipcRenderer.invoke('document.print', 内容, 格式),
+  printPreview: (内容, 格式) => ipcRenderer.invoke('document.printPreview', 内容, 格式),
   reportUnsavedCount: (数量) => ipcRenderer.invoke('system.reportUnsavedCount', 数量),
   onCloseStateRequested: (回调) => {
     const 处理 = (_事件, 标识) => { if (typeof 标识 === 'string') 回调(标识) }
@@ -207,5 +208,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     merge: (列表) => ipcRenderer.invoke('pdf.merge', 列表),
     delete: (数据, 页码) => ipcRenderer.invoke('pdf.delete', 数据, 页码),
     rotate: (数据, 页码, 角度) => ipcRenderer.invoke('pdf.rotate', 数据, 页码, 角度),
+    insertBlank: (数据, 位置) => ipcRenderer.invoke('pdf.insertBlank', 数据, 位置),
+    insertPages: (数据, 插入数据, 页码, 位置) => ipcRenderer.invoke('pdf.insertPages', 数据, 插入数据, 页码, 位置),
+    editPage: (数据, 操作) => ipcRenderer.invoke('pdf.editPage', 数据, 操作),
   },
 })

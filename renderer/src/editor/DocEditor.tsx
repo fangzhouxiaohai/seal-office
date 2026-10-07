@@ -8,7 +8,6 @@ import { 命令表, type CommandContext, type InsertableKind, type ViewState, ty
 import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
-import { 桥接 } from '../ipc/bridge'
 import { 检查文本 } from './spellCheck'
 import { 提取大纲 } from './toc'
 import NavigationPane from './NavigationPane'
@@ -28,6 +27,7 @@ import Ruler from './Ruler'
 import FindReplacePanel from './FindReplacePanel'
 import EditorStatusBar from './EditorStatusBar'
 import ContextMenu from '../components/ContextMenu'
+import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
 import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
@@ -158,6 +158,7 @@ const DocEditor = () => {
   const [邮件合并面板打开, set邮件合并面板打开] = useState(false)
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
+  const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   /** 右键菜单状态 */
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
@@ -739,9 +740,7 @@ const DocEditor = () => {
       const 正文 = 编辑区引用.current?.innerHTML
       if (!正文) { message.warning('文档为空，无法打印'); return }
       const 名称 = 当前文档?.name ?? '未命名文档'
-      void 桥接.printDocument(导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html), 'html').then((结果) => {
-        if (!结果.成功 && !结果.已取消) modal.error({ title: '打印失败', content: 结果.错误 || '无法启动打印任务' })
-      }).catch((错误: unknown) => { modal.error({ title: '打印失败', content: 错误 instanceof Error ? 错误.message : '无法启动打印任务' }) })
+      set打印预览({ 内容: 导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html), 标题: 名称 })
       return
     }
     const 命令 = 命令表[命令标识]
@@ -1098,7 +1097,8 @@ const DocEditor = () => {
       缩放: 视图.缩放,
       视图模式: 视图.视图模式,
       on缩放变化: (值: number) => set视图((当前) => ({ ...当前, 缩放: 值 })),
-    })
+    }),
+    打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'html', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
   )
 }
 

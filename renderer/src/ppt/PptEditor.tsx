@@ -40,6 +40,7 @@ import SlideCanvas from './SlideCanvas'
 import SlideshowView from './SlideshowView'
 import { NotesView, SlideSorterView } from './PptViews'
 import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
+import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
@@ -129,6 +130,7 @@ const PptEditor = () => {
   const [图片地址, set图片地址] = useState<图片地址表>({})
   // 导出面板：范围、格式与分辨率，写盘完成后才报告成功
   const [导出打开, set导出打开] = useState(false)
+  const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   const [选中对象, set选中对象] = useState<string[]>([])
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
@@ -791,9 +793,7 @@ const PptEditor = () => {
       try {
         const 内容 = 导出为Html预览(文稿, 文稿.name, 图片地址)
         if (!内容) { message.warning('演示文稿为空，无法打印'); return }
-        void 桥接.printDocument(内容, 'html').then((结果) => {
-          if (!结果.成功 && !结果.已取消) 显示文件错误('打印失败', 结果.错误 || '无法启动打印任务')
-        }).catch((错误: unknown) => 显示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法启动打印任务'))
+        set打印预览({ 内容, 标题: 文稿.name })
       } catch (错误) { 显示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法准备打印内容') }
       return
     }
@@ -1460,7 +1460,8 @@ const PptEditor = () => {
           ...(放映序列 ? { 序列: 放映序列 } : {}),
           on退出: 退出放映,
         })
-      : null
+      : null,
+    打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'html', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
   )
 }
 

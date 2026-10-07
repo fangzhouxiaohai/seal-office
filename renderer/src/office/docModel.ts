@@ -26,9 +26,13 @@ export interface 文字片段 {
   /** 字号，单位磅 */
   字号?: number
   字体?: string
+  /** 字间距，单位磅，可为负数 */
+  字间距?: number
   基线?: '上标' | '下标' | '正常'
   换行?: boolean
   图片?: 文档图片
+  /** 页码类域：保存时写回域代码，而不是固定文字 */
+  域?: 'PAGE' | 'NUMPAGES'
 }
 
 /** 文本段落，含标题与列表项 */
@@ -44,6 +48,10 @@ export interface 文本段落 extends 段落排版 {
 /** 表格单元格 */
 export interface 表格单元 {
   表头: boolean
+  /** 横向合并的列数，大于 1 时由左侧单元格向右跨列 */
+  跨列?: number
+  /** 纵向合并的行数，大于 1 时由上方单元格向下跨行 */
+  跨行?: number
   文字: 文字片段[]
   段落?: 文本段落[]
 }
@@ -109,6 +117,8 @@ interface 格式状态 {
   底纹?: string
   字号?: number
   字体?: string
+  /** 字间距，单位磅，可为负数 */
+  字间距?: number
   基线?: '上标' | '下标' | '正常'
 }
 
@@ -250,6 +260,27 @@ function 规整字体(字体: string | undefined): string | undefined {
   return 首选.length > 0 ? 首选 : undefined
 }
 
+/** 字间距允许负数与零，与字号解析分开处理 */
+export function 读取字间距(取值: string | undefined | null): number | undefined {
+  if (!取值) {
+    return undefined
+  }
+  const 值 = 取值.trim().toLowerCase()
+  if (值 === 'normal') {
+    return 0
+  }
+  const 匹配 = 值.match(/^(-?[\d.]+)\s*(px|pt|em|rem)?$/)
+  if (匹配 === null) {
+    return undefined
+  }
+  const 数值 = Number(匹配[1])
+  if (!Number.isFinite(数值)) {
+    return undefined
+  }
+  const 磅 = 匹配[2] === 'px' ? 数值 * 0.75 : 匹配[2] === 'em' || 匹配[2] === 'rem' ? 数值 * 12 : 数值
+  return Math.round(磅 * 10) / 10
+}
+
 /** 依据元素自身的标签与内联样式，在父格式之上叠加新的格式 */
 function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状态 {
   const 标签 = 元素.tagName
@@ -286,6 +317,7 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
       (标签 === 'FONT' ? 字号档位磅值[元素.getAttribute('size') ?? ''] : undefined) ??
       父格式.字号,
     字体: 规整字体(样式.fontFamily) ?? 规整字体(元素.getAttribute('face') ?? undefined) ?? 父格式.字体,
+    字间距: 读取字间距(样式.letterSpacing) ?? 父格式.字间距,
     基线: 样式.verticalAlign === 'baseline' ? '正常'
       : 样式.verticalAlign === 'super' || 标签 === 'SUP' ? '上标'
         : 样式.verticalAlign === 'sub' || 标签 === 'SUB' ? '下标' : 父格式.基线,
@@ -305,8 +337,30 @@ function 建片段(文本: string, 格式: 格式状态): 文字片段 {
     底纹: 格式.底纹,
     字号: 格式.字号,
     字体: 格式.字体,
+    ...(格式.字间距 !== undefined ? { 字间距: 格式.字间距 } : {}),
     ...(格式.基线 ? { 基线: 格式.基线 } : {}),
   }
+}
+
+/** 页码类域在编辑区里的标记属性，与主进程读取端保持一致 */
+const 域标记属性 = 'data-seal-field'
+const 支持的域 = new Set(['PAGE', 'NUMPAGES'])
+
+/**
+ * 读取页码域占位元素；返回 null 表示该元素不是域标记。
+ * 未知域无法写回，记入未覆盖清单以便保存前如实告知。
+ */
+function 读取域片段(元素: HTMLElement, 格式: 格式状态, 未覆盖: Set<string>): 文字片段 | null {
+  const 域名称 = (元素.getAttribute(域标记属性) ?? '').toUpperCase()
+  if (域名称 === '') {
+    return null
+  }
+  if (!支持的域.has(域名称)) {
+    未覆盖.add('域代码')
+    return null
+  }
+  const 片段格式 = 叠加格式(元素, 格式)
+  return { ...建片段(元素.textContent ?? '', 片段格式), 域: 域名称 as 'PAGE' | 'NUMPAGES' }
 }
 
 /** 解析过程中的可变上下文 */
@@ -387,12 +441,29 @@ function 收集片段(节点: Node, 格式: 格式状态, 未覆盖: Set<string>
       结果.push({ ...建片段('', 当前格式), 换行: true })
       return
     }
+    // 页码域占位：保留域类型与它上次显示的文字，保存时写回真正的域代码
+    const 域片段 = 读取域片段(当前, 当前格式, 未覆盖)
+    if (域片段 !== null) {
+      结果.push(域片段)
+      return
+    }
     const 子格式 = 叠加格式(当前, 当前格式)
     当前.childNodes.forEach((子) => 遍历(子, 子格式))
   }
 
   节点.childNodes.forEach((子) => 遍历(子, 格式))
   return 结果
+}
+
+/** 读取合并跨度：只接受 1 至 256，越界或非法取值按未覆盖如实报告 */
+function 读取合并跨度(取值: string | null, 未覆盖: Set<string>): number {
+  if (取值 === null) return 1
+  const 数字 = Number(取值)
+  if (!/^\d+$/.test(取值) || !Number.isSafeInteger(数字) || 数字 < 1 || 数字 > 256) {
+    未覆盖.add('合并单元格')
+    return 1
+  }
+  return 数字
 }
 
 /** 解析一个表格元素，行列为空时返回 null */
@@ -408,16 +479,17 @@ function 解析表格(表: HTMLTableElement, 未覆盖: Set<string>): 表格段�
     行.push(
       单元列表.map((单元) => {
         const 元素 = 单元 as HTMLElement
-        // 单元格可能因合并而跨行跨列，当前生成端按规则网格输出
-        if (元素.getAttribute('colspan') !== null || 元素.getAttribute('rowspan') !== null) {
-          未覆盖.add('合并单元格')
-        }
+        // 被合并覆盖的单元格不会出现在后续行列里，跨度写入模型后由保存端还原
+        const 跨列 = 读取合并跨度(元素.getAttribute('colspan'), 未覆盖)
+        const 跨行 = 读取合并跨度(元素.getAttribute('rowspan'), 未覆盖)
         const 单元上下文: 解析上下文 = { 段落: [], 当前: null, 未覆盖 }
         const 单元格式 = 叠加格式(元素, 初始格式)
         元素.childNodes.forEach((子) => 遍历节点(子, 单元格式, 单元上下文))
         if (单元上下文.段落.some((段) => 段.类型 !== '段落')) 未覆盖.add('表格内嵌对象')
         return {
           表头: 元素.tagName === 'TH',
+          ...(跨列 > 1 ? { 跨列 } : {}),
+          ...(跨行 > 1 ? { 跨行 } : {}),
           文字: 收集片段(元素, 单元格式, 未覆盖),
           段落: 单元上下文.段落.filter((段): 段 is 文本段落 => 段.类型 === '段落'),
         }
@@ -428,12 +500,19 @@ function 解析表格(表: HTMLTableElement, 未覆盖: Set<string>): 表格段�
   return 行.length > 0 ? { 类型: '表格', 行 } : null
 }
 
+/** 显式包裹空格的行内标签：其中的空格是真实内容，不当作缩进空白丢弃 */
+const 行内标签 = new Set(['SPAN', 'FONT', 'B', 'I', 'U', 'S', 'STRIKE', 'EM', 'STRONG', 'SUP', 'SUB', 'A', 'MARK', 'SMALL', 'BIG', 'CODE'])
+
 /** 遍历 DOM 节点，把内容填入解析上下文 */
 function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上下文): void {
   if (节点.nodeType === Node.TEXT_NODE) {
     const 文本 = 节点.textContent ?? ''
-    // 纯空白的文本节点来自 HTML 缩进，不构成内容
-    if (文本.trim().length === 0) {
+    if (文本.length === 0) {
+      return
+    }
+    // 只有空格的文本节点若是被行内标签显式包裹（如 <span> </span>），就是正文里的真实空格；
+    // 其余不带内容的空白来自 HTML 缩进，不构成内容
+    if (文本.trim().length === 0 && !(节点.parentElement !== null && 行内标签.has(节点.parentElement.tagName) && !/\n/.test(文本))) {
       return
     }
     取当前段落(上下文, 0, '左', '无').文字.push(建片段(文本, 格式))
@@ -464,6 +543,13 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
   if (标签 === 'IMG') {
     const 图片 = 读取文档图片(节点 as HTMLImageElement, 上下文.未覆盖)
     if (图片) 取当前段落(上下文, 0, '左', '无').文字.push({ ...建片段('', 格式), 图片 })
+    return
+  }
+
+  // 页码域占位：正文与页脚里的页码都不会被固定成保存时看到的数字
+  const 域片段 = 读取域片段(节点, 格式, 上下文.未覆盖)
+  if (域片段 !== null) {
+    取当前段落(上下文, 0, '左', '无').文字.push(域片段)
     return
   }
 

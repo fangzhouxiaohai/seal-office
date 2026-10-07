@@ -21,6 +21,9 @@ const {
   ImageRun,
   Header,
   Footer,
+  VerticalMergeType,
+  XmlComponent,
+  XmlAttributeComponent,
 } = require('docx')
 const JSZip = require('jszip')
 const { 验证段落属性 } = require('./paragraphProperties')
@@ -123,8 +126,34 @@ const 对齐映射 = {
 /** 编号列表使用的编号定义标识 */
 const 编号标识 = '海豹编号'
 
+/** w:fldSimple 的 w:instr 属性 */
+class 域指令属性 extends XmlAttributeComponent {
+  constructor(指令) {
+    super({ instr: 指令 })
+    this.xmlKeys = { instr: 'w:instr' }
+  }
+}
+
+/**
+ * 页码域：w:fldSimple 包住带格式的缓存结果。
+ * 保存库的 SimpleField 只能用无格式的默认文字，会让页码在页脚里变成另一种字号，
+ * 因此这里保留原片段格式，Word 打开时仍会重新计算页码。
+ */
+class 页码域 extends XmlComponent {
+  constructor(指令, 缓存结果) {
+    super('w:fldSimple')
+    this.root.push(new 域指令属性(指令))
+    this.root.push(缓存结果)
+  }
+}
+
 /** 把一个文字片段转为 docx 的 TextRun */
 function 建文字(片段, 图片预算) {
+  if (片段.域 !== undefined) {
+    // 页码类域写回真正的域代码，Word 打开时会重新计算，不会被固定成保存时看到的数字
+    if (!['PAGE', 'NUMPAGES'].includes(片段.域)) throw new Error('页码域类型无效，无法保存')
+    return new 页码域(` ${片段.域} `, 建文字({ ...片段, 域: undefined, 文本: 片段.文本 || '' }, 图片预算))
+  }
   if (片段.图片) {
     const 图片 = 片段.图片
     const 信息 = 解码图片数据(图片.数据)
@@ -160,6 +189,12 @@ function 建文字(片段, 图片预算) {
   }
   if (片段.字体) {
     配置.font = 片段.字体
+  }
+  if (片段.字间距 !== undefined) {
+    // docx 的 characterSpacing 单位是二十分之一磅，与 OOXML 的 w:spacing 一致
+    const 二十分之一磅 = Math.round(片段.字间距 * 20)
+    if (!Number.isSafeInteger(二十分之一磅) || Math.abs(二十分之一磅) > 2147483) throw new Error('字间距数值无效，无法保存')
+    if (二十分之一磅 !== 0) 配置.characterSpacing = 二十分之一磅
   }
   return new TextRun(配置)
 }
@@ -208,23 +243,70 @@ function 建段落(段, 原生排版列表, 图片预算) {
   return new Paragraph(配置)
 }
 
-/** 把一个表格模型转为 docx 的 Table，行列数不齐时按最宽行补齐 */
+/**
+ * 把一个表格模型转为 docx 的 Table。
+ * HTML 中被合并覆盖的单元格不会出现在后续行列里，这里按合并关系重建网格：
+ * 起始格写 w:gridSpan 与 w:vMerge restart，被覆盖的后继行显式补上 continue 格。
+ * 不使用保存库的 rowSpan 自动补格——它会在续格里插入没有排版记录的空段落，
+ * 使段落顺序与原生排版记录错位。
+ */
 function 建表格(表, 原生排版列表, 图片预算) {
   const 行数据 = 表.行 || []
-  const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.length), 0)
+  const 取跨度 = (值, 名称) => {
+    if (值 === undefined) return 1
+    if (!Number.isSafeInteger(值) || 值 < 1 || 值 > 256) throw new Error(`表格${名称}数值无效，无法保存`)
+    return 值
+  }
+  // 网格取值：起点（合并起始）、续格（被上方跨行覆盖）、横向覆盖（被同行跨列覆盖）
+  const 网格 = 行数据.map(() => [])
+  let 列数 = 0
+  行数据.forEach((行单元, 行号) => {
+    let 列号 = 0
+    for (const 单元 of 行单元) {
+      while (网格[行号][列号] !== undefined) 列号 += 1
+      const 跨列 = 取跨度(单元?.跨列, '跨列')
+      const 跨行 = 取跨度(单元?.跨行, '跨行')
+      if (行号 + 跨行 > 行数据.length) throw new Error('表格跨行数超出表格行数，无法保存')
+      for (let 偏移行 = 0; 偏移行 < 跨行; 偏移行 += 1) {
+        for (let 偏移列 = 0; 偏移列 < 跨列; 偏移列 += 1) {
+          网格[行号 + 偏移行][列号 + 偏移列] = 偏移行 === 0 && 偏移列 === 0 ? { 类型: '起点', 跨列, 跨行, 单元 }
+            : 偏移行 === 0 ? { 类型: '横向覆盖' }
+              : { 类型: '续格', 跨列, 起点列: 列号 }
+        }
+      }
+      列号 += 跨列
+      列数 = Math.max(列数, 列号)
+    }
+  })
 
-  const 行 = 行数据.map((行单元) => {
+  const 空格段落 = () => new TableCell({ children: [建段落({ 文字: [] }, 原生排版列表, 图片预算)] })
+  const 行 = 行数据.map((行单元, 行号) => {
     const 单元列表 = []
-    for (let 序号 = 0; 序号 < 列数; 序号 += 1) {
-      const 单元 = 行单元[序号]
-      单元列表.push(
-        new TableCell({
-          children: (单元?.段落?.length ? 单元.段落 : [{ 文字: 单元?.文字 || [] }]).map((段) => 建段落({
-            ...段,
-            文字: (段.文字 || []).map((片段) => 单元?.表头 ? { ...片段, 加粗: true } : 片段),
-          }, 原生排版列表, 图片预算)),
-        })
-      )
+    for (let 列号 = 0; 列号 < 列数; 列号 += 1) {
+      const 格子 = 网格[行号][列号]
+      if (格子 === undefined) {
+        单元列表.push(空格段落())
+        continue
+      }
+      if (格子.类型 === '横向覆盖') continue
+      if (格子.类型 === '续格') {
+        单元列表.push(new TableCell({
+          children: [建段落({ 文字: [] }, 原生排版列表, 图片预算)],
+          ...(格子.跨列 > 1 ? { columnSpan: 格子.跨列 } : {}),
+          verticalMerge: VerticalMergeType.CONTINUE,
+        }))
+        continue
+      }
+      const 单元 = 格子.单元
+      const 段落 = 单元?.段落?.length ? 单元.段落 : [{ 文字: 单元?.文字 || [] }]
+      单元列表.push(new TableCell({
+        children: 段落.map((段) => 建段落({
+          ...段,
+          文字: (段.文字 || []).map((片段) => 单元?.表头 ? { ...片段, 加粗: true } : 片段),
+        }, 原生排版列表, 图片预算)),
+        ...(格子.跨列 > 1 ? { columnSpan: 格子.跨列 } : {}),
+        ...(格子.跨行 > 1 ? { verticalMerge: VerticalMergeType.RESTART } : {}),
+      }))
     }
     return new TableRow({ children: 单元列表 })
   })

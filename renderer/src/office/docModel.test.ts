@@ -233,6 +233,50 @@ describe('解析文档 - 表格', () => {
     const 模型 = 解析('<table></table>')
     expect(模型.段落.some((段) => 段.类型 === '表格')).toBe(false)
   })
+
+  it('横向与纵向合并写入跨列、跨行，不再记为未覆盖内容', () => {
+    const 模型 = 解析('<table><tr><td colspan="2">跨两列</td><td rowspan="2">跨两行</td></tr><tr><td>左下</td><td>中下</td></tr></table>')
+    const 表 = 模型.段落[0] as 表格段落
+    expect(模型.未覆盖).toEqual([])
+    expect(表.行[0][0].跨列).toBe(2)
+    expect(表.行[0][1].跨行).toBe(2)
+    // rowspan 覆盖的单元格在 HTML 中不出现，后续行只保留真实单元格
+    expect(表.行[1]).toHaveLength(2)
+    expect(表.行[0][1].文字.map((片) => 片.文本).join('')).toBe('跨两行')
+  })
+
+  it('越界或非法的合并跨度记入未覆盖清单', () => {
+    expect(解析('<table><tr><td colspan="999">超宽</td></tr></table>').未覆盖).toContain('合并单元格')
+    expect(解析('<table><tr><td rowspan="2.5">小数</td></tr></table>').未覆盖).toContain('合并单元格')
+  })
+})
+
+describe('解析文档 - 字间距与页码域', () => {
+  it('letter-spacing 写入片段字间距，负值同样保留', () => {
+    const 模型 = 解析('<p><span style="letter-spacing:0.4pt">加宽</span><span style="letter-spacing:-0.6pt">收紧</span></p>')
+    const 段 = 模型.段落[0] as 文本段落
+    expect(段.文字[0].字间距).toBe(0.4)
+    expect(段.文字[1].字间距).toBe(-0.6)
+  })
+
+  it('行内标签里的空格是真实内容，缩进空白仍被忽略', () => {
+    const 模型 = 解析('<p>甲<span> </span>乙</p>\n<p>丙</p>')
+    const 首段 = 模型.段落[0] as 文本段落
+    expect(首段.文字.map((片) => 片.文本).join('')).toBe('甲 乙')
+    // 块级标签之间的换行空白不产出空段落
+    expect(模型.段落).toHaveLength(2)
+    expect((模型.段落[1] as 文本段落).文字.map((片) => 片.文本).join('')).toBe('丙')
+  })
+
+  it('页码域占位解析为域片段，未知域记入未覆盖清单', () => {
+    const 模型 = 解析('<p><span data-seal-field="PAGE" style="font-size:14pt">3</span></p>')
+    const 段 = 模型.段落[0] as 文本段落
+    expect(模型.未覆盖).toEqual([])
+    expect(段.文字[0]).toMatchObject({ 文本: '3', 域: 'PAGE', 字号: 14 })
+
+    const 未知 = 解析('<p><span data-seal-field="TIME">10:30</span></p>')
+    expect(未知.未覆盖).toContain('域代码')
+  })
 })
 
 describe('解析文档 - 丢失内容报告', () => {

@@ -1,6 +1,7 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from './pdfWorker.ts?worker&url'
 import { 补齐Promise接口 } from './pdfPromiseCompat'
+import { 补齐流接口 } from './pdfStreamCompat'
 
 type PDF加载结果 = { 文档: PDFDocumentProxy; 关闭: () => void }
 
@@ -16,6 +17,7 @@ export function 解码PDF数据(数据: string): Uint8Array {
 
 export async function 载入PDF(数据: string): Promise<PDF加载结果> {
   补齐Promise接口()
+  补齐流接口()
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
   const 任务 = pdfjs.getDocument({ data: 解码PDF数据(数据), useSystemFonts: true })

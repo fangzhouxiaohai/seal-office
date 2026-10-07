@@ -1,5 +1,5 @@
-export type PDF命令 = 'extract' | 'merge' | 'delete' | 'rotate'
-export const PDF命令表: Record<PDF命令, string> = { extract: '提取页面', merge: '合并文件', delete: '删除页面', rotate: '旋转页面' }
+export type PDF命令 = 'extract' | 'merge' | 'delete' | 'rotate' | 'insertBlank' | 'insertPages'
+export const PDF命令表: Record<PDF命令, string> = { extract: '提取页面', merge: '合并文件', delete: '删除页面', rotate: '旋转页面', insertBlank: '插入空白页', insertPages: '插入其他文件页面' }
 export function 解析页码(文本: string): number[] {
   const 结果: number[] = []
   文本.split(',').forEach((片段) => {

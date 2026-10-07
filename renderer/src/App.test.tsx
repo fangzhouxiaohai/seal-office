@@ -295,7 +295,7 @@ describe('应用外壳（WPS 版式首页）', () => {
 
   it('搜索框按文档名过滤最近列表', async () => {
     const { container } = render(<App 初始最近文档={RECENT_DOCS} />)
-    await userEvent.type(screen.getByPlaceholderText('搜索最近文档名称'), '预算')
+    await userEvent.type(screen.getByPlaceholderText('搜索最近文档名称或内容'), '预算')
     expect(container.querySelectorAll('.wps-doc-card')).toHaveLength(1)
     expect(container.textContent).toContain('部门预算执行明细表.xlsx')
   })

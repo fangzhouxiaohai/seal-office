@@ -34,6 +34,7 @@ import { 应用工作表拼写建议, 扫描工作表拼写 } from './sheetSpell
 import SheetToolbar from './SheetToolbar'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
 import ContextMenu from '../components/ContextMenu'
+import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
@@ -82,6 +83,7 @@ const SheetEditor = () => {
   const [编辑地址, set编辑地址] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
+  const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   const [缩放, set缩放] = useState(1)
   const [当前视图, set当前视图] = useState<'普通' | '页面布局'>('普通')
   const [显示网格线, set显示网格线] = useState(true)
@@ -543,9 +545,7 @@ const SheetEditor = () => {
     if (标识 === 'file.print') {
       const 内容 = 导出为Html表格(工作表, 工作表.name)
       if (!内容) { message.warning('当前工作表为空，无法打印'); return }
-      void 桥接.printDocument(内容, 'html').then((结果) => {
-        if (!结果.成功 && !结果.已取消) 提示文件错误('打印失败', 结果.错误 || '无法启动打印任务')
-      }).catch((错误: unknown) => { 提示文件错误('打印失败', 错误 instanceof Error ? 错误.message : '无法启动打印任务') })
+      set打印预览({ 内容, 标题: 工作表.name })
       return
     }
     if (工作表.保护 && !(
@@ -1280,7 +1280,8 @@ const SheetEditor = () => {
       统计: 选区统计,
       缩放,
       on缩放变化: set缩放,
-    })
+    }),
+    打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'html', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
   )
 }
 

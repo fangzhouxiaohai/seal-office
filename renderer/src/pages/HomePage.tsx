@@ -4,6 +4,7 @@ import { App as AntdApp, Dropdown } from 'antd'
 import Icon from '../components/Icon'
 import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
+import { filterDocs, sortDocs } from '../mock/recentDocs'
 import RecentDocs from '../components/RecentDocs'
 import TemplateLibrary from '../components/TemplateLibrary'
 import { 生成演示模板文稿, type 模板项 } from '../data/templates'
@@ -12,6 +13,7 @@ import CalendarPage from '../localTools/CalendarPage'
 import DiagramPage from '../localTools/DiagramPage'
 import AppsPage from '../localTools/AppsPage'
 import LocalFilesPage, { type 本机位置 } from '../localTools/LocalFilesPage'
+import { 读取搜索文字, 搜索片段 } from '../search/contentSearch'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -30,6 +32,8 @@ interface HomePageProps {
 const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) => {
   const { message, modal } = AntdApp.useApp()
   const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
+  const [正文匹配, set正文匹配] = useState<Record<string, string>>({})
+  const [搜索中, set搜索中] = useState(false)
   const {
     navKey,
     setNavKey,
@@ -41,6 +45,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     sortKey,
     setSortKey,
     visibleDocs,
+    搜索词,
     docs,
     activeDocId,
     setActiveDocId,
@@ -52,13 +57,38 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
   } = useAppStore()
 
   useEffect(() => {
+    const 关键词 = 搜索词.trim()
+    if (!关键词) { set正文匹配({}); set搜索中(false); return }
+    let 已取消 = false
+    set正文匹配({})
+    set搜索中(true)
+    const 定时 = window.setTimeout(() => {
+      void (async () => {
+        const 候选 = docs.filter((文档) => 文档.路径 && !文档.name.toLocaleLowerCase().includes(关键词.toLocaleLowerCase()))
+        for (let 起点 = 0; 起点 < 候选.length && !已取消; 起点 += 3) {
+          const 结果 = await Promise.allSettled(候选.slice(起点, 起点 + 3).map(async (文档) => ({ id: 文档.id, 片段: 搜索片段(await 读取搜索文字(文档), 关键词) })))
+          if (已取消) break
+          set正文匹配((当前) => {
+            const 下次 = { ...当前 }
+            for (const 项 of 结果) if (项.status === 'fulfilled' && 项.value.片段) 下次[项.value.id] = 项.value.片段
+            return 下次
+          })
+        }
+        if (!已取消) set搜索中(false)
+      })()
+    }, 250)
+    return () => { 已取消 = true; window.clearTimeout(定时) }
+  }, [docs, 搜索词])
+
+  useEffect(() => {
     if (最近读取错误 === null) return
     modal.error({ title: '读取最近文档失败', content: 最近读取错误 })
     清除最近读取错误()
   }, [最近读取错误])
 
   /** 「全部类型」下拉筛选：全部/文字/表格/演示 */
-  const 筛选后文档 = 类型筛选 === 'all' ? visibleDocs : visibleDocs.filter((文档) => 文档.type === 类型筛选)
+  const 搜索结果 = 搜索词.trim() ? sortDocs(filterDocs(docs.filter((文档) => 文档.name.toLocaleLowerCase().includes(搜索词.trim().toLocaleLowerCase()) || Boolean(正文匹配[文档.id])), navKey), sortKey) : visibleDocs
+  const 筛选后文档 = 类型筛选 === 'all' ? 搜索结果 : 搜索结果.filter((文档) => 文档.type === 类型筛选)
   const 类型菜单 = {
     items: [
       { key: 'all', label: '全部类型' },
@@ -188,6 +218,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
       )
     ),
     // 最近文档区块（现有）
+    搜索词.trim() && React.createElement('div', { className: 'wps-home__search-results', role: 'status' }, 搜索中 ? '正在搜索最近文档内容…' : `找到 ${筛选后文档.length} 个匹配文件`, ...筛选后文档.filter((文档) => 正文匹配[文档.id]).map((文档) => React.createElement('button', { key: 文档.id, type: 'button', onClick: () => 处理打开(文档.id) }, React.createElement('strong', null, 文档.name), React.createElement('span', null, 正文匹配[文档.id])))),
     React.createElement(RecentDocs, {
       docs: 筛选后文档,
       title: ' ',

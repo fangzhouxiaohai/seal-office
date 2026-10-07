@@ -148,17 +148,87 @@ describe('docx 往返保真', () => {
     expect(结果.页面设置.纸张方向).toBe('横向')
   })
 
-  it('普通段落缩进不再误报，未覆盖的表格合并仍提示风险', async () => {
+  it('普通段落缩进不再误报，横向与纵向合并单元格按 colspan、rowspan 导入', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body>' +
       '<w:p><w:pPr><w:ind w:left="720"/></w:pPr><w:r><w:t>缩进文字</w:t></w:r></w:p>' +
-      '<w:tbl><w:tr><w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>合并单元格</w:t></w:r></w:p></w:tc></w:tr></w:tbl>' +
-      '</w:body></w:document>')
+      '<w:tbl>' +
+      '<w:tr><w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>跨两列</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:tcPr><w:vMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>跨两行</w:t></w:r></w:p></w:tc></w:tr>' +
+      '<w:tr><w:tc><w:p><w:r><w:t>左下</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:p><w:r><w:t>中下</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc></w:tr>' +
+      '</w:tbl></w:body></w:document>')
     const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
     expect(结果.html).toContain('margin-left:36pt')
     expect(结果.html).toContain('colspan="2"')
+    expect(结果.html).toContain('rowspan="2"')
+    expect(结果.html).toContain('跨两行')
+    // 被 rowspan 覆盖的续格不再重复输出，第二行只留两个真实单元格
+    expect(结果.html.match(/<tr>/g)).toHaveLength(2)
+    expect(结果.html.match(/<td/g)).toHaveLength(4)
     expect(结果.警告).not.toContain('段落缩进未完整导入')
+    expect(结果.警告).not.toContain('表格合并单元格未导入')
+  })
+
+  it('越界或非法的合并跨度仍提示未导入', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:tbl>' +
+      '<w:tr><w:tc><w:tcPr><w:gridSpan w:val="999"/></w:tcPr><w:p><w:r><w:t>超宽合并</w:t></w:r></w:p></w:tc></w:tr>' +
+      '<w:tr><w:tc><w:tcPr><w:vMerge w:val="未知"/></w:tcPr><w:p/></w:tc></w:tr>' +
+      '</w:tbl></w:body></w:document>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
     expect(结果.警告).toContain('表格合并单元格未导入')
+  })
+
+  it('段落标记里的字符间距不再误判为段落间距，字间距按 letter-spacing 导入', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:p>' +
+      '<w:pPr><w:spacing w:line="240" w:lineRule="exact"/><w:rPr><w:spacing w:val="-12"/></w:rPr></w:pPr>' +
+      '<w:r><w:rPr><w:spacing w:val="8"/></w:rPr><w:t>加宽字距</w:t></w:r>' +
+      '<w:r><w:rPr><w:spacing w:val="-12"/></w:rPr><w:t>收紧字距</w:t></w:r>' +
+      '</w:p></w:body></w:document>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.html).toContain('letter-spacing:0.4pt')
+    expect(结果.html).toContain('letter-spacing:-0.6pt')
+    expect(结果.html).toContain('line-height:12pt')
+    expect(结果.警告).toEqual([])
+    // 段落标记自身的字符间距不参与段落排版，不应被写成段落属性
+    expect(结果.html).not.toContain('data-seal-paragraph-format')
+  })
+
+  it('横向与纵向合并单元格写入真实 DOCX 后可完整读回', async () => {
+    const 数据 = await 生成docx({ 段落: [{ 类型: '表格', 行: [
+      [{ 文字: [{ 文本: '跨两列' }], 跨列: 2 }, { 文字: [{ 文本: '跨两行' }], 跨行: 2 }],
+      [{ 文字: [{ 文本: '左下' }] }, { 文字: [{ 文本: '中下' }] }],
+    ] }] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    expect(xml).toContain('<w:gridSpan w:val="2"/>')
+    expect(xml).toContain('<w:vMerge w:val="restart"/>')
+    expect(xml).toContain('<w:vMerge w:val="continue"/>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.html).toContain('colspan="2"')
+    expect(结果.html).toContain('rowspan="2"')
+    expect(结果.html).toContain('跨两列')
+    expect(结果.html).toContain('中下')
+  })
+
+  it('非法的合并跨度明确报错，不静默写成错误表格', async () => {
+    await expect(生成docx({ 段落: [{ 类型: '表格', 行: [[{ 文字: [], 跨列: 0 }]] }] })).rejects.toThrow('表格')
+    await expect(生成docx({ 段落: [{ 类型: '表格', 行: [[{ 文字: [], 跨行: 999 }]] }] })).rejects.toThrow('表格')
+  })
+
+  it('字间距按 characterSpacing 写回，越界数值明确报错', async () => {
+    const 数据 = await 生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '字距', 字间距: 0.4 }] }] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    expect(xml).toContain('<w:spacing w:val="8"/>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.html).toContain('letter-spacing:0.4pt')
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '字距', 字间距: 999999 }] }] })).rejects.toThrow('字间距')
   })
 
   it('普通段落间距不再误报，未覆盖的超链接目标仍提示风险', async () => {
@@ -480,5 +550,113 @@ describe('读取时的保真警告', () => {
     const 结果 = await 读取docx(数据)
     expect(结果.警告).toContain('媒体未导入')
     expect(结果.警告).toContain('批注未导入')
+  })
+
+  const 域序列 = (指令, 结果文字) =>
+    '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+    `<w:r><w:instrText xml:space="preserve">${指令}</w:instrText></w:r>` +
+    '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+    `<w:r><w:t>${结果文字}</w:t></w:r>` +
+    '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
+
+  const 带页脚文档 = (页脚) => 构造文档(
+    '<w:p><w:r><w:t>正文</w:t></w:r></w:p><w:sectPr><w:footerReference r:id="rId2"/></w:sectPr>',
+    {
+      'word/_rels/document.xml.rels': '<Relationships><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>',
+      'word/footer1.xml': 页脚,
+    }
+  )
+
+  it('页脚页码域保留为占位，不再报告域未导入', async () => {
+    const 数据 = await 带页脚文档('<w:ftr><w:p><w:r><w:t>第</w:t></w:r>' +
+      域序列('PAGE  \\* MERGEFORMAT', '3') + '<w:r><w:t>页</w:t></w:r></w:p></w:ftr>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.页面设置.页脚Html).toContain('data-seal-field="PAGE"')
+    expect(结果.页面设置.页脚Html).toContain('第')
+    expect(结果.页面设置.页脚Html).toContain('3')
+    // 写回真实域代码后重开仍能识别
+    const 保存 = await 生成docx({ ...构造模型(), 页面设置: 结果.页面设置, 页脚: [
+      { 类型: '段落', 对齐: '中', 文字: [{ 文本: '第' }, { 文本: '3', 域: 'PAGE' }, { 文本: '页' }] },
+    ] })
+    const 压缩包 = await JSZip.loadAsync(保存)
+    const 页脚Xml = await 压缩包.file('word/footer1.xml').async('string')
+    expect(页脚Xml).toContain('<w:fldSimple w:instr=" PAGE ">')
+    const 重开 = await 读取docx(保存)
+    expect(重开.警告).toEqual([])
+    expect(重开.页面设置.页脚Html).toContain('data-seal-field="PAGE"')
+  })
+
+  it('简单域写法的页码页脚同样识别', async () => {
+    const 数据 = await 带页脚文档('<w:ftr><w:p><w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>5</w:t></w:r></w:fldSimple></w:p></w:ftr>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.页面设置.页脚Html).toContain('data-seal-field="NUMPAGES"')
+  })
+
+  it('没有缓存结果的空页码域同样保留', async () => {
+    const 数据 = await 带页脚文档('<w:ftr><w:p><w:fldSimple w:instr="PAGE"/></w:p></w:ftr>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toEqual([])
+    expect(结果.页面设置.页脚Html).toContain('data-seal-field="PAGE"')
+  })
+
+  it('页码域写回时保留缓存结果的字符格式', async () => {
+    const 数据 = await 生成docx({ ...构造模型(), 页脚: [
+      { 类型: '段落', 对齐: '中', 文字: [
+        { 文本: '－', 字号: 14, 字体: '宋体' },
+        { 文本: '3', 字号: 14, 字体: '宋体', 域: 'PAGE' },
+      ] },
+    ] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const 页脚Xml = await 压缩包.file('word/footer1.xml').async('string')
+    const 域Xml = 页脚Xml.match(/<w:fldSimple[\s\S]*?<\/w:fldSimple>/)?.[0] ?? ''
+    expect(域Xml).toContain('w:instr=" PAGE "')
+    expect(域Xml).toContain('w:sz w:val="28"')
+    expect(域Xml).toContain('宋体')
+    const 重开 = await 读取docx(数据)
+    expect(重开.警告).toEqual([])
+    expect(重开.页面设置.页脚Html).toMatch(/data-seal-field="PAGE"[^>]*style="[^"]*font-size:14pt/)
+  })
+
+  it('当前无法写回的域保留显示结果，并如实提示未导入', async () => {
+    const 数据 = await 带页脚文档('<w:ftr><w:p>' + 域序列('TIME \\@ "HH:mm"', '10:30') + '</w:p></w:ftr>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toContain('页脚中的域或制表符未完整导入')
+    expect(结果.页面设置.页脚Html).toContain('10:30')
+    expect(结果.页面设置.页脚Html).not.toContain('data-seal-field')
+  })
+
+  it('页脚中的制表符仍提示未导入', async () => {
+    const 数据 = await 带页脚文档('<w:ftr><w:p><w:r><w:t>左</w:t><w:tab/><w:t>右</w:t></w:r></w:p></w:ftr>')
+    const 结果 = await 读取docx(数据)
+    expect(结果.警告).toContain('页脚中的域或制表符未完整导入')
+  })
+
+  it('未启用的首页或奇偶页页脚不算丢失，启用且内容不同才提示', async () => {
+    const 通用页脚 = '<w:ftr><w:p><w:r><w:t>通用页脚</w:t></w:r></w:p></w:ftr>'
+    const 偶数页脚 = '<w:ftr><w:p><w:r><w:t>偶数页脚</w:t></w:r></w:p></w:ftr>'
+    const 正文 = '<w:p><w:r><w:t>正文</w:t></w:r></w:p><w:sectPr>' +
+      '<w:footerReference w:type="even" r:id="rId4"/><w:footerReference w:type="default" r:id="rId5"/></w:sectPr>'
+    const 文件 = {
+      'word/_rels/document.xml.rels': '<Relationships><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer2.xml"/></Relationships>',
+      'word/footer1.xml': 偶数页脚,
+      'word/footer2.xml': 通用页脚,
+    }
+    // 未开启 evenAndOddHeaders 时偶数页页脚不生效，忽略它是完整保真
+    const 未启用 = await 读取docx(await 构造文档(正文, 文件))
+    expect(未启用.警告).toEqual([])
+    expect(未启用.页面设置.页脚Html).toContain('通用页脚')
+
+    const 已启用 = await 读取docx(await 构造文档(正文, {
+      ...文件, 'word/settings.xml': '<w:settings><w:evenAndOddHeaders/></w:settings>',
+    }))
+    expect(已启用.警告).toContain('页脚的首页或奇偶页版本未完整导入')
+    expect(已启用.页面设置.页脚Html).toContain('通用页脚')
+
+    // 首页页脚只在 w:titlePg 生效后才提示
+    const 首页正文 = '<w:p><w:r><w:t>正文</w:t></w:r></w:p><w:sectPr>' +
+      '<w:footerReference w:type="first" r:id="rId4"/><w:footerReference w:type="default" r:id="rId5"/><w:titlePg/></w:sectPr>'
+    expect((await 读取docx(await 构造文档(首页正文, 文件))).警告).toContain('页脚的首页或奇偶页版本未完整导入')
   })
 })

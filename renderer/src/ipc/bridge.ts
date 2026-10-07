@@ -190,6 +190,7 @@ export interface 电子接口 {
   revealInFolder: (路径: string) => Promise<{ 成功: boolean; 错误?: string }>
   exportToPdf: (html: string, 默认文件名: string) => Promise<文件保存结果 & { 已取消?: boolean }>
   printDocument?: (内容: string, 格式: 'html' | 'pdf') => Promise<{ 成功: boolean; 已取消?: boolean; 错误?: string }>
+  printPreview?: (内容: string, 格式: 'html' | 'pdf') => Promise<{ 成功: boolean; 数据?: string; 错误?: string }>
   reportUnsavedCount: (数量: number) => Promise<{ 成功: boolean; 错误?: string }>
   enterSlideshowFullscreen: () => Promise<放映全屏结果>
   exitSlideshowFullscreen: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>
@@ -222,7 +223,7 @@ export interface 电子接口 {
   presentationAi?: 演示智能接口
   presentationGeneration?: 演示生成接口
   office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
-  pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
+  pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; insertBlank: (数据: string, 位置: number) => Promise<any>; insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => Promise<any>; editPage: (数据: string, 操作: unknown) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
 declare global { interface Window { electronAPI?: 电子接口 } }
 const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? window.electronAPI ?? null : null
@@ -339,6 +340,8 @@ export const 桥接 = {
   exportToPdf: (html: string, 名称: string) => 取后端()?.exportToPdf(html, 名称) ?? 失败('当前环境不支持 PDF 导出'),
   printDocument: (内容: string, 格式: 'html' | 'pdf'): Promise<{ 成功: boolean; 已取消?: boolean; 错误?: string }> =>
     取后端()?.printDocument?.(内容, 格式) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持打印' }),
+  printPreview: (内容: string, 格式: 'html' | 'pdf'): Promise<{ 成功: boolean; 数据?: string; 错误?: string }> =>
+    取后端()?.printPreview?.(内容, 格式) ?? Promise.resolve({ 成功: false, 错误: '当前环境不支持打印预览' }),
   reportUnsavedCount: (数量: number) => 取后端()?.reportUnsavedCount(数量) ?? 失败('当前环境不支持关闭保护'),
   onCloseStateRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onCloseStateRequested?.(回调) ?? (() => {}),
   respondCloseState: (标识: string, 状态: 关闭状态) => 取后端()?.respondCloseState?.(标识, 状态) ?? 失败('当前环境不支持关闭前核验'),
@@ -408,6 +411,9 @@ export const 桥接 = {
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
   },
   pdf: {
+    insertBlank: (数据: string, 位置: number) => 取后端()?.pdf.insertBlank(数据, 位置) ?? 失败('当前环境不支持 PDF 插入空白页'),
+    insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => 取后端()?.pdf.insertPages(数据, 插入数据, 页码, 位置) ?? 失败('当前环境不支持 PDF 插入页面'),
+    editPage: (数据: string, 操作: unknown) => 取后端()?.pdf.editPage(数据, 操作) ?? 失败('当前环境不支持 PDF 编辑'),
     extract: (数据: string, 页码: number[]) => 取后端()?.pdf.extract(数据, 页码) ?? 失败('当前环境不支持 PDF 页面提取'), merge: (列表: string[]) => 取后端()?.pdf.merge(列表) ?? 失败('当前环境不支持 PDF 合并'), delete: (数据: string, 页码: number[]) => 取后端()?.pdf.delete(数据, 页码) ?? 失败('当前环境不支持 PDF 删除页面'), rotate: (数据: string, 页码: number[], 角度: number) => 取后端()?.pdf.rotate(数据, 页码, 角度) ?? 失败('当前环境不支持 PDF 旋转页面'), exportToPath: (html: string, 保存路径: string) => 取后端()?.pdf.exportToPath(html, 保存路径) ?? 失败('当前环境不支持 PDF 导出'),
   },
 }

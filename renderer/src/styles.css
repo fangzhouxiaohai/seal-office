@@ -1252,6 +1252,9 @@ button {
 .wps-editor-canvas__header p,
 .wps-editor-canvas__footer p { margin: 0; }
 
+.seal-print-preview .pdf-viewer { height: min(70vh, 760px); }
+.seal-print-preview__loading { min-height: 180px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+
 /* 页面水印：居中斜置、不拦截交互 */
 .wps-editor-canvas__watermark {
   position: absolute;
@@ -3484,3 +3487,8 @@ button {
 .wps-newdoc-option strong { font-size:17px; }
 .wps-newdoc-option span:last-child { color:var(--text-2); font-size:13px; }
 @media(max-width:540px) { .wps-newdoc-options { grid-template-columns:1fr; } .wps-newdoc-option { min-height:0; } }
+.wps-home__search-results { display: flex; flex-direction: column; gap: 6px; margin: 0 24px 12px; color: var(--text-secondary); font-size: 12px; }
+.wps-home__search-results button { display: flex; gap: 12px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; }
+.wps-home__search-results button:hover { border-color: var(--brand); }
+.wps-home__search-results button strong { flex: 0 0 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.wps-home__search-results button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
