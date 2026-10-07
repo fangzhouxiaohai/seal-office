@@ -35,4 +35,24 @@ describe('顶栏', () => {
     await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
     expect(切换主题).toHaveBeenCalledOnce()
   })
+
+  it('全局设置入口不再有悬浮提示（避免提示框压住下拉菜单）', async () => {
+    render(<TitleBar pageName="首页" homeMode />)
+    const 入口 = screen.getByRole('button', { name: '全局设置' })
+    expect(入口).toHaveAttribute('aria-haspopup', 'menu')
+    await userEvent.hover(入口)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('全局设置菜单项为“全局设置”和“关于我们”，点击后各自触发回调', async () => {
+    const 打开设置 = vi.fn()
+    const 打开关于 = vi.fn()
+    render(<TitleBar pageName="首页" homeMode onShowSettings={打开设置} on关于={打开关于} />)
+    await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: '全局设置' }))
+    expect(打开设置).toHaveBeenCalledOnce()
+    await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: '关于我们' }))
+    expect(打开关于).toHaveBeenCalledOnce()
+  })
 })

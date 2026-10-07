@@ -144,8 +144,8 @@ async function 验收() {
     }
     if (阶段 === 'confirm') {
       await 点击('全局设置')
-      await 等待("Boolean([...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='设置'))")
-      await 执行("[...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='设置').click()")
+      await 等待("Boolean([...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='全局设置'))")
+      await 执行("[...document.querySelectorAll('[role=menuitem]')].find(项=>项.textContent.trim()==='全局设置').click()")
       await 等待(`Boolean(${找按钮('设为默认程序')})`)
       await 执行(`(${找按钮('设为默认程序')}).scrollIntoView({block:'center'})`)
       await 截图('settings-default-app')

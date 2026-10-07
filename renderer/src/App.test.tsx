@@ -385,10 +385,10 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(screen.queryByText('设置中心')).toBeNull()
   })
 
-  it('全局设置下拉含设置与关于我们，分别打开设置页与关于弹窗', async () => {
+  it('全局设置下拉含全局设置与关于我们，分别打开设置页与关于弹窗', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
-    const 设置项 = await screen.findByRole('menuitem', { name: '设置' })
+    const 设置项 = await screen.findByRole('menuitem', { name: '全局设置' })
     expect(screen.getByRole('menuitem', { name: '关于我们' })).toBeInTheDocument()
     await userEvent.click(设置项)
     expect(document.body).toHaveTextContent('设置中心')
@@ -400,7 +400,7 @@ describe('应用外壳（WPS 版式首页）', () => {
       const { unmount } = render(<App 初始最近文档={[]} />)
       expect(screen.getAllByRole('button', { name: '切换深浅模式' })).toHaveLength(1)
       await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
-      await userEvent.click(await screen.findByRole('menuitem', { name: '设置' }))
+      await userEvent.click(await screen.findByRole('menuitem', { name: '全局设置' }))
       expect(document.body).toHaveTextContent('设置中心')
       await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
       expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
@@ -589,7 +589,7 @@ describe('应用外壳（WPS 版式首页）', () => {
   it('从全局设置进入设置页后展示 WPS 式分组', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: '设置' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: '全局设置' }))
     expect(document.body).toHaveTextContent('外观设置')
     expect(document.body).toHaveTextContent('工作环境')
     expect(document.body).toHaveTextContent('沙箱保护')

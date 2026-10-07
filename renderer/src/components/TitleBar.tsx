@@ -84,7 +84,7 @@ const TitleBar = ({
       )
     )
 
-  /** 全局设置下拉：设置 / 关于我们（对齐 WPS 右上角全局设置入口） */
+  /** 全局设置下拉：全局设置 / 关于我们（对齐 WPS 右上角全局设置入口） */
   const 渲染全局设置 = () =>
     React.createElement(
       Dropdown,
@@ -92,7 +92,7 @@ const TitleBar = ({
         trigger: ['click'],
         menu: {
           items: [
-            { key: 'settings', label: '设置' },
+            { key: 'settings', label: '全局设置' },
             { key: 'about', label: '关于我们' },
           ],
           onClick: ({ key }: { key: string }) => {
@@ -101,18 +101,16 @@ const TitleBar = ({
           },
         },
       },
+      // 不用悬浮提示：提示框会压在下拉菜单上挡住菜单项，无障碍名称改用 aria-label 提供
       React.createElement(
-        Tooltip,
-        { title: '全局设置' },
-        React.createElement(
-          'button',
-          {
-            type: 'button',
-            className: 'wps-icon-button',
-            'aria-label': '全局设置',
-          },
-          React.createElement(Icon, { name: 'sliders', size: 18 })
-        )
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button',
+          'aria-label': '全局设置',
+          'aria-haspopup': 'menu',
+        },
+        React.createElement(Icon, { name: 'sliders', size: 18 })
       )
     )
 
