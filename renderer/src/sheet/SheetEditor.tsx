@@ -39,6 +39,7 @@ import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheetImport'
+import { use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import './sheetFeatures.css'
 
@@ -91,6 +92,9 @@ const SheetEditor = () => {
   const [活动窗格, set活动窗格] = useState(0)
   const 图片输入引用 = useRef<HTMLInputElement>(null)
   const [文档路径, set文档路径] = useState<string | null>(() => 已知文档路径[activeDocumentId ?? ''] ?? null)
+
+  // Ctrl+滚轮缩放工作表内容，与状态栏缩放按钮共用同一状态
+  use滚轮缩放(缩放, set缩放, 表格缩放范围)
 
   useEffect(() => {
     set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)

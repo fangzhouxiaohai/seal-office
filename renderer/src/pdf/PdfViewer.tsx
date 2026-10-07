@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
+import { use滚轮缩放, 阅读缩放范围 } from '../editor/wheelZoom'
 
 interface Props {
   数据?: string
@@ -11,9 +12,9 @@ interface Props {
 
 type 阅读状态 = '空白' | '加载中' | '就绪' | '失败'
 interface 页面文字项 { 文本: string; x: number; y: number; 宽: number; 高: number }
-const 缩放下限 = 0.5
-const 缩放上限 = 2
-const 缩放步长 = 0.25
+const 缩放下限 = 阅读缩放范围.下限
+const 缩放上限 = 阅读缩放范围.上限
+const 缩放步长 = 阅读缩放范围.步长
 
 const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
@@ -29,6 +30,9 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const 阅读区 = useRef<HTMLDivElement | null>(null)
   const 报错回调 = useRef(onError)
   报错回调.current = onError
+
+  // Ctrl+滚轮缩放阅读视口，与工具条上的缩放按钮共用同一状态
+  use滚轮缩放(缩放, set缩放, 阅读缩放范围)
 
   useEffect(() => {
     const 节点 = 阅读区.current

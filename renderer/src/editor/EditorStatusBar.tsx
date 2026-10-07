@@ -1,6 +1,7 @@
 // 编辑器状态栏：页码、字数、缩放控制与视图模式。
 import React from 'react'
 import Icon from '../components/Icon'
+import { 文字缩放范围 } from './wheelZoom'
 
 interface Props {
   页码: number
@@ -12,12 +13,13 @@ interface Props {
   on视图模式变化?: (模式: string) => void
 }
 
-const 缩放下限 = 0.5
-const 缩放上限 = 2
+const 缩放下限 = 文字缩放范围.下限
+const 缩放上限 = 文字缩放范围.上限
+const 缩放步长 = 文字缩放范围.步长
 
 const EditorStatusBar = ({ 页码, 总页数, 字数, 缩放, 视图模式, on缩放变化 }: Props) => {
-  const 放大 = () => on缩放变化(Math.min(缩放上限, Number((缩放 + 0.1).toFixed(2))))
-  const 缩小 = () => on缩放变化(Math.max(缩放下限, Number((缩放 - 0.1).toFixed(2))))
+  const 放大 = () => on缩放变化(Math.min(缩放上限, Number((缩放 + 缩放步长).toFixed(2))))
+  const 缩小 = () => on缩放变化(Math.max(缩放下限, Number((缩放 - 缩放步长).toFixed(2))))
 
   return React.createElement(
     'footer',

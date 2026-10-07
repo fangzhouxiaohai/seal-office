@@ -44,6 +44,7 @@ import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
+import { use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import CommentsPanel from './panels/CommentsPanel'
@@ -157,6 +158,10 @@ const PptEditor = () => {
   const 插入中 = useRef(false)
   const 当前标识引用 = useRef(activeDocumentId); 当前标识引用.current = activeDocumentId
   const 图片引用键 = JSON.stringify([...new Set(收集演示资源标识(文稿))])
+
+  // Ctrl+滚轮缩放画布，与状态栏缩放共用同一状态；手动缩放后不再跟随“适应窗口”
+  use滚轮缩放(缩放, (值) => { set适应(false); set缩放(值) }, 演示缩放范围)
+
   useEffect(() => {
     let 取消 = false
     const 标识列表 = JSON.parse(图片引用键) as string[]

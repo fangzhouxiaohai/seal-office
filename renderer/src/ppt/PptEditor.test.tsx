@@ -711,4 +711,26 @@ describe('任务 7 放映视图与自定义放映', () => {
     expect(await screen.findByText(/自定义放映没有页面/)).toBeInTheDocument()
     expect(document.querySelector('.wps-slideshow')).toBeNull()
   })
+
+  it('Ctrl+滚轮缩放画布，范围到 10% 与 400% 后停住', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ...静默桥接 } })
+    render(<AntdApp><AppProvider><放映入口 文稿={三页文稿()} /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开放映演示' }))
+    const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
+    const 滚 = (deltaY: number, ctrlKey = true) =>
+      fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
+
+    expect(百分比()).toBe('100%')
+    滚(-100)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 未按 Ctrl 时不缩放
+    滚(-100, false)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 演示的缩放范围比其他模块宽：可放到 400%
+    for (let 次 = 0; 次 < 30; 次 += 1) 滚(-100)
+    await waitFor(() => expect(百分比()).toBe('400%'))
+    // 连续缩小停在 10%
+    for (let 次 = 0; 次 < 40; 次 += 1) 滚(100)
+    await waitFor(() => expect(百分比()).toBe('10%'))
+  })
 })

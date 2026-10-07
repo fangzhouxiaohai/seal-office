@@ -80,4 +80,28 @@ describe('PDF 阅读预览', () => {
     fireEvent.click(screen.getByRole('button', { name: '复制全文文字' }))
     await waitFor(() => expect(写入).toHaveBeenCalledWith('第1页合同\n第2页合同'))
   })
+
+  it('Ctrl+滚轮缩放阅读视口，未按 Ctrl 时不缩放', async () => {
+    const 渲染 = vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() }))
+    const 取视口 = vi.fn(({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }))
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({ numPages: 1, getPage: vi.fn(async () => ({ getViewport: 取视口, render: 渲染, getTextContent: async () => ({ items: [] }) })) }),
+      destroy: vi.fn(),
+    })
+
+    render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={vi.fn()} />)
+    expect(await screen.findByText('第 1 页 / 共 1 页')).toBeInTheDocument()
+
+    const 滚 = (deltaY: number, ctrlKey = true) =>
+      fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
+    滚(-100)
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.25 }))
+    expect(screen.getByText('125%')).toBeInTheDocument()
+    // 未按 Ctrl 时不缩放
+    滚(-100, false)
+    await waitFor(() => expect(screen.getByText('125%')).toBeInTheDocument())
+    // 到达上限后停在 200%
+    for (let 次 = 0; 次 < 8; 次 += 1) 滚(-100)
+    await waitFor(() => expect(screen.getByText('200%')).toBeInTheDocument())
+  })
 })

@@ -31,6 +31,7 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
 import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
+import { use滚轮缩放, 文字缩放范围 } from './wheelZoom'
 
 const 默认视图: ViewState = {
   缩放: 1,
@@ -159,6 +160,9 @@ const DocEditor = () => {
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
+
+  // Ctrl+滚轮缩放页面内容，与状态栏的缩放按钮共用同一个视图状态
+  use滚轮缩放(视图.缩放, (值) => set视图((当前) => ({ ...当前, 缩放: 值 })), 文字缩放范围)
   /** 右键菜单状态 */
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })

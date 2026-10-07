@@ -1008,3 +1008,24 @@ describe('表格鼠标拖选', () => {
     expect(screen.getByDisplayValue('C4')).toBeInTheDocument()
   })
 })
+
+describe('表格缩放', () => {
+  it('Ctrl+滚轮缩放工作表内容，到边界后停住', async () => {
+    const { container } = 渲染表格()
+    const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
+    const 滚 = (deltaY: number, ctrlKey = true) =>
+      fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
+
+    expect(百分比()).toBe('100%')
+    滚(-100)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 网格根元素仍在（缩放经其 zoom 生效，jsdom 不解析该属性，改由成品核验实测）
+    expect(container.querySelector('.wps-sheet')).not.toBeNull()
+    // 未按 Ctrl 时不缩放
+    滚(-100, false)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 连续放大到上限
+    for (let 次 = 0; 次 < 12; 次 += 1) 滚(-100)
+    await waitFor(() => expect(百分比()).toBe('200%'))
+  })
+})

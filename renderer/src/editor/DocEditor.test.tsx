@@ -388,4 +388,41 @@ describe('编辑器容器', () => {
     const { container } = 渲染编辑器()
     expect(container.querySelector('.wps-ruler')).not.toBeNull()
   })
+
+  it('Ctrl+滚轮缩放页面内容，滚动条方向与浏览器习惯一致', async () => {
+    const { container } = 渲染带创建入口的编辑器()
+    await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
+    const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
+    const 纸张 = () => container.querySelector('.wps-editor-canvas__paper') as HTMLElement
+    const 滚 = (deltaY: number, ctrlKey = true) =>
+      fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
+
+    expect(百分比()).toBe('100%')
+    expect(纸张().style.transform).toContain('scale(1)')
+    // 向上滚放大
+    滚(-100)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    expect(纸张().style.transform).toContain('scale(1.1)')
+    滚(-100)
+    await waitFor(() => expect(百分比()).toBe('120%'))
+    // 向下滚缩小
+    滚(100)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 未按 Ctrl 的滚动不改变缩放
+    滚(-100, false)
+    await waitFor(() => expect(百分比()).toBe('110%'))
+  })
+
+  it('Ctrl+滚轮到达上下限后停在边界，可点状态栏恢复百分之百', async () => {
+    const { container } = 渲染带创建入口的编辑器()
+    await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
+    const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
+    for (let 次 = 0; 次 < 12; 次 += 1) {
+      fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
+    }
+    await waitFor(() => expect(百分比()).toBe('200%'))
+    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.transform).toContain('scale(2)')
+    await userEvent.click(screen.getByRole('button', { name: '恢复百分之百' }))
+    await waitFor(() => expect(百分比()).toBe('100%'))
+  })
 })

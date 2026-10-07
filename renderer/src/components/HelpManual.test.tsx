@@ -30,6 +30,14 @@ describe('帮助手册', () => {
     expect(screen.getByText(/服务商如何留存与使用你发送的内容/)).toBeInTheDocument()
   })
 
+  it('说明缩放视图的快捷方式与范围', () => {
+    render(<HelpManual />)
+    fireEvent.click(screen.getByRole('button', { name: '缩放页面内容' }))
+    expect(screen.getByText(/按住 Ctrl（macOS 为 Command）滚动滚轮/)).toBeInTheDocument()
+    expect(screen.getByText(/演示为 10%–400%/)).toBeInTheDocument()
+    expect(screen.getByText(/缩放只影响你自己的查看比例，不写入文档/)).toBeInTheDocument()
+  })
+
   it('覆盖本机日历、图形工具、文件夹和新文件提醒的操作路径', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '本机日历' }))

@@ -4,6 +4,7 @@ import Icon from '../components/Icon'
 import { SlidePreview, 预览页属性 } from './PptViews'
 import type { 图片地址表 } from './render/SlideObjects'
 import { 读取当前幻灯片, type 演示文稿 } from './deck'
+import { 演示缩放范围 } from '../editor/wheelZoom'
 
 interface ListProps {
   图片地址?: 图片地址表
@@ -55,8 +56,8 @@ interface StatusProps {
 
 export const PptStatusBar = ({ 文稿, 缩放, on缩放变化 }: StatusProps) => {
   const 当前 = 读取当前幻灯片(文稿)
-  const 放大 = () => on缩放变化(Math.min(4, Number((缩放 + 0.1).toFixed(2))))
-  const 缩小 = () => on缩放变化(Math.max(0.1, Number((缩放 - 0.1).toFixed(2))))
+  const 放大 = () => on缩放变化(Math.min(演示缩放范围.上限, Number((缩放 + 演示缩放范围.步长).toFixed(2))))
+  const 缩小 = () => on缩放变化(Math.max(演示缩放范围.下限, Number((缩放 - 演示缩放范围.步长).toFixed(2))))
   const 框数 = 当前 === null ? 0 : 当前.文本框列表.length
 
   return React.createElement(
