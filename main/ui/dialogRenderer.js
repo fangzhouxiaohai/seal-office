@@ -19,11 +19,31 @@ void (async () => {
     const 按钮 = document.createElement('button')
     按钮.type = 'button'
     按钮.textContent = 标签
-    按钮.className = `seal-dialog-button${序号 === 内容.取消选择 ? '' : ' seal-dialog-button--danger'}`
+    const 指定样式 = (内容.按钮样式 ?? [])[序号]
+    按钮.className = `seal-dialog-button${
+      指定样式 === 'primary' ? ' seal-dialog-button--primary'
+        : 指定样式 === 'danger' ? ' seal-dialog-button--danger'
+          : 指定样式 === 'default' ? ''
+            // 未指定样式时沿用旧规则：取消项为普通按钮，其余按危险操作标色
+            : 序号 === 内容.取消选择 ? '' : ' seal-dialog-button--danger'}`
     按钮.addEventListener('click', () => { void 选择(序号) })
     document.getElementById('按钮').append(按钮)
     if (序号 === 内容.默认选择) 按钮.focus()
   }
+  // 按实际内容收缩窗口高度，避免短内容留出大片空白
+  requestAnimationFrame(() => {
+    const 面板 = document.querySelector('.seal-dialog-panel')
+    const 头 = document.querySelector('.seal-dialog-header')
+    const 体 = document.querySelector('.seal-dialog-body')
+    const 脚 = document.querySelector('.seal-dialog-footer')
+    if (!面板 || !头 || !体 || !脚) return
+    const 样式 = getComputedStyle(面板)
+    const 竖向留白 = parseFloat(样式.paddingTop) + parseFloat(样式.paddingBottom) +
+      parseFloat(样式.borderTopWidth) + parseFloat(样式.borderBottomWidth)
+    const 正文高度 = Math.min(体.scrollHeight, 220)
+    const 高度 = Math.ceil(头.getBoundingClientRect().height + 正文高度 + 脚.getBoundingClientRect().height + 竖向留白)
+    void window.应用弹窗.适配高度(高度)
+  })
   document.getElementById('关闭').addEventListener('click', () => { void 选择(内容.取消选择) })
   document.addEventListener('keydown', (事件) => {
     if (事件.key === 'Escape') { 事件.preventDefault(); void 选择(内容.取消选择) }

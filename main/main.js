@@ -3,7 +3,7 @@ const { 显示应用确认 } = require('./appDialog')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { 注册全部通道 } = require('./ipc')
-const { 获取未保存风险数量, 查询实时关闭状态 } = require('./ipc/systemChannel')
+const { 获取未保存风险数量, 查询实时关闭状态, 请求保存全部 } = require('./ipc/systemChannel')
 const { 创建关联文件入口 } = require('./fileAssociation')
 const { 创建文稿会话服务 } = require('./ppt/session')
 const { 创建窗口管理器 } = require('./ppt/windowManager')
@@ -40,7 +40,8 @@ function 安装关闭保护(窗口) {
     if (窗口.isDestroyed?.()) return
     const 选择 = await 显示应用确认(窗口, {
       ...选项,
-      buttons: ['保留窗口', '仍然退出'],
+      buttons: ['保留窗口', '不保存退出'],
+      按钮样式: ['default', 'danger'],
       defaultId: 0,
       cancelId: 0,
       noLink: true,
@@ -82,14 +83,32 @@ function 安装关闭保护(窗口) {
       const 选择 = await 显示应用确认(窗口, {
         type: 'warning',
         title: '确认退出',
-        message: `还有 ${数量} 个文档可能包含未保存的修改`,
-        detail: '放弃修改并退出后，原文件中的内容可能丢失。请先保存文档，或确认放弃修改。',
-        buttons: ['取消', '放弃修改并退出'],
-        defaultId: 0,
+        message: `还有 ${数量} 个文档未保存`,
+        detail: '“保存后退出”会先按原路径保存这些文档；没有保存过路径的会先询问保存位置。选择“不保存退出”将放弃这些修改。',
+        buttons: ['取消', '保存后退出', '不保存退出'],
+        按钮样式: ['default', 'primary', 'danger'],
+        defaultId: 1,
         cancelId: 0,
         noLink: true,
       })
-      if (选择 !== 1 || 窗口.isDestroyed?.()) return
+      if (选择 === 0 || 窗口.isDestroyed?.()) return
+      if (选择 === 1) {
+        const 保存 = await 请求保存全部(窗口)
+        if (窗口.isDestroyed?.()) return
+        const 失败列表 = Array.isArray(保存?.失败) ? 保存.失败 : []
+        const 未完成 = !保存?.成功 || 失败列表.length > 0
+        if (未完成) {
+          const 明细 = 失败列表.slice(0, 5).map((项) => `${项.名称}：${项.原因}`).join('\n')
+          return 询问是否仍然退出({
+            type: 保存?.已取消 ? 'warning' : 'error',
+            title: 保存?.已取消 ? '已取消保存' : '仍有文档未能保存',
+            message: 保存?.已取消
+              ? '保存过程中取消了选择保存位置'
+              : (保存?.错误 || `${失败列表.length} 个文档保存失败`),
+            detail: `${明细 ? `${明细}\n` : ''}${失败列表.length > 5 ? `其余 ${失败列表.length - 5} 个文档也未能保存。\n` : ''}可以回到窗口手动保存后重试；确需退出时选择“不保存退出”。`,
+          })
+        }
+      }
       已确认退出 = true
       窗口.close()
     }).catch((错误) => {

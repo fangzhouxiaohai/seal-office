@@ -124,7 +124,7 @@ describe('主进程窗口关闭保护', () => {
     expect(窗口.close).not.toHaveBeenCalled()
     expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
       title: '工作状态保存失败', message: expect.stringContaining('磁盘已满'),
-      buttons: ['保留窗口', '仍然退出'], defaultId: 0, cancelId: 0,
+      buttons: ['保留窗口', '不保存退出'], 按钮样式: ['default', 'danger'], defaultId: 0, cancelId: 0,
       detail: expect.stringContaining('0 个未保存文档'),
     }))
   })
@@ -146,7 +146,7 @@ describe('主进程窗口关闭保护', () => {
 
     expect(事件.preventDefault).toHaveBeenCalledOnce()
     expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
-      buttons: ['保留窗口', '仍然退出'],
+      buttons: ['保留窗口', '不保存退出'],
       detail: expect.stringContaining('2 个未保存文档'),
     }))
     expect(窗口.close).toHaveBeenCalledOnce()
@@ -212,14 +212,87 @@ describe('主进程窗口关闭保护', () => {
     expect(事件.preventDefault).toHaveBeenCalledOnce()
     expect(窗口.close).not.toHaveBeenCalled()
     expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
-      buttons: ['取消', '放弃修改并退出'],
-      defaultId: 0,
+      buttons: ['取消', '保存后退出', '不保存退出'],
+      按钮样式: ['default', 'primary', 'danger'],
+      defaultId: 1,
       cancelId: 0,
     }))
     expect(显示确认框.mock.calls[0][1].message).toContain('2')
+    expect(显示确认框.mock.calls[0][1].detail).toContain('保存后退出')
   })
 
-  it('确认放弃修改后仅确认一次并真正关闭', async () => {
+  it('选择保存后退出时先请求渲染层保存全部，成功后才关闭', async () => {
+    const { 主进程, 系统通道, 窗口映射, 显示确认框 } = 加载关闭保护()
+    const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
+    const 处理器 = new Map()
+    系统通道.注册系统通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) })
+    主进程.安装关闭保护(窗口)
+    显示确认框.mockReturnValue(1)
+
+    触发关闭()
+    const 关闭标识 = 窗口.webContents.send.mock.calls[0][1]
+    await 处理器.get('system.respondCloseState')({ sender: 窗口.webContents }, 关闭标识, { 未保存数量: 2, 备份成功: true })
+    await vi.waitFor(() => expect(窗口.webContents.send).toHaveBeenCalledWith('system.requestSaveAll', expect.any(String)))
+
+    const 保存标识 = 窗口.webContents.send.mock.calls.at(-1)[1]
+    expect(await 处理器.get('system.respondSaveAll')({ sender: 窗口.webContents }, 保存标识, {
+      成功: true, 已保存: ['甲.docx', '乙.xlsx'], 失败: [], 已取消: false,
+    })).toMatchObject({ 成功: true })
+    await vi.waitFor(() => expect(窗口.close).toHaveBeenCalledOnce())
+
+    expect(显示确认框).toHaveBeenCalledOnce()
+  })
+
+  it('保存未完成时保留窗口并列出失败原因', async () => {
+    const { 主进程, 系统通道, 窗口映射, 显示确认框 } = 加载关闭保护()
+    const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
+    const 处理器 = new Map()
+    系统通道.注册系统通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) })
+    主进程.安装关闭保护(窗口)
+    显示确认框.mockReturnValueOnce(1).mockReturnValue(0)
+
+    触发关闭()
+    const 关闭标识 = 窗口.webContents.send.mock.calls[0][1]
+    await 处理器.get('system.respondCloseState')({ sender: 窗口.webContents }, 关闭标识, { 未保存数量: 1, 备份成功: true })
+    await vi.waitFor(() => expect(窗口.webContents.send).toHaveBeenCalledWith('system.requestSaveAll', expect.any(String)))
+
+    const 保存标识 = 窗口.webContents.send.mock.calls.at(-1)[1]
+    await 处理器.get('system.respondSaveAll')({ sender: 窗口.webContents }, 保存标识, {
+      成功: false, 已保存: [], 失败: [{ 名称: '甲.docx', 原因: '文件被其他程序占用' }], 已取消: false,
+    })
+    await vi.waitFor(() => expect(显示确认框).toHaveBeenCalledTimes(2))
+
+    expect(窗口.close).not.toHaveBeenCalled()
+    expect(显示确认框.mock.calls[1][1]).toMatchObject({
+      title: '仍有文档未能保存',
+      buttons: ['保留窗口', '不保存退出'],
+    })
+    expect(显示确认框.mock.calls[1][1].detail).toContain('甲.docx：文件被其他程序占用')
+  })
+
+  it('保存过程中取消选择位置时如实说明并保留窗口', async () => {
+    const { 主进程, 系统通道, 窗口映射, 显示确认框 } = 加载关闭保护()
+    const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
+    const 处理器 = new Map()
+    系统通道.注册系统通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) })
+    主进程.安装关闭保护(窗口)
+    显示确认框.mockReturnValueOnce(1).mockReturnValue(0)
+
+    触发关闭()
+    const 关闭标识 = 窗口.webContents.send.mock.calls[0][1]
+    await 处理器.get('system.respondCloseState')({ sender: 窗口.webContents }, 关闭标识, { 未保存数量: 1, 备份成功: true })
+    await vi.waitFor(() => expect(窗口.webContents.send).toHaveBeenCalledWith('system.requestSaveAll', expect.any(String)))
+
+    const 保存标识 = 窗口.webContents.send.mock.calls.at(-1)[1]
+    await 处理器.get('system.respondSaveAll')({ sender: 窗口.webContents }, 保存标识, {
+      成功: false, 已保存: [], 失败: [], 已取消: true,
+    })
+    await vi.waitFor(() => expect(显示确认框).toHaveBeenCalledTimes(2))
+    expect(显示确认框.mock.calls[1][1]).toMatchObject({ title: '已取消保存', type: 'warning' })
+    expect(窗口.close).not.toHaveBeenCalled()
+  })
+
+  it('确认不保存退出后仅确认一次并真正关闭', async () => {
     const { 主进程, 系统通道, 窗口映射, 显示确认框 } = 加载关闭保护()
     expect(typeof 主进程.安装关闭保护).toBe('function')
     const { 窗口, 触发关闭 } = 创建测试窗口(窗口映射)
@@ -228,7 +301,7 @@ describe('主进程窗口关闭保护', () => {
     expect(处理器.has('system.reportUnsavedCount')).toBe(true)
     await 处理器.get('system.reportUnsavedCount')({ sender: 窗口.webContents }, 1)
     主进程.安装关闭保护(窗口)
-    显示确认框.mockReturnValue(1)
+    显示确认框.mockReturnValue(2)
 
     const 事件 = 触发关闭()
 
@@ -238,6 +311,7 @@ describe('主进程窗口关闭保护', () => {
     expect(事件.preventDefault).toHaveBeenCalledOnce()
     expect(窗口.close).toHaveBeenCalledOnce()
     expect(显示确认框).toHaveBeenCalledOnce()
+    expect(窗口.webContents.send).not.toHaveBeenCalledWith('system.requestSaveAll', expect.any(String))
   })
 
   it('拒绝非窗口来源及无效数量的上报', async () => {
@@ -307,7 +381,7 @@ describe('主进程窗口关闭保护', () => {
     expect(事件.preventDefault).toHaveBeenCalledOnce()
     expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
       title: '无法确认保存状态', defaultId: 0, cancelId: 0,
-      buttons: ['保留窗口', '仍然退出'],
+      buttons: ['保留窗口', '不保存退出'],
       detail: expect.stringContaining('未保存数量无法确认'),
     }))
     expect(窗口.close).not.toHaveBeenCalled()
@@ -329,7 +403,7 @@ describe('主进程窗口关闭保护', () => {
     expect(事件.preventDefault).toHaveBeenCalledOnce()
     expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
       title: '无法确认保存状态',
-      buttons: ['保留窗口', '仍然退出'],
+      buttons: ['保留窗口', '不保存退出'],
       detail: expect.stringContaining('3 个未保存文档'),
     }))
     await vi.waitFor(() => expect(窗口.close).toHaveBeenCalledOnce())
@@ -353,7 +427,7 @@ describe('主进程窗口关闭保护', () => {
       expect(事件.preventDefault).toHaveBeenCalledOnce()
       expect(显示确认框).toHaveBeenCalledWith(窗口, expect.objectContaining({
         title: '无法确认保存状态',
-        buttons: ['保留窗口', '仍然退出'],
+        buttons: ['保留窗口', '不保存退出'],
         defaultId: 0,
         cancelId: 0,
         detail: expect.stringContaining('4 个未保存文档'),

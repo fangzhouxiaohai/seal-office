@@ -27,6 +27,13 @@ export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string 
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
+/** 关闭前“保存后退出”的应答：已保存只回传名称，失败带回原因 */
+export interface 保存全部应答 {
+  成功: boolean
+  已保存: string[]
+  失败: Array<{ 名称: string; 原因: string }>
+  已取消: boolean
+}
 export interface 放映全屏结果 { 成功: boolean; 会话标识?: string; 错误?: string }
 export interface 显示器信息 { 标识: string; 名称: string; 主屏: boolean; 宽?: number; 高?: number; 缩放?: number }
 export interface 演讲者打开结果 { 成功: boolean; 会话标识?: string; 显示器名称?: string; 提示?: string; 已有窗口?: boolean; 错误?: string }
@@ -200,6 +207,8 @@ export interface 电子接口 {
   presenter?: 演讲者接口
   onCloseStateRequested: (回调: (标识: string) => void) => () => void
   respondCloseState: (标识: string, 状态: 关闭状态) => Promise<{ 成功: boolean; 错误?: string }>
+  onSaveAllRequested?: (回调: (标识: string) => void) => () => void
+  respondSaveAll?: (标识: string, 结果: 保存全部应答) => Promise<{ 成功: boolean; 错误?: string }>
   setDefaultApp: () => Promise<{ 成功: boolean; 需要管理员权限?: boolean; 提示?: string; 错误?: string }>
   checkDefaultAppPrompt?: () => Promise<默认程序提示结果>
   checkIntegrity: () => Promise<完整性检查结果>
@@ -345,6 +354,8 @@ export const 桥接 = {
   reportUnsavedCount: (数量: number) => 取后端()?.reportUnsavedCount(数量) ?? 失败('当前环境不支持关闭保护'),
   onCloseStateRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onCloseStateRequested?.(回调) ?? (() => {}),
   respondCloseState: (标识: string, 状态: 关闭状态) => 取后端()?.respondCloseState?.(标识, 状态) ?? 失败('当前环境不支持关闭前核验'),
+  onSaveAllRequested: (回调: (标识: string) => void): (() => void) => 取后端()?.onSaveAllRequested?.(回调) ?? (() => {}),
+  respondSaveAll: (标识: string, 结果: 保存全部应答) => 取后端()?.respondSaveAll?.(标识, 结果) ?? 失败('当前环境不支持保存后退出'),
   setDefaultApp: (): ReturnType<电子接口['setDefaultApp']> => 取后端()?.setDefaultApp() ?? Promise.resolve({ 成功: false, 错误: '请使用打包后的应用设置默认程序' }),
   get 默认程序提示可用() { return typeof 取后端()?.checkDefaultAppPrompt === 'function' },
   checkDefaultAppPrompt: (): Promise<默认程序提示结果> => 取后端()?.checkDefaultAppPrompt?.() ?? 失败('当前环境不支持默认程序首次检查'),

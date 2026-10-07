@@ -199,6 +199,87 @@ describe('应用外壳（WPS 版式首页）', () => {
     }
   })
 
+  it('收到保存后退出请求时保存全部未保存文档并回报结果', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    let 请求保存: ((标识: string) => void) | undefined
+    const 回报 = vi.fn().mockResolvedValue({ 成功: true })
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '指纹-新' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\导入.docx'),
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'YQ==', 二进制: true, 扩展名: 'docx' }),
+      saveToFile: 写入,
+      showSaveDialog: vi.fn().mockResolvedValue(null),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      office: {
+        readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>导入正文</p>', 页面设置: {
+          纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 页面边框: '无', 页面颜色: '无', 文字方向: '横排', 水印: '无',
+        } }),
+        writeDocx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'YQ==' }),
+      },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn(() => new Promise(() => {})),
+      onSaveAllRequested: (回调: (标识: string) => void) => { 请求保存 = 回调; return () => { 请求保存 = undefined } },
+      respondSaveAll: 回报,
+    } })
+    try {
+      const { container } = render(<App 初始最近文档={[]} />)
+      await userEvent.click(screen.getByRole('button', { name: '打开' }))
+      await screen.findByRole('tab', { name: '导入.docx' })
+      const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+      编辑区.innerHTML = '<p>未保存的正文</p>'
+      fireEvent.input(编辑区)
+      expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+
+      await act(async () => { 请求保存?.('保存请求-1') })
+
+      await waitFor(() => expect(回报).toHaveBeenCalledOnce())
+      const [标识, 结果] = 回报.mock.calls[0]
+      expect(标识).toBe('保存请求-1')
+      expect(结果).toMatchObject({ 成功: true, 已保存: ['导入.docx'], 失败: [], 已取消: false })
+      // 写回原路径（打开时未带指纹，按三参数写入）
+      expect(写入).toHaveBeenCalledWith('C:\\资料\\导入.docx', expect.any(Uint8Array), '二进制')
+      await waitFor(() => expect(container.querySelector('.wps-global-tab__dirty')).toBeNull())
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
+  it('保存后退出时若用户取消选择位置，回报已取消且不标记为已保存', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    let 请求保存: ((标识: string) => void) | undefined
+    const 回报 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      showOpenDialog: vi.fn().mockResolvedValue(null),
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      showSaveDialog: vi.fn().mockResolvedValue(null),
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn(() => new Promise(() => {})),
+      onSaveAllRequested: (回调: (标识: string) => void) => { 请求保存 = 回调; return () => { 请求保存 = undefined } },
+      respondSaveAll: 回报,
+    } })
+    try {
+      const { container } = render(<App 初始最近文档={[]} />)
+      await 通过新建菜单创建('新建文字')
+      const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+      编辑区.innerHTML = '<p>未命名内容</p>'
+      fireEvent.input(编辑区)
+
+      await act(async () => { 请求保存?.('保存请求-2') })
+
+      await waitFor(() => expect(回报).toHaveBeenCalledOnce())
+      expect(回报.mock.calls[0][1]).toMatchObject({ 成功: false, 已取消: true, 已保存: [] })
+      expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
+  })
+
   it('关闭前核验读取当前未保存标签，即使异步上报仍未完成', async () => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     let 请求关闭: ((标识: string) => void) | undefined

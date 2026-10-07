@@ -14,6 +14,8 @@ import HomePage from './pages/HomePage'
 import { 基准文件名, 注册最近文档错误弹窗, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 分组拖入文件, 在局部投放区, 携带文件, 读取拖入路径 } from './fileDrop'
 import { 桥接 } from './ipc/bridge'
+import type { 保存全部应答 } from './ipc/bridge'
+import { 保存全部文档 } from './editor/saveAll'
 import type { DocItem } from './mock/recentDocs'
 import HelpManual from './components/HelpManual'
 import AboutDialog from './components/AboutDialog'
@@ -44,7 +46,7 @@ const 外壳 = () => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message, modal } = AntdApp.useApp()
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
-  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词 } = useAppStore()
+  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
   const { 主题, 切换主题 } = useSettings()
 
   const 是首页 = module === 'home'
@@ -188,6 +190,61 @@ const 外壳 = () => {
       })().catch((错误: unknown) => {
         modal.error({ title: '关闭保护不可用', content: 错误 instanceof Error ? 错误.message : '无法确认当前文档状态' })
       })
+    })
+  }, [modal])
+
+  // “保存后退出”：把每个未保存文档写回原路径（没有路径的先询问位置），并把结果回报给主进程。
+  const 最新保存全部 = React.useRef<() => Promise<保存全部应答>>(async () => ({ 成功: true, 已保存: [], 失败: [], 已取消: false }))
+  最新保存全部.current = async () => {
+    const 待保存标签 = workspaceTabs.filter((标签) => 标签.dirty && (标签.type === 'word' || 标签.type === 'table' || 标签.type === 'ppt'))
+    const 待保存 = 待保存标签.map((标签) => {
+      const 文档 = documents.find((项) => 项.id === 标签.id)
+      return {
+        标识: 标签.id,
+        名称: 标签.name,
+        类型: 标签.type as 'word' | 'table' | 'ppt',
+        路径: 标签.path,
+        ...(文档 === undefined ? {} : {
+          html: 文档.html,
+          页面设置: 文档.页面设置,
+          文件指纹: 文档.文件指纹,
+          来源路径: 文档.来源路径,
+          警告: 文档.警告,
+        }),
+        ...(标签.type === 'table' ? { 表格模型: 表格文档模型[标签.id] } : {}),
+        ...(标签.type === 'ppt' ? { 演示模型: 演示文档模型[标签.id] } : {}),
+      }
+    })
+    const 结果 = await 保存全部文档(待保存)
+    for (const 项 of 结果.已保存) {
+      const 标签 = 待保存标签.find((当前) => 当前.id === 项.标识)
+      const 文档 = documents.find((当前) => 当前.id === 项.标识)
+      if (标签?.type === 'table') markDocumentSaved(项.标识, '', JSON.stringify(表格文档模型[项.标识] ?? []))
+      else if (标签?.type === 'ppt') markDocumentSaved(项.标识, '', JSON.stringify(演示文档模型[项.标识]))
+      else markDocumentSaved(项.标识, 文档?.html ?? '', undefined, { 页面设置: 文档?.页面设置 })
+      set文档路径(项.标识, 项.路径)
+      if (项.文件指纹) 更新文件指纹(项.标识, 项.文件指纹)
+    }
+    if (结果.已保存.length > 0) message.success(`已保存 ${结果.已保存.length} 个文档`)
+    return {
+      成功: 结果.失败.length === 0 && !结果.已取消,
+      已保存: 结果.已保存.map((项) => 项.名称),
+      失败: 结果.失败.map((项) => ({ 名称: 项.名称, 原因: 项.原因 })),
+      已取消: 结果.已取消,
+    }
+  }
+  useEffect(() => {
+    if (!桥接.可用) return
+    return 桥接.onSaveAllRequested((标识) => {
+      void (async () => {
+        let 应答: 保存全部应答
+        try { 应答 = await 最新保存全部.current() }
+        catch (错误) {
+          应答 = { 成功: false, 已保存: [], 失败: [{ 名称: '当前窗口', 原因: 错误 instanceof Error ? 错误.message : '保存全部文档失败' }], 已取消: false }
+        }
+        const 回报 = await 桥接.respondSaveAll(标识, 应答)
+        if (!回报.成功) modal.error({ title: '保存后退出不可用', content: 回报.错误 || '无法回报保存结果' })
+      })()
     })
   }, [modal])
   useEffect(() => {

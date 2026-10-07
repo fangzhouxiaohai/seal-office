@@ -44,6 +44,8 @@ describe('自定义应用确认弹窗', () => {
     const 结果 = 显示应用确认(父窗口, 选项)
     const 弹窗 = 窗口列表[0]
     expect(弹窗.选项).toMatchObject({ parent: 父窗口, modal: true, frame: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } })
+    // 弹窗按内容收缩：宽度固定，高度先给一个不空旷的初值再由内容实测校正
+    expect(弹窗.选项).toMatchObject({ width: 432, height: 232, resizable: false })
     expect(通道.get('appDialog.get')({ sender: 父窗口.webContents })).toBeNull()
     expect(通道.get('appDialog.choose')({ sender: 父窗口.webContents }, 1)).toEqual({ 成功: false })
     expect(通道.get('appDialog.get')({ sender: 弹窗.webContents })).toMatchObject({ 标题: '确认退出', 取消选择: 0 })
@@ -54,6 +56,44 @@ describe('自定义应用确认弹窗', () => {
     expect(通道.get('appDialog.get')({ sender: 弹窗.webContents })).toBeNull()
     expect(父窗口.listenerCount('closed')).toBe(0)
     expect(弹窗.destroy).toHaveBeenCalledOnce()
+  })
+
+  it('按钮样式随内容传给渲染端', async () => {
+    const { 显示应用确认, 通道, 窗口列表, 父窗口 } = 加载弹窗()
+    const 结果 = 显示应用确认(父窗口, {
+      ...选项,
+      buttons: ['取消', '保存后退出', '不保存退出'],
+      按钮样式: ['default', 'primary', 'danger'],
+      defaultId: 1,
+    })
+    const 内容 = 通道.get('appDialog.get')({ sender: 窗口列表[0].webContents })
+    expect(内容).toMatchObject({
+      按钮: ['取消', '保存后退出', '不保存退出'],
+      按钮样式: ['default', 'primary', 'danger'],
+      默认选择: 1,
+    })
+    通道.get('appDialog.choose')({ sender: 窗口列表[0].webContents }, 0)
+    await expect(结果).resolves.toBe(0)
+  })
+
+  it('按内容高度调整窗口，只接受本弹窗的请求并钳制范围', async () => {
+    const { 显示应用确认, 通道, 窗口列表, 父窗口 } = 加载弹窗()
+    const 结果 = 显示应用确认(父窗口, 选项)
+    const 弹窗 = 窗口列表[0]
+    弹窗.setContentSize = vi.fn()
+    const 适配 = 通道.get('appDialog.fit')
+    expect(适配({ sender: 父窗口.webContents }, 200)).toMatchObject({ 成功: false })
+    expect(适配({ sender: 弹窗.webContents }, Number.NaN)).toMatchObject({ 成功: false })
+    expect(适配({ sender: 弹窗.webContents }, 200)).toEqual({ 成功: true, 高度: 200 })
+    expect(弹窗.setContentSize).toHaveBeenLastCalledWith(432, 200)
+    // 过小或过大的内容高度都会被钳制，避免出现空白或超出屏幕
+    适配({ sender: 弹窗.webContents }, 40)
+    expect(弹窗.setContentSize).toHaveBeenLastCalledWith(432, 148)
+    适配({ sender: 弹窗.webContents }, 4000)
+    expect(弹窗.setContentSize).toHaveBeenLastCalledWith(432, 560)
+    通道.get('appDialog.choose')({ sender: 弹窗.webContents }, 0)
+    await expect(结果).resolves.toBe(0)
+    expect(适配({ sender: 弹窗.webContents }, 200)).toMatchObject({ 成功: false })
   })
 
   it.each(['closed', 'render-process-gone', '父窗口关闭'])('%s 只取消退出且清理请求', async (事件) => {

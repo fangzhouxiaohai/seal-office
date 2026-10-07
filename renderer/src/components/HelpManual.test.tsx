@@ -38,6 +38,14 @@ describe('帮助手册', () => {
     expect(screen.getByText(/缩放只影响你自己的查看比例，不写入文档/)).toBeInTheDocument()
   })
 
+  it('说明关闭时的保存后退出与不保存退出', () => {
+    render(<HelpManual />)
+    fireEvent.click(screen.getByRole('button', { name: '保存与另存为' }))
+    expect(screen.getByText(/弹窗提供“保存后退出”/)).toBeInTheDocument()
+    expect(screen.getByText(/先按原路径保存全部未保存文档/)).toBeInTheDocument()
+    expect(screen.getByText(/会停止覆盖并列出原因/)).toBeInTheDocument()
+  })
+
   it('覆盖本机日历、图形工具、文件夹和新文件提醒的操作路径', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '本机日历' }))

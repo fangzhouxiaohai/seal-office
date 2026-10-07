@@ -6,6 +6,7 @@ const { 创建默认程序服务, 获取关联程序路径 } = require('../windo
 
 const 未保存风险数量 = new WeakMap()
 const 关闭核验请求 = new WeakMap()
+const 保存全部请求 = new WeakMap()
 
 function 获取未保存风险数量(窗口) {
   return 未保存风险数量.get(窗口) ?? 0
@@ -32,6 +33,35 @@ function 查询实时关闭状态(窗口, 超时毫秒 = 15000) {
       窗口.webContents.send('system.requestCloseState', 标识)
     } catch {
       结束(null)
+    }
+  })
+}
+
+/**
+ * 请渲染层保存全部未保存文档；返回 { 成功, 已保存, 失败, 已取消 }。
+ * 保存可能包含多个“另存为”对话框，超时按 2 分钟计。
+ */
+function 请求保存全部(窗口, 超时毫秒 = 120000) {
+  return new Promise((完成) => {
+    if (!窗口 || 窗口.isDestroyed?.() || 窗口.webContents?.isDestroyed?.()) {
+      完成({ 成功: false, 错误: '当前窗口已关闭' })
+      return
+    }
+    const 标识 = randomUUID()
+    let 已结束 = false
+    const 结束 = (结果) => {
+      if (已结束) return
+      已结束 = true
+      clearTimeout(计时器)
+      保存全部请求.delete(窗口)
+      完成(结果)
+    }
+    const 计时器 = setTimeout(() => 结束({ 成功: false, 错误: '保存超时，请手动保存后重试' }), 超时毫秒)
+    保存全部请求.set(窗口, { 标识, 结束 })
+    try {
+      窗口.webContents.send('system.requestSaveAll', 标识)
+    } catch {
+      结束({ 成功: false, 错误: '无法请求保存' })
     }
   })
 }
@@ -96,6 +126,19 @@ function 注册系统通道(ipcMain, 依赖 = {}) {
     请求.结束(状态)
     return { 成功: true }
   })
+  ipcMain.handle('system.respondSaveAll', async (事件, 标识, 结果) => {
+    if (typeof 标识 !== 'string' || typeof 结果 !== 'object' || 结果 === null || typeof 结果.成功 !== 'boolean' ||
+        typeof 结果.已取消 !== 'boolean' || !Array.isArray(结果.已保存) || !Array.isArray(结果.失败) ||
+        结果.已保存.some((项) => typeof 项 !== 'string') ||
+        结果.失败.some((项) => typeof 项 !== 'object' || 项 === null || typeof 项.名称 !== 'string' || typeof 项.原因 !== 'string')) {
+      return { 成功: false, 错误: '保存结果无效' }
+    }
+    const 窗口 = BrowserWindow.fromWebContents(事件?.sender)
+    const 请求 = 窗口 && 保存全部请求.get(窗口)
+    if (!请求 || 请求.标识 !== 标识) return { 成功: false, 错误: '保存请求已失效' }
+    请求.结束(结果)
+    return { 成功: true }
+  })
   ipcMain.handle('system.setDefaultApp', async () => {
     try {
       return await 获取默认程序服务().设置默认程序()
@@ -140,4 +183,4 @@ function 注册系统通道(ipcMain, 依赖 = {}) {
   }))
 }
 
-module.exports = { 注册系统通道, 获取未保存风险数量, 查询实时关闭状态 }
+module.exports = { 注册系统通道, 获取未保存风险数量, 查询实时关闭状态, 请求保存全部 }

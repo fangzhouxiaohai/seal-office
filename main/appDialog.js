@@ -2,6 +2,10 @@ const { BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
 const 弹窗请求 = new Map()
+/** 弹窗窗口尺寸：宽度固定，高度按内容适配后回调校对 */
+const 弹窗宽度 = 432
+const 弹窗最小高度 = 148
+const 弹窗最大高度 = 560
 let 已注册 = false
 
 function 注册弹窗通道() {
@@ -13,6 +17,17 @@ function 注册弹窗通道() {
     if (!请求 || !Number.isInteger(选择) || 选择 < 0 || 选择 >= 请求.内容.按钮.length) return { 成功: false }
     请求.完成(选择)
     return { 成功: true }
+  })
+  // 内容高度由渲染端实测，避免为长短不一的内容固定一个大窗口
+  ipcMain.handle('appDialog.fit', (事件, 高度) => {
+    const 请求 = 弹窗请求.get(事件.sender)
+    if (!请求) return { 成功: false }
+    if (!Number.isFinite(高度)) return { 成功: false, 错误: '弹窗高度无效' }
+    const 目标 = Math.round(Math.min(弹窗最大高度, Math.max(弹窗最小高度, 高度)))
+    const 弹窗 = 请求.窗口
+    if (!弹窗 || 弹窗.isDestroyed?.()) return { 成功: false }
+    try { 弹窗.setContentSize(弹窗宽度, 目标) } catch { return { 成功: false } }
+    return { 成功: true, 高度: 目标 }
   })
 }
 
@@ -38,7 +53,7 @@ async function 显示应用确认(父窗口, 选项) {
   return new Promise((完成) => {
     const 弹窗 = new BrowserWindow({
       parent: 父窗口, modal: true, show: false, frame: false, resizable: false,
-      width: 520, height: 320, minimizable: false, maximizable: false, skipTaskbar: true,
+      width: 弹窗宽度, height: 232, minimizable: false, maximizable: false, skipTaskbar: true,
       backgroundColor: 颜色['bg-card'] || '#FFFFFF',
       webPreferences: { preload: path.join(__dirname, 'ui/dialogPreload.js'), nodeIntegration: false, contextIsolation: true, sandbox: true },
     })
@@ -54,8 +69,9 @@ async function 显示应用确认(父窗口, 选项) {
     }
     const 父窗口关闭 = () => 完成选择(取消)
     父窗口.once?.('closed', 父窗口关闭)
-    弹窗请求.set(弹窗.webContents, { 完成: 完成选择, 内容: {
+    弹窗请求.set(弹窗.webContents, { 完成: 完成选择, 窗口: 弹窗, 内容: {
       标题: 选项.title, 原因: 选项.message, 说明: 选项.detail || '', 按钮,
+      按钮样式: Array.isArray(选项.按钮样式) ? 选项.按钮样式 : [],
       默认选择: Number.isInteger(选项.defaultId) ? 选项.defaultId : 0, 取消选择: 取消, 颜色,
     } })
     弹窗.on('closed', () => 完成选择(取消))
