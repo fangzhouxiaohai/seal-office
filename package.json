@@ -113,6 +113,20 @@
         ]
       }
     ],
+    "appx": {
+      "applicationId": "SealOffice",
+      "identityName": "Placeholder.SealOffice",
+      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "publisherDisplayName": "星马软件",
+      "displayName": "海豹办公",
+      "backgroundColor": "#2b6cf6",
+      "languages": [
+        "zh-CN"
+      ],
+      "capabilities": [
+        "runFullTrust"
+      ]
+    },
     "npmRebuild": false,
     "nsis": {
       "include": "build/installer.nsh",
