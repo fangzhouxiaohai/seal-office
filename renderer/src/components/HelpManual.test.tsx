@@ -26,7 +26,7 @@ describe('帮助手册', () => {
     fireEvent.click(screen.getByRole('button', { name: '隐私与数据在哪里' }))
     expect(screen.getByText(/密钥、对话与记忆加密保存在本机/)).toBeInTheDocument()
     expect(screen.getByText(/只把完成该次请求所需的片段发送到你自己配置的服务地址/)).toBeInTheDocument()
-    expect(screen.getByText(/%APPDATA%\\SealOffice/)).toBeInTheDocument()
+    expect(screen.getByText(/%APPDATA%\\seal-office/)).toBeInTheDocument()
     expect(screen.getByText(/服务商如何留存与使用你发送的内容/)).toBeInTheDocument()
   })
 
