@@ -13,7 +13,7 @@ export const ICON_NAMES = [
   'sun', 'moon', 'sliders',
   'desktop', 'download-file', 'globe', 'tag', 'device', 'cloud-off', 'wechat', 'knowledge', 'export-file',
   /* 编辑器图标 */
-  'paste', 'cut', 'copy', 'format-painter',
+  'paste', 'cut', 'copy', 'copy-text', 'copy-all', 'format-painter',
   'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
   'align-left', 'align-center', 'align-right', 'align-justify',
   'bullet-list', 'numbered-list', 'indent-increase', 'indent-decrease',
@@ -144,6 +144,22 @@ const 线性路径: Record<string, React.ReactNode> = {
     <>
       <rect x="2.6" y="2.6" width="7.4" height="8.4" rx="1.2" />
       <path d="M6 13.4h7.4V5" />
+    </>
+  ),
+  /* 复制本页文字：复制图形内加正文行 */
+  'copy-text': (
+    <>
+      <rect x="2.6" y="2.6" width="7.4" height="8.4" rx="1.2" />
+      <path d="M6 13.4h7.4V5" />
+      <path d="M4.4 5.6h3.8M4.4 7.6h3.8M4.4 9.6h2.2" />
+    </>
+  ),
+  /* 复制全文文字：三张错开的纸页，表示整篇内容 */
+  'copy-all': (
+    <>
+      <rect x="4.6" y="4.6" width="6.4" height="7" rx="1.1" />
+      <path d="M7 13.6h5.8V6.8" />
+      <path d="M1.6 5.4V1.6h3.8" />
     </>
   ),
   'format-painter': (

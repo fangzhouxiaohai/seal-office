@@ -178,8 +178,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           <button type="button" aria-label="缩小" title="缩小" disabled={状态 !== '就绪' || 缩放 <= 缩放下限} onClick={() => 调整缩放(-缩放步长)}><Icon name="zoom-out" size={15} /></button>
           <span className="pdf-viewer__zoom" aria-live="polite">{Math.round(缩放 * 100)}%</span>
           <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 缩放 >= 缩放上限} onClick={() => 调整缩放(缩放步长)}><Icon name="zoom-in" size={15} /></button>
-          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={!页面文字.trim()} onClick={() => void 复制本页()}>复制文字</button>
-          <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}>复制全文</button>
+          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={!页面文字.trim()} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
+          <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
         </div>
       </div>
       {复制状态 && <span className="pdf-viewer__copy-status" role="status">{复制状态}</span>}

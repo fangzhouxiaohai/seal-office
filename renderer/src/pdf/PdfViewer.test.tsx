@@ -74,10 +74,18 @@ describe('PDF 阅读预览', () => {
       })) }), destroy: vi.fn(),
     })
     render(<PdfViewer 数据={btoa('%PDF-1.7')} />)
-    await waitFor(() => expect(screen.getByRole('button', { name: '复制本页文字' })).toBeEnabled())
-    fireEvent.click(screen.getByRole('button', { name: '复制本页文字' }))
+    const 本页按钮 = screen.getByRole('button', { name: '复制本页文字' })
+    const 全文按钮 = screen.getByRole('button', { name: '复制全文文字' })
+    // 工具条按钮统一为 32×32 的图标按钮，文案只保留在提示与无障碍名称里
+    expect(本页按钮).toHaveTextContent('')
+    expect(全文按钮).toHaveTextContent('')
+    expect(本页按钮.querySelector('svg')).not.toBeNull()
+    expect(全文按钮.querySelector('svg')).not.toBeNull()
+    expect(本页按钮.getAttribute('title')).toBe('复制本页文字')
+    await waitFor(() => expect(本页按钮).toBeEnabled())
+    fireEvent.click(本页按钮)
     await waitFor(() => expect(写入).toHaveBeenCalledWith('第1页合同'))
-    fireEvent.click(screen.getByRole('button', { name: '复制全文文字' }))
+    fireEvent.click(全文按钮)
     await waitFor(() => expect(写入).toHaveBeenCalledWith('第1页合同\n第2页合同'))
   })
 
