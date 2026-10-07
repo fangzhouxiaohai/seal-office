@@ -69,6 +69,9 @@
     ],
     "win": {
       "icon": "build/icon.ico",
+      "signtoolOptions": {
+        "publisherName": "海豹办公"
+      },
       "target": [
         {
           "target": "portable",
