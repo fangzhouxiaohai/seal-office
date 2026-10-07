@@ -4,6 +4,7 @@ import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
 import { use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
+import ContextMenu, { type 菜单节点 } from '../components/ContextMenu'
 import { 通用AI指令, 交给助手 } from '../assistant/quickActions'
 
 interface Props {
@@ -52,6 +53,38 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     ]
   }
   const 选区浮窗 = use选区浮窗({ 容器: 阅读区, 取按钮: 浮窗按钮 })
+
+  /** 右键菜单：与浮窗动作一致，另外提供整页与全文复制 */
+  const [菜单可见, set菜单可见] = useState(false)
+  const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
+  /** 打开菜单时的选中文字快照：右键会改变焦点，命令要用当时的内容 */
+  const 菜单选区 = useRef('')
+  const 菜单项 = (): 菜单节点[] => {
+    const 选中 = (菜单选区.current || 取选中文字()).trim()
+    const 项: 菜单节点[] = []
+    if (选中 !== '') 项.push({ type: 'item', commandId: '__pdfCopySelection__', label: '复制选中文字', shortcut: 'Ctrl+C' })
+    项.push({ type: 'item', commandId: '__pdfCopyPage__', label: '复制本页文字' })
+    项.push({ type: 'item', commandId: '__pdfCopyAll__', label: '复制全文文字' })
+    if (选中 !== '') {
+      项.push({ type: 'divider' })
+      项.push({
+        type: 'group', 标题: 'AI 快捷动作', 子项: 通用AI指令
+          .filter((指令) => ['ai.translate', 'ai.explain', 'ai.summarize', 'ai.ask'].includes(指令.id))
+          .map((指令) => ({ type: 'item' as const, commandId: `__ai__:${指令.id}`, label: `AI ${指令.标签}` })),
+      })
+    }
+    return 项
+  }
+  const 处理菜单命令 = (命令标识: string): boolean => {
+    const 选中 = 菜单选区.current || 取选中文字()
+    if (命令标识 === '__pdfCopySelection__') { void navigator.clipboard.writeText(选中).then(() => set复制状态('已复制选中文字')).catch(() => set复制状态('复制失败，请检查剪贴板权限')); return true }
+    if (命令标识 === '__pdfCopyPage__') { void 复制本页(); return true }
+    if (命令标识 === '__pdfCopyAll__') { void 复制全文(); return true }
+    if (!命令标识.startsWith('__ai__:')) return false
+    const 指令 = 通用AI指令.find((项) => 项.id === 命令标识.slice('__ai__:'.length))
+    if (指令) 交给助手(指令, 选中)
+    return true
+  }
 
   useEffect(() => {
     const 节点 = 阅读区.current
@@ -209,7 +242,16 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
         </div>
       </div>
       {复制状态 && <span className="pdf-viewer__copy-status" role="status">{复制状态}</span>}
-      <div ref={阅读区} className="pdf-viewer__stage">
+      <div
+        ref={阅读区}
+        className="pdf-viewer__stage"
+        onContextMenu={(事件) => {
+          事件.preventDefault()
+          菜单选区.current = 取选中文字()
+          set菜单坐标({ x: 事件.clientX, y: 事件.clientY })
+          set菜单可见(true)
+        }}
+      >
         {状态 === '空白' && <div className="pdf-viewer__empty">选择本机 PDF 文件后，在这里阅读页面</div>}
         {状态 === '加载中' && <div className="pdf-viewer__empty" role="status">正在打开 PDF 文件…</div>}
         {状态 === '失败' && <div className="pdf-viewer__empty" role="status">无法预览这份 PDF 文件</div>}
@@ -226,6 +268,17 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
         按钮={选区浮窗.按钮}
         on关闭={选区浮窗.关闭}
         名称="选中文字操作"
+      />
+      <ContextMenu
+        open={菜单可见}
+        x={菜单坐标.x}
+        y={菜单坐标.y}
+        items={菜单项()}
+        onCommand={(命令标识) => {
+          set菜单可见(false)
+          if (命令标识 === '__close__') return
+          处理菜单命令(命令标识)
+        }}
       />
     </section>
   )

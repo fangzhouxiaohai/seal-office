@@ -89,4 +89,44 @@ describe('PDF 阅读选区浮窗', () => {
       window.removeEventListener('seal-assistant-ask', 收到)
     }
   })
+
+  it('右键菜单提供复制与 AI 动作，并接到真实命令', async () => {
+    const 写入 = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: 写入 } })
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({ numPages: 1, getPage: vi.fn(async () => ({
+        getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale, convertToViewportPoint: () => [10, 30] }),
+        render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+        getTextContent: async () => ({ items: [{ str: '菜单测试文字', transform: [1, 0, 0, 12, 10, 30], width: 80, height: 12 }] }),
+      })) }),
+      destroy: vi.fn(),
+    })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={vi.fn()} />)
+    await screen.findByText('第 1 页 / 共 1 页')
+    await 选中文字层(container, '菜单测试文字')
+
+    const 舞台 = container.querySelector('.pdf-viewer__stage') as HTMLElement
+    fireEvent.contextMenu(舞台)
+    const 菜单 = await screen.findByRole('menu')
+    expect(within(菜单).getByRole('menuitem', { name: '复制选中文字' })).toBeInTheDocument()
+    expect(within(菜单).getByRole('menuitem', { name: '复制本页文字' })).toBeInTheDocument()
+    expect(within(菜单).getByRole('menuitem', { name: '复制全文文字' })).toBeInTheDocument()
+    expect(within(菜单).getByText('AI 快捷动作')).toBeInTheDocument()
+
+    await userEvent.click(within(菜单).getByRole('menuitem', { name: '复制选中文字' }))
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('菜单测试文字'))
+
+    const 收到 = vi.fn()
+    window.addEventListener('seal-assistant-ask', 收到)
+    try {
+      // 点击菜单项会丢失选区，重新选中后再打开菜单
+      await 选中文字层(container, '菜单测试文字')
+      fireEvent.contextMenu(舞台)
+      await userEvent.click(await screen.findByRole('menuitem', { name: 'AI 总结' }))
+      expect(收到).toHaveBeenCalledOnce()
+      expect((收到.mock.calls[0][0] as CustomEvent<{ 文本: string }>).detail.文本).toContain('总结')
+    } finally {
+      window.removeEventListener('seal-assistant-ask', 收到)
+    }
+  })
 })

@@ -152,7 +152,7 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       },
       React.createElement('span', { className: 'wps-context-menu__item-label' }, 节点.label),
       节点.shortcut
-        ? React.createElement('span', { className: 'wps-context-menu__item-shortcut' }, 节点.shortcut)
+        ? React.createElement('span', { className: 'wps-context-menu__item-shortcut', 'aria-hidden': true }, 节点.shortcut)
         : null
     )
   }
