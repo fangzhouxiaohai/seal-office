@@ -3,7 +3,7 @@
   "version": "1.8.3",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
-  "author": "seal-office",
+  "author": "饮风一笑",
   "license": "MIT",
   "scripts": {
     "start": "concurrently -k \"npm run dev\" \"npm run electron:dev\"",
