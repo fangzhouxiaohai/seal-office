@@ -38,6 +38,15 @@ describe('帮助手册', () => {
     expect(screen.getByText(/无需逐项在系统页面选择|不需要逐项在系统页面选择/)).toBeInTheDocument()
   })
 
+  it('说明选中内容浮窗与右键菜单的可用动作', () => {
+    render(<HelpManual />)
+    fireEvent.click(screen.getByRole('button', { name: '选中内容浮窗与右键菜单' }))
+    expect(screen.getByText(/编辑区上方会自动浮出操作面板/)).toBeInTheDocument()
+    expect(screen.getByText(/面板不抢焦点/)).toBeInTheDocument()
+    expect(screen.getByText(/需在预览中确认后才写回文档/)).toBeInTheDocument()
+    expect(screen.getByText(/数据分组（求和\/清除内容\/排序\/筛选\/删除重复项）/)).toBeInTheDocument()
+  })
+
   it('说明缩放视图的快捷方式与范围', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '缩放页面内容' }))

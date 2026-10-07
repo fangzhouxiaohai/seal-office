@@ -3,6 +3,8 @@ import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
 import { use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
+import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
+import { 通用AI指令, 交给助手 } from '../assistant/quickActions'
 
 interface Props {
   数据?: string
@@ -30,6 +32,26 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
 
   // Ctrl+滚轮缩放阅读视口，与工具条上的缩放按钮共用同一状态
   use滚轮缩放(缩放, set缩放, 阅读缩放范围)
+
+  /** 选中 PDF 文字后的浮窗：复制、翻译、解释、总结与 AI 问答 */
+  const 取选中文字 = (): string => {
+    const 选择 = window.getSelection()
+    const 区域 = 阅读区.current
+    if (!选择 || !区域 || 选择.rangeCount === 0) return ''
+    if (选择.anchorNode && !区域.contains(选择.anchorNode)) return ''
+    return 选择.toString()
+  }
+  const 浮窗按钮 = (): 浮窗按钮[] => {
+    const 选中 = 取选中文字()
+    if (选中.trim() === '') return []
+    return [
+      { id: 'pdf.copySelection', 标签: '复制', 图标: 'copy', 分组: 0, 执行: () => void navigator.clipboard.writeText(选中).then(() => set复制状态('已复制选中文字')).catch(() => set复制状态('复制失败，请检查剪贴板权限')) },
+      ...通用AI指令.filter((指令) => ['ai.translate', 'ai.explain', 'ai.summarize', 'ai.ask'].includes(指令.id)).map((指令) => ({
+        id: 指令.id, 标签: 指令.标签, 分组: 10, 执行: () => 交给助手(指令, 选中),
+      })),
+    ]
+  }
+  const 选区浮窗 = use选区浮窗({ 容器: 阅读区, 取按钮: 浮窗按钮 })
 
   useEffect(() => {
     const 节点 = 阅读区.current
@@ -156,8 +178,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       set复制状态('已复制本页文字')
     } catch { set复制状态('复制失败，请检查剪贴板权限') }
   }
-  const 复制全文 = async () => {
-    if (!文档) return
+  const 复制全文 = async () => {    if (!文档) return
     try {
       const 页面: string[] = []
       for (let 页码 = 1; 页码 <= 文档.numPages; 页码 += 1) {
@@ -199,6 +220,13 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           </div>
         </div>
       </div>
+      <SelectionFloatPanel
+        打开={选区浮窗.打开}
+        位置={选区浮窗.位置}
+        按钮={选区浮窗.按钮}
+        on关闭={选区浮窗.关闭}
+        名称="选中文字操作"
+      />
     </section>
   )
 }

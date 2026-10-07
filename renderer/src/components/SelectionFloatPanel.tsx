@@ -48,13 +48,26 @@ export function 计算浮窗位置(选区: 选区矩形, 视口: { 宽: number; 
   return { x, y: Math.min(最大上, 下方), 在上方: false }
 }
 
-/** 取当前选区矩形；没有有效选区时返回 null */
+/** 表格、演示、PDF 这类没有 DOM 选区的模块：以锚点元素的矩形定位浮窗 */
+export function 从元素计算浮窗位置(元素: HTMLElement | null, 视口: { 宽: number; 高: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
+  if (!元素) return null
+  const 矩形 = 元素.getBoundingClientRect()
+  return 计算浮窗位置({ left: 矩形.left, top: 矩形.top, right: 矩形.right, bottom: 矩形.bottom, width: 矩形.width, height: 矩形.height }, 视口, 面板尺寸)
+}
+
+/** 取当前选区矩形；没有有效选区或环境不提供矩形时返回 null */
 export function 读取选区矩形(选择: Selection | null = typeof window === 'undefined' ? null : window.getSelection()): 选区矩形 | null {
   if (!选择 || 选择.isCollapsed || 选择.rangeCount === 0) return null
   const 文本 = 选择.toString()
   if (文本.trim() === '') return null
   const 范围 = 选择.getRangeAt(0)
-  const 矩形 = 范围.getBoundingClientRect()
+  // 环境差异：部分实现只有 getClientRects，个别测试环境两者都缺，取不到就不出浮窗
+  let 矩形: { left: number; top: number; right: number; bottom: number; width: number; height: number } | null = null
+  try {
+    if (typeof 范围.getBoundingClientRect === 'function') 矩形 = 范围.getBoundingClientRect()
+    else if (typeof 范围.getClientRects === 'function') 矩形 = 范围.getClientRects()[0] ?? null
+  } catch { 矩形 = null }
+  if (矩形 === null) return null
   if (矩形.width === 0 && 矩形.height === 0) return null
   return { left: 矩形.left, top: 矩形.top, right: 矩形.right, bottom: 矩形.bottom, width: 矩形.width, height: 矩形.height }
 }

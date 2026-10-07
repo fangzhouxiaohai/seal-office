@@ -45,6 +45,9 @@ import { useAppStore } from '../store'
 import { 记录最近文档 } from '../fileOpen'
 import { 恢复导入图片 } from './render/resources'
 import { 构建演示保存模型 } from './saveModel'
+import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
+import { 通用AI指令 } from '../assistant/quickActions'
+import SelectionFloatPanel, { 从元素计算浮窗位置 } from '../components/SelectionFloatPanel'
 import { use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
@@ -162,6 +165,10 @@ const PptEditor = () => {
 
   // Ctrl+滚轮缩放画布，与状态栏缩放共用同一状态；手动缩放后不再跟随“适应窗口”
   use滚轮缩放(缩放, (值) => { set适应(false); set缩放(值) }, 演示缩放范围)
+
+  /** 选区浮窗用的画布容器；位置在 当前幻灯片 声明之后再计算 */
+  const 画布引用 = useRef<HTMLDivElement | null>(null)
+  const [浮窗位置, set浮窗位置] = useState<{ x: number; y: number; 在上方: boolean } | null>(null)
 
   useEffect(() => {
     let 取消 = false
@@ -472,24 +479,68 @@ const PptEditor = () => {
     if (只读 || !当前幻灯片) return
     try {
       let 页 = 当前幻灯片
+      // 正在编辑的文本框也视为选中目标，浮窗里的对象操作对两者一致生效
+      const 目标: string[] = 选中对象.length > 0 ? 选中对象 : (选中框标识 ? [选中框标识] : [])
+      if (目标.length === 0) return
       const [操作, 参数] = 命令.split(':')
-      if (操作 === '锁定') { if (选中对象.some(id => !对象允许编辑(页,id))) throw new Error('请先解锁所属组合') }
-      else if (操作 !== '解锁') 要求对象可编辑(页,选中对象)
-      else if (选中对象.some(id => !对象允许编辑(页,id,true))) throw new Error('请先解锁所属组合')
-      if (操作 === '新增节点') 页 = 添加语义节点(页, 选中对象[0])
-      if (操作 === '新增连线') { const [起点,终点] = 参数.split(','); 页 = 添加语义连线(页, 选中对象[0], 起点, 终点) }
-      if (操作 === '对齐') 页 = 对齐对象(页, 选中对象, 参数 as Parameters<typeof 对齐对象>[2])
-      if (操作 === '分布') 页 = 分布对象(页, 选中对象, 参数 as '水平'|'垂直')
-      if (操作 === '图层') 页 = 调整图层(页, 选中对象, 参数 as Parameters<typeof 调整图层>[2])
-      if (操作 === '组合') { const 标识 = `group-${crypto.randomUUID()}`; 页 = 组合对象(页, 选中对象, 标识); set选中对象([标识]) }
-      if (操作 === '取消组合') { 页 = 解除组合(页, 选中对象); set选中对象([]) }
-      if (操作 === '锁定' || 操作 === '解锁') 页 = 修改对象(页, 选中对象, { 锁定: 操作 === '锁定' })
+      if (操作 === '锁定') { if (目标.some(id => !对象允许编辑(页,id))) throw new Error('请先解锁所属组合') }
+      else if (操作 !== '解锁') 要求对象可编辑(页,目标)
+      else if (目标.some(id => !对象允许编辑(页,id,true))) throw new Error('请先解锁所属组合')
+      if (操作 === '新增节点') 页 = 添加语义节点(页, 目标[0])
+      if (操作 === '新增连线') { const [起点,终点] = 参数.split(','); 页 = 添加语义连线(页, 目标[0], 起点, 终点) }
+      if (操作 === '对齐') 页 = 对齐对象(页, 目标, 参数 as Parameters<typeof 对齐对象>[2])
+      if (操作 === '分布') 页 = 分布对象(页, 目标, 参数 as '水平'|'垂直')
+      if (操作 === '图层') 页 = 调整图层(页, 目标, 参数 as Parameters<typeof 调整图层>[2])
+      if (操作 === '组合') { const 标识 = `group-${crypto.randomUUID()}`; 页 = 组合对象(页, 目标, 标识); set选中对象([标识]) }
+      if (操作 === '取消组合') { 页 = 解除组合(页, 目标); set选中对象([]) }
+      if (操作 === '锁定' || 操作 === '解锁') 页 = 修改对象(页, 目标, { 锁定: 操作 === '锁定' })
       if (操作 === '删除') {
-        页 = 删除对象(页,选中对象); set选中对象([])
+        页 = 删除对象(页, 目标); set选中对象([]); set选中框标识(null)
       }
       if (页 !== 当前幻灯片) 更新文稿(更新幻灯片(文稿, 页.id, 页))
     } catch (错误) { 显示文件错误('对象操作失败', 错误 instanceof Error ? 错误.message : '对象操作失败') }
   }
+
+  /** 取选中对象的文字（文本框或含文本的对象），供浮窗与菜单的 AI 快捷动作使用 */
+  const 取选中文本 = (): string => {
+    const 页 = 当前幻灯片
+    if (!页) return ''
+    const 标识列表 = 选中对象.length > 0 ? 选中对象 : (选中框标识 ? [选中框标识] : [])
+    const 片段: string[] = []
+    for (const 标识 of 标识列表) {
+      const 框 = 页.文本框列表.find((项) => 项.id === 标识)
+      if (框) {
+        片段.push((框.片段列表 ?? []).map((项) => 项.文本).join('') || 框.text || '')
+        continue
+      }
+      const 对象 = (页.对象列表 ?? []).find((项) => 项.id === 标识)
+      if (对象 && '文本' in 对象 && typeof (对象 as { 文本?: string }).文本 === 'string') 片段.push((对象 as { 文本: string }).文本)
+    }
+    return 片段.filter((项) => 项.trim() !== '').join('\n')
+  }
+  /** 浮窗锚点：优先多选对象，其次正在编辑的文本框 */
+  const 浮窗标识 = 选中对象[0] ?? 选中框标识 ?? ''
+  const 有文本对象 = 浮窗标识 !== '' && 取选中文本().trim() !== ''
+  useEffect(() => {
+    if (浮窗标识 === '' || 当前视图 !== '普通') { set浮窗位置(null); return }
+    const 画布 = 画布引用.current
+    if (!画布) { set浮窗位置(null); return }
+    const 锚点 = (画布.querySelector(`[data-对象标识="${浮窗标识}"], [data-框标识="${浮窗标识}"]`)
+      ?? 画布.querySelector('.wps-ppt-box--selected, .wps-ppt-image--selected')) as HTMLElement | null
+    set浮窗位置(从元素计算浮窗位置(锚点, { 宽: window.innerWidth, 高: window.innerHeight }))
+  }, [浮窗标识, 选中对象, 选中框标识, 当前视图, 当前幻灯片])
+  useEffect(() => {
+    const 收起 = () => set浮窗位置(null)
+    const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 收起() }
+    window.addEventListener('scroll', 收起, true)
+    window.addEventListener('resize', 收起)
+    document.addEventListener('keydown', 键盘)
+    return () => {
+      window.removeEventListener('scroll', 收起, true)
+      window.removeEventListener('resize', 收起)
+      document.removeEventListener('keydown', 键盘)
+    }
+  }, [])
   /** 插入已经解码好的图片（本机文件、粘贴、截屏共用同一条资源与撤销链路）。 */
   const 插入图片资源 = async (解码列表: Array<{ 数据: string; 类型: string; 宽: number; 高: number }>) => {
     if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !解码列表.length || 插入中.current) return
@@ -1126,6 +1177,10 @@ const PptEditor = () => {
         { type: 'item', commandId: 'edit.undo', label: '撤销' },
         { type: 'item', commandId: 'edit.redo', label: '重做' },
       ]},
+      { type: 'divider' },
+      ...构建演示颜色菜单组(),
+      { type: 'divider' },
+      ...通用AI指令.map((指令) => ({ type: 'item' as const, commandId: `__ai__:${指令.id}`, label: `AI ${指令.标签}` })),
     ]
   }
 
@@ -1186,7 +1241,7 @@ const PptEditor = () => {
     ),
     React.createElement(
       'div',
-      { className: 'wps-ppt-body' },
+      { className: 'wps-ppt-body', ref: 画布引用 },
       当前视图 === '浏览'
         ? React.createElement(SlideSorterView, {
             只读,
@@ -1357,9 +1412,21 @@ const PptEditor = () => {
           关闭菜单()
           return
         }
+        // 颜色与 AI 快捷动作由本模块解析，其余仍走演示命令表
+        if (处理演示颜色命令(命令标识, 执行命令) || 处理演示AI命令(命令标识, 取选中文本)) {
+          关闭菜单()
+          return
+        }
         执行命令(命令标识, 参数)
         关闭菜单()
       },
+    }),
+    React.createElement(SelectionFloatPanel, {
+      打开: 浮窗位置 !== null,
+      位置: 浮窗位置,
+      按钮: 构建演示浮窗按钮({ 执行命令, 对象操作, 取选区文本: 取选中文本, 有文本对象 }),
+      on关闭: () => set浮窗位置(null),
+      名称: '选中对象操作',
     }),
     放映模式 === '全屏'
       ? React.createElement(SlideshowView, {

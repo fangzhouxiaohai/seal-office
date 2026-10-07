@@ -32,6 +32,9 @@ import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
 import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
 import { use滚轮缩放, 文字缩放范围 } from './wheelZoom'
+import { 构建文字浮窗按钮, 构建颜色菜单组, 构建AI菜单组, 处理颜色菜单命令, 处理AI菜单命令 } from './floatActions'
+import { use选区浮窗 } from '../components/SelectionFloatPanel'
+import SelectionFloatPanel from '../components/SelectionFloatPanel'
 
 const 默认视图: ViewState = {
   缩放: 1,
@@ -61,6 +64,15 @@ function 提取页面设置(视图: ViewState): 文字页面设置 {
 /** 转义正则元字符，供查找替换使用 */
 function 转义正则(文本: string): string {
   return 文本.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** 个别运行环境不提供 queryCommandState；缺失或抛错时按“未生效”处理，避免浮窗取格式时异常 */
+function 安全查询格式(指令: string): boolean {
+  try {
+    return typeof document.queryCommandState === 'function' ? document.queryCommandState(指令) : false
+  } catch {
+    return false
+  }
 }
 
 /** 统计关键词在编辑区文本中的命中次数 */
@@ -202,6 +214,11 @@ const DocEditor = () => {
     { type: 'divider' },
     { type: 'item', commandId: 'comment.new', label: '插入批注' },
     { type: 'item', commandId: 'link.insert', label: '超链接', shortcut: 'Ctrl+K' },
+    { type: 'divider' },
+    { type: 'item', commandId: 'font.clear', label: '清除格式' },
+    ...构建颜色菜单组(),
+    { type: 'divider' },
+    ...构建AI菜单组(),
   ]
 
   const 编辑区引用 = useRef<HTMLDivElement | null>(null)
@@ -213,6 +230,8 @@ const DocEditor = () => {
   const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
   /** 下拉浮层打开前的选区快照，供格式化命令恢复选区后再执行 */
   const 选区快照 = useRef<Range | null>(null)
+  /** 右键菜单打开时的选中文本，供颜色与 AI 菜单项使用（菜单点击会改变焦点） */
+  const 右键选区文本 = useRef('')
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
@@ -856,6 +875,36 @@ const DocEditor = () => {
   const 统计 = countWords(文本内容)
   const 页数 = Math.max(1, Math.ceil(统计.词数 / 500))
 
+  // 选区浮窗：选中正文后浮出格式与 AI 快捷动作，不抢焦点、滚动即收起
+  const 取选区文本 = (): string => {
+    const 选择 = window.getSelection()
+    const 元素 = 编辑区引用.current
+    if (!选择 || !元素 || 选择.rangeCount === 0) return ''
+    if (选择.anchorNode && !元素.contains(选择.anchorNode)) return ''
+    return 选择.toString()
+  }
+  const 处理菜单命令 = (命令标识: string): boolean => {
+    // 右键菜单点击会改变焦点，颜色与 AI 动作都要用“打开菜单那一刻”的选区
+    const 快照文本 = 右键选区文本.current
+    if (处理颜色菜单命令(命令标识, 执行格式化)) return true
+    return 处理AI菜单命令(命令标识, () => 快照文本 || 取选区文本())
+  }
+
+  const 选区浮窗 = use选区浮窗({
+    容器: 编辑区引用,    取按钮: () => 构建文字浮窗按钮({
+      执行命令,
+      执行格式化,
+      取选区文本,
+      // 个别运行环境不提供格式查询接口，取不到时按未生效处理，避免浮窗因异常不显示
+      读取格式: () => ({
+        加粗: 安全查询格式('bold'),
+        斜体: 安全查询格式('italic'),
+        下划线: 安全查询格式('underline'),
+        删除线: 安全查询格式('strikeThrough'),
+      }),
+    }),
+  })
+
   return React.createElement(
     React.Fragment,
     null,
@@ -1064,6 +1113,10 @@ const DocEditor = () => {
           set内容版本((值) => 值 + 1)
         },
         onContextMenu: (x: number, y: number) => {
+          // 记录选区与选中文本：菜单点击会改变焦点，命令需要据此恢复选区
+          const 元素 = 编辑区引用.current
+          选区快照.current = 元素 ? 保存选区(元素) : null
+          右键选区文本.current = 取选区文本()
           set菜单坐标({ x, y })
           set菜单可见(true)
         },
@@ -1090,9 +1143,21 @@ const DocEditor = () => {
           关闭菜单()
           return
         }
+        // 颜色与 AI 快捷动作由本模块解析，其余仍走命令表
+        if (处理菜单命令(命令标识)) {
+          关闭菜单()
+          return
+        }
         执行命令(命令标识, 参数)
         关闭菜单()
       },
+    }),
+    React.createElement(SelectionFloatPanel, {
+      打开: 选区浮窗.打开,
+      位置: 选区浮窗.位置,
+      按钮: 选区浮窗.按钮,
+      on关闭: 选区浮窗.关闭,
+      名称: '选中内容操作',
     }),
     React.createElement(EditorStatusBar, {
       页码: 1,

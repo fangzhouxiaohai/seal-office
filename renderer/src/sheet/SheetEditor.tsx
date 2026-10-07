@@ -28,6 +28,8 @@ import { 统计选区 } from './selectionStats'
 import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名 } from './sheetExport'
 import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
+import { 构建表格浮窗按钮, 构建表格颜色菜单组, 构建表格数据菜单组, 处理表格颜色命令, 处理表格AI命令 } from './sheetFloatActions'
+import SelectionFloatPanel, { 从元素计算浮窗位置 } from '../components/SelectionFloatPanel'
 import SheetPagePreview from './SheetPagePreview'
 import SheetValidationForm, { 创建验证草稿, type 验证草稿 } from './SheetValidationForm'
 import { 应用工作表拼写建议, 扫描工作表拼写 } from './sheetSpell'
@@ -165,9 +167,11 @@ const SheetEditor = () => {
   const [查找词, set查找词] = useState('')
 
   /** 关闭右键菜单 */
-  const 关闭菜单 = (): void => {
-    set菜单可见(false)
+  const 关闭菜单 = (): void => {    set菜单可见(false)
   }
+
+  /** 选区浮窗与右键菜单定位用的网格容器 */
+  const 编辑区引用 = useRef<HTMLDivElement | null>(null)
 
   /** 构建表格编辑器的右键菜单项 */
   const 构建表格菜单 = (): 菜单节点[] => [
@@ -198,6 +202,10 @@ const SheetEditor = () => {
     ]},
     { type: 'divider' },
     { type: 'item', commandId: 'view.gridlines', label: 显示网格线 ? '隐藏网格线' : '显示网格线' },
+    { type: 'divider' },
+    ...构建表格颜色菜单组(),
+    { type: 'divider' },
+    ...构建表格数据菜单组(),
   ]
   const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [activeDocumentId])
   /** 列宽拖动状态；拖动过程中不逐帧记录历史，只在开始时记录一次 */
@@ -286,6 +294,48 @@ const SheetEditor = () => {
   }
   const 冻结 = 工作表.冻结
   const 已拆分 = 拆分映射[工作表.id] === true
+
+  /** 选区浮窗：拖选多格或选区内有内容时浮出；位置以选区左上角单元格为锚点 */
+  const [浮窗位置, set浮窗位置] = useState<{ x: number; y: number; 在上方: boolean } | null>(null)
+  const 选区跨多格 = 选区.起点.行 !== 选区.终点.行 || 选区.起点.列 !== 选区.终点.列
+  const 取选区文本 = (): string => {
+    const 行列表: string[] = []
+    const 起行 = Math.min(选区.起点.行, 选区.终点.行)
+    const 止行 = Math.max(选区.起点.行, 选区.终点.行)
+    const 起列 = Math.min(选区.起点.列, 选区.终点.列)
+    const 止列 = Math.max(选区.起点.列, 选区.终点.列)
+    for (let 行 = 起行; 行 <= 止行; 行 += 1) {
+      const 本行: string[] = []
+      for (let 列 = 起列; 列 <= 止列; 列 += 1) {
+        const 单元 = 读取单元格(工作表, 生成地址(行, 列))
+        if (单元.显示值.trim() !== '') 本行.push(单元.显示值)
+      }
+      if (本行.length > 0) 行列表.push(本行.join('\t'))
+    }
+    return 行列表.join('\n')
+  }
+  const 选区有内容 = 取选区文本().trim() !== ''
+  useEffect(() => {
+    // 只在跨多格（拖选/多选）时浮出，避免打开表格就压住第一个单元格
+    if (!选区跨多格) { set浮窗位置(null); return }
+    const 网格 = 编辑区引用.current
+    if (!网格) { set浮窗位置(null); return }
+    const 锚点地址 = 生成地址(Math.min(选区.起点.行, 选区.终点.行), Math.min(选区.起点.列, 选区.终点.列))
+    const 锚点 = 网格.querySelector(`[data-地址="${锚点地址}"]`) as HTMLElement | null
+    set浮窗位置(从元素计算浮窗位置(锚点, { 宽: window.innerWidth, 高: window.innerHeight }))
+  }, [选区, 选区跨多格, 工作表])
+  useEffect(() => {
+    const 收起 = () => set浮窗位置(null)
+    const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 收起() }
+    window.addEventListener('scroll', 收起, true)
+    window.addEventListener('resize', 收起)
+    document.addEventListener('keydown', 键盘)
+    return () => {
+      window.removeEventListener('scroll', 收起, true)
+      window.removeEventListener('resize', 收起)
+      document.removeEventListener('keydown', 键盘)
+    }
+  }, [])
   const 当前筛选 = 工作表.筛选
   const 隐藏行 = new Set<number>()
   if (当前筛选) {
@@ -1158,7 +1208,10 @@ const SheetEditor = () => {
       : null,
     React.createElement(
       'div',
-      { className: `wps-sheet-stage${显示网格线 ? '' : ' wps-sheet-stage--no-gridlines'}${已拆分 ? ' wps-sheet-stage--split' : ''}` },
+      {
+        className: `wps-sheet-stage${显示网格线 ? '' : ' wps-sheet-stage--no-gridlines'}${已拆分 ? ' wps-sheet-stage--split' : ''}`,
+        ref: 编辑区引用,
+      },
       当前筛选 ? React.createElement('div', { className: 'wps-sheet-filterbar' },
         `第 ${当前筛选.列 + 1} 列筛选：${当前筛选.值 === '' ? '空白' : 当前筛选.值}，显示 ${工作表.行数 - 1 - 隐藏行.size} 行`,
         React.createElement('button', { type: 'button', onClick: () => 执行命令('data.filter') }, '清除筛选')
@@ -1245,9 +1298,21 @@ const SheetEditor = () => {
           关闭菜单()
           return
         }
+        // 颜色与 AI 快捷动作由本模块解析，其余仍走表格命令表
+        if (处理表格颜色命令(命令标识, 执行命令) || 处理表格AI命令(命令标识, 取选区文本)) {
+          关闭菜单()
+          return
+        }
         执行命令(命令标识, 参数)
         关闭菜单()
       },
+    }),
+    React.createElement(SelectionFloatPanel, {
+      打开: 浮窗位置 !== null,
+      位置: 浮窗位置,
+      按钮: 构建表格浮窗按钮({ 执行命令, 取选区文本, 选区有内容 }),
+      on关闭: () => set浮窗位置(null),
+      名称: '选中单元格操作',
     }),
     React.createElement(SheetTabs, {
       工作表列表: 工作表列表.map((项) => ({ id: 项.id, name: 项.name })),

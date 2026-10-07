@@ -3633,3 +3633,54 @@ button {
   color: var(--text-2);
   font-size: 13px;
 }
+
+/* 选区浮窗：选中内容后浮出的功能面板，四类文件共用 */
+.wps-float-panel {
+  position: fixed;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  font-family: inherit;
+}
+.wps-float-panel__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-1);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wps-float-panel__item:hover:not(:disabled) { background: var(--bg-hover); }
+.wps-float-panel__item:disabled { color: var(--text-3); cursor: not-allowed; }
+.wps-float-panel__item:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.wps-float-panel__icon { width: 14px; height: 14px; flex: 0 0 auto; }
+.wps-float-panel__divider { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
+.wps-float-panel__close {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.wps-float-panel__close:hover { background: var(--bg-hover); color: var(--text-1); }

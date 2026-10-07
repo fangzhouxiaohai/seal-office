@@ -140,6 +140,9 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       {
         key: `item-${下标}`,
         className: 类名,
+        role: 'menuitem',
+        tabIndex: -1,
+        'aria-disabled': 节点.disabled === true,
         onClick: (事件: React.MouseEvent) => {
           事件.stopPropagation()
           if (!节点.disabled) {
@@ -155,7 +158,7 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
   }
 
   const 渲染分割线 = (下标: number) =>
-    React.createElement('div', { key: `divider-${下标}`, className: 'wps-context-menu__divider' })
+    React.createElement('div', { key: `divider-${下标}`, className: 'wps-context-menu__divider', role: 'separator' })
 
   const 渲染组 = (组: 菜单组, 下标: number) => {
     const 子元素: React.ReactNode[] = []
@@ -171,9 +174,9 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
 
     return React.createElement(
       'div',
-      { key: `group-${下标}` },
+      { key: `group-${下标}`, role: 'group', 'aria-label': 组.标题 },
       组.标题
-        ? React.createElement('div', { className: 'wps-context-menu__group-title' }, 组.标题)
+        ? React.createElement('div', { className: 'wps-context-menu__group-title', 'aria-hidden': true }, 组.标题)
         : null,
       ...子元素
     )
@@ -199,6 +202,8 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       {
         ref: 引用,
         className: 'wps-context-menu',
+        role: 'menu',
+        'aria-label': '上下文菜单',
         style: {
           position: 'fixed',
           top: 0,

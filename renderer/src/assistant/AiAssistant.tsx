@@ -95,6 +95,8 @@ export default function AiAssistant() {
   const [仅规划, set仅规划] = useState(false)
   const [强度, set强度] = useState<思考强度>('high')
   const 进行中 = useRef<执行任务 | null>(null)
+  /** 选区浮窗的 AI 快捷动作经此调用最新的发送函数 */
+  const 发送引用 = useRef<(文本: string) => void>(() => {})
   const 消息容器 = useRef<HTMLDivElement>(null)
   const 跟随输出 = useRef(true)
   const 组件有效 = useRef(true)
@@ -283,8 +285,20 @@ export default function AiAssistant() {
 
   useEffect(() => {
     const 打开助手 = () => set打开(true)
+    // 选区浮窗与右键菜单的 AI 快捷动作：打开助手并直接发送预置指令。
+    // 经 ref 间接调用，避免监听器抓住首次渲染时的旧状态。
+    const 接收指令 = (事件: Event) => {
+      const 文本 = (事件 as CustomEvent<{ 文本?: string }>).detail?.文本
+      if (typeof 文本 !== 'string' || 文本.trim() === '') return
+      set打开(true)
+      发送引用.current(文本)
+    }
     window.addEventListener('seal-open-assistant', 打开助手)
-    return () => window.removeEventListener('seal-open-assistant', 打开助手)
+    window.addEventListener('seal-assistant-ask', 接收指令)
+    return () => {
+      window.removeEventListener('seal-open-assistant', 打开助手)
+      window.removeEventListener('seal-assistant-ask', 接收指令)
+    }
   }, [])
 
   useEffect(() => {
@@ -351,6 +365,8 @@ export default function AiAssistant() {
       modal.error({ title: '智能助手处理失败', content: 错误 instanceof Error ? 错误.message : '请检查模型设置与当前文件内容' })
     } finally { 刷新任务消息(任务); 进行中.current = null; if (组件有效.current) set发送中(false) }
   }
+  // 每次渲染后刷新引用，保证浮窗/菜单触发的指令使用最新状态
+  发送引用.current = (文本: string) => { void 发送(文本) }
 
   const 停止任务 = async () => {
     const 任务 = 进行中.current
