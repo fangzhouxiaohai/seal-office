@@ -4,8 +4,10 @@ import { 桥接 } from '../ipc/bridge'
 import { useSettings } from '../store/settingsStore'
 
 /**
- * 默认程序处理：开关打开时启动即检查并静默设为默认（与 WPS 一致，不弹窗、不跳系统页面）；
- * 开关关闭时沿用首次安装的询问弹窗。
+ * 默认程序处理：
+ * - 开关打开时启动检查，发现不是默认程序就弹确认框，点“立即设为默认”直接自动设置；
+ *   设置后回读真实结果，若系统仍要求手动确认，再引导打开系统页面。
+ * - 开关关闭时沿用首次安装的询问弹窗。
  */
 export default function DefaultAppPrompt() {
   const { modal, message } = AntdApp.useApp()
@@ -14,20 +16,36 @@ export default function DefaultAppPrompt() {
   const 自动请求 = useRef<ReturnType<typeof 桥接.checkDefaultAppOnStartup> | null>(null)
   const 已展示 = useRef(false)
   const [询问, 设询问] = useState(false)
+  const [未生效, 设未生效] = useState<string[]>([])
   const [执行中, 设执行中] = useState(false)
+  /** 弹窗来源：自动检查还是首次安装询问，决定确认后走哪条设置通道 */
+  const [来源, 设来源] = useState<'自动' | '首次'>('自动')
+
+  /** 系统仍拦下时说明剩余格式，并可直接打开系统页面兜底 */
+  const 提示剩余 = (剩余: string[], 说明: string) => {
+    设未生效(剩余)
+    modal.warning({
+      title: 'Windows 仍要求手动确认',
+      content: `${说明}${剩余.length > 0 ? ` 需要确认：${剩余.map((项) => `.${项}`).join('、')}。` : ''}点“打开系统页面”后在海豹办公的默认应用页里确认一次即可，之后每次启动都会保持。`,
+      okText: '打开系统页面',
+      cancelText: '稍后处理',
+      onOk: () => { void 桥接.setDefaultApp() },
+    })
+  }
+
   useEffect(() => {
     if (已展示.current) return
-    // 开关打开：全自动，不再打扰用户；失败只记录，不打断启动
+    // 开关打开：启动检查；不是默认程序时先问一次，确认后自动设置
     if (启动时检查默认程序) {
       if (!桥接.默认程序全自动可用) return
       已展示.current = true
       const 有效 = { 值: true }
-      // 验收专用开关：带 --skip-default-app-check 启动时不做任何关联改动
       void 桥接.defaultAppCheckState().then((状态) => {
         if (!有效.值) return
+        // 验收专用开关：带 --skip-default-app-check 启动时不做任何关联改动
         if (状态.成功 && 状态.已禁用) {
           void 桥接.checkDefaultAppPrompt().then((结果) => {
-            if (有效.值 && 结果.成功 && 结果.需要询问) 设询问(true)
+            if (有效.值 && 结果.成功 && 结果.需要询问) { 设来源('首次'); 设询问(true) }
           }).catch(() => {})
           return
         }
@@ -35,13 +53,10 @@ export default function DefaultAppPrompt() {
         void 自动请求.current.then((结果) => {
           if (!有效.值) return
           if (!结果.成功) throw new Error(结果.错误 || '无法检查系统默认程序')
-          if (!结果.已全部默认) {
-            modal.warning({
-              title: '部分格式仍不是默认程序',
-              content: `Windows 未允许自动设为默认：${(结果.未生效 ?? []).map((项) => `.${项}`).join('、')}。可在设置中心手动设置，或在系统“默认应用”页面确认。`,
-              okText: '知道了',
-            })
-          }
+          if (结果.已全部默认) return
+          设来源('自动')
+          设未生效(结果.未生效 ?? [])
+          设询问(true)
         }).catch((错误: unknown) => {
           if (有效.值) modal.error({ title: '默认程序检查失败', content: 错误 instanceof Error ? 错误.message : '系统关联检查失败', okText: '确定' })
         })
@@ -56,24 +71,60 @@ export default function DefaultAppPrompt() {
       已展示.current = true
       if (!结果.成功) throw new Error(结果.错误 || '无法检查系统默认程序')
       if (!结果.需要询问) return
+      设来源('首次')
       设询问(true)
     }).catch(错误 => { if (有效) { 已展示.current = true; modal.error({ title: '默认程序检查失败', content: 错误 instanceof Error ? 错误.message : '系统关联检查失败', okText: '确定' }) } })
     return () => { 有效 = false }
   }, [modal, 启动时检查默认程序])
+
+  /** 确认后执行自动设置，并如实回报结果 */
   const 确认设置 = async () => {
     if (执行中) return
     设执行中(true)
     try {
-      const 设置 = await 桥接.setDefaultApp()
-      if (!设置.成功) throw new Error(设置.错误 || '系统关联设置失败')
-      // 全自动生效时只提示一句；系统仍要求手动确认时同样用提示（系统页面会同时打开），不弹阻塞对话框
-      if (设置.已全部默认 === false) message.warning(设置.提示 || 'Windows 未允许自动关联全部格式，请在系统默认应用页面确认。', 6)
-      else message.success(设置.提示 || '已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')
-    } catch (错误) { modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '无法设置系统文件关联', okText: '确定' }) }
-    finally { 设执行中(false); 设询问(false) }
+      const 结果 = 来源 === '自动' ? await 桥接.applyDefaultApp() : await 桥接.setDefaultApp()
+      if (!结果.成功) throw new Error(结果.错误 || '系统关联设置失败')
+      if (结果.已全部默认 === false) {
+        设询问(false)
+        // 启动自检这条路径需要用户明确知道系统拦下了什么，用弹窗说明；
+        // 手动/首次安装这条路径保持轻提示，避免打断当前操作
+        if (来源 === '自动') 提示剩余(结果.未生效 ?? [], '已尝试自动设置，但 Windows 未允许全部生效。')
+        else message.warning(`Windows 未允许自动设为默认：${(结果.未生效 ?? []).map((项) => `.${项}`).join('、')}。可在设置中心手动设置，或在系统“默认应用”页面确认。`, 6)
+        return
+      }
+      message.success('已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')
+    } catch (错误) {
+      modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '无法设置系统文件关联', okText: '确定' })
+    } finally {
+      设执行中(false)
+      设询问(false)
+    }
   }
-  return <Modal open={询问} destroyOnHidden title="将海豹办公设为默认程序" okText="设为默认程序" cancelText="暂不设置" confirmLoading={执行中} cancelButtonProps={{ disabled: 执行中 }} maskClosable={false} keyboard={!执行中} closable={!执行中} onOk={() => void 确认设置()} onCancel={() => 设询问(false)}>
-    <p>是否使用海豹办公默认打开 DOCX、XLSX、PPTX 和 PDF？确认后会自动完成关联，无需再到系统页面逐项选择。</p>
-    <p>本次选择后，程序不会再次主动询问。若希望每次启动都自动检查并设为默认，可在设置中心打开“启动时检查默认程序”。</p>
-  </Modal>
+
+  const 是自检询问 = 来源 === '自动' && 未生效.length > 0
+  return (
+    <Modal
+      open={询问}
+      destroyOnHidden
+      title={是自检询问 ? '是否把海豹办公设为默认程序？' : '将海豹办公设为默认程序'}
+      okText={是自检询问 ? '立即设为默认' : '设为默认程序'}
+      cancelText="暂不设置"
+      confirmLoading={执行中}
+      cancelButtonProps={{ disabled: 执行中 }}
+      maskClosable={false}
+      keyboard={!执行中}
+      closable={!执行中}
+      onOk={() => void 确认设置()}
+      onCancel={() => 设询问(false)}
+    >
+      {是自检询问 ? (
+        <>
+          <p>检测到 DOCX、XLSX、PPTX、PDF 目前不是由海豹办公打开，点“立即设为默认”会直接自动设置，不需要你逐项操作。</p>
+          <p>Windows 11 只允许系统自己写入默认程序记录，程序会同时写入程序类型并让资源管理器执行一次设置；若系统仍拦下个别格式，会明确告诉你还需要在哪确认。</p>
+        </>
+      ) : (
+        <p>是否使用海豹办公默认打开 DOCX、XLSX、PPTX 和 PDF？确认后会自动完成关联，无需再到系统页面逐项选择。</p>
+      )}
+    </Modal>
+  )
 }

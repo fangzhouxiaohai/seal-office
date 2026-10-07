@@ -193,6 +193,44 @@ function Get-DefaultState {
   })
   return $items
 }
+# 让资源管理器自己写入关联：Windows 只信任系统自己生成的 UserChoice 记录，
+# 因此除写注册表外再调用系统接口，由 Explorer 完成一次真实设置（能被系统接受时立刻生效）。
+function Set-DefaultViaShell($appRegistryName, $extension) {
+  if ($TestRoot) { return @{ 调用='跳过'; 返回码=$null } }
+  if (-not ('SealAssociationWriter' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class SealAssociationWriter {
+  [ComImport, Guid("4e530b0a-e611-4c77-a3ac-9031d022281b"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  private interface IApplicationAssociationRegistration {
+    [PreserveSig] int QueryCurrentDefault([MarshalAs(UnmanagedType.LPWStr)] string pszQuery, int atQueryType, int atQueryFlags, [MarshalAs(UnmanagedType.LPWStr)] out string ppszAssociation);
+    [PreserveSig] int QueryAppIsDefault([MarshalAs(UnmanagedType.LPWStr)] string pszQuery, int atQueryType, int atQueryFlags, [MarshalAs(UnmanagedType.LPWStr)] string pszAppRegistryName, out bool pfDefault);
+    [PreserveSig] int QueryAppIsDefaultAll(int atQueryFlags, [MarshalAs(UnmanagedType.LPWStr)] string pszAppRegistryName, out bool pfDefault);
+    [PreserveSig] int SetAppAsDefault([MarshalAs(UnmanagedType.LPWStr)] string pszAppRegistryName, [MarshalAs(UnmanagedType.LPWStr)] string pszSet, int atSetType);
+    [PreserveSig] int SetAppAsDefaultAll([MarshalAs(UnmanagedType.LPWStr)] string pszAppRegistryName);
+    [PreserveSig] int ClearUserAssociations();
+  }
+  public static int SetExtensionDefault(string appRegistryName, string extension) {
+    var type = Type.GetTypeFromCLSID(new Guid("591209c7-767b-42b2-9fba-44ee4615f2c7"));
+    var api = (IApplicationAssociationRegistration)Activator.CreateInstance(type);
+    return api.SetAppAsDefault(appRegistryName, extension, 0);
+  }
+  public static int SetAllDefaults(string appRegistryName) {
+    var type = Type.GetTypeFromCLSID(new Guid("591209c7-767b-42b2-9fba-44ee4615f2c7"));
+    var api = (IApplicationAssociationRegistration)Activator.CreateInstance(type);
+    return api.SetAppAsDefaultAll(appRegistryName);
+  }
+}
+'@
+  }
+  try {
+    $code = [SealAssociationWriter]::SetExtensionDefault($appRegistryName, $extension)
+    return @{ 调用='完成'; 返回码=$code }
+  } catch {
+    return @{ 调用='失败'; 错误=$_.Exception.Message }
+  }
+}
 # 全自动设为默认程序：注册 ProgID、把扩展名默认值指向本程序，并清掉阻止生效的 UserChoice
 function Apply-Defaults {
   if (-not (Test-Path -LiteralPath $ExecutableFile -PathType Leaf)) { throw '程序可执行文件不存在' }
@@ -205,6 +243,7 @@ function Apply-Defaults {
     foreach ($属性 in $解析.PSObject.Properties) { $原值 | Add-Member -NotePropertyName $属性.Name -NotePropertyValue $属性.Value -Force }
   }
   $已设置 = @()
+  $外壳结果 = [ordered]@{}
   foreach ($ext in $taskSupported) {
     $当前 = Read-Value "$taskClasses\.$ext" ''
     if ($当前 -and $当前 -ne "SealOffice.$ext" -and -not ($原值.PSObject.Properties.Name -contains $ext)) {
@@ -221,11 +260,13 @@ function Apply-Defaults {
         }
       } finally { $key.Dispose() }
     }
+    # 交给资源管理器写一次：系统接受时会立刻生成有效的默认程序记录
+    $外壳结果[$ext] = Set-DefaultViaShell 'SealOffice' ".$ext"
   }
   Set-Value $taskState 'AppliedDefaults' ($原值 | ConvertTo-Json -Depth 30 -Compress)
   Notify-Shell
   $items = Get-DefaultState
-  return @{ 成功=$true; 已全部默认=(@($items | Where-Object { -not $_.已默认 }).Count -eq 0); 清除用户选择的格式=$已设置; 格式=$items }
+  return @{ 成功=$true; 已全部默认=(@($items | Where-Object { -not $_.已默认 }).Count -eq 0); 清除用户选择的格式=$已设置; 系统接口=$外壳结果; 格式=$items }
 }
 try {
   switch ($Action) {

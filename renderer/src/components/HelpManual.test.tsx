@@ -30,12 +30,12 @@ describe('帮助手册', () => {
     expect(screen.getByText(/服务商如何留存与使用你发送的内容/)).toBeInTheDocument()
   })
 
-  it('说明默认程序的全自动关联与启动开关', () => {
+  it('说明默认程序的确认式自动设置与系统限制', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: 'Windows 文件关联' }))
-    expect(screen.getByText(/“启动时检查默认程序”，默认打开/)).toBeInTheDocument()
-    expect(screen.getByText(/发现不是就自动设为默认/)).toBeInTheDocument()
-    expect(screen.getByText(/无需逐项在系统页面选择|不需要逐项在系统页面选择/)).toBeInTheDocument()
+    expect(screen.getByText(/不是默认程序时弹出确认框/)).toBeInTheDocument()
+    expect(screen.getByText(/0x80070483/)).toBeInTheDocument()
+    expect(screen.getByText(/与 WPS 在 Windows 11 上的表现一致/)).toBeInTheDocument()
   })
 
   it('说明选中内容浮窗与右键菜单的可用动作', () => {
@@ -87,7 +87,7 @@ describe('帮助手册', () => {
     expect(screen.getByText(/生成新文档/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Windows 文件关联' }))
-    expect(screen.getByText(/回读真实结果并提示/)).toBeInTheDocument()
+    expect(screen.getByText(/请资源管理器执行一次设置/)).toBeInTheDocument()
     expect(screen.getByText(/请结束文件操作后重启资源管理器或注销/)).toBeInTheDocument()
     expect(screen.getByText(/文件进入底部标签/)).toBeInTheDocument()
   })
