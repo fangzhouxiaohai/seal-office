@@ -1,0 +1,26 @@
+{
+  "work": {
+    "id": "8fb6b589698aaf07d288d414a1714bc497cc4dd725627d405ea67ba07dbb180b",
+    "bytes": 1321770
+  },
+  "business": {
+    "id": "07bef56c319252f50b826b026dff45af77102c5e1f0c675cffe4d1266d8d85b4",
+    "bytes": 1204654
+  },
+  "education": {
+    "id": "a194b88e78a88850c37fcd0ffeb7121673babe46395d23ddccf39c73016c1320",
+    "bytes": 1294780
+  },
+  "technology": {
+    "id": "70ce3799e4c9f663ddf727e7250a432c9b23aece54aeb6baa8be3fe4c76af988",
+    "bytes": 1194563
+  },
+  "people": {
+    "id": "f3f8351faedafd2c00cb00ba28148955ca8338d65d77385f681cc533932aa0c0",
+    "bytes": 1256980
+  },
+  "industry": {
+    "id": "97b360b2f185d3bddf4959560ece7ea031ea13c1304606175fc875345ed5cba5",
+    "bytes": 1430939
+  }
+}

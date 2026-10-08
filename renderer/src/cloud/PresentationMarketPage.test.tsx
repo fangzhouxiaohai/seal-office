@@ -2,7 +2,8 @@ import {fireEvent,render,screen,within} from '@testing-library/react'
 import {App as AntdApp} from 'antd'
 import {describe,it,expect,vi} from 'vitest'
 import PresentationMarketPage from './PresentationMarketPage'
-const fixture=vi.hoisted(()=>({createDoc:vi.fn(),call:vi.fn(async()=>({items:[]}))}))
+const fixture=vi.hoisted(()=>({restore:vi.fn(async()=>({成功:true})),createDoc:vi.fn(),call:vi.fn(async()=>({items:[]}))}))
+vi.mock('../ipc/bridge',()=>({桥接:{presentationResources:{restore:fixture.restore,read:vi.fn(async()=>({成功:true,数据:'AA=='}))}}}))
 vi.mock('../store',()=>({useAppStore:()=>({createDoc:fixture.createDoc})}))
 vi.mock('./CloudProvider',()=>({cloudCall:fixture.call,useCloud:()=>({state:{account:null,unlocked:false},refresh:vi.fn(),configure:vi.fn()})}))
 describe('市场预览到编辑链路',()=>{
@@ -13,7 +14,7 @@ describe('市场预览到编辑链路',()=>{
     expect(within(modal).getByText('第 9 页 · 感谢聆听 · 交流与讨论')).toBeInTheDocument()
     fireEvent.click(within(modal).getByRole('button',{name:'使用并编辑副本'}))
     expect(fixture.createDoc).toHaveBeenCalledOnce();const [type,deck]=fixture.createDoc.mock.calls[0] as any
-    expect(type).toBe('ppt');expect(deck.幻灯片列表).toHaveLength(9)
+    expect(fixture.restore).toHaveBeenCalledOnce();expect(deck.资源索引).toBeDefined();expect(type).toBe('ppt');expect(deck.幻灯片列表).toHaveLength(9)
     const objects=deck.幻灯片列表.flatMap((p:any)=>p.对象列表);expect(objects.some((o:any)=>o.类型==='图表')).toBe(true);expect(objects.some((o:any)=>o.类型==='表格')).toBe(true)
   })
 })

@@ -11,7 +11,7 @@ app.whenReady().then(async()=>{
     const load=name=>require(path.join(archive,name))
     const integrity=load('main/integrity.js').检查安装目录(archive)
     assert.equal(integrity.完整,true);checks.push(`完整性清单：${integrity.检查文件数} 个文件`)
-    assert.equal(load('package.json').version,'1.9.0')
+    assert.equal(load('package.json').version,require('../package.json').version)
     const png=nativeImage.createFromBuffer(Buffer.from([0,0,255,255]),{width:1,height:1}).toPNG().toString('base64')
     const paragraph=text=>({类型:'段落',文字:[{文本:text}]})
     const model={段落:[paragraph('海豹办公成品文件测试'),{类型:'段落',文字:[{文本:'',图片:{数据:png,格式:'png',宽:48,高:48,说明:'正文图片'}}]}],页眉:[paragraph('海豹办公页眉')],页脚:[paragraph('页脚联系信息')]}
@@ -45,7 +45,7 @@ app.whenReady().then(async()=>{
     const preview=await load('main/pdfExport.js').createPdfFromHtml('<html><body><h1>Seal Office print preview</h1><p>Header, body and footer</p><img width="48" src="data:image/png;base64,'+png+'"></body></html>')
     assert.ok((await PDFDocument.load(preview)).getPageCount()>0);fs.writeFileSync(path.join(output,'print-preview.pdf'),preview)
     checks.push('打印预览：成品模块生成真实 PDF')
-    const report={version:'1.9.0',passed:true,checks}
+    const report={version:load('package.json').version,passed:true,checks}
     fs.writeFileSync(path.join(output,'packaged-codecs.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report))
     app.exit(0)
   }catch(error){fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'packaged-codecs.json'),JSON.stringify({passed:false,checks,error:error.message},null,2));console.error(error);app.exit(1)}

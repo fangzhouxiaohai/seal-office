@@ -397,43 +397,43 @@ describe('编辑器容器', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
 
-    expect(百分比()).toBe('400%')
-    expect(纸张().style.zoom).toBe('4')
+    expect(百分比()).toBe('125%')
+    expect(纸张().style.zoom).toBe('1.25')
     // 向上滚放大
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('500%'))
-    expect(纸张().style.zoom).toBe('5')
+    await waitFor(() => expect(百分比()).toBe('150%'))
+    expect(纸张().style.zoom).toBe('1.5')
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('600%'))
+    await waitFor(() => expect(百分比()).toBe('175%'))
     // 向下滚缩小
     滚(100)
-    await waitFor(() => expect(百分比()).toBe('500%'))
+    await waitFor(() => expect(百分比()).toBe('150%'))
     // 未按 Ctrl 的滚动不改变缩放
     滚(-100, false)
-    await waitFor(() => expect(百分比()).toBe('500%'))
+    await waitFor(() => expect(百分比()).toBe('150%'))
   })
 
-  it('工具栏从 400% 放大到 500%，缩小后恢复 400%，百分比与状态栏一致', async () => {
+  it('工具栏从 125% 放大到 150%，缩小后恢复 125%，百分比与状态栏一致', async () => {
     渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
     await userEvent.click(screen.getByRole('tab', { name: '视图' }))
     await userEvent.click(screen.getAllByRole('button', { name: '放大' })[0])
-    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('500%')
-    expect(screen.getByRole('button', { name: '500%' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('150%')
+    expect(screen.getByRole('button', { name: '150%' })).toBeInTheDocument()
     await userEvent.click(screen.getAllByRole('button', { name: '缩小' })[0])
-    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('400%')
+    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('125%')
   })
 
   it('Ctrl+滚轮到达上下限后停在边界，可点状态栏恢复百分之百', async () => {
     const { container } = 渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
     const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
-    // 按档位放大：4 档到 1000%，继续滚到上限 6400%
+    // 按档位放大：4 档到 250%，继续滚到上限 6400%
     for (let 次 = 0; 次 < 4; 次 += 1) {
       fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     }
-    await waitFor(() => expect(百分比()).toBe('1000%'))
-    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.zoom).toBe('10')
+    await waitFor(() => expect(百分比()).toBe('250%'))
+    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.zoom).toBe('2.5')
     for (let 次 = 0; 次 < 40; 次 += 1) {
       fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     }

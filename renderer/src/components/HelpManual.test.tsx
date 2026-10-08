@@ -52,7 +52,7 @@ describe('帮助手册', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '缩放页面内容' }))
     expect(screen.getByText(/按住 Ctrl（macOS 为 Command）滚动滚轮/)).toBeInTheDocument()
-    expect(screen.getByText(/演示为 10%–400%/)).toBeInTheDocument()
+    expect(screen.getByText(/打开时默认 125%/)).toBeInTheDocument()
     expect(screen.getByText(/缩放只影响你自己的查看比例，不写入文档/)).toBeInTheDocument()
   })
 
@@ -88,7 +88,7 @@ describe('帮助手册', () => {
     expect(screen.getByText(/生成新文档/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Windows 文件关联' }))
-    expect(screen.getByText(/请资源管理器执行一次设置/)).toBeInTheDocument()
+    expect(screen.getByText(/通过 Windows 默认应用页面确认关联/)).toBeInTheDocument()
     expect(screen.getByText(/请结束文件操作后重启资源管理器或注销/)).toBeInTheDocument()
     expect(screen.getByText(/文件进入底部标签/)).toBeInTheDocument()
   })

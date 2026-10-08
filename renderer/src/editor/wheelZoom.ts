@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 
 /** 所有文件首次打开使用四倍显示；打印纸张尺寸不受影响。 */
-export const 默认文件缩放 = 4
+export const 默认文件缩放 = 1.25
 
 export interface 缩放范围 {
   下限: number

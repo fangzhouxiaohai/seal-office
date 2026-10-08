@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import 演讲者窗口根 from './ppt/playback/PresenterView'
 import './styles.css'
+import './styles/actionColors.css'
 import '../../main/ui/dialog.css'
 
 const container = document.getElementById('root')

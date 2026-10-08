@@ -5,7 +5,7 @@ import { useSettings } from '../store/settingsStore'
 
 /**
  * 默认程序处理：
- * - 开关打开时启动检查，发现不是默认程序就弹确认框，点“立即设为默认”直接自动设置；
+ * - 开关打开时启动检查，发现不是默认程序就弹确认框，点“立即设为默认”打开系统页面确认；
  *   设置后回读真实结果，若系统仍要求手动确认，再引导打开系统页面。
  * - 开关关闭时沿用首次安装的询问弹窗。
  */
@@ -26,7 +26,7 @@ export default function DefaultAppPrompt() {
     设未生效(剩余)
     modal.warning({
       title: 'Windows 仍要求手动确认',
-      content: `${说明}${剩余.length > 0 ? ` 需要确认：${剩余.map((项) => `.${项}`).join('、')}。` : ''}点“打开系统页面”后在海豹办公的默认应用页里确认一次即可，之后每次启动都会保持。`,
+      content: `${说明}${剩余.length > 0 ? ` 需要确认：${剩余.map((项) => `.${项}`).join('、')}。` : ''}点“打开系统页面”后在海豹办公的默认应用页里确认一次即可，之后启动时会检查当前关联状态。`,
       okText: '打开系统页面',
       cancelText: '稍后处理',
       onOk: () => { void 桥接.setDefaultApp() },
@@ -35,7 +35,7 @@ export default function DefaultAppPrompt() {
 
   useEffect(() => {
     if (已展示.current) return
-    // 开关打开：启动检查；不是默认程序时先问一次，确认后自动设置
+    // 开关打开：启动检查；不是默认程序时先问一次，确认后注册并提示系统设置
     if (启动时检查默认程序) {
       if (!桥接.默认程序全自动可用) return
       已展示.current = true
@@ -77,7 +77,7 @@ export default function DefaultAppPrompt() {
     return () => { 有效 = false }
   }, [modal, 启动时检查默认程序])
 
-  /** 确认后执行自动设置，并如实回报结果 */
+  /** 确认后注册应用并检查默认状态，并如实回报结果 */
   const 确认设置 = async () => {
     if (执行中) return
     设执行中(true)
@@ -88,8 +88,8 @@ export default function DefaultAppPrompt() {
         设询问(false)
         // 启动自检这条路径需要用户明确知道系统拦下了什么，用弹窗说明；
         // 手动/首次安装这条路径保持轻提示，避免打断当前操作
-        if (来源 === '自动') 提示剩余(结果.未生效 ?? [], '已尝试自动设置，但 Windows 未允许全部生效。')
-        else message.warning(`Windows 未允许自动设为默认：${(结果.未生效 ?? []).map((项) => `.${项}`).join('、')}。可在设置中心手动设置，或在系统“默认应用”页面确认。`, 6)
+        if (来源 === '自动') 提示剩余(结果.未生效 ?? [], '海豹办公已注册，请在 Windows 默认应用页面确认关联。')
+        else message.warning(`需要在 Windows 默认应用页面确认：${(结果.未生效 ?? []).map((项) => `.${项}`).join('、')}。可在设置中心手动设置，或在系统“默认应用”页面确认。`, 6)
         return
       }
       message.success('已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')
@@ -119,11 +119,11 @@ export default function DefaultAppPrompt() {
     >
       {是自检询问 ? (
         <>
-          <p>检测到 DOCX、XLSX、PPTX、PDF 目前不是由海豹办公打开，点“立即设为默认”会直接自动设置，不需要你逐项操作。</p>
-          <p>Windows 11 只允许系统自己写入默认程序记录，程序会同时写入程序类型并让资源管理器执行一次设置；若系统仍拦下个别格式，会明确告诉你还需要在哪确认。</p>
+          <p>检测到部分文件类型目前不是由海豹办公打开。你可以将 DOCX、XLSX、PPTX、PDF 的默认打开程序设为海豹办公。</p>
+          <p>Windows 的默认应用设置需要你在系统页面确认。此操作会注册海豹办公的打开能力，并引导你完成选择。</p>
         </>
       ) : (
-        <p>是否使用海豹办公默认打开 DOCX、XLSX、PPTX 和 PDF？确认后会自动完成关联，无需再到系统页面逐项选择。</p>
+        <p>是否使用海豹办公默认打开 DOCX、XLSX、PPTX 和 PDF？确认后将注册打开能力，需要时进入 Windows 默认应用页面完成选择。</p>
       )}
     </Modal>
   )

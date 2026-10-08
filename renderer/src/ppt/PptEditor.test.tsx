@@ -720,12 +720,12 @@ describe('任务 7 放映视图与自定义放映', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
 
-    expect(百分比()).toBe('400%')
+    expect(百分比()).toBe('125%')
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('500%'))
+    await waitFor(() => expect(百分比()).toBe('150%'))
     // 未按 Ctrl 时不缩放
     滚(-100, false)
-    await waitFor(() => expect(百分比()).toBe('500%'))
+    await waitFor(() => expect(百分比()).toBe('150%'))
     // 四类文件共用同一区间：放大到 6400%，缩小到 8.33%
     for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
     await waitFor(() => expect(百分比()).toBe('6400%'))

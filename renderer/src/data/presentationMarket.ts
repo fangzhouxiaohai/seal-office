@@ -1,5 +1,6 @@
 import {创建演示文稿,创建幻灯片,创建文本框,type 演示文稿,type 幻灯片} from '../ppt/deck'
 import {创建图形,创建图表,创建表格} from '../ppt/model/elements'
+import {marketIllustration} from './marketIllustrations'
 
 // 原创主题内容与十套视觉方案组成 300 套模板，全部由原生可编辑对象构成。
 const topics = [
@@ -31,20 +32,23 @@ export function createMarketDeck(template:MarketTemplate):演示文稿 {
   const text=(x:number,y:number,w:number,h:number,value:string,size=24,color:string=style.ink)=>({...创建文本框(x,y,w,h,value,size),颜色:color})
   const shape=(x:number,y:number,w:number,h:number,fill:string,kind:'矩形'|'圆角矩形'|'椭圆'='圆角矩形')=>({...创建图形(kind),x,y,width:w,height:h,形状:{...创建图形(kind).形状!,填充:fill,线条:fill,线宽:0}})
   const page=(title:string,index:number):幻灯片=>({...创建幻灯片('空白',title),背景色:style.paper,文本框列表:[{...text(54,35,840,75,title,34),加粗:true},text(54,494,660,25,'海豹办公 · '+template.topic,12),text(842,494,60,25,`${index} / 9`,12)],对象列表:[shape(54,117,90,5,style.color,'矩形')],备注:'模板说明：所有文字、图形、表格和图表均可编辑。示例数据仅用于说明版式，使用前请替换并注明来源。'})
+  // 卡片使用同一原生表格承载背景与文字，避免两个图层相互遮挡。
+  const card=(x:number,y:number,w:number,rows:Array<{text:string;height:number;size:number;color?:string;bold?:boolean}>,fill='#FFFFFF')=>{const object=创建表格(rows.length,1);object.x=x;object.y=y;object.width=w;object.height=rows.reduce((sum,r)=>sum+r.height,0);object.表格!.列宽=[w];object.表格!.行高=rows.map(r=>r.height);object.表格!.单元格=rows.map(r=>[{文本:r.text,背景:fill,颜色:r.color||style.ink,字号:r.size,加粗:Boolean(r.bold),对齐:'left' as const}]);return object}
   const cover=page(template.topic,1)
   cover.背景色=style.color
-  cover.文本框列表=[{...text(60,180,720,150,template.topic,48,'#FFFFFF'),加粗:true},text(64,352,700,55,`${template.category} / 汇报人：请填写 / 日期：请填写`,23,'#FFFFFF'),text(64,460,700,30,'海豹办公 · 原创可编辑演示模板',16,'#FFFFFF')]
-  const variant=template.style%3
-  cover.对象列表=[shape(variant===0?758:690,variant===1?55:115,260,260,style.paper,variant===2?'矩形':'椭圆'),shape(variant===0?820:790,variant===1?0:285,170,170,style.paper,'椭圆')]
+  const illustration=marketIllustration(template.category)
+  deck.资源索引={[illustration.id]:{指纹:illustration.id,类型:'image/png',字节数:illustration.bytes}}
+  cover.文本框列表=[{...text(60,155,520,170,template.topic,48,'#FFFFFF'),加粗:true},text(64,352,500,70,`${template.category} / 汇报人：请填写\n日期：请填写`,23,'#FFFFFF'),text(64,460,700,30,'海豹办公 · 原创可编辑演示模板',16,'#FFFFFF')]
+  cover.对象列表=[{id:crypto.randomUUID(),类型:'图片',x:594,y:94,width:340,height:340,资源标识:illustration.id}]
   const agenda=page('汇报目录',2)
   const headings=['目标与背景','关键成果','问题与建议','执行路径','下一步行动']
   headings.forEach((v,i)=>{agenda.文本框列表.push(text(78,155+i*57,72,44,`0${i+1}`,26,style.color),text(178,155+i*57,650,44,v,25))})
   const metrics=page('目标与关键指标',3)
-  ;['完成率','满意度','交付周期'].forEach((v,i)=>{const x=54+i*292;metrics.对象列表!.push(shape(x,180,268,210,'#FFFFFF'));metrics.文本框列表.push(text(x+20,201,230,38,v,23),{...text(x+20,261,230,80,['85%','92%','14 天'][i],44,style.color),加粗:true},text(x+20,350,230,36,'示例数据 · 请替换',16))})
+  ;['完成率','满意度','交付周期'].forEach((v,i)=>{metrics.对象列表!.push(card(54+i*292,180,268,[{text:v,height:60,size:23},{text:['85%','92%','14 天'][i],height:95,size:44,color:style.color,bold:true},{text:'示例数据 · 请替换',height:55,size:16}]))})
   const compare=page('现状与改进建议',4)
-  ;['现状观察','改进方案'].forEach((v,i)=>{const x=54+i*440;compare.对象列表!.push(shape(x,160,412,287,'#FFFFFF'));compare.文本框列表.push({...text(x+20,176,374,50,v,27,style.color),加粗:true},text(x+20,244,368,166,i===0?'• 信息分散，协作进度难追踪\n• 缺少统一的评价标准\n• 关键环节需要明确责任':'• 建立统一的任务与资料目录\n• 制定可量化的阶段目标\n• 定期复盘并记录改进结果',22))})
+  ;['现状观察','改进方案'].forEach((v,i)=>{compare.对象列表!.push(card(54+i*440,160,412,[{text:v,height:70,size:27,color:style.color,bold:true},{text:i===0?'• 信息分散，协作进度难追踪\n• 缺少统一的评价标准\n• 关键环节需要明确责任':'• 建立统一的任务与资料目录\n• 制定可量化的阶段目标\n• 定期复盘并记录改进结果',height:217,size:22}]))})
   const flow=page('实施路径',5)
-  ;['调研诊断','制定方案','组织执行','验收复盘'].forEach((v,i)=>{const x=54+i*226;flow.对象列表!.push(shape(x,205,184,145,i%2? '#FFFFFF':style.color));flow.文本框列表.push(text(x+15,230,154,40,`0${i+1}`,25,i%2?style.color:'#FFFFFF'),text(x+15,284,154,45,v,23,i%2?style.ink:'#FFFFFF'));if(i<3)flow.文本框列表.push(text(x+190,255,35,50,'→',28,style.color))})
+  ;['调研诊断','制定方案','组织执行','验收复盘'].forEach((v,i)=>{const x=54+i*226;flow.对象列表!.push(card(x,205,184,[{text:`0${i+1}`,height:70,size:25,color:i%2?style.color:'#FFFFFF'},{text:v,height:75,size:23,color:i%2?style.ink:'#FFFFFF'}],i%2?'#FFFFFF':style.color));if(i<3)flow.文本框列表.push(text(x+190,255,35,50,'→',28,style.color))})
   const timeline=page('阶段安排与里程碑',6)
   timeline.对象列表!.push(shape(76,246,800,5,style.color,'矩形'))
   ;['准备阶段','试点阶段','推广阶段','总结阶段'].forEach((v,i)=>{const x=65+i*222;timeline.对象列表!.push(shape(x+5,236,24,24,style.color,'椭圆'));timeline.文本框列表.push(text(x,173,200,50,`第 ${i+1} 阶段`,23,style.color),text(x,284,200,55,v,25),text(x,355,205,65,'负责人：请填写\n完成日期：请填写',18))})

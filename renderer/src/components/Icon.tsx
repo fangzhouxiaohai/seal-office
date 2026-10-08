@@ -634,6 +634,15 @@ const 文件类型: Record<string, FileIconType> = {
   'doc-word': 'word', 'doc-table': 'table', 'doc-ppt': 'ppt', 'doc-pdf': 'pdf',
 }
 
+const 语义配色: Record<string,string> = {
+  home:'#2B6CF6',clock:'#3986BE',star:'#C58B14','star-filled':'#C58B14',share:'#1A987D',cloud:'#2B87D7',users:'#8656CD',
+  knowledge:'#8454CD',ai:'#8656CD',aippt:'#E56E28',folder:'#D99318',apps:'#8656CD',calendar:'#E06A46',
+  mindmap:'#8656CD',flow:'#148C97',image:'#249878',chart:'#E3762D',table:'#208B64',formula:'#268E86',
+  open:'#CB9019',save:'#2B6CF6','save-as':'#148D9A','export-file':'#E47A26',paste:'#2B6CF6',copy:'#1A987D',
+  'format-painter':'#E47731',comment:'#8B60CB',track:'#CC658A',compare:'#7E62CC','spell-check':'#188E75',
+  bookmark:'#CB6988',link:'#1E91A1',symbol:'#875BCC',shape:'#E18036',textbox:'#4278CA',wordart:'#945ACE',
+  device:'#2B87D7',desktop:'#2B87D7',tag:'#CE7A38',trash:'#B96A7B',globe:'#169A8D','download-file':'#239175',
+}
 const Icon = ({ name, size = 16, color, className }: IconProps) => {
   if (文件类型[name]) return <FileTypeIcon type={文件类型[name]} size={size} color={color} className={className} />
   const 图形 = 线性路径[name] ?? 文档图标[name] ?? 文档图标['doc-empty']
@@ -645,11 +654,11 @@ const Icon = ({ name, size = 16, color, className }: IconProps) => {
       height: size,
       viewBox: '0 0 16 16',
       fill: 'none',
-      stroke: color ?? 'currentColor',
+      stroke: color ?? 语义配色[name] ?? 'currentColor',
       strokeWidth: 1.6,
       strokeLinecap: 'round',
       strokeLinejoin: 'round',
-      color,
+      color: color ?? 语义配色[name],
       className,
       'aria-hidden': 'true',
       focusable: 'false',

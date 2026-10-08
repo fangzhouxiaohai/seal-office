@@ -30,8 +30,8 @@ describe('PDF 阅读预览', () => {
     fireEvent.click(screen.getByRole('button', { name: '下一页' }))
     await waitFor(() => expect(取页面).toHaveBeenCalledWith(2))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 5 }))
-    expect(screen.getByText('500%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.5 }))
+    expect(screen.getByText('150%')).toBeInTheDocument()
   })
 
   it('窄阅读区先适配页面宽度，放大后允许横向滚动', async () => {
@@ -46,9 +46,9 @@ describe('PDF 阅读预览', () => {
     舞台.style.padding = '24px'
     fireEvent(window, new Event('resize'))
     const 画布 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
-    await waitFor(() => expect(画布.style.width).toBe('1408px'))
+    await waitFor(() => expect(画布.style.width).toBe('440px'))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(1760, 1))
+    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(528, 1))
   })
 
   it('解析失败时通知工作台并显示失败状态', async () => {
@@ -103,14 +103,14 @@ describe('PDF 阅读预览', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
     滚(-100)
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 5 }))
-    expect(screen.getByText('500%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.5 }))
+    expect(screen.getByText('150%')).toBeInTheDocument()
     // 未按 Ctrl 时不缩放
     滚(-100, false)
-    await waitFor(() => expect(screen.getByText('500%')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('150%')).toBeInTheDocument())
     // 按档位放大：110% → 125% → 150%，连续滚动最终停在上限 6400%
     for (let 次 = 0; 次 < 2; 次 += 1) 滚(-100)
-    await waitFor(() => expect(screen.getByText('800%')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('200%')).toBeInTheDocument())
     for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
     await waitFor(() => expect(screen.getByText('6400%')).toBeInTheDocument())
   })

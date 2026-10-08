@@ -1,0 +1,20 @@
+// 真实 Windows 关联脚本回归：仅写入随机测试根，保留默认程序及 UserChoice。
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict')
+const {randomUUID}=require('node:crypto'),{execFileSync}=require('node:child_process')
+if(process.platform!=='win32')throw new Error('This verification requires Windows')
+const app=path.resolve(process.argv[2]||'release/v1.9.1/win-unpacked')
+const executable=path.join(app,'SealOffice.exe'),script=path.join(app,'resources/shell-integration/shellIntegration.ps1'),icons=path.join(app,'resources/file-icons')
+for(const file of [executable,script])assert.ok(fs.existsSync(file))
+const testRoot='Software\\SealOfficeIntegrationTests\\'+randomUUID()
+assert.match(testRoot,/^Software\\SealOfficeIntegrationTests\\[a-f0-9-]{36}$/)
+const ps=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe')
+const run=code=>execFileSync(ps,['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(code,'utf16le').toString('base64')],{windowsHide:true,timeout:30000,encoding:'utf8'}).trim()
+try{
+  run(`$base=[Microsoft.Win32.Registry]::CurrentUser; $k=$base.CreateSubKey('${testRoot}\\Classes\\.docx');$k.SetValue('','Existing.Application');$k.Dispose();$k=$base.CreateSubKey('${testRoot}\\CurrentUser\\FileExts\\.docx\\UserChoice');$k.SetValue('ProgId','Existing.Application');$k.SetValue('Hash','Preserved-Test-Hash');$k.Dispose()`)
+  const started=Date.now()
+  const result=JSON.parse(execFileSync(ps,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','ApplyDefaults','-ExecutableFile',executable,'-Icons',icons,'-TestRoot',testRoot],{windowsHide:true,timeout:15000,encoding:'utf8'}).replace(/^\uFEFF/,''))
+  assert.equal(result.成功,true);assert.equal(typeof result.已全部默认,'boolean');assert.equal(result.清除用户选择的格式.length,0)
+  const preserved=JSON.parse(run(`$base=[Microsoft.Win32.Registry]::CurrentUser;$k=$base.OpenSubKey('${testRoot}\\Classes\\.docx');$ext=$k.GetValue('');$k.Dispose();$k=$base.OpenSubKey('${testRoot}\\CurrentUser\\FileExts\\.docx\\UserChoice');$id=$k.GetValue('ProgId');$hash=$k.GetValue('Hash');$k.Dispose();$k=$base.OpenSubKey('${testRoot}\\Classes\\SealOffice.docx\\shell\\open\\command');$command=$k.GetValue('');$k.Dispose();@{extension=$ext;id=$id;hash=$hash;command=$command}|ConvertTo-Json -Compress`))
+  assert.equal(preserved.extension,'Existing.Application');assert.equal(preserved.id,'Existing.Application');assert.equal(preserved.hash,'Preserved-Test-Hash');assert.equal(preserved.command,'"'+executable+'" "%1"')
+  console.log(JSON.stringify({passed:true,elapsedMilliseconds:Date.now()-started,existingDefaultPreserved:true,userChoicePreserved:true,applicationRegistered:true}))
+}finally{run(`[Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree('${testRoot}',$false)`)}

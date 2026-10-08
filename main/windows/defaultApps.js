@@ -17,14 +17,15 @@ function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, �
     if (!原脚本.equals(fs.readFileSync(脚本))) throw new Error('系统关联组件已缺失或修改，请重新安装可信版本')
     const 命令 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
     const 参数 = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', 脚本, '-Action', 操作, '-ExecutableFile', 可执行文件]
-    // 注册与全自动关联都需要图标路径；验收时用测试根把写入限制在沙箱注册表项下
+    // 注册应用需要图标路径；验收时用测试根把写入限制在沙箱注册表项下
     if (操作 === 'RegisterApplication' || 操作 === 'ApplyDefaults') 参数.push('-Icons', await 准备关联文件图标({ 资源目录, 数据目录, 便携版 }))
     if (测试根) 参数.push('-TestRoot', 测试根)
     const 输出 = await new Promise((完成, 拒绝) => execFile(命令, 参数, { windowsHide: true, timeout: 30000, encoding: 'utf8' }, (错误, stdout, stderr) => {
       if (错误) {
         let 说明
         try { 说明 = JSON.parse(stdout.replace(/^\uFEFF/, '').trim()).错误 } catch { /* 系统未返回结构化错误 */ }
-        拒绝(new Error(`系统文件关联操作失败：${说明 || stderr.trim() || 错误.message}`))
+        const 超时 = 错误.killed || 错误.code === 'ETIMEDOUT'
+        拒绝(new Error(`系统文件关联操作失败：${说明 || (超时 ? 'Windows 响应超时，请稍后在设置中心打开默认应用页面' : stderr.trim() || 'Windows 未能完成关联操作，请检查系统权限后重试')}`))
       }
       else 完成(stdout)
     }))
@@ -39,7 +40,7 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
   const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 测试根 })
   const 状态路径 = path.join(数据目录, 'default-app-prompt.json')
   let 队列 = Promise.resolve()
-  /** 全自动设为默认程序：注册 ProgID、写扩展名默认值并清掉阻止生效的 UserChoice */
+  /** 注册应用并读取默认状态；保留系统保护的用户选择 */
   async function 应用默认程序() {
     if (平台 !== 'win32') throw new Error('默认程序设置仅支持 Windows')
     if (!已打包) throw new Error('请使用 Windows 打包版本设置默认程序')
@@ -54,7 +55,7 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
       格式: 结果.格式,
     }
   }
-  /** 设置默认程序：先尝试全自动，仍有格式未生效时再打开系统页面兜底 */
+  /** 设置默认程序：注册应用，打开 Windows 默认应用页面供用户确认 */
   async function 设置默认程序() {
     const 结果 = await 应用默认程序()
     if (结果.已全部默认) return { 成功: true, 已全部默认: true, 提示: '已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开' }
@@ -64,17 +65,17 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
       成功: true,
       已全部默认: false,
       未生效: 结果.未生效,
-      提示: `已自动关联大部分格式；Windows 仍要求手动确认：${未生效}`,
+      提示: `已打开 Windows 默认应用页面，请确认：${未生效}`,
     }
   }
-  /** 启动时检查：开关打开时调用，不是全部默认就静默设为默认 */
+  /** 启动只查询；受保护的默认程序设置由用户主动在系统页面确认。 */
   async function 启动检查默认程序() {
     if (平台 !== 'win32' || !已打包) return { 成功: true, 已全部默认: true, 已处理: false }
     const 当前 = await 执行('InspectDefaults')
     if (typeof 当前.已全部默认 !== 'boolean') throw new Error('系统默认程序查询结果无效')
     if (当前.已全部默认) return { 成功: true, 已全部默认: true, 已处理: false }
-    const 结果 = await 应用默认程序()
-    return { 成功: true, 已全部默认: 结果.已全部默认, 已处理: true, 未生效: 结果.未生效 }
+    if (!Array.isArray(当前.格式)) throw new Error('系统默认程序查询结果无效')
+    return { 成功: true, 已全部默认: false, 已处理: false, 未生效: 当前.格式.filter(项 => !项.已默认).map(项 => 项.扩展名) }
   }
   async function 检查() {
     if (平台 !== 'win32' || !已打包) return { 成功: true, 需要询问: false }

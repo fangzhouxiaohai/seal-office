@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   cacheDir: 'node_modules/.vitest-main',
   test: {
+    cache: { dir: 'node_modules/.vitest-main' },
     environment: 'node',
     // 主进程源码是 CommonJS，无法 import vitest 的具名导出，
     // 因此启用全局 describe/it/expect

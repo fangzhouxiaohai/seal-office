@@ -5,7 +5,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务}={}){
   let instance=cloudService
   const service=()=>instance||(instance=createService({directory:app.getPath('userData'),safeStorage}))
   const calls={
-    status:()=>service().status(),refresh:()=>service().refresh(),server:i=>service().setServer(i.url),
+    status:()=>service().status(),refresh:()=>service().refresh(),
     code:i=>service().sendCode(i.phone,i.purpose),login:i=>service().login(i.phone,i.code),logout:()=>service().logout(),
     enable:i=>service().enable(i.consent),ackRecovery:()=>service().ackRecovery(),unlock:i=>service().unlock(i.recovery),autosave:i=>service().setAutosave(i.enabled),purge:i=>service().purge(i.code),
     list:()=>service().list(),folder:i=>service().folder(i.name,i.parent,i.kind),save:i=>service().save(i),flush:()=>service().flush(),
@@ -41,7 +41,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务}={}){
     }
   }
   ipcMain.handle('cloud.invoke',async(_event,action,input={})=>{
-    try{if(!Object.prototype.hasOwnProperty.call(calls,action))throw new Error('云端操作不受支持');if(!input||typeof input!=='object')throw new Error('请求参数无效');return {成功:true,数据:await calls[action](input)}}
+    try{if(!Object.prototype.hasOwnProperty.call(calls,action))throw new Error('云端操作不受支持');if(!input||typeof input!=='object')throw new Error('请求参数无效');const result=await calls[action](input);if(result&&typeof result==='object'&&!Array.isArray(result)&&Object.prototype.hasOwnProperty.call(result,'url')){const {url,...data}=result;return {成功:true,数据:data}}return {成功:true,数据:result}}
     catch(error){return {成功:false,错误:error.message||'云端操作失败'}}
   })
 }

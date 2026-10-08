@@ -131,10 +131,10 @@ describe('默认程序与安装后首次提醒', () => {
     expect(调用).not.toHaveBeenCalledWith('ApplyDefaults')
   })
 
-  it('启动检查：不是默认程序时静默设为默认', async () => {
+  it('启动检查：不是默认程序时只查询并列出格式', async () => {
     const 结果 = await 服务.启动检查默认程序()
-    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 已处理: true })
-    expect(调用).toHaveBeenCalledWith('ApplyDefaults')
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 已处理: false })
+    expect(调用).not.toHaveBeenCalledWith('ApplyDefaults')
     expect(系统打开).not.toHaveBeenCalled()
   })
 
@@ -143,7 +143,7 @@ describe('默认程序与安装后首次提醒', () => {
       ? { 已全部默认: false, 格式: 全部格式(false) }
       : { 已全部默认: false, 格式: 全部格式(false) })
     const 结果 = await 服务.启动检查默认程序()
-    expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 已处理: true })
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 已处理: false })
     expect(结果.未生效).toEqual(['docx', 'xlsx', 'pptx', 'pdf'])
   })
 

@@ -1,0 +1,26 @@
+/* 同类动作共享颜色；正文、文档纸张和打印输出不受界面配色影响。 */
+.ant-btn-default:not(:disabled):not(.ant-btn-dangerous) {
+  color:var(--brand,#2b6cf6);
+  background:color-mix(in srgb,var(--brand,#2b6cf6) 7%,var(--bg-card,#fff));
+  border-color:color-mix(in srgb,var(--brand,#2b6cf6) 24%,var(--border,#e8ebf0));
+}
+.ant-btn-default:not(:disabled):not(.ant-btn-dangerous):hover {
+  background:color-mix(in srgb,var(--brand,#2b6cf6) 13%,var(--bg-card,#fff));
+}
+:where(button,[role=button],label.ant-btn):focus-visible {outline:2px solid var(--brand,#2b6cf6);outline-offset:3px}
+.wps-new-card,.wps-recommend__cell,.template-library__card {
+  --action-accent:#2b6cf6;
+  background:color-mix(in srgb,var(--action-accent) 6%,var(--bg-card,#fff));
+  border-color:color-mix(in srgb,var(--action-accent) 22%,var(--border,#e8ebf0));
+}
+.wps-new-card:nth-child(2),.wps-recommend__cell:nth-child(2),.template-library__card:nth-child(4n+2){--action-accent:#159773}
+.wps-new-card:nth-child(3),.wps-recommend__cell:nth-child(3),.template-library__card:nth-child(4n+3){--action-accent:#e87929}
+.wps-new-card:nth-child(4),.wps-recommend__cell:nth-child(4),.template-library__card:nth-child(4n){--action-accent:#c95173}
+.wps-new-card:hover,.wps-recommend__cell:hover,.template-library__card:hover{background:color-mix(in srgb,var(--action-accent) 11%,var(--bg-card,#fff));border-color:var(--action-accent)}
+.wps-recommend__cell-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:color-mix(in srgb,var(--action-accent,#2b6cf6) 13%,var(--bg-card,#fff))}
+.wps-recommend__row:hover,.wps-homenav__item:hover{background:var(--brand-soft,#ebf1fe)}
+.wps-recommend__row-icon{border-radius:8px;padding:7px;background:var(--brand-soft,#ebf1fe)}
+.wps-ribbon-button:hover:not(:disabled),.wps-float-panel__item:hover,.wps-context-menu__item:hover{background:var(--brand-soft,#ebf1fe)}
+.seal-cloud-actions>label.ant-btn{color:var(--brand,#2b6cf6);background:var(--brand-soft,#ebf1fe);border:1px solid color-mix(in srgb,var(--brand,#2b6cf6) 24%,var(--border,#e8ebf0));padding:5px 14px;border-radius:8px;cursor:pointer}
+.template-library__filters .ant-btn-primary{box-shadow:0 3px 9px #2b6cf630}
+@media(prefers-reduced-motion:reduce){.seal-market-tools button{transition:none}.seal-market-tools button:hover{transform:none}}
