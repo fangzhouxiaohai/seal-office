@@ -23,7 +23,7 @@ export function 格式化数字(值: number, 格式: 数字格式, 小数位 = 2
     case '货币':
       return `¥${加千位分隔(值.toFixed(2))}`
     case '百分比':
-      return `${(值 * 100).toFixed(2)}%`
+      return `${(值 * 100).toFixed(小数位)}%`
     case '千位分隔':
       return 加千位分隔(String(Math.round(值)))
     case '常规':

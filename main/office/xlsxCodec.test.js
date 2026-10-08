@@ -337,13 +337,20 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     for (const 地址 of ['A1', 'B1', 'C1']) expect(读取.工作表列表[0].元数据.单元格格式[地址]?.字体颜色).toBeUndefined()
   })
 
-  it('显式彩色边框无法保留时提示保真风险', async () => {
+  it('显式彩色细边框导入和写回保持颜色', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('彩色边框')
     表.getCell('A1').value = '标题'
     表.getCell('A1').border = { top: { style: 'thin', color: { argb: 'FFFF0000' } } }
     const 读回 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
-    expect(读回.警告).toContain('部分边框样式未导入')
+    expect(读回.警告).not.toContain('部分边框样式未导入')
+    const 格式 = 读回.工作表列表[0].元数据.单元格格式.A1
+    expect(格式.边框颜色).toEqual({ 上: '#FF0000' })
+    const 保存 = new ExcelJS.Workbook()
+    await 保存.xlsx.load(await 写入xlsx({ 工作表: [{ 名称: '副本', 数据: [[{ 文字: [{ 文本: '标题' }], 格式 }]] }] }))
+    expect(保存.worksheets[0].getCell('A1').border.top.color.argb).toBe('FFFF0000')
+    表.getCell('A1').border = { top: { style: 'double', color: { argb: 'FFFF0000' } } }
+    expect((await 读取xlsx(await 工作簿.xlsx.writeBuffer())).警告).toContain('部分边框样式未导入')
   })
 
   it('读取包含图表部件的文件时报告图表丢失风险', async () => {

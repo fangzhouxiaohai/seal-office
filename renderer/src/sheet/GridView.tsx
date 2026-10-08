@@ -55,15 +55,15 @@ function 在选区内(位置: 单元格位置, 选区: 选区范围): boolean {
 }
 
 /** 把单元格边框配置转换为内阴影，避免与网格基础边框叠加引起布局位移 */
-function 边框阴影(边框: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean } | undefined): string | undefined {
+function 边框阴影(边框: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean } | undefined, 颜色?: { 上?: string; 下?: string; 左?: string; 右?: string }): string | undefined {
   if (边框 === undefined) {
     return undefined
   }
   const 层: string[] = []
-  if (边框.上 === true) 层.push('inset 0 1px 0 0 #4A5568')
-  if (边框.下 === true) 层.push('inset 0 -1px 0 0 #4A5568')
-  if (边框.左 === true) 层.push('inset 1px 0 0 0 #4A5568')
-  if (边框.右 === true) 层.push('inset -1px 0 0 0 #4A5568')
+  if (边框.上 === true) 层.push(`inset 0 1px 0 0 ${颜色?.上 ?? '#4A5568'}`)
+  if (边框.下 === true) 层.push(`inset 0 -1px 0 0 ${颜色?.下 ?? '#4A5568'}`)
+  if (边框.左 === true) 层.push(`inset 1px 0 0 0 ${颜色?.左 ?? '#4A5568'}`)
+  if (边框.右 === true) 层.push(`inset -1px 0 0 0 ${颜色?.右 ?? '#4A5568'}`)
   return 层.length > 0 ? 层.join(', ') : undefined
 }
 
@@ -189,8 +189,8 @@ const GridView = ({
             style: {
               gridColumn: 合并 !== null && 合并.是左上角 ? `${列 + 2} / span ${合并.跨度列}` : 列 + 2,
               gridRow: 合并 !== null && 合并.是左上角 ? `${行 + 2} / span ${合并.跨度行}` : 行 + 2,
-              width: `${工作表.列宽[列] ?? 默认列宽}px`,
-              height: `${工作表.行高[行] ?? 默认行高}px`,
+              width: `${Array.from({ length: 合并?.跨度列 ?? 1 }, (_, 偏移) => 工作表.列宽[列 + 偏移] ?? 默认列宽).reduce((和, 宽) => 和 + 宽, 0)}px`,
+              height: `${Array.from({ length: 合并?.跨度行 ?? 1 }, (_, 偏移) => 隐藏行?.has(行 + 偏移) ? 0 : 工作表.行高[行 + 偏移] ?? 默认行高).reduce((和, 高) => 和 + 高, 0)}px`,
               textAlign: 单元.格式.水平对齐 ?? 'left',
               justifyContent: 单元.格式.水平对齐 === 'right' ? 'flex-end' : 单元.格式.水平对齐 === 'center' ? 'center' : 'flex-start',
               alignItems: 单元.格式.垂直对齐 === 'top' ? 'flex-start' : 单元.格式.垂直对齐 === 'bottom' ? 'flex-end' : 'center',
@@ -201,7 +201,7 @@ const GridView = ({
               textDecoration: 单元.格式.下划线 === true ? 'underline' : 'none',
               color: 单元.格式.字体颜色,
               background: 单元.格式.填充颜色,
-              boxShadow: 边框阴影(单元.格式.边框),
+              boxShadow: 边框阴影(单元.格式.边框, 单元.格式.边框颜色),
               // 自动换行必须由渲染层消费，否则命令写了格式而界面无变化
               whiteSpace: 单元.格式.自动换行 === true ? 'pre-wrap' : 'nowrap',
               position: 单元.批注 ? 'relative' : undefined,

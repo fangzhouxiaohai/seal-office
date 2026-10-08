@@ -193,13 +193,17 @@ function 写入基础格式(单元格, 格式) {
   if (格式.自动换行 !== undefined) 对齐.wrapText = 格式.自动换行
   if (Object.keys(对齐).length > 0) 单元格.alignment = 对齐
   if (格式.数字格式) {
-    if (格式.数字格式 === '数值') 单元格.numFmt = `0.${'0'.repeat(格式.小数位 ?? 2)}`
+    if (格式.数字格式 === '数值' || 格式.数字格式 === '百分比') {
+      const 位数 = 格式.小数位 ?? 2
+      if (!Number.isInteger(位数) || 位数 < 0 || 位数 > 10) throw new Error('数字格式小数位无效')
+      单元格.numFmt = `0${位数 ? `.${'0'.repeat(位数)}` : ''}${格式.数字格式 === '百分比' ? '%' : ''}`
+    }
     else 单元格.numFmt = 基础数字格式[格式.数字格式]
   }
   if (格式.边框) {
     const 边框 = {}
     for (const [中文, 英文] of [['上', 'top'], ['下', 'bottom'], ['左', 'left'], ['右', 'right']]) {
-      if (格式.边框[中文]) 边框[英文] = { style: 'thin' }
+      if (格式.边框[中文]) 边框[英文] = { style: 'thin', ...(格式.边框颜色?.[中文] ? { color: 转写颜色(格式.边框颜色[中文]) } : {}) }
     }
     单元格.border = 边框
   }
@@ -240,23 +244,31 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
   }
   if (原格式.numFmt && 原格式.numFmt !== 'General') {
     if (原格式.numFmt === 基础数字格式.货币) 格式.数字格式 = '货币'
-    else if (原格式.numFmt === 基础数字格式.百分比) 格式.数字格式 = '百分比'
+    else if (/^0(?:\.[0]{1,10})?%$/.test(原格式.numFmt)) {
+      格式.数字格式 = '百分比'
+      格式.小数位 = 原格式.numFmt.includes('.') ? 原格式.numFmt.length - 3 : 0
+    }
     else if (原格式.numFmt === 基础数字格式.千位分隔) 格式.数字格式 = '千位分隔'
-    else if (/^0\.[0]{1,10}$/.test(原格式.numFmt)) {
+    else if (/^0(?:\.[0]{1,10})?$/.test(原格式.numFmt)) {
       格式.数字格式 = '数值'
-      格式.小数位 = 原格式.numFmt.length - 2
+      格式.小数位 = 原格式.numFmt.includes('.') ? 原格式.numFmt.length - 2 : 0
     } else 警告.add('部分数字格式未导入')
   }
   if (原格式.border) {
     const 边框 = {}
+    const 边框颜色 = {}
     for (const [中文, 英文] of [['上', 'top'], ['下', 'bottom'], ['左', 'left'], ['右', 'right']]) {
       if (原格式.border[英文]) {
         边框[中文] = true
         if (原格式.border[英文].style !== 'thin') 警告.add('部分边框样式未导入')
-        if (原格式.border[英文].color) 警告.add('部分边框样式未导入')
+        if (原格式.border[英文].color) {
+          const 颜色 = 读取颜色(原格式.border[英文].color, 警告, 主题颜色)
+          if (颜色) 边框颜色[中文] = 颜色
+        }
       }
     }
     if (Object.keys(边框).length > 0) 格式.边框 = 边框
+    if (Object.keys(边框颜色).length > 0) 格式.边框颜色 = 边框颜色
     if (Object.keys(原格式.border).some((字段) => !['top', 'bottom', 'left', 'right'].includes(字段))) 警告.add('部分边框样式未导入')
   }
   if (Object.keys(原格式).some((字段) => !['font', 'fill', 'alignment', 'numFmt', 'border', 'protection'].includes(字段))) 警告.add('部分单元格样式未导入')

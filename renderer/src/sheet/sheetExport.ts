@@ -2,7 +2,7 @@
 // 导出内容取自单元格的显示值，因此公式导出的是计算结果而非公式原文。
 
 import { 生成地址, 解析地址 } from './address'
-import { 读取单元格, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
+import { 读取单元格, 重算工作表, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
 
 /** 计算实际有内容的范围，避免导出整张空表 */
 function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number } {
@@ -107,7 +107,7 @@ type Xlsx工作表 = {
 export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Xlsx工作表[] } | null {
   const 列表 = Array.isArray(工作表或列表) ? 工作表或列表 : [工作表或列表]
   const 表定义列表 = 列表
-    .map((工作表) => 构建单表模型(工作表))
+    .map((工作表) => 构建单表模型(重算工作表(工作表)))
     .filter((表): 表 is Xlsx工作表 => 表 !== null)
   if (表定义列表.length === 0) {
     return null
@@ -130,9 +130,8 @@ function 构建单表模型(工作表: Sheet): Xlsx工作表 | null {
       const 单元 = 读取单元格(工作表, 生成地址(行, 列))
       const 格式 = Object.keys(单元.格式).length > 0 ? { 格式: 单元.格式 } : {}
       const 验证 = 单元.数据验证 ? { 数据验证: 单元.数据验证 } : {}
-      if (单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
-        const 数值 = Number(单元.显示值)
-        const 结果 = 单元.显示值.trim() !== '' && Number.isFinite(数值) ? 数值 : 单元.显示值
+      if (单元.值类型 !== '文本' && 单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
+        const 结果 = 单元.计算值 ?? 单元.显示值
         单元格列表.push({ 公式: 单元.原始值.slice(1), 结果, ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证 })
       } else if (单元.批注 || Object.keys(格式).length > 0 || 单元.值类型 || 单元.数据验证) {
         单元格列表.push({ 文字: [{ 文本: 单元.原始值 }], ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...(单元.值类型 ? { 类型: 单元.值类型 } : {}), ...格式, ...验证 })

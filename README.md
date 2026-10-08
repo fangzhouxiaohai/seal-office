@@ -4,18 +4,18 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-下一版账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
+账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
 ## Windows 下载
 
-当前版本：**1.8.3**，适用于 Windows x64。1.8.3 的便携版与安装版已在本机 `release/v1.8.3/` 构建完成，尚未上传到发布页；下表链接仍指向已公开的 1.8.2 安装包。
+当前预发布版本：**1.9.3**，适用于 Windows x64。本版修复带数字格式的表格公式、合并标题显示与模板市场按钮对齐。云端能力仍按预发布状态提供。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice.1.8.2.exe)，下载后直接运行。 |
-| 安装版 | [SealOffice Setup 1.8.2.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.8.2/SealOffice.Setup.1.8.2.exe)，安装向导可选择目录、创建快捷方式并注册七种右键新建菜单。 |
-| 发布说明 | [v1.8.2 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.8.2)，包含新建弹窗、打印、模板与 DOCX 导入修复。 |
-| 1.8.3（待上传） | 本机构建产物：`release/v1.8.3/SealOffice 1.8.3.exe`（便携版）、`release/v1.8.3/SealOffice Setup 1.8.3.exe`（安装版），说明见[1.8.3 升级说明](docs/v1.8.3-DOCX导入修复.md)。 |
+| 便携版 | [SealOffice1.9.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOffice1.9.3.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOfficeSetup1.9.3.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.3.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOffice1.9.3.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.3 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.3)及[修复与验收](docs/v1.9.3-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -45,12 +45,14 @@ DOC、XLS、PPT 模板是真实旧式二进制格式，当前海豹办公仍不�
 
 ## 隐私
 
-海豹办公是本地软件：**没有账号体系，也没有用于收集数据的服务端**。程序内没有使用统计、遥测上报、崩溃转储上传、广告组件或自动更新检查，开发者无法看到你在软件里的任何操作。
+海豹办公的基础编辑在本机完成，无需云端账号。可选手机号登录、云空间、知识库和云文档自动保存由用户主动启用；云空间与自动保存默认关闭。程序内没有使用统计、遥测上报、崩溃转储上传、广告组件或自动更新检查。
 
 - 文件只在本机读写；密钥、对话与记忆使用 Windows 系统数据保护能力加密保存在本机用户数据目录，未保存的工作区自动备份为明文 JSON。
 - 只有你主动使用 AI 助手、翻译、语义校对、语音合成、演示生成等联网功能时，才会把完成该次请求所需的片段（含你附加的图片）发送到**你自己配置的服务地址**（仅允许 `https`，本机地址可用 `http`）；服务商侧如何留存与使用取决于你与其之间的条款。
 - 演示文稿的“屏幕录制”可录制你选择的屏幕或窗口，麦克风需单独勾选，录制内容只有保存后才写入本机文件。
-- 彻底清除：删除用户数据目录（默认 `%APPDATA%\seal-office`）或卸载；你自己保存的文档不受影响。应用内“帮助 → 隐私与数据在哪里”可直接查看要点。
+- 私有云文件、名称与索引在客户端加密后上传；服务器可获知手机号、密文大小、时间与对象数量，无法直接解密私有内容。主动公开的副本可被其他用户和管理员阅读。
+- 云空间每账号实际配额 300 MB；自动保存须先开通云空间再手动开启。恢复密钥由用户保管，所有授权设备与密钥丢失后无法恢复。清空停用删除活动数据，备份最长保留 7 天，已下载的公开副本无法收回。
+- 彻底清除本机数据：删除用户数据目录（默认 `%APPDATA%\seal-office`）或卸载；你自己保存的文档不受影响。应用内“帮助 → 隐私与数据在哪里”可直接查看要点。
 
 完整说明见[隐私声明](docs/隐私声明.md)。
 
@@ -251,7 +253,7 @@ npm run pack
 npm run dist
 ```
 
-`typecheck` 检查类型；`test:run` 执行渲染层、主进程与打包清单测试；`build` 生成前端与安装完整性清单；`pack` 生成可运行的解包目录；`dist` 生成便携版和安装版。Windows 产物位于 `release/`，源码仓库不包含依赖和构建产物，EXE 通过 GitHub Releases 提供。
+`typecheck` 检查类型；`test:run` 执行渲染层、主进程与打包清单测试；`build` 生成前端与安装完整性清单；`pack` 生成可运行的解包目录；`dist` 生成便携版和安装版。Windows 产物位于 `release/`，源码仓库不包含依赖和构建产物，EXE/MSIX 通过 GitHub Releases 提供。每次更新须同时推送源码和版本标签、上传对应新版安装包及 SHA-256 校验文件，并核验远端附件；仅推送代码不算完成交付。发布方法见[Windows 发布流程](docs/Windows发布流程.md)。
 
 开发运行：
 

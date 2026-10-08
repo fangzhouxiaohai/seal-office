@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "饮风一笑",
@@ -128,7 +128,11 @@
       ]
     },
     "npmRebuild": false,
+    "portable": {
+      "artifactName": "SealOffice${version}.exe"
+    },
     "nsis": {
+      "artifactName": "SealOfficeSetup${version}.exe",
       "include": "build/installer.nsh",
       "oneClick": false,
       "perMachine": false,

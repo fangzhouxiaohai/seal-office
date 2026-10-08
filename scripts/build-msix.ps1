@@ -30,7 +30,7 @@ $根 = Split-Path -Parent $PSScriptRoot
 $应用版本 = (Get-Content -LiteralPath (Join-Path $根 'package.json') -Raw | ConvertFrom-Json).version
 if (-not $Version) { $Version = "$应用版本.0" }
 if (-not $Source) { $Source = Join-Path $根 "release\v$应用版本\win-unpacked" }
-if (-not $Output) { $Output = Join-Path $根 "release\v$应用版本\SealOffice $应用版本.msix" }
+if (-not $Output) { $Output = Join-Path $根 "release\v$应用版本\SealOffice$应用版本.msix" }
 if (-not $Assets) { $Assets = Join-Path $根 'build\appx' }
 
 if (-not (Test-Path -LiteralPath $Source)) { throw "找不到应用目录：$Source" }

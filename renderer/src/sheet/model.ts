@@ -25,6 +25,7 @@ export interface CellFormat {
   数字格式?: 数字格式
   小数位?: number
   边框?: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean }
+  边框颜色?: { 上?: string; 下?: string; 左?: string; 右?: string }
 }
 
 export type 单元格数据验证 =
@@ -36,6 +37,8 @@ export interface SheetCell {
   原始值: string
   /** 计算或格式化后的展示值 */
   显示值: string
+  /** 未经显示格式转换的公式结果，用于引用和 XLSX 数值缓存。 */
+  计算值?: number | string
   格式: CellFormat
   /** 从表格文件导入的文本单元格类型，未编辑时保持原始类型 */
   值类型?: '文本'
@@ -144,7 +147,7 @@ export function 检查工作表更新(原表: Sheet, 新表: Sheet, 允许解除
     const 新值 = 新表.单元格[地址]?.原始值 ?? ''
     if (原值 === 新值) continue
     const 规则 = 新表.单元格[地址]?.数据验证 ?? 原表.单元格[地址]?.数据验证
-    const 待验证值 = 新值.startsWith('=') ? (新表.单元格[地址]?.显示值 ?? '') : 新值
+    const 待验证值 = 新值.startsWith('=') ? String(新表.单元格[地址]?.计算值 ?? 新表.单元格[地址]?.显示值 ?? '') : 新值
     if (规则 && !验证输入(待验证值, 规则)) return `${地址} 不符合数据验证规则`
   }
   return null
@@ -200,10 +203,10 @@ function 渲染原始值(原始值: string, 格式: CellFormat): string {
  * 正在求值集合在所有单元格求值过程中共享，确保跨单元格循环引用可被检测。
  */
 export function 重算工作表(工作表: Sheet): Sheet {
-  const 缓存 = new Map<string, string>()
+  const 缓存 = new Map<string, number | string>()
   const 正在求值 = new Set<string>()
 
-  const 求显示值 = (地址: string): string => {
+  const 求计算值 = (地址: string): number | string => {
     const 已缓存 = 缓存.get(地址)
     if (已缓存 !== undefined) {
       return 已缓存
@@ -217,27 +220,34 @@ export function 重算工作表(工作表: Sheet): Sheet {
     }
     const 原始值 = 单元.原始值
     if (单元.值类型 === '文本' || !原始值.startsWith('=')) {
-      const 结果 = 单元.值类型 === '文本' ? 原始值 : 渲染原始值(原始值, 单元.格式)
+      const 数值 = Number(原始值)
+      const 结果 = 单元.值类型 !== '文本' && 原始值.trim() !== '' && Number.isFinite(数值) ? 数值 : 原始值
       缓存.set(地址, 结果)
       return 结果
     }
     正在求值.add(地址)
     const 求值结果 = 求值公式(
       原始值,
-      (引用地址) => 求显示值(引用地址),
+      (引用地址) => 求计算值(引用地址),
       正在求值,
       地址
     )
     正在求值.delete(地址)
-    const 文本 = String(求值结果.值)
-    缓存.set(地址, 文本)
-    return 文本
+    缓存.set(地址, 求值结果.值)
+    return 求值结果.值
   }
 
   const 新单元格: Record<string, SheetCell> = {}
   Object.keys(工作表.单元格).forEach((地址) => {
     const 单元 = 工作表.单元格[地址]
-    新单元格[地址] = { ...单元, 显示值: 求显示值(地址) }
+    const 计算值 = 求计算值(地址)
+    const 是公式 = 单元.值类型 !== '文本' && 单元.原始值.startsWith('=')
+    const { 计算值: _旧计算值, ...原单元 } = 单元
+    新单元格[地址] = {
+      ...原单元,
+      ...(是公式 ? { 计算值 } : {}),
+      显示值: 单元.值类型 === '文本' ? 单元.原始值 : 渲染原始值(是公式 ? String(计算值) : 单元.原始值, 单元.格式),
+    }
   })
 
   return { ...工作表, 单元格: 新单元格 }
