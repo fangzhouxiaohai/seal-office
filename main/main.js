@@ -158,7 +158,7 @@ function 创建窗口(选项 = {}) {
   Menu.setApplicationMenu(null)
   窗口.webContents.on('before-input-event', (_事件, 输入) => {
     if (输入.type !== 'keyDown') return
-    // F12 保留给 WPS 惯例的「另存为」；DevTools 仅在开发态经 F12 / Ctrl+Shift+I 打开
+    // F12 保留给「另存为」；DevTools 仅在开发态经 F12 / Ctrl+Shift+I 打开
     const 是开发态 = !app.isPackaged
     if (是开发态 && 输入.key === 'F12') 窗口.webContents.toggleDevTools()
     if (是开发态 && 输入.key === 'I' && (输入.control || 输入.metaKey) && 输入.shift) 窗口.webContents.toggleDevTools()

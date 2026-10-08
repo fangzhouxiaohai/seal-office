@@ -215,7 +215,7 @@ const GridView = ({
             },
             onMouseDown: (事件: React.MouseEvent) => {
               if (事件.button === 2) {
-                // 右键落在选区外时先把选区移到该格（WPS 习惯），落在选区内则保持不变
+                // 右键落在选区外时先把选区移到该格，落在选区内则保持不变
                 if (!在选区内(位置, 选区)) {
                   on选中(位置, false)
                 }

@@ -46,7 +46,8 @@ describe('设置页状态与真实能力一致', () => {
     localStorage.removeItem('seal-default-app-auto')
     try {
       render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
-      // 默认打开：与 WPS 一致，启动时自动检查并设为默认
+      expect(screen.getByText('每次启动检查这四类格式是否仍由海豹办公打开；发现不是默认程序时提示你确认设置')).toBeInTheDocument()
+      expect(document.body.textContent).not.toMatch(/WPS/i)
       const 开关 = screen.getByRole('switch', { name: '启动时检查默认程序' })
       expect(开关).toHaveAttribute('aria-checked', 'true')
       await userEvent.click(开关)

@@ -414,7 +414,7 @@ function 注册文件通道(ipcMain) {
     }
   })
 
-  // ---- 在资源管理器中显示文件（WPS「打开所在文件夹」） ----
+  // ---- 在资源管理器中显示文件 ----
   ipcMain.handle('file.revealInFolder', async (_event, 路径) => {
     if (typeof 路径 !== 'string' || 路径.length === 0) {
       return { 成功: false, 错误: '缺少文件路径' }

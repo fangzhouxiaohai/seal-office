@@ -75,7 +75,7 @@ function 是菜单组(节点: 菜单节点): 节点 is 菜单组 {
 const 菜单面板宽 = 220
 const 项高 = 32
 const 菜单最大高 = 320
-/** 菜单左上角相对光标的微小间隙，符合 Windows/WPS 右键菜单的贴边习惯 */
+/** 菜单左上角相对光标的微小间隙，符合桌面右键菜单的贴边习惯 */
 const 光标间隙 = 2
 
 const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {

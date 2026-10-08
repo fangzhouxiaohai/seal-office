@@ -388,7 +388,7 @@ const PptEditor = () => {
     同步历史资源()
   }, [历史, 文稿])
 
-  // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始（WPS/Office 惯例）
+  // 放映快捷键：F5 从头开始、Shift+F5 从当前页开始
   const 开始放映 = (索引: number, 模式: '全屏' | '阅读' = '全屏', 请求演讲者 = false) => {
     if (文稿.幻灯片列表.length === 0) {
       modal.warning({ title: '无法开始放映', content: '请先添加至少一张幻灯片，再开始放映。', okText: '我知道了' })

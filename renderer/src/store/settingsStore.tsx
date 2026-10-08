@@ -49,7 +49,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const [语言, set语言] = useState<string>('zh-CN')
 
-  // 默认打开：与 WPS 一样，启动时发现不是默认程序就自动设为默认（可在设置中心关闭）
+  // 默认打开：启动时检查文件关联，发现不是默认程序时提示用户确认
   const [启动时检查默认程序, set启动时检查默认程序] = useState<boolean>(() => {
     try { return localStorage.getItem('seal-default-app-auto') !== '关闭' }
     catch { return true }

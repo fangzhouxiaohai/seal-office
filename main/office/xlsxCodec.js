@@ -615,7 +615,7 @@ async function 读取xlsx(数据) {
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }
 }
 
-/** 纯数字文本写为数值单元格，保证在 Excel/WPS 中可直接求和排序；其余按文本写入 */
+/** 纯数字文本写为数值单元格，保证在常见表格软件中可直接求和排序；其余按文本写入 */
 function 转单元格值(值) {
   if (值 == null) return ''
   const 文本 = String(值)

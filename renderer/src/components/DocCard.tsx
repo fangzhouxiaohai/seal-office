@@ -92,7 +92,7 @@ const DocCard = ({
 
   const 菜单项 = [
     { key: 'open', label: '打开' },
-    // 真实文件才提供「打开所在文件夹」（WPS 标准右键项）；演示数据无路径时隐藏
+    // 真实文件才提供「打开所在文件夹」；演示数据无路径时隐藏
     ...(doc.路径 !== undefined ? [{ key: 'reveal', label: '打开所在文件夹' }] : []),
     { key: 'rename', label: '重命名' },
     { key: 'star', label: doc.starred ? '取消星标' : '添加星标' },

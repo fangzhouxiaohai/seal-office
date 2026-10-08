@@ -35,7 +35,8 @@ describe('帮助手册', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Windows 文件关联' }))
     expect(screen.getByText(/不是默认程序时弹出确认框/)).toBeInTheDocument()
     expect(screen.getByText(/0x80070483/)).toBeInTheDocument()
-    expect(screen.getByText(/与 WPS 在 Windows 11 上的表现一致/)).toBeInTheDocument()
+    expect(screen.getByText(/文件关联完成后，文字显示蓝色图标/)).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/WPS/i)
   })
 
   it('说明选中内容浮窗与右键菜单的可用动作', () => {

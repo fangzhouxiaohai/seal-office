@@ -1,6 +1,6 @@
 // 顶栏：品牌标识、搜索或当前文档名、设置与帮助入口。
 // Electron 使用系统边框窗口，此处不自绘最小化与关闭按钮。
-// 首页态（homeMode）：居中大搜索框 + 通知/客服/设置/会员/头像图标组，版式对齐 WPS 首页。
+// 首页态（homeMode）：居中大搜索框 + 通知/客服/设置/会员/头像图标组。
 import React, { useState } from 'react'
 import { Dropdown, Input, Tooltip } from 'antd'
 import Icon from './Icon'
@@ -20,7 +20,7 @@ interface Props {
   onCloud?: () => void
   /** 登录入口点击（界面元素，功能占位提示） */
   onLogin?: () => void
-  /** 首页态：居中大搜索框与 WPS 式右侧图标组 */
+  /** 首页态：居中大搜索框与右侧图标组 */
   homeMode?: boolean
   /** 首页搜索词（受控） */
   搜索词?: string
@@ -84,7 +84,7 @@ const TitleBar = ({
       )
     )
 
-  /** 全局设置下拉：全局设置 / 关于我们（对齐 WPS 右上角全局设置入口） */
+  /** 全局设置下拉：全局设置 / 关于我们 */
   const 渲染全局设置 = () =>
     React.createElement(
       Dropdown,
