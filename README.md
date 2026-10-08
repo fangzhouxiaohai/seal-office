@@ -8,14 +8,14 @@
 
 ## Windows 下载
 
-当前预发布版本：**1.9.3**，适用于 Windows x64。本版修复带数字格式的表格公式、合并标题显示与模板市场按钮对齐。云端能力仍按预发布状态提供。
+当前预发布版本：**1.9.4**，适用于 Windows x64。本版修复选区悬浮菜单越界、按钮不可见与缩放定位问题，补齐操作图标，并保留 1.9.3 的表格公式与模板按钮修复。云端能力仍按预发布状态提供。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOffice1.9.3.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.3.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOfficeSetup1.9.3.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.3.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.3/SealOffice1.9.3.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.3 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.3)及[修复与验收](docs/v1.9.3-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.4/SealOffice1.9.4.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.4.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.4/SealOfficeSetup1.9.4.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.4.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.4/SealOffice1.9.4.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.4 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.4)及[修复与验收](docs/v1.9.4-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 

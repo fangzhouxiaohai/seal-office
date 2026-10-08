@@ -118,6 +118,8 @@ describe('文字编辑器选区浮窗', () => {
     选中正文(container, '浮窗测试')
     await screen.findByRole('toolbar', { name: '选中内容操作' })
 
+    fireEvent.scroll(screen.getByRole('toolbar', { name: '选中内容操作' }).querySelector('.wps-float-panel__actions')!)
+    expect(screen.getByRole('toolbar', { name: '选中内容操作' })).toBeInTheDocument()
     fireEvent.scroll(window)
     await waitFor(() => expect(screen.queryByRole('toolbar', { name: '选中内容操作' })).toBeNull())
 

@@ -3639,20 +3639,35 @@ button {
   position: fixed;
   z-index: 1200;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px 6px;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  box-sizing: border-box;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--bg-card);
   box-shadow: var(--shadow-card);
   font-family: inherit;
 }
+.wps-float-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 2px;
+  min-width: 0;
+  max-height: calc(100vh - 42px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .wps-float-panel__item {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  min-height: 30px;
+  flex: 0 0 auto;
   padding: 0 8px;
   border: none;
   border-radius: var(--radius-control);
@@ -3666,13 +3681,15 @@ button {
 .wps-float-panel__item:hover:not(:disabled) { background: var(--bg-hover); }
 .wps-float-panel__item:disabled { color: var(--text-3); cursor: not-allowed; }
 .wps-float-panel__item:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.wps-float-panel__item--ai { color: var(--brand); background: var(--brand-soft, #edf3ff); }
 .wps-float-panel__icon { width: 14px; height: 14px; flex: 0 0 auto; }
-.wps-float-panel__divider { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
+.wps-float-panel__divider { width: 1px; height: 18px; flex: 0 0 1px; margin: 0 4px; background: var(--border); }
 .wps-float-panel__close {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 30px;
+  flex: 0 0 28px;
   margin-left: 2px;
   padding: 0;
   border: none;

@@ -66,9 +66,13 @@ describe('演示编辑器选区浮窗', () => {
     for (const 名称 of ['复制', '剪切', '粘贴', '删除对象', '置于顶层', '置于底层', '左对齐', '水平居中', '右对齐', '加粗', '斜体', '下划线', '字体颜色（红色）']) {
       expect(within(面板).getByRole('button', { name: 名称 })).toBeInTheDocument()
     }
+    fireEvent.scroll(面板.querySelector('.wps-float-panel__actions')!)
+    expect(面板).toBeInTheDocument()
     for (const 名称 of ['润色', '翻译', '总结']) {
       expect(within(面板).getByRole('button', { name: 名称 })).toBeInTheDocument()
     }
+    fireEvent.scroll(window)
+    await waitFor(() => expect(screen.queryByRole('toolbar', { name: '选中对象操作' })).toBeNull())
   })
 
   it('对象操作接到真实对象操作：锁定对象时如实给出原因', async () => {

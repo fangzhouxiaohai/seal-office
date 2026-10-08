@@ -326,7 +326,10 @@ const SheetEditor = () => {
     set浮窗位置(从元素计算浮窗位置(锚点, { 宽: window.innerWidth, 高: window.innerHeight }))
   }, [选区, 选区跨多格, 工作表])
   useEffect(() => {
-    const 收起 = () => set浮窗位置(null)
+    const 收起 = (事件?: Event) => {
+      if (事件?.target instanceof Element && 事件.target.closest('.wps-float-panel')) return
+      set浮窗位置(null)
+    }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 收起() }
     window.addEventListener('scroll', 收起, true)
     window.addEventListener('resize', 收起)

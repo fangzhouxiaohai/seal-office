@@ -1,5 +1,7 @@
 // 选区浮窗：选中内容后浮出的功能面板。定位、跟随、关闭规则都集中在这里，四类文件共用。
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import Icon from './Icon'
 
 export interface 浮窗按钮 {
   /** 稳定标识：命令 id 或动作名 */
@@ -28,6 +30,8 @@ export interface 浮窗位置 {
   y: number
   /** 面板放在选区上方还是下方，供样式调整动画与圆角 */
   在上方: boolean
+  /** 保留原选区，渲染后按面板实际尺寸重新定位。 */
+  锚点?: 选区矩形
 }
 
 const 面板宽度估算 = 360
@@ -42,10 +46,10 @@ export function 计算浮窗位置(选区: 选区矩形, 视口: { 宽: number; 
   const 最大左 = Math.max(视口留白, 视口.宽 - 面板尺寸.宽 - 视口留白)
   const x = Math.min(最大左, Math.max(视口留白, 期望左))
   const 上方 = 选区.top - 面板尺寸.高 - 与选区间距
-  if (上方 >= 视口留白) return { x, y: 上方, 在上方: true }
+  if (上方 >= 视口留白) return { x, y: 上方, 在上方: true, 锚点: 选区 }
   const 下方 = 选区.bottom + 与选区间距
   const 最大上 = Math.max(视口留白, 视口.高 - 面板尺寸.高 - 视口留白)
-  return { x, y: Math.min(最大上, 下方), 在上方: false }
+  return { x, y: Math.max(视口留白, Math.min(最大上, 下方)), 在上方: false, 锚点: 选区 }
 }
 
 /** 表格、演示、PDF 这类没有 DOM 选区的模块：以锚点元素的矩形定位浮窗 */
@@ -82,43 +86,67 @@ interface 浮窗属性 {
 
 /** 只负责呈现：不抢焦点（mousedown 阻止默认），Esc 与点击外部由调用方决定 */
 export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }: 浮窗属性) => {
+  const 面板引用 = useRef<HTMLDivElement>(null)
+  const [实测位置, set实测位置] = useState<浮窗位置 | null>(null)
+  useLayoutEffect(() => {
+    if (!打开 || !位置 || !按钮.length) return
+    const 面板 = 面板引用.current
+    if (!面板) return
+    const 定位 = () => {
+      const 矩形 = 面板.getBoundingClientRect()
+      if (!矩形.width || !矩形.height) return
+      const 视口 = { 宽: document.documentElement.clientWidth || window.innerWidth, 高: document.documentElement.clientHeight || window.innerHeight }
+      const 新位置 = 位置.锚点
+        ? 计算浮窗位置(位置.锚点, 视口, { 宽: 矩形.width, 高: 矩形.height })
+        : { ...位置, x: Math.max(视口留白, Math.min(位置.x, 视口.宽 - 矩形.width - 视口留白)), y: Math.max(视口留白, Math.min(位置.y, 视口.高 - 矩形.height - 视口留白)) }
+      set实测位置(旧 => 旧?.x === 新位置?.x && 旧?.y === 新位置?.y && 旧?.在上方 === 新位置?.在上方 ? 旧 : 新位置)
+    }
+    定位()
+    const 观察 = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(定位)
+    观察?.observe(面板)
+    window.addEventListener('resize', 定位)
+    return () => { 观察?.disconnect(); window.removeEventListener('resize', 定位) }
+  }, [打开, 位置, 按钮])
   if (!打开 || 位置 === null || 按钮.length === 0) return null
+  const 显示位置 = 实测位置 ?? 位置
+  const 图标映射: Record<string, string> = { brush: 'format-painter', strike: 'strikethrough', highlight: 'shading', color: 'wordart', clear: 'trash', list: 'bullet-list', 'number-list': 'numbered-list', sparkle: 'ai', fill: 'shading', merge: 'table', wrap: 'paragraph-mark', sum: 'formula', delete: 'trash' }
   const 分组 = 按钮.reduce<number[]>((合计, 项) => {
     const 组 = 项.分组 ?? 0
     if (合计[合计.length - 1] !== 组) 合计.push(组)
     return 合计
   }, [])
-  return (
+  return createPortal(
     <div
-      className={`wps-float-panel${位置.在上方 ? '' : ' wps-float-panel--below'}`}
-      style={{ left: 位置.x, top: 位置.y }}
+      ref={面板引用}
+      className={`wps-float-panel${显示位置.在上方 ? '' : ' wps-float-panel--below'}`}
+      style={{ left: 显示位置.x, top: 显示位置.y }}
       role="toolbar"
       aria-label={名称}
       // 阻止默认不改变选区，用户点完面板还能继续操作选中的内容
       onMouseDown={(事件) => 事件.preventDefault()}
       onContextMenu={(事件) => 事件.preventDefault()}
     >
-      {按钮.map((项, 下标) => {
+      <div className="wps-float-panel__actions">{按钮.map((项, 下标) => {
         const 需要分割线 = 下标 > 0 && 按钮[下标 - 1].分组 !== 项.分组 && 分组.length > 1
         return (
           <React.Fragment key={项.id}>
             {需要分割线 ? <span className="wps-float-panel__divider" aria-hidden="true" /> : null}
             <button
               type="button"
-              className="wps-float-panel__item"
+              className={`wps-float-panel__item${项.id.startsWith('ai.') ? ' wps-float-panel__item--ai' : ''}`}
               title={项.标签}
               aria-label={项.标签}
               disabled={项.禁用 === true}
               onClick={() => 项.执行()}
             >
-              {项.图标 ? <span className={`wps-float-panel__icon wps-float-panel__icon--${项.图标}`} aria-hidden="true" /> : null}
+              {项.图标 || 项.id.startsWith('ai.') ? <Icon className="wps-float-panel__icon" name={图标映射[项.图标 ?? ''] ?? 项.图标 ?? 'ai'} size={14} /> : null}
               <span className="wps-float-panel__label">{项.标签}</span>
             </button>
           </React.Fragment>
         )
-      })}
+      })}</div>
       <button type="button" className="wps-float-panel__close" aria-label={`关闭${名称}`} title="关闭" onClick={on关闭}>×</button>
-    </div>
+    </div>, document.body
   )
 }
 
@@ -170,7 +198,11 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       set位置(新位置)
       set打开(true)
     }
-    const 收起 = () => 关闭()
+    const 收起 = (事件: Event) => {
+      // 小窗口内浮窗自身滚动不能收起；文档或窗口滚动仍收起。
+      if (事件.target instanceof Element && 事件.target.closest('.wps-float-panel')) return
+      关闭()
+    }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 关闭() }
     document.addEventListener('selectionchange', 同步)
     document.addEventListener('mouseup', 同步)

@@ -27,7 +27,7 @@ export const ICON_NAMES = [
   'zoom-in', 'zoom-out', 'zoom-reset', 'fit-width',
   'watermark', 'page-border', 'page-color', 'columns', 'page-break',
   'margin', 'orientation', 'paper-size', 'line-numbers', 'export-file', 'close',
-  'open', 'save', 'save-as',
+  'open', 'save', 'save-as', 'front', 'back',
 ]
 
 interface IconProps {
@@ -39,6 +39,8 @@ interface IconProps {
 
 /** 线性图标路径表 */
 const 线性路径: Record<string, React.ReactNode> = {
+  front: <><path d="M10 5h3v8H5v-3" /><rect x="2" y="2" width="8" height="8" rx="1" fill="var(--bg-card)" /></>,
+  back: <><rect x="2" y="2" width="8" height="8" rx="1" /><rect x="5" y="5" width="8" height="8" rx="1" fill="var(--bg-card)" /></>,
   home: <path d="M3 7.2 8 3l5 4.2V13H3z" />,
   clock: (
     <>
