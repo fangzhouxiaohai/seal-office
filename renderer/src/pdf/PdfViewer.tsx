@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
-import { use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
+import { 默认文件缩放, use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
 import ContextMenu, { type 菜单节点 } from '../components/ContextMenu'
 import { 通用AI指令, 交给助手 } from '../assistant/quickActions'
@@ -20,7 +20,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
-  const [缩放, set缩放] = useState(1)
+  const [缩放, set缩放] = useState(默认文件缩放)
   const [可用宽度, set可用宽度] = useState<number | null>(null)
   const [页面文字, set页面文字] = useState('')
   const [文字项, set文字项] = useState<页面文字项[]>([])
@@ -111,7 +111,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     let 关闭文档: (() => void) | null = null
     set文档(null)
     set当前页(1)
-    set缩放(1)
+    set缩放(默认文件缩放)
     set页面文字('')
     set文字项([])
     if (!数据) {

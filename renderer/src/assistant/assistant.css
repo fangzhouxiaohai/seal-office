@@ -1,7 +1,7 @@
 .assistant-launcher {
   position: fixed;
   right: var(--space-4);
-  bottom: 76px;
+  bottom: 104px;
   z-index: 30;
   display: inline-flex;
   align-items: center;
@@ -92,7 +92,7 @@
 .assistant-settings__grid label { display: grid; gap: var(--space-1); font-size: 12px; color: var(--text-2); }
 .assistant-settings__actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 @media (max-width: 480px) {
-  .assistant-launcher { right: var(--space-2); bottom: 70px; }
+  .assistant-launcher { right: var(--space-2); bottom: 104px; }
   .assistant-drawer__header, .assistant-drawer__messages, .assistant-preview, .assistant-drawer__composer { padding-left: var(--space-3); padding-right: var(--space-3); }
   .assistant-drawer__header { flex-wrap: wrap; }
   .assistant-drawer__reasoning { flex-wrap: wrap; }

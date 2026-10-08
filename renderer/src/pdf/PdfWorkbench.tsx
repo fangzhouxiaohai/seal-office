@@ -28,6 +28,7 @@ interface PdfWorkbenchProps {
   onSelected?: (标识: string) => void
   onRemoved?: (标识: string) => void
   onSaved?: (路径: string, 数据: string) => void
+  onEdited?: (数据:string) => void
 }
 
 function 读取PDF文件(文件: File): Promise<本地PDF文件> {
@@ -47,7 +48,7 @@ function 读取PDF文件(文件: File): Promise<本地PDF文件> {
   })
 }
 
-const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, onSelected, onRemoved, onSaved }: PdfWorkbenchProps) => {
+const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, onSelected, onRemoved, onSaved, onEdited }: PdfWorkbenchProps) => {
   const { message, modal } = AntdApp.useApp()
   const [文件列表, set文件列表] = useState<本地PDF文件[]>([])
   const [预览标识, set预览标识] = useState<string | null>(null)
@@ -176,6 +177,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   }
 
   const 保存结果 = async (数据: string, 默认名称: string) => {
+    set文件列表(当前 => 当前.map(f => f.标识 === 预览标识 ? {...f, 数据} : f))
+    onEdited?.(数据)
     const 原始路径 = await 桥接.showSaveDialog(默认名称, 'pdf')
     if (!原始路径) return
     const 扩展 = 原始路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()

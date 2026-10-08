@@ -1,0 +1,7 @@
+[Unit]
+Description=Seal Office Cloud hourly health check
+[Timer]
+OnCalendar=hourly
+Persistent=true
+[Install]
+WantedBy=timers.target

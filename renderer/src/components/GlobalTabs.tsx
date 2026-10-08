@@ -3,6 +3,7 @@ import { App as AntdApp, Dropdown } from 'antd'
 import Icon from './Icon'
 import { useAppStore, type WorkspaceTab } from '../store'
 import './bottomTabs.css'
+import {flushCloudBeforeClose} from '../cloud/autosaveLifecycle'
 
 const 类型图标: Record<WorkspaceTab['type'], string> = {
   word: 'doc-word',
@@ -42,7 +43,7 @@ const GlobalTabs = () => {
       content: `关闭「${标签.name}」将放弃尚未保存的内容。`,
       okText: '放弃修改',
       cancelText: '取消',
-      onOk: () => closeWorkspaceTab(标签.id),
+      onOk: async () => {await flushCloudBeforeClose(标签.id);closeWorkspaceTab(标签.id)},
     })
   }
 

@@ -6,6 +6,7 @@ import { useAppStore } from '../store'
 import Icon from '../components/Icon'
 import { 读取翻译配置, 保存翻译配置, 清除翻译配置 } from '../editor/translateSettings'
 import AiSettingsCard from '../assistant/AiSettingsCard'
+import CloudSettings from '../cloud/CloudSettings'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
 import './settings.css'
@@ -206,16 +207,6 @@ const SettingsPage = () => {
       : <div className="settings-wps-row">{内容}</div>
   }
 
-  /** 未开放能力仅展示状态，不允许切换出虚假的已启用状态 */
-  const 未开放开关行 = (标题: string, 描述: string) =>
-    设置行(
-      标题,
-      描述,
-      <Switch checked={false} disabled aria-label={标题} />,
-      undefined,
-      '暂未开放'
-    )
-
   return (
     <div className="settings-page">
       <div className="settings-page__header">
@@ -237,13 +228,10 @@ const SettingsPage = () => {
         {组标题('工作环境')}
         <div className="settings-wps-card">
           {设置行('退出时保存工作状态', '下次启动时恢复仍在工作区的本地标签及编辑内容', <Switch aria-label="退出时保存工作状态" checked={恢复工作状态} disabled={本地偏好读取失败} onChange={(值) => 保存本地偏好('seal-session-restore', 值, 设恢复工作状态)} />)}
-          {未开放开关行('文档云同步', '云端同步功能暂未开放，文档保存在本机')}
-          {未开放开关行('云文档默认启用自动保存', '云文档功能暂未开放')}
           {设置行('沙箱保护', '应用运行时始终启用进程沙箱保护', <Switch checked disabled aria-label="沙箱保护" />)}
           {设置行('SSL 安全校验', '网络请求沿用系统证书校验策略，不能在此关闭', <Switch checked disabled aria-label="SSL 安全校验" />)}
           {设置行('使用鼠标双击关闭标签', '双击底部文件标签时关闭；有未保存内容时先确认', <Switch aria-label="使用鼠标双击关闭标签" checked={双击关闭标签} disabled={本地偏好读取失败} onChange={(值) => 保存本地偏好('seal-tab-double-click-close', 值, 设双击关闭标签)} />)}
           {设置行('系统预览窗格设置', 'Windows 资源管理器预览由系统预览处理程序提供；当前安装包未提供该组件', <span className="settings-wps-row__status">需要 Windows 预览处理程序</span>)}
-          {设置行('在线文档浏览设置', '在线文档浏览需要账号和云端服务，当前仅处理本机文件', <span className="settings-wps-row__status">需要云端服务</span>)}
           {设置行(
             '文字内容自动备份',
             '文字编辑内容在本机自动备份；发生异常退出后可在下次启动时恢复'
@@ -251,6 +239,7 @@ const SettingsPage = () => {
         </div>
 
         {/* 组件管理 */}
+        <CloudSettings />
         {组标题('组件管理')}
         <div className="settings-wps-card">
           {设置行(

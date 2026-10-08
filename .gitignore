@@ -9,3 +9,10 @@ renderer/tmp-test/
 __app_run.log
 design/
 main/integrity-manifest.json
+.env
+.env.*
+server/node_modules/
+server/data/
+server/admin/upstream/
+server/admin/dist/
+.upgrade-private/

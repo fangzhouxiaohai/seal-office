@@ -86,9 +86,9 @@ describe('设置页状态与真实能力一致', () => {
     expect(screen.getByText(/请在 Windows 桌面版启用/)).toBeInTheDocument()
   })
 
-  it('云同步不可切换，本地会话恢复和双击关闭标签可保存偏好', async () => {
+  it('云空间默认关闭且自动保存依赖云空间，本地会话恢复和双击关闭标签可保存偏好', async () => {
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
-    const 云同步 = screen.getByText('文档云同步').closest('.settings-wps-row')?.querySelector('[role="switch"]')
+    const 云同步 = screen.getByRole('switch', {name:'云文档自动保存'})
     const 退出恢复 = screen.getByRole('switch', { name: '退出时保存工作状态' })
     const 双击关闭 = screen.getByRole('switch', { name: '使用鼠标双击关闭标签' })
     expect(云同步).toBeDisabled()
@@ -107,7 +107,7 @@ describe('设置页状态与真实能力一致', () => {
     expect(screen.queryByRole('button', { name: /系统预览窗格设置/ })).not.toBeInTheDocument()
     expect(screen.getByText('窗口管理模式').closest('.settings-wps-row')).toHaveTextContent('整合式底部标签')
     expect(screen.queryByRole('button', { name: /窗口管理模式/ })).not.toBeInTheDocument()
-    expect(screen.getByText('在线文档浏览设置').closest('.settings-wps-row')).toHaveTextContent('需要云端服务')
+    expect(screen.getByRole('switch', {name:'云空间'})).toHaveAttribute('aria-checked','false')
   })
 
   it('文件关联提供设为默认程序动作', async () => {

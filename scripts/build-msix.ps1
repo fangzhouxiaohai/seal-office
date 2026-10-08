@@ -15,7 +15,7 @@ param(
   [string]$PublisherDisplayName = '星马软件',
   [string]$DisplayName = '海豹办公',
   [string]$Description = '海豹办公 Seal Office — 本地办公套件',
-  [string]$Version = '1.8.3.0',
+  [string]$Version = '',
   [string]$MinVersion = '10.0.17763.0',
   [string]$MaxVersionTested = '10.0.22621.0',
   [string]$Source = '',
@@ -27,15 +27,19 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $根 = Split-Path -Parent $PSScriptRoot
-if (-not $Source) { $Source = Join-Path $根 'release\v1.8.3\win-unpacked' }
-if (-not $Output) { $Output = Join-Path $根 'release\v1.8.3\SealOffice 1.8.3.msix' }
+$应用版本 = (Get-Content -LiteralPath (Join-Path $根 'package.json') -Raw | ConvertFrom-Json).version
+if (-not $Version) { $Version = "$应用版本.0" }
+if (-not $Source) { $Source = Join-Path $根 "release\v$应用版本\win-unpacked" }
+if (-not $Output) { $Output = Join-Path $根 "release\v$应用版本\SealOffice $应用版本.msix" }
 if (-not $Assets) { $Assets = Join-Path $根 'build\appx' }
 
 if (-not (Test-Path -LiteralPath $Source)) { throw "找不到应用目录：$Source" }
 if (-not (Test-Path -LiteralPath $MakeAppx)) { throw "找不到 makeappx：$MakeAppx" }
 if (-not (Test-Path -LiteralPath (Join-Path $Source 'SealOffice.exe'))) { throw "应用目录里没有 SealOffice.exe：$Source" }
 
-$布局 = Join-Path $根 'release\msix-layout'
+$布局 = [IO.Path]::GetFullPath((Join-Path $根 "release\msix-layout-$应用版本"))
+$发布目录 = [IO.Path]::GetFullPath((Join-Path $根 'release')) + [IO.Path]::DirectorySeparatorChar
+if (-not $布局.StartsWith($发布目录, [StringComparison]::OrdinalIgnoreCase)) { throw 'MSIX 临时目录必须位于项目发布目录内' }
 if (Test-Path -LiteralPath $布局) { Remove-Item -LiteralPath $布局 -Recurse -Force }
 New-Item -ItemType Directory -Path $布局 -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $布局 'Assets') -Force | Out-Null

@@ -510,6 +510,24 @@ describe('createDoc 按文档保存模型', () => {
     expect(状态!.workspaceTabs.find((项) => 项.id === 演示标识)?.dirty).toBe(true)
   })
 
+  it('磁盘 PDF 未另存的改动随备份恢复，恢复时不重新读取旧文件',async()=>{
+    localStorage.setItem('seal-session-restore','true')
+    let backup:string|null=null,state:AppState|null=null
+    const readFile=vi.fn(),backupSave=vi.fn(async(content:string)=>{backup=content;return {成功:true}})
+    Object.defineProperty(window,'electronAPI',{configurable:true,value:{backupLoad:vi.fn(async()=>({成功:true,内容:backup})),backupSave,readFile,backupClear:vi.fn(async()=>({成功:true}))}})
+    const Probe=()=>{state=useAppStore();return null}
+    try{
+      const view=render(<AppProvider><Probe/></AppProvider>);await waitFor(()=>expect(window.electronAPI!.backupLoad).toHaveBeenCalled())
+      act(()=>state!.createDoc('pdf','JVBERi0=',{路径:'D:/原件.pdf'}));const id=state!.activeWorkspaceTabId!
+      act(()=>state!.更新PDF内容(id,'JVBERi1lZGl0'))
+      await act(async()=>{await state!.刷新工作状态备份()})
+      expect(JSON.parse(backup!).pdfDocuments[0]).toMatchObject({data:'JVBERi1lZGl0',dirty:true,path:'D:/原件.pdf'})
+      view.unmount();render(<AppProvider><Probe/></AppProvider>)
+      await waitFor(()=>expect(state!.PDF待预览?.数据).toBe('JVBERi1lZGl0'))
+      expect(state!.workspaceTabs[0].dirty).toBe(true);expect(readFile).not.toHaveBeenCalled()
+    }finally{localStorage.removeItem('seal-session-restore');Reflect.deleteProperty(window,'electronAPI')}
+  })
+
   it('同一路径 PDF 更新内容时复用标签并立即预览新版本', async () => {
     let 状态: AppState | null = null
     const 读取 = () => { 状态 = useAppStore(); return <>

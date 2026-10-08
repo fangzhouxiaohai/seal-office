@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew Seal Office Cloud TLS Certificate
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/.acme.sh/acme.sh --renew -d seal.xingmasoft.com --ecc --server letsencrypt
+SuccessExitStatus=2
+TimeoutStartSec=180

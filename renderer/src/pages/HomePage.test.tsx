@@ -67,12 +67,12 @@ describe('首页（WPS 版式）', () => {
     expect(screen.getByRole('button', { name: '打开文件' })).toBeInTheDocument()
   })
 
-  it('展示最近头部、刷新与云同步占位', () => {
+  it('展示最近头部、刷新与云自动保存状态', () => {
     渲染首页()
     expect(screen.getByText('最近')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '刷新最近列表' })).toBeInTheDocument()
-    expect(screen.getByRole('status', { name: '云端同步暂未开放' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '云端同步暂未开放' })).not.toBeInTheDocument()
+    expect(screen.getByRole('status', { name: '云文档自动保存未开启' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '云文档自动保存未开启' })).not.toBeInTheDocument()
   })
 
   it('展示全部类型筛选下拉并按类型过滤文档', async () => {

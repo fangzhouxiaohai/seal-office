@@ -4,9 +4,11 @@ import React from 'react'
 import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
+import { 缩放百分比文本 } from '../wheelZoom'
 
 interface Props {
   activeKey: string
+  缩放?: number
   /** 标签声明，默认使用文字编辑器的六标签；表格传入自己的七标签 */
   tabs?: RibbonTabSpec[]
   /** 按钮被点击时回传命令标识与参数 */
@@ -24,6 +26,7 @@ interface Props {
 
 const RibbonPanel = ({
   activeKey,
+  缩放,
   tabs = RIBBON_TABS,
   onCommand,
   获取激活态,
@@ -48,7 +51,7 @@ const RibbonPanel = ({
           React.createElement(RibbonButton, {
             key: `${组.name}-${项.commandId}-${项.label}`,
             icon: 项.icon,
-            label: 项.label,
+            label: 项.commandId === 'view.zoomReset' && 缩放 !== undefined ? 缩放百分比文本(缩放) : 项.label,
             size: 项.kind === 'small' ? 'small' : 'large',
             active: 获取激活态 ? 获取激活态(项.commandId) : false,
             disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,

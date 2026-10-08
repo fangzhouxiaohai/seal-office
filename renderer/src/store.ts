@@ -57,6 +57,7 @@ export interface PdfDocument {
   name: string
   path: string | null
   data: string | null
+  dirty?: boolean
 }
 
 type 备份结果 = { 成功: boolean; 错误?: string }
@@ -99,6 +100,8 @@ export interface AppState {
   更新演示文档模型: (标识: string, 更新: React.SetStateAction<演示文稿>) => void
   PDF待预览: { 路径: string; 名称: string; 数据: string } | null
   pdfDocuments: readonly PdfDocument[]
+  更新PDF内容: (标识:string, 数据:string) => void
+  保存PDF文档: (标识:string, 路径:string, 数据:string) => void
   /** 重命名文档；传入纯空白名称时不生效，避免写入无效文件名 */
   renameDoc: (标识: string, 名称: string) => Promise<void>
   /** 删除文档；若删除的是当前打开文档，同时清空选中标识 */
@@ -294,7 +297,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       })
     }
     for (const 文档 of pdfDocuments) {
-      文档标签.set(文档.id, { id: 文档.id, name: 文档.name, type: 'pdf', path: 文档.path, dirty: false })
+      文档标签.set(文档.id, { id: 文档.id, name: 文档.name, type: 'pdf', path: 文档.path, dirty: Boolean(文档.dirty) })
     }
     return workspaceOrder.flatMap((标识) => {
       const 标签 = 文档标签.get(标识)
@@ -374,7 +377,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       documents: 状态.documents, activeDocumentId: 状态.activeDocumentId,
       文档路径: 状态.文档路径, 表格文档模型: 状态.表格文档模型,
       演示文档模型: 状态.演示文档模型,
-      pdfDocuments: 状态.pdfDocuments.map(({ id, name, path, data }) => ({ id, name, path, ...(path === null ? { data } : {}) })),
+      pdfDocuments: 状态.pdfDocuments.map(({ id, name, path, data, dirty }) => ({ id, name, path, ...(dirty ? {dirty:true} : {}), ...(path === null || dirty ? { data } : {}) })),
       activePdfId: 状态.activePdfId, activeModule: 状态.module, workspaceOrder: 状态.workspaceOrder,
     }) }
   }
@@ -508,7 +511,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           表格文档模型?: Record<string, Sheet[]>
           演示文档模型?: Record<string, 演示文稿>
           演示资源字节?: 演示资源条目[]
-          pdfDocuments?: Array<{ id: string; name: string; path: string | null; data?: string | null }>
+          pdfDocuments?: Array<{ id: string; name: string; path: string | null; data?: string | null; dirty?: boolean }>
           activePdfId?: string | null
           activeModule?: ModuleKey
           workspaceOrder?: string[]
@@ -552,7 +555,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
               (记录.path !== null && typeof 记录.path !== 'string')) {
             throw new Error('PDF 标签记录格式无效')
           }
-          if (记录.path === null) {
+          if (记录.path === null || 记录.dirty) {
             if (typeof 记录.data === 'string') return { ...记录, data: 记录.data }
             if (记录.data === null && 记录.name === 'PDF 工具') return { ...记录, data: null }
             throw new Error(`无法恢复「${记录.name}」：备份缺少 PDF 文件内容`)
@@ -882,6 +885,18 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     throw new Error('找不到要切换的工作区标签')
   }
 
+  const 更新PDF内容 = (标识:string, 数据:string) => {
+    setPdfDocuments(当前 => 当前.map(文档 => 文档.id === 标识 ? {...文档,data:数据,dirty:true} : 文档))
+    if (activePdfId === 标识) setPDF待预览(当前 => 当前 ? {...当前,数据} : 当前)
+  }
+  const 保存PDF文档 = (标识:string, 路径:string, 数据:string) => {
+    const 文档 = pdfDocuments.find(d => d.id === 标识)
+    if (!文档) throw new Error('PDF 标签已关闭')
+    if (pdfDocuments.some(d => d.id !== 标识 && 是同一路径(d.path, 路径))) throw new Error('此路径已在其他 PDF 标签打开')
+    setPdfDocuments(当前 => 当前.map(d => d.id === 标识 ? {...d,path:路径,name:基准文件名(路径),data:数据,dirty:false} : d))
+    if (activePdfId === 标识) setPDF待预览({路径,名称:基准文件名(路径),数据})
+  }
+
   const closeWorkspaceTab = (标识: string) => {
     if (标识 === 'home') return
     if (documents.some((项) => 项.id === 标识)) {
@@ -1095,6 +1110,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       设置演示历史资源,
       PDF待预览,
       pdfDocuments,
+      更新PDF内容, 保存PDF文档,
       showSettings,
       showHelp,
       goHome,

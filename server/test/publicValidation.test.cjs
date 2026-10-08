@@ -1,0 +1,11 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),JSZip=require('jszip')
+const {validatePublic}=require('../publicValidation.cjs')
+test('公开格式、文件签名、宏、路径、XML 实体和解压大小检查',async()=>{
+  await assert.rejects(validatePublic(Buffer.from('exe'),'x.exe','knowledge'))
+  await assert.rejects(validatePublic(Buffer.from('fake'),'x.pdf','knowledge'))
+  await assert.rejects(validatePublic(Buffer.from('%PDF-1.7 /JavaScript'),'x.pdf','knowledge'))
+  const zip=new JSZip();zip.file('[Content_Types].xml','<Types/>');zip.file('ppt/presentation.xml','<p:presentation/>')
+  await validatePublic(await zip.generateAsync({type:'nodebuffer'}),'x.pptx','template')
+  zip.file('ppt/vbaProject.bin','macro');await assert.rejects(validatePublic(await zip.generateAsync({type:'nodebuffer'}),'x.pptx','template'))
+  zip.remove('ppt/vbaProject.bin');zip.file('ppt/presentation.xml','<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a/>');await assert.rejects(validatePublic(await zip.generateAsync({type:'nodebuffer'}),'x.pptx','template'))
+})

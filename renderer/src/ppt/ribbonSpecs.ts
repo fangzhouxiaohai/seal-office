@@ -363,7 +363,7 @@ const 视图标签: RibbonTabSpec = {
     },
     {
       name: '显示比例',
-      items: [大('view.zoomIn', '放大', 'zoom-in'), 大('view.zoomOut', '缩小', 'zoom-out')],
+      items: [大('view.zoomIn', '放大', 'zoom-in'), 大('view.zoomOut', '缩小', 'zoom-out'), 大('view.zoomReset', '100%', 'zoom-reset')],
     },
     {
       name: '导出',

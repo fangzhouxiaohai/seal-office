@@ -4,7 +4,7 @@ import { useAppStore } from '../store'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 
 const PdfPage = () => {
-  const { PDF待预览, pdfDocuments, activeWorkspaceTabId, createDoc, selectWorkspaceTab, closeWorkspaceTab } = useAppStore()
+  const { PDF待预览, pdfDocuments, activeWorkspaceTabId, createDoc, 更新PDF内容, 保存PDF文档, selectWorkspaceTab, closeWorkspaceTab } = useAppStore()
   const 待替换标签 = useRef<{ 原标识: string; 目标路径: string } | null>(null)
   const 已打开文件 = useMemo(() => pdfDocuments.filter((文件) => 文件.data !== null).map((文件) => ({ 标识: 文件.id, 名称: 文件.name, 数据: 文件.data! })), [pdfDocuments])
 
@@ -21,7 +21,8 @@ const PdfPage = () => {
     const 原文件 = pdfDocuments.find((文件) => 文件.id === activeWorkspaceTabId)
     if (原文件?.path === null) 待替换标签.current = { 原标识: 原文件.id, 目标路径: 路径 }
     try {
-      createDoc('pdf', 数据, { 路径 })
+      if (activeWorkspaceTabId && activeWorkspaceTabId !== 'home') 保存PDF文档(activeWorkspaceTabId,路径,数据)
+      else createDoc('pdf', 数据, { 路径 })
     } catch (错误) {
       待替换标签.current = null
       throw 错误
@@ -38,6 +39,7 @@ const PdfPage = () => {
       if (pdfDocuments.some((文件) => 文件.id === 标识)) selectWorkspaceTab(标识)
     }}
     onRemoved={closeWorkspaceTab}
+    onEdited={数据 => {if(activeWorkspaceTabId)更新PDF内容(activeWorkspaceTabId,数据)}}
     onSaved={保存后打开}
   />
 }

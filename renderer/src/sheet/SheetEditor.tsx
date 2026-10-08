@@ -41,7 +41,7 @@ import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheetImport'
-import { use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
+import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import './sheetFeatures.css'
 
@@ -87,7 +87,8 @@ const SheetEditor = () => {
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
-  const [缩放, set缩放] = useState(1)
+  const [缩放, set缩放] = useState(默认文件缩放)
+  useEffect(() => { set缩放(默认文件缩放) }, [activeDocumentId])
   const [当前视图, set当前视图] = useState<'普通' | '页面布局'>('普通')
   const [显示网格线, set显示网格线] = useState(true)
   const [拆分映射, set拆分映射] = useState<Record<string, boolean>>({})
@@ -596,6 +597,11 @@ const SheetEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    if (标识 === 'view.zoomReset') { set缩放(1); return }
+    if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
+      set缩放(当前 => (标识 === 'view.zoomIn' ? 放大一档(当前) : 缩小一档(当前)) ?? 当前)
+      return
+    }
     if (标识 === 'file.print') {
       const 内容 = 导出为Html表格(工作表, 工作表.name)
       if (!内容) { message.warning('当前工作表为空，无法打印'); return }
@@ -1129,6 +1135,7 @@ const SheetEditor = () => {
       tabs: 表格标签,
     }),
     React.createElement(RibbonPanel, {
+      缩放,
       activeKey: 当前标签,
       tabs: 表格标签,
       onCommand: 执行命令,

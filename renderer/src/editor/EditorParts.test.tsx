@@ -49,7 +49,7 @@ describe('编辑区', () => {
   it('缩放比例写入纸张样式', () => {
     const { container } = render(<EditorCanvas html="<p>内容</p>" scale={1.5} />)
     const 纸张 = container.querySelector('.wps-editor-canvas__paper') as HTMLElement
-    expect(纸张.style.transform).toContain('1.5')
+    expect(纸张.style.zoom).toBe('1.5')
   })
 })
 

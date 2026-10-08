@@ -22,6 +22,7 @@ import { 解析文档, type 文档模型, type 文字页面设置 } from '../off
 import { 桥接 } from '../ipc/bridge'
 import { 基准文件名, 记录最近文档, 读取本地文件内容, type 打开类型 } from '../fileOpen'
 import { 导出为Html, 保存为纯文本, 纯文本损失项 } from './exportDoc'
+import { 放大一档, 缩小一档 } from './wheelZoom'
 
 export interface ViewState {
   缩放: number
@@ -648,11 +649,11 @@ const 视图命令: EditorCommand[] = [
   ),
   生成回调命令('view.navigation', '导航窗格', (上下文) => 上下文.切换导航窗格()),
   生成回调命令('view.zoomIn', '放大', (上下文) => {
-    上下文.setView({ 缩放: Math.min(2, Number((上下文.view.缩放 + 0.1).toFixed(2))) })
+    上下文.setView({ 缩放: 放大一档(上下文.view.缩放) ?? 上下文.view.缩放 })
     上下文.refresh()
   }),
   生成回调命令('view.zoomOut', '缩小', (上下文) => {
-    上下文.setView({ 缩放: Math.max(0.5, Number((上下文.view.缩放 - 0.1).toFixed(2))) })
+    上下文.setView({ 缩放: 缩小一档(上下文.view.缩放) ?? 上下文.view.缩放 })
     上下文.refresh()
   }),
   生成回调命令('view.zoomReset', '100%', (上下文) => {
@@ -660,7 +661,9 @@ const 视图命令: EditorCommand[] = [
     上下文.refresh()
   }),
   生成回调命令('view.zoomFitWidth', '适应页宽', (上下文) => {
-    上下文.setView({ 缩放: 1 })
+    const 容器=上下文.root.closest('.wps-editor-canvas'),纸张=容器?.querySelector<HTMLElement>('.wps-editor-canvas__paper')
+    const 比例=容器?.clientWidth&&纸张?.offsetWidth?(容器.clientWidth-48)/纸张.offsetWidth:1
+    上下文.setView({ 缩放: Math.min(64,Math.max(0.0833,比例)) })
     上下文.refresh()
   }),
 ]

@@ -5,8 +5,13 @@ export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '
   const 安全标题 = 标题.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const 附加样式 = 页眉Html || 页脚Html ? `<style>
 @page { margin: 25mm 20mm; }
-.seal-print-header { position: fixed; top: -18mm; left: 0; right: 0; font-size: 10pt; }
-.seal-print-footer { position: fixed; bottom: -18mm; left: 0; right: 0; font-size: 10pt; }
+.seal-print-header { position: fixed; top: 0; left: 0; right: 0; font-size: 10pt; }
+.seal-print-footer { position: fixed; bottom: 0; left: 0; right: 0; font-size: 10pt; }
+.seal-print-layout { width: 100%; border-collapse: collapse; }
+.seal-print-layout > thead { display: table-header-group; }
+.seal-print-layout > tfoot { display: table-footer-group; }
+.seal-print-layout > thead > tr > td, .seal-print-layout > tfoot > tr > td { height: 18mm; }
+.seal-print-layout > tbody > tr > td { padding: 0; }
 </style>` : ''
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -19,7 +24,7 @@ ${附加样式}
 <body>
 ${页眉Html ? `<div class="seal-print-header">${页眉Html}</div>` : ''}
 ${页脚Html ? `<div class="seal-print-footer">${页脚Html}</div>` : ''}
-${正文Html}
+${页眉Html || 页脚Html ? `<table class="seal-print-layout">${页眉Html ? '<thead><tr><td></td></tr></thead>' : ''}${页脚Html ? '<tfoot><tr><td></td></tr></tfoot>' : ''}<tbody><tr><td>${正文Html}</td></tr></tbody></table>` : 正文Html}
 </body>
 </html>
 `
@@ -79,6 +84,16 @@ export function 纯文本损失项(正文Html: string): string[] {
     结果.push('文字格式或链接')
   }
   return 结果
+}
+
+/** 与手动保存一致：保留原换行及 JSON 内容，不用格式转换覆盖纯文本。 */
+export function 文字文本输出(名称:string,正文Html:string,页眉Html='',页脚Html=''):string {
+  if (/\.html?$/i.test(名称)) return 导出为Html(名称.replace(/\.[^.]+$/,''),正文Html,页眉Html,页脚Html)
+  const 损失=纯文本损失项(正文Html)
+  if(损失.length||页眉Html||页脚Html)throw new Error('纯文本无法保存格式、图片、表格或页眉页脚，请另存为 DOCX')
+  const 输出=保存为纯文本(正文Html)
+  if(/\.json$/i.test(名称)){try{JSON.parse(输出)}catch{throw new Error('JSON 内容格式无效，请检查后保存')}}
+  return 输出
 }
 
 /** 依据文档名生成导出文件名，扩展名按目标格式替换 */

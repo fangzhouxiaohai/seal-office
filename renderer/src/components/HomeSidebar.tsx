@@ -20,8 +20,9 @@ interface Props {
 
 /** 云盘与本地导航项 */
 const 云盘项 = [
-  { key: 'my-cloud', label: '我的云文档', icon: 'folder' },
+  { key: 'my-cloud', label: '我的云空间', icon: 'folder' },
   { key: 'knowledge', label: '知识库', icon: 'knowledge' },
+  { key: 'market', label: '演示模板市场', icon: 'doc-ppt' },
   { key: 'device', label: '我的设备', icon: 'device' },
   { key: 'tag', label: '标签', icon: 'tag' },
   { key: 'trash', label: '回收站', icon: 'trash' },
@@ -101,7 +102,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
       'div',
       { className: 'wps-homenav' },
       渲染组标题('云盘'),
-      云盘项.map((项) => 渲染导航项(项, true))
+      云盘项.map((项) => 渲染导航项(项, ['device','tag'].includes(项.key)))
     ),
     // 本机文件夹
     React.createElement(

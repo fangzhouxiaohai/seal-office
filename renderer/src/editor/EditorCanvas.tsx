@@ -160,7 +160,10 @@ const EditorCanvas = ({
     right: margin === '自定义' && customMargin ? customMargin.右 / 15 : 边距左右,
   }
   const 纸张样式: React.CSSProperties = {
-    transform: `scale(${scale})`,
+    // Layout zoom reserves the full scaled height, including multi-page content.
+    // A centered transform otherwise puts the left side outside the scroll range.
+    zoom: scale,
+    flex: '0 0 auto',
     width: 页面宽,
     minHeight: 页面高,
     padding: 内边距,
@@ -183,7 +186,7 @@ const EditorCanvas = ({
 
   return React.createElement(
     'div',
-    { className: 容器类名 },
+    { className: 容器类名, style: { minWidth: 页面宽 * scale + 40 } },
     React.createElement(
       'div',
       { className: 'wps-editor-canvas__paper', style: 纸张样式 },

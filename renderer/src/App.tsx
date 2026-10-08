@@ -26,6 +26,10 @@ import NewFileNotifier, { 本机通知事件名, type 本机通知 } from './com
 import AssociatedFileOpener from './components/AssociatedFileOpener'
 import DefaultAppPrompt from './components/DefaultAppPrompt'
 import ErrorBoundary from './components/ErrorBoundary'
+import {CloudProvider,useCloud} from './cloud/CloudProvider'
+import CloudAutosave from './cloud/CloudAutosave'
+import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
+import './cloud/cloud.css'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
 
 /** 动态 Ant Design 主题配置 */
@@ -46,8 +50,9 @@ const 外壳 = () => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message, modal } = AntdApp.useApp()
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
-  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
+  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, pdfDocuments, 保存PDF文档, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
   const { 主题, 切换主题 } = useSettings()
+  const cloud = useCloud()
 
   const 是首页 = module === 'home'
   // 帮助手册以独立弹窗打开，不再切换整页
@@ -179,7 +184,7 @@ const 外壳 = () => {
     return 桥接.onCloseStateRequested((标识) => {
       void (async () => {
         let 备份: { 成功: boolean; 错误?: string }
-        try { 备份 = await 最新备份刷新.current() }
+        try { 备份 = await 最新备份刷新.current(); await flushCloudBeforeClose() }
         catch (错误) { 备份 = { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '无法刷新工作状态备份' } }
         const 结果 = await 桥接.respondCloseState(标识, {
           未保存数量: 最新风险文档数.current,
@@ -196,13 +201,13 @@ const 外壳 = () => {
   // “保存后退出”：把每个未保存文档写回原路径（没有路径的先询问位置），并把结果回报给主进程。
   const 最新保存全部 = React.useRef<() => Promise<保存全部应答>>(async () => ({ 成功: true, 已保存: [], 失败: [], 已取消: false }))
   最新保存全部.current = async () => {
-    const 待保存标签 = workspaceTabs.filter((标签) => 标签.dirty && (标签.type === 'word' || 标签.type === 'table' || 标签.type === 'ppt'))
+    const 待保存标签 = workspaceTabs.filter((标签) => 标签.dirty)
     const 待保存 = 待保存标签.map((标签) => {
       const 文档 = documents.find((项) => 项.id === 标签.id)
       return {
         标识: 标签.id,
         名称: 标签.name,
-        类型: 标签.type as 'word' | 'table' | 'ppt',
+        类型: 标签.type as 'word' | 'table' | 'ppt' | 'pdf',
         路径: 标签.path,
         ...(文档 === undefined ? {} : {
           html: 文档.html,
@@ -211,6 +216,7 @@ const 外壳 = () => {
           来源路径: 文档.来源路径,
           警告: 文档.警告,
         }),
+        ...(标签.type === 'pdf' ? {PDF数据:pdfDocuments.find(d=>d.id===标签.id)?.data||undefined} : {}),
         ...(标签.type === 'table' ? { 表格模型: 表格文档模型[标签.id] } : {}),
         ...(标签.type === 'ppt' ? { 演示模型: 演示文档模型[标签.id] } : {}),
       }
@@ -219,6 +225,7 @@ const 外壳 = () => {
     for (const 项 of 结果.已保存) {
       const 标签 = 待保存标签.find((当前) => 当前.id === 项.标识)
       const 文档 = documents.find((当前) => 当前.id === 项.标识)
+      if (标签?.type === 'pdf') { 保存PDF文档(项.标识,项.路径,pdfDocuments.find(d=>d.id===项.标识)?.data||''); continue }
       if (标签?.type === 'table') markDocumentSaved(项.标识, '', JSON.stringify(表格文档模型[项.标识] ?? []))
       else if (标签?.type === 'ppt') markDocumentSaved(项.标识, '', JSON.stringify(演示文档模型[项.标识]))
       else markDocumentSaved(项.标识, 文档?.html ?? '', undefined, { 页面设置: 文档?.页面设置 })
@@ -296,8 +303,8 @@ const 外壳 = () => {
       onHelp: () => set帮助弹窗打开(true),
       onShowSettings: showSettings,
       onShowHelp: () => set帮助弹窗打开(true),
-      onCloud: () => message.info('云文档功能即将开放，当前文档均保存在本机'),
-      onLogin: () => message.info('本机功能无需登录；云端服务暂未开放'),
+      onCloud: cloud.configure,
+      onLogin: cloud.configure,
       homeMode: 是首页,
       搜索词,
       on搜索变化: set搜索词,
@@ -307,6 +314,7 @@ const 外壳 = () => {
       主题深色: 主题 === '深色',
       on切换主题: 切换主题,
     }),
+    React.createElement(CloudAutosave),
     是首页
       ? React.createElement(
           'div',
@@ -363,7 +371,7 @@ const 外壳 = () => {
         onShowHelp: () => set帮助弹窗打开(true),
         onShowPdf: () => createDoc('pdf'),
       }) : null,
-      主内容
+      React.createElement('div', { style: { display:'flex',flexDirection:'column',flex:1,minWidth:0,minHeight:0 } }, 主内容)
     ),
     React.createElement(GlobalTabs, null),
     React.createElement(Footer, { total: docs.length, starred: 星标数 }),
@@ -451,7 +459,7 @@ const App = ({ 初始最近文档 }: { 初始最近文档?: DocItem[] } = {}) =>
         React.createElement(
           ErrorBoundary,
           null,
-          React.createElement(AppProvider, { 初始最近文档, children: React.createElement(外壳, null) })
+          React.createElement(CloudProvider, { children: React.createElement(AppProvider, { 初始最近文档, children: React.createElement(外壳, null) }) })
         )
       )
     )

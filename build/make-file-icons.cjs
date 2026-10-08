@@ -13,7 +13,7 @@ app.setPath('sessionData', 临时目录)
 app.disableHardwareAcceleration()
 
 function 生成SVG(类型) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${设计.viewBox}"><path d="${设计.paper}" fill="${类型.color}"/><path d="${设计.fold}" fill="${设计.markColor}" opacity="${设计.foldOpacity}"/><g fill="none" stroke="${设计.markColor}" stroke-width="${设计.strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${类型.paths.map(路径 => `<path d="${路径}"/>`).join('')}</g>${(类型.filledPaths || []).map(路径 => `<path d="${路径}" fill="${设计.markColor}"/>`).join('')}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${设计.viewBox}"><path d="${设计.paper}" fill="${类型.color}"/><path d="${设计.fold}" fill="${设计.markColor}" opacity="${设计.foldOpacity}"/><g fill="none" stroke="${设计.markColor}" stroke-width="${设计.strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${[...类型.paths,...设计.commonPaths].map(路径 => `<path d="${路径}"/>`).join('')}</g>${[...(类型.filledPaths || []),...设计.commonFilledPaths].map(路径 => `<path d="${路径}" fill="${设计.markColor}"/>`).join('')}</svg>`
 }
 function 生成ICO(帧) {
   const 头部 = Buffer.alloc(6 + 帧.length * 16)
@@ -66,7 +66,7 @@ app.whenReady().then(async () => {
     .sizes{height:84px;display:flex;gap:24px;align-items:flex-end}.sizes div{display:flex;flex-direction:column;align-items:center;gap:8px}.sizes span{font-size:12px;color:var(--secondary)}
     .dark{margin-top:24px;padding:16px;display:flex;align-items:center;gap:24px;background:var(--dark);border-radius:4px}
     footer{font-size:12px;color:var(--secondary);margin-top:24px}
-    </style><header><h1>海豹办公 · 文件类型图标</h1><p>四类文件使用统一纸张轮廓，通过颜色与内容形状区分</p></header><main>${栏目}</main><footer>图标设计预览 · 下方为深色背景 · 同类旧式与现代格式共用类别图标</footer></html>`
+    </style><header><h1>海豹办公 · 文件类型图标</h1><p>海豹鳍与海浪构成品牌标记，四类文件以颜色和内容形状区分</p></header><main>${栏目}</main><footer>图标设计预览 · 下方为深色背景 · 同类旧式与现代格式共用类别图标</footer></html>`
   窗口.setContentSize(1100, 640)
   await 窗口.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
   await 窗口.webContents.executeJavaScript('document.fonts.ready.then(()=>true)')

@@ -144,7 +144,7 @@ const TitleBar = ({
         渲染全局设置(),
         React.createElement(
           Tooltip,
-          { title: '登录（即将开放，当前版本免登录使用）' },
+          { title: '登录账号与管理云空间' },
           React.createElement(
             'button',
             {
@@ -163,7 +163,7 @@ const TitleBar = ({
     return React.createElement(
       React.Fragment,
       null,
-      渲染图标按钮('云文档（即将开放）', 'cloud', '云文档', onCloud),
+      渲染图标按钮('账号与云空间', 'cloud', '云文档', onCloud),
       渲染全局设置(),
       渲染图标按钮(
         '帮助手册',

@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  cloud: { invoke: (action, input) => ipcRenderer.invoke('cloud.invoke', action, input) },
   showSaveDialog: (默认文件名, 保存类型) => ipcRenderer.invoke('file.showSaveDialog', 默认文件名, 保存类型),
   showOpenDialog: (打开类型) => ipcRenderer.invoke('file.showOpenDialog', 打开类型),
   showOpenDialogMany: (打开类型) => ipcRenderer.invoke('file.showOpenDialogMany', 打开类型),

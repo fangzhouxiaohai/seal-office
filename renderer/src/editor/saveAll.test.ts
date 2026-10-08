@@ -22,6 +22,11 @@ const 安装桥接 = (覆盖: Record<string, unknown> = {}) => {
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('关闭前保存全部文档', () => {
+  it('关闭时 TXT、JSON 和网页按对应格式保存，不写成 DOCX 二进制',async()=>{
+    const {保存,写入}=安装桥接()
+    const result=await 保存全部文档([{标识:'txt',名称:'资料.txt',类型:'word',路径:'D:/资料.txt',html:'<p>甲</p><p><br></p><p>乙</p>'},{标识:'json',名称:'配置.json',类型:'word',路径:'D:/配置.json',html:'<p>{"name":"seal"}</p>'},{标识:'html',名称:'网页.html',类型:'word',路径:'D:/网页.html',html:'<p>正文</p>'}])
+    expect(result.失败).toEqual([]);expect(写入).not.toHaveBeenCalled();expect(保存).toHaveBeenCalledWith('D:/资料.txt','甲\n\n乙','文本');expect(保存).toHaveBeenCalledWith('D:/配置.json','{"name":"seal"}','文本');expect(保存).toHaveBeenCalledWith('D:/网页.html',expect.stringContaining('<!DOCTYPE html>'),'文本')
+  })
   it('按类型补扩展名并逐条写出，返回新的文件指纹', () => {
     expect(规范保存路径('word', 'D:\\文档\\报告')).toBe('D:\\文档\\报告.docx')
     expect(规范保存路径('table', 'D:\\文档\\表格')).toBe('D:\\文档\\表格.xlsx')

@@ -14,6 +14,10 @@ import DiagramPage from '../localTools/DiagramPage'
 import AppsPage from '../localTools/AppsPage'
 import LocalFilesPage, { type 本机位置 } from '../localTools/LocalFilesPage'
 import { 读取搜索文字, 搜索片段 } from '../search/contentSearch'
+import CloudFilesPage from '../cloud/CloudFilesPage'
+import KnowledgePage from '../cloud/KnowledgePage'
+import PresentationMarketPage from '../cloud/PresentationMarketPage'
+import {useCloud} from '../cloud/CloudProvider'
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -31,6 +35,7 @@ interface HomePageProps {
 
 const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) => {
   const { message, modal } = AntdApp.useApp()
+  const cloud = useCloud()
   const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
   const [正文匹配, set正文匹配] = useState<Record<string, string>>({})
   const [搜索中, set搜索中] = useState(false)
@@ -182,7 +187,11 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     })
   })
 
-  const 本地工具页面 = navKey === 'calendar' ? React.createElement(CalendarPage)
+  const 本地工具页面 = navKey === 'my-cloud' ? React.createElement(CloudFilesPage)
+    : navKey === 'trash' ? React.createElement(CloudFilesPage, {trash:true})
+    : navKey === 'knowledge' ? React.createElement(KnowledgePage)
+    : navKey === 'market' ? React.createElement(PresentationMarketPage)
+    : navKey === 'calendar' ? React.createElement(CalendarPage)
     : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })
       : navKey === 'flow' ? React.createElement(DiagramPage, { 类型: '流程图' })
         : navKey === 'apps' ? React.createElement(AppsPage)
@@ -230,10 +239,10 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
         {
           className: 'wps-home__cloud-sync',
           role: 'status',
-          'aria-label': '云端同步暂未开放',
+          'aria-label': cloud.state.account?.autosave ? '云文档自动保存已开启' : '云文档自动保存未开启',
         },
         React.createElement(Icon, { name: 'cloud-off', size: 14 }),
-        React.createElement('span', null, '云端同步暂未开放')
+        React.createElement('span', null, cloud.state.account?.autosave ? '云文档自动保存已开启' : '云文档自动保存未开启')
       )
     ),
     // 工具行：类型筛选（左）

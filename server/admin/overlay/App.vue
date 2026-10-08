@@ -1,0 +1,37 @@
+<script setup lang="ts">
+import {computed,onMounted,ref} from 'vue'
+import {NConfigProvider,zhCN,dateZhCN} from 'naive-ui'
+import AppProvider from './components/common/app-provider.vue'
+const token=ref(sessionStorage.getItem('seal-admin-token')||''),password=ref(''),busy=ref(false),error=ref(''),section=ref('overview')
+const data=ref<any>({users:[],publications:[],audit:[]}),review=ref<any>(null),search=ref('')
+const options=[{label:'运行概览',key:'overview'},{label:'账号与用量',key:'users'},{label:'演示模板审核',key:'template'},{label:'知识内容审核',key:'knowledge'},{label:'操作记录',key:'audit'}]
+async function call(route:string,method='GET',body?:unknown){const r=await fetch('/api/v1/admin/'+route,{method,headers:{'Content-Type':'application/json',...(token.value?{Authorization:'Bearer '+token.value}:{})},...(body?{body:JSON.stringify(body)}:{})});const result=await r.json();if(!r.ok){if(r.status===401){token.value='';sessionStorage.removeItem('seal-admin-token')}throw new Error(result.error||'请求失败')}return result}
+async function run(task:()=>Promise<any>){busy.value=true;error.value='';try{await task()}catch(e){error.value=e instanceof Error?e.message:'操作失败'}finally{busy.value=false}}
+async function load(){data.value=await call('overview')}
+async function login(){await run(async()=>{const r=await call('login','POST',{username:'admin',password:password.value});password.value='';token.value=r.token;sessionStorage.setItem('seal-admin-token',r.token);await load()})}
+async function logout(){await run(async()=>{await call('logout','POST');token.value='';sessionStorage.removeItem('seal-admin-token')})}
+async function openReview(id:string){await run(async()=>{review.value=await call('publications/'+id)})}
+async function downloadReview(){await run(async()=>{const r=await fetch('/api/v1/admin/publications/'+review.value.id+'/download',{headers:{Authorization:'Bearer '+token.value}});if(!r.ok)throw new Error('公开原文件下载失败');const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=url;a.download=review.value.name||review.value.title;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000)})}
+async function decide(status:string){await run(async()=>{await call('publications/'+review.value.id,'PATCH',{status});review.value=null;await load()})}
+const publications=computed(()=>data.value.publications.filter((p:any)=>p.kind===section.value&&p.title.includes(search.value)))
+const total=computed(()=>data.value.users.reduce((sum:number,u:any)=>sum+u.used,0))
+const userColumns=[{title:'手机号',key:'phone'},{title:'账号标识',key:'id'},{title:'云空间',key:'enabled',render:(u:any)=>u.enabled?'已开通':'关闭'},{title:'自动保存',key:'autosave',render:(u:any)=>u.autosave?'开启':'关闭'},{title:'实际占用',key:'used',render:(u:any)=>(u.used/1000000).toFixed(2)+' MB'}]
+const auditColumns=[{title:'时间',key:'time',render:(r:any)=>new Date(r.time).toLocaleString()},{title:'账号',key:'user_id'},{title:'动作',key:'action'},{title:'记录',key:'detail'}]
+onMounted(()=>{if(token.value)void run(load)})
+</script>
+<template>
+  <NConfigProvider :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="{common:{primaryColor:'#245BD6',primaryColorHover:'#3870E5',borderRadius:'8px'}}"><AppProvider>
+    <div v-if="!token" class="login"><NCard title="海豹办公 · 云端管理" style="width:430px"><p>管理员登录</p><NInput value="admin" disabled/><NInput v-model:value="password" type="password" show-password-on="click" placeholder="管理员密码" style="margin:18px 0" @keyup.enter="login"/><NAlert v-if="error" type="error" style="margin-bottom:16px">{{error}}</NAlert><NButton type="primary" block :loading="busy" :disabled="!password" @click="login">登录管理后台</NButton></NCard></div>
+    <NLayout v-else has-sider class="shell"><NLayoutSider bordered :width="230"><div class="brand"><strong>海豹办公</strong><span>云端管理控制台</span></div><NMenu v-model:value="section" :options="options"/></NLayoutSider><NLayout><NLayoutHeader bordered class="header"><h1>{{options.find(o=>o.key===section)?.label}}</h1><div><NButton :loading="busy" @click="run(load)">刷新数据</NButton> <NButton @click="logout">退出登录</NButton></div></NLayoutHeader><NLayoutContent class="content">
+      <NAlert v-if="error" type="error" style="margin-bottom:18px">{{error}}</NAlert>
+      <div v-if="section==='overview'"><div class="stats"><NCard><NStatistic label="账号数量" :value="data.users.length"/></NCard><NCard><NStatistic label="实际文件占用" :value="(total/1000000).toFixed(2)"><template #suffix>MB</template></NStatistic></NCard><NCard><NStatistic label="等待审核" :value="data.publications.filter((p:any)=>p.status==='pending').length"/></NCard></div><NCard title="服务状态" style="margin-top:24px"><p>短信服务：{{data.smsConfigured?'已配置':'未配置'}}</p><p>服务器剩余磁盘：{{((data.runtime?.diskFree||0)/1000000000).toFixed(2)}} GB · 当前进程内存：{{((data.runtime?.memory||0)/1000000).toFixed(0)}} MB · 待提交上传：{{data.runtime?.pendingUploads||0}}</p><p>短信签名：{{data.sms?.sign||'未设置'}} · 模板：{{data.sms?.template||'未设置'}} · 24 小时发送请求：{{data.sms?.lastDay||0}}</p><p>每账号实际配额：{{(data.quota/1000000).toFixed(0)}} MB</p><p>私有文件名、正文与资料索引以客户端密文保存，此后台不提供私有文件解密入口。</p></NCard></div>
+      <NCard v-else-if="section==='users'" title="账号与密文占用"><NDataTable :columns="userColumns" :data="data.users" :pagination="{pageSize:20}" :scroll-x="900"/></NCard>
+      <NCard v-else-if="section==='audit'" title="最近操作记录"><NDataTable :columns="auditColumns" :data="data.audit" :pagination="{pageSize:20}" :scroll-x="900"/></NCard>
+      <div v-else><NInput v-model:value="search" placeholder="搜索公开内容" style="max-width:400px;margin-bottom:24px"/><div class="publications"><NCard v-for="p in publications" :key="p.id" :title="p.title"><img v-if="p.cover" :src="p.cover" alt="公开封面"/><p>状态：{{({pending:'待审核',approved:'已公开',rejected:'已拒绝',withdrawn:'已撤回'} as any)[p.status]}}</p><p>{{p.category||'未分类'}}</p><NButton @click="openReview(p.id)">查看公开资料与审核</NButton></NCard></div></div>
+    </NLayoutContent></NLayout></NLayout>
+    <NModal :show="Boolean(review)" @update:show="value=>{if(!value)review=null}" preset="card" title="公开内容审核" style="width:800px" :mask-closable="false" @close="review=null"><template v-if="review"><h2>{{review.title}}</h2><p>仅显示用户主动发布的公开资料。</p><NButton :loading="busy" @click="downloadReview">下载公开原文件检查</NButton><pre>{{review.text||'该模板暂无文字预览，请下载公开文件检查。'}}</pre><p><NButton type="primary" :loading="busy" @click="decide('approved')">通过并公开</NButton> <NButton type="warning" :loading="busy" @click="decide('rejected')">拒绝发布</NButton> <NButton type="error" :loading="busy" @click="decide('withdrawn')">下架</NButton></p></template></NModal>
+  </AppProvider></NConfigProvider>
+</template>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Microsoft YaHei',sans-serif;color:#16213A;background:#F5F7FA}.login{height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#EAF1FF,#F7F9FC)}.shell{height:100vh}.brand{padding:32px 24px;display:flex;flex-direction:column;gap:8px;color:#245BD6}.brand strong{font-size:24px}.brand span{color:#7A8498;font-size:12px}.header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px}.header h1{font-size:19px;margin:0}.content{padding:32px;background:#F5F7FA}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.publications{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}.publications img{width:100%;height:160px;object-fit:cover}pre{white-space:pre-wrap;max-height:55vh;overflow:auto;font:14px/1.8 'Microsoft YaHei';padding:18px;background:#F6F8FB}
+</style>

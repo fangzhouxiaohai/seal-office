@@ -21,9 +21,9 @@ export default function FileTypeIcon({ type, size, color, className }: Props) {
       <path d={设计.paper} fill="var(--file-icon-color)" />
       <path d={设计.fold} fill={设计.markColor} opacity={设计.foldOpacity} />
       <g fill="none" stroke={设计.markColor} strokeWidth={设计.strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-        {类型.paths.map(路径 => <path key={路径} d={路径} />)}
+        {[...类型.paths,...设计.commonPaths].map(路径 => <path key={路径} d={路径} />)}
       </g>
-      {填充路径.map(路径 => <path key={路径} d={路径} fill={设计.markColor} />)}
+      {[...填充路径,...设计.commonFilledPaths].map(路径 => <path key={路径} d={路径} fill={设计.markColor} />)}
     </svg>
   )
 }

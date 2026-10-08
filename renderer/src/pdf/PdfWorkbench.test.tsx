@@ -10,6 +10,18 @@ vi.mock('./PdfViewer', () => ({
 }))
 
 describe('PDF 工作台', () => {
+  it('取消另存路径仍保留处理后的编辑字节，原路径没有被覆盖', async () => {
+    const 提取=vi.spyOn(桥接.pdf,'extract').mockResolvedValue({成功:true,数据:'JVBERi1lZGl0'})
+    const 路径=vi.spyOn(桥接,'showSaveDialog').mockResolvedValue(null)
+    const 保存=vi.spyOn(桥接,'saveToFile').mockResolvedValue({成功:true})
+    const 编辑=vi.fn(),已保存=vi.fn()
+    try{
+      render(<AntdApp><PdfWorkbench 初始文件={{路径:'D:/原件.pdf',名称:'原件.pdf',数据:'JVBERi0='}} onEdited={编辑} onSaved={已保存}/></AntdApp>)
+      fireEvent.click(screen.getByRole('button',{name:'展开 PDF 工具'}));fireEvent.click(screen.getByRole('button',{name:'执行并保存'}))
+      await waitFor(()=>expect(编辑).toHaveBeenCalledWith('JVBERi1lZGl0'))
+      expect(保存).not.toHaveBeenCalled();expect(已保存).not.toHaveBeenCalled()
+    }finally{提取.mockRestore();路径.mockRestore();保存.mockRestore()}
+  })
   it('接收首页打开的 PDF，并在再次打开时切换预览', async () => {
     const { rerender } = render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\甲.pdf', 名称: '甲.pdf', 数据: 'JVBERi0x' }} /></AntdApp>)
     expect(await screen.findByText('甲.pdf 已进入预览')).toBeInTheDocument()

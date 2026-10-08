@@ -31,13 +31,13 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
 import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
-import { use滚轮缩放, 文字缩放范围 } from './wheelZoom'
+import { 默认文件缩放, use滚轮缩放, 文字缩放范围 } from './wheelZoom'
 import { 构建文字浮窗按钮, 构建颜色菜单组, 构建AI菜单组, 处理颜色菜单命令, 处理AI菜单命令 } from './floatActions'
 import { use选区浮窗 } from '../components/SelectionFloatPanel'
 import SelectionFloatPanel from '../components/SelectionFloatPanel'
 
 const 默认视图: ViewState = {
-  缩放: 1,
+  缩放: 默认文件缩放,
   标尺: true,
   网格线: false,
   段落标记: false,
@@ -239,7 +239,7 @@ const DocEditor = () => {
   当前文档标识引用.current = 文档标识
 
   useEffect(() => {
-    set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
+    set视图((当前) => ({ ...当前, 缩放: 默认文件缩放, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
   }, [文档标识])
 
   // 助手等外部更新直接写入状态层；把新内容加入当前文档历史，保留撤销入口。
@@ -911,6 +911,7 @@ const DocEditor = () => {
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
     React.createElement(RibbonPanel, {
       activeKey: 当前标签,
+      缩放: 视图.缩放,
       onCommand: 执行命令,
       // 浮层打开瞬间抓取选区，此时尚未被浮层折叠
       onDropdownOpen: () => {

@@ -1,0 +1,25 @@
+[Unit]
+Description=Seal Office Cloud API
+After=network.target
+
+[Service]
+Type=simple
+User=seal-cloud
+Group=seal-cloud
+WorkingDirectory=/www/wwwroot/seal.xingmasoft.com/current
+Environment=SEAL_ENV_FILE=/etc/seal-cloud/service.env
+ExecStart=/usr/local/bin/node index.cjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWriteDirectories=/www/wwwroot/seal.xingmasoft.com/data
+TimeoutStopSec=40
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

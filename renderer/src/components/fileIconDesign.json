@@ -1,14 +1,16 @@
 {
   "viewBox": "0 0 64 64",
-  "paper": "M14 4H36L54 22V56A4 4 0 0 1 50 60H14A4 4 0 0 1 10 56V8A4 4 0 0 1 14 4Z",
-  "fold": "M36 4V18A4 4 0 0 0 40 22H54Z",
+  "paper": "M15 3H37L55 21V54C55 58 52 61 48 61H15C11 61 8 58 8 54V10C8 6 11 3 15 3Z",
+  "fold": "M37 3V15C37 19 39 21 43 21H55Z",
   "markColor": "#FFFFFF",
-  "foldOpacity": 0.32,
-  "strokeWidth": 3,
+  "foldOpacity": 0.28,
+  "strokeWidth": 2.8,
+  "commonPaths": ["M17 52C21 48 25 56 29 52S37 48 41 52S47 53 49 51"],
+  "commonFilledPaths": ["M14 12C18 9 24 11 25 16C21 19 17 18 14 12Z"],
   "types": {
-    "word": { "color": "#2B6CF6", "paths": ["M20 28H44M20 35H44M20 42H44M20 49H36"] },
-    "table": { "color": "#15845B", "paths": ["M20 27H44V49H20ZM20 34H44M20 42H44M28 27V49M36 27V49"] },
-    "ppt": { "color": "#C86220", "paths": ["M20 27H44A2 2 0 0 1 46 29V43A2 2 0 0 1 44 45H20A2 2 0 0 1 18 43V29A2 2 0 0 1 20 27ZM32 45V51M25 51H39"], "filledPaths": ["M28 31L37 36L28 41Z"] },
-    "pdf": { "color": "#C73F4C", "paths": ["M24 49C18 54 16 47 23 42C29 38 39 37 44 39C50 42 43 45 38 40C32 35 30 24 33 25C38 26 29 43 24 49Z"] }
+    "word": { "color": "#185AC0", "paths": ["M18 28H45M18 35H45M18 42H36"] },
+    "table": { "color": "#147457", "paths": ["M18 27H45V45H18ZM18 35H45M31 27V45"] },
+    "ppt": { "color": "#CE5C23", "paths": ["M17 27H47V42H17ZM32 42V47M26 47H38"], "filledPaths": ["M27 30C32 29 38 33 38 35C33 39 29 39 27 30Z"] },
+    "pdf": { "color": "#BA3549", "paths": ["M20 27H40V43H20ZM40 31H46V47H26V43M25 32H35M25 37H32"] }
   }
 }

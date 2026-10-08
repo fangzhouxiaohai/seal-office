@@ -1,0 +1,5 @@
+[Unit]
+Description=Seal Office Cloud encrypted data backup
+[Service]
+Type=oneshot
+ExecStart=/www/wwwroot/seal.xingmasoft.com/current/deploy/backup.sh

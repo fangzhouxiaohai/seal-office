@@ -2183,7 +2183,7 @@ button {
 .wps-ppt-stage {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: safe center;
   flex: 1 1 auto;
   min-width: 0;
   padding: 24px;

@@ -6,10 +6,11 @@ import { 导出为Xlsx } from '../sheet/sheetExport'
 import { 构建演示保存模型 } from '../ppt/saveModel'
 import { 收集演示资源标识 } from '../ppt/model/migrations'
 import { 桥接 } from '../ipc/bridge'
+import {文字文本输出,导出为Html} from './exportDoc'
 import type { Sheet } from '../sheet/model'
 import type { 演示文稿 } from '../ppt/deck'
 
-export type 待保存类型 = 'word' | 'table' | 'ppt'
+export type 待保存类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
 export interface 待保存文档 {
   标识: string
@@ -20,6 +21,7 @@ export interface 待保存文档 {
   页面设置?: 文字页面设置
   表格模型?: Sheet[]
   演示模型?: 演示文稿
+  PDF数据?: string
   文件指纹?: string
   /** 导入来源路径：与来源同名且导入时有警告时不允许直接覆盖 */
   来源路径?: string
@@ -44,6 +46,7 @@ function 是同一路径(左: string, 右: string): boolean {
 /** 按类型补齐或校验扩展名；无法保存的格式返回 null */
 export function 规范保存路径(类型: 待保存类型, 路径: string): string | null {
   const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
+  if (类型 === 'pdf') return 扩展 === undefined ? `${路径}.pdf` : 扩展 === '.pdf' ? 路径 : null
   if (类型 === 'word') {
     if (扩展 === undefined) return `${路径}.docx`
     return 文字保存扩展.has(扩展) ? 路径 : null
@@ -57,6 +60,7 @@ export function 规范保存路径(类型: 待保存类型, 路径: string): str
 }
 
 function 格式提示(类型: 待保存类型): string {
+  if (类型 === 'pdf') return 'PDF 文档只能保存为 PDF 格式'
   if (类型 === 'word') return '文字文档只能保存为 DOCX、纯文本、网页或 PDF 格式'
   if (类型 === 'table') return '表格只能保存为 XLSX 格式'
   return '演示文稿只能保存为 PPTX 格式'
@@ -72,7 +76,24 @@ function 描述错误(错误: unknown, 兜底: string): string {
 
 /** 写入一个文档，成功时返回新的文件指纹 */
 async function 写出文档(文档: 待保存文档, 路径: string): Promise<string | undefined> {
+  if (文档.类型 === 'pdf') {
+    if (!文档.PDF数据) throw new Error('PDF 内容缺失，无法保存')
+    const 保存 = await 桥接.saveToFile(路径, Uint8Array.from(atob(文档.PDF数据), c => c.charCodeAt(0)), '二进制')
+    if (!保存.成功) throw new Error(保存.错误 || 'PDF 写入失败')
+    return 保存.文件指纹
+  }
   if (文档.类型 === 'word') {
+    if(/\.(txt|md|json|html?)$/i.test(路径)){
+      const 输出=文字文本输出(路径,文档.html??'',文档.页面设置?.页眉Html,文档.页面设置?.页脚Html)
+      const 保存=await 桥接.saveToFile(路径,输出,'文本',文档.文件指纹)
+      if(!保存.成功)throw new Error(保存.错误||'文本写入失败')
+      return '文件指纹' in 保存 ? 保存.文件指纹 : undefined
+    }
+    if(/\.pdf$/i.test(路径)){
+      const 保存=await 桥接.pdf.exportToPath(导出为Html(文档.名称,文档.html??'',文档.页面设置?.页眉Html,文档.页面设置?.页脚Html),路径)
+      if(!保存.成功)throw new Error(保存.错误||'PDF 导出失败')
+      return '文件指纹' in 保存 ? 保存.文件指纹 : undefined
+    }
     const 模型 = htmlToDocxModel(文档.html ?? '', 文档.页面设置)
     if (模型.未覆盖.length > 0) throw new Error(`含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}`)
     const 结果: any = await 桥接.office.writeDocx(模型)

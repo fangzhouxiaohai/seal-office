@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily Seal Office TLS Renewal Check
+
+[Timer]
+OnCalendar=*-*-* 05:20:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -48,7 +48,7 @@ import { 构建演示保存模型 } from './saveModel'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
 import { 通用AI指令 } from '../assistant/quickActions'
 import SelectionFloatPanel, { 从元素计算浮窗位置 } from '../components/SelectionFloatPanel'
-import { use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
+import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import CommentsPanel from './panels/CommentsPanel'
@@ -130,7 +130,8 @@ const PptEditor = () => {
   const [便捷工具打开, set便捷工具打开] = useState(false)
   const 会话引用 = useRef<会话同步 | null>(null)
   const [当前视图, set当前视图] = useState<'普通' | '浏览' | '备注'>('普通')
-  const [缩放, set缩放] = useState(1)
+  const [缩放, set缩放] = useState(默认文件缩放)
+  useEffect(() => { set缩放(默认文件缩放) }, [activeDocumentId])
   const [显示网格线, set显示网格线] = useState(false)
   const [图片地址, set图片地址] = useState<图片地址表>({})
   // 导出面板：范围、格式与分辨率，写盘完成后才报告成功
@@ -887,10 +888,11 @@ const PptEditor = () => {
     if (标识 === 'slideshow.presenter') { 开始放映(文稿.当前索引, '全屏', true); return }
     if (标识 === 'slideshow.settings' || 标识 === 'slideshow.customShow') { set当前标签('slideshow'); return }
     if (标识 === 'view.reading') { 开始放映(文稿.当前索引, '阅读'); return }
+    if (标识 === 'view.zoomReset') { set适应(false); set缩放(1); return }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
       set适应(false)
       set缩放((当前) =>
-        Math.min(4, Math.max(0.1, Number((当前 + (标识 === 'view.zoomIn' ? 0.1 : -0.1)).toFixed(2))))
+        (标识 === 'view.zoomIn' ? 放大一档(当前) : 缩小一档(当前)) ?? 当前
       )
       return
     }
@@ -1212,6 +1214,7 @@ const PptEditor = () => {
     React.createElement('input', { ref: 音效输入, type: 'file', accept: 音频选择类型, hidden: true, 'aria-label': '选择切换音效文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 更换音效(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
+      缩放,
       activeKey: 当前标签,
       tabs: 演示标签,
       onCommand: 执行命令,
@@ -1236,7 +1239,7 @@ const PptEditor = () => {
       React.createElement('button', { type: 'button', onClick: () => set参考线({ 垂直: [480], 水平: [270] }) }, '中心参考线'),
       React.createElement('button', { type: 'button', onClick: () => set参考线({ 垂直: [], 水平: [] }) }, '清除参考线'),
       React.createElement('button', { type: 'button', onClick: () => { set适应(true); set缩放(适应比例.current) } }, '适应窗口'),
-      React.createElement('label', null, '缩放', React.createElement('input', { type: 'number', min: 10, max: 400, step: 1, 'aria-label': '精确缩放百分比', key: Math.round(缩放 * 100), defaultValue: Math.round(缩放 * 100), onKeyDown: (事件: React.KeyboardEvent<HTMLInputElement>) => { if (事件.key === 'Enter') 事件.currentTarget.blur() }, onBlur: (事件: React.FocusEvent<HTMLInputElement>) => { const 值 = Number(事件.target.value); if (Number.isFinite(值) && 值 >= 10 && 值 <= 400) { set适应(false); set缩放(值 / 100) } else { 事件.target.value = String(Math.round(缩放 * 100)); 显示文件错误('缩放设置失败', '缩放比例应介于 10% 和 400% 之间') } } })),
+      React.createElement('label', null, '缩放', React.createElement('input', { type: 'number', min: 8.33, max: 6400, step: 1, 'aria-label': '精确缩放百分比', key: Math.round(缩放 * 100), defaultValue: Math.round(缩放 * 100), onKeyDown: (事件: React.KeyboardEvent<HTMLInputElement>) => { if (事件.key === 'Enter') 事件.currentTarget.blur() }, onBlur: (事件: React.FocusEvent<HTMLInputElement>) => { const 值 = Number(事件.target.value); if (Number.isFinite(值) && 值 >= 8.33 && 值 <= 6400) { set适应(false); set缩放(值 / 100) } else { 事件.target.value = String(Math.round(缩放 * 100)); 显示文件错误('缩放设置失败', '缩放比例应介于 8.33% 和 6400% 之间') } } })),
       React.createElement('span', null, '双击标尺添加参考线')
     ),
     React.createElement(

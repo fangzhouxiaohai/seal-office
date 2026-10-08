@@ -221,6 +221,7 @@ export interface 电子接口 {
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
+  cloud?: { invoke: (action: string, input?: unknown) => Promise<{ 成功: boolean; 数据?: any; 错误?: string }> }
   ai: {
     getConfig: () => Promise<助手结果<助手配置>>
     saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>

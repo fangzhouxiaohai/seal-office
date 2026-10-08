@@ -31,6 +31,10 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'shared', label: '共享', icon: 'share', implemented: false },
   ],
   [
+    { key: 'my-cloud', label: '我的云空间', icon: 'folder', implemented: true },
+    { key: 'knowledge', label: '知识库', icon: 'knowledge', implemented: true },
+    { key: 'market', label: '演示模板市场', icon: 'doc-ppt', implemented: true },
+    { key: 'trash', label: '云空间回收站', icon: 'trash', implemented: true },
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
     { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
     { key: 'flow', label: '流程图', icon: 'flow', implemented: true },

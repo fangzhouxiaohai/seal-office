@@ -2,6 +2,9 @@
 // 缩放按固定百分比档位行走：最小 8.33%，最大 6400%，避免高倍时需要滚上百次。
 import { useEffect, useRef } from 'react'
 
+/** 所有文件首次打开使用四倍显示；打印纸张尺寸不受影响。 */
+export const 默认文件缩放 = 4
+
 export interface 缩放范围 {
   下限: number
   上限: number
