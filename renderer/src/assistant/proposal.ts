@@ -3,14 +3,22 @@ import { 解析地址 } from '../sheet/address'
 import { 写入单元格, 读取单元格, type Sheet } from '../sheet/model'
 import type { 演示文稿, 文本框 } from '../ppt/deck'
 import { 构建文字根, 清理文字定位块, 收集文字段落, 段落文本 } from './wordBlocks'
+import { 校验创建文件, type 创建文件 } from './createDocument'
+import { 基础动画, 校验动画, type 对象动画 } from '../ppt/model/animations'
+import { 全部切换, 校验播放参数, type 切换效果 } from '../ppt/model/transitions'
+import { 要求对象可编辑 } from '../ppt/model/objectPermissions'
 
 export type 文字替换 = { 种类: '文字替换'; 段落标识?: string; 查找: string; 替换为: string }
 export type 段落格式 = { 标题级别?: number; 对齐?: 'left' | 'center' | 'right' | 'justify'; 字号?: number; 字体?: string; 颜色?: string; 加粗?: boolean; 行距?: number; 段前?: number; 段后?: number; 首行缩进?: number }
 export type 段落排版 = { 种类: '段落排版'; 段落标识: string; 原文: string; 格式: 段落格式 }
-export type 文字修改 = 文字替换 | 段落排版
+export type 文字插入 = { 种类: '文字插入'; 位置: '开头' | '末尾' | '之后'; 段落标识?: string; 原文?: string; 内容: string }
+export type 文字修改 = 文字替换 | 段落排版 | 文字插入
 export type 表格修改 = { 种类: '单元格写入'; 工作表: string; 地址: string; 原值: string; 新值: string }
 export type 演示修改 = { 种类: '演示文本替换'; 页码: number; 文本框标识: string; 查找: string; 替换为: string }
-export type 助手修改 = 文字修改 | 表格修改 | 演示修改
+  | { 种类: '演示切换'; 页码: number; 效果: 切换效果; 持续毫秒: number }
+  | { 种类: '演示对象动画'; 页码: number; 对象标识: string; 效果: typeof 基础动画[number]; 触发: 对象动画['触发']; 持续毫秒: number }
+  | { 种类: '演示表格写入'; 页码: number; 对象标识: string; 行: number; 列: number; 原值: string; 新值: string }
+export type 助手修改 = 文字修改 | 表格修改 | 演示修改 | 创建文件
 export type 助手回复 = { 回复: string; 修改: 助手修改[] }
 
 function 有效文本(值: unknown, 字段: string, 可空 = false): string {
@@ -31,9 +39,34 @@ export function 解析助手回复(原文: string): 助手回复 {
   const 对象 = 数据 as Record<string, unknown>
   const 回复 = 有效文本(对象.回复, '模型回复')
   if (!Array.isArray(对象.修改)) throw new Error('模型修改数量格式无效')
+  if (对象.修改.length > 2000) throw new Error('一次修改过多，请分批处理')
   const 修改 = 对象.修改.map((项): 助手修改 => {
     if (!项 || typeof 项 !== 'object' || Array.isArray(项)) throw new Error('模型修改格式无效')
     const 指令 = 项 as Record<string, unknown>
+    if (指令.种类 === '创建文件') return 校验创建文件(指令)
+    if (指令.种类 === '文字插入') {
+      if (!['开头', '末尾', '之后'].includes(String(指令.位置))) throw new Error('文字插入位置无效')
+      const 定位 = 指令.位置 === '之后' ? { 段落标识: 有效文本(指令.段落标识, '段落标识'), 原文: 有效文本(指令.原文, '段落原文', true) } : {}
+      const 内容 = 有效文本(指令.内容, '插入内容')
+      if (内容.length > 200000) throw new Error('插入内容过长')
+      return { 种类: '文字插入', 位置: 指令.位置 as 文字插入['位置'], ...定位, 内容 }
+    }
+    if (['演示切换', '演示对象动画', '演示表格写入'].includes(String(指令.种类))) {
+      const 页码 = Number(指令.页码)
+      if (!Number.isSafeInteger(指令.页码) || 页码 < 1) throw new Error('幻灯片页码无效')
+      if (指令.种类 === '演示表格写入') {
+        if (!Number.isSafeInteger(指令.行) || !Number.isSafeInteger(指令.列) || Number(指令.行) < 1 || Number(指令.列) < 1) throw new Error('演示表格行列从1开始')
+        return { 种类: '演示表格写入', 页码, 对象标识: 有效文本(指令.对象标识, '对象标识'), 行: Number(指令.行), 列: Number(指令.列), 原值: 有效文本(指令.原值, '原值', true), 新值: 有效文本(指令.新值, '新值', true) }
+      }
+      const 持续毫秒 = 指令.持续毫秒 === undefined ? 500 : Number(指令.持续毫秒)
+      if (!Number.isInteger(持续毫秒) || 持续毫秒 < 0 || 持续毫秒 > 60000) throw new Error('动画时间必须在0至60000毫秒之间')
+      if (指令.种类 === '演示切换') {
+        if (!(全部切换 as readonly unknown[]).includes(指令.效果)) throw new Error('不支持的页面切换效果')
+        return { 种类: '演示切换', 页码, 效果: 指令.效果 as 切换效果, 持续毫秒 }
+      }
+      if (!(基础动画 as readonly unknown[]).includes(指令.效果) || !['单击', '同时', '之后'].includes(String(指令.触发))) throw new Error('演示对象动画参数无效')
+      return { 种类: '演示对象动画', 页码, 对象标识: 有效文本(指令.对象标识, '对象标识'), 效果: 指令.效果 as typeof 基础动画[number], 触发: 指令.触发 as 对象动画['触发'], 持续毫秒 }
+    }
     if (指令.种类 === '文字替换') return { 种类: '文字替换', ...(指令.段落标识 !== undefined ? { 段落标识: 有效文本(指令.段落标识, '段落标识') } : {}), 查找: 有效文本(指令.查找, '查找文本'), 替换为: 有效文本(指令.替换为, '替换文本', true) }
     if (指令.种类 === '段落排版') return { 种类: '段落排版', 段落标识: 有效文本(指令.段落标识, '段落标识'), 原文: 有效文本(指令.原文, '段落原文', true), 格式: 校验段落格式(指令.格式) }
     if (指令.种类 === '单元格写入') return { 种类: '单元格写入', 工作表: 有效文本(指令.工作表, '工作表'), 地址: 有效文本(指令.地址, '单元格地址'), 原值: 有效文本(指令.原值, '原值', true), 新值: 有效文本(指令.新值, '新值', true) }
@@ -100,6 +133,17 @@ export function 预览文字修改(html: string, 修改: 文字修改[]): string
   const 段落 = 收集文字段落(根)
   const 段落索引 = new Map(段落.map((块) => [块.标识, 块]))
   for (const 项 of 修改) {
+    if (项.种类 === '文字插入') {
+      const 片段 = document.createDocumentFragment()
+      项.内容.split(/\r?\n/).forEach((行) => { const 段 = document.createElement('p'); 段.textContent = 行; 片段.appendChild(段) })
+      if (项.位置 === '之后') {
+        const 目标 = 段落索引.get(项.段落标识!)
+        if (!目标 || 目标.原文 !== 项.原文) throw new Error('插入位置的原文已变化或不存在')
+        目标.元素.after(片段)
+      } else if (项.位置 === '开头') 根.prepend(片段)
+      else 根.append(片段)
+      continue
+    }
     const 目标 = '段落标识' in 项 && 项.段落标识 ? 段落索引.get(项.段落标识) : undefined
     if ('段落标识' in 项 && 项.段落标识 && !目标) throw new Error(`找不到指定段落：${项.段落标识}`)
     if (项.种类 === '段落排版') {
@@ -181,6 +225,26 @@ export function 预览演示修改(文稿: 演示文稿, 修改: 演示修改[])
   for (const 项 of 修改) {
     const 页 = 候选.幻灯片列表[项.页码 - 1]
     if (!页) throw new Error(`幻灯片页码超出范围：${项.页码}`)
+    if (项.种类 !== '演示文本替换') {
+      let 新页 = { ...页 }
+      if (项.种类 === '演示切换') {
+        新页.切换 = { 效果: 项.效果, 持续毫秒: 项.持续毫秒, 方向: '左', 方式: '外', 轴: '水平', ...(项.效果 === '轮辐' ? { 辐条: 4 } : {}) }
+        校验播放参数(新页)
+      } else if (项.种类 === '演示对象动画') {
+        if (页.对象列表?.some((对象) => 对象.id === 项.对象标识)) 要求对象可编辑(页, [项.对象标识])
+        新页.动画序列 = [...(页.动画序列 ?? []).filter((动画) => 动画.对象标识 !== 项.对象标识), { id: crypto.randomUUID(), 对象标识: 项.对象标识, 效果: 项.效果, 触发: 项.触发, 持续毫秒: 项.持续毫秒 }]
+        校验动画(新页)
+      } else {
+        const 对象 = 页.对象列表?.find((对象) => 对象.id === 项.对象标识)
+        const 单元格 = 对象?.表格?.单元格[项.行 - 1]?.[项.列 - 1]
+        if (!单元格 || 单元格.文本 !== 项.原值) throw new Error('演示表格原值不一致或目标不存在')
+        要求对象可编辑(页, [项.对象标识])
+        if (对象!.表格!.合并.some((合并) => 项.行 - 1 >= 合并.行 && 项.行 - 1 < 合并.行 + 合并.行数 && 项.列 - 1 >= 合并.列 && 项.列 - 1 < 合并.列 + 合并.列数 && (项.行 - 1 !== 合并.行 || 项.列 - 1 !== 合并.列))) throw new Error('请修改合并单元格的左上角，不能写入被合并覆盖的位置')
+        新页.对象列表 = 页.对象列表!.map((原) => 原.id === 项.对象标识 ? { ...原, 表格: { ...原.表格!, 单元格: 原.表格!.单元格.map((行, 行号) => 行.map((格, 列号) => 行号 === 项.行 - 1 && 列号 === 项.列 - 1 ? { ...格, 文本: 项.新值 } : 格)) } } : 原)
+      }
+      候选 = { ...候选, 幻灯片列表: 候选.幻灯片列表.map((原, 索引) => 索引 === 项.页码 - 1 ? 新页 : 原) }
+      continue
+    }
     const 框 = 页.文本框列表.find((目标) => 目标.id === 项.文本框标识)
     if (!框) throw new Error(`第 ${项.页码} 页找不到指定文本框`)
     const 新框 = 替换文本框(框, 项.查找, 项.替换为)

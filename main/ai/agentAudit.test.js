@@ -153,7 +153,7 @@ describe('助手完整任务链路独立审计', () => {
     expect((await 新服务.读取会话(会话标识)).待确认候选).toEqual(候选)
     const 通道 = 创建通道(新服务)
     expect((await 通道.处理器.get('ai.getSession')(通道.事件, 会话标识)).数据.待确认候选).toEqual(候选)
-    await 新服务.对话(输入('先保留候选，等我确认'))
+    await expect(新服务.对话(输入('先保留候选，等我确认'))).rejects.toThrow('先确认或放弃')
     expect((await 新服务.读取会话(会话标识)).待确认候选).toEqual(候选)
     expect(环境.请求列表.every((请求) => !JSON.stringify(请求).includes('仅本地完整编辑快照'))).toBe(true)
   })
@@ -199,6 +199,8 @@ describe('助手完整任务链路独立审计', () => {
     })
     const 执行工具 = vi.fn()
     const 新服务 = 环境.新服务()
+    await expect(新服务.对话(输入('恢复之前的任务'), { 执行工具 })).rejects.toThrow('先确认或放弃')
+    await 新服务.放弃会话候选(会话标识)
     await 新服务.对话(输入('恢复之前的任务'), { 执行工具 })
     expect(环境.请求列表).toHaveLength(1)
     const 发给模型 = 环境.请求列表[0].messages
@@ -211,7 +213,7 @@ describe('助手完整任务链路独立审计', () => {
     expect(发给模型.find((项) => 项.tool_calls).reasoning_content).toBe('上轮正在读取并生成候选。')
     expect(执行工具).not.toHaveBeenCalled()
     const 恢复记忆 = await 新服务.读取会话(会话标识)
-    expect(恢复记忆.待确认候选).toEqual(候选)
+    expect(恢复记忆.待确认候选).toBeNull()
     断言调用配对(恢复记忆.模型消息)
   })
 

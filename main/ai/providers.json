@@ -1,6 +1,117 @@
 [
-  { "标识": "deepseek", "名称": "DeepSeek", "地址": "https://api.deepseek.com/chat/completions", "模型": "deepseek-flash", "参数模式": "three", "说明": "默认 deepseek-flash，高强度思考；填入 DeepSeek API 密钥即可使用。", "文档": "https://api-docs.deepseek.com/zh-cn/guides/thinking_mode" },
-  { "标识": "doubao", "名称": "豆包", "地址": "https://ark.cn-beijing.volces.com/api/v3/chat/completions", "模型": "", "参数模式": "thinking", "说明": "填入火山方舟 API 密钥及已开通的模型 ID 或 ep- 推理接入点。默认开启思考，具体能力由模型决定。", "文档": "https://www.volcengine.com/docs/82379/1263279" },
-  { "标识": "zhipu", "名称": "智谱", "地址": "https://open.bigmodel.cn/api/paas/v4/chat/completions", "模型": "glm-5.3", "参数模式": "three", "说明": "默认 GLM-5.3；填入智谱开放平台 API 密钥，账号需有该模型访问权限。", "文档": "https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3" },
-  { "标识": "kimi", "名称": "Kimi", "地址": "https://api.moonshot.cn/v1/chat/completions", "模型": "kimi-k3", "参数模式": "three", "说明": "默认 Kimi K3；填入 Moonshot API 密钥，账号需有该模型访问权限。", "文档": "https://platform.moonshot.cn/docs/guide/kimi-k3-quickstart" }
+  {
+    "标识": "deepseek",
+    "名称": "DeepSeek",
+    "地址": "https://api.deepseek.com/chat/completions",
+    "模型": "deepseek-flash",
+    "参数模式": "three",
+    "说明": "默认 deepseek-flash，高强度思考；填入 DeepSeek API 密钥即可使用。",
+    "文档": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "模型列表": [
+      {
+        "标识": "deepseek-flash",
+        "上下文令牌": 1048576,
+        "参数模式": "three"
+      },
+      {
+        "标识": "deepseek-v4-pro",
+        "上下文令牌": 1048576,
+        "参数模式": "three"
+      }
+    ],
+    "上下文令牌": 1048576,
+    "核对日期": "2026-10-09"
+  },
+  {
+    "标识": "doubao",
+    "名称": "豆包",
+    "地址": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+    "模型": "doubao-seed-2-1-pro-260628",
+    "参数模式": "thinking",
+    "说明": "内置 Seed 2.1 Pro、Turbo、Lite 模型及官方上下文窗口；需已开通模型权限，也可在高级设置填写 ep- 接入点和对应容量。",
+    "文档": "https://docs.volcengine.com/docs/82379/1553576?lang=zh",
+    "模型列表": [
+      {
+        "标识": "doubao-seed-2-1-pro-260628",
+        "上下文令牌": 262144,
+        "参数模式": "thinking"
+      },
+      {
+        "标识": "doubao-seed-2-1-turbo-260628",
+        "上下文令牌": 262144,
+        "参数模式": "thinking"
+      },
+      {
+        "标识": "doubao-seed-2-1-lite-260915",
+        "上下文令牌": 1048576,
+        "参数模式": "thinking"
+      }
+    ],
+    "上下文令牌": 262144,
+    "核对日期": "2026-10-09"
+  },
+  {
+    "标识": "zhipu",
+    "名称": "智谱",
+    "地址": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "模型": "glm-5.3",
+    "参数模式": "three",
+    "说明": "默认 GLM-5.3；填入智谱开放平台 API 密钥，账号需有该模型访问权限。",
+    "文档": "https://docs.z.ai/guides/llm/glm-5.3",
+    "模型列表": [
+      {
+        "标识": "glm-5.3",
+        "上下文令牌": 1048576,
+        "参数模式": "three"
+      }
+    ],
+    "上下文令牌": 1048576,
+    "核对日期": "2026-10-09"
+  },
+  {
+    "标识": "kimi",
+    "名称": "Kimi",
+    "地址": "https://api.moonshot.cn/v1/chat/completions",
+    "模型": "kimi-k3",
+    "参数模式": "three",
+    "说明": "默认 Kimi K3；填入 Moonshot API 密钥，账号需有该模型访问权限。",
+    "文档": "https://www.kimi.ai/help/kimi-api/api-model-selection",
+    "模型列表": [
+      {
+        "标识": "kimi-k3",
+        "上下文令牌": 1048576,
+        "参数模式": "three"
+      },
+      {
+        "标识": "kimi-k2.6",
+        "上下文令牌": 262144,
+        "参数模式": "thinking"
+      }
+    ],
+    "上下文令牌": 1048576,
+    "核对日期": "2026-10-09"
+  },
+  {
+    "标识": "qwen",
+    "名称": "通义千问",
+    "地址": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    "模型": "qwen3.5-plus",
+    "参数模式": "budget",
+    "上下文令牌": 1000000,
+    "说明": "百炼中国内地兼容接口，内置 Qwen3.5 Plus 和 Qwen3 Max；需要开通相应模型权限。",
+    "文档": "https://help.aliyun.com/zh/model-studio/qwen3-5-plus",
+    "核对日期": "2026-10-09",
+    "模型列表": [
+      {
+        "标识": "qwen3.5-plus",
+        "上下文令牌": 1000000,
+        "参数模式": "budget"
+      },
+      {
+        "标识": "qwen3-max",
+        "上下文令牌": 262144,
+        "参数模式": "budget"
+      }
+    ]
+  }
 ]

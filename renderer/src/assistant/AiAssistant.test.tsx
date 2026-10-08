@@ -636,7 +636,7 @@ describe('智能助手对话修改链路', () => {
     expect(screen.getByText('待确认修改，共 1 处')).toBeInTheDocument()
   })
 
-  it('后续对话失败时仍保留当前文件的待确认修改', async () => {
+  it('上一项待确认时后续需求留在队列，不覆盖现有候选', async () => {
     const 对话 = vi.fn()
       .mockResolvedValueOnce({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '修改建议。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '正式标题' }] }) } })
       .mockResolvedValueOnce({ 成功: false, 错误: '模型服务暂时不可用' })
@@ -665,8 +665,9 @@ describe('智能助手对话修改链路', () => {
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
     await waitFor(() => expect(screen.getByText('待确认修改，共 1 处')).toBeInTheDocument())
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '再解释一下')
-    await userEvent.click(screen.getByRole('button', { name: '发送' }))
-    expect(await screen.findByText('模型服务暂时不可用')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '加入队列' }))
+    expect(对话).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('等待确认上一项修改后继续。')).toBeInTheDocument()
     expect(screen.getByText('待确认修改，共 1 处')).toBeInTheDocument()
   })
 })

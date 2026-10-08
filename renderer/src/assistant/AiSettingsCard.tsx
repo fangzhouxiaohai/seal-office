@@ -56,7 +56,7 @@ export default function AiSettingsCard({ onSaved, compact = false }: Props) {
 
   const 选择服务商 = (标识: string) => {
     const 预设 = 预设列表.find((项) => 项.标识 === 标识)
-    set配置(预设 ? { 名称: 预设.名称, 地址: 预设.地址, 模型: 预设.模型, 服务商: 标识, 参数模式: 预设.参数模式 as 思考参数模式, 思考强度: 'high', 已配置密钥: false } : { ...空配置, 服务商: 'custom', 思考强度: 'high', 参数模式: 'none' })
+    set配置(预设 ? { 名称: 预设.名称, 地址: 预设.地址, 模型: 预设.模型, 服务商: 标识, 参数模式: 预设.参数模式 as 思考参数模式, 上下文令牌: 预设.上下文令牌, 思考强度: 'high', 已配置密钥: false } : { ...空配置, 服务商: 'custom', 思考强度: 'high', 参数模式: 'none' })
     set密钥(''); set清除密钥(true); set高级展开(!预设 || !预设.模型)
   }
   const 预设 = 预设列表.find((项) => 项.标识 === 配置.服务商)
@@ -97,6 +97,13 @@ export default function AiSettingsCard({ onSaved, compact = false }: Props) {
         <Select aria-label="选择模型服务商" value={配置.服务商 ?? 'custom'} disabled={编辑禁用} onChange={选择服务商} options={[...预设列表.map((项) => ({ value: 项.标识, label: 项.名称 })), { value: 'custom', label: '自定义兼容服务' }]} />
       </label>
       {预设 ? <p className="assistant-settings__note">{预设.说明}</p> : null}
+      {预设 ? <label>内置模型
+        <Select aria-label="内置模型" value={配置.模型} disabled={编辑禁用} options={预设.模型列表.map((项) => ({ value: 项.标识, label: `${项.标识} · ${项.上下文令牌.toLocaleString()} tokens` }))} onChange={(标识) => {
+          const 模型 = 预设.模型列表.find((项) => 项.标识 === 标识)!
+          set配置((旧) => ({ ...旧, 模型: 标识, 上下文令牌: 模型.上下文令牌, 参数模式: 模型.参数模式 as 思考参数模式 }))
+        }} />
+        <span className="assistant-settings__note">官方窗口预设 · {预设.核对日期}核对；选择模型会同步容量，可在高级设置调整。</span>
+      </label> : null}
       {显示高级 ? <>
       <label>服务商名称
         <Input aria-label="模型服务商名称" value={配置.名称} disabled={!桌面可用 || 读取中 || 保存中} placeholder="如：本机模型服务" onChange={(事件) => set配置((当前) => ({ ...当前, 名称: 事件.target.value }))} />
@@ -111,9 +118,9 @@ export default function AiSettingsCard({ onSaved, compact = false }: Props) {
         <Select aria-label="思考参数模式" value={配置.参数模式 ?? 'none'} disabled={编辑禁用} options={参数选项} onChange={(值: 思考参数模式) => set配置((当前) => ({ ...当前, 参数模式: 值 }))} />
       </label>
       <label>上下文令牌
-        <InputNumber aria-label="上下文令牌" value={配置.上下文令牌 ?? 131072} min={8192} max={4194304} step={8192} precision={0} disabled={编辑禁用} onChange={(值) => set配置((当前) => ({ ...当前, 上下文令牌: 值 ?? 0 }))} />
+        <InputNumber aria-label="上下文令牌" value={配置.上下文令牌 ?? 131072} min={8192} max={4194304} step={8192} precision={0} disabled={编辑禁用} onChange={(值) => set配置((当前) => ({ ...当前, 上下文令牌: 值 ?? undefined }))} />
       </label>
-      <p className="assistant-settings__note">按模型实际上下文容量填写。接近容量时会自动压缩历史记忆，完整对话仍保存在本机。</p>
+      <p className="assistant-settings__note">按模型实际上下文容量填写。达到窗口的80%时自动压缩历史记忆；支持 /compact 手动压缩。自定义留空按128K（131072令牌）处理，完整对话仍保存在本机。</p>
       </> : <div className="assistant-settings__preset-summary">{配置.名称} · {配置.模型 || '待填写模型'}<Button type="link" onClick={() => set高级展开(true)}>高级设置</Button></div>}
       <label>默认思考强度
         <Select aria-label="默认思考强度" value={配置.思考强度 ?? 'high'} disabled={编辑禁用} options={思考选项} onChange={(值: 思考强度) => set配置((当前) => ({ ...当前, 思考强度: 值 }))} />

@@ -195,14 +195,14 @@ async function 等待摘要(文本, 生成摘要, 信号) {
   }
 }
 
-async function 压缩上下文({ 消息, 摘要 = '', 上下文令牌 = 131072, 固定消息 = [], 生成摘要, 信号, 推送 = () => {} } = {}) {
+async function 压缩上下文({ 消息, 摘要 = '', 上下文令牌 = 131072, 固定消息 = [], 生成摘要, 信号, 推送 = () => {}, 强制 = false } = {}) {
   检查取消(信号)
   if (!Array.isArray(消息) || !Array.isArray(固定消息) || typeof 摘要 !== 'string') throw new Error('上下文消息或摘要格式无效。')
   if (!Number.isSafeInteger(上下文令牌) || 上下文令牌 <= 0) throw new Error('上下文令牌预算必须为正整数。')
   const 原结果 = { 消息, 摘要, 已压缩: false, 压缩次数: 0 }
   const 固定令牌 = 估算令牌(固定消息)
   const 摘要令牌 = 摘要 ? 估算令牌({ role: 'system', content: 摘要 }) : 0
-  if (固定令牌 + 摘要令牌 + 估算令牌(消息) < Math.floor(上下文令牌 * 0.7)) return 原结果
+  if (!强制 && 固定令牌 + 摘要令牌 + 估算令牌(消息) < Math.floor(上下文令牌 * 0.8)) return 原结果
 
   const 消息组 = 分组消息(消息)
   let 最近用户起点 = -1

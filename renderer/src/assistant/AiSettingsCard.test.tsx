@@ -36,7 +36,7 @@ describe('智能助手设置同步', () => {
     await userEvent.click(screen.getByRole('combobox', { name: '选择模型服务商' }))
     await userEvent.click(await screen.findByText('智谱', { selector: '.ant-select-item-option-content' }))
     expect(screen.getByLabelText('模型访问密钥')).toHaveValue('')
-    expect(screen.getByText(/glm-5.3/)).toBeInTheDocument()
+    expect(screen.getAllByText(/glm-5.3/).length).toBeGreaterThan(0)
   })
   it('其他设置入口清除配置后重新读取并更新表单', async () => {
     let 当前配置 = { 名称: '本机服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false }

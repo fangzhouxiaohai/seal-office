@@ -1,6 +1,17 @@
 const { 创建助手服务, 规范配置 } = require('./assistant')
 
 describe('智能助手模型连接', () => {
+  it('内置模型使用对应官方窗口，自定义空值默认128K，明确设置不被覆盖', () => {
+    const 预设 = require('./providers.json')
+    for (const 服务 of 预设) for (const 模型 of 服务.模型列表) {
+      const 配置 = 规范配置({ 名称: 服务.名称, 地址: 服务.地址, 服务商: 服务.标识, 模型: 模型.标识 })
+      expect(配置.上下文令牌).toBe(模型.上下文令牌)
+    }
+    const 自定义 = { 名称: '自定义', 地址: 'https://example.com/v1/chat/completions', 服务商: 'custom', 模型: 'private-model' }
+    expect(规范配置(自定义).上下文令牌).toBe(131072)
+    expect(规范配置({ ...自定义, 上下文令牌: 65536 }).上下文令牌).toBe(65536)
+    expect(规范配置({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 服务商: 'deepseek', 模型: 'deepseek-flash', 上下文令牌: 131072 }).上下文令牌).toBe(131072)
+  })
   it('长助手回复可作为下一轮历史发送，用户输入仍单独校验', async () => {
     const 配置 = { 名称: '测试服务', 服务商: 'custom', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '', 思考强度: 'high', 参数模式: 'none' }
     const 请求 = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"回复":"继续处理。","修改":[]}' }, finish_reason: 'stop' }] }), { headers: { 'Content-Type': 'application/json' } }))
@@ -112,6 +123,6 @@ describe('智能助手模型连接', () => {
     const 清除 = 服务.清除配置()
     允许写完()
     await Promise.all([保存, 清除])
-    expect(await 服务.读取配置()).toEqual({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 模型: 'deepseek-flash', 已配置密钥: false, 服务商: 'deepseek', 思考强度: 'high', 参数模式: 'three', 上下文令牌: 131072 })
+    expect(await 服务.读取配置()).toEqual({ 名称: 'DeepSeek', 地址: 'https://api.deepseek.com/chat/completions', 模型: 'deepseek-flash', 已配置密钥: false, 服务商: 'deepseek', 思考强度: 'high', 参数模式: 'three', 上下文令牌: 1048576 })
   })
 })

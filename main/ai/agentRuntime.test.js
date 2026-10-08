@@ -57,3 +57,60 @@ describe('助手原生计划和工具执行', () => {
     expect(await 服务.读取会话('test')).toBeNull()
   })
 })
+
+
+describe('创建、引导和有界执行', () => {
+  it('引导修订用完整新候选替换旧候选，同名新文件只创建一次', async () => {
+    const 初稿 = [{ 种类: '创建文件', 类型: 'word', 名称: '计划.docx', 内容: '原始计划' }]
+    const 定稿 = [{ ...初稿[0], 内容: '计划包含追加交付日期' }]
+    const { 服务, 准备, 会话列表 } = 环境([调用('set_plan', { steps: 计划 }, 'p'), 调用('propose_changes', { 回复: '初稿', 修改: 初稿 }, 'e1'), { content: '等待确认' }, 调用('propose_changes', { 回复: '按引导更新', 替换候选: true, 修改: 定稿 }, 'e2'), { content: '更新完成，请确认' }])
+    await 准备()
+    let 已用 = false
+    const 执行工具 = vi.fn(async () => ({ 成功: true, 数据: { 候选已生成: true } }))
+    const 结果 = await 服务.对话({ 会话标识: 'revision', 消息: [{ 角色: 'user', 内容: '创建计划' }] }, { 执行工具, 读取引导: end => end && !已用 ? (已用 = true, ['增加交付日期']) : [] })
+    expect(执行工具.mock.calls[1][0].参数.修改).toEqual(定稿)
+    expect(JSON.parse(结果.内容).修改).toEqual(定稿)
+    expect(会话列表.get('revision').待确认候选.修改).toEqual(定稿)
+  })
+  it('无文件新建完整候选持久保存，需要确认后才能开始下一任务', async () => {
+    const 修改 = [{ 种类: '创建文件', 类型: 'word', 名称: '计划.docx', 内容: '实际计划正文' }]
+    const { 服务, 准备, 会话列表 } = 环境([调用('set_plan', { steps: 计划 }, 'p'), 调用('propose_changes', { 回复: '新建候选', 修改 }, 'e'), { content: '请确认新文件候选' }])
+    await 准备()
+    await 服务.对话({ 会话标识: 'general', 消息: [{ 角色: 'user', 内容: '新建计划' }] }, { 执行工具: async () => ({ 成功: true, 数据: { 候选已生成: true } }) })
+    expect(会话列表.get('general').待确认候选).toMatchObject({ 修改, 文件快照: null })
+    await expect(服务.对话({ 会话标识: 'general', 消息: [{ 角色: 'user', 内容: '重新生成' }] })).rejects.toThrow('确认或放弃')
+  })
+  it('终端回复前收到的引导继续同一任务，保留累计候选而不重发第一批', async () => {
+    const 修改 = [{ 种类: '文字替换', 查找: '原始标题', 替换为: '正式标题' }]
+    const { 服务, 准备, 请求列表, 会话列表 } = 环境([调用('set_plan', { steps: 计划 }, 'p'), 调用('propose_changes', { 回复: '候选', 修改 }, 'e1'), { content: '完成第一部分' }, 调用('propose_changes', { 回复: '追加候选', 修改: [{ 种类: '文字插入', 位置: '末尾', 内容: '预算100元' }] }, 'e2'), { content: '已结合预算，请确认' }])
+    await 准备()
+    let used = false
+    const 执行工具 = vi.fn(async () => ({ 成功: true, 数据: { 候选已生成: true } }))
+    const result = await 服务.对话({ 会话标识: 'test', 消息: [{ 角色: 'user', 内容: '改标题' }], 文档上下文: 上下文 }, { 执行工具, 读取引导: (end) => end && !used ? (used = true, ['追加预算100元']) : [] })
+    expect(请求列表).toHaveLength(5)
+    expect(请求列表[3].messages.at(-1).content).toContain('追加预算100元')
+    expect(执行工具.mock.calls[1][0].参数.修改).toHaveLength(2)
+    expect(JSON.parse(result.内容).修改).toHaveLength(2)
+    expect(会话列表.get('test').显示消息.some(m => m.内容.includes('补充引导：追加预算'))).toBe(true)
+  })
+  it('不断变换工具参数的循环也在48轮停止并保留错误', async () => {
+    const 回复 = Array.from({ length: 60 }, (_, i) => 调用('set_plan', { steps: [{ id: `step-${i}`, title: `步骤${i}`, status: 'pending' }] }, `call-${i}`))
+    const { 服务, 准备, 请求列表, 会话列表 } = 环境(回复)
+    await 准备()
+    await expect(服务.对话({ 会话标识: 'loop', 消息: [{ 角色: 'user', 内容: '连续处理' }] })).rejects.toThrow('48轮')
+    expect(请求列表).toHaveLength(48)
+    expect(会话列表.get('loop').最近任务错误).toContain('48轮')
+  })
+  it('手动压缩保持候选和计划，并保留完整显示记录', async () => {
+    const { 服务, 准备, 会话列表 } = 环境([{ content: '历史摘要：原目标写预算；未确认候选保留。' }])
+    await 准备()
+    const 模型消息 = Array.from({ length: 4 }, (_, i) => [{ role: 'user', content: `需求${i}` }, { role: 'assistant', content: `回复${i}` }]).flat()
+    const 候选 = { 回复: '候选', 修改: [{ 种类: '文字插入', 位置: '末尾', 内容: '预算' }], 文件快照: '原快照' }
+    会话列表.set('compact', { 模型消息, 显示消息: [{ 角色: 'user', 内容: '完整对话保留' }], 计划, 摘要: '', 压缩次数: 0, 待确认候选: 候选 })
+    const result = await 服务.对话({ 会话标识: 'compact', 手动压缩: true, 消息: [{ 角色: 'user', 内容: '/compact' }] })
+    expect(result.压缩次数).toBe(1)
+    expect(会话列表.get('compact').待确认候选).toEqual(候选)
+    expect(会话列表.get('compact').计划).toEqual(计划)
+    expect(会话列表.get('compact').显示消息[0].内容).toBe('完整对话保留')
+  })
+})

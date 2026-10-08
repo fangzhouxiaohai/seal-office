@@ -18,7 +18,7 @@ export interface 助手配置输入 { 名称: string; 地址: string; 模型: st
 export interface 助手计划项 { id: string; title: string; status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'awaiting_confirmation' }
 export interface 助手待确认候选 { 回复: string; 修改: unknown[]; 文档上下文: string; 文件快照: string | null }
 export interface 助手会话 { 显示消息: Array<{ 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 状态?: '完成' | '已停止' | '失败'; 阶段?: string }>; 摘要: string; 计划: 助手计划项[]; 压缩次数: number; 待确认候选?: 助手待确认候选 | null }
-export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 请求标识?: string; 思考强度?: 思考强度; 会话标识?: string; 自动执行?: boolean; 上下文令牌?: number; 文件快照?: string }
+export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 请求标识?: string; 思考强度?: 思考强度; 会话标识?: string; 自动执行?: boolean; 手动压缩?: boolean; 上下文令牌?: number; 文件快照?: string }
 export interface 助手流片段 { 请求标识: string; 类型: '思考' | '正文' | '状态' | '计划' | '工具' | '压缩'; 内容: string }
 export interface 助手工具请求 { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }
 export interface 助手工具结果 { 请求标识: string; 调用标识: string; 成功: boolean; 数据?: unknown; 错误?: string }
@@ -228,6 +228,7 @@ export interface 电子接口 {
     clearConfig: () => Promise<助手结果<助手配置>>
     chat: (对话: 助手对话输入) => Promise<助手结果<助手对话结果>>
     cancel: (标识: string) => Promise<助手结果<never>>
+    guide?: (标识: string, 内容: string) => Promise<助手结果<never>>
     onStream: (回调: (片段: 助手流片段) => void) => () => void
     getSession?: (标识: string) => Promise<助手结果<助手会话 | null>>
     clearSession?: (标识: string) => Promise<助手结果<never>>
@@ -382,6 +383,7 @@ export const 桥接 = {
     clearConfig: (): Promise<助手结果<助手配置>> => 取后端()?.ai?.clearConfig() ?? 失败('当前环境不支持智能助手设置'),
     chat: (对话: 助手对话输入): Promise<助手结果<助手对话结果>> => 取后端()?.ai?.chat(对话) ?? 失败('当前环境不支持智能助手对话'),
     cancel: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.cancel?.(标识) ?? 失败('当前环境不支持停止任务'),
+    guide: (标识: string, 内容: string): Promise<助手结果<never>> => 取后端()?.ai?.guide?.(标识, 内容) ?? 失败('当前版本不支持任务引导，请升级桌面版'),
     onStream: (回调: (片段: 助手流片段) => void): (() => void) => 取后端()?.ai?.onStream?.(回调) ?? (() => {}),
     getSession: (标识: string): Promise<助手结果<助手会话 | null>> => 取后端()?.ai?.getSession?.(标识) ?? 失败('当前环境不支持会话记忆读取'),
     clearSession: (标识: string): Promise<助手结果<never>> => 取后端()?.ai?.clearSession?.(标识) ?? 失败('当前环境不支持会话记忆'),

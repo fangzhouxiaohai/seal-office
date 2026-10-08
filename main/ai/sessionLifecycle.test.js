@@ -79,7 +79,7 @@ async function 创建环境() {
     return 窗口.get(标识)
   }
   const 调用 = (名称, 窗口号, ...参数) => 处理器.get(名称)({ sender: 获取窗口(窗口号) }, ...参数)
-  const 对话 = (标识, 内容 = '请继续', 窗口号 = 1) => 调用('ai.chat', 窗口号, { 请求标识: `request-${++请求计数}`, 会话标识: 标识, 消息: [{ 角色: 'user', 内容 }], 文档上下文: 文件上下文, 文件快照 })
+  const 对话 = (标识, 内容 = '请继续', 窗口号 = 1, 额外 = {}) => 调用('ai.chat', 窗口号, { 请求标识: `request-${++请求计数}`, 会话标识: 标识, 消息: [{ 角色: 'user', 内容 }], 文档上下文: 文件上下文, 文件快照, ...额外 })
   const 生成候选 = async (标识 = 新文件标识) => {
     回复列表.push(工具回复('set_plan', { steps: 初始计划 }, `plan-${请求计数 + 1}`), 工具回复('propose_changes', { 回复: '建议将原始标题作为一级标题。', 修改: 修改候选 }, `edit-${请求计数 + 1}`), { content: '已经生成标题候选，请确认后应用。' })
     const 结果 = await 对话(标识, '请检查并调整标题。')
@@ -125,6 +125,8 @@ describe('真实助手服务的文件会话生命周期', () => {
     expect(恢复会话.模型消息.find((项) => 项.tool_calls).reasoning_content).toBe('逐项核对真实文件。')
     const 可见会话 = await 环境.调用('ai.getSession', 2, 已存文件标识)
     expect(可见会话.数据).toMatchObject({ 显示消息: 原会话.显示消息, 计划: 原会话.计划, 待确认候选: 原会话.待确认候选 })
+    await expect(重开服务.对话({ 会话标识: 已存文件标识, 消息: [{ 角色: 'user', 内容: '我上次要求修改什么？' }], 文档上下文: 文件上下文 })).rejects.toThrow('先确认或放弃')
+    await 重开服务.放弃会话候选(已存文件标识)
     await 重开服务.对话({ 会话标识: 已存文件标识, 消息: [{ 角色: 'user', 内容: '我上次要求修改什么？' }], 文档上下文: 文件上下文 })
     expect(环境.请求列表.at(-1).messages).toEqual(expect.arrayContaining(原会话.模型消息))
   })
@@ -255,7 +257,10 @@ describe('真实助手服务的文件会话生命周期', () => {
     环境.会话存储.保存.mockRejectedValueOnce(new Error('对话记忆保存失败，磁盘空间不足。'))
     expect((await 环境.调用('ai.discardSessionProposal', 1, 新文件标识)).成功).toBe(false)
     expect(await 环境.基础存储.读取(新文件标识)).toEqual(原会话)
-    expect((await 环境.对话(新文件标识, '保存失败后继续核对原文。', 2)).成功).toBe(true)
+    expect((await 环境.对话(新文件标识, '保存失败后继续核对原文。', 2)).成功).toBe(false)
+    expect(await 环境.基础存储.读取(新文件标识)).toEqual(原会话)
+    expect((await 环境.调用('ai.discardSessionProposal', 2, 新文件标识)).成功).toBe(true)
+    expect((await 环境.对话(新文件标识, '放弃旧候选后继续核对原文。', 2)).成功).toBe(true)
   })
 
   it('绑定保存失败保留来源与目标，重试解除占用并只合并一次', async () => {
@@ -311,11 +316,12 @@ describe('真实助手服务的文件会话生命周期', () => {
 
   it('生成任务占用期间其他窗口不能绑定、确认、放弃或清除同一会话', async () => {
     const 环境 = await 创建环境()
+    await 环境.对话(新文件标识, '历史需求：保留预算。')
     const 原会话 = await 环境.生成候选()
     const 已连接 = 可控等待()
     const 完成回复 = 可控等待()
     环境.回复列表.push(async () => { 已连接.释放(); await 完成回复.等待; return { content: '继续处理完成。' } })
-    const 任务 = 环境.对话(新文件标识, '继续处理这份文件', 1)
+    const 任务 = 环境.对话(新文件标识, '/compact', 1, { 手动压缩: true })
     await 已连接.等待
     try {
       for (const [频道, 参数] of [

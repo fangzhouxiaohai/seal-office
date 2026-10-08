@@ -153,6 +153,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     chat: (对话) => ipcRenderer.invoke('ai.chat', 对话),
     cancel: (标识) => ipcRenderer.invoke('ai.cancel', 标识),
+    guide: (标识, 内容) => ipcRenderer.invoke('ai.guide', 标识, 内容),
     onStream: (回调) => {
       const 处理 = (_事件, 片段) => {
         if (片段 && typeof 片段.请求标识 === 'string' && ['思考', '正文', '状态', '计划', '工具', '压缩'].includes(片段.类型) && typeof 片段.内容 === 'string') 回调(片段)

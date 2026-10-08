@@ -16,6 +16,14 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
   ipcMain.handle('ai.saveConfig', 包装((输入) => 服务.保存配置(输入)))
   ipcMain.handle('ai.clearConfig', 包装(() => 服务.清除配置()))
   const 进行中 = new Map()
+  ipcMain.handle('ai.guide', (事件, 标识, 内容) => {
+    const 任务 = 进行中.get(事件.sender.id)
+    if (!任务 || 任务.标识 !== 标识 || !任务.接收引导 || 任务.控制器.signal.aborted) return { 成功: false, 错误: '当前任务已结束、正在收尾或不支持引导' }
+    if (typeof 内容 !== 'string' || !内容.trim() || 内容.length > 12000) return { 成功: false, 错误: '引导内容为空或超过12000字' }
+    if (任务.引导字数 + 内容.length > 24000) return { 成功: false, 错误: '本次任务的引导内容过多，请等待后续队列处理' }
+    任务.引导.push(内容.trim()); 任务.引导字数 += 内容.length
+    return { 成功: true }
+  })
   ipcMain.handle('ai.getSession', 包装(async (标识) => {
     const 会话 = await 服务.读取会话(标识)
     if (!会话) return null
@@ -55,7 +63,7 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
     if (typeof 标识 !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(标识)) return { 成功: false, 错误: '助手请求标识无效' }
     if (进行中.has(发送者.id)) return { 成功: false, 错误: '请等待当前任务完成或停止后重试' }
     const 控制器 = new AbortController()
-    const 任务 = { 标识, 控制器, 工具: new Map() }
+    const 任务 = { 标识, 控制器, 工具: new Map(), 引导: [], 引导字数: 0, 接收引导: typeof 输入?.会话标识 === 'string' && 输入?.自动执行 !== false && !输入?.手动压缩 }
     进行中.set(发送者.id, 任务)
     const 停止 = () => 控制器.abort()
     发送者.once('destroyed', 停止)
@@ -63,6 +71,12 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
     try {
       const 数据 = await 服务.对话(输入, {
         信号: 控制器.signal,
+        读取引导: (结束 = false) => {
+          const 内容 = 任务.引导.splice(0)
+          // 最终回复前原子关闭入口；若还有引导，继续原任务并再次接收。
+          if (结束 && !内容.length) 任务.接收引导 = false
+          return 内容
+        },
         推送: (片段) => { if (!发送者.isDestroyed() && !控制器.signal.aborted) 发送者.send('ai.stream', { 请求标识: 标识, ...片段 }) },
         执行工具: (输入工具) => new Promise((完成, 拒绝) => {
           if (控制器.signal.aborted || 发送者.isDestroyed()) return 拒绝(new Error('已停止生成'))

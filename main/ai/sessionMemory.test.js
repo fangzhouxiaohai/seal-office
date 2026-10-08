@@ -187,7 +187,7 @@ describe('完整上下文摘要压缩', () => {
     expect(生成摘要).not.toHaveBeenCalled()
   })
 
-  it('达到七成预算时真实摘要旧历史并保留最近完整用户轮次', async () => {
+  it('达到八成预算时真实摘要旧历史并保留最近完整用户轮次', async () => {
     const 消息 = [{ role: 'user', content: '旧要求'.repeat(250) }, { role: 'assistant', content: '旧回答'.repeat(250) }, { role: 'user', content: '当前要求' }, { role: 'assistant', content: '当前回答' }]
     const 原值 = JSON.stringify(消息)
     const 推送 = vi.fn()
@@ -361,5 +361,18 @@ describe('完整上下文摘要压缩', () => {
     控制.abort()
     await expect(摘要中).rejects.toMatchObject({ name: 'AbortError' })
     expect(JSON.stringify(消息)).toBe(原值)
+  })
+})
+
+
+describe('80%窗口和手动压缩', () => {
+  it('75%不压缩，达到80%才自动压缩', async () => {
+    const 消息 = [{ role: 'user', content: '早期记录' }, { role: 'assistant', content: '结论' }, { role: 'user', content: '继续' }]
+    const 总数 = 估算令牌(消息), 生成摘要 = vi.fn(async () => '旧记录摘要')
+    const 窗口 = Math.ceil(总数 / 0.75)
+    expect((await 压缩上下文({ 消息, 上下文令牌: 窗口, 生成摘要 })).已压缩).toBe(false)
+    expect(生成摘要).not.toHaveBeenCalled()
+    const 大历史 = [{ role: 'user', content: '旧正文'.repeat(100) }, { role: 'assistant', content: '旧结论' }, { role: 'user', content: '继续' }]
+    expect((await 压缩上下文({ 消息: 大历史, 上下文令牌: Math.floor(估算令牌(大历史) / 0.8), 生成摘要 })).已压缩).toBe(true)
   })
 })
