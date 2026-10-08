@@ -84,15 +84,16 @@ def main():
     verified = []
     for file in files:
         digest, size = expected[file.name], file.stat().st_size
+        asset_name = f'SealOffice{version}-ReleaseNotes.md' if file == files[-1] else file.name
         assets = call('GET', f'{API}/releases/{release["id"]}/assets', params={'per_page': 100})
-        asset = next((a for a in assets if a['name'] == file.name), None)
+        asset = next((a for a in assets if a['name'] == asset_name), None)
         if asset is None:
             print(json.dumps({'phase': 'uploading', 'name': file.name, 'bytes': size}, ensure_ascii=False), flush=True)
             with file.open('rb') as source:
-                asset = call('POST', upload_url, params={'name': file.name}, data=source, headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(size)}, timeout=600)
-        if asset['size'] != size or asset.get('digest') != f'sha256:{digest}' or asset.get('state') != 'uploaded':
+                asset = call('POST', upload_url, params={'name': asset_name}, data=source, headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(size)}, timeout=600)
+        if asset['name'] != asset_name or asset['size'] != size or asset.get('digest') != f'sha256:{digest}' or asset.get('state') != 'uploaded':
             raise SystemExit(f'Remote asset differs or upload is incomplete: {file.name}; existing data was preserved')
-        verified.append({'name': file.name, 'bytes': size, 'sha256': digest, 'url': asset['browser_download_url']})
+        verified.append({'name': asset_name, 'bytes': size, 'sha256': digest, 'url': asset['browser_download_url']})
         print(json.dumps({'phase': 'verified', 'name': file.name}, ensure_ascii=False), flush=True)
     release = call('PATCH', f'{API}/releases/{release["id"]}', json={'body': body, 'draft': False, 'prerelease': True, 'make_latest': 'false'})
     result = {'version': version, 'commit': head, 'tag': tag, 'url': release['html_url'], 'draft': release['draft'], 'prerelease': release['prerelease'], 'assets': verified}
