@@ -18,13 +18,14 @@ export interface 快照 {
 }
 
 export class HistoryStack<T = 快照> {
-  constructor(private readonly 相同?: (a: T, b: T) => boolean) {}
+  constructor(private readonly 相同?: (a: T, b: T) => boolean, private readonly 补全?: (item: T) => T) {}
   private 列表: T[] = []
 
   private 指针 = -1
 
   /** 记录新快照；记录后重做分支被清空 */
   record(项: T): void {
+    项 = this.补全?.(项) ?? 项
     const 当前 = this.current()
     if (当前 !== null && this.相同?.(当前, 项)) return
     this.列表 = this.列表.slice(0, this.指针 + 1)

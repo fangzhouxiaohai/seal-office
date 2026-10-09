@@ -95,7 +95,7 @@ def main():
             raise SystemExit(f'Remote asset differs or upload is incomplete: {file.name}; existing data was preserved')
         verified.append({'name': asset_name, 'bytes': size, 'sha256': digest, 'url': asset['browser_download_url']})
         print(json.dumps({'phase': 'verified', 'name': file.name}, ensure_ascii=False), flush=True)
-    release = call('PATCH', f'{API}/releases/{release["id"]}', json={'body': body, 'draft': False, 'prerelease': True, 'make_latest': 'false'})
+    release = call('PATCH', f'{API}/releases/{release["id"]}', json={'body': body, 'target_commitish': head, 'draft': False, 'prerelease': True, 'make_latest': 'false'})
     result = {'version': version, 'commit': head, 'tag': tag, 'url': release['html_url'], 'draft': release['draft'], 'prerelease': release['prerelease'], 'assets': verified}
     (release_dir / 'published-release.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({'phase': 'published', 'url': result['url'], 'assetCount': len(verified)}, ensure_ascii=False), flush=True)

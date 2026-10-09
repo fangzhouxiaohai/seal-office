@@ -57,7 +57,10 @@ const 默认视图: ViewState = {
   文档保护: false,
 }
 
-const 新文字历史 = () => new HistoryStack((a, b) => a.html === b.html && (b.页面设置 === undefined || JSON.stringify(a.页面设置) === JSON.stringify(b.页面设置)))
+const 新文字历史 = (读取页面: () => 文字页面设置 | undefined) => new HistoryStack(
+  (a, b) => a.html === b.html && JSON.stringify(a.页面设置) === JSON.stringify(b.页面设置),
+  item => ({ ...item, 页面设置: item.页面设置 === undefined ? 读取页面() ?? null : item.页面设置 }),
+)
 const 修改正文命令 = (标识: string) => /^(font\.|para\.|style\.|insert\.|layout\.|table\.|link\.|comment\.|track\.|merge\.)/.test(标识) || ['clipboard.cut', 'clipboard.paste', 'clipboard.formatPainter', 'edit.undo', 'edit.redo'].includes(标识)
 
 const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距', '页眉Html', '页脚Html'] as const
@@ -263,7 +266,7 @@ const DocEditor = () => {
     if (!当前文档 || !文档标识) return
     const 已由编辑器写入 = 内部写入内容.current.get(文档标识)
     if (已由编辑器写入 === 当前文档.html) return
-    const 历史 = 历史表.current.get(文档标识) ?? 新文字历史()
+    const 历史 = 历史表.current.get(文档标识) ?? 新文字历史(() => 页面设置引用.current)
     if (!历史表.current.has(文档标识)) 历史表.current.set(文档标识, 历史)
     if (输入计时器.current !== null) {
       window.clearTimeout(输入计时器.current)
@@ -330,7 +333,7 @@ const DocEditor = () => {
     if (已有 !== undefined) {
       return 已有
     }
-    const 新栈 = 新文字历史()
+    const 新栈 = 新文字历史(() => 页面设置引用.current)
     历史表.current.set(文档标识, 新栈)
     return 新栈
   }

@@ -16,6 +16,9 @@ app.whenReady().then(async () => {
       import {App as AntdApp,ConfigProvider} from 'antd';import {AppProvider,useAppStore} from './renderer/src/store';
       import {SettingsProvider} from './renderer/src/store/settingsStore';import DocEditor from './renderer/src/editor/DocEditor';
       import {应用主题} from './renderer/src/styles/themes';
+      import {HistoryStack} from './renderer/src/editor/history';
+      const recordHistory=HistoryStack.prototype.record;
+      HistoryStack.prototype.record=function(item){window.auditHistory=this;return recordHistory.call(this,item)};
       const mount=createRoot(document.getElementById('root'));let store;
       window.start=theme=>{
         flushSync(()=>mount.render(null));应用主题(theme);
@@ -105,6 +108,8 @@ app.whenReady().then(async () => {
       const undone=await js('info()');assert.notEqual(undone.html,edited.html,'Undo restores previous formatting')
       await js(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}))`);await frame()
       assert.equal((await js('info()')).html,edited.html,'Redo restores edited formatting')
+      const snapshots=await js('auditHistory.snapshots()')
+      assert.ok(!snapshots.some((s,i)=>i>0&&s.html===snapshots[i-1].html&&JSON.stringify(s.页面设置??null)===JSON.stringify(snapshots[i-1].页面设置??null)), 'No duplicate undo snapshot')
       checks.push({theme,action:'undo-redo',passed:true})
       for(const region of ['header','footer']) {
         await js(`prepareRegion(${JSON.stringify(region)})`);await frame()

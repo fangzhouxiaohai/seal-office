@@ -95,4 +95,30 @@ describe('撤销重做历史栈', () => {
     栈.record({ html: '<p>内容</p>', selection: 选区 })
     expect(栈.current()?.selection).toEqual(选区)
   })
+
+  it('先补全页面状态再去重，初始内容和格式操作前记录不产生额外撤销步骤', () => {
+    const 栈 = new HistoryStack((a,b)=>a.html===b.html&&JSON.stringify(a.页面设置)===JSON.stringify(b.页面设置),
+      item=>({...item,页面设置:item.页面设置===undefined?null:item.页面设置}))
+    栈.record({html:'正文',selection:null})
+    栈.record({html:'正文',selection:null,页面设置:null})
+    栈.record({html:'加粗正文',selection:null})
+    expect(栈.size()).toBe(2)
+    expect(栈.undo()?.html).toBe('正文')
+    expect(栈.canUndo()).toBe(false)
+    expect(栈.redo()?.html).toBe('加粗正文')
+  })
+
+  it('输入快照保存当前页面状态，后续布局修改撤销与重做还原对应状态', () => {
+    let 页面 = {纸张:'A4'}
+    const 栈 = new HistoryStack((a,b)=>a.html===b.html&&JSON.stringify(a.页面设置)===JSON.stringify(b.页面设置),
+      item=>({...item,页面设置:item.页面设置===undefined?{...页面}:item.页面设置}))
+    栈.record({html:'原正文',selection:null})
+    栈.record({html:'输入正文',selection:null})
+    页面={纸张:'A5'}
+    栈.record({html:'输入正文',selection:null})
+    expect(栈.undo()).toMatchObject({html:'输入正文',页面设置:{纸张:'A4'}})
+    expect(栈.undo()).toMatchObject({html:'原正文',页面设置:{纸张:'A4'}})
+    expect(栈.redo()).toMatchObject({html:'输入正文',页面设置:{纸张:'A4'}})
+    expect(栈.redo()).toMatchObject({html:'输入正文',页面设置:{纸张:'A5'}})
+  })
 })
