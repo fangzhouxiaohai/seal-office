@@ -4,3 +4,4 @@ numpy>=1.26
 Pillow>=10
 opencv-python>=4.8
 qrcode==8.2
+requests>=2.32

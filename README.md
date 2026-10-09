@@ -222,7 +222,9 @@ PDF 正文居中显示，右侧工具栏默认收起为图标，支持展开页�
 
 ## 宣传视频制作
 
-提供 3 分钟横版与竖版宣传片的[讲解分镜、真实软件素材和制作说明](docs/promo/README.md)。两版均包含普通话女声、中文字幕、功能演示和仓库二维码；成片输出到本地 `release/promo/`。
+基于 **1.9.8** 重新制作 3 分钟[横版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoLandscape1080p.mp4)与[竖版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoPortrait1080p.mp4)，包含最新版操作画面、模板市场、新版助手、知识库与云空间入口。两版配有普通话女声、中文字幕、轻柔伴奏和下载二维码；[分镜与制作说明](docs/promo/README.md)可复现制作过程。本地成片位于 `release/promo/`。
+
+[![海豹办公 1.9.8 横版宣传片封面](docs/promo/assets/cover-landscape.jpg)](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoLandscape1080p.mp4)
 
 ## 演示文稿能力与兼容范围
 

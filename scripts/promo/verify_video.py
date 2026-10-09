@@ -1,5 +1,6 @@
 """检查成片尺寸、时长、完整解码、字幕、音量和仓库二维码。"""
 import json
+import hashlib
 import re
 import subprocess
 import sys
@@ -10,13 +11,26 @@ import imageio_ffmpeg
 
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'release/promo'
-WORK=OUT/'work'
+CONFIG=json.loads((ROOT/'docs/promo/storyboard.json').read_text(encoding='utf-8'))
+WORK=OUT/('work-v'+CONFIG['版本'])
 FFMPEG=imageio_ffmpeg.get_ffmpeg_exe()
 
 def main():
     sys.stdout.reconfigure(encoding='utf-8')
-    repository=json.loads((ROOT/'docs/promo/storyboard.json').read_text(encoding='utf-8'))['仓库']
+    repository=CONFIG['下载']
     captions=json.loads((WORK/'captions.json').read_text(encoding='utf-8'))
+    source=json.loads((WORK/'capture-source.json').read_text(encoding='utf-8'))
+    if source['version']!=CONFIG['版本']: raise ValueError('录制成品版本不一致')
+    integrity=json.loads((ROOT/'release'/('v'+CONFIG['版本'])/'release-integrity.json').read_text(encoding='utf-8-sig'))
+    archive=ROOT/'release'/('v'+CONFIG['版本'])/'win-unpacked/resources/app.asar'
+    if not integrity['passed'] or hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()!=integrity['archiveSha256']: raise ValueError('录制成品不符合已验证安装包')
+    recorded=[]
+    for scene in CONFIG['镜头']:
+        name=scene['素材']
+        if name in ['intro','scope','outro']: continue
+        manifest=json.loads((WORK/'recordings'/name/'manifest.json').read_text(encoding='utf-8'))
+        if manifest['版本']!=CONFIG['版本'] or not manifest['画面']: raise ValueError('操作素材缺失或版本不一致')
+        recorded.append(name)
     for i,item in enumerate(captions):
         if not 0<=item['start']<item['end']<=180: raise ValueError('字幕时间范围无效')
         if i and captions[i-1]['end']>item['start']: raise ValueError('字幕重叠')
@@ -47,9 +61,9 @@ def main():
         loudness=float(volume['input_i'])
         peak=float(volume['input_tp'])
         if not -18<=loudness<=-14 or peak>-.5: raise ValueError('音量或峰值超出交付范围')
-        results.append({'版式':mode,'宽':width,'高':height,'帧率':fps,'帧数':count,'时长秒':count/fps,'文件字节':video.stat().st_size,'完整解码':True,'仓库二维码':value,'综合响度':loudness,'真实峰值':peak})
+        results.append({'版式':mode,'宽':width,'高':height,'帧率':fps,'帧数':count,'时长秒':count/fps,'文件字节':video.stat().st_size,'SHA256':hashlib.file_digest(video.open('rb'),'sha256').hexdigest(),'完整解码':True,'下载二维码':value,'综合响度':loudness,'真实峰值':peak})
         print(json.dumps(results[-1],ensure_ascii=False),flush=True)
-    (OUT/'成片核验.json').write_text(json.dumps({'成片':results,'字幕段数':len(captions)},ensure_ascii=False,indent=2),encoding='utf-8')
+    (OUT/'成片核验.json').write_text(json.dumps({'版本':CONFIG['版本'],'成片':results,'字幕段数':len(captions),'录制片段':recorded,'来源说明':source['assistant'],'通过':True},ensure_ascii=False,indent=2),encoding='utf-8')
     print('两种版式的画面、音轨、字幕和二维码核验通过')
 
 if __name__=='__main__': main()

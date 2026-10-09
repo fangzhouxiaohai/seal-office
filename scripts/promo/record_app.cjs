@@ -2,9 +2,11 @@
 const fs = require('fs')
 const path = require('path')
 const 根 = path.resolve(__dirname, '../..')
-const 工作目录 = path.join(根, 'release/promo/work/recordings')
+const 配置 = JSON.parse(fs.readFileSync(path.join(根, 'docs/promo/storyboard.json'), 'utf8'))
+const 工作目录 = path.join(根, `release/promo/work-v${配置.版本}/recordings`)
 const 素材目录 = path.join(根, 'docs/promo/assets')
 const 端口 = Number(process.argv[2] || 9346)
+const 刷新片段 = new Set(process.argv.slice(3))
 const 暂停 = 毫秒 => new Promise(完成 => setTimeout(完成, 毫秒))
 
 async function 主程序() {
@@ -55,9 +57,9 @@ async function 主程序() {
   }
   const 录制 = async (名称, 操作) => {
     const 目录 = path.join(工作目录, 名称)
-    if (fs.existsSync(path.join(目录, 'manifest.json'))) { console.log('复用已完成片段：' + 名称); return }
+    if (!刷新片段.has(名称) && fs.existsSync(path.join(目录, 'manifest.json'))) { const 原 = JSON.parse(fs.readFileSync(path.join(目录, 'manifest.json'), 'utf8')); if (原.版本 !== 配置.版本) throw new Error('素材版本不一致'); console.log('复用已完成片段：' + 名称); return }
     fs.mkdirSync(目录, { recursive: true })
-    当前录制 = { 名称, 开始: Date.now(), 画面: [], 操作: [] }
+    当前录制 = { 名称, 版本: 配置.版本, 开始: Date.now(), 画面: [], 操作: [] }
     const 元数据 = 当前录制
     let 继续 = true
     const 保存帧 = async () => {
@@ -84,7 +86,9 @@ async function 主程序() {
   try {
     await 调用('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
     await 等待("document.querySelectorAll('.wps-global-tab__select').length === 4 && document.fonts.status === 'loaded'")
-    if (await 执行("document.visibilityState !== 'visible' || document.querySelectorAll('.ant-modal').length > 0")) throw new Error('演示窗口未显示，或存在导入提示')
+    const 暂不按钮 = await 执行(`Boolean(${按钮('暂不设置')})`)
+    if (暂不按钮) { await 点击(按钮('暂不设置'), '跳过演示实例默认程序提示'); await 暂停(500) }
+    if (await 执行("[...document.querySelectorAll('.ant-modal')].some(项=>项.getClientRects().length>0)")) throw new Error('演示窗口存在导入提示')
     await 点击("document.querySelector('.wps-global-tabs__home')", '回到首页')
     await 录制('home', async () => {
       await 点击(标签('产品发布计划.docx'), '切换文字文档'); await 暂停(700)
@@ -153,14 +157,46 @@ async function 主程序() {
       await 点击(按钮('模型设置'), '展开模型服务配置')
       await 暂停(1500)
       await 点击(按钮('收起模型设置'), '返回文件对话')
+      await 执行("document.querySelector('.assistant-drawer__messages').scrollTop=0")
+      await 暂停(1800)
+      await 执行("(()=>{const 区=document.querySelector('.assistant-drawer__messages');区.scrollTop=区.scrollHeight})()")
+      await 暂停(1800)
+      await 点击(按钮('复制Python代码'), '复制示例代码')
       await 点击("document.querySelector('textarea[aria-label=\"发送给智能助手的消息\"]')", '输入文件修改需求')
-      await 文本输入('请帮我精简这份发布计划的项目目标。')
+      await 文本输入('请把这份计划整理成三项行动建议。')
       await 暂停(600)
     })
     if (await 执行("Boolean(document.querySelector('.ant-drawer-open .ant-drawer-close'))")) await 点击("document.querySelector('.ant-drawer-open .ant-drawer-close')", '收起智能助手')
     await 暂停(700)
     await 点击("document.querySelector('.wps-global-tabs__home')", '回到首页')
     await 等待("Boolean(document.querySelector('button[aria-label=\"切换深浅模式\"]'))")
+    await 点击(按钮('演示模板市场'), '打开演示模板市场')
+    await 等待("document.querySelectorAll('.seal-market-tools button').length===3")
+    await 录制('market', async () => {
+      await 点击("document.querySelector('.seal-market-tools [data-tool=\"document\"]')", '查看文档生成演示')
+      await 暂停(900)
+      await 点击("[...document.querySelectorAll('.ant-modal')].find(项=>项.getClientRects().length>0).querySelector('.ant-modal-close')", '返回模板市场')
+      await 暂停(600)
+      await 执行("document.querySelector('.seal-market').parentElement.scrollTop=200")
+      await 暂停(1000)
+    })
+    await 点击(按钮('知识库'), '打开知识库')
+    await 等待("Boolean(document.querySelector('.seal-cloud-list .seal-cloud-card'))")
+    await 录制('knowledge', async () => {
+      await 点击(按钮('阅读与提问'), '阅读内置文件与备份指南')
+      await 暂停(1800)
+      await 点击(按钮('返回知识列表'), '返回原创指南')
+      await 暂停(800)
+    })
+    await 点击(按钮('我的云空间'), '打开云空间入口')
+    await 等待("Boolean(document.querySelector('.seal-cloud-empty'))")
+    await 录制('cloud', async () => {
+      await 暂停(1000)
+      await 点击(按钮('登录并开通云空间'), '查看用户主动开通入口')
+      await 暂停(1400)
+      await 点击("[...document.querySelectorAll('.ant-modal')].find(项=>项.getClientRects().length>0).querySelector('.ant-modal-close')", '保持默认关闭，返回云空间')
+      await 暂停(700)
+    })
     await 录制('tools', async () => {
       await 点击("[...document.querySelectorAll('.wps-home-sidebar button')].find(项=>项.textContent.trim()==='日历') || [...document.querySelectorAll('button')].find(项=>项.textContent.trim()==='日历')", '查看本机日历')
       await 暂停(1400)
@@ -179,7 +215,7 @@ async function 主程序() {
       await 暂停(700)
       await 点击("[...document.querySelectorAll('.help-manual__topic')].find(项=>项.textContent.includes('阅读和处理 PDF'))", '查看 PDF 操作步骤')
     })
-    console.log('真实操作录制完成；助手没有发送请求，也没有模拟回复。')
+    console.log('1.9.8 成品操作录制完成；助手恢复标明为示例的公开演示会话，未发送模型请求。')
   } finally { 连接.close() }
 }
 主程序().catch(错误 => { console.error(错误.message); process.exitCode = 1 })

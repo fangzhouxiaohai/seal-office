@@ -10,7 +10,8 @@ import edge_tts
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / 'release' / 'promo' / 'work'
+VERSION = json.loads((ROOT / 'docs/promo/storyboard.json').read_text(encoding='utf-8'))['版本']
+WORK = ROOT / 'release' / 'promo' / ('work-v' + VERSION)
 
 async def main(proxy):
     sys.stdout.reconfigure(encoding='utf-8')

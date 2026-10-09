@@ -18,7 +18,8 @@ from PIL import Image, ImageDraw, ImageFont
 import qrcode
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / 'release/promo/work'
+VERSION = json.loads((ROOT / 'docs/promo/storyboard.json').read_text(encoding='utf-8'))['版本']
+WORK = ROOT / 'release/promo' / ('work-v' + VERSION)
 OUT = ROOT / 'release/promo'
 ASSETS = ROOT / 'docs/promo/assets'
 CONFIG = json.loads((ROOT / 'docs/promo/storyboard.json').read_text(encoding='utf-8'))
@@ -29,29 +30,31 @@ TOKENS = CONFIG['设计令牌']
 BG, INK, MUTED, BLUE = [TOKENS[key] for key in ['背景','主文字','次文字','品牌']]
 FONT = Path('C:/Windows/Fonts/msyh.ttc')
 BOLD = Path('C:/Windows/Fonts/msyhbd.ttc')
-FALLBACK = {
-    'home': '01-home', 'word': '02-word', 'sheet': '03-sheet',
-    'slides': '04-slides', 'pdf': '05-pdf', 'assistant': '06-settings', 'help': '07-help',
-}
 DETAILS = {
     'home': (0, 790, 860, 100),
-    'word': (615, 388, 635, 190),
+    'word': (420, 340, 820, 255),
     'sheet': (240, 184, 600, 250),
-    'slides': (490, 345, 780, 265),
+    'slides': (280, 450, 730, 170),
     'pdf': (1145, 379, 204, 174),
-    'assistant': (1024, 205, 385, 124),
+    'assistant': (1008, 465, 386, 240),
+    'market': (350, 490, 750, 240),
+    'knowledge': (300, 145, 800, 420),
+    'cloud': (440, 319, 560, 262),
     'tools': (300, 120, 800, 420),
     'help': (505, 270, 635, 430),
 }
 WIDE_TITLES = {
     'home':'文件再多\n切换也有条理', 'word':'从一份计划\n到清晰的文档',
+    'sheet':'把预算和清单\n整理清楚',
     'slides':'把想法\n整理成一场演示', 'pdf':'正文居中\n阅读更专注',
-    'assistant':'模型服务\n由你自己选择', 'tools':'从整理资料\n到安排工作',
+    'assistant':'回复分区\n清楚呈现', 'tools':'从整理资料\n到安排工作',
+    'market':'从合适的\n模板开始', 'knowledge':'围绕资料\n整理知识', 'cloud':'云端保存\n由你决定',
     'help':'操作有说明\n保存有反馈',
 }
 DETAIL_LABELS = {
     'home':'底部标签，随时切换', 'word':'简单表格与段落特写', 'sheet':'公式输入，直观看结果',
-    'slides':'幻灯片画布特写', 'pdf':'右侧页面处理工具', 'assistant':'服务商与接口地址特写',
+    'slides':'幻灯片画布特写', 'pdf':'右侧页面处理工具', 'assistant':'示例对话 · 语言高亮与一键复制',
+    'market':'原创主题与封面配图', 'knowledge':'原创指南 · 阅读与提问', 'cloud':'用户主动开通 · 默认关闭',
     'tools':'本机工具与外观', 'help':'按任务查找操作步骤',
 }
 POINTS = {
@@ -61,7 +64,10 @@ POINTS = {
     'sheet': [('基础公式','数量与单价自动计算'),('多工作表','预算和记录分类维护'),('单元格格式','让清单清楚易读')],
     'slides': [('编辑幻灯片','整理文字与页面顺序'),('逐页备注','讲稿与页面一起维护'),('基础放映','从准备到展示')],
     'pdf': [('专注阅读','正文居中，按需缩放'),('可折叠工具','需要时再展开'),('页面处理','结果另存为新文件')],
-    'assistant': [('模型服务可配置','地址、模型与访问密钥'),('修改先审阅','确认之后才应用'),('当前展示配置与入口','需接入模型后才能对话')],
+    'assistant': [('独立内容区域','代码、Markdown、普通文本'),('底部一键复制','每个代码块可分别复制'),('模型设置集中收纳','思考模式与上下文说明')],
+    'market': [('300 套原创内置模板','30 个主题，多种视觉方案'),('封面配图清楚展示','按分类和关键词挑选'),('三个 AI 创作入口','沿用自己配置的模型服务')],
+    'knowledge': [('原创知识指南','文件、备份、排版与数据'),('上传自己的知识文件','云空间开通后按需使用'),('在线 AI 处理另行授权','确认后交给模型服务')],
+    'cloud': [('默认关闭，主动开通','云空间与自动保存独立设置'),('每账号 300 MB 实际配额','目录、版本和回收站'),('私有文件客户端加密','恢复密钥由你保管')],
     'tools': [('本机日历','安排每日任务'),('脑图与流程图','整理结构和思路'),('浅色与深色','外观按习惯设置')],
     'help': [('主题搜索','快速找到操作方法'),('步骤与提醒','边查看，边完成任务'),('本地工作状态备份','未保存修改有退出提示')],
 }
@@ -239,6 +245,7 @@ class Footage:
         self.name=name
         manifest=WORK/'recordings'/name/'manifest.json'
         self.meta=json.loads(manifest.read_text(encoding='utf-8')) if manifest.exists() else None
+        if self.meta and self.meta.get('版本')!=VERSION: raise ValueError('操作素材版本不一致：'+name)
         self.times=[frame['秒'] for frame in self.meta['画面']] if self.meta else []
     def get(self,t,duration):
         if self.meta:
@@ -246,11 +253,9 @@ class Footage:
             index=max(0,bisect.bisect_right(self.times,local)-1)
             return image(str(WORK/'recordings'/self.name/self.meta['画面'][index]['文件'])),local
         if self.name=='repository': return image(str(ASSETS/'repository.png')),0
-        if self.name not in FALLBACK: raise ValueError('缺少实际操作素材：'+self.name)
-        return image(str(ROOT/'docs/screenshots/v1.6.7'/(FALLBACK[self.name]+'.png'))),0
+        raise ValueError('缺少最新版实际操作素材：'+self.name)
     def detail(self):
-        preferred=ASSETS/(self.name+'-detail.png')
-        if not preferred.exists(): preferred=ASSETS/(self.name+('-start.png' if self.name=='slides' else '-middle.png'))
+        preferred=ASSETS/(self.name+('-start.png' if self.name=='slides' else '-end.png' if self.name=='assistant' else '-middle.png'))
         if not preferred.exists(): raise ValueError('缺少操作特写素材：'+self.name)
         pic=image(str(preferred))
         x,y,w,h=DETAILS[self.name]
@@ -284,12 +289,12 @@ def brand(canvas,portrait):
         fit(canvas,image(str(ROOT/'build/icon.png')),(64,64,72,72),border=False)
         text(draw,'海豹办公',(156,66),42,bold=True)
         text(draw,'开源本地办公软件',(156,121),24,MUTED)
-        text(draw,'1.6.7',(856,80),28,MUTED)
+        text(draw,VERSION,(856,80),28,MUTED)
     else:
         fit(canvas,image(str(ROOT/'build/icon.png')),(48,30,64,64),border=False)
         text(draw,'海豹办公',(132,32),34,bold=True)
         text(draw,'开源本地办公软件',(328,41),22,MUTED)
-        text(draw,'Windows 版 1.6.7',(1620,41),24,MUTED)
+        text(draw,'Windows 版 '+VERSION,(1620,41),24,MUTED)
 
 def subtitles(canvas,content,portrait):
     if not content: return
@@ -304,7 +309,7 @@ def subtitles(canvas,content,portrait):
 
 def qr_image(size):
     code=qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M,box_size=8,border=4)
-    code.add_data(CONFIG['仓库']); code.make(fit=True)
+    code.add_data(CONFIG['下载']); code.make(fit=True)
     return code.make_image(fill_color=INK,back_color='white').convert('RGB').resize((size,size),Image.Resampling.NEAREST)
 
 def special(canvas,scene,t,portrait):
@@ -315,46 +320,46 @@ def special(canvas,scene,t,portrait):
             fit(canvas,image(str(ROOT/'build/icon.png')),(434,230,212,212),border=False)
             text(draw,'海豹办公',(282,480),92,bold=True)
             text(draw,'文字、表格、演示、PDF',(167,613),44,MUTED)
-            fit(canvas,image(str(ROOT/'docs/screenshots/v1.6.7/01-home.png')),(48,745,984,615))
+            fit(canvas,image(str(ASSETS/'home-start.png')),(48,745,984,615))
             text(draw,'把日常办公\n放进同一个工作区',(92,1420),54,bold=True,width=900,leading=78)
         else:
             fit(canvas,image(str(ROOT/'build/icon.png')),(72,195,160,160),border=False)
             text(draw,'海豹办公',(72,385),100,bold=True)
             text(draw,'把日常办公\n放进同一个工作区',(72,540),52,bold=True,width=740,leading=78)
             text(draw,'文字、表格、演示、PDF',(72,750),32,MUTED)
-            fit(canvas,image(str(ROOT/'docs/screenshots/v1.6.7/01-home.png')),(884,225,964,603))
+            fit(canvas,image(str(ASSETS/'home-start.png')),(884,225,964,603))
             text(draw,'Windows 本地办公',(884,862),30,BLUE)
     elif name=='outro':
         if portrait:
             text(draw,'欢迎体验\n也欢迎一起完善',(64,245),76,bold=True,width=952,leading=104)
-            text(draw,'下载体验，反馈问题，贡献代码',(64,516),35,MUTED)
+            text(draw,'下载 '+VERSION+'，体验新版海豹办公',(64,516),35,MUTED)
             canvas.paste(qr_image(370),(355,676))
-            text(draw,'扫描二维码，打开开源仓库',(234,1090),34,BLUE)
+            text(draw,'扫描二维码，下载最新版',(274,1090),34,BLUE)
             text(draw,'github.com/fangzhouxiaohai',(164,1218),35,bold=True)
             text(draw,'/seal-office',(404,1274),35,bold=True)
             text(draw,'让开源办公，在参与中更好用',(106,1478),40,MUTED)
         else:
             text(draw,'欢迎体验\n也欢迎一起完善',(72,220),84,bold=True,width=1090,leading=117)
-            text(draw,'下载体验，点亮 Star，反馈问题，贡献代码',(72,520),36,MUTED)
+            text(draw,'下载 '+VERSION+'，反馈问题，参与开源',(72,520),36,MUTED)
             text(draw,'https://github.com/fangzhouxiaohai/seal-office',(72,685),32,BLUE)
             text(draw,'让开源办公，在参与中更好用',(72,804),38,bold=True)
             canvas.paste(qr_image(360),(1430,318))
-            text(draw,'扫描打开仓库',(1474,730),30,MUTED)
+            text(draw,'扫描下载新版',(1474,730),30,MUTED)
     elif name=='scope':
         if portrait:
             text(draw,scene['章节'],(64,220),30,BLUE)
             text(draw,scene['标题'],(64,285),64,bold=True,width=952,leading=88)
             y=560
-            for title,body in [('适合日常基础办公','文字、清单、演示与 PDF 页面处理'),('复杂对象，请先核对','重要文件先保存副本'),('云端协作暂未开放','当前版本以本机文件为主'),('PDF 不编辑正文','支持阅读与页面处理')]:
+            for title,body in [('修改先预览','查看候选，再确认应用'),('执行中才排队','引导补充需求，不打断当前工作'),('云端主动开启','私有文件本机加密后上传'),('复杂文件先核对','留意兼容提示，重要文件保留副本')]:
                 text(draw,title,(72,y),42,bold=True)
                 text(draw,body,(72,y+78),32,MUTED,width=936)
                 draw.line((72,y+160,1008,y+160),fill='#DCE4EF',width=2)
                 y+=242
         else:
-            text(draw,'先从日常基础办公开始',(72,200),76,bold=True)
-            text(draw,'功能边界透明，使用前便于判断',(72,315),34,MUTED)
+            text(draw,'按需使用，确认后应用',(72,200),76,bold=True)
+            text(draw,'本地编辑、助手修改与云端授权',(72,315),34,MUTED)
             y=460
-            for label,body in [('复杂 Office 对象','不能完整往返，先另存副本'),('云端协作','暂未开放，当前以本机文件为主'),('PDF 处理','阅读与页面处理，不编辑正文')]:
+            for label,body in [('助手修改','查看候选，确认后应用；执行中才排队'),('云端能力','主动开通，私有文件在本机加密后上传'),('复杂文件','留意兼容提示；PDF 以阅读与页面处理为主')]:
                 text(draw,label,(72,y),35,bold=True)
                 text(draw,body,(555,y),32,MUTED)
                 draw.line((72,y+80,1848,y+80),fill='#DCE4EF',width=2)
@@ -370,7 +375,17 @@ def frame(scene,t,portrait,footage,caption,global_time):
         special(canvas,scene,t,portrait)
     else:
         pic,local=footage.get(t,scene['duration'])
-        if portrait:
+        if portrait and name=='assistant':
+            text(draw,scene['章节'],(64,212),30,BLUE)
+            text(draw,scene['标题'],(64,272),64,bold=True,width=952,leading=87)
+            text(draw,scene['副标题'],(64,452),31,MUTED,width=952)
+            fit(canvas,pic.crop((980,0,1440,122)),(64,540,952,252))
+            draw=ImageDraw.Draw(canvas)
+            text(draw,'Python 示例 · 语言高亮与一键复制',(64,814),32,BLUE)
+            fit(canvas,footage.detail(),(64,884,952,655))
+            draw=ImageDraw.Draw(canvas)
+            text(draw,'示例对话 · 接入模型后按需使用',(64,1584),28,MUTED)
+        elif portrait:
             text(draw,scene['章节'],(64,212),30,BLUE)
             text(draw,scene['标题'],(64,272),64,bold=True,width=952,leading=87)
             text(draw,scene['副标题'],(64,452),31,MUTED,width=952)
@@ -390,12 +405,13 @@ def frame(scene,t,portrait,footage,caption,global_time):
                     text(draw,'已打开的文件，都在底部切换',(104,1544),32,MUTED)
                 if name=='assistant':
                     draw=ImageDraw.Draw(canvas)
-                    text(draw,'演示配置与入口，未发送模型请求',(72,1585),26,BLUE)
+                    text(draw,'示例对话 · 接入模型后按需使用',(72,1585),26,BLUE)
         else:
             placement=fit(canvas,pic,(48,134,1272,795))
             pointer(ImageDraw.Draw(canvas),footage.meta,local,placement)
             draw=ImageDraw.Draw(canvas)
             text(draw,scene['章节'],(1370,162),24,BLUE)
+            if name=='assistant': text(draw,'示例对话 · 代码与 Markdown 排版',(64,895),22,BLUE)
             bottom=text(draw,WIDE_TITLES.get(name,scene['标题']),(1370,218),48,bold=True,width=492,leading=65)
             y=max(432,bottom+50)
             for index,(title,desc) in enumerate(POINTS[name]):
@@ -409,7 +425,10 @@ def frame(scene,t,portrait,footage,caption,global_time):
     draw=ImageDraw.Draw(canvas)
     if portrait and name not in ['outro']:
         text(draw,'github.com/fangzhouxiaohai/seal-office',(244,1833),24,MUTED)
-    draw.rectangle((0,size[1]-6,round(size[0]*global_time/180),size[1]),fill=BLUE)
+    draw.rectangle((0,size[1]-6,round(size[0]*global_time/CONFIG['目标时长秒']),size[1]),fill=BLUE)
+    # Short, quiet transitions preserve readable operation footage.
+    opacity=min(1,ease_out(t/.32),ease_out((scene['duration']-t)/.32))
+    if opacity<1: canvas=Image.blend(Image.new('RGB',size,BG),canvas,opacity)
     return canvas
 
 def render(timeline,captions,mode,audio,preview=False):
@@ -417,7 +436,7 @@ def render(timeline,captions,mode,audio,preview=False):
     name='竖版' if portrait else '横版'
     footage_by_name={scene['素材']:Footage(scene['素材']) for scene in timeline if scene['素材'] not in ['intro','outro','scope']}
     if preview:
-        previews=OUT/'预览'
+        previews=OUT/('预览-v'+VERSION)
         previews.mkdir(exist_ok=True)
         for scene in timeline:
             t=scene['duration']*.55
@@ -448,7 +467,7 @@ def render(timeline,captions,mode,audio,preview=False):
         log.close()
     if code: raise RuntimeError('视频编码失败，请检查 '+str(log_path))
     final=OUT/f'海豹办公-{name}宣传片-1080p.mp4'
-    subprocess.run([FFMPEG,'-v','error','-y','-i',str(silent),'-i',str(audio),'-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','192k','-ar',str(RATE),'-t','180','-movflags','+faststart','-metadata',f'title=海豹办公 {name}开源项目宣传片','-metadata','comment=实际软件操作，演示文件；智能助手展示配置与入口，未模拟模型回复。',str(final)],check=True)
+    subprocess.run([FFMPEG,'-v','error','-y','-i',str(silent),'-i',str(audio),'-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','192k','-ar',str(RATE),'-t','180','-movflags','+faststart','-metadata',f'title=海豹办公 {VERSION} {name}宣传片','-metadata','comment=最新版成品操作，公开演示文件；助手回复排版采用标明为示例的会话，未发起模型请求。',str(final)],check=True)
     print(json.dumps({'成片':str(final),'字节':final.stat().st_size},ensure_ascii=False),flush=True)
 
 def main():
@@ -464,9 +483,13 @@ def main():
     (OUT/'海豹办公-宣传片字幕.srt').write_text(srt,encoding='utf-8-sig')
     (WORK/'captions.json').write_text(json.dumps(captions,ensure_ascii=False,indent=2),encoding='utf-8')
     audio=OUT/'海豹办公-宣传片配音.wav'
-    if not args.preview and not audio.exists(): audio=prepare_audio(timeline)
+    if not args.preview: audio=prepare_audio(timeline)
     modes=['landscape','portrait'] if args.mode=='both' else [args.mode]
     for mode in modes: render(timeline,captions,mode,audio,args.preview)
+    if not args.preview:
+        for portrait,name in [(False,'横版'),(True,'竖版')]:
+            poster=frame(timeline[0],timeline[0]['duration']*.55,portrait,None,'',0)
+            poster.save(OUT/f'海豹办公-{name}封面.jpg',quality=94)
     print(json.dumps({'时长':180,'字幕段数':len(captions),'配音节奏系数':round(timeline[0]['tempo'],4)},ensure_ascii=False),flush=True)
 
 if __name__=='__main__': main()
