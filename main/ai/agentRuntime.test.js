@@ -15,6 +15,42 @@ const 计划 = [{ id: 'read', title: '读取当前文件', status: 'pending' }, 
 const 上下文 = '文件名称：示例.docx\n文件类型：文字\n文件内容：\n' + JSON.stringify([{ 段落标识: '段落-1', 原文: '原始标题', 类型: 'p', 格式: {} }])
 
 describe('助手原生计划和工具执行', () => {
+  it('工具逐行记录开始与结束，绑定步骤按真实读取和候选结果更新并持久保留', async () => {
+    const 步骤 = [...计划, { id: 'future', title: '下一阶段另行处理', status: 'pending' }]
+    const 修改 = [{ 种类: '文字替换', 查找: '原始标题', 替换为: '新标题' }]
+    const e = 环境([
+      调用('set_plan', { steps: 步骤 }, 'p'),
+      调用('read_document', { offset: 0, limit: 10, step_id: 'read' }, 'r'),
+      调用('propose_changes', { 回复: '候选', 修改, step_id: 'format' }, 'e'),
+      调用('set_plan', { steps: [{ ...步骤[0], status: 'completed' }, { ...步骤[1], status: 'completed' }, 步骤[2]] }, 'p2'),
+      { content: '候选已生成，请确认。' },
+    ])
+    await e.准备()
+    const 推送 = vi.fn(), 执行工具 = vi.fn(async () => ({ 成功: true, 数据: { 候选已生成: true } }))
+    const 结果 = await e.服务.对话({ 会话标识: '逐行', 消息: [{ 角色: 'user', 内容: '读取并修改标题，后续再做下一阶段' }], 文档上下文: 上下文 }, { 执行工具, 推送 })
+    expect(e.请求列表[0].messages[0].content).toContain('复杂任务')
+    expect(e.请求列表[0].tools.find((项) => 项.function.name === 'read_document').function.parameters.properties.step_id).toBeDefined()
+    expect(结果.计划.map((项) => 项.status)).toEqual(['completed', 'awaiting_confirmation', 'pending'])
+    expect(推送.mock.calls.filter(([项]) => 项.类型 === '工具' && 项.调用标识 === 'r').map(([项]) => 项.执行状态)).toEqual(['执行中', '完成'])
+    expect(推送.mock.calls.filter(([项]) => 项.类型 === '计划').map(([项]) => JSON.parse(项.内容)[0].status)).toEqual(expect.arrayContaining(['in_progress', 'completed']))
+    const 记录 = e.会话列表.get('逐行').显示消息.at(-1).执行记录
+    expect(记录).toHaveLength(4)
+    expect(记录.every((项) => 项.状态 === '完成')).toBe(true)
+    expect(记录.find((项) => 项.id === 'e').详情).toContain('尚未写入或保存')
+  })
+
+  it('工具实际失败使绑定步骤和执行行失败，模型纠正后同一步骤更新为等待确认', async () => {
+    const 修改 = [{ 种类: '文字替换', 查找: '原始标题', 替换为: '新标题' }]
+    const e = 环境([调用('set_plan', { steps: 计划 }, 'p'), 调用('propose_changes', { 回复: '第一次', 修改, step_id: 'format' }, 'bad'), 调用('propose_changes', { 回复: '纠正', 修改, step_id: 'format' }, 'good'), { content: '已纠正，请确认。' }])
+    await e.准备()
+    const 推送 = vi.fn(), 执行工具 = vi.fn().mockResolvedValueOnce({ 成功: false, 错误: '原文不匹配' }).mockResolvedValueOnce({ 成功: true, 数据: { 候选已生成: true } })
+    const 结果 = await e.服务.对话({ 会话标识: '纠正', 消息: [{ 角色: 'user', 内容: '修改标题' }], 文档上下文: 上下文 }, { 执行工具, 推送 })
+    expect(结果.计划[1].status).toBe('awaiting_confirmation')
+    expect(推送.mock.calls.filter(([项]) => 项.类型 === '计划').some(([项]) => JSON.parse(项.内容)[1].status === 'failed')).toBe(true)
+    expect(e.会话列表.get('纠正').显示消息.at(-1).执行记录.find((项) => 项.id === 'bad')).toMatchObject({ 状态: '失败', 详情: '原文不匹配' })
+    expect(e.会话列表.get('纠正').显示消息.at(-1).执行记录.find((项) => 项.id === 'good').状态).toBe('完成')
+  })
+
   it('规划、读取、验证候选和最终回复完成原生工具往返并保存记忆', async () => {
     const 修改 = [{ 种类: '段落排版', 段落标识: '段落-1', 格式: { 标题级别: 1, 对齐: 'center' } }]
     const { 服务, 准备, 请求列表, 会话列表 } = 环境([调用('set_plan', { steps: 计划 }, 'plan-1'), 调用('read_document', { offset: 0, limit: 10 }, 'read-1'), 调用('propose_changes', { 回复: '建议居中排版。', 修改 }, 'edit-1'), { content: '已生成总结和排版候选，请确认。' }])

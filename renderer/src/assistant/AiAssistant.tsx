@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { App as AntdApp, Button, Checkbox, Drawer, Input, Select } from 'antd'
 import { useAppStore, type EditorDocument } from '../store'
-import { 桥接, type 助手配置, type 思考强度 } from '../ipc/bridge'
+import { 桥接, type 助手配置, type 思考强度, type 助手执行记录 } from '../ipc/bridge'
 import { 检查工作簿更新, type Sheet } from '../sheet/model'
 import { type 演示文稿 } from '../ppt/deck'
 import { 使用放映状态 } from '../ppt/presentationState'
@@ -13,7 +13,7 @@ import { 生成文字上下文 } from './wordBlocks'
 import { 思考选项, 思考说明, 提取流式正文 } from './reasoning'
 import './assistant.css'
 
-type 会话消息 = { 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 请求标识?: string; 状态?: '执行中' | '完成' | '已停止' | '失败'; 阶段?: string }
+type 会话消息 = { 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 请求标识?: string; 状态?: '执行中' | '完成' | '已停止' | '失败'; 阶段?: string; 执行记录?: 助手执行记录[] }
 type 文档类型 = 'word' | 'table' | 'ppt'
 type 计划项 = { id: string; title: string; status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'awaiting_confirmation' }
 type 会话记忆 = { 摘要: string; 压缩次数: number; 计划: 计划项[] }
@@ -22,6 +22,7 @@ type 执行任务 = {
   标识: string; 范围: string; 会话标识: string; 文件名: string; 原始正文: string; 思考: string; 已停止: boolean
   文档: EditorDocument | null; 原内容: string; 表格?: Sheet[]; 演示?: 演示文稿; 修改: 助手修改[]
   待刷新: Partial<会话消息>; 计时器?: ReturnType<typeof setTimeout>; 正文已刷新: boolean; 思考已刷新: boolean; 正文待刷新?: boolean; 思考待刷新?: boolean
+  执行记录?: 助手执行记录[]; 已请求?: boolean; 结束状态?: 排队任务['状态']
 }
 type 排队任务 = { id: string; 文本: string; 范围: string; 文件名: string; 会话标识: string; 强度: 思考强度; 自动执行: boolean; 状态: '等待' | '执行中' | '完成' | '失败' | '取消' | '已引导'; 错误?: string }
 const 每页修改数 = 20
@@ -84,15 +85,20 @@ function 修改说明(项: 助手修改): { 位置: string; 原文: string; 新�
 export default function AiAssistant() {
   const 放映中 = 使用放映状态()
   const { message, modal } = AntdApp.useApp()
-  const { documents, activeDocumentId, activeWorkspaceTabId, 文档路径, 表格文档模型, 演示文档模型, updateEditorHtml, 更新表格文档模型, 更新演示文档模型, createDoc, setActiveDocumentId } = useAppStore()
+  const { documents, pdfDocuments, activeDocumentId, activeWorkspaceTabId, 文档路径, 表格文档模型, 演示文档模型, updateEditorHtml, 更新表格文档模型, 更新演示文档模型, createDoc, selectWorkspaceTab } = useAppStore()
   const 当前文档 = useMemo(() => activeWorkspaceTabId === activeDocumentId
     ? documents.find((项) => 项.id === activeWorkspaceTabId) ?? null
     : null, [documents, activeDocumentId, activeWorkspaceTabId])
   const [打开, set打开] = useState(false)
   const [配置展开, set配置展开] = useState(false)
   const [配置, set配置] = useState<助手配置 | null>(null)
+  const 配置引用 = useRef<助手配置 | null>(null)
+  const 配置请求 = useRef<Promise<助手配置> | null>(null)
+  const 配置版本 = useRef(0)
   const [会话按范围, set会话按范围] = useState<Record<string, 会话消息[]>>({})
-  const 当前范围标识 = 当前文档?.id ?? '无文件'
+  const 当前PDF = pdfDocuments.find((项) => 项.id === activeWorkspaceTabId && 项.data) ?? null
+  const 当前文件 = 当前文档 ?? 当前PDF
+  const 当前范围标识 = 当前文件?.id ?? '无文件'
   const 会话 = 会话按范围[当前范围标识] ?? []
   const [输入按范围, set输入按范围] = useState<Record<string, string>>({})
   const 输入 = 输入按范围[当前范围标识] ?? ''
@@ -121,20 +127,26 @@ export default function AiAssistant() {
   const [恢复提示按范围, set恢复提示按范围] = useState<Record<string, string>>({})
   const 当前记忆 = 记忆按范围[当前范围标识]
   const 会话标识按文档 = useRef(new Map<string, string>())
-  if (当前文档 && !会话标识按文档.current.has(当前文档.id)) {
-    const 路径 = 文档路径[当前文档.id] ?? 当前文档.来源路径
-    会话标识按文档.current.set(当前文档.id, 路径 ? `file:${路径.replace(/\\/g, '/').toLowerCase()}` : `document:${当前文档.id}`)
+  if (当前文件 && !会话标识按文档.current.has(当前文件.id)) {
+    const 路径 = 当前文档 ? 文档路径[当前文档.id] ?? 当前文档.来源路径 : 当前PDF?.path
+    会话标识按文档.current.set(当前文件.id, 路径 ? `file:${路径.replace(/\\/g, '/').toLowerCase()}` : `document:${当前文件.id}`)
   }
-  const 当前会话标识 = 当前文档 ? 会话标识按文档.current.get(当前文档.id)! : 'general'
+  const 当前会话标识 = 当前文件 ? 会话标识按文档.current.get(当前文件.id)! : 'general'
   const 已恢复 = useRef(new Set<string>())
+  const 恢复请求 = useRef(new Map<string, Promise<void>>())
+  const 恢复候选锁 = useRef(new Set<string>())
+  const 待确认引用 = useRef(待确认按文件)
+  待确认引用.current = 待确认按文件
+  const 恢复提示引用 = useRef(恢复提示按范围)
+  恢复提示引用.current = 恢复提示按范围
   const [恢复中范围, set恢复中范围] = useState<Record<string, boolean>>({})
   const 恢复中 = 恢复中范围[当前范围标识] === true
   const [绑定中范围, set绑定中范围] = useState<Record<string, boolean>>({})
   const 绑定中 = Object.values(绑定中范围).some(Boolean)
   const 正在绑定 = useRef(new Set<string>())
   const 绑定失败 = useRef(new Set<string>())
-  const 最新文件 = useRef({ documents, 表格文档模型, 演示文档模型 })
-  最新文件.current = { documents, 表格文档模型, 演示文档模型 }
+  const 最新文件 = useRef({ documents, pdfDocuments, 表格文档模型, 演示文档模型 })
+  最新文件.current = { documents, pdfDocuments, 表格文档模型, 演示文档模型 }
   const 新版可用 = typeof window.electronAPI?.ai?.onToolCall === 'function'
   const 交互禁用 = 发送中 || 恢复中 || 清除中 || 绑定中 || 处理候选中
 
@@ -157,6 +169,13 @@ export default function AiAssistant() {
     任务.待刷新 = { ...任务.待刷新, ...更新 }
     if (即时) 刷新任务消息(任务)
     else if (!任务.计时器) 任务.计时器 = setTimeout(() => 刷新任务消息(任务), 50)
+  }
+
+  const 追加执行记录 = (任务: 执行任务, 记录: 助手执行记录) => {
+    const 列表 = 任务.执行记录 ?? []
+    const 已有 = 列表.find((项) => 项.id === 记录.id)
+    任务.执行记录 = 已有 ? 列表.map((项) => 项.id === 记录.id ? { ...项, ...记录 } : 项) : [...列表, 记录]
+    合并任务消息(任务, { 执行记录: 任务.执行记录 }, true)
   }
 
   const 生成候选 = (任务: 执行任务, 修改: 助手修改[]) => {
@@ -189,7 +208,9 @@ export default function AiAssistant() {
     set待确认按文件((当前) => ({ ...当前, [文档.id]: { 标识: 文档.id, 类型: 文档.type ?? 'word', 原内容: 任务.原内容, 候选, 修改, 范围: 任务.范围, 会话标识: 任务.会话标识 } }))
     set记忆按范围((当前) => {
       const 记忆 = 当前[任务.范围]
-      return 记忆 ? { ...当前, [任务.范围]: { ...记忆, 计划: 记忆.计划.map((项) => 项.status === 'in_progress' ? { ...项, status: 'awaiting_confirmation' } : 项) } } : 当前
+      if (!记忆 || 记忆.计划.some((项) => 项.status === 'awaiting_confirmation')) return 当前
+      const 执行步骤 = 记忆.计划.map((项) => 项.status).lastIndexOf('in_progress')
+      return { ...当前, [任务.范围]: { ...记忆, 计划: 记忆.计划.map((项, 索引) => 索引 === 执行步骤 ? { ...项, status: 'awaiting_confirmation' } : 项) } }
     })
   }
 
@@ -213,7 +234,13 @@ export default function AiAssistant() {
           const 计划 = 校验计划(JSON.parse(片段.内容))
           set记忆按范围((当前) => ({ ...当前, [任务.范围]: { 摘要: 当前[任务.范围]?.摘要 ?? '', 压缩次数: 当前[任务.范围]?.压缩次数 ?? 0, 计划 } }))
         } catch (错误) { modal.error({ title: '计划读取失败', content: 错误 instanceof Error ? 错误.message : '模型计划格式无效' }) }
-      } else 合并任务消息(任务, { 阶段: 片段.内容 }, true)
+      } else {
+        if (片段.类型 === '工具' || 片段.类型 === '压缩') 追加执行记录(任务, {
+          id: 片段.调用标识 ?? crypto.randomUUID(), 标题: 片段.内容,
+          状态: 片段.执行状态 ?? '完成', 详情: 片段.详情,
+        })
+        合并任务消息(任务, { 阶段: 片段.内容 }, true)
+      }
     })
     const 释放工具 = 新版可用 ? 桥接.ai.onToolCall((调用) => {
       const 任务 = 进行中.current
@@ -268,17 +295,19 @@ export default function AiAssistant() {
       if (组件有效.current) set绑定中范围((当前) => ({ ...当前, [文件标识]: false }))
     })
   }, [documents, 文档路径, 当前会话标识, 新版可用, 发送中, 清除中, 处理候选中, 恢复中范围, 绑定中范围, modal])
-  useEffect(() => {
-    if (!打开 || !新版可用 || typeof window.electronAPI?.ai?.getSession !== 'function' || 已恢复.current.has(当前范围标识)) return
-    const 范围 = 当前范围标识
-    已恢复.current.add(范围)
+  const 恢复会话 = (范围: string, 会话标识: string): Promise<void> => {
+    const 正在读取 = 恢复请求.current.get(范围)
+    if (正在读取) return 正在读取
+    if (!新版可用 || typeof window.electronAPI?.ai?.getSession !== 'function' || 已恢复.current.has(范围)) return Promise.resolve()
     set恢复中范围((当前) => ({ ...当前, [范围]: true }))
-    void 桥接.ai.getSession(当前会话标识).then((结果) => {
+    const 请求 = 桥接.ai.getSession(会话标识).then((结果) => {
       if (!结果.成功) throw new Error(结果.错误 || '无法读取会话记忆')
-      if (!组件有效.current || 进行中.current?.范围 === 范围) return
+      if (!组件有效.current || (进行中.current?.范围 === 范围 && 进行中.current.已请求)) return
+      已恢复.current.add(范围)
       const 数据 = 结果.数据
       if (数据) {
         const 计划 = 校验计划(数据.计划)
+        会话引用.current = { ...会话引用.current, [范围]: 数据.显示消息 }
         set会话按范围((当前) => ({ ...当前, [范围]: 数据.显示消息 }))
         set记忆按范围((当前) => ({ ...当前, [范围]: { 摘要: 数据.摘要, 压缩次数: 数据.压缩次数, 计划 } }))
         const 已保存候选 = 数据.待确认候选
@@ -286,20 +315,34 @@ export default function AiAssistant() {
           const 文档 = 最新文件.current.documents.find((项) => 项.id === 范围)
           if (Array.isArray(已保存候选.修改) && 已保存候选.修改.length && 已保存候选.修改.every((项: unknown) => !!项 && typeof 项 === 'object' && (项 as { 种类?: string }).种类 === '创建文件')) {
             const 回复 = 解析助手回复(JSON.stringify({ 回复: 已保存候选.回复, 修改: 已保存候选.修改 }))
-            生成候选({ 标识: '', 范围, 会话标识: 当前会话标识, 文件名: 文档?.name ?? '新建文件', 原始正文: '', 思考: '', 已停止: false, 文档: 文档 ?? null, 原内容: 已保存候选.文件快照 ?? '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
+            生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档?.name ?? '新建文件', 原始正文: '', 思考: '', 已停止: false, 文档: 文档 ?? null, 原内容: 已保存候选.文件快照 ?? '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
           } else if (typeof 已保存候选.文件快照 !== 'string') set恢复提示按范围((当前) => ({ ...当前, [范围]: '旧修改候选缺少文件快照，请重新发送修改请求。' }))
           else if (!文档 || 原始快照(文档, 最新文件.current.表格文档模型, 最新文件.current.演示文档模型) !== 已保存候选.文件快照) {
             set恢复提示按范围((当前) => ({ ...当前, [范围]: '已保存的修改候选已过期，请重新发送修改请求。' }))
           } else {
             const 回复 = 解析助手回复(JSON.stringify({ 回复: 已保存候选.回复, 修改: 已保存候选.修改 }))
-            if (回复.修改.length) 生成候选({ 标识: '', 范围, 会话标识: 当前会话标识, 文件名: 文档.name, 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: 已保存候选.文件快照, 表格: 最新文件.current.表格文档模型[文档.id], 演示: 最新文件.current.演示文档模型[文档.id], 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
+            if (回复.修改.length) 生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档.name, 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: 已保存候选.文件快照, 表格: 最新文件.current.表格文档模型[文档.id], 演示: 最新文件.current.演示文档模型[文档.id], 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
           }
+          // 初始化的 Promise 返回前就锁定候选，防止快捷指令抢先覆盖尚待确认的修改。
+          恢复候选锁.current.add(范围)
         }
       }
     }).catch((错误: unknown) => {
       已恢复.current.delete(范围)
-      if (组件有效.current) modal.error({ title: '恢复会话失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机会话记录' })
-    }).finally(() => { if (组件有效.current) set恢复中范围((当前) => ({ ...当前, [范围]: false })) })
+      throw 错误
+    }).finally(() => {
+      恢复请求.current.delete(范围)
+      if (组件有效.current) set恢复中范围((当前) => ({ ...当前, [范围]: false }))
+    })
+    恢复请求.current.set(范围, 请求)
+    return 请求
+  }
+  useEffect(() => {
+    if (!打开) return
+    const 由任务恢复 = 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求
+    void 恢复会话(当前范围标识, 当前会话标识).catch((错误: unknown) => {
+      if (组件有效.current && !由任务恢复 && 进行中.current?.范围 !== 当前范围标识) modal.error({ title: '恢复会话失败', content: 错误 instanceof Error ? 错误.message : '无法读取本机会话记录' })
+    })
   }, [打开, 当前范围标识, 当前会话标识, 新版可用, modal])
 
   useEffect(() => { 跟随输出.current = true }, [当前范围标识])
@@ -326,20 +369,34 @@ export default function AiAssistant() {
     }
   }, [])
 
+  const 读取模型配置 = (): Promise<助手配置> => {
+    if (配置引用.current) return Promise.resolve(配置引用.current)
+    if (配置请求.current) return 配置请求.current
+    const 版本 = 配置版本.current
+    const 请求: Promise<助手配置> = 桥接.ai.getConfig().then((结果) => {
+        if (版本 !== 配置版本.current) return 读取模型配置()
+        if (!结果.成功 || !结果.数据) throw new Error(结果.错误 || '模型设置读取失败')
+        配置引用.current = 结果.数据
+        if (!组件有效.current) return 结果.数据
+        set配置(结果.数据)
+        if (!进行中.current?.已请求) set强度(结果.数据.思考强度 ?? 'high')
+        return 结果.数据
+      }).finally(() => { if (配置请求.current === 请求) 配置请求.current = null })
+    配置请求.current = 请求
+    return 请求
+  }
   useEffect(() => {
     if (!桥接.ai.可用) return
     const 读取配置 = () => {
-      void 桥接.ai.getConfig().then((结果) => {
-        if (!结果.成功 || !结果.数据) throw new Error(结果.错误 || '模型设置读取失败')
-        set配置(结果.数据)
-        if (!进行中.current) set强度(结果.数据.思考强度 ?? 'high')
-      }).catch((错误: unknown) => {
-        modal.error({ title: '读取模型设置失败', content: 错误 instanceof Error ? 错误.message : '请检查本机安全存储' })
+      const 由任务读取 = !!进行中.current && !进行中.current.已请求
+      void 读取模型配置().catch((错误: unknown) => {
+        if (组件有效.current && !由任务读取 && !进行中.current) modal.error({ title: '读取模型设置失败', content: 错误 instanceof Error ? 错误.message : '请检查本机安全存储' })
       })
     }
+    const 配置变更 = () => { 配置版本.current++; 配置引用.current = null; 配置请求.current = null; 读取配置() }
     if (打开) 读取配置()
-    window.addEventListener('seal-ai-setting-changed', 读取配置)
-    return () => window.removeEventListener('seal-ai-setting-changed', 读取配置)
+    window.addEventListener('seal-ai-setting-changed', 配置变更)
+    return () => window.removeEventListener('seal-ai-setting-changed', 配置变更)
   }, [打开, modal])
 
   const 发送 = async (指定文本?: string, 指定执行?: boolean, 排队?: 排队任务) => {
@@ -358,40 +415,60 @@ export default function AiAssistant() {
         return
       }
     }
-    if (!配置?.地址 || !配置.模型) {
-      set配置展开(true)
-      modal.info({ title: '请先配置模型服务', content: '填写模型服务商、接口地址和模型名称后再开始对话。' })
-      return
-    }
     if (!排队) {
-      if (队列引用.current.filter((项) => ['等待', '执行中'].includes(项.状态)).length >= 30) { message.warning('队列已满，请先处理或移除任务'); return }
-      const 项: 排队任务 = { id: crypto.randomUUID(), 文本, 范围: 当前范围标识, 文件名: 当前文档?.name ?? '新建文件 / 一般对话', 会话标识: 当前会话标识, 强度, 自动执行: 文本.toLowerCase() === '/compact' ? false : 指定执行 ?? !仅规划, 状态: '等待' }
-      变更队列((旧) => [...旧.filter((项) => !['完成', '取消'].includes(项.状态)).slice(-49), 项])
+      const 项: 排队任务 = { id: crypto.randomUUID(), 文本, 范围: 当前范围标识, 文件名: 当前文件?.name ?? '新建文件 / 一般对话', 会话标识: 当前会话标识, 强度, 自动执行: 文本.toLowerCase() === '/compact' ? false : 指定执行 ?? !仅规划, 状态: '等待' }
+      const 需等待 = !!进行中.current || 队列引用.current.some((项) => 项.状态 === '等待') || 清除中 || 绑定中 || 处理候选中 || (文本.toLowerCase() !== '/compact' && (!!待确认引用.current[项.范围] || !!恢复提示引用.current[项.范围] || 恢复候选锁.current.has(项.范围)))
+      if (需等待 && 队列引用.current.filter((旧项) => ['等待', '执行中'].includes(旧项.状态)).length >= 30) { message.warning('队列已满，请先处理或移除任务'); return }
       if (!指定文本) set输入按范围((当前) => ({ ...当前, [当前范围标识]: '' }))
-      return
+      if (需等待) {
+        变更队列((旧) => [...旧.filter((旧项) => !['完成', '取消'].includes(旧项.状态)).slice(-49), 项])
+        return
+      }
+      排队 = 项
     }
     if (进行中.current) return
     const 标识 = 排队.id
-    const 文档 = 排队.范围 === '无文件' ? null : 最新文件.current.documents.find((项) => 项.id === 排队.范围) ?? null
+    let 文档 = 排队.范围 === '无文件' ? null : 最新文件.current.documents.find((项) => 项.id === 排队.范围) ?? null
+    const PDF = 最新文件.current.pdfDocuments.find((项) => 项.id === 排队.范围)
     const 范围标识 = 排队.范围
-    const { 表格文档模型, 演示文档模型 } = 最新文件.current
     变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '执行中' } : 项))
-    const 任务: 执行任务 = { 标识, 范围: 范围标识, 会话标识: 排队.范围 === '无文件' ? 'general' : 会话标识按文档.current.get(排队.范围) ?? 排队.会话标识, 文件名: 文档?.name ?? '一般对话', 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }
+    const 任务: 执行任务 = { 标识, 范围: 范围标识, 会话标识: 排队.范围 === '无文件' ? 'general' : 会话标识按文档.current.get(排队.范围) ?? 排队.会话标识, 文件名: 文档?.name ?? PDF?.name ?? '一般对话', 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }
     进行中.current = 任务
     set发送中(true)
     try {
-      if (排队.范围 !== '无文件' && !文档) throw new Error('排队任务的原文件已关闭，请重新打开文件后发送需求')
-      const 上下文 = 生成文件上下文(文档, 表格文档模型, 演示文档模型)
+      const 模型配置 = await 读取模型配置()
+      if (!组件有效.current || 任务.已停止) return
+      if (!模型配置.地址 || !模型配置.模型) {
+        set配置展开(true)
+        set输入按范围((旧) => 旧[范围标识]?.trim() ? 旧 : { ...旧, [范围标识]: 文本 })
+        变更队列((旧) => 旧.filter((项) => 项.id !== 标识))
+        modal.info({ title: '请先配置模型服务', content: '填写模型服务商、接口地址和模型名称后再开始对话。' })
+        return
+      }
+      await 恢复会话(范围标识, 任务.会话标识)
+      if (!组件有效.current || 任务.已停止) return
+      if (文本.toLowerCase() !== '/compact' && (待确认引用.current[范围标识] || 恢复提示引用.current[范围标识] || 恢复候选锁.current.has(范围标识))) {
+        变更队列((旧) => [{ ...排队!, 状态: '等待' }, ...旧.filter((项) => 项.id !== 标识)])
+        return
+      }
+      if (排队.范围 !== '无文件' && !文档 && !PDF) throw new Error('排队任务的原文件已关闭，请重新打开文件后发送需求')
+      if (范围标识 !== '无文件' && !最新文件.current.documents.some((项) => 项.id === 范围标识) && !最新文件.current.pdfDocuments.some((项) => 项.id === 范围标识)) throw new Error('任务的原文件已关闭，请重新打开后发送需求')
+      文档 = 最新文件.current.documents.find((项) => 项.id === 范围标识) ?? null
+      任务.文档 = 文档
+      const { 表格文档模型, 演示文档模型 } = 最新文件.current
+      const 上下文 = PDF ? `文件名称：${PDF.name}\n文件类型：PDF（仅处理用户消息中引用的选中文字；未读取全文，不能直接修改 PDF）\n文件内容：\n[]` : 生成文件上下文(文档, 表格文档模型, 演示文档模型)
       任务.原内容 = 文档 ? 原始快照(文档, 表格文档模型, 演示文档模型) : ''
       任务.表格 = 文档 ? 表格文档模型[文档.id] : undefined
       任务.演示 = 文档 ? 演示文档模型[文档.id] : undefined
       const 消息列表 = [...(会话引用.current[范围标识] ?? []).filter((项) => 项.内容.trim() && (!项.状态 || 项.状态 === '完成')).map((项) => ({ 角色: 项.角色, 内容: 项.内容 })), { 角色: 'user' as const, 内容: 文本 }]
       set会话按范围((当前) => ({ ...当前, [范围标识]: [...(当前[范围标识] ?? []), { 角色: 'user', 内容: 文本 }, { 角色: 'assistant', 内容: '', 思考: '', 请求标识: 标识, 状态: '执行中', 阶段: '正在准备文件上下文' }] }))
       跟随输出.current = true
-      const 结果 = await 桥接.ai.chat({ 消息: 消息列表, 文档上下文: 上下文, 文件快照: 文档 ? 任务.原内容 : undefined, 请求标识: 标识, 思考强度: 排队.强度, 上下文令牌: 配置.上下文令牌 ?? 131072, 会话标识: 任务.会话标识, 自动执行: 排队.自动执行, 手动压缩: 文本.toLowerCase() === '/compact' })
+      任务.已请求 = true
+      const 结果 = await 桥接.ai.chat({ 消息: 消息列表, 文档上下文: 上下文, 文件快照: 文档 ? 任务.原内容 : undefined, 请求标识: 标识, 思考强度: 配置 ? 排队.强度 : 模型配置.思考强度 ?? 排队.强度, 上下文令牌: 模型配置.上下文令牌 ?? 131072, 会话标识: 任务.会话标识, 自动执行: 排队.自动执行, 手动压缩: 文本.toLowerCase() === '/compact' })
       if (!组件有效.current) return
       刷新任务消息(任务)
       if (任务.已停止 || 结果.数据?.已停止) {
+        任务.结束状态 = '取消'
         变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '取消' } : 项)); set队列暂停(true)
         更新任务消息(范围标识, 标识, { 状态: '已停止', 阶段: '已停止，未应用修改' })
         return
@@ -406,26 +483,32 @@ export default function AiAssistant() {
         set记忆按范围((当前) => ({ ...当前, [范围标识]: { 摘要: 数据.摘要 ?? 当前[范围标识]?.摘要 ?? '', 压缩次数: 数据.压缩次数 ?? 当前[范围标识]?.压缩次数 ?? 0, 计划: 计划 ?? 当前[范围标识]?.计划 ?? [] } }))
       }
       更新任务消息(范围标识, 标识, { 状态: '完成', 阶段: 任务.修改.length ? '修改已校验，等待确认' : '已回复，未修改文件' })
+      任务.结束状态 = '完成'
       变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '完成' } : 项))
     } catch (错误) {
       if (!组件有效.current) return
       刷新任务消息(任务)
-      if (任务.已停止) { 变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '取消' } : 项)); set队列暂停(true); 更新任务消息(范围标识, 标识, { 状态: '已停止', 阶段: '已停止，未应用修改' }); return }
-      变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '失败', 错误: 错误 instanceof Error ? 错误.message : '处理失败' } : 项)); set队列暂停(true)
+      if (任务.已停止) { 任务.结束状态 = '取消'; 变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '取消' } : 项)); set队列暂停(true); 更新任务消息(范围标识, 标识, { 状态: '已停止', 阶段: '已停止，未应用修改' }); return }
+      任务.结束状态 = '失败'
+      const 失败项: 排队任务 = { ...排队, 状态: '失败', 错误: 错误 instanceof Error ? 错误.message : '处理失败' }
+      变更队列((旧) => 旧.some((项) => 项.id === 标识) ? 旧.map((项) => 项.id === 标识 ? 失败项 : 项) : [失败项, ...旧]); set队列暂停(true)
       更新任务消息(范围标识, 标识, { 状态: '失败', 阶段: '处理失败，未应用修改' })
       set输入按范围((旧) => 旧[范围标识]?.trim() ? 旧 : { ...旧, [范围标识]: 文本 })
       modal.error({ title: '智能助手处理失败', content: 错误 instanceof Error ? 错误.message : '请检查模型设置与当前文件内容' })
     } finally {
       刷新任务消息(任务)
-      const 结束状态 = 队列引用.current.find((项) => 项.id === 标识)?.状态
+      if (任务.已停止 && !任务.结束状态) { 任务.结束状态 = '取消'; set队列暂停(true); 变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '取消' } : 项)) }
+      for (const 记录 of 任务.执行记录 ?? []) if (记录.状态 === '执行中') 追加执行记录(任务, { ...记录, 状态: 任务.结束状态 === '取消' ? '已停止' : '失败', 详情: '任务已结束，未收到该操作的完成结果' })
+      const 结束状态 = 任务.结束状态
       变更队列((旧) => 旧.map((项) => 项.状态 === '已引导' && 项.错误 === 标识 ? { ...项, 状态: 结束状态 === '完成' ? '完成' : '失败', 错误: 结束状态 === '完成' ? undefined : '主任务未完成，补充需求可重试' } : 项))
-      进行中.current = null; if (组件有效.current) set发送中(false)
+      if (进行中.current === 任务) 进行中.current = null
+      if (组件有效.current) set发送中(false)
     }
   }
   useEffect(() => {
     if (发送中 || 进行中.current || 队列暂停 || 引导中 || 清除中 || 处理候选中 || 绑定中 || Object.values(恢复中范围).some(Boolean)) return
     const 下一项 = 队列引用.current.find((项) => 项.状态 === '等待')
-    if (!下一项 || (下一项.文本.toLowerCase() !== '/compact' && (待确认按文件[下一项.范围] || 恢复提示按范围[下一项.范围]))) return
+    if (!下一项 || (下一项.文本.toLowerCase() !== '/compact' && (待确认按文件[下一项.范围] || 恢复提示按范围[下一项.范围] || 恢复候选锁.current.has(下一项.范围)))) return
     void 发送(下一项.文本, 下一项.自动执行, 下一项)
   }, [队列, 发送中, 队列暂停, 引导中, 清除中, 处理候选中, 绑定中, 恢复中范围, 待确认按文件, 恢复提示按范围])
 
@@ -437,7 +520,7 @@ export default function AiAssistant() {
     try {
       const 结果 = await 桥接.ai.guide(任务.标识, 项.文本)
       if (!结果.成功) throw new Error(结果.错误 || '当前任务已进入收尾阶段')
-      const 主状态 = 队列引用.current.find((旧项) => 旧项.id === 任务.标识)?.状态
+      const 主状态 = 任务.结束状态
       变更队列((旧) => 旧.map((旧项) => 旧项.id === 项.id ? { ...旧项, 状态: 主状态 === '完成' ? '完成' : 主状态 === '失败' || 主状态 === '取消' ? '失败' : '已引导', 错误: 主状态 === '失败' || 主状态 === '取消' ? '主任务未完成，补充需求可重试' : 任务.标识 } : 旧项))
       set会话按范围((当前) => ({ ...当前, [项.范围]: [...(当前[项.范围] ?? []), { 角色: 'user', 内容: `补充引导：${项.文本}` }] }))
       message.success('补充需求已提交，将在当前工作中一并处理')
@@ -453,6 +536,7 @@ export default function AiAssistant() {
     刷新任务消息(任务)
     任务.已停止 = true
     更新任务消息(任务.范围, 任务.标识, { 阶段: '正在停止' })
+    if (!任务.已请求) return
     try {
       const 结果 = await 桥接.ai.cancel(任务.标识)
       if (!结果.成功) throw new Error(结果.错误 || '请稍后重试')
@@ -488,6 +572,7 @@ export default function AiAssistant() {
       else updateEditorHtml(文档.id, 待确认.候选 as string)
       }
       set待确认按文件((当前) => ({ ...当前, [待确认.标识]: undefined }))
+      恢复候选锁.current.delete(待确认.范围)
       const 旧计划 = 记忆按范围[待确认.范围]?.计划 ?? []
       const 计划 = 旧计划.map((项): 计划项 => 项.status === 'awaiting_confirmation' ? { ...项, status: 'completed' } : 项)
       set记忆按范围((当前) => ({ ...当前, [待确认.范围]: { 摘要: 当前[待确认.范围]?.摘要 ?? '', 压缩次数: 当前[待确认.范围]?.压缩次数 ?? 0, 计划 } }))
@@ -513,6 +598,11 @@ export default function AiAssistant() {
         if (!结果.成功) throw new Error(结果.错误 || '无法清除持久候选')
       }
       set待确认按文件((当前) => ({ ...当前, [待确认.标识]: undefined }))
+      恢复候选锁.current.delete(待确认.范围)
+      set记忆按范围((当前) => {
+        const 记忆 = 当前[待确认.范围]
+        return 记忆 ? { ...当前, [待确认.范围]: { ...记忆, 计划: 记忆.计划.map((项) => 项.status === 'awaiting_confirmation' ? { ...项, status: 'failed' } : 项) } } : 当前
+      })
     } catch (错误) { modal.error({ title: '放弃修改失败', content: 错误 instanceof Error ? 错误.message : '无法清除持久候选' }) }
     finally { if (组件有效.current) set处理候选中(false) }
   }
@@ -531,6 +621,7 @@ export default function AiAssistant() {
       set记忆按范围((当前) => ({ ...当前, [范围]: { 摘要: '', 压缩次数: 0, 计划: [] } }))
       set恢复提示按范围((当前) => ({ ...当前, [范围]: '' }))
       set待确认按文件((当前) => ({ ...当前, [范围]: undefined }))
+      恢复候选锁.current.delete(范围)
       变更队列((旧) => 旧.filter((项) => 项.范围 !== 范围))
     } catch (错误) { modal.error({ title: '开始新对话失败', content: 错误 instanceof Error ? 错误.message : '无法清除本机会话记忆' }) }
     finally { if (组件有效.current) set清除中(false) }
@@ -541,27 +632,29 @@ export default function AiAssistant() {
     <Drawer className="assistant-drawer" title="智能助手" placement="right" width="min(430px, 100vw)" mask={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
         <div className="assistant-drawer__header"><strong>文件对话</strong><div className="assistant-drawer__header-actions"><Button size="small" disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button type="link" onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
-        {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }} /> : null}
+        {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }} /> : null}
         <div className="assistant-drawer__work">
-        <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文档 ? 当前文档.name : '未选择文件'}。{当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div>
+        <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div>
         {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
+          {当前记忆?.计划.length ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
+        {发送中 && 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求 ? <div className="assistant-drawer__initializing" role="status"><span className="assistant-task__spinner" aria-hidden="true" />正在读取模型设置与会话记忆</div> : null}
         <div ref={消息容器} className="assistant-drawer__messages" role="log" aria-label="助手对话" onScroll={() => { const 元素 = 消息容器.current; if (元素) 跟随输出.current = 元素.scrollHeight - 元素.scrollTop - 元素.clientHeight < 64 }}>
           {恢复中 ? <div className="assistant-drawer__empty" role="status">正在恢复本机会话记忆</div> : null}
           {绑定中范围[当前范围标识] ? <div className="assistant-drawer__empty" role="status">正在绑定已保存文件的会话记忆</div> : null}
           {恢复提示按范围[当前范围标识] ? <div className="assistant-drawer__empty" role="status">{恢复提示按范围[当前范围标识]}<Button size="small" disabled={交互禁用} onClick={async () => {
             set处理候选中(true)
-            try { const 结果 = await 桥接.ai.discardSessionProposal(当前会话标识); if (!结果.成功) throw new Error(结果.错误 || '无法清除过期候选'); set恢复提示按范围((旧) => ({ ...旧, [当前范围标识]: '' })) }
+            try { const 结果 = await 桥接.ai.discardSessionProposal(当前会话标识); if (!结果.成功) throw new Error(结果.错误 || '无法清除过期候选'); 恢复候选锁.current.delete(当前范围标识); set恢复提示按范围((旧) => ({ ...旧, [当前范围标识]: '' })) }
             catch (错误) { modal.error({ title: '清除过期候选失败', content: 错误 instanceof Error ? 错误.message : '请重试' }) }
             finally { set处理候选中(false) }
           }}>清除过期候选</Button></div> : null}
-          {当前记忆?.计划.length ? <details className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id}><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。</div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
             <span className="assistant-message__role">{项.角色 === 'user' ? '我' : '助手'}</span>
+            {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
             {项.内容 ? <div className={`assistant-message__body${项.状态 === '执行中' && 项.阶段 === '正在输出' ? ' assistant-message__body--streaming' : ''}`}>{项.内容}</div> : null}
-            {项.状态 ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
+            {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
         {当前待确认 ? <section className="assistant-preview" aria-label="待确认修改">
@@ -578,7 +671,7 @@ export default function AiAssistant() {
           <p role="status">{队列暂停 ? '队列已暂停，正在执行的任务会继续。' : 队列.find((项) => 项.状态 === '等待' && 待确认按文件[项.范围]) ? '等待确认上一项修改后继续。' : '按提交顺序执行；可将同一文件的补充需求引导到当前任务。'}</p>
           <div className="assistant-queue__list">{队列.filter((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)).map((项) => <div className={`assistant-queue__item assistant-queue__item--${项.状态}`} key={项.id}>
             <div><strong>{项.状态} · {项.文件名}</strong><span>{项.文本}</span>{项.状态 === '失败' && 项.错误 ? <small>失败原因：{项.错误}</small> : null}</div>
-            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button size="small" onClick={() => setActiveDocumentId(项.范围)}>返回文件</Button> : null}
+            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button size="small" onClick={() => selectWorkspaceTab(项.范围)}>返回文件</Button> : null}
             {项.状态 === '等待' ? <><Button size="small" icon={<Icon name="ai" size={15} />} title="不打断当前任务，将补充需求一起处理" aria-label={`引导当前任务：${项.文本}`} disabled={!发送中 || 进行中.current?.范围 !== 项.范围 || !!引导中 || !项.自动执行} loading={引导中 === 项.id} onClick={() => void 引导任务(项)}>引导</Button><Button size="small" disabled={引导中 === 项.id} onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}
             {项.状态 === '失败' ? <><Button size="small" onClick={() => { 变更队列((旧) => [{ ...项, id: crypto.randomUUID(), 状态: '等待', 错误: undefined }, ...旧.filter((旧项) => 旧项.id !== 项.id)]); set队列暂停(false) }}>重试</Button><Button size="small" onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}</div>
           </div>)}</div>

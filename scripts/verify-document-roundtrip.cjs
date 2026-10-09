@@ -18,7 +18,7 @@ app.whenReady().then(async () => {
       let pageSettings;
       window.renderDoc=(html,part,width=614,settings)=>{pageSettings=settings;root.parentElement.style.width=(width+180)+'px';root.className=part==='页眉'?'wps-editor-canvas__header':part==='页脚'?'wps-editor-canvas__footer':'wps-editor-canvas__content';root.style.position='static';root.innerHTML=净化富文本(html)};
       window.toModel=(part)=>part?htmlToDocxModel('<p>正文</p>',{纸张:'A4',纸张方向:'纵向',页边距:'常规',分栏:'一栏',水印:'无',页面边框:'无',页面颜色:'#FFFFFF',文字方向:'横排',[part+'Html']:root.innerHTML}):htmlToDocxModel(root.innerHTML,pageSettings);
-      window.editSample=()=>{const h=root.querySelector('h1');h.style.fontSize='24pt';h.style.fontWeight='700';h.querySelectorAll('span,font').forEach(n=>{n.style.fontSize='24pt';n.style.fontWeight='700'});};
+      window.editSample=()=>{const h=root.querySelector('h1')??[...root.querySelectorAll('p,h2,h3,h4,h5,h6')].find(p=>p.textContent.trim());if(!h)throw new Error('Sample has no editable title');h.style.fontSize='24pt';h.style.fontWeight='700';h.querySelectorAll('span,font').forEach(n=>{n.style.fontSize='24pt';n.style.fontWeight='700'});};
       window.inspectDoc=()=>{
         const paragraphs=[...root.querySelectorAll('p,h1,h2,h3,h4,h5,h6,li')].map(p=>{
           const r=p.getBoundingClientRect(),s=getComputedStyle(p),walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT),runs=[];
@@ -31,6 +31,7 @@ app.whenReady().then(async () => {
     const css = fs.readFileSync(path.join(project, 'renderer/src/styles.css'), 'utf8')
     fs.writeFileSync(path.join(output, 'verify.html'), `<!doctype html><meta charset="utf-8"><style>${css}</style><main class="wps-editor-canvas__paper" style="margin:20px auto;transform:scale(1.25);transform-origin:top center"><div id="content" class="wps-editor-canvas__content"></div></main><script src="verify.js"></script>`)
     win = new BrowserWindow({ show: false, width: 1280, height: 900, webPreferences: { offscreen: true, backgroundThrottling: false, contextIsolation: true, nodeIntegration: false } })
+    win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) console.error(message) })
     await win.loadFile(path.join(output, 'verify.html'))
     const load = name => require(archive ? path.join(archive, name) : path.join(project, name))
     const { 生成docx } = load('main/office/docxWriter.js'), { 读取docx } = load('main/office/docxReader.js')
