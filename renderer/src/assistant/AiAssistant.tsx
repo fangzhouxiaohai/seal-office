@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { App as AntdApp, Button, Checkbox, Drawer, Input, Select } from 'antd'
+import { App as AntdApp, Button, Checkbox, Drawer, Input } from 'antd'
 import { useAppStore, type EditorDocument } from '../store'
 import { 桥接, type 助手配置, type 思考强度, type 助手执行记录 } from '../ipc/bridge'
 import { 检查工作簿更新, type Sheet } from '../sheet/model'
@@ -7,10 +7,12 @@ import { type 演示文稿 } from '../ppt/deck'
 import { 使用放映状态 } from '../ppt/presentationState'
 import Icon from '../components/Icon'
 import AiSettingsCard from './AiSettingsCard'
+import AssistantContent from './AssistantContent'
+import SealLogo from '../components/SealLogo'
 import { 解析助手回复, 预览文字修改, 预览表格修改, 预览演示修改, type 助手修改, type 文字修改, type 表格修改, type 演示修改 } from './proposal'
 import { 构建新文件, type 新文件候选, type 创建文件 } from './createDocument'
 import { 生成文字上下文 } from './wordBlocks'
-import { 思考选项, 思考说明, 提取流式正文 } from './reasoning'
+import { 提取流式正文 } from './reasoning'
 import './assistant.css'
 
 type 会话消息 = { 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 请求标识?: string; 状态?: '执行中' | '完成' | '已停止' | '失败'; 阶段?: string; 执行记录?: 助手执行记录[] }
@@ -629,10 +631,12 @@ export default function AiAssistant() {
 
   return <>
     {放映中 ? null : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
-    <Drawer className="assistant-drawer" title="智能助手" placement="right" width="min(430px, 100vw)" mask={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
+    <Drawer className="assistant-drawer" title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} placement="right" width="min(460px, 100vw)" mask={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
-        <div className="assistant-drawer__header"><strong>文件对话</strong><div className="assistant-drawer__header-actions"><Button size="small" disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button type="link" onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
-        {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }} /> : null}
+        <div className="assistant-drawer__header"><strong>{配置展开 ? '模型设置' : '文件对话'}</strong><div className="assistant-drawer__header-actions"><Button className="assistant-new-chat" size="small" icon={<Icon name="plus" size={14} />} disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button className="assistant-settings-toggle" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={14} />} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
+        {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }}>
+          {新版可用 ? <div className="assistant-settings__task-mode"><Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox><p className="assistant-settings__note">开启后，接下来发送的需求先生成计划；点击“执行计划”可继续处理。正在执行或已排队的任务沿用提交时的设置。</p></div> : null}
+        </AiSettingsCard> : null}
         <div className="assistant-drawer__work">
         <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div>
         {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
@@ -650,10 +654,10 @@ export default function AiAssistant() {
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。</div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
-            <span className="assistant-message__role">{项.角色 === 'user' ? '我' : '助手'}</span>
+            <span className="assistant-message__role">{项.角色 === 'assistant' ? <span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={13} /></span> : null}{项.角色 === 'user' ? '我' : '助手'}</span>
             {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
-            {项.内容 ? <div className={`assistant-message__body${项.状态 === '执行中' && 项.阶段 === '正在输出' ? ' assistant-message__body--streaming' : ''}`}>{项.内容}</div> : null}
+            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div> : null}
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
@@ -678,10 +682,8 @@ export default function AiAssistant() {
         </section> : null}
         </div>
         <div className="assistant-drawer__composer">
-          <div className="assistant-drawer__reasoning"><label>思考强度</label><Select aria-label="思考强度" value={强度} options={思考选项} disabled={发送中} onChange={set强度} />{新版可用 ? <Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox> : null}</div>
-          <p className="assistant-drawer__reasoning-note">{思考说明(配置?.参数模式, 强度)} · 上下文 {((配置?.上下文令牌 ?? 131072) / 1024).toFixed(0)}K，80%自动压缩 · /help</p>
           <Input.TextArea aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={3} disabled={清除中} placeholder="输入需求，或输入 /help 查看命令" onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
-          <div className="assistant-drawer__composer-actions"><span>按 Ctrl+Enter 发送</span><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button type="primary" disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || 当前待确认 ? '加入队列' : '发送'}</Button></div></div>
+          <div className="assistant-drawer__composer-actions"><span>Ctrl+Enter 发送 · /help</span><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || 当前待确认 ? '加入队列' : '发送'}</Button></div></div>
         </div>
       </div>
     </Drawer>

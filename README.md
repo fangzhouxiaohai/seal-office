@@ -8,14 +8,14 @@
 
 ## Windows 下载
 
-当前预发布版本：**1.9.7**，适用于 Windows x64。本版修复格式操作跳到文档顶部、选区浮窗遮挡功能区下拉菜单、字号不精确及页眉页脚格式作用区域错误；改进撤销重做、受保护文档操作状态、上传按钮键盘操作、搜索与翻页名称，以及云目录校验和失败重试。全应用页面覆盖深浅主题、不同窗口尺寸与云空间状态检查，后台完成登录和审核交互检查。保留前版的 DOCX 保存重开、AI 首次调用与消息队列修复。云端能力仍按预发布状态提供。
+当前预发布版本：**1.9.8**，适用于 Windows x64。本版改进智能助手：回复按代码、Markdown 和普通文本展示，代码按语言高亮，各内容面板底部提供复制按钮；模型思考设置归入设置面板，对话区延伸到消息输入框上方，增加海豹头像并调整按钮样式。修复流式和最终回复解析丢失代码围栏的问题，保留前版的文件格式保存重开、阅读位置、选区浮窗、AI 首次调用与队列修复。云端能力仍按预发布状态提供。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.7.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOffice1.9.7.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.7.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOfficeSetup1.9.7.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.7.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOffice1.9.7.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.7 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.7)及[修复与验收](docs/v1.9.7-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.8.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.8.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOfficeSetup1.9.8.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.8.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.8 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.8)及[修复与验收](docs/v1.9.8-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -102,7 +102,7 @@ DOC、XLS、PPT 模板是真实旧式二进制格式，当前海豹办公仍不�
 
 ## 软件截图
 
-右键新建文件保存重开与零页演示截图来自 **1.7.3** 实际 Windows 成品；文件图标预览与首页截图来自 **1.7.2**；智能助手截图采集自 Windows 版 **1.7.0**，对话使用本机模拟接口展示流式和修改流程；全宽文字、表格、演示、PDF 和全屏放映截图采集自 **1.6.9**；图片调整和深浅主题截图保留自 **1.6.8**，设置和帮助截图保留自 **1.6.7**。文档内容均为演示数据，具体功能和格式支持范围见下方说明。
+最新助手代码与 Markdown 展示截图来自 **1.9.8** 真实组件在隔离 Chromium 中的验收，内容使用测试数据。右键新建文件保存重开与零页演示截图来自 **1.7.3** 实际 Windows 成品；文件图标预览与首页截图来自 **1.7.2**；其余智能助手截图采集自 Windows 版 **1.7.0**，对话使用本机模拟接口展示流式和修改流程；全宽文字、表格、演示、PDF 和全屏放映截图采集自 **1.6.9**；图片调整和深浅主题截图保留自 **1.6.8**，设置和帮助截图保留自 **1.6.7**。文档内容均为演示数据，具体功能和格式支持范围见下方说明。
 
 ### 1.9.3 实际界面
 
@@ -133,6 +133,12 @@ DOC、XLS、PPT 模板是真实旧式二进制格式，当前海豹办公仍不�
 ![合法零页演示的真实打开状态](docs/screenshots/v1.7.3/zero-slide-presentation.png)
 
 ### 模型预设、任务计划与流式修改
+
+1.9.8 的助手回复按内容展示：代码使用对应语言的语法高亮，Markdown 显示标题、列表和表格，普通文本保留换行。内容面板底部可复制原文或代码正文；思考强度、上下文说明和仅规划选项归入模型设置。
+
+![助手代码高亮、底部复制与扩展后的对话区](docs/screenshots/v1.9.8/assistant-code-light.png)
+
+![助手 Markdown 标题、列表和表格排版](docs/screenshots/v1.9.8/assistant-markdown-light.png)
 
 DeepSeek 初始配置已填写模型与接口，填写密钥即可使用；完整模型与参数在高级设置中调整。
 

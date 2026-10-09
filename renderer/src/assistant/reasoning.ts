@@ -23,9 +23,12 @@ export function 思考说明(模式: 思考参数模式 = 'none', 强度: 思考
 
 /** 解码顶层回复字符串的已到达部分，避免向用户显示 JSON 修改协议。 */
 export function 提取流式正文(原文: string): string {
-  const 文本 = 原文.trimStart().replace(/^```(?:json)?\s*/i, '')
-  if (!文本 || 文本.startsWith('`')) return ''
-  if (!文本.startsWith('{') && !文本.startsWith('[')) return 文本
+  const 开始 = 原文.trimStart()
+  const 围栏 = /^```(?:json)?[ \t]*(?:\r?\n|(?=[{[]))/i.exec(开始)
+  if (开始.startsWith('```') && !围栏) return /^```[\w-]*$/.test(开始) ? '' : 原文
+  const 文本 = 围栏 ? 开始.slice(围栏[0].length).trimStart() : 开始
+  if (!文本 || 文本 === '`' || 文本 === '``') return ''
+  if (!文本.startsWith('{') && !文本.startsWith('[')) return 原文
   let 深度 = 0
   for (let i = 0; i < 文本.length; i++) {
     const 字符 = 文本[i]
@@ -60,5 +63,11 @@ export function 提取流式正文(原文: string): string {
       return 内容
     }
   }
+  // Structured examples are replies too. Wait until JSON is complete to avoid
+  // exposing an unfinished legacy modification envelope.
+  try {
+    const 数据 = JSON.parse(文本.replace(/\s*```\s*$/, ''))
+    if (!数据 || typeof 数据 !== 'object' || !('回复' in 数据 || '修改' in 数据)) return 原文
+  } catch { /* The next stream fragment may complete the protocol. */ }
   return ''
 }

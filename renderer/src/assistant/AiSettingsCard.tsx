@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { App as AntdApp, Button, Input, InputNumber, Checkbox, Select } from 'antd'
 import { 桥接, type 助手配置, type 思考强度, type 思考参数模式 } from '../ipc/bridge'
 import 预设列表 from '../../../main/ai/providers.json'
 import { 思考选项, 参数选项, 思考说明 } from './reasoning'
 import './assistant.css'
 
-interface Props { onSaved?: (配置: 助手配置) => void; compact?: boolean }
+interface Props { onSaved?: (配置: 助手配置) => void; compact?: boolean; children?: ReactNode }
 
 const 空配置: 助手配置 = { 名称: '', 地址: '', 模型: '', 上下文令牌: 131072, 已配置密钥: false }
 
-export default function AiSettingsCard({ onSaved, compact = false }: Props) {
+export default function AiSettingsCard({ onSaved, compact = false, children }: Props) {
   const { message, modal } = AntdApp.useApp()
   const [配置, set配置] = useState<助手配置>(空配置)
   const [密钥, set密钥] = useState('')
@@ -126,10 +126,12 @@ export default function AiSettingsCard({ onSaved, compact = false }: Props) {
         <Select aria-label="默认思考强度" value={配置.思考强度 ?? 'high'} disabled={编辑禁用} options={思考选项} onChange={(值: 思考强度) => set配置((当前) => ({ ...当前, 思考强度: 值 }))} />
       </label>
       <p className="assistant-settings__note">{思考说明(配置.参数模式, 配置.思考强度)}</p>
+      <p className="assistant-settings__note">当前上下文 {((配置.上下文令牌 ?? 131072) / 1024).toFixed(0)}K；达到80%自动压缩。/compact 手动压缩，/help 查看会话命令。</p>
       <label>访问密钥
         <Input.Password aria-label="模型访问密钥" autoComplete="new-password" value={密钥} disabled={编辑禁用} placeholder={配置.已配置密钥 ? '留空则沿用已保存密钥' : 预设 ? '填写该服务商的 API 密钥' : '无密钥的本机服务可留空'} onChange={(事件) => { set密钥(事件.target.value); if (事件.target.value) set清除密钥(false) }} />
       </label>
     </div>
+    {children}
     {配置.已配置密钥 ? <Checkbox checked={清除密钥} disabled={保存中} onChange={(事件) => set清除密钥(事件.target.checked)}>删除已保存密钥</Checkbox> : null}
     <div className="assistant-settings__actions"><Button onClick={清除设置} disabled={!桌面可用 || 保存中}>清除设置</Button><Button type="primary" onClick={() => void 保存()} loading={保存中} disabled={!桌面可用 || 读取中}>保存模型设置</Button></div>
   </section>

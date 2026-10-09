@@ -8,8 +8,19 @@ $taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable
 if ($Portable -and $InstalledExecutable) { throw '便携版与安装目录验收不可同时指定' }
 $taskDirectory = Join-Path 'E:\Temp' ('seal-windows-release-' + [guid]::NewGuid().ToString('N'))
 $taskRegistry = 'Software\SealOfficeIntegrationTests\' + [guid]::NewGuid().ToString()
-$taskPagePort = if ($Portable) { 9387 } else { 9385 }
-$taskMainPort = $taskPagePort + 1
+# Fixed ports may fall inside Windows reserved ranges. Allocate both ports
+# while their listeners are held so the two debugging endpoints are distinct.
+$taskPageListener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+$taskMainListener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+try {
+  $taskPageListener.Start()
+  $taskMainListener.Start()
+  $taskPagePort = $taskPageListener.LocalEndpoint.Port
+  $taskMainPort = $taskMainListener.LocalEndpoint.Port
+} finally {
+  $taskPageListener.Stop()
+  $taskMainListener.Stop()
+}
 New-Item -ItemType Directory -Path $taskDirectory | Out-Null
 try {
   foreach ($taskPhase in @('first', 'repeat', 'confirm')) {

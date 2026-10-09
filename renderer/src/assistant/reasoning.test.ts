@@ -15,4 +15,10 @@ describe('流式正文展示', () => {
     expect(思考说明('three', 'ultra')).toContain('实际使用最高档')
     expect(思考说明('none')).toContain('默认思考')
   })
+  it('流式代码保留语言围栏、缩进和换行，完整 JSON 示例按原文输出', () => {
+    expect(提取流式正文('```py')).toBe('')
+    for (const 内容 of ['```python\n', '```python\nprint(1)\n```', '```md\n# 标题', '  文字\n  缩进', '```json\n{"name":"海豹"}\n```', '{"name":"海豹"}']) expect(提取流式正文(内容)).toBe(内容)
+    expect(提取流式正文('```json\n{"修改":[')).toBe('')
+    expect(提取流式正文('```json\n{"回复":"正文含 ```python\\nprint(1)\\n```","修改":[]}\n```')).toBe('正文含 ```python\nprint(1)\n```')
+  })
 })

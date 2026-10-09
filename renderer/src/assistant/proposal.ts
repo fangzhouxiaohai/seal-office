@@ -28,14 +28,18 @@ function 有效文本(值: unknown, 字段: string, 可空 = false): string {
 
 /** 仅接受固定的修改指令；模型输出不能直接运行任意命令。 */
 export function 解析助手回复(原文: string): 助手回复 {
-  const 文本 = 原文.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  const 开始 = 原文.trim()
+  const 围栏 = /^```(?:json)?[ \t]*(?:\r?\n|(?=[{[]))/i.exec(开始)
+  if (开始.startsWith('```') && !围栏) return { 回复: 有效文本(原文, '模型回复'), 修改: [] }
+  const 文本 = 围栏 ? 开始.slice(围栏[0].length).trimStart().replace(/\s*```$/, '') : 开始
   let 数据: unknown
   try { 数据 = JSON.parse(文本) }
   catch {
-    if (文本.startsWith('{') || 文本.startsWith('[')) throw new Error('模型回复的修改格式无效，请重新描述需求')
-    return { 回复: 有效文本(文本, '模型回复'), 修改: [] }
+    if ((文本.startsWith('{') || 文本.startsWith('[')) && !(围栏 && !/"(?:回复|修改)"\s*:/.test(文本))) throw new Error('模型回复的修改格式无效，请重新描述需求')
+    return { 回复: 有效文本(原文, '模型回复'), 修改: [] }
   }
-  if (!数据 || typeof 数据 !== 'object' || Array.isArray(数据)) throw new Error('模型回复格式无效')
+  if (!数据 || typeof 数据 !== 'object' || !('回复' in 数据 || '修改' in 数据)) return { 回复: 有效文本(原文, '模型回复'), 修改: [] }
+  if (Array.isArray(数据)) throw new Error('模型回复格式无效')
   const 对象 = 数据 as Record<string, unknown>
   const 回复 = 有效文本(对象.回复, '模型回复')
   if (!Array.isArray(对象.修改)) throw new Error('模型修改数量格式无效')

@@ -4,6 +4,11 @@ import { 创建工作表, 写入单元格 } from '../sheet/model'
 import { 创建演示文稿 } from '../ppt/deck'
 
 describe('智能助手修改预览', () => {
+  it('代码、Markdown 和纯文本的语言围栏与空白保留，JSON 示例不误作修改协议', () => {
+    for (const 内容 of ['```python\nprint(1)\n```', '```md\n# 标题\n```', '```txt\n第一行\n  第二行\n```', '```json\n{"name":"海豹"}\n```', '```json\n{"incomplete":\n```', '[1,2,3]', '  保留空白\n']) expect(解析助手回复(内容)).toEqual({ 回复: 内容, 修改: [] })
+    expect(解析助手回复('```json\n{"回复":"请核对","修改":[]}\n```')).toEqual({ 回复: '请核对', 修改: [] })
+    expect(() => 解析助手回复('```json\n{"回复":"候选","修改":[\n```')).toThrow('修改格式无效')
+  })
   it('长原文与长替换内容不因字符上限中止', () => {
     const 原文 = '正文'.repeat(7000), 新文 = '改写'.repeat(8000)
     const 回复 = 解析助手回复(JSON.stringify({ 回复: '已生成完整候选', 修改: [{ 种类: '文字替换', 段落标识: '段落-1', 查找: 原文, 替换为: 新文 }] }))

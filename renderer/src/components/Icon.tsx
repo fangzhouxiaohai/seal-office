@@ -4,7 +4,7 @@ import React from 'react'
 import FileTypeIcon, { type FileIconType } from './FileTypeIcon'
 
 export const ICON_NAMES = [
-  'home', 'clock', 'star', 'star-filled', 'share', 'cloud', 'users',
+  'home', 'clock', 'star', 'star-filled', 'share', 'send', 'cloud', 'users',
   'pdf', 'mindmap', 'flow', 'settings', 'help',
   'search', 'grid', 'list', 'sort', 'more', 'arrow-left', 'plus', 'retry',
   'doc-word', 'doc-table', 'doc-ppt', 'doc-pdf', 'doc-empty',
@@ -39,6 +39,7 @@ interface IconProps {
 
 /** 线性图标路径表 */
 const 线性路径: Record<string, React.ReactNode> = {
+  send: <><path d="m2 2 12 6-12 6 2-6z" /><path d="M4 8h6" /></>,
   front: <><path d="M10 5h3v8H5v-3" /><rect x="2" y="2" width="8" height="8" rx="1" fill="var(--bg-card)" /></>,
   back: <><rect x="2" y="2" width="8" height="8" rx="1" /><rect x="5" y="5" width="8" height="8" rx="1" fill="var(--bg-card)" /></>,
   home: <path d="M3 7.2 8 3l5 4.2V13H3z" />,
