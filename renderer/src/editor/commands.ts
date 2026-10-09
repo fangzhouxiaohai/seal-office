@@ -983,10 +983,10 @@ function 从视图提取页面设置(视图: ViewState): 文字页面设置 {
 }
 
 export function htmlToDocxModel(html: string, 页面设置?: 文字页面设置): 文档模型 {
-  const 模型 = 解析文档(html)
+  const 模型 = 解析文档(html, '正文', 页面设置)
   for (const [键, 内容] of [['页眉', 页面设置?.页眉Html], ['页脚', 页面设置?.页脚Html]] as const) {
     if (!内容) continue
-    const 部分 = 解析文档(内容)
+    const 部分 = 解析文档(内容, 键, 页面设置)
     模型.未覆盖.push(...部分.未覆盖.map((项) => `${键}中的${项}`))
     模型[键] = 部分.段落
   }

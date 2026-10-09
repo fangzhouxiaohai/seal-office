@@ -29,12 +29,40 @@ app.whenReady().then(async()=>{
     const table=await load('main/office/xlsxCodec.js').读取xlsx(xlsx)
     assert.equal(table.工作表列表.length,2);assert.equal(table.工作表列表[0].元数据.图片.length,1);assert.deepEqual(table.警告,[])
     checks.push('XLSX：多表、公式及图片导入')
+    const xlsxCodec=load('main/office/xlsxCodec.js')
+    const format={字体:'Arial',字号:15,加粗:true,斜体:true,下划线:true,字体颜色:'#C00000',填充颜色:'#FFFF00',水平对齐:'center',垂直对齐:'middle',自动换行:true,边框:{上:true,下:true,左:true,右:true},边框颜色:{上:'#336699',下:'#336699',左:'#336699',右:'#336699'}}
+    let workbookModel={工作表:[{名称:'格式回归',数据:[[{文字:[{文本:'标题'}],格式:format},{文字:[{文本:'金额'}]}],[{文字:[{文本:'项目'}]},{公式:'SUM(100,200)',结果:300,格式:{数字格式:'数值',小数位:2}}]],列宽:[196,140],行高:[40,32],冻结:{行:1,列:1},图片:[{数据:png,格式:'png',列:3,行:0,宽:32,高:32}],页面设置:{方向:'横向',纸张大小:'A4',页边距:'常规'}}]}
+    for(let cycle=1;cycle<=3;cycle++){
+      const bytes=await xlsxCodec.写入xlsx(workbookModel),imported=await xlsxCodec.读取xlsx(bytes)
+      assert.deepEqual(imported.警告,[])
+      const entry=imported.工作表列表[0],meta=entry.元数据
+      assert.deepEqual(meta.单元格格式.A1,format);assert.equal(meta.图片.length,1)
+      assert.deepEqual(meta.冻结,{行:1,列:1});assert.equal(meta.列宽[0],196);assert.equal(meta.行高[0],40)
+      const raw=new ExcelJS.Workbook();await raw.xlsx.load(bytes);assert.equal(raw.worksheets[0].getCell('B2').value.formula,'SUM(100,200)')
+      const data=Array.from({length:2},(_,row)=>Array.from({length:2},(_,col)=>{
+        const cell=raw.worksheets[0].getCell(row+1,col+1),style=meta.单元格格式[cell.address]
+        return cell.value?.formula?{公式:cell.value.formula,结果:cell.value.result,格式:style}:{文字:[{文本:cell.text}],格式:style}
+      }))
+      workbookModel={工作表:[{名称:entry.名称,数据:data,列宽:[meta.列宽[0],meta.列宽[1]],行高:[meta.行高[0],meta.行高[1]],冻结:meta.冻结,图片:meta.图片,页面设置:entry.页面设置}]}
+      fs.writeFileSync(path.join(output,`formatted-${cycle}.xlsx`),bytes)
+    }
+    checks.push('XLSX：字号、字体、颜色、填充、边框、对齐、行列尺寸、冻结、公式及图片连续三次保存重开')
     const resourceId=require('crypto').createHash('sha256').update(Buffer.from(png,'base64')).digest('hex')
     const slides=Array.from({length:3},(_,i)=>({id:'page-'+i,背景色:'#FFFFFF',文本框:[{id:'text-'+i,text:'海豹演示 '+(i+1),x:30,y:40,width:300,height:60,字号:24,颜色:'#000000'}],对象列表:[{id:'image-'+i,类型:'图片',x:30,y:180,width:48,height:48,资源标识:resourceId}]}))
     const pptx=await load('main/office/pptxCodec.js').写入pptx({幻灯片:slides,资源条目:[{标识:resourceId,类型:'image/png',数据:png}]});fs.writeFileSync(path.join(output,'verify.pptx'),pptx)
     const presentation=await load('main/office/pptxCodec.js').读取pptx(pptx)
     assert.equal(presentation.演示文稿.幻灯片列表.length,3);assert.deepEqual(presentation.警告,[])
     checks.push('PPTX：三页文字与图片导入')
+    let presentationModel={幻灯片:slides.map(slide=>({...slide,备注:'备注 & <内容>',文本框:slide.文本框.map(text=>({...text,字体:'Arial',字号:28,加粗:true,斜体:true,下划线:true,颜色:'#C00000',对齐:'center'}))})),资源条目:[{标识:resourceId,类型:'image/png',数据:png}]}
+    for(let cycle=1;cycle<=3;cycle++){
+      const bytes=await load('main/office/pptxCodec.js').写入pptx(presentationModel),imported=await load('main/office/pptxCodec.js').读取pptx(bytes)
+      assert.deepEqual(imported.警告,[]);assert.equal(imported.演示文稿.幻灯片列表.length,3)
+      imported.演示文稿.幻灯片列表.forEach((slide,i)=>{
+        const text=slide.文本框列表[0];assert.equal(text.text,'海豹演示 '+(i+1));assert.equal(text.字号,28);assert.equal(text.加粗,true);assert.equal(text.斜体,true);assert.equal(text.下划线,true);assert.equal(text.颜色,'#C00000');assert.equal(text.对齐,'center');assert.equal(slide.备注,'备注 & <内容>');assert.equal(slide.对象列表.filter(object=>object.类型==='图片').length,1)
+      })
+      presentationModel={...imported.演示文稿,资源条目:imported.资源条目};fs.writeFileSync(path.join(output,`formatted-${cycle}.pptx`),bytes)
+    }
+    checks.push('PPTX：三页文字字号、字体格式、颜色、对齐、图片及备注连续三次保存重开')
     const {PDFDocument}=load('node_modules/pdf-lib')
     const pdfDoc=await PDFDocument.create();for(let i=0;i<3;i++)pdfDoc.addPage().drawText('Seal Office page '+(i+1),{x:40,y:700})
     let pdf=Buffer.from(await pdfDoc.save()),tools=load('main/pdf/pdfTools.js')

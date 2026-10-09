@@ -9,6 +9,65 @@ const { 读取docx } = 加载模块('../../../main/office/docxReader.js')
 const JSZip = 加载模块('jszip')
 
 describe('编辑区到真实 DOCX 的段落格式往返', () => {
+  it('标题显式字号、加粗与空段落标记连续三次保存不变', async () => {
+    let html = '<h1 style="font-size:24pt;font-weight:700;text-align:center">修改后的标题</h1><p style="font-size:18pt;line-height:2"><br></p><p style="font-size:10.5pt">正文</p>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.段落[0]).toMatchObject({ 标记: { 字号: 24, 加粗: true }, 文字: [{ 字号: 24, 加粗: true }] })
+      expect(模型.段落[1]).toMatchObject({ 标记: { 字号: 18 }, 文字: [], 间距: { 行距: 480, 行距规则: 'auto' } })
+      html = 净化富文本((await 读取docx(await 生成docx(模型))).html)
+    }
+  })
+
+  it('CSS 关键字、四分之一磅字号和 XML 符号保持真实内容', async () => {
+    let html = '<p><span style="font-size:x-large">18磅</span><span style="font-size:15px">11.25磅 &amp; &lt; &gt; &quot; &#39; &amp;lt;</span></p>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.段落[0]).toMatchObject({ 文字: [{ 字号: 18 }, { 字号: 11.25, 文本: '11.25磅 & < > " \' &lt;' }] })
+      html = 净化富文本((await 读取docx(await 生成docx(模型))).html)
+    }
+  })
+
+  it('表格宽度、边框、底色和内边距保存后不强制替换或追加空行', async () => {
+    let html = '<table style="width:300pt;border-collapse:collapse"><tr><td style="width:180pt;padding:3pt 6pt;border:1pt solid #C00000;background-color:#FFFF00"><p>单元格</p></td><td style="width:120pt;padding:3pt 6pt;border:1pt solid #C00000"><p>第二格</p></td></tr></table><p>表后正文</p>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.段落).toHaveLength(2)
+      expect(模型.段落[0]).toMatchObject({ 宽度: 300, 行: [[{ 宽度: 180, 内边距: { 上: 3, 右: 6, 下: 3, 左: 6 }, 底纹: 'FFFF00', 边框: { top: { 样式: 'solid', 宽: 1, 颜色: 'C00000' } } }, { 宽度: 120 }]] })
+      html = 净化富文本((await 读取docx(await 生成docx(模型))).html)
+    }
+  })
+
+  it('相邻表格使用隐藏分隔标记，重开不添加可编辑的空段落', async () => {
+    let html = '<table><tr><td>第一表</td></tr></table><table><tr><td>第二表</td></tr></table>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.段落.map(段 => 段.类型)).toEqual(['表格', '表格'])
+      html = 净化富文本((await 读取docx(await 生成docx(模型))).html)
+    }
+  })
+
+  it('百分比表宽连续保存不被读成 0%，兼容两种 OOXML 百分比表示', async () => {
+    let html = '<table style="width:80%;border-collapse:collapse"><tr><td><p>百分比表格</p></td></tr></table>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.段落[0]).toMatchObject({ 宽度百分比: 80 })
+      const bytes = await 生成docx(模型)
+      html = 净化富文本((await 读取docx(bytes)).html)
+      expect(html).toContain('width:80%')
+      const zip = await JSZip.loadAsync(bytes)
+      const xml = await zip.file('word/document.xml').async('string')
+      zip.file('word/document.xml', xml.replace('w:w="80%"', 'w:w="4000"'))
+      expect((await 读取docx(await zip.generateAsync({ type: 'nodebuffer' }))).html).toContain('width:80%')
+    }
+  })
+
+  it('页眉页脚采用自身 12px 基准字号并保留空行格式', async () => {
+    const 模型 = htmlToDocxModel('<p>正文</p>', { 页眉Html: '<p>页眉</p>', 页脚Html: '<p style="font-size:16pt"><br></p>' } as any)
+    expect(模型.页眉?.[0]).toMatchObject({ 标记: { 字号: 9 }, 文字: [{ 字号: 9 }] })
+    expect(模型.页脚?.[0]).toMatchObject({ 标记: { 字号: 16 } })
+  })
+
   it.each([1, 2, 3, 4, 5, 6])('默认 %i 级标题重开不会增加蓝色', async (级别) => {
     const 结果 = await 读取docx(await 生成docx(htmlToDocxModel(`<h${级别}>默认标题</h${级别}>`)))
     expect(结果.警告).toEqual([])
@@ -155,7 +214,7 @@ describe('编辑区到真实 DOCX 的段落格式往返', () => {
     ]) })
     expect(重开模型.段落[1]).toMatchObject({ 列表: '项目符号', 间距: { 段后: 160, 行距: 480, 行距规则: 'auto' } })
     expect(重开模型.段落[2]).toMatchObject({ 行: [[{ 段落: [
-      expect.objectContaining({ 对齐: '右', 缩进: { 首行: 480 } }), expect.objectContaining({ 间距: { 段前: 240 } }),
+      expect.objectContaining({ 对齐: '右', 缩进: { 首行: 480 } }), expect.objectContaining({ 间距: { 段前: 240, 行距: 420, 行距规则: 'auto' } }),
     ] }]] })
   })
 

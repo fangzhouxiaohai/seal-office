@@ -22,6 +22,7 @@ const {
   Header,
   Footer,
   VerticalMergeType,
+  VerticalAlign,
   XmlComponent,
   XmlAttributeComponent,
 } = require('docx')
@@ -164,8 +165,11 @@ function 建文字(片段, 图片预算) {
     return new ImageRun({ data: 信息.字节, transformation: { width: 图片.宽, height: 图片.高 },
       altText: { title: 图片.说明, description: 图片.说明, name: 图片.说明 || '图片' } })
   }
+  return new TextRun({ text: 片段.文本 || '', ...文字属性(片段) })
+}
+
+function 文字属性(片段) {
   const 配置 = {
-    text: 片段.文本 || '',
     bold: 片段.加粗 === true,
     italics: 片段.倾斜 === true,
     strike: 片段.删除线 === true,
@@ -185,7 +189,7 @@ function 建文字(片段, 图片预算) {
   }
   if (typeof 片段.字号 === 'number' && 片段.字号 > 0) {
     // docx 的 size 单位是半磅
-    配置.size = Math.round(片段.字号 * 2)
+    配置.size = Number.isInteger(片段.字号 * 2) ? 片段.字号 * 2 : `${片段.字号}pt`
   }
   if (片段.字体) {
     配置.font = 片段.字体
@@ -196,7 +200,7 @@ function 建文字(片段, 图片预算) {
     if (!Number.isSafeInteger(二十分之一磅) || Math.abs(二十分之一磅) > 2147483) throw new Error('字间距数值无效，无法保存')
     if (二十分之一磅 !== 0) 配置.characterSpacing = 二十分之一磅
   }
-  return new TextRun(配置)
+  return 配置
 }
 
 /** 把一个文本段落转为 docx 的 Paragraph */
@@ -230,6 +234,7 @@ function 建段落(段, 原生排版列表, 图片预算) {
   }
 
   const 样式 = 标题样式[段.级别]
+  if (段.标记) 配置.run = 文字属性(段.标记)
   if (样式 !== undefined) {
     配置.heading = 样式
   }
@@ -302,8 +307,17 @@ function 建表格(表, 原生排版列表, 图片预算) {
       单元列表.push(new TableCell({
         children: 段落.map((段) => 建段落({
           ...段,
-          文字: (段.文字 || []).map((片段) => 单元?.表头 ? { ...片段, 加粗: true } : 片段),
+          文字: (段.文字 || []).map((片段) => 单元?.表头 && 片段.加粗 === undefined ? { ...片段, 加粗: true } : 片段),
         }, 原生排版列表, 图片预算)),
+        ...(单元.宽度 ? { width: { size: Math.round(单元.宽度 * 20), type: WidthType.DXA } } : {}),
+        ...(单元.内边距 ? { margins: { top: 单元.内边距.上 * 20, right: 单元.内边距.右 * 20,
+          bottom: 单元.内边距.下 * 20, left: 单元.内边距.左 * 20 } } : {}),
+        ...(单元.边框 ? { borders: Object.fromEntries(Object.entries(单元.边框).map(([side, border]) => [side, {
+          style: ({ solid: BorderStyle.SINGLE, double: BorderStyle.DOUBLE, dashed: BorderStyle.DASHED, dotted: BorderStyle.DOTTED })[border.样式] || BorderStyle.NONE,
+          size: Math.round(border.宽 * 8), color: border.颜色 || '000000',
+        }])) } : {}),
+        ...(单元.底纹 ? { shading: { fill: 单元.底纹 } } : {}),
+        ...({ top: { verticalAlign: VerticalAlign.TOP }, middle: { verticalAlign: VerticalAlign.CENTER }, bottom: { verticalAlign: VerticalAlign.BOTTOM } }[单元.垂直对齐] || {}),
         ...(格子.跨列 > 1 ? { columnSpan: 格子.跨列 } : {}),
         ...(格子.跨行 > 1 ? { verticalMerge: VerticalMergeType.RESTART } : {}),
       }))
@@ -311,7 +325,17 @@ function 建表格(表, 原生排版列表, 图片预算) {
     return new TableRow({ children: 单元列表 })
   })
 
-  return new Table({ rows: 行, width: { size: 100, type: WidthType.PERCENTAGE } })
+  const 宽 = 表.宽度百分比 ? { size: 表.宽度百分比, type: WidthType.PERCENTAGE } : 表.宽度 ? { size: Math.round(表.宽度 * 20), type: WidthType.DXA } : { size: 100, type: WidthType.PERCENTAGE }
+  const 列宽 = (行数据[0] || []).flatMap(单元 => Array.from({ length: 单元.跨列 || 1 }, () => Math.round((单元.宽度 || 0) * 20 / (单元.跨列 || 1))))
+  const 结果 = new Table({ rows: 行, width: 宽, ...(列宽.length === 列数 && 列宽.every(值 => 值 > 0) ? { columnWidths: 列宽 } : {}) })
+  if (表.单元间距 !== undefined && !表.边框合并) {
+    const 间距 = new XmlComponent('w:tblCellSpacing')
+    const 属性 = new XmlAttributeComponent({ w: Math.round(表.单元间距 * 20), type: 'dxa' })
+    属性.xmlKeys = { w: 'w:w', type: 'w:type' }
+    间距.root.push(属性)
+    结果.root[0].root.push(间距)
+  }
+  return 结果
 }
 
 /** 当前 docx 库未暴露字符缩进和行单位段距选项，按实际正文段落顺序补入受控属性。 */
@@ -384,12 +408,15 @@ exports.生成docx = async (文档模型) => {
     })
     return children.length ? children : [new Paragraph({ children: [] })]
   }
-  段落列表.forEach((项) => {
+  段落列表.forEach((项, 序号) => {
     if (项.类型 === '表格') {
       子元素.push(建表格(项, 原生排版列表, 图片预算))
-      // Word 要求表格之后跟随段落，否则相邻表格会被合并
-      子元素.push(new Paragraph({ children: [] }))
-      原生排版列表.push({ ind: {}, spacing: {} })
+      // Only consecutive tables need a boundary. Do not append a new visible
+      // blank line on every save; the boundary has a distinct roundtrip style.
+      if (段落列表[序号 + 1]?.类型 === '表格') {
+        子元素.push(new Paragraph({ style: 'SealOfficeTableSeparator', children: [] }))
+        原生排版列表.push({ ind: {}, spacing: {} })
+      }
     } else if (项.类型 === '分页符') {
       子元素.push(new Paragraph({ children: [new PageBreak()] }))
       原生排版列表.push({ ind: {}, spacing: {} })
@@ -408,7 +435,8 @@ exports.生成docx = async (文档模型) => {
   }
 
   const 文档 = new Document({
-    styles: { default: 标题默认样式 },
+    styles: { default: 标题默认样式, paragraphStyles: [{ id: 'SealOfficeTableSeparator', name: 'SealOffice table separator',
+      paragraph: { spacing: { before: 0, after: 0, line: 1, lineRule: 'exact' } }, run: { size: 2, vanish: true } }] },
     numbering: 编号配置,
     background: 页面底色(文档模型?.页面设置),
     sections: [{

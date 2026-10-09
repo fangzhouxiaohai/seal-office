@@ -84,7 +84,7 @@ describe('htmlToDocxModel 样式保真', () => {
     expect(模型.未覆盖).toEqual([])
     expect(模型.段落[0]).toMatchObject({ 行: [[{ 段落: [
       expect.objectContaining({ 缩进: { 首行: 480 }, 间距: { 行距: 360, 行距规则: 'auto' } }),
-      expect.objectContaining({ 对齐: '右', 间距: { 段前: 240 } }),
+      expect.objectContaining({ 对齐: '右', 间距: { 段前: 240, 行距: 420, 行距规则: 'auto' } }),
     ] }]] })
   })
 

@@ -23,10 +23,20 @@ function 转义(文本) {
   return 文本.replace(/[&<>"']/g, (字符) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[字符]))
 }
 
+function 解码Xml(文本) {
+  return 文本.replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[\da-f]+);/gi, 实体 => {
+    const 名称 = 实体.slice(1, -1)
+    if (名称[0] !== '#') return { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" }[名称.toLowerCase()]
+    const 码点 = 名称[1].toLowerCase() === 'x' ? parseInt(名称.slice(2), 16) : Number(名称.slice(1))
+    if (!Number.isInteger(码点) || 码点 > 0x10ffff || 码点 >= 0xd800 && 码点 <= 0xdfff) throw new Error('文档包含无效 XML 字符')
+    return String.fromCodePoint(码点)
+  })
+}
+
 /** 提取某段 XML 里第一个 <标签 ... 属性="值"> 的属性值 */
 function 取属性(片段, 标签, 属性) {
   const 匹配 = 片段.match(new RegExp(`<${标签}(?=[\\s/>])[^>]*\\s${属性}="([^"]*)"`, 'i'))
-  return 匹配 === null ? null : 匹配[1]
+  return 匹配 === null ? null : 解码Xml(匹配[1])
 }
 
 /** 判断某个子标签是否出现（带 w: 命名空间前缀） */
@@ -118,6 +128,10 @@ function 提取字符配置(rPr) {
   if (底纹 !== null) 配置.底纹 = 底纹
   const 半磅 = 取属性(rPr, 'w:sz', 'w:val')
   if (半磅 !== null && /^\d+$/.test(半磅)) 配置.字号 = Number(半磅) / 2
+  else if (半磅 !== null) {
+    const 尺寸 = 半磅.match(/^(\d+(?:\.\d+)?)(pt|pc|pi|in|cm|mm)$/)
+    if (尺寸) 配置.字号 = Number(尺寸[1]) * ({ pt: 1, pc: 12, pi: 12, in: 72, cm: 72 / 2.54, mm: 72 / 25.4 }[尺寸[2]])
+  }
   const 字体 = 取属性(rPr, 'w:rFonts', 'w:eastAsia') ?? 取属性(rPr, 'w:rFonts', 'w:ascii')
   if (字体) 配置.字体 = 字体
   const 基线 = 取属性(rPr, 'w:vertAlign', 'w:val')
@@ -131,7 +145,7 @@ function 提取字符配置(rPr) {
 /** 把叠加后的字符属性转为内联样式。 */
 function 生成字符样式(配置) {
   let 样式 = ''
-  if (配置.加粗 !== undefined) 样式 += `font-weight:${配置.加粗 ? '600' : 'normal'};`
+  if (配置.加粗 !== undefined) 样式 += `font-weight:${配置.加粗 ? '700' : 'normal'};`
   if (配置.倾斜 !== undefined) 样式 += `font-style:${配置.倾斜 ? 'italic' : 'normal'};`
   if (配置.下划线 !== undefined || 配置.删除线 !== undefined) {
     const 装饰 = [配置.下划线 ? 'underline' : '', 配置.删除线 ? 'line-through' : ''].filter(Boolean).join(' ')
@@ -140,7 +154,7 @@ function 生成字符样式(配置) {
   if (配置.颜色) 样式 += `color:${配置.颜色};`
   if (配置.底纹) 样式 += `background-color:${配置.底纹};`
   if (配置.字号) 样式 += `font-size:${配置.字号}pt;`
-  if (配置.字体) 样式 += `font-family:'${配置.字体}';`
+  if (配置.字体) 样式 += `font-family:'${配置.字体.replace(/[\\'"<>&]/g, 字符 => '\\' + 字符.codePointAt(0).toString(16) + ' ')}';`
   if (配置.字间距) 样式 += `letter-spacing:${配置.字间距}pt;`
   if (配置.基线) 样式 += `vertical-align:${配置.基线 === 'superscript' ? 'super' : 配置.基线 === 'subscript' ? 'sub' : 'baseline'};`
   return 样式
@@ -400,6 +414,9 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     ...样式定义.默认字符,
     ...解析继承字符(样式定义, 段落样式 ?? 样式定义.默认段落样式),
   }
+  const 标记属性 = pPr匹配?.[1].match(/<w:rPr(?:\s[^>]*)?>([\s\S]*?)<\/w:rPr>/i)?.[1]
+  const 标记配置 = { ...继承配置, ...提取字符配置(标记属性 || '') }
+  段属性.样式 += 生成字符样式(标记配置)
   const 片段列表 = []
   // 页码域按 Word 的域结构解析：begin → instrText 指令 → separate → 缓存结果 → end。
   // 能写回的域输出为带标记的占位，保存时重新写成域代码，页码不会被写死。
@@ -439,12 +456,12 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
         片段列表.push('<br>')
       } else if (文本匹配[2] !== undefined) {
         if (域 !== null && 域.阶段 === '结果') {
-          const 缓存文本 = 转义(文本匹配[2])
+          const 缓存文本 = 转义(解码Xml(文本匹配[2]))
           域.缓存.push(缓存文本)
           域.缓存片段.push(样式 === '' ? 缓存文本 : `<span style="${样式}">${缓存文本}</span>`)
           域.样式 = 样式
         } else {
-          const 内容 = 转义(文本匹配[2])
+          const 内容 = 转义(解码Xml(文本匹配[2]))
           片段列表.push(样式 === '' ? 内容 : `<span style="${样式}">${内容}</span>`)
         }
       }
@@ -459,6 +476,14 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
  * rowspan，被覆盖的续格不再输出，与 HTML 表格表达合并的方式一致。
  */
 function 解析表格(表Xml, 编号映射, 样式定义) {
+  const 表属性 = 表Xml.match(/<w:tblPr(?:\s[^>]*)?>([\s\S]*?)<\/w:tblPr>/i)?.[1] || ''
+  const 数值 = (xml, tag, attr = 'w:w') => { const v = Number(取属性(xml, tag, attr)); return Number.isFinite(v) ? v : 0 }
+  const 表宽类型 = 取属性(表属性, 'w:tblW', 'w:type')
+  const 原始表宽 = 取属性(表属性, 'w:tblW', 'w:w') || ''
+  const 百分比宽 = /^\d+(?:\.\d+)?%$/.test(原始表宽) ? Number.parseFloat(原始表宽) : 数值(表属性, 'w:tblW') / 50
+  const 表宽 = 表宽类型 === 'pct' ? `${百分比宽}%` : 表宽类型 === 'dxa' ? `${数值(表属性, 'w:tblW') / 15}px` : 'auto'
+  const 间距 = 数值(表属性, 'w:tblCellSpacing') / 15
+  const 默认边距 = 表属性.match(/<w:tblCellMar[^>]*>([\s\S]*?)<\/w:tblCellMar>/i)?.[1] || ''
   const 行网格 = []
   const 行正则 = /<w:tr(?:\s[^>]*)?>([\s\S]*?)<\/w:tr>/gi
   let 行匹配
@@ -476,6 +501,19 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
         段落列表.push(渲染段落Xml(段匹配[0], { 允许标题: false }, 编号映射, 样式定义).html)
       }
       const 单元属性 = 单元Xml.match(/<w:tcPr(?:\s[^>]*)?>([\s\S]*?)<\/w:tcPr>/i)?.[1] ?? ''
+      const 边距 = 单元属性.match(/<w:tcMar[^>]*>([\s\S]*?)<\/w:tcMar>/i)?.[1] || 默认边距
+      const 边框 = 单元属性.match(/<w:tcBorders[^>]*>([\s\S]*?)<\/w:tcBorders>/i)?.[1] || 表属性.match(/<w:tblBorders[^>]*>([\s\S]*?)<\/w:tblBorders>/i)?.[1] || ''
+      const 样式 = ['top', 'right', 'bottom', 'left'].map(side => {
+        const tag = `w:${side}`, kind = 取属性(边框, tag, 'w:val')
+        const css = ({ single: 'solid', double: 'double', dashed: 'dashed', dotted: 'dotted' })[kind] || 'none'
+        const color = 取属性(边框, tag, 'w:color')
+        return `padding-${side}:${数值(边距, tag) / 15}px;border-${side}:${数值(边框, tag, 'w:sz') / 6}px ${css} #${/^[0-9a-f]{6}$/i.test(color || '') ? color : '000000'}`
+      })
+      if (取属性(单元属性, 'w:tcW', 'w:type') === 'dxa') 样式.push(`width:${数值(单元属性, 'w:tcW') / 15}px`)
+      const 填充 = 取属性(单元属性, 'w:shd', 'w:fill')
+      if (/^[0-9a-f]{6}$/i.test(填充 || '')) 样式.push(`background-color:#${填充}`)
+      const 垂直 = 取属性(单元属性, 'w:vAlign', 'w:val')
+      样式.push(`vertical-align:${({ center: 'middle', top: 'top', bottom: 'bottom' })[垂直] || 'middle'}`)
       const 跨列原值 = 取属性(单元属性, 'w:gridSpan', 'w:val')
       const 跨列 = 跨列原值 !== null && /^\d+$/.test(跨列原值) ? Number(跨列原值) : 1
       const 有效跨列 = Number.isSafeInteger(跨列) && 跨列 > 1 && 跨列 <= 256 ? 跨列 : 1
@@ -486,6 +524,7 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
         跨列: 有效跨列,
         纵向合并,
         内容: 段落列表.join('') || '<br>',
+        样式: 样式.join(';'),
       })
       列起点 += 有效跨列
     }
@@ -507,11 +546,11 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
         }
       }
       const 合并属性 = (单元.跨列 > 1 ? ` colspan="${单元.跨列}"` : '') + (跨行 > 1 ? ` rowspan="${跨行}"` : '')
-      片段.push(`<td${合并属性} style="border:1px solid #D5DBE3;padding:4px 8px">${单元.内容}</td>`)
+      片段.push(`<td${合并属性} style="${单元.样式}">${单元.内容}</td>`)
     }
     return `<tr>${片段.join('')}</tr>`
   })
-  return `<table style="border-collapse:collapse;width:100%">${行列表.join('')}</table>`
+  return `<table style="border-collapse:${间距 > 0 ? 'separate' : 'collapse'};border-spacing:${间距}px;width:${表宽}">${行列表.join('')}</table>`
 }
 
 /** 渲染单个段落 XML；列表项由外层聚合为 ul/ol */
@@ -541,6 +580,7 @@ function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
   }
   while ((块匹配 = 块正则.exec(bodyXml)) !== null) {
     const 块Xml = 块匹配[0]
+    if (取属性(块Xml, 'w:pStyle', 'w:val') === 'SealOfficeTableSeparator' && !/<w:(?:t|drawing|pict)(?=[\s/>])/.test(块Xml)) continue
     if (/^<w:tbl/i.test(块Xml)) {
       结束列表()
       const 表格Html = 解析表格(块Xml, 编号映射, 样式定义)

@@ -5,6 +5,7 @@
 // 主进程只负责把模型写成 docx 等二进制格式。
 import { 读取段落排版, type 段落排版 } from './paragraphFormat'
 import { 读取文档图片, type 文档图片 } from './docImages'
+import { 固定文档显示格式 } from './docRenderFormat'
 
 /** 段落对齐方式 */
 export type 对齐方式 = '左' | '中' | '右' | '两端'
@@ -43,6 +44,8 @@ export interface 文本段落 extends 段落排版 {
   对齐: 对齐方式
   列表: 列表类型
   文字: 文字片段[]
+  /** Paragraph-mark formatting also controls empty lines and relative indentation. */
+  标记?: 文字片段
 }
 
 /** 表格单元格 */
@@ -54,12 +57,21 @@ export interface 表格单元 {
   跨行?: number
   文字: 文字片段[]
   段落?: 文本段落[]
+  宽度?: number
+  内边距?: { 上: number; 右: number; 下: number; 左: number }
+  边框?: Record<string, { 样式: string; 宽: number; 颜色?: string }>
+  底纹?: string
+  垂直对齐?: string
 }
 
 /** 表格段落 */
 export interface 表格段落 {
   类型: '表格'
   行: 表格单元[][]
+  宽度?: number
+  宽度百分比?: number
+  边框合并?: boolean
+  单元间距?: number
 }
 
 export interface 分页符段落 { 类型: '分页符' }
@@ -200,22 +212,22 @@ export function 颜色转十六进制(颜色: string | undefined | null): string
 
 /** CSS 绝对尺寸关键字到磅值的映射（medium 以 16px 为基准） */
 const 尺寸关键字磅值: Record<string, number> = {
-  'xx-small': 9,
-  'x-small': 10,
-  small: 13,
-  medium: 16,
-  large: 18,
-  'x-large': 24,
-  'xx-large': 36,
-  'xxx-large': 48,
+  'xx-small': 6.75,
+  'x-small': 7.5,
+  small: 9.75,
+  medium: 12,
+  large: 13.5,
+  'x-large': 18,
+  'xx-large': 24,
+  'xxx-large': 36,
 }
 
 /** 旧式 <font size> 档位（1-7）到磅值的映射，与浏览器默认渲染一致 */
 const 字号档位磅值: Record<string, number> = {
-  '1': 8,
-  '2': 10,
+  '1': 7.5,
+  '2': 9.75,
   '3': 12,
-  '4': 14,
+  '4': 13.5,
   '5': 18,
   '6': 24,
   '7': 36,
@@ -240,14 +252,14 @@ export function 长度转磅(长度: string | undefined | null): number | undefi
   }
   switch (匹配[2]) {
     case 'pt':
-      return Math.round(数值 * 10) / 10
+      return Math.round(数值 * 10000) / 10000
     case 'em':
     case 'rem':
       // 以 16px 为基准字号折算
-      return Math.round(数值 * 16 * 0.75 * 10) / 10
+      return Math.round(数值 * 16 * 0.75 * 10000) / 10000
     case 'px':
     default:
-      return Math.round(数值 * 0.75 * 10) / 10
+      return Math.round(数值 * 0.75 * 10000) / 10000
   }
 }
 
@@ -301,7 +313,7 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
 
   const 新格式: 格式状态 = {
     加粗:
-      显式字重 ?? (父格式.加粗 || 标签 === 'B' || 标签 === 'STRONG'),
+      显式字重 ?? (父格式.加粗 || 标签 === 'B' || 标签 === 'STRONG' || 标签 in 标题级别 || 标签 === 'TH'),
     倾斜: 显式字形 ?? (父格式.倾斜 || 标签 === 'I' || 标签 === 'EM'),
     下划线: 明确无装饰 ? false : 父格式.下划线 || 标签 === 'U' || 装饰.includes('underline'),
     删除线:
@@ -313,8 +325,9 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
       父格式.颜色,
     底纹: 颜色转十六进制(样式.backgroundColor) ?? 父格式.底纹,
     字号:
-      长度转磅(样式.fontSize) ??
+      读取字体尺寸(样式.fontSize, 父格式.字号) ??
       (标签 === 'FONT' ? 字号档位磅值[元素.getAttribute('size') ?? ''] : undefined) ??
+      (标签 in 标题级别 ? (父格式.字号 ?? 10.5) * [0, 2, 1.5, 1.17, 1, 0.83, 0.67][标题级别[标签]] : undefined) ??
       父格式.字号,
     字体: 规整字体(样式.fontFamily) ?? 规整字体(元素.getAttribute('face') ?? undefined) ?? 父格式.字体,
     字间距: 读取字间距(样式.letterSpacing) ?? 父格式.字间距,
@@ -323,6 +336,11 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
         : 样式.verticalAlign === 'sub' || 标签 === 'SUB' ? '下标' : 父格式.基线,
   }
   return 新格式
+}
+
+function 读取字体尺寸(值: string, 父字号 = 10.5): number | undefined {
+  const 相对 = 值.trim().match(/^(\d+(?:\.\d+)?)(em|%)$/)
+  return 相对 ? Number(相对[1]) * 父字号 / (相对[2] === '%' ? 100 : 1) : 长度转磅(值)
 }
 
 /** 把格式状态与文本合成一个片段 */
@@ -492,12 +510,24 @@ function 解析表格(表: HTMLTableElement, 未覆盖: Set<string>): 表格段�
           ...(跨行 > 1 ? { 跨行 } : {}),
           文字: 收集片段(元素, 单元格式, 未覆盖),
           段落: 单元上下文.段落.filter((段): 段 is 文本段落 => 段.类型 === '段落'),
+          宽度: 长度转磅(元素.style.width),
+          内边距: { 上: 长度转磅(元素.style.paddingTop) ?? 0, 右: 长度转磅(元素.style.paddingRight) ?? 0,
+            下: 长度转磅(元素.style.paddingBottom) ?? 0, 左: 长度转磅(元素.style.paddingLeft) ?? 0 },
+          边框: Object.fromEntries(['top', 'right', 'bottom', 'left'].map(side => [side, {
+            样式: 元素.style.getPropertyValue(`border-${side}-style`) || 'none',
+            宽: 长度转磅(元素.style.getPropertyValue(`border-${side}-width`)) ?? 0,
+            颜色: 颜色转十六进制(元素.style.getPropertyValue(`border-${side}-color`)),
+          }])),
+          底纹: 颜色转十六进制(元素.style.backgroundColor),
+          垂直对齐: 元素.style.verticalAlign || undefined,
         }
       })
     )
   })
 
-  return 行.length > 0 ? { 类型: '表格', 行 } : null
+  return 行.length > 0 ? { 类型: '表格', 行, 宽度: 长度转磅(表.style.width),
+    ...(表.style.width.endsWith('%') ? { 宽度百分比: Number.parseFloat(表.style.width) } : {}),
+    边框合并: 表.style.borderCollapse === 'collapse', 单元间距: 长度转磅(表.style.borderSpacing.split(' ')[0]) } : null
 }
 
 /** 显式包裹空格的行内标签：其中的空格是真实内容，不当作缩进空白丢弃 */
@@ -621,6 +651,7 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     const 段 = 取当前段落(上下文, 级别, 对齐, 列表)
     const 子格式 = 叠加格式(节点, 格式)
     Object.assign(段, 读取段落排版(节点, 子格式.字号, 上下文.未覆盖))
+    段.标记 = 建片段('', 子格式)
 
     节点.childNodes.forEach((子) => {
       // 块级元素内若再嵌套块级元素，由递归自行结算
@@ -645,9 +676,10 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
  * 把编辑区 HTML 解析为文档模型。
  * @param 正文Html - 编辑区的 innerHTML
  */
-export function 解析文档(正文Html: string): 文档模型 {
+export function 解析文档(正文Html: string, 部分: '正文' | '页眉' | '页脚' = '正文', 设置?: 文字页面设置): 文档模型 {
   const 容器 = document.createElement('div')
   容器.innerHTML = 正文Html
+  固定文档显示格式(容器, 部分, 设置)
 
   const 上下文: 解析上下文 = { 段落: [], 未覆盖: new Set<string>(), 当前: null }
   if (容器.querySelector('.wps-chart')) 上下文.未覆盖.add('图表')
@@ -669,7 +701,8 @@ export function 解析文档(正文Html: string): 文档模型 {
       上下文.未覆盖.add('图形或文本框布局')
     }
   }
-  容器.childNodes.forEach((子) => 遍历节点(子, 初始格式, 上下文))
+  const 根格式 = 叠加格式(容器, 初始格式)
+  容器.childNodes.forEach((子) => 遍历节点(子, 根格式, 上下文))
 
   // 空文档也要给出一个空段落，否则生成的文件结构非法
   if (上下文.段落.length === 0) {

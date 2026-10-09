@@ -305,9 +305,10 @@ describe('格式保真：font 标签与 CSS 尺寸关键字', () => {
   })
 
   it('CSS 绝对尺寸关键字映射为磅值', () => {
-    expect(长度转磅('x-large')).toBe(24)
-    expect(长度转磅('large')).toBe(18)
-    expect(长度转磅('xx-large')).toBe(36)
+    expect(长度转磅('x-large')).toBe(18)
+    expect(长度转磅('large')).toBe(13.5)
+    expect(长度转磅('xx-large')).toBe(24)
+    expect(长度转磅('xxx-large')).toBe(36)
   })
 
   it('内联样式 span 的颜色字号在模型中保留', () => {
