@@ -116,7 +116,7 @@ export interface AppState {
   activeDocumentId: string | null
   setActiveDocumentId: (标识: string | null) => void
   updateEditorHtml: (标识: string, html: string) => void
-  更新文字页面设置: (标识: string, 设置: 文字页面设置) => void
+  更新文字页面设置: (标识: string, 设置: 文字页面设置 | undefined) => void
   markDocumentSaved: (标识: string, html: string, 模型快照?: string, 文字保存快照?: { 页面设置?: 文字页面设置 }) => void
   文档路径: Record<string, string | null>
   set文档路径: (标识: string, 路径: string | null) => void
@@ -791,7 +791,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     setDocuments((当前) => 当前.map((项) => (项.id === 标识 ? { ...项, html } : 项)))
   }
 
-  const 更新文字页面设置 = (标识: string, 设置: 文字页面设置) => {
+  const 更新文字页面设置 = (标识: string, 设置: 文字页面设置 | undefined) => {
     setDocuments((当前) => 当前.map((项) => 项.id === 标识 && (项.type === 'word' || 项.type === undefined)
       ? { ...项, 页面设置: 设置 } : 项))
   }

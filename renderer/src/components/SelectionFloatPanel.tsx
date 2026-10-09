@@ -32,6 +32,7 @@ export interface 浮窗位置 {
   在上方: boolean
   /** 保留原选区，渲染后按面板实际尺寸重新定位。 */
   锚点?: 选区矩形
+  上边界?: number
 }
 
 const 面板宽度估算 = 360
@@ -40,23 +41,35 @@ const 与选区间距 = 8
 const 视口留白 = 12
 
 /** 依据选区矩形算出面板位置：优先放在选区上方，空间不足改放下方，并水平居中且不出屏 */
-export function 计算浮窗位置(选区: 选区矩形, 视口: { 宽: number; 高: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
+export function 计算浮窗位置(选区: 选区矩形, 视口: { 宽: number; 高: number; 上边界?: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
   if (!(选区.width > 0) && !(选区.height > 0)) return null
   const 期望左 = 选区.left + 选区.width / 2 - 面板尺寸.宽 / 2
   const 最大左 = Math.max(视口留白, 视口.宽 - 面板尺寸.宽 - 视口留白)
   const x = Math.min(最大左, Math.max(视口留白, 期望左))
   const 上方 = 选区.top - 面板尺寸.高 - 与选区间距
-  if (上方 >= 视口留白) return { x, y: 上方, 在上方: true, 锚点: 选区 }
+  const 最小上 = Math.max(视口留白, 视口.上边界 ?? 0)
+  const 边界 = 视口.上边界 === undefined ? {} : { 上边界: 视口.上边界 }
+  if (上方 >= 最小上) return { x, y: 上方, 在上方: true, 锚点: 选区, ...边界 }
   const 下方 = 选区.bottom + 与选区间距
-  const 最大上 = Math.max(视口留白, 视口.高 - 面板尺寸.高 - 视口留白)
-  return { x, y: Math.max(视口留白, Math.min(最大上, 下方)), 在上方: false, 锚点: 选区 }
+  const 最大上 = Math.max(最小上, 视口.高 - 面板尺寸.高 - 视口留白)
+  return { x, y: Math.max(最小上, Math.min(最大上, 下方)), 在上方: false, 锚点: 选区, ...边界 }
+}
+
+function 编辑区上边界(元素: HTMLElement): number | undefined {
+  for (let 父 = 元素.parentElement; 父; 父 = 父.parentElement) {
+    if (/auto|scroll/.test(getComputedStyle(父).overflowY || getComputedStyle(父).overflow)) {
+      const 矩形 = 父.getBoundingClientRect()
+      if (矩形.height > 0) return Math.max(0, 矩形.top + 与选区间距)
+    }
+  }
+  return undefined
 }
 
 /** 表格、演示、PDF 这类没有 DOM 选区的模块：以锚点元素的矩形定位浮窗 */
 export function 从元素计算浮窗位置(元素: HTMLElement | null, 视口: { 宽: number; 高: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
   if (!元素) return null
   const 矩形 = 元素.getBoundingClientRect()
-  return 计算浮窗位置({ left: 矩形.left, top: 矩形.top, right: 矩形.right, bottom: 矩形.bottom, width: 矩形.width, height: 矩形.height }, 视口, 面板尺寸)
+  return 计算浮窗位置({ left: 矩形.left, top: 矩形.top, right: 矩形.right, bottom: 矩形.bottom, width: 矩形.width, height: 矩形.height }, { ...视口, 上边界: 编辑区上边界(元素) }, 面板尺寸)
 }
 
 /** 取当前选区矩形；没有有效选区或环境不提供矩形时返回 null */
@@ -87,7 +100,21 @@ interface 浮窗属性 {
 /** 只负责呈现：不抢焦点（mousedown 阻止默认），Esc 与点击外部由调用方决定 */
 export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }: 浮窗属性) => {
   const 面板引用 = useRef<HTMLDivElement>(null)
+  const 关闭引用 = useRef(on关闭)
+  关闭引用.current = on关闭
   const [实测位置, set实测位置] = useState<浮窗位置 | null>(null)
+  useEffect(() => {
+    if (!打开) return
+    const 外部交互 = (事件: Event) => {
+      if (事件.target instanceof Node && !面板引用.current?.contains(事件.target)) 关闭引用.current()
+    }
+    document.addEventListener('mousedown', 外部交互, true)
+    document.addEventListener('focusin', 外部交互, true)
+    return () => {
+      document.removeEventListener('mousedown', 外部交互, true)
+      document.removeEventListener('focusin', 外部交互, true)
+    }
+  }, [打开])
   useLayoutEffect(() => {
     if (!打开 || !位置 || !按钮.length) return
     const 面板 = 面板引用.current
@@ -97,7 +124,7 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
       if (!矩形.width || !矩形.height) return
       const 视口 = { 宽: document.documentElement.clientWidth || window.innerWidth, 高: document.documentElement.clientHeight || window.innerHeight }
       const 新位置 = 位置.锚点
-        ? 计算浮窗位置(位置.锚点, 视口, { 宽: 矩形.width, 高: 矩形.height })
+        ? 计算浮窗位置(位置.锚点, { ...视口, 上边界: 位置.上边界 }, { 宽: 矩形.width, 高: 矩形.height })
         : { ...位置, x: Math.max(视口留白, Math.min(位置.x, 视口.宽 - 矩形.width - 视口留白)), y: Math.max(视口留白, Math.min(位置.y, 视口.高 - 矩形.height - 视口留白)) }
       set实测位置(旧 => 旧?.x === 新位置?.x && 旧?.y === 新位置?.y && 旧?.在上方 === 新位置?.在上方 ? 旧 : 新位置)
     }
@@ -119,7 +146,7 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
     <div
       ref={面板引用}
       className={`wps-float-panel${显示位置.在上方 ? '' : ' wps-float-panel--below'}`}
-      style={{ left: 显示位置.x, top: 显示位置.y }}
+      style={{ left: 显示位置.x, top: 显示位置.y, ...(显示位置.上边界 === undefined ? {} : { maxHeight: `max(46px, calc(100vh - ${显示位置.上边界 + 12}px))` }) }}
       role="toolbar"
       aria-label={名称}
       // 阻止默认不改变选区，用户点完面板还能继续操作选中的内容
@@ -173,6 +200,7 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
   按钮引用.current = 取按钮
   const 关闭引用 = useRef(on关闭)
   关闭引用.current = on关闭
+  const 暂停显示 = useRef(false)
 
   useEffect(() => {
     const 关闭 = () => {
@@ -181,18 +209,21 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       关闭引用.current?.()
     }
     const 同步 = () => {
+      if (暂停显示.current) return
       const 选择 = window.getSelection()
       const 矩形 = 读取选区矩形(选择)
       if (矩形 === null) { 关闭(); return }
       // 选区在容器之外（例如助手面板）时不出浮窗
       const 节点 = 容器?.current
-      if (节点 && 选择 && 选择.anchorNode && !节点.contains(选择.anchorNode)) { 关闭(); return }
+      if (节点 && 选择 && (!节点.contains(选择.anchorNode) || !节点.contains(选择.getRangeAt(0).endContainer))) { 关闭(); return }
       const 新按钮 = 按钮引用.current()
       if (新按钮.length === 0) { 关闭(); return }
       const 面板 = 节点
         ? { 宽: Math.min(面板宽度估算, Math.max(160, 新按钮.length * 46 + 48)), 高: 面板高度估算 }
         : { 宽: 面板宽度估算, 高: 面板高度估算 }
-      const 新位置 = 计算浮窗位置(矩形, { 宽: window.innerWidth, 高: window.innerHeight }, 面板)
+      const 上边界 = 节点 ? 编辑区上边界(节点) : undefined
+      if (矩形.bottom <= (上边界 ?? 0) || 矩形.top >= window.innerHeight) { 关闭(); return }
+      const 新位置 = 计算浮窗位置(矩形, { 宽: window.innerWidth, 高: window.innerHeight, 上边界 }, 面板)
       if (新位置 === null) { 关闭(); return }
       set按钮(新按钮)
       set位置(新位置)
@@ -203,25 +234,46 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       if (事件.target instanceof Element && 事件.target.closest('.wps-float-panel')) return
       关闭()
     }
+    const 指针按下 = (事件: MouseEvent) => {
+      const 目标 = 事件.target
+      if (!(目标 instanceof Node)) return
+      if (目标 instanceof Element && 目标.closest('.wps-float-panel')) return
+      const 编辑区 = 容器?.current
+      暂停显示.current = !!编辑区 && !编辑区.contains(目标)
+      if (暂停显示.current) 关闭()
+    }
+    const 指针松开 = (事件: MouseEvent) => {
+      if (容器?.current && 事件.target instanceof Node && !容器.current.contains(事件.target)) return
+      暂停显示.current = false
+      同步()
+    }
+    const 按键松开 = (事件: KeyboardEvent) => {
+      if (事件.key === 'Escape') return
+      if (容器?.current && 事件.target instanceof Node && !容器.current.contains(事件.target)) return
+      if (事件.shiftKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(事件.key)) 暂停显示.current = false
+      同步()
+    }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 关闭() }
     document.addEventListener('selectionchange', 同步)
-    document.addEventListener('mouseup', 同步)
-    document.addEventListener('keyup', 同步)
+    document.addEventListener('mousedown', 指针按下, true)
+    document.addEventListener('mouseup', 指针松开)
+    document.addEventListener('keyup', 按键松开)
     // 滚动会改变选区位置，先收起避免面板与内容错位
     window.addEventListener('scroll', 收起, true)
     window.addEventListener('resize', 收起)
     document.addEventListener('keydown', 键盘)
     return () => {
       document.removeEventListener('selectionchange', 同步)
-      document.removeEventListener('mouseup', 同步)
-      document.removeEventListener('keyup', 同步)
+      document.removeEventListener('mousedown', 指针按下, true)
+      document.removeEventListener('mouseup', 指针松开)
+      document.removeEventListener('keyup', 按键松开)
       window.removeEventListener('scroll', 收起, true)
       window.removeEventListener('resize', 收起)
       document.removeEventListener('keydown', 键盘)
     }
   }, [容器])
 
-  return { 打开, 位置, 按钮, 关闭: () => { set打开(false); set位置(null); 关闭引用.current?.() } }
+  return { 打开, 位置, 按钮, 关闭: () => { 暂停显示.current = true; set打开(false); set位置(null); 关闭引用.current?.() } }
 }
 
 export default SelectionFloatPanel

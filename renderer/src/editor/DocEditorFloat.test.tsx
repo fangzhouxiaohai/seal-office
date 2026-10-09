@@ -61,6 +61,21 @@ const 选中正文 = (容器: HTMLElement, 文本: string) => {
 }
 
 describe('文字编辑器选区浮窗', () => {
+  it('选中正文后打开字体菜单，鼠标松开和选区更新不能重开浮窗遮挡菜单', async () => {
+    const { container } = 渲染带文档的编辑器()
+    await userEvent.click(screen.getByRole('button', { name: '打开浮窗文档' }))
+    选中正文(container, '浮窗测试')
+    await screen.findByRole('toolbar', { name: '选中内容操作' })
+    await userEvent.click(screen.getByRole('button', { name: /^字体$/ }))
+    await screen.findByRole('menuitem', { name: 'Arial' })
+    fireEvent(document, new Event('selectionchange'))
+    expect(screen.queryByRole('toolbar', { name: '选中内容操作' })).toBeNull()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Arial' }))
+    expect(格式化调用).toContainEqual(['fontName', 'Arial'])
+    expect(window.getSelection()?.toString()).toBe('浮窗测试')
+    选中正文(container, '正文')
+    expect(await screen.findByRole('toolbar', { name: '选中内容操作' })).toBeInTheDocument()
+  })
   it('选中内容后浮出面板，未选中时不出现', async () => {
     const { container } = 渲染带文档的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开浮窗文档' }))

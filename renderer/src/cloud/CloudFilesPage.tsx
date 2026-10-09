@@ -1,3 +1,4 @@
+import FileUploadButton from '../components/FileUploadButton'
 import {useEffect,useRef,useState} from 'react'
 import {App,Button,Input,Modal,Select,Tag} from 'antd'
 import {cloudCall,useCloud} from './CloudProvider'
@@ -11,12 +12,22 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
   const load=async()=>{const key=context.current;try{const items=await cloudCall('list'),queue=await cloudCall('pending');if(key!==context.current)return;setNodes(items);setPending(queue);setError('');await cloud.refresh()}catch(e){if(key===context.current)setError(e instanceof Error?e.message:'读取失败')}}
   useEffect(()=>{setNodes([]);setPending([]);setVersions(null);setParent(null);if(cloud.state.account?.enabled&&cloud.state.unlocked)void load()},[cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
   const run=async(task:()=>Promise<any>)=>{setBusy(true);try{await task();await load()}catch(e){modal.error({title:'云文件操作失败',content:e instanceof Error?e.message:'操作失败'})}finally{setBusy(false)}}
-  const nameDialog=(title:string,initial:string,task:(name:string)=>Promise<any>)=>{let name=initial;modal.confirm({title,content:<Input aria-label={title} defaultValue={initial} maxLength={120} onChange={e=>name=e.target.value}/>,onOk:()=>{if(!name.trim())return Promise.reject(new Error('名称不能为空'));return run(()=>task(name.trim()))}})}
+  const nameDialog=(title:string,initial:string,task:(name:string)=>Promise<any>)=>{
+    let name=initial,submitting=false
+    const dialog=modal.confirm({title,content:<Input aria-label={title} defaultValue={initial} maxLength={120} onChange={e=>name=e.target.value}/>,onOk:(close:()=>void)=>{
+      if(submitting)return
+      if(!name.trim()){message.warning('名称不能为空，请输入后继续');return}
+      submitting=true;setBusy(true);dialog.update({okButtonProps:{loading:true},cancelButtonProps:{disabled:true}})
+      void (async()=>{try{await task(name.trim());await load();close()}
+        catch(e){message.error(e instanceof Error?e.message:'操作失败，请重试')}
+        finally{submitting=false;setBusy(false);dialog.update({okButtonProps:{loading:false},cancelButtonProps:{disabled:false}})}})()
+    }})
+  }
   const download=(node:Node,open=false,version?:string)=>run(async()=>{const r=await cloudCall('download',{id:node.id,version});if(open&&r.path){const opened=await 通过路径打开文件(r.path,message,modal,(type,content,path,warnings,page,fingerprint)=>store.createDoc(type,content,{路径:path,警告:warnings,页面设置:page,文件指纹:fingerprint}));if(opened)store.refreshRecents()}else if(!r.cancelled)message.success('文件已下载')})
   if(!cloud.state.account?.enabled||!cloud.state.unlocked)return <div className="seal-cloud-empty"><h1>{trash?'云空间回收站':'我的云空间'}</h1><p>开通加密云空间后管理文件与目录，每账号 300 MB。</p><Button type="primary" onClick={cloud.configure}>{cloud.state.account?.enabled?'解锁云空间':'登录并开通云空间'}</Button></div>
   const shown=nodes.filter(n=>Boolean(n.deleted)===trash&&(search?n.meta.name?.toLowerCase().includes(search.toLowerCase()):n.parent===parent))
   return <section className="seal-cloud-page"><header><h1>{trash?'云空间回收站':'我的云空间'}</h1><span>{((cloud.state.account.used||0)/1000000).toFixed(2)} / 300 MB</span></header>
-    <div className="seal-cloud-actions"><Button loading={busy} onClick={()=>void load()}>刷新</Button><Button disabled={!parent} onClick={()=>setParent(nodes.find(n=>n.id===parent)?.parent||null)}>上级目录</Button><Button onClick={()=>setParent(null)}>根目录</Button>{!trash?<><Button onClick={()=>nameDialog('新建目录','',name=>cloudCall('folder',{name,parent}))}>新建目录</Button><label className="ant-btn"><input type="file" multiple hidden onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value='';void run(async()=>{for(const file of files)await cloudCall('save',{linkId:crypto.randomUUID(),name:file.name,data:await readUpload(file),parent});message.success('文件已加密处理，请检查同步状态')})}}/>上传文件</label></>:null}<Input.Search aria-label="搜索云文件" placeholder="搜索文件名" style={{maxWidth:260}} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+    <div className="seal-cloud-actions"><Button loading={busy} onClick={()=>void load()}>刷新</Button><Button disabled={!parent} onClick={()=>setParent(nodes.find(n=>n.id===parent)?.parent||null)}>上级目录</Button><Button onClick={()=>setParent(null)}>根目录</Button>{!trash?<><Button onClick={()=>nameDialog('新建目录','',name=>cloudCall('folder',{name,parent}))}>新建目录</Button><FileUploadButton disabled={busy} multiple onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value='';void run(async()=>{for(const file of files)await cloudCall('save',{linkId:crypto.randomUUID(),name:file.name,data:await readUpload(file),parent});message.success('文件已加密处理，请检查同步状态')})}}>上传文件</FileUploadButton></>:null}<Input.Search enterButton="搜索" aria-label="搜索云文件" placeholder="搜索文件名" style={{maxWidth:260}} value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {error?<p className="seal-cloud-error">{error}</p>:null}
     {pending.length?<div className="seal-cloud-card"><h2>待同步文件（已在本机加密保留）</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>重试同步</Button>{pending.map(p=><p key={p.id}>{p.name} · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>导出本机副本</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>保留为冲突副本</Button>:null}<Button danger onClick={()=>modal.confirm({title:'清除这条待同步记录？',content:'此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。',onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>清除记录</Button></p>)}</div>:null}
     <p>当前目录：{parent?nodes.find(n=>n.id===parent)?.meta.name:'根目录'} · 回收站保留 30 天</p>

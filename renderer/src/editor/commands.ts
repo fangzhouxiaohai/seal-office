@@ -17,7 +17,7 @@ import {
   type 图表类型,
 } from './graphics'
 import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 } from './citation'
-import { 解析字号, 磅值到档位 } from './fontOptions'
+import { 解析字号, 字号列表 } from './fontOptions'
 import { 解析文档, type 文档模型, type 文字页面设置 } from '../office/docModel'
 import { 桥接 } from '../ipc/bridge'
 import { 基准文件名, 记录最近文档, 读取本地文件内容, type 打开类型 } from '../fileOpen'
@@ -229,29 +229,29 @@ const 字体命令: EditorCommand[] = [
       return
     }
     上下文.history.record({ html: 上下文.读取内容(), selection: null })
-    上下文.执行格式化('fontSize', 磅值到档位(解析字号(参数)))
+    上下文.执行格式化('fontSizePt', String(解析字号(参数)))
     上下文.refresh()
   }),
   生成回调命令('font.grow', '增大字号', (上下文) => {
-    const 当前档位 = Number.parseInt(上下文.查询格式('fontSize'), 10)
-    const 基准 = Number.isFinite(当前档位) && 当前档位 > 0 ? 当前档位 : 3
-    if (基准 >= 7) {
+    const 当前 = Number.parseFloat(上下文.查询格式('fontSizePt')) || 10.5
+    const 下一个 = [...new Set(字号列表.map(解析字号))].sort((a, b) => a - b).find(值 => 值 > 当前 + 0.01)
+    if (下一个 === undefined) {
       上下文.notify('字号已达上限')
       return
     }
     上下文.history.record({ html: 上下文.读取内容(), selection: null })
-    上下文.执行格式化('fontSize', String(基准 + 1))
+    上下文.执行格式化('fontSizePt', String(下一个))
     上下文.refresh()
   }),
   生成回调命令('font.shrink', '减小字号', (上下文) => {
-    const 当前档位 = Number.parseInt(上下文.查询格式('fontSize'), 10)
-    const 基准 = Number.isFinite(当前档位) && 当前档位 > 0 ? 当前档位 : 3
-    if (基准 <= 1) {
+    const 当前 = Number.parseFloat(上下文.查询格式('fontSizePt')) || 10.5
+    const 下一个 = [...new Set(字号列表.map(解析字号))].sort((a, b) => b - a).find(值 => 值 < 当前 - 0.01)
+    if (下一个 === undefined) {
       上下文.notify('字号已达下限')
       return
     }
     上下文.history.record({ html: 上下文.读取内容(), selection: null })
-    上下文.执行格式化('fontSize', String(基准 - 1))
+    上下文.执行格式化('fontSizePt', String(下一个))
     上下文.refresh()
   }),
   生成格式化命令('font.highlight', '突出显示', 'hiliteColor'),

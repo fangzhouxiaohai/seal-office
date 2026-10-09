@@ -8,14 +8,14 @@
 
 ## Windows 下载
 
-当前预发布版本：**1.9.6**，适用于 Windows x64。本版修复四类文件首次通过快捷菜单调用 AI 时误报未配置、首条消息误入队列的问题；执行过程按操作逐行显示，复杂任务通过工具创建计划并更新步骤状态，计划默认折叠。保留 1.9.5 的 DOCX 保存重开格式修复。云端能力仍按预发布状态提供。
+当前预发布版本：**1.9.7**，适用于 Windows x64。本版修复格式操作跳到文档顶部、选区浮窗遮挡功能区下拉菜单、字号不精确及页眉页脚格式作用区域错误；改进撤销重做、受保护文档操作状态、上传按钮键盘操作、搜索与翻页名称，以及云目录校验和失败重试。全应用页面覆盖深浅主题、不同窗口尺寸与云空间状态检查，后台完成登录和审核交互检查。保留前版的 DOCX 保存重开、AI 首次调用与消息队列修复。云端能力仍按预发布状态提供。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.6.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.6/SealOffice1.9.6.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.6.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.6/SealOfficeSetup1.9.6.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.6.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.6/SealOffice1.9.6.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.6 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.6)及[修复与验收](docs/v1.9.6-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.7.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOffice1.9.7.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.7.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOfficeSetup1.9.7.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.7.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.7/SealOffice1.9.7.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.7 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.7)及[修复与验收](docs/v1.9.7-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 

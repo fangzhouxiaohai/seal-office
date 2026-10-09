@@ -67,6 +67,7 @@ interface Props {
   onHeaderChange?: (html: string) => void
   onFooterChange?: (html: string) => void
   onChange?: (html: string) => void
+  onBeforeChange?: (元素: HTMLDivElement) => void
   onReady?: (元素: HTMLDivElement) => void
   /** 右键点击回调，返回坐标 */
   onContextMenu?: (x: number, y: number) => void
@@ -94,6 +95,7 @@ const EditorCanvas = ({
   onHeaderChange,
   onFooterChange,
   onChange,
+  onBeforeChange,
   onReady,
   onContextMenu,
 }: Props) => {
@@ -129,6 +131,7 @@ const EditorCanvas = ({
   const 处理输入 = () => {
     const 元素 = 引用.current
     if (元素 !== null) {
+      onBeforeChange?.(元素)
       const 安全内容 = 净化富文本(元素.innerHTML)
       if (元素.innerHTML !== 安全内容) 元素.innerHTML = 安全内容
       onChange?.(安全内容)
@@ -208,7 +211,7 @@ const EditorCanvas = ({
             contentEditable: editable,
             suppressContentEditableWarning: true,
             'aria-label': '页眉',
-            onInput: (event: React.FormEvent<HTMLDivElement>) => onHeaderChange?.(净化富文本(event.currentTarget.innerHTML)),
+            onInput: (event: React.FormEvent<HTMLDivElement>) => { onBeforeChange?.(event.currentTarget); onHeaderChange?.(净化富文本(event.currentTarget.innerHTML)) },
           }) : null,
       React.createElement('div', {
         ref: 引用,
@@ -228,7 +231,7 @@ const EditorCanvas = ({
             contentEditable: editable,
             suppressContentEditableWarning: true,
             'aria-label': '页脚',
-            onInput: (event: React.FormEvent<HTMLDivElement>) => onFooterChange?.(净化富文本(event.currentTarget.innerHTML)),
+            onInput: (event: React.FormEvent<HTMLDivElement>) => { onBeforeChange?.(event.currentTarget); onFooterChange?.(净化富文本(event.currentTarget.innerHTML)) },
           }) : null
     )
   )

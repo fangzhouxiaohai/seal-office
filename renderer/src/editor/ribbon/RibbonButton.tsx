@@ -72,6 +72,7 @@ const RibbonButton = ({
         menu: {
           items: 规范化后.map((项) => ({ key: 项.value, label: 项.label })),
           onClick: ({ key }: { key: string }) => onSelect && onSelect(key),
+          style: { maxHeight: 'min(60vh, 420px)', overflowY: 'auto' },
         },
         trigger: ['click'],
         disabled,

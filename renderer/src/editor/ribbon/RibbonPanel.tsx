@@ -56,7 +56,7 @@ const RibbonPanel = ({
             active: 获取激活态 ? 获取激活态(项.commandId) : false,
             disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,
             disabledReason: 获取禁用原因?.(项.commandId),
-            currentValue: 项.options !== undefined ? (获取当前值 ? 获取当前值(项.commandId) : 项.currentValue) : undefined,
+            currentValue: 项.options !== undefined ? (获取当前值?.(项.commandId) ?? 项.currentValue) : undefined,
             options: 项.options,
             onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
             onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),

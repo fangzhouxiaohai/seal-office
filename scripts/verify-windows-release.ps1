@@ -4,7 +4,7 @@ $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw | ConvertFrom-Json).version
 $taskRelease = Join-Path $taskRoot "release\v$taskVersion"
 $taskLabel = if ($InstalledExecutable) { 'installed' } elseif ($Portable) { 'portable' } else { 'unpacked' }
-$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "SealOffice $taskVersion.exe" } else { Join-Path $taskRelease 'win-unpacked\SealOffice.exe' }
+$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "SealOffice$taskVersion.exe" } else { Join-Path $taskRelease 'win-unpacked\SealOffice.exe' }
 if ($Portable -and $InstalledExecutable) { throw '便携版与安装目录验收不可同时指定' }
 $taskDirectory = Join-Path 'E:\Temp' ('seal-windows-release-' + [guid]::NewGuid().ToString('N'))
 $taskRegistry = 'Software\SealOfficeIntegrationTests\' + [guid]::NewGuid().ToString()

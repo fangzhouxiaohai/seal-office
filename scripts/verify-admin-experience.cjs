@@ -1,0 +1,28 @@
+// Isolated browser checks of the built admin UI; HTTP responses are controlled.
+// No production login, user data, publication or server setting is changed.
+const {app,BrowserWindow}=require('electron')
+const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict')
+const root=path.resolve(__dirname,'..'),dist=path.join(root,'server/admin/dist'),output=path.resolve(process.argv[2]||path.join(root,'.upgrade-private/admin-experience'))
+app.setPath('userData',path.join(output,'profile'));app.disableHardwareAcceleration()
+app.whenReady().then(async()=>{
+  let win,server;const checks=[],errors=[]
+  try{
+    fs.mkdirSync(output,{recursive:true})
+    server=http.createServer((req,res)=>{const file=path.resolve(dist,'.'+decodeURIComponent(req.url.split('?')[0]==='/'?'/index.html':req.url.split('?')[0]));if(!file.startsWith(dist+path.sep)||!fs.existsSync(file)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.png')?'image/png':'text/html');res.end(fs.readFileSync(file))})
+    await new Promise(r=>server.listen(0,'127.0.0.1',r))
+    win=new BrowserWindow({show:false,width:1440,height:900,webPreferences:{offscreen:true,backgroundThrottling:false,contextIsolation:true,nodeIntegration:false}})
+    win.webContents.on('console-message',(_e,level,message)=>{if(level>=3&&!message.includes('Failed to load resource'))errors.push(message)})
+    await win.loadURL(`http://127.0.0.1:${server.address().port}/`)
+    const js=code=>win.webContents.executeJavaScript(code),settle=()=>js('new Promise(r=>setTimeout(r,450))')
+    await js(`window.calls=[];window.loginAllowed=false;window.fetch=async(url,options={})=>{window.calls.push({url,options});const pub={id:'review-test',kind:'template',title:'验收演示模板',status:'pending',text:'公开资料测试正文'};let data={},status=200;if(url.endsWith('/login')){status=window.loginAllowed?200:401;data=window.loginAllowed?{token:'isolated-test-token'}:{error:'管理员账号或密码不正确'}}else if(url.endsWith('/overview'))data={users:[{id:'test-user',phone:'13800000000',used:100000,enabled:1,autosave:0}],publications:[pub,{...pub,id:'knowledge-test',kind:'knowledge',title:'验收知识资料'}],audit:[{time:Date.now(),user_id:'test-user',action:'测试',detail:'隔离验收记录'}],runtime:{diskFree:10000000000,memory:10000000,pendingUploads:0},quota:300000000};else if(url.includes('/publications/'))data=pub;return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}})};true`)
+    const click=async selector=>{const pos=await js(`(()=>{const el=document.querySelector(${JSON.stringify(selector)});if(!el)throw Error('Missing '+${JSON.stringify(selector)});el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect(),x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2);if(!el.contains(document.elementFromPoint(x,y)))throw Error('Obscured '+${JSON.stringify(selector)});return {x,y}})()`);for(const type of ['mouseMove','mouseDown','mouseUp'])win.webContents.sendInputEvent({type,button:'left',clickCount:1,...pos});await settle()}
+    const button=async text=>{await js(`(()=>{const el=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===${JSON.stringify(text)}&&e.getBoundingClientRect().height>0);if(!el)throw Error('Missing '+${JSON.stringify(text)});el.dataset.testAction='target'})()`);await click('[data-test-action="target"]');await js('document.querySelectorAll("[data-test-action]").forEach(e=>delete e.dataset.testAction)')}
+    for(const width of [1440,960,390]){win.setContentSize(width,900);await settle();assert.ok(await js('document.documentElement.scrollWidth<=innerWidth+1'));fs.writeFileSync(path.join(output,`login-${width}.png`),(await win.webContents.capturePage()).toPNG());checks.push('登录页面 '+width+' 无横向溢出')}
+    win.setContentSize(1440,900);await click('input[type=password]');win.webContents.insertText('test-password');await button('登录管理后台');assert.match(await js('document.body.textContent'),/管理员账号或密码不正确/);checks.push('错误登录显示原因')
+    await js('loginAllowed=true');await button('登录管理后台');assert.match(await js('document.body.textContent'),/运行概览/);checks.push('正确登录加载概览')
+    for(const width of [1440,960,390]){win.setContentSize(width,900);for(let index=0;index<5;index++){await click(`.nav-item:nth-child(${index+1})`);assert.ok(await js('document.documentElement.scrollWidth<=innerWidth+1'));assert.ok(await js('[...document.images].every(i=>i.complete&&i.naturalWidth>0)'));fs.writeFileSync(path.join(output,`page-${index}-${width}.png`),(await win.webContents.capturePage()).toPNG());checks.push('后台栏目 '+index+' / '+width)}}
+    win.setContentSize(1440,900);await click('.nav-item:nth-child(3)');await button('查看资料并审核');assert.match(await js('document.body.textContent'),/公开资料测试正文/);await button('通过并公开');assert.ok(await js('calls.some(c=>c.options.method==="PATCH"&&JSON.parse(c.options.body).status==="approved")'));checks.push('公开资料读取与审核提交')
+    await button('退出登录');assert.equal(await js('sessionStorage.getItem("seal-admin-token")'),null);assert.ok(await js('!!document.querySelector("input[type=password]")'));checks.push('退出清除会话')
+    assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,'admin-report.json'),JSON.stringify({passed:true,cases:checks.length,checks,errors},null,2));console.log(JSON.stringify({passed:true,cases:checks.length,output}));win.destroy();server.close();app.exit(0)
+  }catch(e){fs.writeFileSync(path.join(output,'admin-report.json'),JSON.stringify({passed:false,checks,errors,error:e.message},null,2));console.error(e);win?.destroy();server?.close();app.exit(1)}
+})

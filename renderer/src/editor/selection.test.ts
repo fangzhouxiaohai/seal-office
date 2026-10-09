@@ -1,5 +1,5 @@
 // 选区保存与恢复的测试：覆盖下拉菜单浮层抢焦点导致选区丢失的修复。
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { 保存选区, 恢复选区, 选区在根内, 选区非空, 选区覆盖的段落 } from './selection'
 
 /**
@@ -142,8 +142,9 @@ describe('选区保存与恢复', () => {
     document.body.appendChild(按钮)
     按钮.focus()
     折叠选区()
-
+    const 聚焦 = vi.spyOn(根, 'focus')
     恢复选区(根, 快照)
+    expect(聚焦).toHaveBeenCalledWith({ preventScroll: true })
     expect(document.activeElement).toBe(根)
   })
 })

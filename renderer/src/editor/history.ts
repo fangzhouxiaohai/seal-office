@@ -12,17 +12,21 @@ export interface 保存的选区 {
 
 export interface 快照 {
   html: string
+  页面设置?: unknown
   /** 选区以路径与偏移保存，避免持有活动 Range 导致失效 */
   selection: 保存的选区 | null
 }
 
 export class HistoryStack<T = 快照> {
+  constructor(private readonly 相同?: (a: T, b: T) => boolean) {}
   private 列表: T[] = []
 
   private 指针 = -1
 
   /** 记录新快照；记录后重做分支被清空 */
   record(项: T): void {
+    const 当前 = this.current()
+    if (当前 !== null && this.相同?.(当前, 项)) return
     this.列表 = this.列表.slice(0, this.指针 + 1)
     this.列表.push(项)
     if (this.列表.length > 栈上限) {

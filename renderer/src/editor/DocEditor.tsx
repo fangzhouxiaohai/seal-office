@@ -35,6 +35,8 @@ import { 默认文件缩放, use滚轮缩放, 文字缩放范围 } from './wheel
 import { 构建文字浮窗按钮, 构建颜色菜单组, 构建AI菜单组, 处理颜色菜单命令, 处理AI菜单命令 } from './floatActions'
 import { use选区浮窗 } from '../components/SelectionFloatPanel'
 import SelectionFloatPanel from '../components/SelectionFloatPanel'
+import { 应用精确字号, 规范化字号标记, 读取字号磅值 } from './fontSize'
+import { 中文字号表 } from './fontOptions'
 
 const 默认视图: ViewState = {
   缩放: 默认文件缩放,
@@ -54,6 +56,9 @@ const 默认视图: ViewState = {
   修订模式: false,
   文档保护: false,
 }
+
+const 新文字历史 = () => new HistoryStack((a, b) => a.html === b.html && (b.页面设置 === undefined || JSON.stringify(a.页面设置) === JSON.stringify(b.页面设置)))
+const 修改正文命令 = (标识: string) => /^(font\.|para\.|style\.|insert\.|layout\.|table\.|link\.|comment\.|track\.|merge\.)/.test(标识) || ['clipboard.cut', 'clipboard.paste', 'clipboard.formatPainter', 'edit.undo', 'edit.redo'].includes(标识)
 
 const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距', '页眉Html', '页脚Html'] as const
 
@@ -230,15 +235,26 @@ const DocEditor = () => {
   const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
   /** 下拉浮层打开前的选区快照，供格式化命令恢复选区后再执行 */
   const 选区快照 = useRef<Range | null>(null)
+  const 待输入字号 = useRef<number | null>(null)
+  const 格式编辑区 = useRef<HTMLElement | null>(null)
+  const 格式操作中 = useRef(false)
+  const 页面视图引用 = useRef(视图)
+  const 页面设置引用 = useRef<文字页面设置 | undefined>(undefined)
+  页面视图引用.current = 视图
+  const [选区显示格式, set选区显示格式] = useState({ 字体: '宋体', 字号: '五号', 加粗: false, 斜体: false, 下划线: false, 删除线: false })
   /** 右键菜单打开时的选中文本，供颜色与 AI 菜单项使用（菜单点击会改变焦点） */
   const 右键选区文本 = useRef('')
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+  页面设置引用.current = 当前文档?.页面设置
   const 当前文档标识引用 = useRef(文档标识)
   当前文档标识引用.current = 文档标识
 
   useEffect(() => {
+    格式编辑区.current = null
+    待输入字号.current = null
+    选区快照.current = null
     set视图((当前) => ({ ...当前, 缩放: 默认文件缩放, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
   }, [文档标识])
 
@@ -247,7 +263,7 @@ const DocEditor = () => {
     if (!当前文档 || !文档标识) return
     const 已由编辑器写入 = 内部写入内容.current.get(文档标识)
     if (已由编辑器写入 === 当前文档.html) return
-    const 历史 = 历史表.current.get(文档标识) ?? new HistoryStack()
+    const 历史 = 历史表.current.get(文档标识) ?? 新文字历史()
     if (!历史表.current.has(文档标识)) 历史表.current.set(文档标识, 历史)
     if (输入计时器.current !== null) {
       window.clearTimeout(输入计时器.current)
@@ -314,7 +330,7 @@ const DocEditor = () => {
     if (已有 !== undefined) {
       return 已有
     }
-    const 新栈 = new HistoryStack()
+    const 新栈 = 新文字历史()
     历史表.current.set(文档标识, 新栈)
     return 新栈
   }
@@ -322,11 +338,12 @@ const DocEditor = () => {
   const 刷新 = () => set内容版本((值) => 值 + 1)
 
   const 记录历史 = (): void => {
+    if (输入计时器.current !== null) { window.clearTimeout(输入计时器.current); 输入计时器.current = null }
     const 元素 = 编辑区引用.current
     if (元素 === null) {
       return
     }
-    取历史().record({ html: 元素.innerHTML, selection: null })
+    取历史().record({ html: 元素.innerHTML, selection: null, 页面设置: 页面设置引用.current ?? null })
   }
 
   const 同步内容 = (): void => {
@@ -337,8 +354,54 @@ const DocEditor = () => {
     }
   }
 
+  const 取格式编辑区 = (): HTMLElement | null => {
+    const 正文 = 编辑区引用.current
+    if (!正文) return null
+    const 纸张 = 正文.closest('.wps-editor-canvas__paper')
+    const 范围 = window.getSelection()?.rangeCount ? window.getSelection()!.getRangeAt(0) : null
+    const 区域 = [正文, ...(纸张?.querySelectorAll<HTMLElement>('.wps-editor-canvas__header,.wps-editor-canvas__footer') ?? [])]
+    const 选中区域 = 范围 && 区域.find(x => x.contains(范围.startContainer) && x.contains(范围.endContainer))
+    if (选中区域) 格式编辑区.current = 选中区域
+    return 格式编辑区.current && 区域.includes(格式编辑区.current) ? 格式编辑区.current : 正文
+  }
+
+  const 同步格式区域 = (元素: HTMLElement): void => {
+    if (元素 === 编辑区引用.current) { 同步内容(); return }
+    const 字段 = 元素.classList.contains('wps-editor-canvas__header') ? '页眉Html' : '页脚Html'
+    const 下一个 = { ...页面视图引用.current, [字段]: 元素.innerHTML || undefined }
+    页面视图引用.current = 下一个
+    页面设置引用.current = 提取页面设置(下一个)
+    set视图(下一个)
+    if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+  }
+
+  useEffect(() => {
+    const 更新格式 = () => {
+      const 根 = 取格式编辑区()
+      const 选择 = window.getSelection()
+      if (!根 || !选择?.anchorNode || !根.contains(选择.anchorNode)) return
+      const 磅值 = 待输入字号.current ?? 读取字号磅值(根)
+      const 节点 = 选择.anchorNode instanceof HTMLElement ? 选择.anchorNode : 选择.anchorNode.parentElement
+      const 字体 = 节点 ? getComputedStyle(节点).fontFamily.split(',')[0].replace(/["']/g, '').trim() : '宋体'
+      const 新格式 = { 字体, 字号: 中文字号表.find(x => Math.abs(x.磅值 - 磅值) < 0.02)?.名称 ?? `${Math.round(磅值 * 100) / 100}`,
+        加粗: 安全查询格式('bold'), 斜体: 安全查询格式('italic'), 下划线: 安全查询格式('underline'), 删除线: 安全查询格式('strikeThrough') }
+      set选区显示格式(旧 => JSON.stringify(旧) === JSON.stringify(新格式) ? 旧 : 新格式)
+    }
+    const 重置输入字号 = (事件: Event) => {
+      if (!(事件.target instanceof Node) || !编辑区引用.current?.closest('.wps-editor-canvas__paper')?.contains(事件.target)) return
+      if (事件 instanceof KeyboardEvent && !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown', 'Escape'].includes(事件.key)) return
+      待输入字号.current = null
+    }
+    更新格式()
+    document.addEventListener('selectionchange', 更新格式)
+    document.addEventListener('mousedown', 重置输入字号, true)
+    document.addEventListener('keydown', 重置输入字号, true)
+    return () => { document.removeEventListener('selectionchange', 更新格式); document.removeEventListener('mousedown', 重置输入字号, true); document.removeEventListener('keydown', 重置输入字号, true) }
+  }, [文档标识, 内容版本])
+
   const 执行格式化 = (指令: string, 值?: string): void => {
-    const 元素 = 编辑区引用.current
+    if (视图.文档保护 && !['copy', 'selectAll'].includes(指令)) { message.info('文档已保护，请先解除保护'); return }
+    const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
     }
@@ -346,25 +409,38 @@ const DocEditor = () => {
     // 缺少这一步时，浮层抢焦点已折叠选区，focus() 又把光标重置到起始位置，
     // 导致 foreColor 等命令只影响后续输入而非选中文字。
     if (!恢复选区(元素, 选区快照.current)) {
-      元素.focus()
+      元素.focus({ preventScroll: true })
     }
-    document.execCommand('styleWithCSS', false, 'true')
-    document.execCommand(指令, false, 值)
+    记录历史()
+    格式操作中.current = true
+    try { if (指令 === 'fontSizePt') {
+      const 磅值 = Number(值)
+      if (Number.isFinite(磅值) && 磅值 > 0) 待输入字号.current = 应用精确字号(元素, 磅值) ? null : 磅值
+    } else {
+      document.execCommand('styleWithCSS', false, 'true')
+      document.execCommand(指令, false, 值)
+    } } finally { 格式操作中.current = false }
     // 快照已消费，避免后续命令误用过期选区
     选区快照.current = null
+    同步格式区域(元素)
+    记录历史()
   }
 
   const 插入内容 = (html: string): void => {
-    const 元素 = 编辑区引用.current
+    if (视图.文档保护) { message.info('文档已保护，请先解除保护'); return }
+    const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
     }
-    元素.focus()
+    记录历史()
+    if (!恢复选区(元素, 选区快照.current)) 元素.focus({ preventScroll: true })
+    选区快照.current = null
     // 修订模式下把插入内容标记为修订，便于后续接受或拒绝
     const 实际内容 = 视图.修订模式 ? `<span class="wps-insert">${html}</span>` : html
-    document.execCommand('insertHTML', false, 实际内容)
+    格式操作中.current = true
+    try { document.execCommand('insertHTML', false, 实际内容) } finally { 格式操作中.current = false }
+    同步格式区域(元素)
     记录历史()
-    同步内容()
   }
 
   const 选择图片 = (): void => {
@@ -507,7 +583,7 @@ const DocEditor = () => {
     textAlign?: string
     backgroundColor?: string
   }): void => {
-    const 元素 = 编辑区引用.current
+    const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
     }
@@ -520,12 +596,13 @@ const DocEditor = () => {
       message.info('请先将光标置于段落中')
       return
     }
+    记录历史()
     目标.forEach((块) => {
       if (样式.lineHeight !== undefined) delete 块.dataset.sealLineRule
       Object.assign(块.style, 样式)
     })
+    同步格式区域(元素)
     记录历史()
-    同步内容()
   }
 
   const 应用样式 = (样式名: string): void => {
@@ -611,20 +688,22 @@ const DocEditor = () => {
     斜体: 查询状态('italic'),
     下划线: 查询状态('underline'),
     字体: 查询取值('fontName'),
-    字号: 查询取值('fontSize'),
+    字号: String(读取字号磅值(取格式编辑区()!)),
     颜色: 查询取值('foreColor'),
   })
 
   const 应用选区格式 = (格式: 选区格式): void => {
-    const 元素 = 编辑区引用.current
+    const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
     }
     // 与 执行格式化 同理：优先恢复选区，否则格式刷会作用到光标而非选中文字
     if (!恢复选区(元素, 选区快照.current)) {
-      元素.focus()
+      元素.focus({ preventScroll: true })
     }
     选区快照.current = null
+    格式操作中.current = true
+    try {
     document.execCommand('styleWithCSS', false, 'true')
     if (格式.加粗 !== 查询状态('bold')) {
       document.execCommand('bold')
@@ -639,11 +718,15 @@ const DocEditor = () => {
       document.execCommand('fontName', false, 格式.字体)
     }
     if (格式.字号.length > 0) {
-      document.execCommand('fontSize', false, 格式.字号)
+      const 磅值 = Number(格式.字号)
+      待输入字号.current = 应用精确字号(元素, 磅值) ? null : 磅值
     }
     if (格式.颜色.length > 0) {
       document.execCommand('foreColor', false, 格式.颜色)
     }
+    } finally { 格式操作中.current = false }
+    同步格式区域(元素)
+    记录历史()
   }
 
   const 上下文: CommandContext = {
@@ -659,6 +742,8 @@ const DocEditor = () => {
       const 下一个 = { ...视图, ...部分 }
       if (部分.纸张 !== undefined) 下一个.原始纸张 = undefined
       if (部分.页边距 !== undefined) 下一个.原始页边距 = undefined
+      页面视图引用.current = 下一个
+      if (布局字段.some((字段) => Object.prototype.hasOwnProperty.call(部分, 字段))) 页面设置引用.current = 提取页面设置(下一个)
       set视图(下一个)
       if (文档标识 && 布局字段.some((字段) => Object.prototype.hasOwnProperty.call(部分, 字段))) {
         更新文字页面设置(文档标识, 提取页面设置(下一个))
@@ -667,6 +752,7 @@ const DocEditor = () => {
     },
     执行格式化,
     查询格式: (指令: string) => {
+      if (指令 === 'fontSizePt') return String(待输入字号.current ?? 读取字号磅值(取格式编辑区()!))
       try {
         return String(document.queryCommandValue(指令) ?? '')
       } catch {
@@ -679,6 +765,14 @@ const DocEditor = () => {
         return
       }
       元素.innerHTML = html
+      const 页面快照 = 取历史().current()?.页面设置 as 文字页面设置 | null | undefined
+      if (页面快照 !== undefined) {
+        const 下一个 = { ...页面视图引用.current, ...提取页面设置(默认视图), ...(页面快照 ?? {}) }
+        页面视图引用.current = 下一个
+        页面设置引用.current = 页面快照 ?? undefined
+        set视图(下一个)
+        if (文档标识) 更新文字页面设置(文档标识, 页面快照 ?? undefined)
+      }
       同步内容()
     },
     插入内容,
@@ -759,6 +853,8 @@ const DocEditor = () => {
   }
 
   const 执行命令 = (命令标识: string, 参数?: string): void => {
+    if (视图.文档保护 && 修改正文命令(命令标识)) { message.info('文档已保护，请先解除保护'); return }
+    if (输入计时器.current !== null) 记录历史()
     if (命令标识 === 'file.print') {
       const 正文 = 编辑区引用.current?.innerHTML
       if (!正文) { message.warning('文档为空，无法打印'); return }
@@ -771,8 +867,10 @@ const DocEditor = () => {
       modal.error({ title: '操作失败', content: '该功能未正确加载，请重新打开文档后重试。', okText: '确定' })
       return
     }
+    if (!['edit.undo', 'edit.redo'].includes(命令标识)) 记录历史()
     if (命令标识 === 'file.save' || 命令标识 === 'file.saveAs') 同步内容()
     命令.run(上下文, 参数)
+    if (!['edit.undo', 'edit.redo'].includes(命令标识)) { 记录历史(); 同步内容() }
   }
 
   // 键盘快捷键层：补齐文字编辑快捷键（右键菜单与帮助手册中均已标注）。
@@ -796,15 +894,15 @@ const DocEditor = () => {
         break
       case 'b':
         事件.preventDefault()
-        执行格式化('bold')
+        执行命令('font.bold')
         break
       case 'i':
         事件.preventDefault()
-        执行格式化('italic')
+        执行命令('font.italic')
         break
       case 'u':
         事件.preventDefault()
-        执行格式化('underline')
+        执行命令('font.underline')
         break
       case 'z':
         事件.preventDefault()
@@ -825,19 +923,19 @@ const DocEditor = () => {
         break
       case 'e':
         事件.preventDefault()
-        执行格式化('justifyCenter')
+        执行命令('para.alignCenter')
         break
       case 'l':
         事件.preventDefault()
-        执行格式化('justifyLeft')
+        执行命令('para.alignLeft')
         break
       case 'r':
         事件.preventDefault()
-        执行格式化('justifyRight')
+        执行命令('para.alignRight')
         break
       case 'j':
         事件.preventDefault()
-        执行格式化('justifyFull')
+        执行命令('para.alignJustify')
         break
       case 's':
         事件.preventDefault()
@@ -902,7 +1000,7 @@ const DocEditor = () => {
         下划线: 安全查询格式('underline'),
         删除线: 安全查询格式('strikeThrough'),
       }),
-    }),
+    }).map(项 => ({ ...项, 禁用: 视图.文档保护 && 修改正文命令(项.id) })),
   })
 
   return React.createElement(
@@ -913,12 +1011,20 @@ const DocEditor = () => {
       activeKey: 当前标签,
       缩放: 视图.缩放,
       onCommand: 执行命令,
+      获取禁用态: (标识: string) => 视图.文档保护 && 修改正文命令(标识),
+      获取禁用原因: (标识: string) => 视图.文档保护 && 修改正文命令(标识) ? '文档已保护，请先解除保护' : undefined,
+      获取当前值: (标识: string) => 标识 === 'font.name' ? 选区显示格式.字体 : 标识 === 'font.size' ? 选区显示格式.字号 : undefined,
       // 浮层打开瞬间抓取选区，此时尚未被浮层折叠
       onDropdownOpen: () => {
-        const 元素 = 编辑区引用.current
+        选区浮窗.关闭()
+        const 元素 = 取格式编辑区()
         选区快照.current = 元素 === null ? null : 保存选区(元素)
       },
       获取激活态: (命令标识: string) => {
+        if (命令标识 === 'font.bold') return 选区显示格式.加粗
+        if (命令标识 === 'font.italic') return 选区显示格式.斜体
+        if (命令标识 === 'font.underline') return 选区显示格式.下划线
+        if (命令标识 === 'font.strike') return 选区显示格式.删除线
         if (命令标识 === 'track.enable') {
           return 视图.修订模式
         }
@@ -1084,14 +1190,24 @@ const DocEditor = () => {
         headerHtml: 视图.页眉Html,
         footerHtml: 视图.页脚Html,
         onHeaderChange: (html: string) => {
+          if (格式操作中.current) return
+          记录历史()
           const 下一个 = { ...视图, 页眉Html: html || undefined }
+          页面视图引用.current = 下一个
+          页面设置引用.current = 提取页面设置(下一个)
           set视图(下一个)
           if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+          记录历史()
         },
         onFooterChange: (html: string) => {
+          if (格式操作中.current) return
+          记录历史()
           const 下一个 = { ...视图, 页脚Html: html || undefined }
+          页面视图引用.current = 下一个
+          页面设置引用.current = 提取页面设置(下一个)
           set视图(下一个)
           if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+          记录历史()
         },
         onReady: (元素: HTMLDivElement) => {
           编辑区引用.current = 元素
@@ -1112,6 +1228,9 @@ const DocEditor = () => {
             输入计时器.current = null
           }, 300)
           set内容版本((值) => 值 + 1)
+        },
+        onBeforeChange: (元素: HTMLDivElement) => {
+          if (待输入字号.current !== null) 规范化字号标记(元素, 待输入字号.current)
         },
         onContextMenu: (x: number, y: number) => {
           // 记录选区与选中文本：菜单点击会改变焦点，命令需要据此恢复选区

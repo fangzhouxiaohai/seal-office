@@ -1145,6 +1145,7 @@ const SheetEditor = () => {
       activeKey: 当前标签,
       tabs: 表格标签,
       onCommand: 执行命令,
+      onDropdownOpen: () => set浮窗位置(null),
       获取激活态: 取激活态,
       获取当前值: (标识: string) => {
         if (标识 === 'layout.margin') return 工作表.页面设置?.页边距 ?? '常规'

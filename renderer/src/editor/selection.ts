@@ -58,7 +58,7 @@ export function 恢复选区(根: HTMLElement, 快照: Range | null): boolean {
     return false
   }
   try {
-    根.focus()
+    根.focus({ preventScroll: true })
     选区.removeAllRanges()
     选区.addRange(快照)
     return true
