@@ -73,6 +73,9 @@ def main():
         return response.json()
 
     body = files[-1].read_text(encoding='utf-8-sig')
+    # Release notes render outside docs/, so repository-relative screenshot
+    # links need an immutable tag URL. The saved document stays relative.
+    body = body.replace('](screenshots/', f'](https://raw.githubusercontent.com/{REPO}/{tag}/docs/screenshots/')
     body += f'\n\n源码和 `{tag}` 标签已同步 GitHub 与 GitCode，安装包文件名不含空格。\n'
     releases = call('GET', f'{API}/releases', params={'per_page': 100})
     release = next((r for r in releases if r['tag_name'] == tag), None)
