@@ -31,7 +31,7 @@ app.whenReady().then(async () => {
       window.start=(theme)=>{
         flushSync(()=>mount.render(null));应用主题(theme);window.copied=[];window.calls=[];
         Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>window.copied.push(text)}});
-        window.electronAPI={backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),ai:{
+        window.electronAPI={backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),backupClear:async()=>({成功:true}),ai:{
           getConfig:async()=>({成功:true,数据:{名称:'测试模型',地址:'https://example.com/chat',模型:'test',已配置密钥:true,思考强度:'medium',参数模式:'three',上下文令牌:131072}}),
           getSession:async()=>({成功:true,数据:{摘要:'',计划:[],压缩次数:0,显示消息:replies.map(内容=>({角色:'assistant',内容}))}}),
           onStream:fn=>{listener=fn;return()=>{}},onToolCall:()=>()=>{},clearSession:async()=>({成功:true}),
@@ -110,6 +110,13 @@ app.whenReady().then(async () => {
       }
       if (width === 1366) {
         await js(`(()=>{const e=document.querySelector('textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,'请输出示例代码');e.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+        await wait('!document.querySelector(".assistant-send").disabled')
+        await js('new Promise(r=>setTimeout(r,300))')
+        await frame()
+        assert.equal(await js('getComputedStyle(document.querySelector(".assistant-send > span:last-child")).color'), await js('getComputedStyle(document.querySelector(".assistant-send")).color'), 'Send text inherits the primary button color')
+        assert.equal(await js('getComputedStyle(document.querySelector(".assistant-send > span:last-child")).color'), 'rgb(255, 255, 255)', 'Enabled send button has readable light text')
+        const composeRect = await js(`(()=>{const r=document.querySelector('.ant-drawer-content-wrapper').getBoundingClientRect();return{x:Math.round(r.x),y:0,width:Math.round(r.width),height:innerHeight}})()`)
+        fs.writeFileSync(path.join(output, `composer-${theme === '浅色' ? 'light' : 'dark'}.png`), (await win.webContents.capturePage(composeRect)).toPNG())
         await click('.assistant-send'); await wait('window.calls.length===1')
         assert.equal(await js('!!document.querySelector(".assistant-queue")'), false)
         for (const fragment of ['```py', 'thon\n', 'print("海', '豹")\n', '```']) { await js(`reply(${JSON.stringify(fragment)})`); await frame() }
@@ -129,7 +136,8 @@ app.whenReady().then(async () => {
     console.log(JSON.stringify({ passed: true, cases: cases.length, output }))
     win.destroy(); app.exit(0)
   } catch (error) {
-    fs.writeFileSync(path.join(output, 'presentation-report.json'), JSON.stringify({ passed: false, error: error.stack, completed: cases.length, errors }, null, 2))
+    const diagnostics = win ? await win.webContents.executeJavaScript(`({calls:window.calls,dialogs:[...document.querySelectorAll('.ant-modal')].filter(e=>e.getClientRects().length).map(e=>e.textContent),input:document.querySelector('textarea')?.value,sendDisabled:document.querySelector('.assistant-send')?.disabled})`).catch(() => null) : null
+    fs.writeFileSync(path.join(output, 'presentation-report.json'), JSON.stringify({ passed: false, error: error.stack, completed: cases.length, errors, diagnostics }, null, 2))
     console.error(error.stack); if (win) win.destroy(); app.exit(1)
   }
 })

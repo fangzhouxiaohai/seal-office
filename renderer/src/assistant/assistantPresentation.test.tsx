@@ -14,7 +14,7 @@ it('设置面板的思考强度用于下一次请求，历史和最终回复按�
   const 对话 = vi.fn((_输入: 助手对话输入) => new Promise((resolve) => { 完成 = resolve }))
   const 清理 = vi.fn().mockResolvedValue({ 成功: true })
   Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
-    backupLoad: async () => ({ 成功: true, 内容: null }), backupSave: async () => ({ 成功: true }), ai: {
+    backupLoad: async () => ({ 成功: true, 内容: null }), backupSave: async () => ({ 成功: true }), backupClear: async () => ({ 成功: true }), ai: {
       getConfig: async () => ({ 成功: true, 数据: 配置 }),
       saveConfig: async (值: 助手配置) => { 配置 = { ...值, 已配置密钥: false }; return { 成功: true, 数据: 配置 } },
       getSession: async () => ({ 成功: true, 数据: { 摘要: '', 计划: [], 压缩次数: 0, 显示消息: [{ 角色: 'assistant', 内容: '```python\nprint("历史")\n```' }] } }),

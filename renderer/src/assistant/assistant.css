@@ -24,7 +24,7 @@
 .assistant-drawer__work { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .assistant-drawer__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
 .assistant-drawer__header strong { font-size: 15px; font-weight: 600; }
-.assistant-drawer__header span { color: var(--text-2); font-size: 12px; }
+.assistant-drawer__header > span { color: var(--text-2); font-size: 12px; }
 .assistant-drawer__header-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .assistant-context { padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-control); font-size: 12px; line-height: 1.55; color: var(--text-2); background: var(--bg-app); }
 .assistant-context summary { cursor: pointer; overflow-wrap: anywhere; }
@@ -90,7 +90,7 @@
 .assistant-drawer__composer { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); }
 .assistant-drawer__composer .ant-input { resize: none; }
 .assistant-drawer__composer-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.assistant-drawer__composer-actions span { color: var(--text-2); font-size: 12px; }
+.assistant-drawer__composer-actions > span { color: var(--text-2); font-size: 12px; }
 .assistant-drawer__background-task { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-size: 12px; color: var(--text-2); border-bottom: 1px solid var(--border); }
 .assistant-message__body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .assistant-output--streaming > .assistant-result > .assistant-result__heading::after { content: '接收中'; color: var(--brand); font-weight: 400; font-size: 11px; margin-left: auto; animation: assistant-cursor 1.6s linear infinite; }
@@ -139,6 +139,7 @@
 .assistant-message__avatar { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 8px; color: #7c3aed; background: var(--brand-soft); }
 .assistant-drawer__header .ant-btn { min-height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
 .assistant-new-chat { color: var(--brand); border-color: var(--border); background: var(--brand-soft); }
+:root[data-theme='dark'] .assistant-new-chat:not(:disabled) { color: #a9ceff; }
 .assistant-settings-toggle { color: var(--text-2); }
 .assistant-settings-toggle[aria-expanded='true'] { color: var(--brand); background: var(--brand-soft); }
 .assistant-settings__task-mode { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-app); display: grid; gap: 8px; }
