@@ -2320,11 +2320,24 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .wps-find__input {
   width: 240px;
+  max-width: 100%;
 }
+
+::highlight(seal-search) { background-color: #ffe79b; color: #151515; }
+::highlight(seal-search-current) { background-color: #b8d5ff; color: #101b2e; text-decoration: underline #2b6cf6 2px; }
+.wps-find__ai { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wps-find__ai > [role=status] { flex-basis: 100%; font-size: 13px; color: var(--text-2); }
+.wps-find__button:disabled { opacity: .5; cursor: default; }
+.wps-find__results { flex-basis: 100%; max-height: 180px; overflow: auto; display: grid; gap: 6px; }
+.wps-find__results button { text-align: left; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text-1); cursor: pointer; overflow-wrap: anywhere; }
+.wps-find__results button:hover, .wps-find__results button:focus-visible { border-color: var(--brand); background: var(--bg-hover); }
+.wps-find__results strong, .wps-find__results span { display: block; font-size: 13px; }
+.wps-find__results span { margin-top: 4px; color: var(--text-2); }
 
 .wps-find__button {
   height: 30px;

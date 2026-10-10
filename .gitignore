@@ -16,3 +16,4 @@ server/data/
 server/admin/upstream/
 server/admin/dist/
 .upgrade-private/
+.publish-profile/

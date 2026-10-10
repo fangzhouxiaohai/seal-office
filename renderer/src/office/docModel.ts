@@ -290,7 +290,8 @@ export function 读取字间距(取值: string | undefined | null): number | und
     return undefined
   }
   const 磅 = 匹配[2] === 'px' ? 数值 * 0.75 : 匹配[2] === 'em' || 匹配[2] === 'rem' ? 数值 * 12 : 数值
-  return Math.round(磅 * 10) / 10
+  // OOXML 字间距使用二十分之一磅；保留 0.25pt 等合法值，避免保存后文字宽度变化。
+  return Math.round(磅 * 20) / 20
 }
 
 /** 依据元素自身的标签与内联样式，在父格式之上叠加新的格式 */

@@ -25,6 +25,7 @@ import EditorCanvas from './EditorCanvas'
 import ImageTools from './ImageTools'
 import Ruler from './Ruler'
 import FindReplacePanel from './FindReplacePanel'
+import { 查找文字, 高亮搜索, 清除搜索高亮, 定位文字, 替换范围 } from './textSearch'
 import EditorStatusBar from './EditorStatusBar'
 import ContextMenu from '../components/ContextMenu'
 import PrintPreview from '../components/PrintPreview'
@@ -69,11 +70,6 @@ function 提取页面设置(视图: ViewState): 文字页面设置 {
   return Object.fromEntries(布局字段.map((字段) => [字段, 视图[字段]])) as unknown as 文字页面设置
 }
 
-/** 转义正则元字符，供查找替换使用 */
-function 转义正则(文本: string): string {
-  return 文本.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 /** 个别运行环境不提供 queryCommandState；缺失或抛错时按“未生效”处理，避免浮窗取格式时异常 */
 function 安全查询格式(指令: string): boolean {
   try {
@@ -83,70 +79,11 @@ function 安全查询格式(指令: string): boolean {
   }
 }
 
-/** 统计关键词在编辑区文本中的命中次数 */
-function 统计命中(根: HTMLElement, 关键词: string, 区分大小写: boolean): number {
-  if (关键词.length === 0) {
-    return 0
-  }
-  const 正则 = new RegExp(转义正则(关键词), 区分大小写 ? 'g' : 'gi')
-  return ((根.textContent ?? '').match(正则) ?? []).length
-}
-
-/** 替换首个命中，返回替换处数 */
-function 替换首个(根: HTMLElement, 关键词: string, 替换为: string, 区分大小写: boolean): number {
-  const 正则 = new RegExp(转义正则(关键词), 区分大小写 ? '' : 'i')
-  let 已替换 = 0
-  const 遍历 = (节点: Node) => {
-    if (已替换 > 0) {
-      return
-    }
-    if (节点.nodeType === Node.TEXT_NODE) {
-      const 原文 = 节点.textContent ?? ''
-      const 匹配 = 正则.exec(原文)
-      if (匹配 !== null) {
-        节点.textContent =
-          原文.slice(0, 匹配.index) + 替换为 + 原文.slice(匹配.index + 匹配[0].length)
-        已替换 = 1
-      }
-      return
-    }
-    节点.childNodes.forEach(遍历)
-  }
-  遍历(根)
-  return 已替换
-}
-
-/** 替换全部命中，返回替换处数 */
-function 替换全部(根: HTMLElement, 关键词: string, 替换为: string, 区分大小写: boolean): number {
-  const 正则 = new RegExp(转义正则(关键词), 区分大小写 ? 'g' : 'gi')
-  let 计数 = 0
-  const 遍历 = (节点: Node) => {
-    if (节点.nodeType === Node.TEXT_NODE) {
-      const 原文 = 节点.textContent ?? ''
-      if (原文.length === 0) {
-        return
-      }
-      const 新文 = 原文.replace(正则, () => {
-        计数 += 1
-        return 替换为
-      })
-      if (新文 !== 原文) {
-        节点.textContent = 新文
-      }
-      return
-    }
-    节点.childNodes.forEach(遍历)
-  }
-  遍历(根)
-  return 计数
-}
-
 const 表格模板 = (): string => {
   const 单元格 = '<td style="border:1px solid #E8EBF0;padding:6px 8px">&nbsp;</td>'
   const 行 = `<tr>${单元格.repeat(3)}</tr>`
   return `<table style="border-collapse:collapse;width:100%"><tbody>${行.repeat(3)}</tbody></table><p><br></p>`
 }
-
 const 封面模板 = (): string =>
   '<p style="text-align:center"><span style="font-size:32px;font-weight:600">文档标题</span></p>' +
   '<p style="text-align:center"><span style="font-size:14px;color:#5C6472">作者名称</span></p>' +
@@ -171,6 +108,7 @@ const DocEditor = () => {
   const [当前标签, set当前标签] = useState('start')
   const [视图, set视图] = useState<ViewState>(默认视图)
   const [查找打开, set查找打开] = useState(false)
+  const 查找位置 = useRef({ 关键词: '', 区分大小写: false, html: '', 序号: -1 })
   const [导航打开, set导航打开] = useState(false)
   const [网格打开, set网格打开] = useState(false)
   const [文献面板打开, set文献面板打开] = useState(false)
@@ -355,6 +293,24 @@ const DocEditor = () => {
       内部写入内容.current.set(文档标识, 元素.innerHTML)
       updateEditorHtml(文档标识, 元素.innerHTML)
     }
+  }
+
+  useEffect(() => {
+    查找位置.current = { 关键词: '', 区分大小写: false, html: '', 序号: -1 }
+    清除搜索高亮()
+    return 清除搜索高亮
+  }, [查找打开, 文档标识, 当前文档?.html])
+
+  const 执行查找 = (关键词: string, 区分大小写: boolean, 方向 = 1) => {
+    const 根 = 编辑区引用.current
+    if (!根) return { 总数: 0, 当前位置: 0 }
+    const 命中 = 查找文字(根, 关键词, 区分大小写), 旧 = 查找位置.current
+    const 连续 = 旧.关键词 === 关键词 && 旧.区分大小写 === 区分大小写 && 旧.html === 根.innerHTML
+    const 序号 = 命中.length ? ((连续 ? 旧.序号 : 方向 === 1 ? -1 : 0) + 方向 + 命中.length) % 命中.length : -1
+    查找位置.current = { 关键词, 区分大小写, html: 根.innerHTML, 序号 }
+    高亮搜索(命中, 命中[序号])
+    if (序号 >= 0) { 定位文字(根, 命中[序号]); 选区快照.current = 命中[序号].cloneRange() }
+    return { 总数: 命中.length, 当前位置: 序号 + 1 }
   }
 
   const 取格式编辑区 = (): HTMLElement | null => {
@@ -880,6 +836,12 @@ const DocEditor = () => {
   // 处理器经引用间接调用，确保监听器只挂载一次的同时始终使用最新闭包状态。
   const 快捷键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
   快捷键处理引用.current = (事件: KeyboardEvent) => {
+    if (事件.key === 'F3') {
+      事件.preventDefault(); set查找打开(true)
+      const 查询 = 查找位置.current
+      if (查询.关键词) 执行查找(查询.关键词, 查询.区分大小写, 事件.shiftKey ? -1 : 1)
+      return
+    }
     if (!(事件.ctrlKey || 事件.metaKey)) {
       return
     }
@@ -1056,19 +1018,30 @@ const DocEditor = () => {
       ? React.createElement(FindReplacePanel, {
           open: 查找打开,
           onClose: () => set查找打开(false),
+          onQueryChange: () => { 查找位置.current.序号 = -1; 清除搜索高亮() },
+          getRoot: () => 编辑区引用.current,
+          documentId: 文档标识,
+          onPrevious: (关键词, 区分大小写) => 执行查找(关键词, 区分大小写, -1),
           onFind: (关键词: string, 区分大小写: boolean) => {
-            const 元素 = 编辑区引用.current
-            return 元素 === null ? 0 : 统计命中(元素, 关键词, 区分大小写)
+            return 执行查找(关键词, 区分大小写)
           },
           onReplace: (关键词: string, 替换为: string, 区分大小写: boolean) => {
             const 元素 = 编辑区引用.current
             if (元素 === null) {
               return 0
             }
-            const 计数 = 替换首个(元素, 关键词, 替换为, 区分大小写)
+            if (视图.文档保护) { message.info('文档已保护，不能替换'); return 0 }
+            const 命中 = 查找文字(元素, 关键词, 区分大小写)
+            const 旧 = 查找位置.current
+            const 序号 = 旧.关键词 === 关键词 && 旧.区分大小写 === 区分大小写 && 旧.html === 元素.innerHTML && 旧.序号 >= 0 ? 旧.序号 : 0
+            const 计数 = 命中[序号] ? 1 : 0
             if (计数 > 0) {
               记录历史()
+              替换范围(命中[序号], 替换为)
               同步内容()
+              记录历史()
+              查找位置.current = { 关键词, 区分大小写, html: 元素.innerHTML, 序号: 序号 - 1 }
+              执行查找(关键词, 区分大小写)
             }
             return 计数
           },
@@ -1077,10 +1050,16 @@ const DocEditor = () => {
             if (元素 === null) {
               return 0
             }
-            const 计数 = 替换全部(元素, 关键词, 替换为, 区分大小写)
+            if (视图.文档保护) { message.info('文档已保护，不能替换'); return 0 }
+            const 命中 = 查找文字(元素, 关键词, 区分大小写)
+            const 计数 = 命中.length
             if (计数 > 0) {
               记录历史()
+              for (const 范围 of 命中.reverse()) 替换范围(范围, 替换为)
               同步内容()
+              记录历史()
+              查找位置.current.序号 = -1
+              清除搜索高亮()
             }
             return 计数
           },

@@ -41,6 +41,29 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
+  it('查找逐项框选、反向循环，替换当前项并能撤销，搜索不改动正文', async () => {
+    const 创建入口 = () => {
+      const { createDoc } = useAppStore()
+      return <button onClick={() => createDoc('word', '<p>第一处补<b>充</b></p><p>第二处补充</p>')}>打开搜索样例</button>
+    }
+    const { container } = render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByText('打开搜索样例'))
+    await userEvent.click(screen.getByRole('button', { name: '查找' }))
+    const 根 = container.querySelector('.wps-editor-canvas__content')!
+    const 原文 = 根.innerHTML
+    await userEvent.type(screen.getByPlaceholderText('查找内容'), '补充')
+    await userEvent.click(screen.getByRole('button', { name: '查找下一个' }))
+    expect(window.getSelection()?.toString()).toBe('补充')
+    expect(screen.getByText('第 1 / 2 处')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '查找上一个' }))
+    expect(screen.getByText('第 2 / 2 处')).toBeInTheDocument()
+    expect(根.innerHTML).toBe(原文)
+    await userEvent.type(screen.getByPlaceholderText('替换为'), '完善')
+    await userEvent.click(within(container.querySelector('.wps-find') as HTMLElement).getByRole('button', { name: '替换' }))
+    expect(根.textContent).toBe('第一处补充第二处完善')
+    await userEvent.click(screen.getByRole('button', { name: '撤销' }))
+    expect(根.innerHTML).toBe(原文)
+  })
   it('图片对齐更新未保存状态，并可撤销、重做', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()

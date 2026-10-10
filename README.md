@@ -8,14 +8,14 @@
 
 ## Windows 下载
 
-当前预发布版本：**1.9.8**，适用于 Windows x64。本版改进智能助手：回复按代码、Markdown 和普通文本展示，代码按语言高亮，各内容面板底部提供复制按钮；模型思考设置归入设置面板，对话区延伸到消息输入框上方，增加海豹头像并调整按钮样式。修复流式和最终回复解析丢失代码围栏的问题，保留前版的文件格式保存重开、阅读位置、选区浮窗、AI 首次调用与队列修复。云端能力仍按预发布状态提供。
+当前预发布版本：**1.9.9**，适用于 Windows x64。本版修复文字文档查找只计数的问题：支持前后跳转、循环查找、定位并选中原文、跨内联格式搜索与当前项替换；加入使用现有模型设置的 AI 语义搜索，点击结果可定位到核实过的原文。修复 Word/WPS 嵌套目录域导致中文标题丢失，并支持数字样式编号对应的导航标题。云端能力仍按预发布状态提供。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.8.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.8.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOfficeSetup1.9.8.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.8.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.8 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.8)及[修复与验收](docs/v1.9.8-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.9.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.9/SealOffice1.9.9.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.9.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.9/SealOfficeSetup1.9.9.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.9.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.9/SealOffice1.9.9.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.9 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.9)及[修复与验收](docs/v1.9.9-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 

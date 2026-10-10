@@ -1,6 +1,18 @@
 const { 创建助手服务, 规范配置 } = require('./assistant')
 
 describe('智能助手模型连接', () => {
+  it('文档搜索使用专用只读提示，保留JSON引用结果且不开放修改工具', async () => {
+    const 配置 = { 名称: '测试服务', 服务商: 'custom', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '', 思考强度: 'high', 参数模式: 'none' }
+    const 内容 = '{"结果":[{"编号":1,"原文":"原文片段","说明":"相关"}]}'
+    const 请求 = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: 内容 }, finish_reason: 'stop' }] }), { headers: { 'Content-Type': 'application/json' } }))
+    const 服务 = 创建助手服务({ 配置路径: '测试配置', 存储: { readFile: async () => Buffer.from(JSON.stringify(配置)) }, 安全存储: { isEncryptionAvailable: () => true, decryptString: 值 => 值.toString() }, 请求 })
+    const 结果 = await 服务.对话({ 用途: '文档搜索', 自动执行: false, 消息: [{ 角色: 'user', 内容: '搜索原文' }], 文档上下文: '[{"编号":1,"原文":"原文片段"}]' })
+    expect(结果.内容).toBe(内容)
+    const 请求体 = JSON.parse(请求.mock.calls[0][1].body)
+    expect(请求体.messages[0].content).toContain('文档语义搜索助手')
+    expect(请求体.messages[0].content).toContain('不执行')
+    expect(请求体.tools).toBeUndefined()
+  })
   it('内置模型使用对应官方窗口，自定义空值默认128K，明确设置不被覆盖', () => {
     const 预设 = require('./providers.json')
     for (const 服务 of 预设) for (const 模型 of 服务.模型列表) {

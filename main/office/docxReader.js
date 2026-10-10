@@ -185,6 +185,7 @@ function 解析样式定义(stylesXml) {
     const 字符片段 = 匹配[2].match(/<w:rPr(?:\s[^>]*)?>([\s\S]*?)<\/w:rPr>/i)?.[1] ?? ''
     定义.set(标识, {
       基于: 取属性(匹配[2], 'w:basedOn', 'w:val'),
+      名称: 取属性(匹配[2], 'w:name', 'w:val'),
       字符: 提取字符配置(字符片段),
       段落属性: 匹配[2].match(/<w:pPr(?:\s[^>]*)?>([\s\S]*?)<\/w:pPr>/i)?.[1] ?? '',
     })
@@ -410,6 +411,14 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
   ])
   if (样式定义?.警告) 样式定义.警告.push(...收集段落格式警告(实际段落属性))
   const 段属性 = 解析段落属性(实际段落属性, 编号映射)
+  // Word/WPS 经常用数字 styleId 标记标题，须解析样式名或继承的大纲级别。
+  const 样式标题 = 标题标签(样式定义?.定义.get(段落样式)?.名称)
+  const 大纲级别 = [...[实际段落属性, ...(样式定义 ? 解析继承段落(样式定义, 段落样式) : []).reverse()]]
+    .map(项 => 取属性(项, 'w:outlineLvl', 'w:val')).find(项 => 项 !== null)
+  if (段属性.标签 === 'p') {
+    if (大纲级别 !== undefined && /^[0-5]$/.test(大纲级别)) 段属性.标签 = `h${Number(大纲级别) + 1}`
+    else if (大纲级别 === undefined && 样式标题) 段属性.标签 = 样式标题
+  }
   const 继承配置 = 样式定义 === undefined ? {} : {
     ...样式定义.默认字符,
     ...解析继承字符(样式定义, 段落样式 ?? 样式定义.默认段落样式),
@@ -420,7 +429,20 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
   const 片段列表 = []
   // 页码域按 Word 的域结构解析：begin → instrText 指令 → separate → 缓存结果 → end。
   // 能写回的域输出为带标记的占位，保存时重新写成域代码，页码不会被写死。
-  let 域 = null
+  const 域栈 = []
+  const 输出片段 = (html, 文本 = html) => {
+    const 域 = 域栈.at(-1)
+    if (!域) 片段列表.push(html)
+    else if (域.阶段 === '结果') { 域.缓存.push(文本); 域.缓存片段.push(html) }
+  }
+  const 结束域 = () => {
+    const 域 = 域栈.pop()
+    if (!域) return
+    const 名称 = 域名称(域.指令)
+    输出片段(支持的域.has(名称)
+      ? `<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`
+      : 域.缓存片段.join(''), 域.缓存.join(''))
+  }
   // 逐个 run 解析：rPr 决定字符样式，w:t 与 w:br 决定内容
   const run正则 = /<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/gi
   let run匹配
@@ -430,43 +452,35 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     const rPr = rPr匹配 === null ? null : rPr匹配[1]
     const 字符样式 = rPr === null || 样式定义 === undefined ? {} : 解析继承字符(样式定义, 取属性(rPr, 'w:rStyle', 'w:val'))
     const { 样式 } = 解析字符属性(rPr, { ...继承配置, ...字符样式 })
-    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?=[\s/>])[^>]*>/gi
+    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr|tab)(?=[\s/>])[^>]*>/gi
     let 文本匹配
     while ((文本匹配 = 文本正则.exec(runXml)) !== null) {
       const 片段Xml = 文本匹配[0]
+      const 域 = 域栈.at(-1)
       if (/^<w:fldChar/i.test(片段Xml)) {
         const 类型 = 取属性(片段Xml, 'w:fldChar', 'w:fldCharType')
-        if (类型 === 'begin') 域 = { 指令: '', 阶段: '指令', 缓存: [], 缓存片段: [], 样式 }
-        else if (类型 === 'separate' && 域 !== null) 域.阶段 = '结果'
-        else if (类型 === 'end' && 域 !== null) {
-          const 名称 = 域名称(域.指令)
-          if (支持的域.has(名称)) {
-            片段列表.push(`<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`)
-          } else if (域.缓存片段.length > 0) {
-            // 无法写回的域至少保留它上次计算出的结果，同时如实提示
-            片段列表.push(域.缓存片段.join(''))
-          }
-          域 = null
-        }
+        if (类型 === 'begin') 域栈.push({ 指令: '', 阶段: '指令', 缓存: [], 缓存片段: [], 样式 })
+        else if (类型 === 'separate' && 域) 域.阶段 = '结果'
+        else if (类型 === 'end') 结束域()
       } else if (/^<w:instrText/i.test(片段Xml)) {
-        if (域 !== null && 域.阶段 === '指令' && 文本匹配[1] !== undefined) 域.指令 += 文本匹配[1]
+        if (域 && 域.阶段 === '指令' && 文本匹配[1] !== undefined) 域.指令 += 文本匹配[1]
       } else if (/^<w:(?:drawing|pict)/i.test(片段Xml)) {
-        片段列表.push(样式定义?.图片?.get(片段Xml) || '')
+        输出片段(样式定义?.图片?.get(片段Xml) || '')
       } else if (/^<w:(?:br|cr)/i.test(片段Xml)) {
-        片段列表.push('<br>')
+        输出片段('<br>')
+      } else if (/^<w:tab/i.test(片段Xml)) {
+        输出片段('<span style="white-space:pre">\t</span>', '\t')
       } else if (文本匹配[2] !== undefined) {
-        if (域 !== null && 域.阶段 === '结果') {
-          const 缓存文本 = 转义(解码Xml(文本匹配[2]))
-          域.缓存.push(缓存文本)
-          域.缓存片段.push(样式 === '' ? 缓存文本 : `<span style="${样式}">${缓存文本}</span>`)
-          域.样式 = 样式
-        } else {
-          const 内容 = 转义(解码Xml(文本匹配[2]))
-          片段列表.push(样式 === '' ? 内容 : `<span style="${样式}">${内容}</span>`)
-        }
+        const 文本 = 转义(解码Xml(文本匹配[2]))
+        // 保存库可能将制表符写入 w:t；与独立 w:tab 使用相同显示方式。
+        const 内容 = 文本.replace(/\t/g, '<span style="white-space:pre">\t</span>')
+        输出片段(样式 === '' ? 内容 : `<span style="${样式}">${内容}</span>`, 文本)
+        if (域) 域.样式 = 样式
       }
     }
   }
+  // TOC 外层域可以跨越多个段落；本段的缓存结果仍须立即呈现。
+  while (域栈.length) 结束域()
   return { 段属性, 内容: 片段列表.join('') }
 }
 

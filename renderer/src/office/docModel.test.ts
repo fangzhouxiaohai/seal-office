@@ -252,6 +252,12 @@ describe('解析文档 - 表格', () => {
 })
 
 describe('解析文档 - 字间距与页码域', () => {
+  it('保留二十分之一磅精度，不把 WPS 的四分之一磅字距改成 0.3 磅', () => {
+    const 模型 = 解析('<p><span style="letter-spacing:0.25pt">目录标题</span><span style="letter-spacing:-0.15pt">收紧</span></p>')
+    const 段 = 模型.段落[0] as 文本段落
+    expect(段.文字[0].字间距).toBe(0.25)
+    expect(段.文字[1].字间距).toBe(-0.15)
+  })
   it('letter-spacing 写入片段字间距，负值同样保留', () => {
     const 模型 = 解析('<p><span style="letter-spacing:0.4pt">加宽</span><span style="letter-spacing:-0.6pt">收紧</span></p>')
     const 段 = 模型.段落[0] as 文本段落
