@@ -1,0 +1,19 @@
+{
+  "version": "1.9.11",
+  "startedAt": "2026-10-10T19:25:01.781Z",
+  "checks": [
+    {
+      "extension": "xml",
+      "fixture": "word2003.xml",
+      "type": "word"
+    },
+    {
+      "extension": "xml",
+      "fixture": "excel2003.xml",
+      "type": "table"
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-10-10T19:25:49.478Z",
+  "status": "passed"
+}

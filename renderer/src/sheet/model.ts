@@ -85,6 +85,8 @@ export interface Sheet {
   筛选?: { 列: number; 值: string }
   /** 本机保护可直接解除；外部复杂保护只读且需在来源软件解除 */
   保护?: '本机' | '外部'
+  /** CSV 的空字段、空行及编码/换行信息，避免保存时截去来源数据边界。 */
+  CSV来源?: { 行字段数: number[]; 换行: '\r\n' | '\r' | '\n'; 末尾换行: boolean; BOM: boolean; 分隔符?: '\t'; 编码?: import('../ipc/bridge').文本编码 }
 }
 
 export const 默认行数 = 100

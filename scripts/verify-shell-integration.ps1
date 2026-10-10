@@ -61,7 +61,7 @@ try {
   Check ($install.新建格式.Count -eq 7) '安装注册七种新建格式'
   foreach ($ext in @('doc','docx','ppt','pptx','pdf','xls','xlsx')) {
     Check ((Read-TestValue "$taskClasses\.$ext\ShellNew" 'FileName') -eq (Join-Path $taskTemplates "blank.$ext")) "$ext 使用真实模板路径"
-    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
+    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf','csv','txt','md','html','htm','json','doc','dot','dotx','docm','dotm','rtf','odt','ott','fodt','mht','mhtml','xml','xls','xlt','xltx','xlsm','xltm','xlsb','xla','xlam','ods','ots','fods','dbf','prn','dif','tsv','slk','ppt','pot','potx','pptm','potm','pps','ppsx','ppsm','odp','otp','fodp')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Check ((Read-TestValue "$taskClasses\$taskClass\DefaultIcon" '') -eq ('"' + (Join-Path $taskIcons ($taskMap[$ext] + '.ico')) + '",0')) "$ext 注册对应类别图标"
   }
   Check ((Read-TestValue "$taskClasses\.xlsx" '') -eq 'ExistingOffice.Workbook') '安装保留已存在的文件打开类型'
@@ -78,7 +78,7 @@ try {
   Copy-Item -LiteralPath (Join-Path $taskRoot 'main\windows\file-icons\word.ico'),(Join-Path $taskRoot 'main\windows\file-icons\table.ico'),(Join-Path $taskRoot 'main\windows\file-icons\ppt.ico'),(Join-Path $taskRoot 'main\windows\file-icons\pdf.ico') -Destination $taskIcons
   [void](Run-Action 'Install')
   foreach ($ext in $taskMap.Keys) {
-    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
+    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf','csv','txt','md','html','htm','json','doc','dot','dotx','docm','dotm','rtf','odt','ott','fodt','mht','mhtml','xml','xls','xlt','xltx','xlsm','xltm','xlsb','xla','xlam','ods','ots','fods','dbf','prn','dif','tsv','slk','ppt','pot','potx','pptm','potm','pps','ppsx','ppsm','odp','otp','fodp')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Check ((Read-TestValue "$taskClasses\$taskClass\DefaultIcon" '') -eq ('"' + (Join-Path $taskIcons ($taskMap[$ext] + '.ico')) + '",0')) "$ext 升级更新图标路径并支持中文空格"
   }
   [void](Run-Action 'RegisterApplication')
@@ -90,8 +90,15 @@ try {
   Check $true 'Windows 原生关联解析出四种不同文件图标'
   Check ((Run-Action 'GetInstallation').安装标识 -eq $token) '升级保留首次安装标识'
   Check ((Read-TestValue "$taskRegistry\Application\ShellIntegration" 'OriginalShellNewPaths') -eq $backup) '升级保留最初菜单备份'
-  Check ((Read-TestValue "$taskRegistry\Application\Capabilities\FileAssociations" '.docx') -eq 'SealOffice.docx') '注册四种受支持格式的默认程序能力'
-  Check ($null -eq (Read-TestValue "$taskRegistry\Application\Capabilities\FileAssociations" '.doc')) '旧式格式没有冒充可编辑的默认程序能力'
+  $taskFormats = Get-Content -LiteralPath (Join-Path $taskRoot 'main/documentFormats.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  foreach ($format in $taskFormats) {
+    $ext = $format.extension
+    $icon = if ($format.icon -eq 'presentation') { 'ppt' } else { $format.icon }
+    Check ((Read-TestValue "$taskRegistry\Application\Capabilities\FileAssociations" ".$ext") -eq "SealOffice.$ext") "$ext 提供默认打开能力"
+    Check ((Read-TestValue "$taskClasses\SealOffice.$ext\shell\open\command" '') -eq ('"' + $taskExecutable + '" "%1"')) "$ext 命令保留完整路径参数"
+    Check ((Read-TestValue "$taskClasses\SealOffice.$ext\DefaultIcon" '') -eq ('"' + (Join-Path $taskIcons "$icon.ico") + '",0')) "$ext 对应类别图标"
+  }
+  Check ((Read-TestValue "$taskRegistry\Application\Capabilities\FileAssociations" '.doc') -eq 'SealOffice.doc') '旧式文字格式具有真实转换能力'
   $key = $taskBase.CreateSubKey("$taskClasses\.doc\ShellNew")
   $key.SetValue('FileName', 'OtherOffice.doc'); $key.SetValue('ItemName', '其他办公文档'); $key.Dispose()
   [void](Run-Action 'Uninstall')
@@ -106,18 +113,21 @@ try {
   Check ($null -eq (Read-TestValue "$taskClasses\.pdf\ShellNew" 'FileName')) '原本没有菜单的格式恢复原状态'
   Check ($null -eq (Read-TestValue "$taskClasses\.pdf\ExistingPDF.Document\ShellNew" 'FileName')) '卸载恢复默认类型原本没有新建子键的状态'
   foreach ($ext in $taskMap.Keys) {
-    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
+    $taskClass = if ($ext -in @('docx','xlsx','pptx','pdf','csv','txt','md','html','htm','json','doc','dot','dotx','docm','dotm','rtf','odt','ott','fodt','mht','mhtml','xml','xls','xlt','xltx','xlsm','xltm','xlsb','xla','xlam','ods','ots','fods','dbf','prn','dif','tsv','slk','ppt','pot','potx','pptm','potm','pps','ppsx','ppsm','odp','otp','fodp')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Check ($null -eq (Read-TestValue "$taskClasses\$taskClass\DefaultIcon" '')) "$ext 卸载移除本程序图标注册"
   }
+  foreach ($format in $taskFormats) {
+    Check ($null -eq (Read-TestValue "$taskClasses\SealOffice.$($format.extension)\shell\open\command" '')) "$($format.extension) 卸载移除本程序类型"
+  }
   $inspect = Run-Action 'InspectDefaults'
-  Check ($inspect.格式.Count -eq 4 -and $inspect.已全部默认 -is [bool]) '使用系统接口查询四种真实默认应用'
+  Check ($inspect.格式.Count -eq $taskFormats.Count -and $inspect.已全部默认 -is [bool]) '使用系统接口查询全部受支持格式的真实默认应用'
   # 注册能力并回读系统；既有默认值和受保护的 UserChoice 由 Windows 设置确认。
   $key = $taskBase.CreateSubKey("$taskClasses\.docx")
   $key.SetValue('', 'WPS.Docx.6'); $key.Dispose()
   $key = $taskBase.CreateSubKey("$taskRegistry\CurrentUser\FileExts\.docx\UserChoice")
   $key.SetValue('ProgId', 'WPS.Docx.6'); $key.Dispose()
   $apply = Run-Action 'ApplyDefaults'
-  Check ($apply.已全部默认 -is [bool] -and $apply.格式.Count -eq 4) '关联注册返回四种格式的系统回读结果'
+  Check ($apply.已全部默认 -is [bool] -and $apply.格式.Count -eq $taskFormats.Count) '关联注册返回全部格式的系统回读结果'
   Check ((Read-TestValue "$taskRegistry\Application\Capabilities\FileAssociations" '.docx') -eq 'SealOffice.docx') '关联注册提供文字文件的可选打开能力'
   Check ((Read-TestValue "$taskClasses\.docx" '') -eq 'WPS.Docx.6') '关联注册保留其他程序的扩展名默认值'
   Check ((Read-TestValue "$taskClasses\.pdf" '') -eq 'ExistingPDF.Document') '关联注册保留已有 PDF 默认值'
@@ -136,7 +146,7 @@ try {
   Check ((Read-TestValue "$taskRegistry\CurrentUser\Classes\.docx\WPS.Docx.6\ShellNew" 'FileName') -eq (Join-Path $taskTemplates 'blank.docx')) '全用户安装覆盖当前用户层的旧菜单'
   Check ($null -eq (Read-TestValue "$taskRegistry\CurrentUser\Classes\.docx\WPS.Docx.6\ShellNew" 'NullFile')) '全用户安装清除用户层零字节创建指令'
   foreach ($ext in $taskMap.Keys) {
-    $id = if ($ext -in @('docx','xlsx','pptx','pdf')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
+    $id = if ($ext -in @('docx','xlsx','pptx','pdf','csv','txt','md','html','htm','json','doc','dot','dotx','docm','dotm','rtf','odt','ott','fodt','mht','mhtml','xml','xls','xlt','xltx','xlsm','xltm','xlsb','xla','xlam','ods','ots','fods','dbf','prn','dif','tsv','slk','ppt','pot','potx','pptm','potm','pps','ppsx','ppsm','odp','otp','fodp')) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Copy-TestKey "$taskClasses\$id" "$taskRegistry\CurrentUser\Classes\$id"
   }
   Copy-TestKey "$taskRegistry\Application\Capabilities" "$taskRegistry\CurrentUser\Application\Capabilities"

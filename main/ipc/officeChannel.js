@@ -3,8 +3,11 @@ const { 读取docx } = require('../office/docxReader')
 const { 读取xlsx, 写入xlsx } = require('../office/xlsxCodec')
 const { 读取pptx, 写入pptx } = require('../office/pptxCodec')
 const { 生成说明 } = require('../office/lossReport')
+const { 读取兼容文档, 写入兼容文档 } = require('../office/compatibleFormats')
 
 function 注册Office通道(ipcMain) {
+  ipcMain.handle('office.readCompatible', async (_event, 扩展, 数据) => 执行(() => 读取兼容文档(扩展, Buffer.from(数据, 'base64'))))
+  ipcMain.handle('office.writeCompatible', async (_event, 类型, 扩展, 模型) => 执行数据(() => 写入兼容文档(类型, 扩展, 模型)))
   ipcMain.handle('office.writeDocx', async (_event, 模型) => {
     try {
       const 数据 = await 生成docx(模型)

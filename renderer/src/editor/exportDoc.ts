@@ -89,10 +89,19 @@ export function 纯文本损失项(正文Html: string): string[] {
 /** 与手动保存一致：保留原换行及 JSON 内容，不用格式转换覆盖纯文本。 */
 export function 文字文本输出(名称:string,正文Html:string,页眉Html='',页脚Html=''):string {
   if (/\.html?$/i.test(名称)) return 导出为Html(名称.replace(/\.[^.]+$/,''),正文Html,页眉Html,页脚Html)
+  if (/\.(mht|mhtml)$/i.test(名称)) {
+    const html = 导出为Html(名称.replace(/\.[^.]+$/,''),正文Html,页眉Html,页脚Html)
+    const 字节 = new TextEncoder().encode(html)
+    let 二进制 = ''
+    for (const 字节值 of 字节) 二进制 += String.fromCharCode(字节值)
+    const 内容 = btoa(二进制).match(/.{1,76}/g)?.join('\r\n') ?? ''
+    return `MIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\nContent-Location: file:///seal-office/document.html\r\n\r\n${内容}\r\n`
+  }
   const 损失=纯文本损失项(正文Html)
   if(损失.length||页眉Html||页脚Html)throw new Error('纯文本无法保存格式、图片、表格或页眉页脚，请另存为 DOCX')
   const 输出=保存为纯文本(正文Html)
   if(/\.json$/i.test(名称)){try{JSON.parse(输出)}catch{throw new Error('JSON 内容格式无效，请检查后保存')}}
+  if (/\.xml$/i.test(名称) && new DOMParser().parseFromString(输出, 'application/xml').querySelector('parsererror')) throw new Error('XML 内容格式无效，请检查后保存')
   return 输出
 }
 

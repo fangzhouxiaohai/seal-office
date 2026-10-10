@@ -14,6 +14,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
+import { 可保存扩展 } from '../fileFormats'
+import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
@@ -42,8 +44,7 @@ import { NotesView, SlideSorterView } from './PptViews'
 import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
 import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
-import { 记录最近文档 } from '../fileOpen'
-import { 恢复导入图片 } from './render/resources'
+import { 记录最近文档, 读取本地文件内容 } from '../fileOpen'
 import { 构建演示保存模型 } from './saveModel'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
 import { 通用AI指令 } from '../assistant/quickActions'
@@ -102,7 +103,7 @@ const 只读可放行 = (标识: string): boolean =>
 
 const 规范演示保存路径 = (路径: string): string | null => {
   const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
-  return 扩展 === undefined ? `${路径}.pptx` : 扩展 === '.pptx' ? 路径 : null
+  return 扩展 === undefined ? `${路径}.pptx` : 可保存扩展('ppt').has(扩展) ? 路径 : null
 }
 
 const PptEditor = () => {
@@ -921,55 +922,15 @@ const PptEditor = () => {
         message.info('当前环境不支持打开文件功能，请使用打包后的版本')
         return
       }
-      桥接.showOpenDialog('ppt' as const).then((文件路径) => {
-        if (文件路径) {
-          // 判断文件扩展名
-          const 扩展 = 文件路径.slice((文件路径.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase()
-          if (扩展 === 'pptx') {
-            // pptx 文件：读取为二进制，通过主进程解析为演示文稿模型
-            桥接.readFile(文件路径).then((读取结果) => {
-              if (读取结果.成功 && 读取结果.二进制 && 读取结果.内容) {
-                桥接.office.readPptx(读取结果.内容).then(async (解析结果) => {
-                  if (解析结果 && 解析结果.演示文稿) {
-                    const 警告 = Array.isArray(解析结果.警告) ? 解析结果.警告 as string[] : []
-                    const 恢复文稿 = await 恢复导入图片(解析结果)
-                    const 恢复主题 = 恢复文稿.主题 ? 匹配内置主题(恢复文稿.主题 as 主题定义) : undefined
-                    恢复文稿.主题 = 恢复主题
-                    createDoc('ppt', 恢复文稿, { 路径: 文件路径, 警告, 文件指纹: 读取结果.文件指纹 })
-                    void 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
-                  } else {
-                    显示文件错误('打开文件失败', 解析结果?.错误 || '演示文稿格式转换失败，请检查内容后重试')
-                  }
-                }).catch((error: unknown) => {
-                  显示文件错误('打开文件失败', (error as Error).message || '未知错误')
-                })
-              } else {
-                显示文件错误('打开文件失败', 读取结果.错误 || '文件读取失败')
-              }
-            }).catch((error: unknown) => {
-              显示文件错误('打开文件失败', (error as Error).message || '未知错误')
-            })
-          } else {
-            // json 文件：直接解析
-            桥接.readFile(文件路径).then((结果) => {
-              if (结果.成功 && 结果.内容) {
-                try {
-                  const 数据 = JSON.parse(结果.内容) as 演示文稿
-                  createDoc('ppt', 数据)
-                } catch (错误) {
-                  显示文件错误('打开文件失败', 错误 instanceof SyntaxError ? '文件格式不正确，无法打开' : 错误 instanceof Error ? 错误.message : '未知错误')
-                }
-              } else {
-                显示文件错误('打开文件失败', 结果.错误 || '未知错误')
-              }
-            }).catch((error: unknown) => {
-              显示文件错误('打开文件失败', (error as Error).message || '未知错误')
-            })
-          }
-        }
-      }).catch((error: unknown) => {
-        显示文件错误('打开文件失败', (error as Error).message || '未知错误')
-      })
+      void 桥接.showOpenDialog('ppt').then(async 文件路径 => {
+        if (!文件路径) return
+        const 内容 = await 读取本地文件内容(文件路径)
+        if (内容.类型 !== 'ppt' || !内容.演示文稿) throw new Error('请选择受支持的演示文稿文件')
+        const 恢复文稿 = 内容.演示文稿 as 演示文稿
+        恢复文稿.主题 = 恢复文稿.主题 ? 匹配内置主题(恢复文稿.主题 as 主题定义) : undefined
+        createDoc('ppt', 恢复文稿, { 路径: 文件路径, 警告: 内容.警告 ?? [], 文件指纹: 内容.文件指纹 })
+        await 记录最近文档(文件路径, 基准名(文件路径), 'ppt')
+      }).catch((错误: unknown) => 显示文件错误('打开文件失败', 错误 instanceof Error ? 错误.message : '文件读取失败'))
       return
     }
     if (标识 === 'file.save') {
@@ -1003,7 +964,7 @@ const PptEditor = () => {
           const 模型 = 构建演示保存模型(文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          桥接.office.writePptx(模型).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
@@ -1033,7 +994,7 @@ const PptEditor = () => {
         return
       }
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
-      桥接.showSaveDialog(`${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (原始文件路径: string | null) => {
+      桥接.showSaveDialog(文档路径 && 规范演示保存路径(文档路径) ? 文档路径.replace(/^.*[\\/]/, '') : `${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (原始文件路径: string | null) => {
         if (原始文件路径) {
           const 文件路径 = 规范演示保存路径(原始文件路径)
           if (!文件路径) {
@@ -1056,7 +1017,7 @@ const PptEditor = () => {
           const 模型 = 构建演示保存模型(文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          桥接.office.writePptx(模型).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据

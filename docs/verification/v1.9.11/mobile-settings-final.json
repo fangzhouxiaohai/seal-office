@@ -1,0 +1,19 @@
+{
+  "version": "1.9.11",
+  "startedAt": "2026-10-10T19:51:41.293Z",
+  "checks": [
+    {
+      "operation": "service-config",
+      "status": "passed",
+      "behavior": "加密令牌不回显、鉴权测试、换地址不复用令牌、取消不上传"
+    },
+    {
+      "operation": "settings-ui",
+      "status": "passed"
+    }
+  ],
+  "failures": [],
+  "requests": [],
+  "status": "passed",
+  "finishedAt": "2026-10-10T19:51:46.456Z"
+}

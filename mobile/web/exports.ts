@@ -10,6 +10,7 @@ async function chineseFont(): Promise<Uint8Array> {
   return fontPromise
 }
 async function pdfFromHtml(html: string): Promise<Uint8Array> {
+  if (/data-ofd-width=/.test(html)) return ofdPdf(html)
   const [{ default: pdfMake }, { default: converter }] = await Promise.all([import('pdfmake/build/pdfmake'), import('html-to-pdfmake')])
   const font = await chineseFont(), writer = pdfMake as any
   writer.vfs = { 'SealChinese.ttf': Buffer.from(font).toString('base64') }
@@ -21,6 +22,30 @@ async function pdfFromHtml(html: string): Promise<Uint8Array> {
     try { writer.createPdf({ content, defaultStyle: { font: 'SealChinese', fontSize: 11 }, pageSize: 'A4', pageMargins: [40, 48, 40, 48] }).getBuffer((result: Uint8Array) => resolve(new Uint8Array(result))) }
     catch (error) { reject(error) }
   })
+}
+async function ofdPdf(html: string): Promise<Uint8Array> {
+  const frame = document.createElement('iframe')
+  frame.sandbox.add('allow-same-origin')
+  frame.style.cssText = 'position:fixed;left:-20000px;top:0;border:0;width:1600px;height:2000px'
+  document.body.appendChild(frame)
+  try {
+    const loaded = new Promise<void>(resolve => { frame.onload = () => resolve() })
+    frame.srcdoc = html; await loaded
+    const doc = frame.contentDocument!
+    await doc.fonts.ready
+    await Promise.all(Array.from(doc.images).map(image => image.decode()))
+    const pages = Array.from(doc.querySelectorAll<HTMLElement>('section[data-ofd-width]'))
+    if (!pages.length) throw new Error('没有可导出的 OFD 页面')
+    const { toPng } = await import('html-to-image'), pdf = await PDFDocument.create()
+    for (const node of pages) {
+      const width = Number(node.dataset.ofdWidth) * 72 / 25.4, height = Number(node.dataset.ofdHeight) * 72 / 25.4
+      if (![width, height].every(n => Number.isFinite(n) && n > 0)) throw new Error('OFD 页面尺寸无效')
+      const png = await toPng(node, { pixelRatio: 2, skipFonts: true, backgroundColor: '#ffffff' })
+      const image = await pdf.embedPng(Buffer.from(png.split(',')[1], 'base64'))
+      pdf.addPage([width, height]).drawImage(image, { x: 0, y: 0, width, height })
+    }
+    return await pdf.save()
+  } finally { frame.remove() }
 }
 export async function installExportAdapters(core: any, save: any, handle: any) {
   ;(globalThis as any).sealBrowserPdfFont = async (doc: any, text: string) => {

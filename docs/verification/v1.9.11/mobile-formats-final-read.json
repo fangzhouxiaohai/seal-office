@@ -1,0 +1,406 @@
+{
+  "version": "1.9.11",
+  "startedAt": "2026-10-10T19:46:42.523Z",
+  "checks": [
+    {
+      "operation": "service-config",
+      "status": "passed",
+      "behavior": "加密令牌不回显、鉴权测试、换地址不复用令牌、取消不上传"
+    },
+    {
+      "extension": "dot",
+      "operation": "read",
+      "milliseconds": 27306,
+      "warnings": []
+    },
+    {
+      "extension": "doc",
+      "operation": "read",
+      "milliseconds": 27361,
+      "warnings": []
+    },
+    {
+      "extension": "dotx",
+      "operation": "read",
+      "milliseconds": 230,
+      "warnings": []
+    },
+    {
+      "extension": "docm",
+      "operation": "read",
+      "milliseconds": 338,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "dotm",
+      "operation": "read",
+      "milliseconds": 329,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "rtf",
+      "operation": "read",
+      "milliseconds": 26987,
+      "warnings": []
+    },
+    {
+      "extension": "odt",
+      "operation": "read",
+      "milliseconds": 27239,
+      "warnings": []
+    },
+    {
+      "extension": "fodt",
+      "operation": "read",
+      "milliseconds": 25357,
+      "warnings": []
+    },
+    {
+      "extension": "ott",
+      "operation": "read",
+      "milliseconds": 25913,
+      "warnings": []
+    },
+    {
+      "extension": "xls",
+      "operation": "read",
+      "milliseconds": 312,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xlt",
+      "operation": "read",
+      "milliseconds": 222,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xltx",
+      "operation": "read",
+      "milliseconds": 340,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "xlsm",
+      "operation": "read",
+      "milliseconds": 372,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlsb",
+      "operation": "read",
+      "milliseconds": 218,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xltm",
+      "operation": "read",
+      "milliseconds": 414,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xla",
+      "operation": "read",
+      "milliseconds": 206,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ods",
+      "operation": "read",
+      "milliseconds": 222,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xlam",
+      "operation": "read",
+      "milliseconds": 382,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ots",
+      "operation": "read",
+      "milliseconds": 230,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "fods",
+      "operation": "read",
+      "milliseconds": 214,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "dbf",
+      "operation": "read",
+      "milliseconds": 212,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "prn",
+      "operation": "read",
+      "milliseconds": 221,
+      "warnings": [
+        "PRN 按连续空格或制表符分列；无分隔的固定字段需核对边界。请另存为副本以保留来源文件"
+      ]
+    },
+    {
+      "extension": "dif",
+      "operation": "read",
+      "milliseconds": 201,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "slk",
+      "operation": "read",
+      "milliseconds": 227,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "ppt",
+      "operation": "read",
+      "milliseconds": 27597,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pot",
+      "operation": "read",
+      "milliseconds": 27516,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "potx",
+      "operation": "read",
+      "milliseconds": 695,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pptm",
+      "operation": "read",
+      "milliseconds": 783,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "potm",
+      "operation": "read",
+      "milliseconds": 820,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ppsx",
+      "operation": "read",
+      "milliseconds": 664,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "ppsm",
+      "operation": "read",
+      "milliseconds": 749,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "pps",
+      "operation": "read",
+      "milliseconds": 25170,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "odp",
+      "operation": "read",
+      "milliseconds": 25504,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "otp",
+      "operation": "read",
+      "milliseconds": 26649,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "fodp",
+      "operation": "read",
+      "milliseconds": 26810,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "xml",
+      "fixture": "word2003.xml",
+      "operation": "read"
+    },
+    {
+      "extension": "xml",
+      "fixture": "excel2003.xml",
+      "operation": "read"
+    },
+    {
+      "operation": "settings-ui",
+      "status": "passed"
+    }
+  ],
+  "failures": [],
+  "requests": [
+    {
+      "input": "doc",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "dot",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "rtf",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "odt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "ott",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "fodt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "ppt",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pot",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pps",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "odp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "otp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "fodp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "xml",
+      "output": "docx",
+      "type": "word"
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-10-10T19:49:54.401Z"
+}

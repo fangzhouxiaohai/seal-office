@@ -1,6 +1,6 @@
 {
   "name": "seal-office-uniapp-x",
-  "version": "1.9.10",
+  "version": "1.9.11",
   "private": true,
   "description": "海豹办公 uni-app x：Android、iOS、HarmonyOS、移动 H5 与 PC Web",
   "type": "module",
@@ -26,7 +26,8 @@
     "buffer": "6.0.3",
     "html-to-image": "1.11.13",
     "pako": "2.1.0",
-    "path-browserify": "1.0.1"
+    "path-browserify": "1.0.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

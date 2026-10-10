@@ -1,0 +1,477 @@
+{
+  "version": "1.9.11",
+  "status": "passed",
+  "checks": 64,
+  "compatibleReads": 37,
+  "saveAndReopen": 25,
+  "checksByFormat": [
+    {
+      "extension": "dot",
+      "operation": "read",
+      "milliseconds": 27306,
+      "warnings": []
+    },
+    {
+      "extension": "doc",
+      "operation": "read",
+      "milliseconds": 27361,
+      "warnings": []
+    },
+    {
+      "extension": "dotx",
+      "operation": "read",
+      "milliseconds": 230,
+      "warnings": []
+    },
+    {
+      "extension": "docm",
+      "operation": "read",
+      "milliseconds": 338,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "dotm",
+      "operation": "read",
+      "milliseconds": 329,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "rtf",
+      "operation": "read",
+      "milliseconds": 26987,
+      "warnings": []
+    },
+    {
+      "extension": "odt",
+      "operation": "read",
+      "milliseconds": 27239,
+      "warnings": []
+    },
+    {
+      "extension": "fodt",
+      "operation": "read",
+      "milliseconds": 25357,
+      "warnings": []
+    },
+    {
+      "extension": "ott",
+      "operation": "read",
+      "milliseconds": 25913,
+      "warnings": []
+    },
+    {
+      "extension": "xls",
+      "operation": "read",
+      "milliseconds": 312,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xlt",
+      "operation": "read",
+      "milliseconds": 222,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xltx",
+      "operation": "read",
+      "milliseconds": 340,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "xlsm",
+      "operation": "read",
+      "milliseconds": 372,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlsb",
+      "operation": "read",
+      "milliseconds": 218,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xltm",
+      "operation": "read",
+      "milliseconds": 414,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xla",
+      "operation": "read",
+      "milliseconds": 206,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ods",
+      "operation": "read",
+      "milliseconds": 222,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xlam",
+      "operation": "read",
+      "milliseconds": 382,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ots",
+      "operation": "read",
+      "milliseconds": 230,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "fods",
+      "operation": "read",
+      "milliseconds": 214,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "dbf",
+      "operation": "read",
+      "milliseconds": 212,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "prn",
+      "operation": "read",
+      "milliseconds": 221,
+      "warnings": [
+        "PRN 按连续空格或制表符分列；无分隔的固定字段需核对边界。请另存为副本以保留来源文件"
+      ]
+    },
+    {
+      "extension": "dif",
+      "operation": "read",
+      "milliseconds": 201,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "slk",
+      "operation": "read",
+      "milliseconds": 227,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "ppt",
+      "operation": "read",
+      "milliseconds": 27597,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pot",
+      "operation": "read",
+      "milliseconds": 27516,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "potx",
+      "operation": "read",
+      "milliseconds": 695,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pptm",
+      "operation": "read",
+      "milliseconds": 783,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "potm",
+      "operation": "read",
+      "milliseconds": 820,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ppsx",
+      "operation": "read",
+      "milliseconds": 664,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "ppsm",
+      "operation": "read",
+      "milliseconds": 749,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "pps",
+      "operation": "read",
+      "milliseconds": 25170,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "odp",
+      "operation": "read",
+      "milliseconds": 25504,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "otp",
+      "operation": "read",
+      "milliseconds": 26649,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "fodp",
+      "operation": "read",
+      "milliseconds": 26810,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "xml",
+      "fixture": "word2003.xml",
+      "operation": "read"
+    },
+    {
+      "extension": "xml",
+      "fixture": "excel2003.xml",
+      "operation": "read"
+    },
+    {
+      "extension": "doc",
+      "operation": "write-read",
+      "milliseconds": 46755
+    },
+    {
+      "extension": "dot",
+      "operation": "write-read",
+      "milliseconds": 46775
+    },
+    {
+      "extension": "dotx",
+      "operation": "write-read",
+      "milliseconds": 701
+    },
+    {
+      "extension": "rtf",
+      "operation": "write-read",
+      "milliseconds": 45985
+    },
+    {
+      "extension": "odt",
+      "operation": "write-read",
+      "milliseconds": 46086
+    },
+    {
+      "extension": "ott",
+      "operation": "write-read",
+      "milliseconds": 46728
+    },
+    {
+      "extension": "xls",
+      "operation": "write-read",
+      "milliseconds": 290
+    },
+    {
+      "extension": "fodt",
+      "operation": "write-read",
+      "milliseconds": 46331
+    },
+    {
+      "extension": "xltx",
+      "operation": "write-read",
+      "milliseconds": 469
+    },
+    {
+      "extension": "ods",
+      "operation": "write-read",
+      "milliseconds": 224
+    },
+    {
+      "extension": "xlt",
+      "operation": "write-read",
+      "milliseconds": 22029
+    },
+    {
+      "extension": "fods",
+      "operation": "write-read",
+      "milliseconds": 211
+    },
+    {
+      "extension": "dbf",
+      "operation": "write-read",
+      "milliseconds": 208
+    },
+    {
+      "extension": "prn",
+      "operation": "write-read",
+      "milliseconds": 194
+    },
+    {
+      "extension": "ots",
+      "operation": "write-read",
+      "milliseconds": 21868
+    },
+    {
+      "extension": "dif",
+      "operation": "write-read",
+      "milliseconds": 225
+    },
+    {
+      "extension": "slk",
+      "operation": "write-read",
+      "milliseconds": 241
+    },
+    {
+      "extension": "pot",
+      "operation": "write-read",
+      "milliseconds": 47171
+    },
+    {
+      "extension": "ppt",
+      "operation": "write-read",
+      "milliseconds": 47246
+    },
+    {
+      "extension": "potx",
+      "operation": "write-read",
+      "milliseconds": 1679
+    },
+    {
+      "extension": "ppsx",
+      "operation": "write-read",
+      "milliseconds": 1721
+    },
+    {
+      "extension": "pps",
+      "operation": "write-read",
+      "milliseconds": 45314
+    },
+    {
+      "extension": "odp",
+      "operation": "write-read",
+      "milliseconds": 46979
+    },
+    {
+      "extension": "otp",
+      "operation": "write-read",
+      "milliseconds": 48669
+    },
+    {
+      "extension": "fodp",
+      "operation": "write-read",
+      "milliseconds": 49320
+    }
+  ],
+  "serviceConfigurationAndSettings": [
+    {
+      "operation": "service-config",
+      "status": "passed",
+      "behavior": "加密令牌不回显、鉴权测试、换地址不复用令牌、取消不上传"
+    },
+    {
+      "operation": "settings-ui",
+      "status": "passed"
+    }
+  ],
+  "method": "Production browser build using an authenticated local real conversion service. All 37 format reads repeated after final Android resource build; 25 successful save-and-reopen operations retained from the first run; final settings controls tested again.",
+  "initialRunnerFailure": "The first run completed 63 format/config checks, then failed only because the harness selected a nonexistent settings navigation control. The harness was corrected; final read run and separate settings run passed. The original failed report is retained.",
+  "reports": [
+    "mobile-formats-initial.json",
+    "mobile-formats-final-read.json",
+    "mobile-settings-final.json"
+  ],
+  "limitations": [
+    "No public service deployment",
+    "Browser and native-host simulation, not final APK or iOS/Harmony/OEM device tests"
+  ]
+}

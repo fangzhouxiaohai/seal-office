@@ -1,6 +1,6 @@
 # 海豹办公 uni-app x
 
-基于仓库当前桌面版 **1.9.10** 创建。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。
+基于仓库当前桌面版 **1.9.11** 创建。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 
@@ -77,7 +77,7 @@ npm --prefix mobile run test:browser -- --web
 
 浏览器验收使用独立、无 preload、无 Node 接口的隐藏 Chromium。`--file` 检查安装包形态的普通脚本页面，字体及导出 RPC 使用宿主模拟，不等同于安卓真机测试。报告/截图在仓库忽略的 `.upgrade-private/mobile-verification/`。
 
-本轮结果与待验项在 [verification.json](verification.json)，详细平台和品牌矩阵在 [compatibility.md](compatibility.md)。1.9.10 渲染层全量基线覆盖 200 个文件、1,821 项，全部通过；确认图标后相关组件另行复跑，原始报告保留；主进程 911 项、移动基础 7 项及两种页面加载方式各 17 组检查通过。桌面界面另巡检 96 个页面、主题和宽度组合，检查 5,861 个控件与 15 条交互流程。
+本轮结果与待验项在 [verification.json](verification.json)，详细平台和品牌矩阵在 [compatibility.md](compatibility.md)。1.9.11 主进程 921 项、移动单元 11 项通过，网页和本地 WebView 宿主模拟两种加载方式各 18 组通过。办公格式验收覆盖 37 组兼容读取、25 组保存重开及服务配置操作，使用实际本地转换服务。渲染层全量运行 1,848 项，OFD 的一项问题修复后在最终受影响的 82 项回归和真实 OFD/PDF 流程中通过；详细原始结果与复测说明见[本版验收](../docs/v1.9.11-修复与验收.md)。1.9.10 的完整基线另行归档，不作为新 APK 或各品牌真机均通过的证明。
 
 检查覆盖中文 DOCX/XLSX/PPTX 往返、保存重开、来源指纹冲突、密钥重新加载、中文 PDF 生成/旋转/阅读、手机新建文字和全部功能入口。Word 图片回归实际操作八个手柄、旋转、翻转、布局、裁剪、移动、删除和撤销重做，并检查裁剪像素、PDF 中的旋转翻转像素及工作区恢复。旧 APK 已验证 DOCX 导入、中文编辑、保存、后台和杀进程后恢复，并发现系统分享与 MIME 文件选择差异；对应源码修复须通过新 APK 再验收。按用户要求，当前只打包 Android，不打包 iOS、鸿蒙。
 
@@ -93,6 +93,8 @@ Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 AR
 
 ## 操作视频与 APK 交付
 
-[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用本版移动端生产界面原型，讲解完整日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。新版 APK 由用户在 HBuilderX 云打包后提供，收到后再核对版本、签名、资源与实际安装行为，上传同版本发布附件。当前没有把旧 APK 当作 1.9.10 成品。
+[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用 1.9.10 移动端生产界面原型，讲解日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。新版 APK 由用户在 HBuilderX 云打包后提供，收到后再核对版本、签名、资源与实际安装行为，上传同版本发布附件。当前没有把旧 APK 当作 1.9.11 成品。
 
-1.9.10 已接入用户确认的 PC / 移动两套界面图标。PC 使用细线条和彩色点缀，移动文件及功能入口使用彩色图形；窄屏与触屏平板按移动样式适配，PC Web 与桌面界面使用扁平皮肤。
+1.9.11 已接入用户确认的 PC / 移动两套界面图标。PC 使用细线条和彩色点缀，移动文件及功能入口使用彩色图形；窄屏与触屏平板按移动样式适配，PC Web 与桌面界面使用扁平皮肤。
+
+本版手机与 PC 共用全部 50 种办公扩展名清单，同步 CSV/TSV 原格式保存、中文编码、OOXML 模板与宏正文导入、MHTML 和 OFD 阅读。旧表格使用离线兼容处理，旧文字、演示和部分开放格式使用用户确认的[自建文档转换服务](../server/converter/README.md)。手机设置中心可保存服务地址、加密访问令牌、测试连接；每次上传正文前确认，取消或失败保留来源。服务需实际部署后才能使用联网格式，完整范围见[文档格式支持](../docs/文档格式支持.md)。APK 继续由用户云打包后提供核验。

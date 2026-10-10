@@ -11,7 +11,8 @@ const 检查 = (条件, 说明) => { if (!条件) throw new Error(说明); 核�
 
 async function 连接(端口, 选择) {
   let 入口
-  for (let 次数 = 0; 次数 < 120; 次数++) {
+  // Portable packages also expand the offline compatibility engine on a cold start.
+  for (let 次数 = 0; 次数 < 1200; 次数++) {
     try { 入口 = (await (await fetch(`http://127.0.0.1:${端口}/json/list`)).json()).find(选择) } catch {}
     if (入口) break
     await 等待片刻(100)
@@ -30,8 +31,8 @@ async function 连接(端口, 选择) {
     else 任务.完成(响应.result)
   })
   return {
-    执行: 表达式 => new Promise((完成, 拒绝) => {
-      const id = ++序号, 超时 = setTimeout(() => { 任务列表.delete(id); 拒绝(new Error('成品核验调用超时')) }, 20000)
+    执行: (表达式, 超时毫秒 = 20000) => new Promise((完成, 拒绝) => {
+      const id = ++序号, 超时 = setTimeout(() => { 任务列表.delete(id); 拒绝(new Error('成品核验调用超时')) }, 超时毫秒)
       任务列表.set(id, { 完成: 结果 => 完成(结果.result.value), 拒绝, 超时 })
       通道.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression: 表达式, awaitPromise: true, returnByValue: true } }))
     }),
@@ -219,6 +220,22 @@ async function 验收() {
       await 执行("document.querySelector('.wps-global-tabs__home').click()")
       await 点击('打开'); await 等待("document.body.textContent.includes('第 1 张')")
       检查(!await 执行(可见弹窗), '零页演示新增后保存重开保留真实一页')
+    }
+    if (阶段 === 'first') {
+      const 来源 = fs.readFileSync(path.resolve(__dirname, '../.upgrade-private/format-samples/verify.doc')).toString('base64')
+      const 读取 = await 执行(`window.electronAPI.office.readCompatible('doc',${JSON.stringify(来源)})`, 110000)
+      检查(读取.成功 && /中文格式验收 0012/.test(读取.html.replace(/<[^>]+>/g,'')), '成品内置转换引擎真实读取 DOC，中文与前导零完整')
+      const 写入 = await 执行(`window.electronAPI.office.writeCompatible('word','doc',{段落:[{类型:'段落',文字:[{文本:'成品旧格式保存 0012'}]}]})`, 110000)
+      检查(写入.成功 && Buffer.from(写入.数据,'base64').subarray(0,8).equals(Buffer.from([0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1])), '成品输出真实 DOC 二进制内容')
+      const 重开 = await 执行(`window.electronAPI.office.readCompatible('doc',${JSON.stringify(写入.数据)})`, 110000)
+      检查(重开.成功 && /成品旧格式保存 0012/.test(重开.html.replace(/<[^>]+>/g,'')), '成品 DOC 保存后重新读取保留修改')
+      const CSV文件 = path.join(数据目录, '中文原格式.csv')
+      await 主.执行(`process.mainModule.require('fs').writeFileSync(${JSON.stringify(CSV文件)},Buffer.from('\\uFEFF编号,金额\\r\\n0012,123\\r\\n','utf16le'));true`)
+      const CSV来源 = await 执行(`window.electronAPI.readFile(${JSON.stringify(CSV文件)})`)
+      检查(CSV来源.成功 && CSV来源.文本编码 === 'utf16le' && CSV来源.内容.includes('0012'), '成品读取 CSV 保留中文 UTF-16 编码')
+      const CSV保存 = await 执行(`window.electronAPI.saveToFile(${JSON.stringify(CSV文件)},'\\uFEFF编号,金额\\r\\n0012,456\\r\\n','文本',${JSON.stringify(CSV来源.文件指纹)},'utf16le')`)
+      const CSV重开 = await 执行(`window.electronAPI.readFile(${JSON.stringify(CSV文件)})`)
+      检查(CSV保存.成功 && CSV重开.文本编码 === 'utf16le' && CSV重开.内容.includes('0012,456') && !CSV重开.二进制, '成品 CSV 写回原扩展名和编码，重开保留内容')
     }
     const 信息 = await 执行('window.electronAPI.getAppInfo()'), 完整性 = await 执行('window.electronAPI.checkIntegrity()')
     检查(完整性.成功 && 完整性.完整, '最终成品完整性校验通过')

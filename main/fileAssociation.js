@@ -1,6 +1,6 @@
 const path = require('path')
 
-const 关联扩展名 = new Set(['.docx', '.xlsx', '.pptx', '.pdf'])
+const 关联扩展名 = new Set(require('./documentFormats.json').map(({ extension }) => `.${extension}`))
 
 /** 仅提取安装版可处理的 Windows 文件绝对路径，不把启动参数误当文件。 */
 function 提取关联路径(命令行) {

@@ -57,11 +57,15 @@ foreach ($名 in @('Square44x44Logo.png','Square150x150Logo.png','Square310x310L
 Write-Host '  已复制 6 个磁贴资源'
 
 Write-Host '=== 3) 生成 AppxManifest.xml ==='
+$文档格式 = Get-Content -LiteralPath (Join-Path $根 'main/documentFormats.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$文件类型清单 = ($文档格式 | ForEach-Object { "                  <uap:FileType>.$($_.extension)</uap:FileType>" }) -join "`n"
 $清单 = @"
 <?xml version="1.0" encoding="utf-8"?>
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  IgnorableNamespaces="uap3"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
   <Identity Name="$IdentityName" Publisher="$Publisher" Version="$Version" ProcessorArchitecture="x64" />
   <Properties>
@@ -90,6 +94,15 @@ $清单 = @"
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\Square310x310Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="officedocuments" Parameters="&quot;%1&quot;">
+            <uap:SupportedFileTypes>
+$文件类型清单
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 </Package>

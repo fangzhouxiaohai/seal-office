@@ -54,7 +54,7 @@ it('开关打开但不是默认程序时先确认，点“立即设为默认”�
   expect(await screen.findByText('是否把海豹办公设为默认程序？')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: '立即设为默认' }))
   await waitFor(() => expect(应用).toHaveBeenCalledOnce())
-  expect(await screen.findByText('已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')).toBeInTheDocument()
+  expect(await screen.findByText('所有受支持文档格式已使用海豹办公打开')).toBeInTheDocument()
 })
 
 it('自动设置后系统仍拦下时说明剩余格式并可打开系统页面', async () => {

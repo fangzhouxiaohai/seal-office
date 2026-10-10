@@ -1,8 +1,9 @@
 // 拖入文件打开：从系统拖放数据里取出本地路径，并按可打开的扩展名分流。
 import { 归一化扩展名 } from './fileOpen'
+import 文档格式 from '../../main/documentFormats.json'
 
 /** 与「打开文件」对话框一致的可打开格式 */
-export const 可拖入扩展名 = ['docx', 'xlsx', 'pptx', 'pdf', 'csv', 'json', 'txt', 'md', 'html', 'htm'] as const
+export const 可拖入扩展名 = 文档格式.map(项 => 项.extension)
 
 export interface 拖入文件分组 {
   可打开: string[]

@@ -1,0 +1,409 @@
+[
+  {
+    "extension": "docx",
+    "type": "word",
+    "label": "Word 文档",
+    "icon": "word"
+  },
+  {
+    "extension": "xlsx",
+    "type": "table",
+    "label": "Excel 表格",
+    "icon": "table"
+  },
+  {
+    "extension": "pptx",
+    "type": "ppt",
+    "label": "演示文稿",
+    "icon": "presentation"
+  },
+  {
+    "extension": "pdf",
+    "type": "pdf",
+    "label": "PDF 文件",
+    "icon": "pdf"
+  },
+  {
+    "extension": "csv",
+    "type": "table",
+    "label": "CSV 表格",
+    "icon": "table",
+    "text": true
+  },
+  {
+    "extension": "txt",
+    "type": "word",
+    "label": "纯文本",
+    "icon": "word",
+    "text": true
+  },
+  {
+    "extension": "md",
+    "type": "word",
+    "label": "Markdown",
+    "icon": "word",
+    "text": true
+  },
+  {
+    "extension": "html",
+    "type": "word",
+    "label": "HTML 网页",
+    "icon": "word",
+    "text": true
+  },
+  {
+    "extension": "htm",
+    "type": "word",
+    "label": "HTM 网页",
+    "icon": "word",
+    "text": true
+  },
+  {
+    "extension": "json",
+    "type": "word",
+    "label": "JSON 文档",
+    "icon": "word",
+    "text": true
+  },
+  {
+    "extension": "doc",
+    "type": "word",
+    "label": "Word 97–2003",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "MS Word 97"
+  },
+  {
+    "extension": "dot",
+    "type": "word",
+    "label": "Word 旧版模板",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "MS Word 97 Vorlage"
+  },
+  {
+    "extension": "dotx",
+    "type": "word",
+    "label": "Word 模板",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "Office Open XML Text Template",
+    "ooxml": true
+  },
+  {
+    "extension": "docm",
+    "type": "word",
+    "label": "Word 宏文档",
+    "icon": "word",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "dotm",
+    "type": "word",
+    "label": "Word 宏模板",
+    "icon": "word",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "rtf",
+    "type": "word",
+    "label": "RTF 文档",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "Rich Text Format"
+  },
+  {
+    "extension": "odt",
+    "type": "word",
+    "label": "开放文本文档",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "writer8"
+  },
+  {
+    "extension": "ott",
+    "type": "word",
+    "label": "开放文本模板",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "writer8_template"
+  },
+  {
+    "extension": "fodt",
+    "type": "word",
+    "label": "开放文本 XML",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "OpenDocument Text Flat XML"
+  },
+  {
+    "extension": "mht",
+    "type": "word",
+    "label": "单文件网页",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "mhtml",
+    "text": true
+  },
+  {
+    "extension": "mhtml",
+    "type": "word",
+    "label": "单文件网页",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "mhtml",
+    "text": true
+  },
+  {
+    "extension": "xml",
+    "type": "word",
+    "label": "XML 文档",
+    "icon": "word",
+    "conversion": true,
+    "outputFilter": "xml",
+    "text": true
+  },
+  {
+    "extension": "xls",
+    "type": "table",
+    "label": "Excel 97–2003",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "MS Excel 97"
+  },
+  {
+    "extension": "xlt",
+    "type": "table",
+    "label": "Excel 旧版模板",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "MS Excel 97 Vorlage/Template"
+  },
+  {
+    "extension": "xltx",
+    "type": "table",
+    "label": "Excel 模板",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "Calc Office Open XML Template",
+    "ooxml": true
+  },
+  {
+    "extension": "xlsm",
+    "type": "table",
+    "label": "Excel 宏表格",
+    "icon": "table",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "xltm",
+    "type": "table",
+    "label": "Excel 宏模板",
+    "icon": "table",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "xlsb",
+    "type": "table",
+    "label": "Excel 二进制表格",
+    "icon": "table",
+    "conversion": true,
+    "readOnlySource": true
+  },
+  {
+    "extension": "xla",
+    "type": "table",
+    "label": "Excel 旧版加载项",
+    "icon": "table",
+    "conversion": true,
+    "readOnlySource": true
+  },
+  {
+    "extension": "xlam",
+    "type": "table",
+    "label": "Excel 加载项",
+    "icon": "table",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "ods",
+    "type": "table",
+    "label": "开放电子表格",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "calc8"
+  },
+  {
+    "extension": "ots",
+    "type": "table",
+    "label": "开放表格模板",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "calc8_template"
+  },
+  {
+    "extension": "fods",
+    "type": "table",
+    "label": "开放表格 XML",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "OpenDocument Spreadsheet Flat XML"
+  },
+  {
+    "extension": "dbf",
+    "type": "table",
+    "label": "dBASE 数据表",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "dBase"
+  },
+  {
+    "extension": "prn",
+    "type": "table",
+    "label": "固定宽度数据表",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "prn"
+  },
+  {
+    "extension": "dif",
+    "type": "table",
+    "label": "DIF 数据表",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "DIF"
+  },
+  {
+    "extension": "tsv",
+    "type": "table",
+    "label": "制表符数据表",
+    "icon": "table",
+    "text": true
+  },
+  {
+    "extension": "slk",
+    "type": "table",
+    "label": "SYLK 数据表",
+    "icon": "table",
+    "conversion": true,
+    "outputFilter": "SYLK"
+  },
+  {
+    "extension": "ppt",
+    "type": "ppt",
+    "label": "PowerPoint 97–2003",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "MS PowerPoint 97"
+  },
+  {
+    "extension": "pot",
+    "type": "ppt",
+    "label": "PowerPoint 旧版模板",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "MS PowerPoint 97 Vorlage"
+  },
+  {
+    "extension": "potx",
+    "type": "ppt",
+    "label": "PowerPoint 模板",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "Impress Office Open XML Template",
+    "ooxml": true
+  },
+  {
+    "extension": "pptm",
+    "type": "ppt",
+    "label": "PowerPoint 宏文稿",
+    "icon": "presentation",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "potm",
+    "type": "ppt",
+    "label": "PowerPoint 宏模板",
+    "icon": "presentation",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "pps",
+    "type": "ppt",
+    "label": "PowerPoint 旧版放映",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "MS PowerPoint 97 AutoPlay"
+  },
+  {
+    "extension": "ppsx",
+    "type": "ppt",
+    "label": "PowerPoint 放映",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "Impress Office Open XML AutoPlay",
+    "ooxml": true
+  },
+  {
+    "extension": "ppsm",
+    "type": "ppt",
+    "label": "PowerPoint 宏放映",
+    "icon": "presentation",
+    "conversion": true,
+    "readOnlySource": true,
+    "macro": true,
+    "ooxml": true
+  },
+  {
+    "extension": "odp",
+    "type": "ppt",
+    "label": "开放演示文稿",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "impress8"
+  },
+  {
+    "extension": "otp",
+    "type": "ppt",
+    "label": "开放演示模板",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "impress8_template"
+  },
+  {
+    "extension": "fodp",
+    "type": "ppt",
+    "label": "开放演示 XML",
+    "icon": "presentation",
+    "conversion": true,
+    "outputFilter": "OpenDocument Presentation Flat XML"
+  },
+  {
+    "extension": "ofd",
+    "type": "pdf",
+    "label": "OFD 版式文档",
+    "icon": "pdf",
+    "readOnlySource": true
+  }
+]

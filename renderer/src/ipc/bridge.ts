@@ -1,4 +1,5 @@
-export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 扩展名?: string; 文件指纹?: string; 错误?: string }
+export type 文本编码 = 'utf8' | 'utf16le' | 'utf16be' | 'gb18030'
+export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
 export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string }
 export interface 文件重命名结果 { 成功: boolean; 路径?: string; 名称?: string; 文件指纹?: string; 错误?: string }
 export interface 完整性检查结果 { 成功: boolean; 完整?: boolean; 检查文件数?: number; 异常?: Array<{ 路径: string; 原因: string }>; 错误?: string }
@@ -159,13 +160,13 @@ export interface 演示生成接口 {
   }
 }
 export interface 电子接口 {
-  showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
+  showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf' | 'ofd') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialogMany: (打开类型: 'pdf' | 'ppt') => Promise<string[]>
   takePendingAssociatedFiles: () => Promise<关联文件领取结果>
   onAssociatedFilesAvailable: (回调: () => void) => () => void
   listKnownFolder: (位置: 'desktop' | 'document' | 'download') => Promise<本机文件夹结果>
-  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null) => Promise<文件保存结果>
+  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null, 编码?: 文本编码) => Promise<文件保存结果>
   readFile: (路径: string) => Promise<文件读取结果>
   renameFile: (旧路径: string, 新名称: string, 预期文件指纹?: string) => Promise<文件重命名结果>
   backupSave: (内容: string) => Promise<{ 成功: boolean; 错误?: string }>
@@ -241,7 +242,7 @@ export interface 电子接口 {
   }
   presentationAi?: 演示智能接口
   presentationGeneration?: 演示生成接口
-  office: { writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
+  office: { readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; insertBlank: (数据: string, 位置: number) => Promise<any>; insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => Promise<any>; editPage: (数据: string, 操作: unknown) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
 declare global { interface Window { electronAPI?: 电子接口 } }
@@ -271,15 +272,16 @@ export const 桥接 = {
   sendPresenterControl: (动作: string): Promise<{ 成功: boolean; 错误?: string }> => 取后端()?.presenter?.control(undefined, 动作) ?? 失败('当前环境不支持演讲者控制'),
   onPresenterUpdate: (回调: (数据: 演讲者推送数据) => void): (() => void) => 取后端()?.presenter?.onUpdate?.(回调) ?? (() => {}),
   get 关联文件可用() { return typeof 取后端()?.takePendingAssociatedFiles === 'function' && typeof 取后端()?.onAssociatedFilesAvailable === 'function' },
-  showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
+  showSaveDialog: (名称: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf' | 'ofd') => 取后端()?.showSaveDialog(名称, 保存类型) ?? Promise.resolve(null),
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => 取后端()?.showOpenDialog(打开类型) ?? Promise.resolve(null),
   showOpenDialogMany: (打开类型: 'pdf' | 'ppt') => 取后端()?.showOpenDialogMany(打开类型) ?? Promise.resolve([]),
   takePendingAssociatedFiles: (): Promise<关联文件领取结果> => 取后端()?.takePendingAssociatedFiles?.() ?? 失败('当前环境不支持从系统文件关联打开文件'),
   onAssociatedFilesAvailable: (回调: () => void): (() => void) => 取后端()?.onAssociatedFilesAvailable?.(回调) ?? (() => {}),
   listKnownFolder: (位置: 'desktop' | 'document' | 'download'): Promise<本机文件夹结果> => 取后端()?.listKnownFolder(位置) ?? 失败('请使用 Windows 桌面版浏览本机文件夹'),
-  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null): Promise<文件保存结果> => {
+  saveToFile: (路径: string, 内容: string | Uint8Array, 格式?: '文本' | '二进制', 预期文件指纹?: string | null, 编码?: 文本编码): Promise<文件保存结果> => {
     const 后端 = 取后端()
     if (!后端) return 失败('当前环境不支持文件保存')
+    if (编码 !== undefined) return 后端.saveToFile(路径, 内容, 格式, 预期文件指纹, 编码)
     return 预期文件指纹 === undefined
       ? 后端.saveToFile(路径, 内容, 格式)
       : 后端.saveToFile(路径, 内容, 格式, 预期文件指纹)
@@ -434,6 +436,8 @@ export const 桥接 = {
     },
   },
   office: {
+    readCompatible: (扩展: string, 数据: string) => 取后端()?.office.readCompatible?.(扩展, 数据) ?? 失败('当前环境缺少文档兼容引擎'),
+    writeCompatible: (类型: string, 扩展: string, 模型: unknown) => 取后端()?.office.writeCompatible?.(类型, 扩展, 模型) ?? 失败('当前环境缺少文档兼容引擎'),
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
   },
   pdf: {

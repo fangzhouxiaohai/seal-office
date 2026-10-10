@@ -13,10 +13,13 @@ export async function buildCore() {
     alias: {
       electron: path.join(directory, 'web/shims/electron.js'), fs: path.join(directory, 'web/shims/fs.js'),
       crypto: path.join(directory, 'web/shims/crypto.js'), path: path.join(directory, 'node_modules/path-browserify/index.js'),
-      zlib: path.join(directory, 'web/shims/zlib.js'),
+      zlib: path.join(directory, 'web/shims/zlib.js'), stream: path.join(directory, 'web/shims/unavailable.js'),
       os: path.join(directory, 'web/shims/unavailable.js'), http: path.join(directory, 'web/shims/unavailable.js'), https: path.join(directory, 'web/shims/unavailable.js')
     },
     plugins: [{ name: 'seal-browser-platform', setup(context) {
+      context.onResolve({ filter: /\.\/nativeConversion$/ }, args => {
+        if (args.importer.replaceAll('\\', '/').includes('/main/office/')) return { path: path.join(directory, 'web/nativeConversion.cjs') }
+      })
       context.onResolve({ filter: /(?:\.\.\/ppt\/export|\.\/export)$/ }, (args) => {
         if (args.importer.replaceAll('\\', '/').includes('/main/')) return { path: path.join(directory, 'web/presentationExport.cjs') }
       })

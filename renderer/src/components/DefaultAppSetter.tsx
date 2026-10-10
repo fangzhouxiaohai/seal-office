@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { App as AntdApp, Button, Alert, Card } from 'antd'
 import { 桥接 } from '../ipc/bridge'
+import { 文档格式, 文档格式说明 } from '../fileFormats'
 
 const DefaultAppSetter = () => {
   const { message, modal } = AntdApp.useApp()
@@ -36,7 +37,7 @@ const DefaultAppSetter = () => {
     
     React.createElement(Alert, {
       message: '功能说明',
-      description: '在 Windows 默认应用设置中，可为 DOCX、XLSX、PPTX 和 PDF 文件选择海豹办公。',
+      description: `在 Windows 默认应用设置中，可为${文档格式说明}选择海豹办公。`,
       type: 'info',
       showIcon: true,
       style: { marginBottom: '16px' }
@@ -44,11 +45,8 @@ const DefaultAppSetter = () => {
 
     React.createElement('div', { style: { marginBottom: '16px' } },
       React.createElement('p', null, '支持的文件类型：'),
-      React.createElement('ul', null,
-        React.createElement('li', null, '.docx - Word 文档'),
-        React.createElement('li', null, '.xlsx - Excel 表格'),
-        React.createElement('li', null, '.pptx - PPT 演示'),
-        React.createElement('li', null, '.pdf - PDF 文件')
+      React.createElement('ul', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '4px 16px', maxHeight: '240px', overflow: 'auto', padding: '0 0 0 20px', fontSize: '13px' } },
+        ...文档格式.map(项 => React.createElement('li', { key: 项.extension }, `.${项.extension} - ${项.label}${项.readOnlySource ? '（读取后另存为普通文档）' : ''}`))
       )
     ),
 

@@ -48,6 +48,9 @@ def main():
     store_materials = release_dir / f'SealOffice{version}-LenovoAssets.zip'
     if store_materials.is_file():
         files.append(store_materials)
+    converter_package = release_dir / f'SealOffice{version}-DocumentConverter.zip'
+    if converter_package.is_file():
+        files.append(converter_package)
     tutorial = ROOT / 'release/promo' / f'SealOffice{version}-AndroidTutorialLandscape1080p.mp4'
     if tutorial.is_file():
         verification = tutorial.with_name(f'SealOffice{version}-AndroidTutorialVerification.json')

@@ -1,0 +1,25 @@
+{
+  "version": "1.9.10",
+  "startedAt": "2026-10-10T19:15:46.684Z",
+  "checks": [
+    {
+      "extension": "prn",
+      "bytes": 30,
+      "milliseconds": 74,
+      "warnings": [
+        "PRN 按连续空格或制表符分列；无分隔的固定字段需核对边界。请另存为副本以保留来源文件"
+      ]
+    },
+    {
+      "extension": "xlsb",
+      "mode": "Microsoft Excel fixture body import; source protected"
+    },
+    {
+      "extension": "xla",
+      "mode": "Microsoft Excel fixture body import; source protected"
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-10-10T19:16:37.151Z",
+  "status": "passed"
+}

@@ -14,5 +14,7 @@ const platform = require('./shims/electron.js')
 const storage = require('./shims/fs.js')
 const vault = require('./shims/vault.js')
 const crypto = require('./shims/crypto.js')
+const textCodec = require('../../main/textCodec')
+const conversion = require('./nativeConversion.cjs')
 require('../../main/preload.js')
-module.exports = { office, ai, presentationAi, generation, cloud, presentation, assistant, services, cloudService, pdf, recognition, recording, platform, storage, vault, crypto }
+module.exports = { office, ai, presentationAi, generation, cloud, presentation, assistant, services, cloudService, pdf, recognition, recording, platform, storage, vault, crypto, textCodec, conversion }

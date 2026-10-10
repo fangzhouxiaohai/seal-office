@@ -12,7 +12,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('file.association.available', 处理)
   },
   listKnownFolder: (位置) => ipcRenderer.invoke('file.listKnownFolder', 位置),
-  saveToFile: (路径, 内容, 格式, 预期文件指纹) => 预期文件指纹 === undefined
+  saveToFile: (路径, 内容, 格式, 预期文件指纹, 文本编码) => 文本编码 !== undefined
+    ? ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式, 预期文件指纹, 文本编码)
+    : 预期文件指纹 === undefined
     ? ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式)
     : ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式, 预期文件指纹),
   readFile: (路径) => ipcRenderer.invoke('file.readFile', 路径),
@@ -206,6 +208,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   office: {
+    readCompatible: (扩展, 数据) => ipcRenderer.invoke('office.readCompatible', 扩展, 数据),
+    writeCompatible: (类型, 扩展, 模型) => ipcRenderer.invoke('office.writeCompatible', 类型, 扩展, 模型),
     writeDocx: (模型) => ipcRenderer.invoke('office.writeDocx', 模型),
     readDocx: (数据) => ipcRenderer.invoke('office.readDocx', 数据),
     readXlsx: (数据) => ipcRenderer.invoke('office.readXlsx', 数据),

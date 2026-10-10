@@ -1,0 +1,21 @@
+{
+  "archiveSha256": "98945b6bf392dd772536374b205cf1755836d259573cedbe37836f023e2b68c9",
+  "version": "1.9.11",
+  "passed": true,
+  "packages": [
+    {
+      "embeddedArchiveMatches": true,
+      "embeddedOfficeEngineMatches": true,
+      "sha256": "60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609",
+      "name": "SealOfficeSetup1.9.11.exe",
+      "bytes": 385988252
+    },
+    {
+      "embeddedArchiveMatches": true,
+      "embeddedOfficeEngineMatches": true,
+      "sha256": "f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00",
+      "name": "SealOffice1.9.11.exe",
+      "bytes": 385763330
+    }
+  ]
+}

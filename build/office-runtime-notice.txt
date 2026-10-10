@@ -1,0 +1,26 @@
+Seal Office desktop document conversion runtime
+
+This distribution includes the unmodified LibreOffice 26.8.1 Windows x64
+runtime from The Document Foundation, with its license.txt, LICENSE.html,
+third-party notices, fonts and dictionaries in resources/office-runtime.
+LibreOffice is licensed under the Mozilla Public License 2.0 and additional
+component licenses described in those files.
+
+Corresponding upstream source code is available from:
+https://download.documentfoundation.org/libreoffice/src/26.8.1/
+Release information and source archives:
+https://www.libreoffice.org/about-us/source-code/
+
+Official binary package:
+LibreOffice_26.8.1_Win_x86-64.msi
+SHA-256: c6298b10cfa1748bcbedad94c62ce771e240e5021bfd6d7a967cd571b04b5312
+
+Seal Office runs the converter in a separate temporary profile and does not
+install LibreOffice system-wide. Seal Office is not affiliated with The
+Document Foundation. Its own source and format-support documentation are at:
+https://github.com/fangzhouxiaohai/seal-office
+
+OFD rendering: @ycsx/ofdjs 1.0.6, Apache-2.0
+https://github.com/ycsx/ofd.js
+Text encodings: iconv-lite 0.6.3, MIT
+https://github.com/pillarjs/iconv-lite

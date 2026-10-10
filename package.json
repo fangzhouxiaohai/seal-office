@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.9.10",
+  "version": "1.9.11",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "饮风一笑",
@@ -19,8 +19,9 @@
     "icons:files": "electron build/make-file-icons.cjs",
     "pack": "npm --prefix mobile run pack:android",
     "dist": "npm --prefix mobile run pack:android",
-    "pack:windows": "npm run build && electron-builder --win --dir",
-    "dist:windows": "npm run build && electron-builder --win",
+    "prepare:office-runtime": "python scripts/prepare-office-runtime.py",
+    "pack:windows": "npm run prepare:office-runtime && npm run build && electron-builder --win --dir",
+    "dist:windows": "npm run prepare:office-runtime && npm run build && electron-builder --win",
     "mobile:dev": "npm --prefix mobile run dev",
     "mobile:build": "npm --prefix mobile run build:android",
     "mobile:pack": "npm --prefix mobile run pack:android",
@@ -30,12 +31,14 @@
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
+    "@ycsx/ofdjs": "1.0.6",
     "antd": "^5.0.0",
     "docx": "^8.5.0",
     "dompurify": "^3.4.16",
     "exceljs": "^4.4.0",
     "highlight.js": "^11.12.0",
     "html-to-pdfmake": "^2.1.0",
+    "iconv-lite": "0.6.3",
     "jszip": "^3.10.2",
     "lowlight": "^3.3.0",
     "mammoth": "^1.12.3",
@@ -110,6 +113,19 @@
     },
     "extraResources": [
       {
+        "from": "build/office-runtime-notice.txt",
+        "to": "office-runtime-notice.txt"
+      },
+      {
+        "from": ".upgrade-private/office-runtime",
+        "to": "office-runtime",
+        "filter": [
+          "**/*",
+          "!*.msi",
+          "!*.log"
+        ]
+      },
+      {
         "from": "main/windows/shellIntegration.ps1",
         "to": "shell-integration/shellIntegration.ps1"
       },
@@ -156,6 +172,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "海豹办公"
     },
-    "electronDist": "node_modules/electron/dist"
+    "electronDist": "node_modules/electron/dist",
+    "compression": "normal"
   }
 }

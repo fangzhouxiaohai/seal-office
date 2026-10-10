@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "pages": 2,
+  "checks": [
+    "实际 OFD XML 解析和中文 SVG 渲染",
+    "原字节副本保存",
+    "移动端 PDF 两页和毫米尺寸",
+    "Electron 打印两页和毫米尺寸"
+  ],
+  "errors": [],
+  "warnings": [
+    "ofd:Template not found!",
+    "ofd:Template not found!"
+  ]
+}

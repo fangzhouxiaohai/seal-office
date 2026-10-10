@@ -20,8 +20,10 @@ import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 }
 import { 解析字号, 字号列表 } from './fontOptions'
 import { 解析文档, type 文档模型, type 文字页面设置 } from '../office/docModel'
 import { 桥接 } from '../ipc/bridge'
+import { 可保存扩展 } from '../fileFormats'
+import { 写出办公文档 } from '../office/writeDocument'
 import { 基准文件名, 记录最近文档, 读取本地文件内容, type 打开类型 } from '../fileOpen'
-import { 导出为Html, 保存为纯文本, 纯文本损失项 } from './exportDoc'
+import { 导出为Html, 保存为纯文本, 纯文本损失项, 文字文本输出 } from './exportDoc'
 import { 放大一档, 缩小一档 } from './wheelZoom'
 
 export interface ViewState {
@@ -682,11 +684,16 @@ function 预期文件指纹(上下文: CommandContext, 保存路径: string): st
     ? 上下文.当前文件指纹 : undefined
 }
 
-const 文字保存扩展 = new Set(['.docx', '.txt', '.md', '.json', '.html', '.htm', '.pdf'])
+const 文字保存扩展 = new Set([...可保存扩展('word'), '.pdf'])
 
 function 保存文本文件(上下文: CommandContext, 保存路径: string, 扩展: string, 正文Html: string, 提示: string): Promise<void> {
   let 输出: string
-  if (扩展 === '.html' || 扩展 === '.htm') {
+  if (['.mht', '.mhtml', '.xml'].includes(扩展)) {
+    try { 输出 = 文字文本输出(保存路径, 正文Html) } catch (错误) {
+      报告文件错误(上下文, '保存失败', 错误 instanceof Error ? 错误.message : '文档格式无效')
+      return Promise.resolve()
+    }
+  } else if (扩展 === '.html' || 扩展 === '.htm') {
     输出 = 导出为Html(基准文件名(保存路径).replace(/\.[^.]+$/, ''), 正文Html)
   } else {
     const 损失 = 纯文本损失项(正文Html)
@@ -788,7 +795,7 @@ const 导出命令: EditorCommand[] = [
           if (上下文.检查保存路径 && !上下文.检查保存路径(保存路径)) return
           const 保存文本 = () => 保存文本文件(上下文, 保存路径, 扩展, 内容, '文件已保存')
 
-          if (扩展 === '.docx') {
+          if (!/\.(txt|md|json|xml|mht|mhtml|html?|pdf)$/.test(扩展)) {
             // HTML 转 docx 模型并写入二进制文件
             const 页面设置快照 = 从视图提取页面设置(上下文.view)
             const 模型 = htmlToDocxModel(内容, 页面设置快照)
@@ -796,7 +803,7 @@ const 导出命令: EditorCommand[] = [
               报告文件错误(上下文, '保存失败', `当前文档包含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}。请先移除这些对象，或导出为网页保留当前显示内容。`)
               return
             }
-            桥接.office.writeDocx(模型).then((结果: any) => {
+            写出办公文档('word', 保存路径, 模型).then((结果: any) => {
               if (结果 && 结果.成功 && 结果.数据) {
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const, 预期文件指纹(上下文, 保存路径)).then((保存结果) => {
@@ -867,14 +874,14 @@ const 导出命令: EditorCommand[] = [
           if (上下文.检查保存路径 && !上下文.检查保存路径(保存路径)) return
           const 保存文本 = () => 保存文本文件(上下文, 保存路径, 扩展, 内容, '文件已另存为')
 
-          if (扩展 === '.docx') {
+          if (!/\.(txt|md|json|xml|mht|mhtml|html?|pdf)$/.test(扩展)) {
             const 页面设置快照 = 从视图提取页面设置(上下文.view)
             const 模型 = htmlToDocxModel(内容, 页面设置快照)
             if (模型.未覆盖.length > 0) {
               报告文件错误(上下文, '保存失败', `当前文档包含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}。请先移除这些对象，或导出为网页保留当前显示内容。`)
               return
             }
-            桥接.office.writeDocx(模型).then((结果: any) => {
+            写出办公文档('word', 保存路径, 模型).then((结果: any) => {
               if (结果 && 结果.成功 && 结果.数据) {
                 const 二进制数据 = Uint8Array.from(atob(结果.数据), (c) => c.charCodeAt(0))
                 return 桥接.saveToFile(保存路径, 二进制数据, '二进制' as const, 预期文件指纹(上下文, 保存路径)).then((保存结果) => {

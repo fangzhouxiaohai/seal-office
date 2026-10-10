@@ -1,12 +1,13 @@
 // PDF 工具页面：提供 PDF 文件的提取、删除、旋转等操作。
 import PdfWorkbench from '../pdf/PdfWorkbench'
+import OfdViewer from '../pdf/OfdViewer'
 import { useAppStore } from '../store'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 
 const PdfPage = () => {
   const { PDF待预览, pdfDocuments, activeWorkspaceTabId, createDoc, 更新PDF内容, 保存PDF文档, selectWorkspaceTab, closeWorkspaceTab } = useAppStore()
   const 待替换标签 = useRef<{ 原标识: string; 目标路径: string } | null>(null)
-  const 已打开文件 = useMemo(() => pdfDocuments.filter((文件) => 文件.data !== null).map((文件) => ({ 标识: 文件.id, 名称: 文件.name, 数据: 文件.data! })), [pdfDocuments])
+  const 已打开文件 = useMemo(() => pdfDocuments.filter((文件) => 文件.data !== null && !/\.ofd$/i.test(文件.name)).map((文件) => ({ 标识: 文件.id, 名称: 文件.name, 数据: 文件.data! })), [pdfDocuments])
 
   useLayoutEffect(() => {
     const 待替换 = 待替换标签.current
@@ -29,6 +30,7 @@ const PdfPage = () => {
     }
   }
 
+  if (PDF待预览 && /\.ofd$/i.test(PDF待预览.名称)) return <OfdViewer key={activeWorkspaceTabId} 名称={PDF待预览.名称} 数据={PDF待预览.数据} />
   return <PdfWorkbench
     key={activeWorkspaceTabId}
     初始文件={PDF待预览}

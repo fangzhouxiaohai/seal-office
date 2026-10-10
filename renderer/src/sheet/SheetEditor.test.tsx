@@ -754,7 +754,7 @@ describe('表格保存为 xlsx', () => {
     expect(状态!.documents).toHaveLength(1)
   })
 
-  it('CSV 来源点击保存先选择 XLSX 路径，不把二进制写回 CSV', async () => {
+  it('CSV 来源点击保存直接写出 CSV 文本，不改名或调用 XLSX 编码', async () => {
     const 选择路径 = vi.fn().mockResolvedValue('C:\\资料\\数据.xlsx')
     const 写入 = vi.fn().mockResolvedValue({ 成功: true })
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
@@ -768,17 +768,16 @@ describe('表格保存为 xlsx', () => {
     const 入口 = () => {
       状态 = useAppStore()
       return <>
-        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\数据.csv' })}>打开 CSV</button>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\数据.csv', 文件指纹: '原指纹' })}>打开 CSV</button>
         {状态.module === 'table' ? <SheetEditor /> : null}
       </>
     }
     render(<AntdApp><AppProvider><入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByText('打开 CSV'))
     await userEvent.click(screen.getByRole('button', { name: '保存' }))
-    await waitFor(() => expect(选择路径).toHaveBeenCalledWith('数据.xlsx', 'table'))
-    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\数据.xlsx', 'UEsDBAo=', '二进制'))
-    expect(写入).not.toHaveBeenCalledWith('C:\\资料\\数据.csv', expect.anything(), expect.anything())
-    expect(状态!.文档路径[状态!.activeDocumentId!]).toBe('C:\\资料\\数据.xlsx')
+    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\数据.csv', '\uFEFF数据', '文本', '原指纹'))
+    expect(选择路径).not.toHaveBeenCalled()
+    expect(状态!.文档路径[状态!.activeDocumentId!]).toBe('C:\\资料\\数据.csv')
   })
 
   it('另存为目标已被其他标签占用时在编码和写盘前阻止', async () => {
@@ -867,7 +866,7 @@ describe('表格保存为 xlsx', () => {
   it('导出表格的目标扩展名不是 XLSX 时拒绝写入二进制', async () => {
     const 写入 = vi.fn().mockResolvedValue({ 成功: true })
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
-      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\误选.csv'),
+      showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\误选.pdf'),
       saveToFile: 写入,
       office: { writeXlsx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
     } })

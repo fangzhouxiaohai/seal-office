@@ -4,11 +4,14 @@ import core from './generated/core.mjs'
 import { downloadFile, platformFetch, waitForNative } from './native'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
+import formats from '../../main/documentFormats.json'
+import { installConversionService } from './conversionService'
 
 const { platform, storage, vault, crypto: cryptoCore } = core
 const { ipcMain } = platform
 const hash = (bytes: Uint8Array) => cryptoCore.createHash('sha256').update(bytes).digest('hex')
-const binaryExtensions = new Set(['docx', 'xlsx', 'pptx', 'pdf', 'doc', 'xls', 'ppt', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'mp3', 'wav', 'mp4', 'webm'])
+const binaryExtensions = new Set([...formats.filter(format => !('text' in format && format.text)).map(format => format.extension), 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'mp3', 'wav', 'mp4', 'webm'])
+const allDocuments = formats.map(format => '.' + format.extension).join(',')
 const bytes = (data: string | Uint8Array, format?: string) => typeof data === 'string' ? Buffer.from(data, format === '二进制' ? 'base64' : 'utf8') : Buffer.from(data)
 const wrapped = (callback: (...args: any[]) => any) => async (_event: unknown, ...args: any[]) => {
   try { return await callback(...args) } catch (error) { return { 成功: false, 错误: error instanceof Error ? error.message : String(error) } }
@@ -17,7 +20,7 @@ const handle = (channel: string, callback: (...args: any[]) => any) => ipcMain.h
 const success = () => ({ 成功: true })
 let unsaved = 0
 
-async function pickFiles(accept = '.docx,.xlsx,.pptx,.pdf,.csv,.txt,.md,.html,.json', multiple = false): Promise<string[]> {
+async function pickFiles(accept = allDocuments, multiple = false): Promise<string[]> {
   const files = await new Promise<File[]>((resolve) => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = window.sealNative?.platform === 'android' ? '*/*' : accept; input.multiple = multiple; input.hidden = true
     let finished = false, timer: ReturnType<typeof setTimeout> | undefined
@@ -40,13 +43,22 @@ async function pickFiles(accept = '.docx,.xlsx,.pptx,.pdf,.csv,.txt,.md,.html,.j
   }
   await storage.flushStorage(); return paths
 }
-const acceptFor = (kind?: string) => ({ word: '.docx,.txt,.md,.html,.json', table: '.xlsx,.csv', ppt: '.pptx', pdf: '.pdf' }[kind ?? ''] ?? '.docx,.xlsx,.pptx,.pdf,.csv,.txt,.md,.html,.json')
-async function save(filename: string, data: string | Uint8Array, format?: string, fingerprint?: string | null) {
+const acceptFor = (kind?: string) => kind ? formats.filter(format => format.type === kind || kind === 'table' && ['json', 'xml'].includes(format.extension)).map(format => '.' + format.extension).join(',') : allDocuments
+async function save(filename: string, data: string | Uint8Array, format?: string, fingerprint?: string | null, encoding?: string) {
   if (!filename.startsWith('/seal/documents/')) throw new Error('请保存到应用文档空间')
   if (fingerprint && storage.existsSync(filename) && hash(storage.readFileSync(filename)) !== fingerprint) throw new Error('文件已被其他操作修改，请另存为，避免覆盖')
-  const content = bytes(data, format)
-  storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, content); await storage.flushStorage()
+  const content = typeof data === 'string' && format !== '二进制' ? core.textCodec.编码文本(data, encoding) : bytes(data, format)
+  const previous = storage.existsSync(filename) ? storage.readFileSync(filename) : null
+  const expected = previous ? hash(previous) : null
+  // A failed native export must not replace the local source or make its fingerprint stale.
   await downloadFile(path.basename(filename), content)
+  if (storage.existsSync(filename) ? hash(storage.readFileSync(filename)) !== expected : expected !== null) throw new Error('导出期间文件发生变化，已导出副本但未覆盖本机来源，请重新打开')
+  storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, content)
+  try { await storage.flushStorage() }
+  catch (error) {
+    if (hash(storage.readFileSync(filename)) === hash(content)) { if (previous) storage.writeFileSync(filename, previous); else storage.rmSync(filename, { force: true }) }
+    throw error
+  }
   return { 成功: true, 路径: filename, 文件指纹: hash(content) }
 }
 const recentFile = '/seal/private/recent.json'
@@ -59,7 +71,7 @@ function registerFiles() {
   handle('file.showSaveDialog', async (name) => (await platform.dialog.showSaveDialog({ defaultPath: name })).filePath)
   handle('file.readFile', (filename: string) => {
     const content = storage.readFileSync(filename), ext = path.extname(filename).slice(1).toLowerCase(), binary = binaryExtensions.has(ext)
-    return { 成功: true, 内容: content.toString(binary ? 'base64' : 'utf8'), 二进制: binary, 扩展名: ext, 文件指纹: hash(content) }
+    return { 成功: true, ...(binary ? { 内容: content.toString('base64') } : core.textCodec.解码文本(content)), 二进制: binary, 扩展名: ext, 文件指纹: hash(content) }
   })
   handle('file.saveToFile', save)
   handle('file.rename', async (filename, name, fingerprint) => {
@@ -112,6 +124,7 @@ async function initialize() {
   })
   await storage.initializeStorage(); await vault.initializeVault()
   for (const folder of ['/seal/private', '/seal/documents', '/seal/tmp', '/seal/private/cloud-outbox']) storage.mkdirSync(folder, { recursive: true })
+  installConversionService(core)
   window.fetch = platformFetch as typeof fetch
   platform.configureDialogs(() => pickFiles(undefined, true), (filename: string, data: Uint8Array) => downloadFile(path.basename(filename), data))
   const assistant = core.assistant.创建助手服务({ 配置路径: '/seal/private/assistant-config.secure', 安全存储: vault.safeStorage })

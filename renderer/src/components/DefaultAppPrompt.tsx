@@ -92,7 +92,7 @@ export default function DefaultAppPrompt() {
         else message.warning(`需要在 Windows 默认应用页面确认：${(结果.未生效 ?? []).map((项) => `.${项}`).join('、')}。可在设置中心手动设置，或在系统“默认应用”页面确认。`, 6)
         return
       }
-      message.success('已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开')
+      message.success('所有受支持文档格式已使用海豹办公打开')
     } catch (错误) {
       modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '无法设置系统文件关联', okText: '确定' })
     } finally {
@@ -119,11 +119,11 @@ export default function DefaultAppPrompt() {
     >
       {是自检询问 ? (
         <>
-          <p>检测到部分文件类型目前不是由海豹办公打开。你可以将 DOCX、XLSX、PPTX、PDF 的默认打开程序设为海豹办公。</p>
+          <p>检测到部分文件类型目前不是由海豹办公打开。可为文字、表格、演示和 PDF 文档设置默认程序，包含 CSV、旧版 Office、模板和开放文档格式。</p>
           <p>Windows 的默认应用设置需要你在系统页面确认。此操作会注册海豹办公的打开能力，并引导你完成选择。</p>
         </>
       ) : (
-        <p>是否使用海豹办公默认打开 DOCX、XLSX、PPTX 和 PDF？确认后将注册打开能力，需要时进入 Windows 默认应用页面完成选择。</p>
+        <p>是否使用海豹办公默认打开受支持的文档格式？确认后将注册打开能力，需要时进入 Windows 默认应用页面完成选择。</p>
       )}
     </Modal>
   )

@@ -32,7 +32,8 @@ describe('关闭前保存全部文档', () => {
     expect(规范保存路径('table', 'D:\\文档\\表格')).toBe('D:\\文档\\表格.xlsx')
     expect(规范保存路径('ppt', 'D:\\文档\\演示')).toBe('D:\\文档\\演示.pptx')
     expect(规范保存路径('word', 'D:\\文档\\报告.DOCX')).toBe('D:\\文档\\报告.DOCX')
-    expect(规范保存路径('table', 'D:\\文档\\表格.csv')).toBeNull()
+    expect(规范保存路径('table', 'D:\\文档\\表格.csv')).toBe('D:\\文档\\表格.csv')
+    expect(规范保存路径('table', 'D:\\文档\\表格.pdf')).toBeNull()
     expect(规范保存路径('ppt', 'D:\\文档\\演示.pptx.bak')).toBeNull()
   })
 
@@ -119,9 +120,36 @@ describe('关闭前保存全部文档', () => {
 
   it('保存路径格式不受支持时拒绝写出', async () => {
     const { 保存 } = 安装桥接()
-    安装桥接({ showSaveDialog: vi.fn(async () => 'D:\\文档\\表格.csv') })
+    安装桥接({ showSaveDialog: vi.fn(async () => 'D:\\文档\\表格.pdf') })
     const 结果 = await 保存全部文档([{ 标识: '甲', 名称: '表格', 类型: 'table', 路径: null, 表格模型: [] }])
-    expect(结果.失败[0].原因).toContain('只能保存为 XLSX 格式')
+    expect(结果.失败[0].原因).toContain('表格请选择')
+    expect(保存).not.toHaveBeenCalled()
+  })
+  it('退出前保存 CSV 和旧版表格 JSON 保留文本格式与文件指纹', async () => {
+    const { 保存, 写入, 选择路径 } = 安装桥接()
+    const 表 = 创建工作表('验收')
+    表.单元格.A1 = { 原始值: '0012', 显示值: '0012', 值类型: '文本', 格式: {} }
+    const 结果 = await 保存全部文档([
+      { 标识: 'csv', 名称: '编号.csv', 类型: 'table', 路径: 'D:/编号.csv', 表格模型: [表], 文件指纹: '原版本' },
+      { 标识: 'json', 名称: '模型.json', 类型: 'table', 路径: 'D:/模型.json', 表格模型: [表] },
+    ])
+    expect(结果.失败).toEqual([])
+    expect(选择路径).not.toHaveBeenCalled()
+    expect(写入).not.toHaveBeenCalled()
+    expect(保存).toHaveBeenCalledWith('D:/编号.csv', '\uFEFF0012', '文本', '原版本')
+    expect(保存).toHaveBeenCalledWith('D:/模型.json', JSON.stringify([表]), '文本')
+  })
+  it('退出前不丢弃 CSV 的多表、公式或样式，写盘失败仍保留未保存状态', async () => {
+    const { 保存 } = 安装桥接()
+    const 表 = 创建工作表('验收')
+    表.单元格.A1 = { 原始值: '=1+1', 显示值: '2', 格式: { 加粗: true } }
+    const 结果 = await 保存全部文档([
+      { 标识: '多表', 名称: '多表.csv', 类型: 'table', 路径: 'D:/多表.csv', 表格模型: [表, 创建工作表('乙')] },
+      { 标识: '格式', 名称: '格式.csv', 类型: 'table', 路径: 'D:/格式.csv', 表格模型: [表] },
+    ])
+    expect(结果.已保存).toEqual([])
+    expect(结果.失败[0].原因).toContain('只能保存一张工作表')
+    expect(结果.失败[1].原因).toContain('CSV 无法保留公式')
     expect(保存).not.toHaveBeenCalled()
   })
 })

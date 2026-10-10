@@ -45,6 +45,17 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   const 行数 = Math.max(行值列表.length + 5, 元数据最大行 + 1, 图片最大行 + 1, 10)
   const 列数 = Math.max(最大列数 + 3, 元数据最大列 + 1, 图片最大列 + 1, 6)
   const 工作表: Sheet = { ...创建工作表(名称, 行数, 列数), 页面设置: { ...默认页面设置, ...页面 } }
+  const CSV标记 = 表格.getAttribute('data-seal-csv')
+  if (CSV标记) {
+    const 来源 = JSON.parse(decodeURIComponent(CSV标记)) as Sheet['CSV来源']
+    if (!来源 || !Array.isArray(来源.行字段数) || 来源.行字段数.length !== 行值列表.length ||
+      !来源.行字段数.every((数, 行) => 数 === 行值列表[行].length) ||
+      !['\r\n', '\r', '\n'].includes(来源.换行) || typeof 来源.BOM !== 'boolean' || typeof 来源.末尾换行 !== 'boolean' || (来源.分隔符 !== undefined && 来源.分隔符 !== '\t') ||
+      (来源.编码 !== undefined && !['utf8', 'utf16le', 'utf16be', 'gb18030'].includes(来源.编码))) {
+      throw new Error('CSV 数据边界无效，文件未打开')
+    }
+    工作表.CSV来源 = 来源
+  }
   行值列表.forEach((行值, 行) => {
     行值.forEach((单元, 列) => {
       if (单元.原始值 !== '' || 单元.批注) {

@@ -1,0 +1,310 @@
+{
+  "version": "1.9.10",
+  "startedAt": "2026-10-10T19:11:51.836Z",
+  "checks": [
+    {
+      "extension": "doc",
+      "bytes": 10752,
+      "milliseconds": 44946,
+      "warnings": []
+    },
+    {
+      "extension": "dot",
+      "bytes": 10752,
+      "milliseconds": 45095,
+      "warnings": []
+    },
+    {
+      "extension": "dotx",
+      "bytes": 5524,
+      "milliseconds": 22618,
+      "warnings": []
+    },
+    {
+      "extension": "rtf",
+      "bytes": 4985,
+      "milliseconds": 45016,
+      "warnings": []
+    },
+    {
+      "extension": "odt",
+      "bytes": 10324,
+      "milliseconds": 45711,
+      "warnings": []
+    },
+    {
+      "extension": "ott",
+      "bytes": 10340,
+      "milliseconds": 46622,
+      "warnings": []
+    },
+    {
+      "extension": "fodt",
+      "bytes": 40499,
+      "milliseconds": 45542,
+      "warnings": []
+    },
+    {
+      "extension": "xls",
+      "bytes": 5632,
+      "milliseconds": 45503,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "xlt",
+      "bytes": 5632,
+      "milliseconds": 45640,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "xltx",
+      "bytes": 6678,
+      "milliseconds": 22334,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "ods",
+      "bytes": 9567,
+      "milliseconds": 47551,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "ots",
+      "bytes": 9582,
+      "milliseconds": 47605,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "dbf",
+      "bytes": 106,
+      "milliseconds": 51717,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入",
+        "部分数字格式未导入"
+      ]
+    },
+    {
+      "extension": "prn",
+      "bytes": 30,
+      "milliseconds": 36,
+      "warnings": [
+        "PRN 按连续空格或制表符分列；无分隔的固定字段需核对边界。请另存为副本以保留来源文件"
+      ]
+    },
+    {
+      "extension": "fods",
+      "bytes": 42383,
+      "milliseconds": 52307,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "tsv",
+      "bytes": 31,
+      "milliseconds": 48124,
+      "warnings": [
+        "日期、布尔值或富文本单元格类型未保留",
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "dif",
+      "bytes": 120,
+      "milliseconds": 48619,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入",
+        "部分数字格式未导入"
+      ]
+    },
+    {
+      "extension": "slk",
+      "bytes": 87,
+      "milliseconds": 44716,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入",
+        "部分数字格式未导入"
+      ]
+    },
+    {
+      "extension": "ppt",
+      "bytes": 458240,
+      "milliseconds": 45526,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "potx",
+      "bytes": 12174,
+      "milliseconds": 21768,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pot",
+      "bytes": 458240,
+      "milliseconds": 43490,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "ppsx",
+      "bytes": 12168,
+      "milliseconds": 23710,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pps",
+      "bytes": 458240,
+      "milliseconds": 46244,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "odp",
+      "bytes": 11932,
+      "milliseconds": 56584,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "otp",
+      "bytes": 11948,
+      "milliseconds": 56308,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "fodp",
+      "bytes": 83782,
+      "milliseconds": 51950,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "docm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "dotm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlsm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xltm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlam",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "pptm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "potm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ppsm",
+      "mode": "macro/add-in body import; source protected",
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-10-10T19:21:25.029Z",
+  "status": "passed"
+}

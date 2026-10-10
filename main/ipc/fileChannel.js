@@ -6,8 +6,10 @@ const { 读取docx } = require('../office/docxReader')
 const { 读取xlsx } = require('../office/xlsxCodec')
 const { 读取pptx } = require('../office/pptxCodec')
 
-const 文本扩展名 = new Set(['.html', '.htm', '.txt', '.md', '.csv', '.json'])
-const 可浏览扩展名 = new Set([...文本扩展名, '.docx', '.xlsx', '.pptx', '.pdf'])
+const { 解码文本, 编码文本 } = require('../textCodec')
+const 文档格式 = require('../documentFormats.json')
+const 文本扩展名 = new Set(文档格式.filter(项 => 项.text).map(项 => `.${项.extension}`))
+const 可浏览扩展名 = new Set(文档格式.map(项 => `.${项.extension}`))
 const 已知文件夹 = { desktop: 'desktop', document: 'documents', download: 'downloads' }
 const 保存对话框授权 = new WeakMap()
 
@@ -43,7 +45,7 @@ function 文件冲突错误(原因) {
  *   3. 格式为'二进制'时的 base64 字符串：解码为二进制字节；
  *   4. 其它情况按 UTF-8 文本处理。
  */
-function 内容转缓冲(内容, 格式) {
+function 内容转缓冲(内容, 格式, 文本编码) {
   if (Buffer.isBuffer(内容)) return 内容
   if (内容 instanceof Uint8Array) {
     return Buffer.from(内容.buffer, 内容.byteOffset, 内容.byteLength)
@@ -54,9 +56,9 @@ function 内容转缓冲(内容, 格式) {
     if (文本.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(文本)) {
       return Buffer.from(文本, 'base64')
     }
-    return Buffer.from(文本, 'utf8')
+    return 编码文本(文本, 文本编码)
   }
-  return Buffer.from(文本, 'utf8')
+  return 编码文本(文本, 文本编码)
 }
 
 function 原子写入文件(目标, 内容) {
@@ -151,32 +153,26 @@ function 生成重命名文件名(旧路径, 新名称) {
   return `${基名}${扩展名}`
 }
 
-// 按文档类型给出专属的保存/打开过滤器：保存什么类型的文档，对话框就只提供该类型，
-// 不再混杂 html/json 等中间格式。
+// 所有可写出的格式均可选择；来源扩展名对应的过滤器排在首位。
 const 保存过滤器映射 = {
-  word: [{ name: '文字文档', extensions: ['docx'] }],
-  table: [{ name: '表格文档', extensions: ['xlsx'] }],
-  ppt: [{ name: '演示文档', extensions: ['pptx'] }],
+  word: 文档格式.filter(项 => (项.type === 'word' || 项.extension === 'pdf') && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })),
+  table: [...文档格式.filter(项 => 项.type === 'table' && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })), { name: '旧版 JSON 表格', extensions: ['json'] }],
+  ppt: 文档格式.filter(项 => 项.type === 'ppt' && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })),
   pdf: [{ name: 'PDF 文件', extensions: ['pdf'] }],
+  ofd: [{ name: 'OFD 版式文档', extensions: ['ofd'] }],
 }
 
 const 打开过滤器映射 = {
-  word: [{ name: '文字文档', extensions: ['docx', 'html', 'htm', 'txt', 'md'] }],
-  table: [{ name: '表格文档', extensions: ['xlsx', 'csv', 'json'] }],
-  ppt: [{ name: '演示文档', extensions: ['pptx', 'json'] }],
-  pdf: [{ name: 'PDF 文件', extensions: ['pdf'] }],
+  word: [{ name: '文字文档', extensions: 文档格式.filter(项 => 项.type === 'word').map(项 => 项.extension) }],
+  table: [{ name: '表格文档', extensions: [...文档格式.filter(项 => 项.type === 'table').map(项 => 项.extension), 'json'] }],
+  ppt: [{ name: '演示文档', extensions: 文档格式.filter(项 => 项.type === 'ppt').map(项 => 项.extension) }],
+  pdf: [{ name: '版式文档', extensions: ['pdf', 'ofd'] }],
 }
 
-const 兜底保存过滤器 = [
-  { name: '文字文档', extensions: ['docx'] },
-  { name: '表格文档', extensions: ['xlsx'] },
-  { name: '演示文档', extensions: ['pptx'] },
-  { name: 'PDF 文件', extensions: ['pdf'] },
-  { name: '所有文件', extensions: ['*'] },
-]
+const 兜底保存过滤器 = 文档格式.filter(项 => !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] }))
 
 const 兜底打开过滤器 = [
-  { name: '办公文档', extensions: ['docx', 'xlsx', 'pptx', 'html', 'htm', 'txt', 'md', 'csv', 'json', 'pdf'] },
+  { name: '办公文档', extensions: 文档格式.map(项 => 项.extension) },
   { name: '所有文件', extensions: ['*'] },
 ]
 
@@ -204,7 +200,8 @@ function 注册文件通道(ipcMain) {
     const 结果 = await dialog.showSaveDialog(窗口, {
       title: '保存文件',
       defaultPath: 默认文件名,
-      filters: 保存过滤器映射[保存类型] ?? 兜底保存过滤器,
+      filters: [...(保存过滤器映射[保存类型] ?? 兜底保存过滤器)].sort((左, 右) =>
+        Number(右.extensions.includes(path.extname(默认文件名 || '').slice(1).toLowerCase())) - Number(左.extensions.includes(path.extname(默认文件名 || '').slice(1).toLowerCase()))),
     })
     const 保存路径 = 结果.canceled ? null : 结果.filePath || null
     if (保存路径 && event.sender && typeof event.sender === 'object') {
@@ -234,7 +231,7 @@ function 注册文件通道(ipcMain) {
     return 结果.canceled ? [] : 结果.filePaths
   })
 
-  ipcMain.handle('file.saveToFile', async (event, filePath, 内容, 格式, 预期文件指纹) => {
+  ipcMain.handle('file.saveToFile', async (event, filePath, 内容, 格式, 预期文件指纹, 文本编码) => {
     try {
       if (!filePath) return { 成功: false, 错误: '未指定保存路径' }
       const 授权 = event?.sender && typeof event.sender === 'object' ? 保存对话框授权.get(event.sender) : undefined
@@ -244,7 +241,7 @@ function 注册文件通道(ipcMain) {
       if (有效预期指纹 !== null && (typeof 有效预期指纹 !== 'string' || !/^[a-f0-9]{64}$/.test(有效预期指纹))) {
         return { 成功: false, 错误: '文件版本信息无效，已阻止覆盖。请重新打开文件后重试。' }
       }
-      const 文件指纹 = 带版本校验写入文件(filePath, 内容转缓冲(内容, 格式), 有效预期指纹, 缺少原始版本)
+      const 文件指纹 = 带版本校验写入文件(filePath, 内容转缓冲(内容, 格式, 文本编码), 有效预期指纹, 缺少原始版本)
       if (使用对话框授权) 保存对话框授权.delete(event.sender)
       return { 成功: true, 路径: filePath, 文件指纹 }
     } catch (错误) {
@@ -430,7 +427,7 @@ function 注册文件通道(ipcMain) {
       const 扩展名 = path.extname(filePath).toLowerCase()
       const 文件指纹 = 计算文件指纹(filePath, 缓冲)
       return 文本扩展名.has(扩展名)
-        ? { 成功: true, 内容: 缓冲.toString('utf8'), 二进制: false, 扩展名, 文件指纹 }
+        ? { 成功: true, ...解码文本(缓冲), 二进制: false, 扩展名, 文件指纹 }
         : { 成功: true, 内容: 缓冲.toString('base64'), 二进制: true, 扩展名, 文件指纹 }
     } catch (错误) {
       return { 成功: false, 错误: 错误.message || '读取文件失败' }

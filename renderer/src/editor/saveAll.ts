@@ -8,6 +8,9 @@ import { 收集演示资源标识 } from '../ppt/model/migrations'
 import { 桥接 } from '../ipc/bridge'
 import {文字文本输出,导出为Html} from './exportDoc'
 import type { Sheet } from '../sheet/model'
+import { 表格文本输出, 单表数据输出 } from '../sheet/sheetSave'
+import { 可保存扩展 } from '../fileFormats'
+import { 写出办公文档 } from '../office/writeDocument'
 import type { 演示文稿 } from '../ppt/deck'
 
 export type 待保存类型 = 'word' | 'table' | 'ppt' | 'pdf'
@@ -37,7 +40,7 @@ export interface 保存全部结果 {
   已取消: boolean
 }
 
-const 文字保存扩展 = new Set(['.docx', '.txt', '.md', '.json', '.html', '.htm', '.pdf'])
+const 文字保存扩展 = new Set([...可保存扩展('word'), '.pdf'])
 
 function 是同一路径(左: string, 右: string): boolean {
   return 左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
@@ -53,17 +56,17 @@ export function 规范保存路径(类型: 待保存类型, 路径: string): str
   }
   if (类型 === 'table') {
     if (扩展 === undefined) return `${路径}.xlsx`
-    return 扩展 === '.xlsx' ? 路径 : null
+    return 可保存扩展('table').has(扩展) ? 路径 : null
   }
   if (扩展 === undefined) return `${路径}.pptx`
-  return 扩展 === '.pptx' ? 路径 : null
+  return 可保存扩展('ppt').has(扩展) ? 路径 : null
 }
 
 function 格式提示(类型: 待保存类型): string {
   if (类型 === 'pdf') return 'PDF 文档只能保存为 PDF 格式'
-  if (类型 === 'word') return '文字文档只能保存为 DOCX、纯文本、网页或 PDF 格式'
-  if (类型 === 'table') return '表格只能保存为 XLSX 格式'
-  return '演示文稿只能保存为 PPTX 格式'
+  if (类型 === 'word') return '文字文档请选择 DOCX、DOC、RTF、开放文本、纯文本、网页或 PDF 格式'
+  if (类型 === 'table') return '表格请选择 XLSX、CSV、XLS、开放表格或其他可保存的数据格式'
+  return '演示文稿请选择 PPTX、PPT 或开放演示格式'
 }
 
 /** 转换与写盘可能抛出非 Error（例如 DOMException），这里统一取到可读原因 */
@@ -83,7 +86,7 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
     return 保存.文件指纹
   }
   if (文档.类型 === 'word') {
-    if(/\.(txt|md|json|html?)$/i.test(路径)){
+    if(/\.(txt|md|json|xml|mht|mhtml|html?)$/i.test(路径)){
       const 输出=文字文本输出(路径,文档.html??'',文档.页面设置?.页眉Html,文档.页面设置?.页脚Html)
       const 保存=await 桥接.saveToFile(路径,输出,'文本',文档.文件指纹)
       if(!保存.成功)throw new Error(保存.错误||'文本写入失败')
@@ -96,7 +99,7 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
     }
     const 模型 = htmlToDocxModel(文档.html ?? '', 文档.页面设置)
     if (模型.未覆盖.length > 0) throw new Error(`含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}`)
-    const 结果: any = await 桥接.office.writeDocx(模型)
+    const 结果: any = await 写出办公文档('word', 路径, 模型)
     if (!结果?.成功 || !结果.数据) throw new Error(结果?.错误 || '文档格式转换失败')
     const 字节 = Uint8Array.from(atob(结果.数据), (字符) => 字符.charCodeAt(0))
     const 保存 = await 桥接.saveToFile(路径, 字节, '二进制', 文档.文件指纹)
@@ -104,9 +107,18 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
     return 保存.文件指纹
   }
   if (文档.类型 === 'table') {
-    const 模型 = 导出为Xlsx(文档.表格模型 ?? [])
+    const 文本 = 表格文本输出(路径, 文档.表格模型 ?? [])
+    if (文本) {
+      if (文本.损失.length) throw new Error(`CSV 无法保留${文本.损失.join('、')}，请先另存为 XLSX，或手动保存 CSV 并确认格式转换后再退出`)
+      const 保存 = await 桥接.saveToFile(路径, 文本.内容, '文本', 文档.文件指纹, 文本.编码)
+      if (!保存.成功) throw new Error(保存.错误 || '表格写入失败')
+      return 保存.文件指纹
+    }
+    const 数据输出 = 单表数据输出(路径, 文档.表格模型 ?? [])
+    if (数据输出?.损失.length) throw new Error(`${数据输出.格式} 会转换${数据输出.损失.join('、')}，请先手动保存并确认，或另存为 XLSX 后退出`)
+    const 模型 = 数据输出?.模型 ?? 导出为Xlsx(文档.表格模型 ?? [])
     if (模型 === null) throw new Error('工作表为空，没有可保存的内容')
-    const 结果: any = await 桥接.office.writeXlsx(模型)
+    const 结果: any = await 写出办公文档('table', 路径, 模型)
     if (!结果?.成功 || !结果.数据) throw new Error(结果?.错误 || '表格格式转换失败')
     const 保存 = await 桥接.saveToFile(路径, 结果.数据, '二进制', 文档.文件指纹)
     if (!保存.成功) throw new Error(保存.错误 || '文件写入失败')
@@ -117,7 +129,7 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
   const 标识列表 = 收集演示资源标识(文稿)
   const 资源 = 标识列表.length > 0 ? await 桥接.presentationResources.export(标识列表) : { 成功: true, 条目: [] }
   if (!资源.成功 || !资源.条目) throw new Error(资源.错误 || '图片资源导出失败')
-  const 结果: any = await 桥接.office.writePptx(构建演示保存模型(文稿, 资源.条目))
+  const 结果: any = await 写出办公文档('ppt', 路径, 构建演示保存模型(文稿, 资源.条目))
   if (!结果?.成功 || !结果.数据) throw new Error(结果?.错误 || '生成演示文稿文件失败')
   const 保存 = await 桥接.saveToFile(路径, 结果.数据, '二进制', 文档.文件指纹)
   if (!保存.成功) throw new Error(保存.错误 || '文件写入失败')

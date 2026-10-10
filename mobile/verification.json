@@ -1,153 +1,6 @@
 {
-  "desktopVersion": "1.9.10",
   "hbuilderxVersion": "5.26.2026091802",
   "defaultPackagePlatform": "android",
-  "verifiedDate": "2026-10-11",
-  "currentAndroidEditor": {
-    "platform": "android",
-    "desktopVersion": "1.9.10",
-    "builtAt": "2026-10-10T18:25:26.458Z",
-    "architecture": "uni-app-x-local-webview",
-    "defaultPackagePlatform": "android",
-    "sha256": "928083740c601d3ae80833e9b30c4772c6f56f7d2aacaa099d40c9a286d48a7f"
-  },
-  "checks": {
-    "desktopTypecheck": "passed",
-    "mobileWebTypecheck": "passed",
-    "desktopRendererFullSuite": {
-      "status": "passed",
-      "total": 1821,
-      "passed": 1821,
-      "failed": 0,
-      "pending": 0,
-      "testFiles": 200,
-      "method": "Full 200-file baseline before approved icon integration; subsequent icon, settings and default-app component regressions are recorded separately below. No failures or skipped assertions.",
-      "report": "v1910-renderer-full.json",
-      "environment": {
-        "workers": 1,
-        "fileIsolation": true,
-        "testTimeoutMs": 60000
-      }
-    },
-    "desktopMainFullSuite": {
-      "status": "passed",
-      "total": 911,
-      "passed": 911,
-      "failed": 0,
-      "testFiles": 88,
-      "report": "v1910-approved-main-tests.json"
-    },
-    "wordImagesAndRecognitionTests": {
-      "passed": 39
-    },
-    "mobileStorageCryptoNativeRequestFileTypesViewportAndPackagingTests": {
-      "passed": 7
-    },
-    "desktopPackagingManifestTests": {
-      "passed": 2
-    },
-    "desktopRendererBuild": "passed",
-    "androidEmbeddedEditorBuild": "passed",
-    "androidUtsKotlinSourceAndStaticResources": "passed",
-    "androidIconAndManifestResourcesAapt2": "passed",
-    "responsiveWebBuild": "passed",
-    "webBrowserFunctionalSmoke": {
-      "status": "passed",
-      "checks": 17,
-      "consoleErrors": []
-    },
-    "fileSchemeBrowserSmokeWithFontAndSaveHostSimulation": {
-      "status": "passed",
-      "checks": 17,
-      "consoleErrors": []
-    },
-    "desktopUiExperience": {
-      "status": "passed",
-      "cases": 96,
-      "controls": 5861,
-      "actions": 15,
-      "errors": [],
-      "scope": "isolated desktop IPC and cloud response fixtures; not production accounts"
-    },
-    "windowsArtifacts": {
-      "version": "1.9.10",
-      "embeddedArchiveMatches": true,
-      "unpackedAndPortableLaunches": 3,
-      "checksPerArtifact": 58,
-      "packagedCodecsGroups": 8,
-      "msixPayloadFiles": 97,
-      "archiveSha256": "5c0a575adf01dc70ab9efe010c0303a3ac5006599f8f7de4e6ad2edd8926ffce",
-      "packages": [
-        {
-          "bytes": 97140580,
-          "sha256": "e705700ad7fbbc89ef28182342d263b1acc405a30cd30d085b7a32902d025797",
-          "embeddedArchiveMatches": true,
-          "name": "SealOfficeSetup1.9.10.exe"
-        },
-        {
-          "bytes": 96915620,
-          "sha256": "a4466473526bd328a12a6928acf1d0bdc001e8a82e47e7285c3b24ad156bea84",
-          "embeddedArchiveMatches": true,
-          "name": "SealOffice1.9.10.exe"
-        },
-        {
-          "name": "SealOffice1.9.10.msix",
-          "bytes": 177676938,
-          "sha256": "e471ae98d749d6655ac6bf014fa64d5b33421c5f4d008c9d19115720f37755d4",
-          "embeddedArchiveMatches": true
-        }
-      ],
-      "report": "../docs/v1.9.10-成品验收.json"
-    },
-    "desktopRendererApprovedIconsAndDefaultApps": {
-      "status": "passed",
-      "total": 37,
-      "passed": 37,
-      "failed": 0,
-      "testFiles": 4,
-      "report": "v1910-approved-related-tests.json"
-    },
-    "windowsNativeAssociation": {
-      "status": "passed",
-      "checks": 85,
-      "scope": "isolated HKCU test root; real UserChoice preserved",
-      "notificationBeforeMs": 58697,
-      "notificationAfterMs": 89,
-      "notificationMethod": "SHCNF_FLUSHNOWAIT, without HWND_BROADCAST"
-    },
-    "approvedIconGeometry": {
-      "status": "passed",
-      "pc": 127,
-      "mobile": 127,
-      "nonemptyVectors": 254,
-      "compactControlCases": 8,
-      "documentStyleCases": 6,
-      "report": "../docs/v1.9.10-图标与扁平界面验收.json"
-    },
-    "approvedMobileIconsVisualReview": {
-      "status": "passed",
-      "report": "../docs/v1.9.10-图标与扁平界面验收.json"
-    }
-  },
-  "functionalSmoke": [
-    "生产构建可在无 Electron preload 的浏览器环境启动",
-    "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
-    "中文 PDF 生成与页面旋转",
-    "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
-    "页面重载后恢复本地文件与加密模型配置",
-    "无效工作区备份被阻止且允许保留后继续",
-    "手机菜单新建文字文档并进入真实编辑器",
-    "390px 文字正文重排、输入事件与编辑区域可见",
-    "真实工作区备份恢复未保存正文与文字编辑页面",
-    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
-    "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
-    "390px 手机布局、底部触控导航、知识库与全部功能入口",
-    "移动端 15 个功能入口逐一点击、导航状态及视口检查",
-    "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
-    "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
-    "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
-    "360/390/820/1280px 窄屏、平板与 PC 布局"
-  ],
   "wordPictureEditing": {
     "desktop": "eight resize handles and rotation handle; toolbar next to selected image",
     "mobile": "touch drag, resize and rotation; toolbar above bottom navigation",
@@ -205,24 +58,8 @@
       ]
     },
     "webEngine": "Chromium 100+ / Safari 15.4+ with capability checks",
-    "ios": "including iOS 27; native verification pending",
+    "ios": "User-requested iOS 27 target; native compilation and device verification pending; no claim of validated OS support",
     "harmony": "native VDOM API 14+; native verification pending"
-  },
-  "pending": [
-    "new Android cloud APK and its launcher, system sharing, MIME picker, keyboard, safe area and back/lifecycle regression",
-    "HBuilderX GUI is running but its CLI does not detect the running instance",
-    "brand ROM devices and Android 9–16 other than current Android 14 emulator",
-    "iOS/HarmonyOS native compilation, signing and device validation",
-    "real account cloud sync and image recognition with a configured vision provider",
-    "emulator localhost H5 port mapping/browser launch blocked by automatic approval policy"
-  ],
-  "artifacts": {
-    "androidEmbeddedEditor": "static/office",
-    "androidKotlinCheck": "unpackage/native-check/android",
-    "web": "unpackage/web",
-    "desktop": "../dist",
-    "browserReportsAndScreenshots": "../.upgrade-private/mobile-verification",
-    "localPreview": "http://127.0.0.1:5194/"
   },
   "userProvidedApk": true,
   "currentSourcesApkGenerated": false,
@@ -262,5 +99,152 @@
     "desktopFlatSkin": true,
     "pc": 127,
     "mobile": 127
+  },
+  "desktopVersion": "1.9.11",
+  "verifiedDate": "2026-10-11",
+  "previousBaseline": "../docs/verification/v1.9.11/mobile-baseline-v1.9.10.json",
+  "currentAndroidEditor": {
+    "platform": "android",
+    "desktopVersion": "1.9.11",
+    "builtAt": "2026-10-10T19:46:11.578Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android",
+    "sha256": "c376b8a15a5a75f4a9136f01fd62ba5ae93dc4751060bfb9dc8a75d1fd5c330b",
+    "sha256File": "static/office/office.js"
+  },
+  "checks": {
+    "currentVersionTests": {
+      "version": "1.9.11",
+      "unresolvedFailures": 0,
+      "desktopMain": {
+        "status": "passed",
+        "files": 90,
+        "tests": 921
+      },
+      "desktopRendererFullRun": {
+        "status": "one_failure_resolved_by_final_retest",
+        "files": 203,
+        "tests": 1848,
+        "passed": 1847,
+        "failed": 1,
+        "failure": "OFD canvas-to-PNG regression",
+        "note": "Full run loaded the earlier module while OFD source was being repaired; final affected source was verified by a fresh targeted run and actual production OFD pixel/PDF checks. The full suite was not rerun after that change."
+      },
+      "desktopRendererFinalAffectedRun": {
+        "status": "passed",
+        "files": 6,
+        "tests": 82,
+        "includes": [
+          "OFD canvas conversion",
+          "Word exit/save rules",
+          "sheet save",
+          "file opening",
+          "settings",
+          "new mobile converter settings"
+        ]
+      },
+      "mobileUnit": {
+        "status": "passed",
+        "tests": 11
+      },
+      "conversionServer": {
+        "status": "passed",
+        "tests": 3
+      },
+      "packagingManifest": {
+        "status": "passed",
+        "tests": 2
+      },
+      "desktopTypecheck": "passed",
+      "mobileTypecheck": "passed",
+      "desktopBuild": "passed",
+      "androidLocalResourcesBuild": "passed",
+      "h5Build": "passed",
+      "hbuilderxUtsKotlinCheck": "passed"
+    },
+    "allOfficeFormats": {
+      "status": "passed",
+      "checks": 64,
+      "compatibleReads": 37,
+      "saveAndReopen": 25,
+      "method": "Production browser build using an authenticated local real conversion service. All 37 format reads repeated after final Android resource build; 25 successful save-and-reopen operations retained from the first run; final settings controls tested again.",
+      "limitations": [
+        "No public service deployment",
+        "Browser and native-host simulation, not final APK or iOS/Harmony/OEM device tests"
+      ]
+    },
+    "webBrowserFunctionalSmoke": {
+      "status": "passed",
+      "checks": 18,
+      "consoleErrors": []
+    },
+    "fileSchemeBrowserSmokeWithFontAndSaveHostSimulation": {
+      "status": "passed",
+      "checks": 18,
+      "consoleErrors": []
+    },
+    "windowsArtifacts": {
+      "unpacked": {
+        "status": "passed",
+        "checks": 63,
+        "normalExits": 3
+      },
+      "portable": {
+        "status": "passed",
+        "checks": 63,
+        "normalExits": 3
+      }
+    },
+    "windowsNativeAssociation": {
+      "status": "passed",
+      "checks": 284,
+      "registeredFormats": 50
+    },
+    "ofdReadingPrintingAndPdf": {
+      "status": "passed",
+      "pages": 2,
+      "checks": 4
+    },
+    "conversionServer": {
+      "status": "passed",
+      "tests": 3,
+      "realServiceIntegration": "local authenticated service tested",
+      "publicDeployment": "pending"
+    }
+  },
+  "functionalSmoke": [
+    "生产构建可在无 Electron preload 的浏览器环境启动",
+    "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+    "设备导出失败保留本机原文件与来源指纹，允许重新保存",
+    "中文 PDF 生成与页面旋转",
+    "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+    "页面重载后恢复本地文件与加密模型配置",
+    "无效工作区备份被阻止且允许保留后继续",
+    "手机菜单新建文字文档并进入真实编辑器",
+    "390px 文字正文重排、输入事件与编辑区域可见",
+    "真实工作区备份恢复未保存正文与文字编辑页面",
+    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+    "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+    "390px 手机布局、底部触控导航、知识库与全部功能入口",
+    "移动端 15 个功能入口逐一点击、导航状态及视口检查",
+    "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+    "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+    "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+    "360/390/820/1280px 窄屏、平板与 PC 布局"
+  ],
+  "pending": [
+    "Deploy converter service to user server and configure phone URL/token before using connected formats",
+    "New Android cloud APK: launcher, system picker/share, keyboard, safe areas, back/lifecycle and format roundtrip regression",
+    "Android 9–16 brand ROM devices beyond the existing Android 14 old-APK emulator baseline",
+    "iOS/Harmony native compilation, signing and device validation",
+    "Real-account cloud sync and image recognition with a configured vision provider"
+  ],
+  "artifacts": {
+    "androidEmbeddedEditor": "static/office",
+    "androidKotlinCheck": "unpackage/native-check/android",
+    "web": "unpackage/web",
+    "reports": "../docs/verification/v1.9.11",
+    "conversionDeployment": "../server/converter/README.md",
+    "localPreview": "http://127.0.0.1:5194/"
   }
 }

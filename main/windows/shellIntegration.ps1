@@ -27,9 +27,9 @@ $taskUserApplication = if ($TestRoot) { "$TestRoot\CurrentUser\Application" } el
 $taskUserRegistered = if ($TestRoot) { "$TestRoot\CurrentUser\RegisteredApplications" } else { 'Software\RegisteredApplications' }
 # 默认应用由 Windows 设置页面确认；注册过程保留已有用户选择。
 $taskTypes = @('doc','docx','ppt','pptx','pdf','xls','xlsx')
-$taskSupported = @('docx','xlsx','pptx','pdf')
-$taskLabels = @{doc='DOC 文档';docx='DOCX 文档';ppt='PPT 演示文稿';pptx='PPTX 演示文稿';pdf='PDF 文档';xls='XLS 工作表';xlsx='XLSX 工作表'}
-$taskIcons = @{doc='word.ico';docx='word.ico';xls='table.ico';xlsx='table.ico';ppt='ppt.ico';pptx='ppt.ico';pdf='pdf.ico'}
+$taskSupported = @('docx','xlsx','pptx','pdf','csv','txt','md','html','htm','json','doc','dot','dotx','docm','dotm','rtf','odt','ott','fodt','mht','mhtml','xml','xls','xlt','xltx','xlsm','xltm','xlsb','xla','xlam','ods','ots','fods','dbf','prn','dif','tsv','slk','ppt','pot','potx','pptm','potm','pps','ppsx','ppsm','odp','otp','fodp','ofd')
+$taskLabels = @{docx='Word 文档';xlsx='Excel 表格';pptx='演示文稿';pdf='PDF 文件';csv='CSV 表格';txt='纯文本';md='Markdown';html='HTML 网页';htm='HTM 网页';json='JSON 文档';doc='Word 97–2003';dot='Word 旧版模板';dotx='Word 模板';docm='Word 宏文档';dotm='Word 宏模板';rtf='RTF 文档';odt='开放文本文档';ott='开放文本模板';fodt='开放文本 XML';mht='单文件网页';mhtml='单文件网页';xml='XML 文档';xls='Excel 97–2003';xlt='Excel 旧版模板';xltx='Excel 模板';xlsm='Excel 宏表格';xltm='Excel 宏模板';xlsb='Excel 二进制表格';xla='Excel 旧版加载项';xlam='Excel 加载项';ods='开放电子表格';ots='开放表格模板';fods='开放表格 XML';dbf='dBASE 数据表';prn='固定宽度数据表';dif='DIF 数据表';tsv='制表符数据表';slk='SYLK 数据表';ppt='PowerPoint 97–2003';pot='PowerPoint 旧版模板';potx='PowerPoint 模板';pptm='PowerPoint 宏文稿';potm='PowerPoint 宏模板';pps='PowerPoint 旧版放映';ppsx='PowerPoint 放映';ppsm='PowerPoint 宏放映';odp='开放演示文稿';otp='开放演示模板';fodp='开放演示 XML';ofd='OFD 版式文档'}
+$taskIcons = @{docx='word.ico';xlsx='table.ico';pptx='ppt.ico';pdf='pdf.ico';csv='table.ico';txt='word.ico';md='word.ico';html='word.ico';htm='word.ico';json='word.ico';doc='word.ico';dot='word.ico';dotx='word.ico';docm='word.ico';dotm='word.ico';rtf='word.ico';odt='word.ico';ott='word.ico';fodt='word.ico';mht='word.ico';mhtml='word.ico';xml='word.ico';xls='table.ico';xlt='table.ico';xltx='table.ico';xlsm='table.ico';xltm='table.ico';xlsb='table.ico';xla='table.ico';xlam='table.ico';ods='table.ico';ots='table.ico';fods='table.ico';dbf='table.ico';prn='table.ico';dif='table.ico';tsv='table.ico';slk='table.ico';ppt='ppt.ico';pot='ppt.ico';potx='ppt.ico';pptm='ppt.ico';potm='ppt.ico';pps='ppt.ico';ppsx='ppt.ico';ppsm='ppt.ico';odp='ppt.ico';otp='ppt.ico';fodp='ppt.ico';ofd='pdf.ico'}
 
 function Assert-FileIcons {
   if (-not $Icons -or -not [IO.Path]::IsPathRooted($Icons)) { throw '文件类型图标目录无效' }
@@ -123,7 +123,7 @@ function Migrate-InstallationState {
 function Register-Application {
   if (-not (Test-Path -LiteralPath $ExecutableFile -PathType Leaf)) { throw '程序可执行文件不存在' }
   Assert-FileIcons
-  foreach ($ext in $taskTypes) {
+  foreach ($ext in $taskSupported) {
     $id = if ($ext -in $taskSupported) { "SealOffice.$ext" } else { "SealOffice.New.$ext" }
     Set-Value "$taskClasses\$id" '' ("海豹办公 " + $taskLabels[$ext])
     Set-Value "$taskClasses\$id\DefaultIcon" '' ('"' + (Join-Path $Icons $taskIcons[$ext]) + '",0')

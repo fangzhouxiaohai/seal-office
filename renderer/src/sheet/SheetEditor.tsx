@@ -26,6 +26,9 @@ import {
 import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单元格位置 } from './address'
 import { 统计选区 } from './selectionStats'
 import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名 } from './sheetExport'
+import { 表格文本输出, 单表数据输出 } from './sheetSave'
+import { 可保存扩展 } from '../fileFormats'
+import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
 import { 构建表格浮窗按钮, 构建表格颜色菜单组, 构建表格数据菜单组, 处理表格颜色命令, 处理表格AI命令 } from './sheetFloatActions'
@@ -40,7 +43,6 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
-import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheetImport'
 import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import './sheetFeatures.css'
@@ -694,76 +696,16 @@ const SheetEditor = () => {
       })
       return
     }
-    // 文件操作命令：XLSX 为主要保存格式，CSV 按文本导入，JSON 仅兼容旧版读取。
+    // 统一解析入口，包含 CSV、旧版 Office、开放表格及模型 JSON。
     if (标识 === 'file.open') {
-      if (!桥接.可用) {
-        message.info('当前环境不支持打开文件功能，请使用打包后的版本')
-        return
-      }
-      桥接.showOpenDialog('table' as const).then((文件路径) => {
-        if (文件路径) {
-          if (/\.csv$/i.test(文件路径)) {
-            void 读取本地文件内容(文件路径).then((内容) => {
-              if (内容.类型 !== 'table' || typeof 内容.内容 !== 'string') throw new Error('CSV 内容无法作为表格打开')
-              createDoc('table', 内容.内容, { 路径: 文件路径, 文件指纹: 内容.文件指纹 })
-              void 记录最近文档(文件路径, 基准名(文件路径), 'table').catch((错误: unknown) => {
-                提示文件错误('最近文档记录失败', 错误 instanceof Error ? 错误.message : '无法记录最近文档')
-              })
-            }).catch((错误: unknown) => {
-              提示文件错误('打开表格失败', 错误 instanceof Error ? 错误.message : 'CSV 文件读取失败')
-            })
-            return
-          }
-          桥接.readFile(文件路径).then((结果) => {
-            if (!(结果.成功 && 结果.内容)) {
-              提示文件错误('打开表格失败', 结果.错误 || '文件读取失败')
-              return
-            }
-            const 扩展匹配 = 文件路径.match(/\.[^\/]+$/)
-            const 扩展 = (扩展匹配 !== null ? 扩展匹配[0] : '').toLowerCase()
-            if (扩展 === '.json') {
-              // 旧版私有格式：工作表列表 JSON
-              try {
-                const 数据 = JSON.parse(结果.内容) as Sheet[]
-                if (!Array.isArray(数据) || 数据.length === 0) {
-                  throw new Error('结构不正确')
-                }
-                createDoc('table', 数据, { 路径: 文件路径, 文件指纹: 结果.文件指纹 })
-                记录最近文档(文件路径, 基准名(文件路径), 'table')
-              } catch {
-                提示文件错误('打开表格失败', '文件格式不正确，无法打开')
-              }
-              return
-            }
-            if (扩展 === '.xlsx' && 结果.二进制) {
-              // 标准 xlsx：主进程解析出全部工作表的 HTML，再逐表导入为工作表模型
-              桥接.office.readXlsx(结果.内容).then((解析: any) => {
-                const 表列表: Array<{ 名称: string; html: string; 页面设置?: Sheet['页面设置']; 元数据?: Xlsx工作表元数据 }> | undefined = 解析?.工作表列表
-                if (!解析 || 解析.成功 === false || !表列表 || 表列表.length === 0) {
-                  提示文件错误('打开表格失败', 解析?.错误 || '表格内容解析失败')
-                  return
-                }
-                const 解析表 = 表列表.map((项) => 从Html表格构建工作表(项.html, 项.名称, 项.页面设置, 项.元数据))
-                if (解析表.some((表) => 表 === null)) {
-                  提示文件错误('打开表格失败', '部分工作表内容解析失败，文件未打开')
-                  return
-                }
-                const 新表 = 解析表 as Sheet[]
-                createDoc('table', 新表, { 路径: 文件路径, 警告: Array.isArray(解析.警告) ? 解析.警告 : [], 文件指纹: 结果.文件指纹 })
-                记录最近文档(文件路径, 基准名(文件路径), 'table')
-              }).catch(() => {
-                提示文件错误('打开表格失败', '表格内容解析失败')
-              })
-              return
-            }
-            提示文件错误('打开表格失败', '请选择 XLSX、CSV 表格文件（或旧版 JSON 表格文件）')
-          }).catch((error: unknown) => {
-            提示文件错误('打开表格失败', (error as Error).message || '未知错误')
-          })
-        }
-      }).catch((error: unknown) => {
-        提示文件错误('打开表格失败', (error as Error).message || '未知错误')
-      })
+      if (!桥接.可用) { message.info('当前环境不支持打开文件功能，请使用打包后的版本'); return }
+      void 桥接.showOpenDialog('table').then(async 文件路径 => {
+        if (!文件路径) return
+        const 内容 = await 读取本地文件内容(文件路径)
+        if (内容.类型 !== 'table') throw new Error('请选择受支持的表格文件，普通 JSON 应从文字编辑器打开')
+        createDoc('table', 内容.工作表列表 ?? 内容.内容, { 路径: 文件路径, 文件指纹: 内容.文件指纹, 警告: 内容.警告 ?? [] })
+        await 记录最近文档(文件路径, 基准名(文件路径), 'table')
+      }).catch((错误: unknown) => { 提示文件错误('打开表格失败', 错误 instanceof Error ? 错误.message : '文件读取失败') })
       return
     }
     if (标识 === 'file.save') {
@@ -771,15 +713,14 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      // CSV 来源需要换成 XLSX 文件；直接回写会把 XLSX 二进制写入 .csv。
-      const 可直接保存 = 文档路径 !== null && /\.(xlsx|json)$/i.test(文档路径)
+      const 可直接保存 = 文档路径 !== null && 可保存扩展('table').has(文档路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase() ?? '')
       const 默认名称 = 文档路径 && !可直接保存
         ? `${基准名(文档路径).replace(/\.[^.]+$/, '')}.xlsx`
         : 生成表格文件名(工作表.name, '.xlsx')
       const 选择路径 = 可直接保存 ? 文档路径 : 桥接.showSaveDialog(默认名称, 'table' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
-          保存表格文件(文件路径, '文件已保存')
+          return 保存表格文件(文件路径, '文件已保存')
         }
       }).catch((error: unknown) => {
         提示文件错误('保存表格失败', (error as Error).message || '未知错误')
@@ -791,7 +732,7 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      桥接.showSaveDialog(生成表格文件名(工作表.name, '.xlsx'), 'table' as const).then(async (文件路径) => {
+      桥接.showSaveDialog(文档路径 ? 基准名(文档路径) : 生成表格文件名(工作表.name, '.xlsx'), 'table' as const).then(async (文件路径) => {
         if (文件路径) {
           if (路径被其他标签占用(规范表格路径(文件路径))) return
           if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径)) {
@@ -799,7 +740,7 @@ const SheetEditor = () => {
             return
           }
           if (保真风险 && !await 确认保存副本(保真风险.警告)) return
-          保存表格文件(文件路径, '文件已另存为')
+          return 保存表格文件(文件路径, '文件已另存为')
         }
       }).catch((error: unknown) => {
         提示文件错误('保存表格失败', (error as Error).message || '未知错误')
@@ -818,13 +759,13 @@ const SheetEditor = () => {
     }
   }
 
-  /** 保存表格文档：xlsx 为标准格式（未带扩展名时补齐），旧版 json 路径兼容回写 */
-  const 保存表格文件 = (原始路径: string, 成功提示: string) => {
+  /** 保存表格文档：根据扩展名写出真实格式，并保留来源文件指纹。 */
+  const 保存表格文件 = async (原始路径: string, 成功提示: string) => {
     const 文件路径 = 规范表格路径(原始路径)
     const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
       ? 当前文档.文件指纹 : undefined
-    if (!/\.(xlsx|json)$/i.test(文件路径)) {
-      提示文件错误('保存表格失败', '请选择 XLSX 格式的文件路径；当前路径不能保存为表格文件。')
+    if (!可保存扩展('table').has(文件路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase() ?? '')) {
+      提示文件错误('保存表格失败', '请选择 XLSX、CSV、XLS、开放表格或其他可保存的数据格式。')
       return
     }
     if (路径被其他标签占用(文件路径)) return
@@ -832,10 +773,16 @@ const SheetEditor = () => {
       提示禁止覆盖(保真风险.警告)
       return
     }
-    const 扩展匹配 = 文件路径.match(/\.[^\/]+$/)
-    const 扩展 = (扩展匹配 !== null ? 扩展匹配[0] : '').toLowerCase()
-    if (扩展 === '.json') {
-      桥接.saveToFile(文件路径, JSON.stringify(工作表列表), '文本', 预期文件指纹).then((结果) => {
+    const 格式名 = 文件路径.match(/\.([^\\/]+)$/)?.[1]?.toUpperCase() ?? 'CSV'
+    const 文本 = 表格文本输出(文件路径, 工作表列表)
+    if (文本) {
+      if (文本.损失.length && !await new Promise<boolean>((完成) => modal.confirm({
+        title: `${格式名} 格式不能保留全部内容`,
+        content: `将只保存单元格的文字和数值，以下内容不会写入 ${格式名}：${文本.损失.join('、')}。如需保留，请取消后另存为 XLSX。`,
+        okText: `仍保存 ${格式名}`, cancelText: '取消', onOk: () => 完成(true), onCancel: () => 完成(false),
+      }))) return
+      if (路径被其他标签占用(文件路径)) return
+      await 桥接.saveToFile(文件路径, 文本.内容, '文本', 预期文件指纹, 文本.编码).then((结果) => {
         if (结果.成功) {
           记录当前路径(文件路径, 结果.文件指纹)
           记录最近文档(文件路径, 基准名(文件路径), 'table')
@@ -848,11 +795,16 @@ const SheetEditor = () => {
       })
       return
     }
+    const 数据输出 = 单表数据输出(文件路径, 工作表列表)
+    if (数据输出?.损失.length && !await new Promise<boolean>((完成) => modal.confirm({
+      title: `${数据输出.格式} 保存需要转换内容`, content: `以下内容将转换或不被该格式保留：${数据输出.损失.join('、')}。请保留原工作簿并核对导出结果。`,
+      okText: `仍保存 ${数据输出.格式}`, cancelText: '取消', onOk: () => 完成(true), onCancel: () => 完成(false),
+    }))) return
     // 空工作簿也允许保存，导出模型为空时回落为空表定义
-    const 模型 = 导出为Xlsx(工作表列表.length > 1 ? 工作表列表 : 工作表) ?? {
+    const 模型 = 数据输出?.模型 ?? 导出为Xlsx(工作表列表.length > 1 ? 工作表列表 : 工作表) ?? {
       工作表: [{ 名称: 工作表.name, 数据: [], 页面设置: 工作表.页面设置 }],
     }
-    桥接.office.writeXlsx(模型).then((结果: any) => {
+    await 写出办公文档('table', 文件路径, 模型, () => message.loading('正在转换并保存表格，请稍等…', 0)).then((结果: any) => {
       if (!(结果 && 结果.成功 && 结果.数据)) {
         提示文件错误('保存表格失败', 结果?.错误 || '表格格式转换失败，请检查内容后重试')
         return

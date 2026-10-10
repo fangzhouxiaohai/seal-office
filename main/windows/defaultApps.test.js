@@ -110,7 +110,7 @@ describe('默认程序与安装后首次提醒', () => {
   it('设置默认程序优先注册并回读，全部生效时不再打开系统页面', async () => {
     const 结果 = await 服务.设置默认程序()
     expect(结果).toMatchObject({ 成功: true, 已全部默认: true })
-    expect(结果.提示).toContain('DOCX')
+    expect(结果.提示).toContain('所有受支持文档格式')
     expect(系统打开).not.toHaveBeenCalled()
   })
 

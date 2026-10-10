@@ -1,0 +1,49 @@
+{
+  "version": "1.9.11",
+  "unresolvedFailures": 0,
+  "desktopMain": {
+    "status": "passed",
+    "files": 90,
+    "tests": 921
+  },
+  "desktopRendererFullRun": {
+    "status": "one_failure_resolved_by_final_retest",
+    "files": 203,
+    "tests": 1848,
+    "passed": 1847,
+    "failed": 1,
+    "failure": "OFD canvas-to-PNG regression",
+    "note": "Full run loaded the earlier module while OFD source was being repaired; final affected source was verified by a fresh targeted run and actual production OFD pixel/PDF checks. The full suite was not rerun after that change."
+  },
+  "desktopRendererFinalAffectedRun": {
+    "status": "passed",
+    "files": 6,
+    "tests": 82,
+    "includes": [
+      "OFD canvas conversion",
+      "Word exit/save rules",
+      "sheet save",
+      "file opening",
+      "settings",
+      "new mobile converter settings"
+    ]
+  },
+  "mobileUnit": {
+    "status": "passed",
+    "tests": 11
+  },
+  "conversionServer": {
+    "status": "passed",
+    "tests": 3
+  },
+  "packagingManifest": {
+    "status": "passed",
+    "tests": 2
+  },
+  "desktopTypecheck": "passed",
+  "mobileTypecheck": "passed",
+  "desktopBuild": "passed",
+  "androidLocalResourcesBuild": "passed",
+  "h5Build": "passed",
+  "hbuilderxUtsKotlinCheck": "passed"
+}

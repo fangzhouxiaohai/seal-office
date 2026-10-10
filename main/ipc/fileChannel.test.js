@@ -34,15 +34,16 @@ describe('fileChannel.内容转缓冲', () => {
 describe('保存/打开对话框过滤器映射', () => {
   const { 保存过滤器映射, 打开过滤器映射 } = require('./fileChannel')
 
-  it('每种文档类型都有专属的保存过滤器，不再混杂 html/json', () => {
-    expect(保存过滤器映射.word).toEqual([{ name: '文字文档', extensions: ['docx'] }])
-    expect(保存过滤器映射.table).toEqual([{ name: '表格文档', extensions: ['xlsx'] }])
-    expect(保存过滤器映射.ppt).toEqual([{ name: '演示文档', extensions: ['pptx'] }])
+  it('所有可写格式都能选择，宏和加载项不能冒充可写格式', () => {
+    expect(保存过滤器映射.word.flatMap(项 => 项.extensions)).toEqual(expect.arrayContaining(['docx', 'doc', 'rtf', 'odt', 'txt', 'md', 'html', 'htm', 'json', 'mht', 'mhtml', 'xml']))
+    expect(保存过滤器映射.table.flatMap(项 => 项.extensions)).toEqual(expect.arrayContaining(['xlsx', 'xls', 'ods', 'csv', 'json', 'dbf', 'dif']))
+    expect(保存过滤器映射.ppt.flatMap(项 => 项.extensions)).toEqual(expect.arrayContaining(['pptx', 'ppt', 'odp', 'potx', 'ppsx']))
+    expect(Object.values(保存过滤器映射).flatMap(组 => 组.flatMap(项 => 项.extensions))).not.toEqual(expect.arrayContaining(['docm', 'xlsm', 'pptm', 'xlam']))
     expect(保存过滤器映射.pdf).toEqual([{ name: 'PDF 文件', extensions: ['pdf'] }])
   })
 
   it('表格打开过滤器支持 XLSX、CSV 和旧版 JSON', () => {
-    expect(打开过滤器映射.table).toEqual([{ name: '表格文档', extensions: ['xlsx', 'csv', 'json'] }])
+    expect(打开过滤器映射.table[0].extensions).toEqual(expect.arrayContaining(['xlsx', 'csv', 'json', 'xls', 'ods', 'xltx', 'xlsm']))
     expect(打开过滤器映射.word[0].extensions).toContain('docx')
     expect(打开过滤器映射.ppt[0].extensions).toContain('pptx')
   })

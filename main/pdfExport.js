@@ -12,6 +12,7 @@ const 打印选项 = {
   margins: { top: 1, bottom: 1, left: 1, right: 1 },
   printBackground: true,
   pageSize: 'A4',
+  preferCSSPageSize: true,
 }
 
 /**

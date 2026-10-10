@@ -1,0 +1,21 @@
+{
+  "package": "E:/seal-office/release/v1.9.11/SealOffice1.9.11.msix",
+  "version": "1.9.11.0",
+  "identity": "45C56666.seal-office",
+  "publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
+  "displayName": "seal-office",
+  "architecture": "x64",
+  "bytes": 723483861,
+  "sha256": "fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6",
+  "sourceFilesVerified": 19570,
+  "totalPayloadFilesVerified": 19577,
+  "appAsarSha256": "98945b6bf392dd772536374b205cf1755836d259573cedbe37836f023e2b68c9",
+  "hasBlockMap": true,
+  "signed": false,
+  "unexpectedEntries": [],
+  "makeAppxValidation": "Package creation succeeded (semantic validation enabled)",
+  "identitySource": "docs/商店上架说明.md: product 9NFQB4FRSVJR",
+  "partnerCenterUpload": "Not performed; browser URL identification unavailable",
+  "installationTest": "Not performed; Store-upload package is unsigned",
+  "generatedAt": "2026-10-11T03:50:42.8994511+08:00"
+}

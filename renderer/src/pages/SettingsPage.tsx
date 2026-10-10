@@ -7,6 +7,7 @@ import Icon from '../components/Icon'
 import { 读取翻译配置, 保存翻译配置, 清除翻译配置 } from '../editor/translateSettings'
 import AiSettingsCard from '../assistant/AiSettingsCard'
 import CloudSettings from '../cloud/CloudSettings'
+import ConversionServiceSettings from './ConversionServiceSettings'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
 import './settings.css'
@@ -95,7 +96,7 @@ const SettingsPage = () => {
       if (!结果.成功) throw new Error(('错误' in 结果 ? 结果.错误 : undefined) || 结果.提示 || '无法设置默认程序')
       // 以实际回读结果为准；注册成功但仍需系统确认时说明下一步。
       if (结果.已全部默认 === false) message.info(结果.提示 || '已打开 Windows 默认应用页面，请选择海豹办公并确认文件格式。', 8)
-      else message.success(结果.提示 || 'DOCX、XLSX、PPTX 与 PDF 已使用海豹办公打开')
+      else message.success(结果.提示 || '所有受支持文档格式已使用海豹办公打开')
     } catch (错误) {
       modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '请检查系统设置是否可用', okText: '确定' })
     }
@@ -150,6 +151,7 @@ const SettingsPage = () => {
       localStorage.removeItem('seal-tab-double-click-close')
       保存提醒目录(null)
       await 清除翻译配置()
+      await window.sealDocumentConversion?.clear()
     } catch (错误) {
       if (模型配置已清除) window.dispatchEvent(new Event('seal-ai-setting-changed'))
       modal.error({ title: '恢复设置失败', content: `${模型配置已清除 ? '模型设置已清除，' : ''}部分本地设置可能已恢复，请检查当前选项。${错误 instanceof Error ? 错误.message : '本地设置无法写入'}`, okText: '确定' })
@@ -241,11 +243,12 @@ const SettingsPage = () => {
 
         {/* 组件管理 */}
         <CloudSettings />
+        <ConversionServiceSettings />
         {桌面系统功能 ? <>{组标题('组件管理')}
         <div className="settings-wps-card">
           {设置行(
             '文件格式关联',
-            '注册 DOCX、XLSX、PPTX 和 PDF 的打开能力；需要时进入 Windows 默认应用页面确认，设置后回读实际结果',
+            '注册文字、表格、演示和 PDF 的打开能力，包含 CSV、旧版 Office、模板和开放文档；需要时进入 Windows 默认应用页面确认，设置后回读实际结果',
             <Button size="small" loading={默认设置中} disabled={!桥接.可用 || 默认设置中} onClick={() => void 打开默认应用设置()}>设为默认程序</Button>
           )}
           {设置行(
