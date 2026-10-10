@@ -59,7 +59,12 @@ function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执
   async function 设置默认程序() {
     const 结果 = await 应用默认程序()
     if (结果.已全部默认) return { 成功: true, 已全部默认: true, 提示: '已将 DOCX、XLSX、PPTX、PDF 设为海豹办公打开' }
-    await 打开地址('ms-settings:defaultapps?registeredAppUser=SealOffice')
+    try { await 打开地址('ms-settings:defaultapps?registeredAppUser=SealOffice') }
+    catch {
+      // Windows 10 或旧系统设置不接受应用专属地址时，仍可进入默认应用列表。
+      try { await 打开地址('ms-settings:defaultapps') }
+      catch { throw new Error('海豹办公已注册，但 Windows 默认应用页面未能打开。请在系统设置 → 应用 → 默认应用中选择海豹办公。') }
+    }
     const 未生效 = 结果.未生效.map((项) => `.${项}`).join('、')
     return {
       成功: true,

@@ -39,7 +39,7 @@ const SheetToolbar = ({ 地址文本, 公式值, on地址提交, on公式提交 
       value: 地址草稿,
       onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set地址草稿(事件.target.value),
       onKeyDown: (事件: React.KeyboardEvent) => {
-        if (事件.key === 'Enter') {
+        if (事件.key === 'Enter' && !事件.nativeEvent.isComposing && 事件.nativeEvent.keyCode !== 229) {
           事件.preventDefault()
           on地址提交(地址草稿)
         }
@@ -57,7 +57,7 @@ const SheetToolbar = ({ 地址文本, 公式值, on地址提交, on公式提交 
         set公式草稿(事件.target.value)
       },
       onKeyDown: (事件: React.KeyboardEvent) => {
-        if (事件.key === 'Enter') {
+        if (事件.key === 'Enter' && !事件.nativeEvent.isComposing && 事件.nativeEvent.keyCode !== 229) {
           事件.preventDefault()
           // 提交后清空草稿，让下一次输入从零开始
           跳过一次同步.current = true

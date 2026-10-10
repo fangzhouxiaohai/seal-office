@@ -1,0 +1,81 @@
+html, body, #root { height: 100%; height: var(--seal-viewport-height, 100dvh); }
+body { overscroll-behavior: none; }
+.seal-mobile-nav { display: none; }
+.wps-app { padding-top: env(safe-area-inset-top, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+/* 原生外壳已避开安全区域，WebView 内不再次增加刘海与手势区留白。 */
+html[data-seal-platform="app"] .wps-app { padding: 0; }
+html[data-seal-platform="app"] { --seal-bottom-inset: 0px; }
+.seal-mobile-function-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.seal-mobile-function-grid button { display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 78px; padding: 12px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); color: var(--text-1); font: inherit; cursor: pointer; }
+.seal-mobile-create { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 22px; }
+.seal-mobile-create .ant-btn { height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.seal-mobile-account { display: flex; gap: 12px; margin: 20px 0; }
+@media (max-width: 820px), (pointer: coarse) and (max-width: 1024px) {
+  .wps-app { height: calc(100% - 58px - var(--seal-bottom-inset, env(safe-area-inset-bottom, 0px))); }
+  .seal-mobile-nav { position: fixed; z-index: 35; bottom: 0; inset-inline: 0; height: calc(58px + var(--seal-bottom-inset, env(safe-area-inset-bottom, 0px))); padding-bottom: var(--seal-bottom-inset, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--border); background: var(--bg-card); }
+  .seal-keyboard-open .seal-mobile-nav { display: none; }
+  .seal-keyboard-open .wps-app { height: 100%; }
+  .seal-mobile-nav button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--text-1); font: inherit; font-size: 11px; cursor: pointer; }
+  .seal-mobile-nav button:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }
+  .seal-mobile-nav button[aria-current="page"] { color: var(--brand); background: var(--brand-soft); }
+  .seal-mobile-nav button[aria-current="page"] .seal-icon[data-icon="home"] { fill: var(--brand); }
+  .wps-homerail, .wps-recommend, .wps-sidebar, .wps-homesidebar > nav, .wps-homesidebar > .wps-homenav, .wps-homesidebar__local-note { display: none !important; }
+  .wps-homebody { flex-direction: column; }
+  .wps-homesidebar { width: 100%; flex-basis: auto; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--border); }
+  .wps-homesidebar__actions { display: flex; flex-direction: row; margin: 0; gap: 8px; }
+  .wps-homesidebar__actions > * { flex: 1; min-width: 0; min-height: 42px; }
+  .wps-home-main { width: 100%; padding: 12px; }
+  .wps-home-main .wps-main { padding: 0; }
+  .wps-titlebar { min-height: 56px; padding: 6px 10px; gap: 8px; }
+  .wps-titlebar__brand { flex: 0 0 28px; }
+  .wps-titlebar__divider, .wps-titlebar__page { display: none; }
+  .wps-titlebar__center { flex: 1; }
+  .wps-titlebar__search { width: 100% !important; }
+  .wps-titlebar__actions { gap: 4px; }
+  .wps-titlebar__actions > .wps-icon-button { display: none; }
+  .wps-titlebar__actions > .wps-theme-toggle { display: inline-flex; }
+  .wps-icon-button, .wps-avatar { min-width: 36px; min-height: 36px; }
+  .wps-new-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .wps-doc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wps-home__header { flex-wrap: wrap; gap: 10px; }
+  .wps-doc-list__head { display: none; }
+  .wps-doc-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .wps-doc-row > :nth-child(2), .wps-doc-row > :nth-child(3) { display: none; }
+  .wps-doc-card__actions, .wps-doc-card__more, .wps-doc-card__star { opacity: 1; }
+  .wps-footer { display: none; }
+  .wps-global-tabs { flex-basis: 42px; height: 42px; }
+  .wps-global-tabs button { min-height: 36px; }
+  .assistant-launcher { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .ant-drawer-content-wrapper { max-width: 100%; }
+  .ant-modal { max-width: calc(100% - 24px); margin-inline: auto; }
+  .ant-modal-body { max-height: 70dvh; overflow-y: auto; }
+  .ant-input, .ant-input-number-input, textarea, select { font-size: 16px; }
+  .wps-ribbon, .wps-ribbon-tabs, .wps-ribbon-panel { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+  .wps-ribbon-tabs { flex-wrap: nowrap; white-space: nowrap; }
+  .wps-ribbon-panel { flex-wrap: nowrap; }
+  .wps-editor-canvas { padding: 12px 6px; }
+  /* 手机编辑时重排正文；导出继续使用文档模型中的纸张、边距和分栏。 */
+  .wps-editor-stage { padding: 8px 0 16px; }
+  .wps-editor-canvas { min-width: 0 !important; width: 100%; }
+  .wps-editor-canvas__paper { width: 100% !important; min-height: 480px !important; padding: 42px 18px !important; zoom: 1 !important; }
+  .wps-editor-canvas__content { min-height: 400px; column-count: 1 !important; }
+  .wps-editor-canvas__content img { max-width: 100%; height: auto; }
+  .wps-editor-canvas__header, .wps-editor-canvas__footer { left: 18px !important; right: 18px !important; }
+  .wps-ruler { display: none; }
+  .wps-editor-status { min-height: 32px; padding: 4px 12px; overflow-x: auto; }
+  .wps-app[data-module="word"] .wps-editor-status__left > :nth-child(-n + 4), .wps-app[data-module="word"] .wps-editor-status__right { display: none; }
+  .wps-app[data-module="word"] .wps-editor-status__left::before { content: '手机编辑视图'; color: var(--text-2); margin-right: 12px; }
+  .assistant-launcher { display: none; }
+  .wps-ppt-thumbs { max-width: 100%; }
+  .wps-ppt-body { min-width: 0; }
+  .wps-ppt-stage { padding: 12px; }
+  .wps-ppt-box, .wps-ppt-image, .wps-ppt-resize { touch-action: none; }
+  .wps-ppt-box__editor { touch-action: auto; }
+  .wps-ppt-resize { width: 28px; height: 28px; }
+  .wps-ppt-object-toolbar { overflow-x: auto; flex-shrink: 0; }
+  .wps-home__search-results { margin-inline: 0; }
+  .wps-home__search-results button { display: block; }
+  .wps-home__search-results button strong, .wps-home__search-results button span { display: block; }
+  .seal-cloud-toolbar, .seal-knowledge-toolbar { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .seal-mobile-nav *, .seal-mobile-functions * { scroll-behavior: auto; } }

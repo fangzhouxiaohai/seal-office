@@ -1,0 +1,532 @@
+{
+  "generatedAt": "2026-10-10T18:07:01.808Z",
+  "browser": "Electron 25.9.8",
+  "previewUrl": "http://127.0.0.1:8290/opendesign/mockups/ui-icons/",
+  "checks": [
+    {
+      "name": "full page capture pc",
+      "pass": true,
+      "data": {
+        "view": "pc",
+        "title": "海豹办公 · PC图标效果稿",
+        "width": 1600,
+        "clientWidth": 1600,
+        "scrollWidth": 1600,
+        "height": 1000,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "true",
+            "x": 680.546875,
+            "y": 18.5,
+            "width": 85.5,
+            "height": 38,
+            "right": 766.046875,
+            "bottom": 56.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "false",
+            "x": 770.046875,
+            "y": 18.5,
+            "width": 91,
+            "height": 38,
+            "right": 861.046875,
+            "bottom": 56.5
+          }
+        ],
+        "svgCount": 186,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "PC 端 · 细线条功能区图标",
+        "overflow": [],
+        "cloudNavigation": null
+      }
+    },
+    {
+      "name": "full page capture mobile",
+      "pass": true,
+      "data": {
+        "view": "mobile",
+        "title": "海豹办公 · 移动端图标效果稿",
+        "width": 1600,
+        "clientWidth": 1600,
+        "scrollWidth": 1600,
+        "height": 1061,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "false",
+            "x": 680.546875,
+            "y": 18.5,
+            "width": 85.5,
+            "height": 38,
+            "right": 766.046875,
+            "bottom": 56.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "true",
+            "x": 770.046875,
+            "y": 18.5,
+            "width": 91,
+            "height": 38,
+            "right": 861.046875,
+            "bottom": 56.5
+          }
+        ],
+        "svgCount": 193,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "移动端 · 彩色分层图标",
+        "overflow": [],
+        "cloudNavigation": {
+          "viewBox": "0 0 16 16",
+          "stroke": "rgb(31, 35, 43)",
+          "strokeWidth": "1.4px",
+          "fill": "none"
+        }
+      }
+    },
+    {
+      "name": "responsive 1280 pc",
+      "pass": true,
+      "data": {
+        "view": "pc",
+        "title": "海豹办公 · PC图标效果稿",
+        "width": 1280,
+        "clientWidth": 1263,
+        "scrollWidth": 1263,
+        "height": 1086,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "true",
+            "x": 512.046875,
+            "y": 22.5,
+            "width": 85.5,
+            "height": 38,
+            "right": 597.546875,
+            "bottom": 60.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "false",
+            "x": 601.546875,
+            "y": 22.5,
+            "width": 91,
+            "height": 38,
+            "right": 692.546875,
+            "bottom": 60.5
+          }
+        ],
+        "svgCount": 186,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "PC 端 · 细线条功能区图标",
+        "overflow": [],
+        "cloudNavigation": null
+      }
+    },
+    {
+      "name": "responsive 1280 mobile",
+      "pass": true,
+      "data": {
+        "view": "mobile",
+        "title": "海豹办公 · 移动端图标效果稿",
+        "width": 1280,
+        "clientWidth": 1263,
+        "scrollWidth": 1263,
+        "height": 1151,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "false",
+            "x": 512.046875,
+            "y": 22.5,
+            "width": 85.5,
+            "height": 38,
+            "right": 597.546875,
+            "bottom": 60.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "true",
+            "x": 601.546875,
+            "y": 22.5,
+            "width": 91,
+            "height": 38,
+            "right": 692.546875,
+            "bottom": 60.5
+          }
+        ],
+        "svgCount": 193,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "移动端 · 彩色分层图标",
+        "overflow": [],
+        "cloudNavigation": {
+          "viewBox": "0 0 16 16",
+          "stroke": "rgb(31, 35, 43)",
+          "strokeWidth": "1.4px",
+          "fill": "none"
+        }
+      }
+    },
+    {
+      "name": "version switcher 1280",
+      "pass": true,
+      "data": {
+        "pc": {
+          "view": "pc",
+          "title": "海豹办公 · PC图标效果稿",
+          "width": 1280,
+          "clientWidth": 1263,
+          "scrollWidth": 1263,
+          "height": 1086,
+          "buttons": [
+            {
+              "view": "pc",
+              "pressed": "true",
+              "x": 512.046875,
+              "y": 22.5,
+              "width": 85.5,
+              "height": 38,
+              "right": 597.546875,
+              "bottom": 60.5
+            },
+            {
+              "view": "mobile",
+              "pressed": "false",
+              "x": 601.546875,
+              "y": 22.5,
+              "width": 91,
+              "height": 38,
+              "right": 692.546875,
+              "bottom": 60.5
+            }
+          ],
+          "svgCount": 186,
+          "brokenImages": [
+            "http://127.0.0.1:8290/opendesign/mockups/ui-icons/assets/seal-office.png"
+          ],
+          "iconCatalogCount": 127,
+          "visibleText": "PC 端 · 细线条功能区图标",
+          "overflow": [],
+          "cloudNavigation": null
+        },
+        "mobile": {
+          "view": "mobile",
+          "title": "海豹办公 · 移动端图标效果稿",
+          "width": 1280,
+          "clientWidth": 1263,
+          "scrollWidth": 1263,
+          "height": 1151,
+          "buttons": [
+            {
+              "view": "pc",
+              "pressed": "false",
+              "x": 512.046875,
+              "y": 22.5,
+              "width": 85.5,
+              "height": 38,
+              "right": 597.546875,
+              "bottom": 60.5
+            },
+            {
+              "view": "mobile",
+              "pressed": "true",
+              "x": 601.546875,
+              "y": 22.5,
+              "width": 91,
+              "height": 38,
+              "right": 692.546875,
+              "bottom": 60.5
+            }
+          ],
+          "svgCount": 193,
+          "brokenImages": [],
+          "iconCatalogCount": 127,
+          "visibleText": "移动端 · 彩色分层图标",
+          "overflow": [],
+          "cloudNavigation": {
+            "viewBox": "0 0 16 16",
+            "stroke": "rgb(31, 35, 43)",
+            "strokeWidth": "1.4px",
+            "fill": "none"
+          }
+        }
+      }
+    },
+    {
+      "name": "complete catalog 1280",
+      "pass": true,
+      "data": {
+        "cells": 127,
+        "scrollWidth": 1263,
+        "clientWidth": 1263
+      }
+    },
+    {
+      "name": "responsive 390 pc",
+      "pass": true,
+      "data": {
+        "view": "pc",
+        "title": "海豹办公 · PC图标效果稿",
+        "width": 390,
+        "clientWidth": 373,
+        "scrollWidth": 373,
+        "height": 1643,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "true",
+            "x": 220.5,
+            "y": 15.5,
+            "width": 61.5,
+            "height": 44,
+            "right": 282,
+            "bottom": 59.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "false",
+            "x": 286,
+            "y": 15.5,
+            "width": 67,
+            "height": 44,
+            "right": 353,
+            "bottom": 59.5
+          }
+        ],
+        "svgCount": 186,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "PC 端 · 细线条功能区图标",
+        "overflow": [],
+        "cloudNavigation": null
+      }
+    },
+    {
+      "name": "responsive 390 mobile",
+      "pass": true,
+      "data": {
+        "view": "mobile",
+        "title": "海豹办公 · 移动端图标效果稿",
+        "width": 390,
+        "clientWidth": 373,
+        "scrollWidth": 373,
+        "height": 2767,
+        "buttons": [
+          {
+            "view": "pc",
+            "pressed": "false",
+            "x": 220.5,
+            "y": 15.5,
+            "width": 61.5,
+            "height": 44,
+            "right": 282,
+            "bottom": 59.5
+          },
+          {
+            "view": "mobile",
+            "pressed": "true",
+            "x": 286,
+            "y": 15.5,
+            "width": 67,
+            "height": 44,
+            "right": 353,
+            "bottom": 59.5
+          }
+        ],
+        "svgCount": 193,
+        "brokenImages": [],
+        "iconCatalogCount": 127,
+        "visibleText": "移动端 · 彩色分层图标",
+        "overflow": [],
+        "cloudNavigation": {
+          "viewBox": "0 0 16 16",
+          "stroke": "rgb(31, 35, 43)",
+          "strokeWidth": "1.4px",
+          "fill": "none"
+        }
+      }
+    },
+    {
+      "name": "version switcher 390",
+      "pass": true,
+      "data": {
+        "pc": {
+          "view": "pc",
+          "title": "海豹办公 · PC图标效果稿",
+          "width": 390,
+          "clientWidth": 373,
+          "scrollWidth": 373,
+          "height": 1643,
+          "buttons": [
+            {
+              "view": "pc",
+              "pressed": "true",
+              "x": 220.5,
+              "y": 15.5,
+              "width": 61.5,
+              "height": 44,
+              "right": 282,
+              "bottom": 59.5
+            },
+            {
+              "view": "mobile",
+              "pressed": "false",
+              "x": 286,
+              "y": 15.5,
+              "width": 67,
+              "height": 44,
+              "right": 353,
+              "bottom": 59.5
+            }
+          ],
+          "svgCount": 186,
+          "brokenImages": [],
+          "iconCatalogCount": 127,
+          "visibleText": "PC 端 · 细线条功能区图标",
+          "overflow": [],
+          "cloudNavigation": null
+        },
+        "mobile": {
+          "view": "mobile",
+          "title": "海豹办公 · 移动端图标效果稿",
+          "width": 390,
+          "clientWidth": 373,
+          "scrollWidth": 373,
+          "height": 2767,
+          "buttons": [
+            {
+              "view": "pc",
+              "pressed": "false",
+              "x": 220.5,
+              "y": 15.5,
+              "width": 61.5,
+              "height": 44,
+              "right": 282,
+              "bottom": 59.5
+            },
+            {
+              "view": "mobile",
+              "pressed": "true",
+              "x": 286,
+              "y": 15.5,
+              "width": 67,
+              "height": 44,
+              "right": 353,
+              "bottom": 59.5
+            }
+          ],
+          "svgCount": 193,
+          "brokenImages": [],
+          "iconCatalogCount": 127,
+          "visibleText": "移动端 · 彩色分层图标",
+          "overflow": [],
+          "cloudNavigation": {
+            "viewBox": "0 0 16 16",
+            "stroke": "rgb(31, 35, 43)",
+            "strokeWidth": "1.4px",
+            "fill": "none"
+          }
+        }
+      }
+    },
+    {
+      "name": "complete catalog 390",
+      "pass": true,
+      "data": {
+        "cells": 127,
+        "scrollWidth": 373,
+        "clientWidth": 373
+      }
+    }
+  ],
+  "screenshots": [
+    {
+      "view": "pc",
+      "path": "E:/seal-office/opendesign/mockups/ui-icons/assets/pc-effect.png",
+      "width": 1600,
+      "height": 1000,
+      "independentlyViewed": true
+    },
+    {
+      "view": "mobile",
+      "path": "E:/seal-office/opendesign/mockups/ui-icons/assets/mobile-effect.png",
+      "width": 1600,
+      "height": 1061,
+      "independentlyViewed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "warnings": [
+    {
+      "source": "Electron renderer",
+      "level": "warning",
+      "message": "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+    }
+  ],
+  "automatedPassed": true,
+  "passed": true,
+  "visualReview": {
+    "status": "passed",
+    "reviewer": "Independent OpenDesign verifier",
+    "referenceImagesViewed": [
+      "D:/downsoft/xwechat_files/wxid_pytztjf4bgf622_2b1a/temp/RWTemp/2026-10/9e20f478899dc29eb19741386f9343c8/e7ad6f09350353ad49073844ac5b3b38.jpg",
+      "D:/downsoft/xwechat_files/wxid_pytztjf4bgf622_2b1a/temp/RWTemp/2026-10/9e20f478899dc29eb19741386f9343c8/327d9c227699f3a1f37969a2b43f1340.jpg",
+      "E:/Temp/codex-clipboard-137a226c-dc17-427f-badd-43813d23cdaa.png"
+    ],
+    "findings": [
+      {
+        "id": "pc-style",
+        "status": "passed",
+        "detail": "PC icons use thin dark outlines with restrained orange, green and blue accents. The insertion ribbon matches the density and visual treatment of the supplied WPS toolbar."
+      },
+      {
+        "id": "mobile-style",
+        "status": "passed",
+        "detail": "Mobile file icons use blue, orange, green and red layered tiles. Rounded colored feature icons and outline navigation match the supplied mobile references."
+      },
+      {
+        "id": "mobile-cloud-navigation",
+        "status": "fixed",
+        "detail": "Changed the bottom cloud-space navigation from a colored filled feature icon to a dark outline icon. The colored version remains in the feature area."
+      },
+      {
+        "id": "layout-and-legibility",
+        "status": "passed",
+        "detail": "Both final 1600px full-page screenshots were viewed independently. Titles, icon labels, document content and mobile screens fit their containers; the footer is included without truncation."
+      },
+      {
+        "id": "responsive",
+        "status": "passed",
+        "detail": "390px and 1280px checks found no page overflow or broken images. The 390px PC canvas scrolls within its own container, and the mobile devices stack vertically."
+      },
+      {
+        "id": "interaction",
+        "status": "passed",
+        "detail": "Both PC/mobile switch buttons update the selected state and content. The complete icon catalog expands to 127 entries at both tested widths."
+      }
+    ],
+    "modifications": [
+      "preview.js: use outline cloud icon in mobile bottom navigation",
+      "preview.css: match bottom-navigation stroke weight"
+    ],
+    "productionFilesChanged": false,
+    "gitChanged": false,
+    "implementationAuthorized": false,
+    "note": "Only the design mockup was adjusted. Await user review before integrating any icon proposal into the product."
+  },
+  "implementation": {
+    "status": "approved-and-integrated",
+    "userApproved": true,
+    "version": "1.9.10",
+    "pcIcons": 127,
+    "mobileIcons": 127,
+    "verification": "../../../docs/v1.9.10-图标与扁平界面验收.json",
+    "note": "The independentReview records the original proposal review; the user subsequently authorized production integration and desktop flattening."
+  }
+}

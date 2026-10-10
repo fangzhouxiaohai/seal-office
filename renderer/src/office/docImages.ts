@@ -1,4 +1,5 @@
 import { 解码图片数据, 单张最大字节 } from '../../../main/office/imageData'
+import { 读取图片变换 } from './imageTransform'
 
 export interface 文档图片 {
   数据: string
@@ -6,6 +7,9 @@ export interface 文档图片 {
   宽: number
   高: number
   说明: string
+  旋转?: number
+  水平翻转?: boolean
+  垂直翻转?: boolean
 }
 
 function 尺寸转像素(文本: string): number | undefined {
@@ -22,7 +26,8 @@ export function 读取文档图片(元素: HTMLImageElement, 未覆盖: Set<stri
     if (!匹配) throw new Error('图片尚未嵌入或格式不支持')
     const 信息 = 解码图片数据(匹配[2])
     if (信息.格式 !== 匹配[1].toLowerCase().replace('jpg', 'jpeg')) throw new Error('图片类型与实际内容不一致')
-    if (元素.style.transform && 元素.style.transform !== 'none' || 元素.style.float && 元素.style.float !== 'none' ||
+    const 变换 = 读取图片变换(元素.style.transform)
+    if (元素.style.float && 元素.style.float !== 'none' ||
         元素.style.position && 元素.style.position !== 'static' || 元素.style.objectFit && 元素.style.objectFit !== 'fill') throw new Error('图片裁剪或浮动布局尚不能保存')
     const 宽文本 = 元素.style.width && 元素.style.width !== 'auto' ? 元素.style.width : 元素.getAttribute('width') || ''
     const 高文本 = 元素.style.height && 元素.style.height !== 'auto' ? 元素.style.height : 元素.getAttribute('height') || ''
@@ -32,7 +37,7 @@ export function 读取文档图片(元素: HTMLImageElement, 未覆盖: Set<stri
     const 宽 = 指定宽 ?? (指定高 === undefined ? 信息.宽 : 指定高 * 信息.宽 / 信息.高)
     const 高 = 指定高 ?? (指定宽 === undefined ? 信息.高 : 指定宽 * 信息.高 / 信息.宽)
     if (![宽, 高].every((值) => Number.isFinite(值) && 值 > 0 && 值 <= 32768)) throw new Error('图片显示尺寸无效')
-    return { 数据: 匹配[2], 格式: 信息.格式, 宽, 高, 说明: 元素.alt || '' }
+    return { 数据: 匹配[2], 格式: 信息.格式, 宽, 高, 说明: 元素.alt || '', ...(变换.旋转 ? { 旋转: 变换.旋转 } : {}), ...(变换.水平翻转 ? { 水平翻转: true } : {}), ...(变换.垂直翻转 ? { 垂直翻转: true } : {}) }
   } catch (错误) {
     未覆盖.add(错误 instanceof Error ? 错误.message : '图片数据无效')
     return undefined

@@ -31,7 +31,12 @@ function createService({directory,safeStorage,transport}={}){
   async function request(route,{method='GET',data,binary=false,headers={}}={}){
     const url=new URL(state.url+route),payload=Buffer.isBuffer(data)?data:data===undefined?null:Buffer.from(JSON.stringify(data))
     const head={...(state.token?{Authorization:'Bearer '+state.token}:{}),...(payload?{'Content-Type':Buffer.isBuffer(data)?'application/octet-stream':'application/json','Content-Length':payload.length}:{}),...headers}
-    if(transport)return transport(url.toString(),{method,headers:head,body:payload,binary})
+    if(transport){
+      const controller=new AbortController(),req={destroy:()=>controller.abort()};active.add(req)
+      try{return await transport(url.toString(),{method,headers:head,body:payload,binary,signal:controller.signal})}
+      catch(error){if(error.status===401){state.token=null;state.root=null;state.account=null;epoch++;for(const pending of active)pending.destroy();persist()}throw error}
+      finally{active.delete(req)}
+    }
     return new Promise((resolve,reject)=>{
       const req=(url.protocol==='https:'?https:http).request(url,{method,headers:head},res=>{
         const chunks=[];let size=0

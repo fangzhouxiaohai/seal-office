@@ -1,0 +1,8 @@
+# 与云服务共用一个站点时，保留现有 /api 反向代理，并添加以下静态路径。
+# root 改为 build:web 生成的 mobile/unpackage/web 目录。
+location /office/ {
+    alias /var/www/seal-office-web/;
+    index index.html;
+    try_files $uri $uri/ /office/index.html;
+}
+# 云 API 必须通过同源 /api/ 提供；不要用通配 CORS 暴露带账号的接口。

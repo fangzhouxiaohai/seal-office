@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import quote
 import requests
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -47,6 +48,17 @@ def main():
     store_materials = release_dir / f'SealOffice{version}-LenovoAssets.zip'
     if store_materials.is_file():
         files.append(store_materials)
+    tutorial = ROOT / 'release/promo' / f'SealOffice{version}-AndroidTutorialLandscape1080p.mp4'
+    if tutorial.is_file():
+        verification = tutorial.with_name(f'SealOffice{version}-AndroidTutorialVerification.json')
+        video_report = json.loads(verification.read_text(encoding='utf-8'))
+        if not video_report.get('passed') or video_report.get('version') != version or not video_report.get('decodedVideoAndAudio'):
+            raise SystemExit('Verified mobile tutorial report required')
+        with tutorial.open('rb') as stream:
+            if hashlib.file_digest(stream, 'sha256').hexdigest() != video_report.get('sha256'):
+                raise SystemExit('Mobile tutorial changed after verification')
+        files.extend([tutorial, tutorial.with_name(f'SealOffice{version}-AndroidTutorialCover.jpg'),
+                      tutorial.with_name(f'SealOffice{version}-AndroidTutorialSubtitles.srt'), verification])
     files.append(ROOT / 'docs' / f'{tag}-修复与验收.md')
     expected = {}
     for file in files:
@@ -73,9 +85,24 @@ def main():
         return response.json()
 
     body = files[-1].read_text(encoding='utf-8-sig')
-    # Release notes render outside docs/, so repository-relative screenshot
-    # links need an immutable tag URL. The saved document stays relative.
-    body = body.replace('](screenshots/', f'](https://raw.githubusercontent.com/{REPO}/{tag}/docs/screenshots/')
+    # Release notes render outside docs/. Resolve local links against their
+    # source and point screenshots and reports at the immutable release tag.
+    def release_link(match):
+        image, label, target = match.groups()
+        if '://' in target or target.startswith('#'):
+            return match.group(0)
+        relative, separator, fragment = target.partition('#')
+        source = (ROOT / 'docs' / relative).resolve()
+        try:
+            repository_path = source.relative_to(ROOT).as_posix()
+        except ValueError:
+            raise SystemExit('Release note link is outside the repository')
+        base = f'https://raw.githubusercontent.com/{REPO}/{tag}' if image else f'https://github.com/{REPO}/blob/{tag}'
+        destination = base + '/' + quote(repository_path, safe='/')
+        if separator:
+            destination += '#' + fragment
+        return f'{image}[{label}]({destination})'
+    body = re.sub(r'(!?)\[([^\]]+)\]\(([^)]+)\)', release_link, body)
     body += f'\n\n源码和 `{tag}` 标签已同步 GitHub 与 GitCode，安装包文件名不含空格。\n'
     releases = call('GET', f'{API}/releases', params={'per_page': 100})
     release = next((r for r in releases if r['tag_name'] == tag), None)

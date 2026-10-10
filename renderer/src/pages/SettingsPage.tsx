@@ -12,6 +12,7 @@ import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒
 import './settings.css'
 
 const SettingsPage = () => {
+  const 桌面系统功能 = !document.documentElement.dataset.sealPlatform
   const { message, modal } = AntdApp.useApp()
   const { 主题, 切换主题, 恢复默认主题, 启动时检查默认程序, 设置启动时检查默认程序 } = useSettings()
   const { goHome } = useAppStore()
@@ -92,8 +93,8 @@ const SettingsPage = () => {
     try {
       const 结果 = await 桥接.setDefaultApp()
       if (!结果.成功) throw new Error(('错误' in 结果 ? 结果.错误 : undefined) || 结果.提示 || '无法设置默认程序')
-      // 全自动关联成功时只提示一句；系统仍要求手动确认时同样用提示，避免无谓的阻塞弹窗（系统页面会同时打开）
-      if (结果.已全部默认 === false) message.warning(结果.提示 || 'Windows 未允许自动关联全部格式，请在系统默认应用页面确认。', 6)
+      // 以实际回读结果为准；注册成功但仍需系统确认时说明下一步。
+      if (结果.已全部默认 === false) message.info(结果.提示 || '已打开 Windows 默认应用页面，请选择海豹办公并确认文件格式。', 8)
       else message.success(结果.提示 || 'DOCX、XLSX、PPTX 与 PDF 已使用海豹办公打开')
     } catch (错误) {
       modal.error({ title: '设置默认程序失败', content: 错误 instanceof Error ? 错误.message : '请检查系统设置是否可用', okText: '确定' })
@@ -228,10 +229,10 @@ const SettingsPage = () => {
         {组标题('工作环境')}
         <div className="settings-wps-card">
           {设置行('退出时保存工作状态', '下次启动时恢复仍在工作区的本地标签及编辑内容', <Switch aria-label="退出时保存工作状态" checked={恢复工作状态} disabled={本地偏好读取失败} onChange={(值) => 保存本地偏好('seal-session-restore', 值, 设恢复工作状态)} />)}
-          {设置行('沙箱保护', '应用运行时始终启用进程沙箱保护', <Switch checked disabled aria-label="沙箱保护" />)}
+          {桌面系统功能 ? 设置行('沙箱保护', '应用运行时始终启用进程沙箱保护', <Switch checked disabled aria-label="沙箱保护" />) : null}
           {设置行('SSL 安全校验', '网络请求沿用系统证书校验策略，不能在此关闭', <Switch checked disabled aria-label="SSL 安全校验" />)}
           {设置行('使用鼠标双击关闭标签', '双击底部文件标签时关闭；有未保存内容时先确认', <Switch aria-label="使用鼠标双击关闭标签" checked={双击关闭标签} disabled={本地偏好读取失败} onChange={(值) => 保存本地偏好('seal-tab-double-click-close', 值, 设双击关闭标签)} />)}
-          {设置行('系统预览窗格设置', 'Windows 资源管理器预览由系统预览处理程序提供；当前安装包未提供该组件', <span className="settings-wps-row__status">需要 Windows 预览处理程序</span>)}
+          {桌面系统功能 ? 设置行('系统预览窗格设置', 'Windows 资源管理器预览由系统预览处理程序提供；当前安装包未提供该组件', <span className="settings-wps-row__status">需要 Windows 预览处理程序</span>) : null}
           {设置行(
             '文字内容自动备份',
             '文字编辑内容在本机自动备份；发生异常退出后可在下次启动时恢复'
@@ -240,11 +241,11 @@ const SettingsPage = () => {
 
         {/* 组件管理 */}
         <CloudSettings />
-        {组标题('组件管理')}
+        {桌面系统功能 ? <>{组标题('组件管理')}
         <div className="settings-wps-card">
           {设置行(
             '文件格式关联',
-            '把 DOCX、XLSX、PPTX 和 PDF 交给海豹办公打开；点击后自动完成关联，无需逐项在系统页面选择',
+            '注册 DOCX、XLSX、PPTX 和 PDF 的打开能力；需要时进入 Windows 默认应用页面确认，设置后回读实际结果',
             <Button size="small" loading={默认设置中} disabled={!桥接.可用 || 默认设置中} onClick={() => void 打开默认应用设置()}>设为默认程序</Button>
           )}
           {设置行(
@@ -254,12 +255,17 @@ const SettingsPage = () => {
           )}
         </div>
 
+        </> : null}
+
         {/* 消息提醒 */}
+        {桌面系统功能 ? <>
         {组标题('消息提醒')}
         <div className="settings-wps-card">
           {设置行('新文件接收提醒', 提醒读取失败 ? '原提醒设置读取失败；请先恢复默认后重新配置' : 桥接.可用 ? '程序运行时检测选定目录中新出现的办公文件，首次检测只记录现有文件' : '请在 Windows 桌面版启用本机文件提醒', <Switch aria-label="新文件接收提醒" checked={提醒目录 !== null} disabled={!桥接.可用 || 提醒读取失败} onChange={(启用) => 更新提醒目录(启用 ? 'desktop' : null)} />)}
           {提醒目录 !== null ? 设置行('提醒目录', '选择要检测的本机目录', <Select<提醒目录> aria-label="提醒目录" className="settings-wps-row__input" value={提醒目录} disabled={!桥接.可用 || 提醒读取失败} onChange={更新提醒目录} options={(Object.keys(提醒目录名称) as 提醒目录[]).map((目录) => ({ value: 目录, label: 提醒目录名称[目录] }))} />) : null}
         </div>
+
+        </> : null}
 
         {/* 翻译设置（真实功能） */}
         {组标题('翻译设置')}
@@ -299,7 +305,7 @@ const SettingsPage = () => {
         {组标题('其他')}
         <div className="settings-wps-card">
           {设置行('窗口管理模式', '所有文件在当前窗口底部打开标签，便于在首页与文件之间切换', <span className="settings-wps-row__status">整合式底部标签</span>)}
-          {设置行('安装目录完整性检测', '对照打包时生成的清单，检查程序文件是否缺失或意外修改', <Button size="small" loading={完整性检查中} onClick={() => void 检查安装目录()}>立即检测</Button>)}
+          {桌面系统功能 ? 设置行('安装目录完整性检测', '对照打包时生成的清单，检查程序文件是否缺失或意外修改', <Button size="small" loading={完整性检查中} onClick={() => void 检查安装目录()}>立即检测</Button>) : null}
           {设置行(
             '恢复初始默认设置',
             '清除外观、工作偏好、提醒、翻译及智能助手模型配置；不删除已保存的文档文件',

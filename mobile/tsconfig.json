@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "lib": ["ES2021", "DOM", "DOM.Iterable"] },
+  "include": ["web/**/*.ts", "web/**/*.tsx", "../renderer/src"],
+  "exclude": ["web/generated", "../renderer/src/**/*.test.*"]
+}

@@ -1,0 +1,99 @@
+{
+  "version": "1.9.10",
+  "generatedAt": "2026-10-10T18:32:08.374601+00:00",
+  "passed": true,
+  "archiveSha256": "5c0a575adf01dc70ab9efe010c0303a3ac5006599f8f7de4e6ad2edd8926ffce",
+  "packages": [
+    {
+      "bytes": 97140580,
+      "sha256": "e705700ad7fbbc89ef28182342d263b1acc405a30cd30d085b7a32902d025797",
+      "embeddedArchiveMatches": true,
+      "name": "SealOfficeSetup1.9.10.exe"
+    },
+    {
+      "bytes": 96915620,
+      "sha256": "a4466473526bd328a12a6928acf1d0bdc001e8a82e47e7285c3b24ad156bea84",
+      "embeddedArchiveMatches": true,
+      "name": "SealOffice1.9.10.exe"
+    },
+    {
+      "name": "SealOffice1.9.10.msix",
+      "bytes": 177676938,
+      "sha256": "e471ae98d749d6655ac6bf014fa64d5b33421c5f4d008c9d19115720f37755d4",
+      "embeddedArchiveMatches": true
+    }
+  ],
+  "launches": [
+    {
+      "artifact": "unpacked",
+      "phase": "first",
+      "checks": 15,
+      "passed": true
+    },
+    {
+      "artifact": "unpacked",
+      "phase": "repeat",
+      "checks": 11,
+      "passed": true
+    },
+    {
+      "artifact": "unpacked",
+      "phase": "confirm",
+      "checks": 32,
+      "passed": true
+    },
+    {
+      "artifact": "portable",
+      "phase": "first",
+      "checks": 15,
+      "passed": true
+    },
+    {
+      "artifact": "portable",
+      "phase": "repeat",
+      "checks": 11,
+      "passed": true
+    },
+    {
+      "artifact": "portable",
+      "phase": "confirm",
+      "checks": 32,
+      "passed": true
+    }
+  ],
+  "packagedCodecs": {
+    "version": "1.9.10",
+    "passed": true,
+    "checks": [
+      "完整性清单：100 个文件",
+      "DOCX：正文图片、页眉与页脚保存重开",
+      "XLSX：多表、公式及图片导入",
+      "XLSX：字号、字体、颜色、填充、边框、对齐、行列尺寸、冻结、公式及图片连续三次保存重开",
+      "PPTX：三页文字与图片导入",
+      "PPTX：三页文字字号、字体格式、颜色、对齐、图片及备注连续三次保存重开",
+      "PDF：文字编辑、旋转、插入及删除页面保存重开",
+      "打印预览：成品模块生成真实 PDF"
+    ]
+  },
+  "nativeAssociation": {
+    "passed": true,
+    "checks": 85,
+    "isolatedTestRoot": true,
+    "preservesUserChoice": true,
+    "notificationBeforeMs": 58697,
+    "notificationAfterMs": 89
+  },
+  "msix": {
+    "version": "1.9.10.0",
+    "identity": "45C56666.seal-office",
+    "sourceFilesVerified": 90,
+    "totalPayloadFilesVerified": 97,
+    "blockMap": true,
+    "signed": false,
+    "storeSubmission": false
+  },
+  "limitations": [
+    "Installed application upgrade and all vendor ROM devices require separate device acceptance.",
+    "The user will provide the new Android cloud APK; this release does not upload the old APK."
+  ]
+}

@@ -15,6 +15,9 @@ describe('帮助手册', () => {
     render(<HelpManual />)
     const 搜索 = screen.getByRole('searchbox', { name: '搜索帮助内容' })
     fireEvent.change(搜索, { target: { value: '旋转' } })
+    fireEvent.click(screen.getByRole('button', { name: '图片选中、移动、旋转与裁剪' }))
+    expect(screen.getByRole('heading', { name: '图片选中、移动、旋转与裁剪' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '阅读和处理 PDF' }))
     expect(screen.getByRole('heading', { name: '阅读和处理 PDF' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '电子表格' })).not.toBeInTheDocument()
     fireEvent.change(搜索, { target: { value: '不存在的帮助主题' } })
@@ -52,7 +55,7 @@ describe('帮助手册', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '缩放页面内容' }))
     expect(screen.getByText(/按住 Ctrl（macOS 为 Command）滚动滚轮/)).toBeInTheDocument()
-    expect(screen.getByText(/打开时默认 125%/)).toBeInTheDocument()
+    expect(screen.getByText(/打开时默认 150%/)).toBeInTheDocument()
     expect(screen.getByText(/缩放只影响你自己的查看比例，不写入文档/)).toBeInTheDocument()
   })
 

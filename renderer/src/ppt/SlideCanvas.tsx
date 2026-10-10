@@ -28,7 +28,8 @@ export default function SlideCanvas(属性: Props) {
   const 尺寸 = 属性.页面尺寸 ?? 默认页面尺寸
   const 容器 = useRef<HTMLDivElement>(null)
   const [预览, set预览] = useState<Record<string, 几何修改>>({})
-  const 拖动 = useRef<{ x: number; y: number; 对象: 演示对象[]; 尺寸: boolean; 修改: Record<string, 几何修改> } | null>(null)
+  const 拖动 = useRef<{ x: number; y: number; 对象: 演示对象[]; 尺寸: boolean; 修改: Record<string, 几何修改>; 触点?: number } | null>(null)
+  const 最近轻点 = useRef<{ 标识: string; 时间: number } | null>(null)
   const 最新 = useRef(属性); 最新.current = 属性
   const 尺寸引用 = useRef(尺寸); 尺寸引用.current = 尺寸
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function SlideCanvas(属性: Props) {
     return () => 观察?.disconnect()
   }, [])
   useEffect(() => {
-    const 移动 = (事件: MouseEvent) => {
+    const 移动 = (事件: { clientX: number; clientY: number }) => {
       const 状态 = 拖动.current, 当前 = 最新.current
       if (!状态) return
       if (当前.只读 || 状态.对象.some(项 => !当前.幻灯片.文本框列表.some(框 => 框.id === 项.id) && !对象可以移动(当前.幻灯片,项.id))) { 拖动.current = null; set预览({}); return }
@@ -70,10 +71,37 @@ export default function SlideCanvas(属性: Props) {
       const 修改 = Object.fromEntries(Object.entries(状态.修改).filter(([id]) => !文本.some(框 => 框.id === id)))
       if (Object.keys(修改).length) 最新.current.on对象提交?.(修改)
     }
+    const 取消 = () => { 拖动.current = null; 最近轻点.current = null; set预览({}) }
+    const 触摸移动 = (事件: TouchEvent) => {
+      const 状态 = 拖动.current
+      if (状态?.触点 === undefined) return
+      if (事件.touches.length !== 1) { 取消(); return }
+      const 触点 = Array.from(事件.touches).find(项 => 项.identifier === 状态.触点)
+      if (!触点) return
+      if (事件.cancelable) 事件.preventDefault()
+      移动(触点)
+    }
+    const 触摸结束 = (事件: TouchEvent) => {
+      const 状态 = 拖动.current
+      if (状态?.触点 === undefined || !Array.from(事件.changedTouches).some(项 => 项.identifier === 状态.触点)) return
+      const 框 = 状态.对象[0]
+      if (框 && !Object.keys(状态.修改).length && 最新.current.幻灯片.文本框列表.some(项 => 项.id === 框.id) && !最新.current.只读) {
+        const 上次 = 最近轻点.current, 现在 = Date.now()
+        if (上次?.标识 === 框.id && 现在 - 上次.时间 < 350) { 最近轻点.current = null; 最新.current.on双击框(框.id) }
+        else 最近轻点.current = { 标识: 框.id, 时间: 现在 }
+      } else 最近轻点.current = null
+      结束()
+    }
     window.addEventListener('mousemove', 移动); window.addEventListener('mouseup', 结束)
-    return () => { window.removeEventListener('mousemove', 移动); window.removeEventListener('mouseup', 结束) }
+    window.addEventListener('touchmove', 触摸移动, { passive: false }); window.addEventListener('touchend', 触摸结束)
+    window.addEventListener('touchcancel', 取消); window.addEventListener('blur', 取消)
+    return () => {
+      window.removeEventListener('mousemove', 移动); window.removeEventListener('mouseup', 结束)
+      window.removeEventListener('touchmove', 触摸移动); window.removeEventListener('touchend', 触摸结束)
+      window.removeEventListener('touchcancel', 取消); window.removeEventListener('blur', 取消)
+    }
   }, [])
-  const 开始 = (事件: React.MouseEvent, 对象: 演示对象, 尺寸 = false) => {
+  const 开始 = (事件: Pick<React.MouseEvent, 'stopPropagation' | 'preventDefault' | 'clientX' | 'clientY' | 'button' | 'ctrlKey' | 'shiftKey'>, 对象: 演示对象, 尺寸 = false) => {
     事件.stopPropagation()
     if (只读 || 事件.button !== 0) return
     const 文本 = 页.文本框列表.some(框 => 框.id === 对象.id)
@@ -88,6 +116,13 @@ export default function SlideCanvas(属性: Props) {
     事件.preventDefault()
     拖动.current = { x: 事件.clientX, y: 事件.clientY, 对象: 文本 || 尺寸 ? [对象] : (页.对象列表 ?? []).filter(项 => 标识.includes(项.id) && 对象可以移动(页, 项.id)), 尺寸, 修改: {} }
   }
+  const 开始触摸 = (事件: React.TouchEvent, 对象: 演示对象, 尺寸 = false) => {
+    if (事件.touches.length !== 1) { 拖动.current = null; set预览({}); return }
+    const 触点 = 事件.touches[0]
+    // React 的 touchstart 默认是 passive；touch-action 和非 passive touchmove 控制拖动。
+    开始({ clientX: 触点.clientX, clientY: 触点.clientY, button: 0, ctrlKey: false, shiftKey: false, stopPropagation: () => 事件.stopPropagation(), preventDefault: () => {} }, 对象, 尺寸)
+    if (拖动.current) 拖动.current.触点 = 触点.identifier
+  }
   const 父表 = new Map((页.对象列表 ?? []).flatMap(项 => (项.子对象标识 ?? []).map(id => [id, 项.id] as const)))
   const 顶层 = (id: string): string => 父表.has(id) ? 顶层(父表.get(id)!) : id
   const 预览页 = Object.entries(预览).reduce((当前, [id, 值]) => 修改对象(当前, [id], 值), 页)
@@ -97,16 +132,16 @@ export default function SlideCanvas(属性: Props) {
       {属性.显示标尺 && <><div className="wps-ppt-ruler wps-ppt-ruler--horizontal" onDoubleClick={事件 => { const rect = 事件.currentTarget.getBoundingClientRect(); 属性.on参考线?.({ 垂直: [...属性.参考线?.垂直 ?? [], (事件.clientX - rect.left) / 缩放], 水平: 属性.参考线?.水平 ?? [] }) }}>{Array.from({ length: Math.max(1, Math.round(尺寸.宽 / 100)) + 1 }, (_,i) => <span key={i} style={{ left: `${i * 100 / 尺寸.宽 * 100}%` }}>{i * 100}</span>)}</div><div className="wps-ppt-ruler wps-ppt-ruler--vertical" onDoubleClick={事件 => { const rect = 事件.currentTarget.getBoundingClientRect(); 属性.on参考线?.({ 水平: [...属性.参考线?.水平 ?? [], (事件.clientY - rect.top) / 缩放], 垂直: 属性.参考线?.垂直 ?? [] }) }}>{Array.from({ length: Math.max(1, Math.round(尺寸.高 / 100)) + 1 }, (_,i) => <span key={i} style={{ top: `${i * 100 / 尺寸.高 * 100}%` }}>{i * 100}</span>)}</div></>}
       <div className={`wps-ppt-canvas${属性.显示网格线 ? ' wps-ppt-canvas--gridlines' : ''}`} style={{ width: 尺寸.宽, height: 尺寸.高, ...背景样式(属性.背景, 图片地址, 页.背景色), transform: `scale(${缩放})`, transformOrigin: 'top left' }} onClick={() => { 属性.on选中框(null); 属性.on选中对象?.([]) }} onContextMenu={事件 => { 事件.preventDefault(); 属性.onContextMenu?.(事件.clientX, 事件.clientY) }}>{/* 页脚图层与正文共用同一渲染规则 */}
         <页脚图层 页脚={属性.页脚} 页序号={属性.页序号} 尺寸={尺寸} />
-        {页.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className={`wps-ppt-box${框.id === 属性.选中框标识 ? ' wps-ppt-box--selected' : ''}`} style={{ ...文本样式(框), ...预览[框.id] }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, { ...框, 类型: '图形' })} onDoubleClick={事件 => { 事件.stopPropagation(); if (!只读) 属性.on双击框(框.id) }}>
-          {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
+        {页.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className={`wps-ppt-box${框.id === 属性.选中框标识 ? ' wps-ppt-box--selected' : ''}`} style={{ ...文本样式(框), ...预览[框.id] }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, { ...框, 类型: '图形' })} onTouchStart={事件 => 开始触摸(事件, { ...框, 类型: '图形' })} onDoubleClick={事件 => { 事件.stopPropagation(); if (!只读) 属性.on双击框(框.id) }}>
+          {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onTouchStart={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
         </div>)}
         {绘制列表.map(对象 => {
           if (!['图片','组合','图形','表格','图表'].includes(对象.类型)) return null
           const 根 = 页.对象列表!.find(项 => 项.id === 顶层(对象.id))!, 选中 = 选中对象.includes(对象.id), 几何 = { ...对象, ...预览[对象.id] }
           if (对象.类型 === '组合' && !选中) return null
-          return <div key={对象.id} data-对象标识={对象.id} className={`wps-ppt-image${选中 ? ' wps-ppt-image--selected' : ''}`} style={{ ...对象样式(几何), pointerEvents: 对象.类型 === '组合' ? 'none' : 'auto' }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, 选中对象.includes(对象.id) ? 对象 : 根)}>
+          return <div key={对象.id} data-对象标识={对象.id} className={`wps-ppt-image${选中 ? ' wps-ppt-image--selected' : ''}`} style={{ ...对象样式(几何), pointerEvents: 对象.类型 === '组合' ? 'none' : 'auto' }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, 选中对象.includes(对象.id) ? 对象 : 根)} onTouchStart={事件 => 开始触摸(事件, 选中对象.includes(对象.id) ? 对象 : 根)}>
             {对象.类型 !== '组合' && <对象内容 对象={几何} 图片地址={图片地址} />}
-            {选中 && !只读 && 对象可以移动(页, 对象.id) && <button type="button" className="wps-ppt-resize" aria-label="调整对象尺寸" onMouseDown={事件 => 开始(事件, 对象, true)} />}
+            {选中 && !只读 && 对象可以移动(页, 对象.id) && <button type="button" className="wps-ppt-resize" aria-label="调整对象尺寸" onMouseDown={事件 => 开始(事件, 对象, true)} onTouchStart={事件 => 开始触摸(事件, 对象, true)} />}
           </div>
         })}
         {属性.参考线?.垂直.map((x,i) => <div key={`竖${i}`} className="wps-ppt-guide wps-ppt-guide--vertical" style={{ left: x }} />)}

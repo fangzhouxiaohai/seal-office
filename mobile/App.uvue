@@ -1,0 +1,8 @@
+<script lang="uts">
+export default {
+  onLaunch() {},
+  onHide() {
+    uni.$emit('seal-persist-workspace')
+  }
+}
+</script>

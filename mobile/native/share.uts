@@ -1,0 +1,31 @@
+// #ifdef APP-ANDROID
+import Intent from 'android.content.Intent'
+import ClipData from 'android.content.ClipData'
+import File from 'java.io.File'
+// #endif
+
+export function shareExport(filename: string, mime: string, failed: (message: string) => void) {
+  // #ifdef APP-ANDROID
+  // HBuilderX 5.26 的系统分享在异步文件回调中可能取不到 top page activity。
+  // 使用当前 UniActivity 和框架 FileProvider，授予接收方临时读取权限。
+  try {
+    const activity = UTSAndroid.getUniActivity()
+    if (activity == null) { failed('请回到应用前台后再次导出'); return }
+    const uri = UTSAndroid.getFileProviderUri(new File(UTSAndroid.convert2AbsFullPath(filename)))
+    if (uri == null) { failed('无法读取导出文件'); return }
+    const intent = new Intent(Intent.ACTION_SEND)
+    intent.setType(mime)
+    intent.putExtra(Intent.EXTRA_STREAM, uri)
+    intent.setClipData(ClipData.newRawUri('海豹办公文档', uri))
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    const chooser = Intent.createChooser(intent, '导出文档')
+    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    activity.startActivity(chooser)
+  } catch (_) { failed('系统分享暂不可用，文件已保存在应用内') }
+  // #endif
+  // #ifndef APP-ANDROID
+  uni.shareWithSystem({ type: 'file', filePaths: [filename], fail: (error) => {
+    if (error.errCode != 1310600) failed('系统分享暂不可用，文件已保存在应用内')
+  } })
+  // #endif
+}

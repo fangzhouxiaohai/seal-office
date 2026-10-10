@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.9.9",
+  "version": "1.9.10",
   "description": "海豹办公 Seal Office",
   "main": "main/main.js",
   "author": "饮风一笑",
@@ -17,8 +17,16 @@
     "test:packaging": "node --test scripts/generate-integrity.test.cjs",
     "typecheck": "tsc --noEmit",
     "icons:files": "electron build/make-file-icons.cjs",
-    "pack": "npm run build && electron-builder --win --dir",
-    "dist": "npm run build && electron-builder --win"
+    "pack": "npm --prefix mobile run pack:android",
+    "dist": "npm --prefix mobile run pack:android",
+    "pack:windows": "npm run build && electron-builder --win --dir",
+    "dist:windows": "npm run build && electron-builder --win",
+    "mobile:dev": "npm --prefix mobile run dev",
+    "mobile:build": "npm --prefix mobile run build:android",
+    "mobile:pack": "npm --prefix mobile run pack:android",
+    "web:dev": "npm --prefix mobile run dev",
+    "web:build": "npm --prefix mobile run build:web",
+    "mobile:check": "npm --prefix mobile run check"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

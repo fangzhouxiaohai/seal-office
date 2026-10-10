@@ -1,0 +1,197 @@
+{
+  "version": "1.9.10",
+  "generatedAt": "2026-10-10T18:29:13.5049473Z",
+  "reviewer": "OpenDesign independent verifier",
+  "passed": true,
+  "scope": "真实React程序组件、已确认的PC与移动SVG、PC扁平皮肤及最终移动生产页面；Windows关联与安装包由主代理验证。",
+  "environment": "Electron 25.9.8 独立离屏窗口。载入实际App组件，桌面IPC与云响应受控；未修改用户文件或账户。",
+  "approvedReferences": [
+    "opendesign/mockups/ui-icons/assets/pc-effect.png",
+    "opendesign/mockups/ui-icons/assets/mobile-effect.png"
+  ],
+  "interfaceAudit": {
+    "passed": true,
+    "cases": 96,
+    "controls": 5861,
+    "widths": [
+      1280,
+      960
+    ],
+    "themes": [
+      "浅色",
+      "深色"
+    ],
+    "actions": [
+      "新建弹窗 → word",
+      "新建弹窗 → table",
+      "新建弹窗 → ppt",
+      "模板收藏 → 取消收藏",
+      "模板翻页 → 返回",
+      "模板预览九页与配图 → 创建可编辑副本",
+      "文档生成演示 → 对话框 → 取消",
+      "美化演示 → 对话框 → 取消",
+      "图片转可编辑演示 → 对话框 → 取消",
+      "知识库阅读 → 返回列表",
+      "日历新增保存 → 编辑 → 取消保留原内容",
+      "mindmap 添加节点 → 转为演示",
+      "flow 添加节点 → 转为演示",
+      "云目录空名称反馈 → 保留弹窗 → 修正后创建",
+      "云目录连接失败 → 保留输入 → 成功重试"
+    ],
+    "issues": [],
+    "runtimeErrors": [],
+    "source": ".upgrade-private/ui-v1.9.10-approved/ui-report.json"
+  },
+  "geometryAudit": {
+    "passed": true,
+    "iconFamilies": 127,
+    "renderedVectors": 254,
+    "nonemptyGraphics": 254,
+    "compactControlCases": 8,
+    "documentStyleCases": 6,
+    "source": ".upgrade-private/ui-v1.9.10-approved/visual-geometry-report.json"
+  },
+  "visualReview": {
+    "passed": true,
+    "independentlyViewed": [
+      "home-light.png",
+      "home-dark.png",
+      "word-light.png",
+      "word-dark.png",
+      "table-light.png",
+      "table-dark.png",
+      "ppt-light.png",
+      "ppt-dark.png",
+      "pdf-light.png",
+      "pdf-dark.png",
+      "settings-light.png",
+      "settings-dark.png",
+      "market-light.png",
+      "market-dark.png"
+    ],
+    "findings": [
+      {
+        "id": "approved-icon-style",
+        "status": "passed",
+        "detail": "PC细线条与有限彩色点缀、文件纸张轮廓与已确认效果稿一致。移动彩色分层图标的254项联合几何检查包含全部127个移动SVG。"
+      },
+      {
+        "id": "flat-desktop-style",
+        "status": "passed",
+        "detail": "首页、设置、模板市场及各编辑器采用中性平面、细分隔边框、紧凑圆角；浅色与深色主题均已独立查看。"
+      },
+      {
+        "id": "compact-icons",
+        "status": "fixed",
+        "detail": "原通用按钮内边距压缩26/30px紧凑按钮内的SVG。仅在flatDesktop.css取消紧凑按钮内边距并禁止图标收缩，真实截图中加粗、撤销、通知等图形已恢复，8组实际尺寸检查通过。"
+      },
+      {
+        "id": "document-object-styles",
+        "status": "passed",
+        "detail": "6组浅/深主题中，Word纸张/正文、Sheet单元格、PPT画布/标题对象的尺寸、颜色、字体、对齐、边框和阴影在启用/移除PC扁平皮肤前后完全一致。"
+      },
+      {
+        "id": "interactions",
+        "status": "passed",
+        "detail": "15条真实鼠标交互覆盖新建、模板收藏/翻页/副本、三种创作对话框、知识库、日历、脑图/流程图，以及云目录输入校验与失败重试。"
+      }
+    ]
+  },
+  "modifiedProductionFiles": [
+    "renderer/src/styles/flatDesktop.css"
+  ],
+  "fixedSelectors": [
+    ":root:not([data-seal-ui=\"mobile\"]) :is(.wps-ribbon-button--small,.wps-icon-button,.wps-titlebar__avatar) { padding:0; flex-shrink:0 }",
+    ":root:not([data-seal-ui=\"mobile\"]) .seal-icon { flex:0 0 auto }"
+  ],
+  "savedScreenshots": [
+    {
+      "path": "docs/screenshots/v1.9.10/flat-desktop-home.png",
+      "source": "home-light.png",
+      "width": 1280,
+      "height": 900
+    },
+    {
+      "path": "docs/screenshots/v1.9.10/flat-desktop-word.png",
+      "source": "word-light.png",
+      "width": 1280,
+      "height": 900
+    },
+    {
+      "path": "docs/screenshots/v1.9.10/flat-desktop-settings.png",
+      "source": "settings-light.png",
+      "width": 1280,
+      "height": 900
+    },
+    {
+      "path": "docs/screenshots/v1.9.10/flat-mobile-home.png",
+      "source": "release/promo/mobile-v1.9.10/recordings/home/0000.png",
+      "width": 420,
+      "height": 840
+    }
+  ],
+  "mobileProductionReview": {
+    "status": "passed",
+    "independentlyViewed": true,
+    "productionBuildInfo": {
+      "platform": "web",
+      "desktopVersion": "1.9.10",
+      "builtAt": "2026-10-10T18:24:58.893Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "viewportWidths": [
+      390,
+      420
+    ],
+    "reviewedScreenshots": [
+      ".upgrade-private/mobile-verification/mobile-web.png",
+      ".upgrade-private/mobile-verification/mobile-word.png",
+      ".upgrade-private/mobile-verification/mobile-ppt.png",
+      "release/promo/mobile-v1.9.10/recordings/home/0000.png",
+      "release/promo/mobile-v1.9.10/recordings/home/0013.png",
+      "release/promo/mobile-v1.9.10/recordings/functions/0006.png"
+    ],
+    "findings": [
+      {
+        "id": "mobile-file-icons",
+        "status": "passed",
+        "detail": "新建功能抽屉中的W/S/P/PDF文件图标有完整彩色色块、分层和字符，实际生产图形与确认稿一致。"
+      },
+      {
+        "id": "mobile-feature-navigation",
+        "status": "passed",
+        "detail": "导入、知识库、脑图、流程图、日历等功能入口使用圆润彩色图标；底部首页/文件/助手/功能导航保留单色轮廓和蓝色选中态。"
+      },
+      {
+        "id": "mobile-compact-editor-icons",
+        "status": "passed",
+        "detail": "文字和演示编辑器的工具栏、对象浮层内复制/剪切/粘贴/加粗/对齐等小图标均有清楚的完整图形，不再被基础按钮内边距压缩。"
+      },
+      {
+        "id": "mobile-layout",
+        "status": "passed",
+        "detail": "390px文字正文重排、420px首页及功能抽屉适配正常。编辑器长工具栏在内部横向滚动；导航与底部控件在可视区域内。"
+      },
+      {
+        "id": "presentation-screenshot-choice",
+        "status": "passed",
+        "detail": "mobile-web回归截图含预期的备份保留测试弹窗；公开首页截图选用当前生产录制中的无弹窗home/0000.png。"
+      }
+    ],
+    "httpRegression": {
+      "passed": true,
+      "checks": 17,
+      "errors": [],
+      "source": ".upgrade-private/mobile-verification/result.json"
+    },
+    "fileRegression": {
+      "passed": true,
+      "checks": 17,
+      "errors": [],
+      "source": ".upgrade-private/mobile-verification/file-result.json"
+    },
+    "browserSmokeModifiedByVerifier": false,
+    "mobileProductionSourceModifiedByVerifier": false
+  }
+}

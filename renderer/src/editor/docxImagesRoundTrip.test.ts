@@ -13,6 +13,29 @@ const JPEG = readFileSync(加载.resolve('./__fixtures__/office-image.jpg'))
 const 图片 = (数据: Buffer, 类型: string, 属性 = '') => `<img src="data:image/${类型};base64,${数据.toString('base64')}" ${属性}>`
 
 describe('文档图片真实 DOCX 往返', () => {
+  it('同一图片使用不同旋转与翻转，连续保存重开保持尺寸、角度和媒体', async () => {
+    let html = `<p>${图片(PNG, 'png', 'width="120" height="60" style="transform:rotate(90deg) scale(-1, 1)"')}${图片(PNG, 'png', 'width="80" height="40" style="transform:rotate(27.5deg) scale(1, -1)"')}</p>`
+    for (let 次数 = 0; 次数 < 2; 次数++) {
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.未覆盖).toEqual([])
+      const 数据 = await 生成docx(模型)
+      const 包 = await JSZip.loadAsync(数据)
+      const xml = await 包.file('word/document.xml').async('string')
+      expect(xml).toContain('rot="5400000"')
+      expect(xml).toContain('flipH="true"')
+      expect(xml).toContain('rot="1650000"')
+      expect(xml).toContain('flipV="true"')
+      const 读取 = await 读取docx(数据)
+      expect(读取.警告).toEqual([])
+      html = 净化富文本(读取.html)
+      const 容器 = document.createElement('div'); 容器.innerHTML = html
+      const 图 = 容器.querySelectorAll('img')
+      expect(图[0].style.transform).toBe('rotate(90deg) scale(-1, 1)')
+      expect(图[1].style.transform).toBe('rotate(27.5deg) scale(1, -1)')
+      expect(图[0].width).toBe(120); expect(图[1].height).toBe(40)
+      expect(图[0].src).toBe(图[1].src)
+    }
+  })
   it('正文中两张不同格式的图片按原顺序、尺寸与说明连续保存重开', async () => {
     let html = `<p style="text-align:center">前文${图片(PNG, 'png', 'width="120" height="60" alt="平面图 &amp; 示意"')}` +
       `中间文字${图片(JPEG, 'jpeg', 'style="width:40px;height:60px" alt="示意照片"')}后文</p>`

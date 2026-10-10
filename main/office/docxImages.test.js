@@ -19,6 +19,9 @@ const 标准关系 = '<Relationship Id="pic1" Type="http://schemas.openxmlformat
 const 标准图片 = '<w:drawing><wp:inline><wp:extent cx="1524000" cy="762000"/><wp:docPr descr="平面图 &amp; 说明"/><pic:pic><a:blip r:embed="pic1"/></pic:pic></wp:inline></w:drawing>'
 
 describe('DOCX 图片数据与来源关系', () => {
+  it.each([{ 旋转: NaN }, { 旋转: 360 }, { 旋转: -1 }, { 水平翻转: 'true' }, { 垂直翻转: 1 }])('错误变换参数阻止写盘：%j', async (参数) => {
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 图片: { ...构造图片(), ...参数 } }] }] })).rejects.toThrow('图片旋转或翻转参数无效')
+  })
   it.each(['png', 'jpg', 'gif', 'bmp'])('真实 %s 图片按实际格式生成媒体文件并完整读取', async (后缀) => {
     const 原文 = fs.readFileSync(path.join(样本根, `office-image.${后缀}`))
     const 信息 = 解码图片数据(原文.toString('base64'))

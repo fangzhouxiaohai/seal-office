@@ -1,0 +1,66 @@
+{
+  "name": "海豹办公",
+  "appid": "__UNI__B52B65B",
+  "description": "海豹办公：文字、表格、演示、PDF 与智能助手",
+  "versionName": "1.9.10",
+  "versionCode": "10910",
+  "vueVersion": "3",
+  "uni-app-x": {
+    "styleIsolationVersion": "2"
+  },
+  "app-android": {
+    "distribute": {
+      "packagename": "com.sealoffice.mobile",
+      "minSdkVersion": 28,
+      "abiFilters": [
+        "armeabi-v7a",
+        "arm64-v8a"
+      ],
+      "icons": {
+        "hdpi": "static/icons/android/icon72.png",
+        "xhdpi": "static/icons/android/icon96.png",
+        "xxhdpi": "static/icons/android/icon144.png",
+        "xxxhdpi": "static/icons/android/icon192.png"
+      },
+      "splashScreens": {
+        "icon": {
+          "xhdpi": "static/icon.png",
+          "xxhdpi": "static/icon.png",
+          "xxxhdpi": "static/icon.png"
+        },
+        "brand": {
+          "xhdpi": "static/icon.png",
+          "xxhdpi": "static/icon.png",
+          "xxxhdpi": "static/icon.png"
+        }
+      },
+      "targetSdkVersion": 36
+    }
+  },
+  "app-ios": {
+    "distribute": {
+      "appid": "com.sealoffice.mobile",
+      "icons": {
+        "appstore": "static/icons/ios/appstore.png"
+      }
+    }
+  },
+  "app-harmony": {
+    "distribute": {
+      "bundleName": "com.sealoffice.mobile",
+      "icons": {
+        "foreground": "static/icons/harmony/foreground.png",
+        "background": "static/icons/harmony/background.png"
+      }
+    }
+  },
+  "web": {
+    "title": "海豹办公",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "uniStatistics": {
+    "enable": false
+  }
+}

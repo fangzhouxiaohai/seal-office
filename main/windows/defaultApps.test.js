@@ -80,7 +80,7 @@ describe('默认程序与安装后首次提醒', () => {
     调用 = vi.fn(async (操作) => {
       if (操作 === 'GetInstallation') return 安装
       if (操作 === 'InspectDefaults') return { 已全部默认: 默认, 格式: 全部格式(默认) }
-      if (操作 === 'ApplyDefaults') { 默认 = true; return { 已全部默认: true, 清除用户选择的格式: ['docx'], 格式: 全部格式(true) } }
+      if (操作 === 'ApplyDefaults') { 默认 = true; return { 已全部默认: true, 清除用户选择的格式: [], 格式: 全部格式(true) } }
       return { 成功: true }
     })
     服务 = 创建默认程序服务({ 平台: 'win32', 已打包: true, 可执行文件: 安装.可执行文件, 数据目录: 目录, 执行注册: 调用, 打开地址: 系统打开 })
@@ -91,9 +91,9 @@ describe('默认程序与安装后首次提醒', () => {
   }
   afterEach(() => { fs.rmSync(目录, { recursive: true, force: true }) })
 
-  it('全自动设为默认程序：写关联、清掉用户选择并回读结果', async () => {
+  it('注册打开能力并返回系统已生效的关联结果', async () => {
     const 结果 = await 服务.应用默认程序()
-    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 未生效: [], 清除用户选择的格式: ['docx'] })
+    expect(结果).toMatchObject({ 成功: true, 已全部默认: true, 未生效: [], 清除用户选择的格式: [] })
     expect(调用).toHaveBeenCalledWith('ApplyDefaults')
     expect(系统打开).not.toHaveBeenCalled()
   })
@@ -107,7 +107,7 @@ describe('默认程序与安装后首次提醒', () => {
     expect(结果.未生效).toEqual(['docx'])
   })
 
-  it('设置默认程序优先全自动，全部生效时不再打开系统页面', async () => {
+  it('设置默认程序优先注册并回读，全部生效时不再打开系统页面', async () => {
     const 结果 = await 服务.设置默认程序()
     expect(结果).toMatchObject({ 成功: true, 已全部默认: true })
     expect(结果.提示).toContain('DOCX')
@@ -122,6 +122,19 @@ describe('默认程序与安装后首次提醒', () => {
     expect(结果).toMatchObject({ 成功: true, 已全部默认: false, 未生效: ['pdf'] })
     expect(结果.提示).toContain('.pdf')
     expect(系统打开).toHaveBeenCalledWith('ms-settings:defaultapps?registeredAppUser=SealOffice')
+  })
+
+  it('应用专属系统页面不支持时退回默认应用列表', async () => {
+    调用.mockImplementation(async () => ({ 已全部默认: false, 格式: 全部格式(false) }))
+    系统打开.mockRejectedValueOnce(new Error('应用专属地址不支持')).mockResolvedValueOnce(undefined)
+    expect(await 服务.设置默认程序()).toMatchObject({ 成功: true, 已全部默认: false })
+    expect(系统打开.mock.calls.map(([地址]) => 地址)).toEqual(['ms-settings:defaultapps?registeredAppUser=SealOffice', 'ms-settings:defaultapps'])
+  })
+
+  it('两个系统页面都打不开时给出可执行的手动路径，不误报已默认', async () => {
+    调用.mockImplementation(async () => ({ 已全部默认: false, 格式: 全部格式(false) }))
+    系统打开.mockRejectedValue(new Error('系统设置不可用'))
+    await expect(服务.设置默认程序()).rejects.toThrow('海豹办公已注册，但 Windows 默认应用页面未能打开')
   })
 
   it('启动检查：已经是默认程序时不改写系统状态', async () => {

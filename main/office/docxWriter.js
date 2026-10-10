@@ -160,9 +160,11 @@ function 建文字(片段, 图片预算) {
     const 信息 = 解码图片数据(图片.数据)
     if (信息.格式 !== 图片.格式 || ![图片.宽, 图片.高].every((值) => typeof 值 === 'number' && Number.isFinite(值) && 值 > 0 && 值 <= 32768) ||
         typeof 图片.说明 !== 'string' || 图片.说明.length > 32768) throw new Error('图片格式、尺寸或说明无效，无法保存')
+    if (图片.旋转 !== undefined && (typeof 图片.旋转 !== 'number' || !Number.isFinite(图片.旋转) || 图片.旋转 < 0 || 图片.旋转 >= 360) ||
+        ['水平翻转', '垂直翻转'].some(键 => 图片[键] !== undefined && typeof 图片[键] !== 'boolean')) throw new Error('图片旋转或翻转参数无效，无法保存')
     图片预算.字节数 += 信息.字节.length
     if (图片预算.字节数 > 文档最大图片字节) throw new Error('文档图片累计超过 100 MB，无法保存')
-    return new ImageRun({ data: 信息.字节, transformation: { width: 图片.宽, height: 图片.高 },
+    return new ImageRun({ data: 信息.字节, transformation: { width: 图片.宽, height: 图片.高, rotation: 图片.旋转 ?? 0, flip: { horizontal: 图片.水平翻转 ?? false, vertical: 图片.垂直翻转 ?? false } },
       altText: { title: 图片.说明, description: 图片.说明, name: 图片.说明 || '图片' } })
   }
   return new TextRun({ text: 片段.文本 || '', ...文字属性(片段) })

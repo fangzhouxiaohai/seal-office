@@ -30,10 +30,11 @@ import {CloudProvider,useCloud} from './cloud/CloudProvider'
 import CloudAutosave from './cloud/CloudAutosave'
 import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
 import './cloud/cloud.css'
+import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
 
 /** 动态 Ant Design 主题配置 */
-const 主题配置 = ({ 深色 }: { 深色: boolean }) => ({
+const 主题配置 = ({ 深色, 移动 }: { 深色: boolean; 移动: boolean }) => ({
   algorithm: 深色 ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: 深色 ? '#4A90E2' : '#2B6CF6',
@@ -41,7 +42,9 @@ const 主题配置 = ({ 深色 }: { 深色: boolean }) => ({
     colorTextSecondary: 深色 ? '#9AA0A6' : '#5C6472',
     colorBgContainer: 深色 ? '#252A33' : '#FFFFFF',
     colorBgElevated: 深色 ? '#2D333F' : '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: 移动 ? 6 : 4,
+    boxShadow: 移动 ? '0 6px 16px rgba(0,0,0,.08)' : '0 3px 12px rgba(30,38,50,.08)',
+    boxShadowSecondary: '0 4px 16px rgba(30,38,50,.09)',
     fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
   },
 })
@@ -296,7 +299,7 @@ const 外壳 = () => {
 
   return React.createElement(
     'div',
-    { className: 'wps-app' },
+    { className: 'wps-app', 'data-module': module },
     React.createElement(TitleBar, {
       pageName: 当前模块.label,
       documentName: 当前文档名,
@@ -440,12 +443,12 @@ export const 动态主题容器 = ({ children }: { children: React.ReactNode }) 
   const { 主题 } = useSettings()
   return React.createElement(ConfigProvider, {
     locale: zhCN,
-    theme: 主题配置({ 深色: 主题 === '深色' }),
+    theme: 主题配置({ 深色: 主题 === '深色', 移动: useIconPlatform() === 'mobile' }),
     button: { autoInsertSpace: false },
   }, children)
 }
 
-const App = ({ 初始最近文档 }: { 初始最近文档?: DocItem[] } = {}) =>
+const App = ({ 初始最近文档, 跨端导航 }: { 初始最近文档?: DocItem[]; 跨端导航?: React.ComponentType } = {}) =>
   React.createElement(
     SettingsProvider,
     null,
@@ -459,7 +462,7 @@ const App = ({ 初始最近文档 }: { 初始最近文档?: DocItem[] } = {}) =>
         React.createElement(
           ErrorBoundary,
           null,
-          React.createElement(CloudProvider, { children: React.createElement(AppProvider, { 初始最近文档, children: React.createElement(外壳, null) }) })
+          React.createElement(CloudProvider, { children: React.createElement(AppProvider, { 初始最近文档, children: React.createElement(React.Fragment, null, React.createElement(外壳, null), 跨端导航 ? React.createElement(跨端导航) : null) }) })
         )
       )
     )

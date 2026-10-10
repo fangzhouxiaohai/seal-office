@@ -88,3 +88,37 @@ export function 图片可用宽度(根: HTMLElement, 图片: HTMLImageElement): 
   if (!Number.isFinite(宽) || 宽 <= 0) throw new Error('无法读取正文可用宽度，请返回文档后重试')
   return 宽
 }
+
+/** Chromium/Safari 与 Firefox 的插入点接口不同，统一返回正文 Range。 */
+export function 正文位置(根: HTMLElement, x: number, y: number): Range {
+  const 页面 = document as Document & { caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null }
+  let 范围 = 页面.caretRangeFromPoint?.(x, y) ?? null
+  if (!范围 && 页面.caretPositionFromPoint) {
+    const 位置 = 页面.caretPositionFromPoint(x, y)
+    if (位置) { 范围 = document.createRange(); 范围.setStart(位置.offsetNode, 位置.offset); 范围.collapse(true) }
+  }
+  if (!范围 || !根.contains(范围.startContainer)) throw new Error('请将图片移到当前正文中的文字位置')
+  return 范围
+}
+
+export function 显示缩放(元素: HTMLElement): number {
+  let 缩放 = 1
+  for (let 父: HTMLElement | null = 元素; 父; 父 = 父.parentElement) {
+    const 值 = getComputedStyle(父).getPropertyValue('zoom')
+    缩放 *= (parseFloat(值) || 1) / (值.includes('%') ? 100 : 1)
+  }
+  return 缩放
+}
+let 旧缩放坐标: boolean | undefined
+/** Electron 25 与较新 Android WebView 的 CSS zoom 坐标规则不同，按能力探测。 */
+export function 屏幕矩形(元素: HTMLElement) {
+  if (旧缩放坐标 === undefined) {
+    const 探针 = document.createElement('div')
+    探针.style.cssText = 'position:fixed;left:0;top:0;width:4px;height:4px;zoom:2;visibility:hidden;pointer-events:none'
+    document.body.append(探针)
+    旧缩放坐标 = Math.abs(探针.getBoundingClientRect().width - 4) < 0.1
+    探针.remove()
+  }
+  const 矩形 = 元素.getBoundingClientRect(), 倍率 = 旧缩放坐标 ? 显示缩放(元素) : 1
+  return { left: 矩形.left * 倍率, top: 矩形.top * 倍率, right: 矩形.right * 倍率, bottom: 矩形.bottom * 倍率, width: 矩形.width * 倍率, height: 矩形.height * 倍率 }
+}

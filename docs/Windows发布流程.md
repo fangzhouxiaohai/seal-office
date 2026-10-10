@@ -12,7 +12,7 @@
 ## 验证与构建
 
 1. 针对实际缺陷先复现，再运行相关回归、主进程回归、`npm run typecheck` 和 `npm run test:packaging`。
-2. 运行 `npm run dist -- --config.directories.output=release/v<版本>`，生成安装版、便携版和 `win-unpacked`。
+2. 运行 `npm run dist:windows -- --config.directories.output=release/v<版本>`，生成安装版、便携版和 `win-unpacked`。默认 `pack` / `dist` 按跨端项目约定只提交 Android 打包。
 3. 用 `scripts/build-msix.ps1` 生成对应版本 MSIX。商店身份必须与既有产品一致，不能使用脚本的占位身份。
 4. 验证实际成品模块与界面。解压安装版和便携版，比较内嵌 `app.asar` 与已验收成品；验证 MSIX 清单、版本和所有有效负载。报告分别写入产物目录的 `release-integrity.json` 与 `SealOffice<版本>.msix.verification.json`。
 5. 生成 `SHA256SUMS.txt`，覆盖三个包。记录实际测试结果、限制与校验信息至 `docs/v<版本>-修复与验收.md`。

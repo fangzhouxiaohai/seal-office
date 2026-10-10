@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="com.sealoffice.mobile">
+  <!-- 保持 uni-app x 的 onBackPress 可用，保护未保存文档；迁移预测返回后再开启。 -->
+  <application android:enableOnBackInvokedCallback="false" tools:replace="android:enableOnBackInvokedCallback" />
+</manifest>

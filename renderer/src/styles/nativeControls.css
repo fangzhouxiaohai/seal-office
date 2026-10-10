@@ -1,0 +1,47 @@
+/* 零优先级的基础皮肤：已有功能区、表格单元格和 Ant Design 的专用样式优先。
+   保留原生下拉框、日期和文件选择行为，兼容桌面 Chromium 与手机 WebView。 */
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:where(button, input, select, textarea) { font: inherit; }
+:where(button:not([class*="ant-"])) {
+  color: var(--text-1);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 5px 12px;
+  cursor: pointer;
+}
+/* Compact editor and titlebar buttons also appear in the mobile WebView.
+   Keep the base skin from consuming their entire icon area. */
+:where(.wps-ribbon-button--small, .wps-icon-button, .wps-titlebar__avatar) { padding: 0; flex-shrink: 0; }
+.seal-icon { flex-shrink: 0; }
+:where(button:not([class*="ant-"]):hover:not(:disabled)) {
+  background-color: var(--bg-hover);
+  border-color: var(--brand);
+}
+:where(input:not([class*="ant-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]), select:not([class*="ant-"]), textarea:not([class*="ant-"])) {
+  color: var(--text-1);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 5px 8px;
+  max-width: 100%;
+}
+:where(input:not([class*="ant-"]), select:not([class*="ant-"]), textarea:not([class*="ant-"])):hover:not(:disabled) { border-color: var(--brand); }
+:where(input, textarea)::placeholder { color: var(--text-3); opacity: 1; }
+:where(button, input, select, textarea):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+:where(button, input, select, textarea):disabled { opacity: 0.55; cursor: not-allowed; }
+:where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--brand); }
+:where(input[type="file"]) { font-size: 13px; }
+:where(input[type="file"])::file-selector-button {
+  margin-right: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-hover);
+  color: var(--text-1);
+  font: inherit;
+  cursor: pointer;
+}
+:where(input[type="file"]:focus-visible)::file-selector-button { border-color: var(--brand); }
+:where(input[type="color"]) { min-width: 32px; padding: 3px; }

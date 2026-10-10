@@ -42,7 +42,7 @@ app.whenReady().then(async()=>{
         {name:'audit-store',setup(build){build.onLoad({filter:/renderer[\\/]src[\\/]App\.tsx$/},args=>({contents:fs.readFileSync(args.path,'utf8').replace('const 是首页 = module', 'window.uiStore = useAppStore(); window.uiSettings = useSettings(); const 是首页 = module'),loader:'tsx'}))}},
         {name:'unused-worker',setup(build){build.onResolve({filter:/\?worker&url$/},()=>({path:'worker-url',namespace:'verification'}));build.onLoad({filter:/.*/,namespace:'verification'},()=>({contents:'export default "unused-worker"'}))}}
       ]})
-    fs.writeFileSync(path.join(output,'ui.html'),`<!doctype html><meta charset="utf-8"><style>${fs.readFileSync(path.join(root,'renderer/src/styles.css'),'utf8')}</style><link rel="stylesheet" href="ui.css"><div id="root"></div><script src="ui.js"></script>`)
+    fs.writeFileSync(path.join(output,'ui.html'),`<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="ui.css"><style>${fs.readFileSync(path.join(root,'renderer/src/styles.css'),'utf8')}\n${fs.readFileSync(path.join(root,'renderer/src/styles/nativeControls.css'),'utf8')}\n${fs.readFileSync(path.join(root,'renderer/src/styles/actionColors.css'),'utf8')}\n${fs.readFileSync(path.join(root,'renderer/src/styles/flatDesktop.css'),'utf8')}</style><div id="root"></div><script src="ui.js"></script>`)
     win=new BrowserWindow({show:false,width:1280,height:900,webPreferences:{offscreen:true,backgroundThrottling:false,contextIsolation:true,nodeIntegration:false}})
     win.webContents.on('console-message',(_e,level,message)=>{if(level>=3&&!message.includes('Failed to load resource'))errors.push(message)})
     await win.loadFile(path.join(output,'ui.html'))

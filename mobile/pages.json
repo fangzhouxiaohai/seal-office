@@ -1,0 +1,4 @@
+{
+  "pages": [{ "path": "pages/workspace/workspace", "style": { "navigationStyle": "custom", "disableScroll": true, "backgroundColor": "#F5F7FA" } }],
+  "globalStyle": { "navigationBarTitleText": "海豹办公", "backgroundColor": "#F5F7FA" }
+}

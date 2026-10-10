@@ -8,9 +8,10 @@ interface Props {
   on插入文字: (文本: string) => void
   导入的图片?: { 数据: string; 类型: string; 名称?: string } | null
   on提示?: (标题: string, 内容: string) => void
+  插入按钮文本?: string
 }
 
-const RecognitionPanel = ({ 只读, on插入文字, 导入的图片, on提示 }: Props) => {
+const RecognitionPanel = ({ 只读, on插入文字, 导入的图片, on提示, 插入按钮文本 = '插入为文本框' }: Props) => {
   const { message } = App.useApp()
   const [状态, set状态] = React.useState<{ 可用: boolean; 模型?: string; 原因?: string; 说明?: string }>({ 可用: false, 原因: '正在读取识别服务状态' })
   const [图片, set图片] = React.useState<{ 数据: string; 类型: string; 名称: string } | null>(null)
@@ -90,7 +91,7 @@ const RecognitionPanel = ({ 只读, on插入文字, 导入的图片, on提示 }:
             <label>识别结果<textarea aria-label="识别结果" readOnly value={结果} rows={6} /></label>
             <div className="wps-recognition-panel__actions">
               <button type="button" onClick={() => void 复制结果()}>复制文字</button>
-              <button type="button" onClick={() => { on插入文字(结果); set结果('') }} disabled={只读}>插入为文本框</button>
+              <button type="button" onClick={() => { on插入文字(结果); set结果('') }} disabled={只读}>{插入按钮文本}</button>
               <button type="button" onClick={() => set结果('')}>取消结果</button>
             </div>
           </div>

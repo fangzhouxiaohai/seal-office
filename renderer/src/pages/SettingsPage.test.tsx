@@ -159,8 +159,10 @@ describe('设置页状态与真实能力一致', () => {
       await userEvent.type(screen.getByRole('textbox', { name: '翻译服务地址' }), 'https://a.example.com')
       await userEvent.type(screen.getByLabelText('翻译服务密钥'), 'sk-明文密钥')
       await userEvent.click(screen.getByRole('button', { name: '保存翻译设置' }))
-      expect(await screen.findByText(/密钥已写入系统安全存储/)).toBeInTheDocument()
+      // 自动关闭的成功提示可能在慢速 jsdom 中提前消失；核对持久状态与真实保存调用。
+      expect(await screen.findByText(/密钥已保存在系统安全存储；留空保存不修改/)).toBeInTheDocument()
       expect(保存服务).toHaveBeenCalledWith('翻译', expect.objectContaining({ 密钥: 'sk-明文密钥' }))
+      expect(screen.getByLabelText('翻译服务密钥')).toHaveValue('')
       expect(localStorage.getItem('seal.office.translate') ?? '').not.toContain('sk-明文密钥')
     } finally {
       Reflect.deleteProperty(window, 'electronAPI')

@@ -1,0 +1,161 @@
+<template>
+  <view class="workspace" :style="{ paddingTop: safeTop + 'px', paddingBottom: safeBottom + 'px', paddingLeft: safeLeft + 'px', paddingRight: safeRight + 'px' }">
+    <web-view v-if="errorText.length == 0" id="seal-office" class="office" :src="source" :fullscreen="false" @load="onLoaded" @message="onMessage" @error="onError" @didterminate="reloadOffice" />
+    <view v-else class="error-panel">
+      <text class="error-title">海豹办公暂时无法打开</text>
+      <text class="error-detail">{{ errorText }}</text>
+      <button @click="reloadOffice">重新打开</button>
+    </view>
+  </view>
+</template>
+
+<script lang="uts">
+import { shareExport } from '../../native/share.uts'
+export default {
+  data() {
+    return {
+      source: '/static/office/index.html?native=1',
+      errorText: '',
+      token: Date.now().toString() + '-' + Math.random().toString() + '-' + Math.random().toString(),
+      atHome: true,
+      unsaved: 0,
+      safeTop: 0,
+      safeBottom: 0,
+      safeLeft: 0,
+      safeRight: 0,
+      tasks: new Map<string, RequestTask>()
+    }
+  },
+  onLoad() {
+    uni.$on('seal-persist-workspace', this.persistWorkspace)
+  },
+  onReady() { this.updateSafeArea() },
+  onResize() { this.updateSafeArea() },
+  onUnload() {
+    uni.$off('seal-persist-workspace', this.persistWorkspace)
+    this.tasks.forEach((task: RequestTask) => { task.abort() })
+    this.tasks.clear()
+  },
+  onBackPress(): boolean {
+    this.persistWorkspace()
+    if (!this.atHome) {
+      this.evaluate("window.dispatchEvent(new Event('seal-native-back'))")
+      return true
+    }
+    if (this.unsaved > 0) {
+      uni.showToast({ title: '还有未保存的文件，请先保存或关闭文件', icon: 'none' })
+      return true
+    }
+    return false
+  },
+  methods: {
+    updateSafeArea() {
+      const insets = uni.getWindowInfo().safeAreaInsets
+      this.safeTop = insets.top
+      this.safeBottom = insets.bottom
+      this.safeLeft = insets.left
+      this.safeRight = insets.right
+    },
+    evaluate(script: string) {
+      // #ifdef APP
+      uni.createWebViewContext('seal-office')?.evalJS(script)
+      // #endif
+    },
+    persistWorkspace() { this.evaluate("window.dispatchEvent(new Event('seal-persist-workspace'))") },
+    reply(message: UTSJSONObject) {
+      const json = JSON.stringify(message)
+      this.evaluate('window.sealReceiveNative && window.sealReceiveNative(' + json + ')')
+    },
+    onLoaded(event: UniWebViewLoadEvent) {
+      // 只有安装包内的办公页面能够获得原生接口。
+      const src = event.detail.src
+      if ((!src.startsWith('/') && !src.startsWith('file://')) || src.indexOf('/static/office/index.html') < 0) { this.errorText = '请在应用内打开本地工作台'; return }
+      let platform = 'web'
+      // #ifdef APP-ANDROID
+      platform = 'android'
+      // #endif
+      // #ifdef APP-IOS
+      platform = 'ios'
+      // #endif
+      // #ifdef APP-HARMONY
+      platform = 'harmony'
+      // #endif
+      const config: UTSJSONObject = { token: this.token, platform: platform }
+      this.evaluate('window.sealNative=' + JSON.stringify(config) + ";window.dispatchEvent(new Event('seal-native-ready'))")
+    },
+    onError(event: UniWebViewErrorEvent) { this.errorText = event.detail.errMsg },
+    reloadOffice() { this.errorText = ''; this.source = '/static/office/index.html?native=1&reload=' + Date.now().toString() },
+    onMessage(event: UniWebViewMessageEvent) {
+      event.detail.data.forEach((message: UTSJSONObject) => {
+        if (message.getString('token') != this.token) return
+        const action = message.getString('action') ?? ''
+        if (action == 'state') { this.atHome = message.getBoolean('atHome') ?? true; this.unsaved = message.getNumber('unsaved') ?? 0; return }
+        const id = message.getString('id') ?? ''
+        if (id.length == 0 || id.length > 100) return
+        if (action == 'abort') { this.tasks.get(id)?.abort(); this.tasks.delete(id) }
+        else if (action == 'request') this.request(id, message)
+        else if (action == 'save') this.save(id, message)
+        else if (action == 'font') this.font(id)
+      })
+    },
+    request(id: string, message: UTSJSONObject) {
+      const url = message.getString('url') ?? ''
+      if (!url.startsWith('https://') && !url.startsWith('http://127.0.0.1:') && !url.startsWith('http://localhost:')) { this.reply({ id: id, type: 'error', error: '联网地址须使用 HTTPS' }); return }
+      const body = message.getString('body')
+      const data = body == null ? null : uni.base64ToArrayBuffer(body)
+      const headers = message.getJSON('headers') ?? {} as UTSJSONObject
+      const task = uni.request<ArrayBuffer>({
+        url: url,
+        method: message.getString('method') ?? 'GET',
+        header: headers,
+        data: data,
+        responseType: 'arraybuffer',
+        enableChunked: message.getBoolean('stream') ?? false,
+        timeout: 900000,
+        success: (response) => {
+          this.reply({ id: id, type: 'end', status: response.statusCode, headers: response.header, data: response.data == null ? '' : uni.arrayBufferToBase64(response.data!) })
+        },
+        fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) },
+        complete: (_) => { this.tasks.delete(id) }
+      })
+      task.onHeadersReceived((response) => { this.reply({ id: id, type: 'headers', status: response.statusCode, headers: response.header }) })
+      task.onChunkReceived((chunk) => { this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(chunk.data) }) })
+      this.tasks.set(id, task)
+    },
+    font(id: string) {
+      uni.getFileSystemManager().readFile({
+        filePath: '/static/office/fonts/NotoSansSC.ttf', encoding: 'base64',
+        success: (result) => {
+          const data = result.data as string
+          // base64 分段必须以 4 字符为边界。
+          for (let start = 0; start < data.length; start += 131072) this.reply({ id: id, type: 'chunk', data: data.slice(start, start + 131072) })
+          this.reply({ id: id, type: 'end' })
+        },
+        fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
+      })
+    },
+    save(id: string, message: UTSJSONObject) {
+      const name = (message.getString('name') ?? '文档').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+      const data = message.getString('data') ?? ''
+      if (data.length > 150000000 || name.length > 240) { this.reply({ id: id, type: 'error', error: '文件过大或名称过长' }); return }
+      const filename = uni.env.USER_DATA_PATH + '/seal-export-' + Date.now().toString() + '-' + name
+      uni.getFileSystemManager().writeFile({
+        filePath: filename, data: data, encoding: 'base64',
+        success: (_) => {
+          this.reply({ id: id, type: 'saved', path: filename })
+          shareExport(filename, message.getString('mime') ?? 'application/octet-stream', (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) })
+        },
+        fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
+      })
+    }
+  }
+}
+</script>
+
+<style>
+.workspace { flex: 1; width: 100%; height: 100%; background-color: #F5F7FA; }
+.office { flex: 1; width: 100%; height: 100%; }
+.error-panel { flex: 1; justify-content: center; align-items: center; padding: 24px; }
+.error-title { font-size: 20px; color: #202A3D; margin-bottom: 16px; }
+.error-detail { font-size: 14px; color: #667085; margin-bottom: 24px; }
+</style>

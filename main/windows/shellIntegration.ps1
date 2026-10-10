@@ -169,14 +169,14 @@ function Remove-CreatedDefaults($defaults, $base, $classes) {
   }
 }
 function Notify-Shell {
+  # 沙箱验收不通知真实桌面；关联写入已限制在测试根内。
+  if ($TestRoot) { return }
   if (-not ('SealShellNotify' -as [type])) {
-    Add-Type 'using System; using System.Runtime.InteropServices; public static class SealShellNotify { [DllImport("shell32.dll")] public static extern void SHChangeNotify(uint e, uint f, IntPtr a, IntPtr b); [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, UIntPtr wp, string lp, uint flags, uint timeout, out UIntPtr result); }'
+    Add-Type 'using System; using System.Runtime.InteropServices; public static class SealShellNotify { [DllImport("shell32.dll")] public static extern void SHChangeNotify(uint e, uint f, IntPtr a, IntPtr b); }'
   }
-  [SealShellNotify]::SHChangeNotify(0x08000000, 0x1000, [IntPtr]::Zero, [IntPtr]::Zero)
-  if (-not $TestRoot) {
-    $output = [UIntPtr]::Zero
-    [void][SealShellNotify]::SendMessageTimeout([IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'Software\Classes', 2, 2000, [ref]$output)
-  }
+  # SHCNE_ASSOCCHANGED | SHCNF_IDLIST + SHCNF_FLUSHNOWAIT：开始通知即返回。
+  # 同步 FLUSH 和 HWND_BROADCAST 会等待所有窗口，多个慢窗口会累积超过 30 秒。
+  [SealShellNotify]::SHChangeNotify(0x08000000, 0x3000, [IntPtr]::Zero, [IntPtr]::Zero)
 }
 # 用系统接口回读四种格式当前实际生效的处理程序
 function Get-DefaultState {

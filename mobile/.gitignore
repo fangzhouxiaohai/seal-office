@@ -1,0 +1,12 @@
+node_modules/
+unpackage/
+static/office/*
+!static/office/.gitkeep
+hybrid/
+web/generated/
+.hbuilderx/
+pack.config.json
+*.keystore
+*.jks
+*.p12
+*.mobileprovision

@@ -103,9 +103,14 @@ async function 读取正文图片(压缩包, 正文, 警告, 部件 = 'word/docu
       if (裁剪 && ['l', 't', 'r', 'b'].some((键) => 属性(裁剪, 键) !== null && 属性(裁剪, 键) !== '0') ||
           /\s(?:crop(?:top|bottom|left|right)|rotation)="(?!0["\s])/.test(内容)) 当前警告.push('图片裁剪或旋转未完整导入')
       const 变换 = 内容.match(/<a:xfrm(?=[\s/>])[^>]*>/)?.[0] || ''
-      if (属性(变换, 'rot') && 属性(变换, 'rot') !== '0' || ['flipH', 'flipV'].some((键) => ['1', 'true'].includes(属性(变换, 键)))) 当前警告.push('图片裁剪或旋转未完整导入')
+      const 原角度 = Number(属性(变换, 'rot') ?? '0') / 60000
+      if (!Number.isFinite(原角度)) throw new Error('图片旋转角度无效')
+      const 角度 = ((原角度 % 360) + 360) % 360
+      const 横向 = ['1', 'true'].includes(属性(变换, 'flipH')) ? -1 : 1
+      const 纵向 = ['1', 'true'].includes(属性(变换, 'flipV')) ? -1 : 1
+      const 变换样式 = 角度 || 横向 === -1 || 纵向 === -1 ? `;transform:rotate(${角度}deg) scale(${横向}, ${纵向})` : ''
       if (/<a:(?:tile|alphaModFix|alphaMod|alphaOff|duotone|lum|grayscl|biLevel|blur|glow|outerShdw)(?=[\s/>])/.test(内容)) 当前警告.push('图片特效未完整导入')
-      结果.set(内容, `<img src="data:image/${信息.格式};base64,${信息.字节.toString('base64')}" width="${Math.round(宽)}" height="${Math.round(高)}" alt="${转义(说明)}" style="width:${宽}px;height:${高}px;max-width:100%">`)
+      结果.set(内容, `<img src="data:image/${信息.格式};base64,${信息.字节.toString('base64')}" width="${Math.round(宽)}" height="${Math.round(高)}" alt="${转义(说明)}" style="width:${宽}px;height:${高}px;max-width:100%${变换样式}">`)
     } catch (错误) {
       const 信息 = 错误.message || '图片未导入'
       当前警告.push(信息.startsWith('图片') || 信息.startsWith('外部') ? 信息 : `图片未导入：${信息}`)

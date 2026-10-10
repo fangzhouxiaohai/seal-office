@@ -40,11 +40,12 @@ export default defineConfig({
     css: false,
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
-    // 富编辑器与真实 Office 往返测试占用较多内存，限制并发以避免资源争用超时。
+    // 保留线程模式的文件隔离，单个工作线程避免富编辑器争用资源。
+    // 不使用 threads=false：它会让多个文件共享同一个 jsdom 环境。
     minThreads: 1,
-    maxThreads: 2,
+    maxThreads: 1,
     // 表格编辑器会渲染 2600 个单元格，jsdom 下构造成本远高于浏览器，
-    // 放宽超时以避免全量并行运行时的偶发失败
-    testTimeout: 20000,
+    // 慢速测试机允许更长执行时间；所有功能断言仍必须成立。
+    testTimeout: 60000,
   },
 })

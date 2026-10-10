@@ -76,7 +76,8 @@ describe('编辑器容器', () => {
     vi.spyOn(图, 'getBoundingClientRect').mockReturnValue({ x: 100, y: 200, left: 100, top: 200, width: 120, height: 80, right: 220, bottom: 280, toJSON: () => ({}) })
     expect(container.querySelector('.wps-global-tab__dirty')).toBeNull()
     await userEvent.click(图)
-    await userEvent.click(within(screen.getByRole('toolbar', { name: '图片工具' })).getByRole('button', { name: '居中' }))
+    await userEvent.click(within(screen.getByRole('toolbar', { name: '图片工具' })).getByRole('button', { name: '布局选项' }))
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '布局选项' })).getByRole('button', { name: '居中' }))
     expect(根.querySelector('img')?.parentElement?.style.textAlign).toBe('center')
     expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '撤销' }))
@@ -420,43 +421,43 @@ describe('编辑器容器', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
 
-    expect(百分比()).toBe('125%')
-    expect(纸张().style.zoom).toBe('1.25')
+    expect(百分比()).toBe('150%')
+    expect(纸张().style.zoom).toBe('1.5')
     // 向上滚放大
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('150%'))
-    expect(纸张().style.zoom).toBe('1.5')
-    滚(-100)
     await waitFor(() => expect(百分比()).toBe('175%'))
+    expect(纸张().style.zoom).toBe('1.75')
+    滚(-100)
+    await waitFor(() => expect(百分比()).toBe('200%'))
     // 向下滚缩小
     滚(100)
-    await waitFor(() => expect(百分比()).toBe('150%'))
+    await waitFor(() => expect(百分比()).toBe('175%'))
     // 未按 Ctrl 的滚动不改变缩放
     滚(-100, false)
-    await waitFor(() => expect(百分比()).toBe('150%'))
+    await waitFor(() => expect(百分比()).toBe('175%'))
   })
 
-  it('工具栏从 125% 放大到 150%，缩小后恢复 125%，百分比与状态栏一致', async () => {
+  it('工具栏从 150% 放大到 175%，缩小后恢复 150%，百分比与状态栏一致', async () => {
     渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
     await userEvent.click(screen.getByRole('tab', { name: '视图' }))
     await userEvent.click(screen.getAllByRole('button', { name: '放大' })[0])
-    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('150%')
-    expect(screen.getByRole('button', { name: '150%' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('175%')
+    expect(screen.getByRole('button', { name: '175%' })).toBeInTheDocument()
     await userEvent.click(screen.getAllByRole('button', { name: '缩小' })[0])
-    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('125%')
+    expect(screen.getByRole('button', { name: '恢复百分之百' })).toHaveTextContent('150%')
   })
 
   it('Ctrl+滚轮到达上下限后停在边界，可点状态栏恢复百分之百', async () => {
     const { container } = 渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))
     const 百分比 = () => screen.getByRole('button', { name: '恢复百分之百' }).textContent
-    // 按档位放大：4 档到 250%，继续滚到上限 6400%
+    // 按档位放大：4 档到 300%，继续滚到上限 6400%
     for (let 次 = 0; 次 < 4; 次 += 1) {
       fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     }
-    await waitFor(() => expect(百分比()).toBe('250%'))
-    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.zoom).toBe('2.5')
+    await waitFor(() => expect(百分比()).toBe('300%'))
+    expect((container.querySelector('.wps-editor-canvas__paper') as HTMLElement).style.zoom).toBe('3')
     for (let 次 = 0; 次 < 40; 次 += 1) {
       fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     }

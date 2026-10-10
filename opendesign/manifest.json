@@ -1,0 +1,25 @@
+{
+  "generated": "2026-10-10T18:04:26.827772+00:00",
+  "sections": [
+    {
+      "id": "mockups",
+      "label": "Mockups",
+      "groups": [
+        {
+          "slug": "ui-icons",
+          "files": [
+            {
+              "label": "index.html",
+              "path": "mockups/ui-icons/index.html"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-systems",
+      "label": "Design Systems",
+      "groups": []
+    }
+  ]
+}

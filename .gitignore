@@ -17,3 +17,5 @@ server/admin/upstream/
 server/admin/dist/
 .upgrade-private/
 .publish-profile/
+__pycache__/
+*.py[cod]

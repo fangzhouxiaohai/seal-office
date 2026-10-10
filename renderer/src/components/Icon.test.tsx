@@ -65,4 +65,29 @@ describe('图标集', () => {
       expect(未声明图标, `以下图标未声明: ${未声明图标.join(', ')}`).toEqual([])
     }
   })
+
+  it('移动文件图标保留彩色色块与有效裁切范围，多处显示互不串用', () => {
+    const { container } = render(<><Icon name="doc-word" variant="mobile"/><Icon name="doc-word" variant="mobile"/></>)
+    const 图标 = container.querySelectorAll('svg')
+    expect(图标).toHaveLength(2)
+    for (const svg of 图标) {
+      expect(svg.getAttribute('viewBox')).toBe('0 0 64 64')
+      const 裁切 = svg.querySelector('clipPath')!
+      const 范围 = 裁切.querySelector('rect')!
+      expect(Number(范围.getAttribute('width'))).toBeGreaterThan(0)
+      expect(Number(范围.getAttribute('height'))).toBeGreaterThan(0)
+      expect(svg.querySelector('g[clip-path]')?.getAttribute('clip-path')).toBe(`url(#${裁切.id})`)
+      expect(svg.querySelector('rect[fill="#1466F5"]')).not.toBeNull()
+    }
+    expect(图标[0].querySelector('clipPath')!.id).not.toBe(图标[1].querySelector('clipPath')!.id)
+  })
+
+  it('PC 与移动功能图标使用各自的构图，底部导航可选择单色线条', () => {
+    const { container } = render(<><Icon name="image" variant="pc"/><Icon name="image" variant="mobile"/><Icon name="cloud" variant="outline" color="#2B6CF6"/></>)
+    const 图标 = container.querySelectorAll('svg')
+    expect(图标[0]).toHaveAttribute('viewBox','0 0 24 24')
+    expect(图标[1]).toHaveAttribute('viewBox','0 0 48 48')
+    expect(图标[2]).toHaveAttribute('color','#2B6CF6')
+    expect(container.textContent).toBe('')
+  })
 })

@@ -1,0 +1,74 @@
+/* Approved PC style: neutral surfaces, fine borders and compact controls.
+   Only application chrome is targeted; document/slide objects keep their styles. */
+:root:not([data-seal-ui="mobile"]) {
+  --radius-card: 6px;
+  --radius-control: 4px;
+  --shadow-card: 0 1px 4px rgba(30, 38, 50, .06);
+}
+:root:not([data-seal-ui="mobile"]):not([data-theme="dark"]) {
+  --bg-app: #f4f5f7;
+  --bg-hover: #f5f6f8;
+  --border: #e0e4ea;
+  --border-subtle: #eef0f3;
+  --text-1: #252830;
+  --text-2: #656d79;
+}
+:root:not([data-seal-ui="mobile"]) :is(.wps-titlebar,.wps-sidebar,.wps-homesidebar,.wps-homerail,.wps-ribbon,.wps-toolbar,.wps-footer,.wps-global-tabs) {
+  box-shadow: none;
+  background: var(--bg-card);
+}
+:root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button) {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 6px;
+  box-shadow: none;
+  transform: none;
+  transition: border-color .15s, background-color .15s;
+}
+:root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button):hover {
+  background: var(--bg-hover);
+  border-color: var(--brand);
+  box-shadow: none;
+  transform: none;
+}
+:root:not([data-seal-ui="mobile"]) :is(.wps-doc-card,.seal-market-cover,.seal-market-favorite,.wps-newdoc-option,.settings-wps-card) {
+  border-radius: 6px;
+  box-shadow: none;
+}
+:root:not([data-seal-ui="mobile"]) :is(.wps-doc-card:hover,.seal-market-cover:hover,.seal-market-tools button:hover) { box-shadow: none; }
+:root:not([data-seal-ui="mobile"]) :is(.wps-recommend__cell-icon,.wps-recommend__row-icon,.seal-market-tools .seal-tool-icon) {
+  background: transparent;
+  border-radius: 0;
+}
+:root:not([data-seal-ui="mobile"]) .ant-btn-default:not(:disabled):not(.ant-btn-dangerous) {
+  color: var(--text-1);
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: none;
+}
+:root:not([data-seal-ui="mobile"]) .ant-btn-default:not(:disabled):not(.ant-btn-dangerous):hover {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+:root:not([data-seal-ui="mobile"]) :is(.ant-btn-primary,.template-library__filters .ant-btn-primary,.ant-input,.ant-input-affix-wrapper,.ant-select-selector) { box-shadow: none; }
+:root:not([data-seal-ui="mobile"]) .ant-btn-primary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+:root:not([data-seal-ui="mobile"]) :is(.wps-ribbon-button,.wps-nav-item,.wps-icon-button,.wps-context-menu__item,.wps-float-panel__item) { border-radius: 4px; }
+/* Compact controls must reserve the declared SVG size rather than inherit
+   the generic button padding and squeeze their icons into a few pixels. */
+:root:not([data-seal-ui="mobile"]) :is(.wps-ribbon-button--small,.wps-icon-button,.wps-titlebar__avatar) {
+  padding: 0;
+  flex-shrink: 0;
+}
+:root:not([data-seal-ui="mobile"]) .seal-icon { flex: 0 0 auto; }
+:root:not([data-seal-ui="mobile"]) :is(.wps-context-menu,.wps-float-panel,.seal-image-toolbar,.assistant-drawer__composer) {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 3px 12px rgba(30,38,50,.08);
+}
+:root:not([data-seal-ui="mobile"]) .wps-doc-row { border-bottom: 1px solid var(--border-subtle); }
+:root:not([data-seal-ui="mobile"]) .wps-nav-item--active .seal-icon,
+:root:not([data-seal-ui="mobile"]) .wps-homenav__item--active .seal-icon { color: var(--brand); }
+@media(prefers-reduced-motion:reduce) {
+  :root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button) { transition: none; }
+}
