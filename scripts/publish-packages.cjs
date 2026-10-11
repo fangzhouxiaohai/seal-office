@@ -29,6 +29,10 @@ function validateRelease(config) {
   assert.ok(Number.isFinite(Date.parse(config.created)));
   assert.deepEqual(Object.keys(config.platforms).sort(), ['android', 'linux', 'windows']);
   for (const platform of Object.values(config.platforms)) {
+    if (platform.packageTag !== undefined) {
+      assert.match(platform.packageTag, /^\d+\.\d+\.\d+-r[1-9]\d*$/);
+      assert.ok(platform.packageTag.startsWith(config.version + '-r'));
+    }
     assert.ok(platform.assets.length > 0);
     assert.equal(new Set(platform.assets.map((a) => a.name)).size, platform.assets.length);
     for (const asset of platform.assets) {
@@ -61,11 +65,13 @@ function context(platform, directory) {
   assert.ok(Object.hasOwn(release.platforms, platform), 'Unknown platform');
   const owner = release.repository.split('/')[0].toLowerCase();
   const name = `seal-office-${platform}`;
+  const spec = release.platforms[platform];
+  const packageTag = spec.packageTag || release.version;
   return { platform, directory: path.resolve(directory), owner, name,
-    ref: `ghcr.io/${owner}/${name}:${release.version}`,
+    packageTag, ref: `ghcr.io/${owner}/${name}:${packageTag}`,
     page: `https://github.com/users/${owner}/packages/container/package/${name}`,
     url: `https://github.com/${release.repository}/releases/tag/${release.tag}`,
-    spec: release.platforms[platform] };
+    spec };
 }
 
 async function prepare(ctx, sourceDirectory) {
@@ -96,20 +102,20 @@ async function prepare(ctx, sourceDirectory) {
     'org.opencontainers.image.description': ctx.spec.description,
     'org.opencontainers.image.source': `https://github.com/${release.repository}`,
     'org.opencontainers.image.url': ctx.url,
-    'org.opencontainers.image.version': release.version,
+    'org.opencontainers.image.version': ctx.packageTag,
     'org.opencontainers.image.created': release.created,
     'org.opencontainers.image.licenses': 'MIT'
   };
   await fsp.writeFile(path.join(ctx.directory, 'installer-config.json'), json({
-    artifact: 'seal-office-installers', version: release.version, platform: ctx.platform,
+    artifact: 'seal-office-installers', version: release.version, packageTag: ctx.packageTag, platform: ctx.platform,
     config: { Labels: annotations }, assets: ctx.spec.assets
   }));
   await fsp.writeFile(path.join(ctx.directory, 'annotations.json'), json({ '$manifest': annotations }));
   await fsp.writeFile(path.join(ctx.directory, 'installer-metadata.json'), json({
-    schemaVersion: 1, ...release, platforms: undefined, platform: ctx.platform, assets: ctx.spec.assets
+    schemaVersion: 1, ...release, platforms: undefined, platform: ctx.platform, packageTag: ctx.packageTag, assets: ctx.spec.assets
   }));
   await fsp.writeFile(path.join(ctx.directory, 'README.md'),
-    `# 海豹办公 ${release.version} · ${ctx.platform}\n\n${ctx.spec.description}\n\n` +
+    `# 海豹办公 ${ctx.packageTag} · ${ctx.platform}\n\n${ctx.spec.description}\n\n` +
     `直接下载安装：[GitHub Release](${ctx.url}) · [GitCode Release](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/${release.tag})\n\n` +
     `提取本包：\n\n\`\`\`sh\noras pull ${ctx.ref}\n\`\`\`\n\n` +
     `安装方法：${ctx.spec.usage}\n\n文件内容与 Release 完全一致；SHA256SUMS.txt 提供校验值。\n`);
@@ -138,7 +144,7 @@ async function publish(ctx, localOnly) {
   const payload = JSON.parse(await fsp.readFile(path.join(ctx.directory, 'payload.json'), 'utf8'));
   await verifyFiles(ctx.directory, payload);
   const layout = path.join(ctx.directory, 'oci');
-  const localRef = `${layout}:${release.version}`;
+  const localRef = `${layout}:${ctx.packageTag}`;
   // OCI 1.0 with a custom config is supported by GHCR; layers contain the original file bytes.
   oras(ctx, ['push', '--oci-layout', '--image-spec', 'v1.0', '--config',
     'installer-config.json:application/vnd.seal-office.installer.config.v1+json',
@@ -171,16 +177,16 @@ async function publish(ctx, localOnly) {
   assert.equal(pkg.repository?.full_name, release.repository, 'Package is not linked to the repository');
   const versions = await api(`/users/${ctx.owner}/packages/container/${ctx.name}/versions?per_page=100`);
   const current = versions.find((v) => v.name === digest);
-  assert.ok(current?.metadata?.container?.tags?.includes(release.version));
+  assert.ok(current?.metadata?.container?.tags?.includes(ctx.packageTag));
   assert.ok(current.metadata.container.tags.includes('latest'));
-  const result = { platform: ctx.platform, version: release.version, reference: ctx.ref,
+  const result = { platform: ctx.platform, version: release.version, packageTag: ctx.packageTag, reference: ctx.ref,
     digest, packageUrl: pkg.html_url || ctx.page, repository: pkg.repository.full_name,
     visibility: pkg.visibility, tags: current.metadata.container.tags,
     verified: true, assets: ctx.spec.assets, payload, workflowCommit: process.env.GITHUB_SHA,
     workflowUrl: `https://github.com/${release.repository}/actions/runs/${process.env.GITHUB_RUN_ID}` };
   await fsp.writeFile(path.join(ctx.directory, 'published-package.json'), json(result));
   if (process.env.GITHUB_STEP_SUMMARY) await fsp.appendFile(process.env.GITHUB_STEP_SUMMARY,
-    `### ${ctx.platform} ${release.version}\n\n[Package](${result.packageUrl}) · ${result.visibility}\n\n` +
+    `### ${ctx.platform} ${ctx.packageTag}\n\n[Package](${result.packageUrl}) · ${result.visibility}\n\n` +
     `Published and downloaded ${ctx.spec.assets.length} original Release files; all SHA-256 checks passed.\n\n\`${digest}\`\n`);
   console.log(json(result));
 }

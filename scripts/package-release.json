@@ -26,6 +26,7 @@
       ]
     },
     "android": {
+      "packageTag": "1.9.12-r1",
       "description": "海豹办公 Android 9+ ARM 32/64 位原始云打包 APK。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
       "usage": "将 SealOfficeAndroid1.9.12.apk 下载到 Android 手机并安装。最低 Android 9，目标 Android 16，包名 com.sealoffice.mobile。APK 未重新签名或修改。",
       "assets": [
@@ -37,6 +38,7 @@
       ]
     },
     "linux": {
+      "packageTag": "1.9.12-r1",
       "description": "海豹办公 Ubuntu amd64 DEB，已通过 Ubuntu 22.04 / 24.04 安装验证。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
       "usage": "在 Ubuntu 22.04 / 24.04 x86_64 运行 sudo apt update，然后 sudo apt install ./SealOfficeUbuntu1.9.12-amd64.deb。启动命令：sealoffice。验收报告随包提供。",
       "assets": [

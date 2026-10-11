@@ -13,6 +13,9 @@ test('all three platforms reference pinned, safe Release installer assets', () =
     malformed.platforms.android.assets[0].name = name;
     assert.throws(() => validateRelease(malformed));
   }
+  const malformedTag = structuredClone(release);
+  malformedTag.platforms.android.packageTag = '1.9.12';
+  assert.throws(() => validateRelease(malformedTag));
 });
 
 test('reject altered installer bytes even when the file size remains identical', async () => {
