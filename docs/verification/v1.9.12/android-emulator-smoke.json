@@ -1,6 +1,7 @@
 {
   "releasedApk": "SealOfficeAndroid1.9.12.apk",
-  "releasedApkSha256": "637395b8bb46a284fd93932bc1eb9799b47c87dd116945753c847911e5e39211",
+  "originalApkSha256": "637395b8bb46a284fd93932bc1eb9799b47c87dd116945753c847911e5e39211",
+  "replacementApkSha256": "592fa197a06aea0ed808a4db5a7b0f0f164cea4fab0176525f26bac49badf2ca",
   "testEnvironment": "LDPlayer Android 14 emulator, 2026-10-12",
   "passed": [
     "Existing installation upgraded with the same signing certificate",
@@ -22,6 +23,15 @@
     "Document card component tests: 14 passed",
     "Local file WebView browser smoke: 18 checks passed"
   ],
-  "releaseStatus": "The released APK predates these source fixes. A replacement APK must be cloud-built and verified before the release asset can be updated.",
+  "replacementApkVerification": [
+    "Cloud package includes the current repaired office.js byte-for-byte",
+    "APK package metadata, original signer certificate, ZIP integrity and 16 KiB native-library alignment verified",
+    "Android 14 emulator accepted an in-place upgrade without deleting document data",
+    "One tap on the recent document grid card opened the saved Word document",
+    "Editing and pressing Save cleared the unsaved marker without starting Android ACTION_SEND or a share chooser",
+    "Saved text remained visible after force-stop and relaunch",
+    "Installed APK SHA-256 matched the downloaded replacement APK"
+  ],
+  "releaseStatus": "Replacement APK verified and selected for publication as the Android asset of v1.9.12.",
   "limits": "This emulator result does not verify other Android brands, iOS or HarmonyOS devices."
 }
