@@ -65,3 +65,43 @@ jobs:
           name: verification-${{ matrix.os }}
           path: release/ubuntu/verification/*
           if-no-files-found: error
+  publish:
+    needs: [build, verify]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-deb
+          path: release/ubuntu
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verification-ubuntu-*
+          path: release/ubuntu/reports
+      - name: Verify exact package checksums before publishing
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('assert/strict');
+          const version = require('./package.json').version;
+          assert(/^\d+\.\d+\.\d+$/.test(version));
+          const filename = `SealOfficeUbuntu${version}-amd64.deb`;
+          const bytes = fs.readFileSync(path.join('release/ubuntu', filename));
+          const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+          for (const os of ['ubuntu-22.04', 'ubuntu-24.04']) {
+            const report = JSON.parse(fs.readFileSync(`release/ubuntu/reports/verification-${os}/ubuntu-verification.json`, 'utf8'));
+            assert(report.passed && report.version === version && report.packageSha256 === sha256 && report.packageBytes === bytes.length && report.sandboxBypassed === false);
+          }
+          fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_TAG=v${version}\nRELEASE_REPORT=SealOffice${version}-UbuntuVerification.zip\n`);
+          console.log(`${filename} SHA-256 ${sha256}: both installed-package checks passed`);
+          NODE
+      - name: Publish verified Ubuntu package and reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd release/ubuntu/reports && zip -r "../$RELEASE_REPORT" .)
+          gh release upload "$RELEASE_TAG" release/ubuntu/*.deb "release/ubuntu/$RELEASE_REPORT" --repo "$GITHUB_REPOSITORY"
