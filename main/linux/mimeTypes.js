@@ -29,6 +29,6 @@ const 文件关联 = 格式.map(项 => {
   if (!映射[项.extension]) throw new Error(`缺少 Linux 文档 MIME 配置：${项.extension}`)
   return { ext: 项.extension, name: 项.label, description: 项.label, mimeType: 映射[项.extension].toLowerCase() }
 })
-const MIME别名 = ['application/rtf', 'application/xml']
+const MIME别名 = ['application/rtf', 'application/xml', 'application/x-dbf']
 const MIME类型 = [...new Set([...文件关联.map(项 => 项.mimeType), ...MIME别名])]
 module.exports = { 文件关联, MIME类型, MIME别名 }
