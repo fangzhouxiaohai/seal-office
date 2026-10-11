@@ -27,7 +27,9 @@
     "mobile:pack": "npm --prefix mobile run pack:android",
     "web:dev": "npm --prefix mobile run dev",
     "web:build": "npm --prefix mobile run build:web",
-    "mobile:check": "npm --prefix mobile run check"
+    "mobile:check": "npm --prefix mobile run check",
+    "pack:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir",
+    "dist:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

@@ -20,8 +20,8 @@ const 演示会话 = 创建文稿会话服务()
 /** webContents.id -> { 文稿标识, 视图标识 }，新窗口据此接管同一份文稿 */
 const 窗口身份表 = new Map()
 let 窗口管理器 = null
-const 关联文件入口 = 创建关联文件入口(() => 主窗口)
-if (process.platform === 'win32') 关联文件入口.加入命令行(process.argv)
+const 关联文件入口 = 创建关联文件入口(() => 主窗口, process.platform)
+if (['win32', 'linux'].includes(process.platform)) 关联文件入口.加入命令行(process.argv)
 
 function 加载开发服务(窗口, 次数) {
   窗口.loadURL(DEV_SERVER_URL).catch(() => {
@@ -219,7 +219,7 @@ if (!获得单实例锁) {
   app.quit()
 } else {
   app.on('second-instance', (_事件, 命令行) => {
-    if (process.platform === 'win32') 关联文件入口.加入命令行(命令行)
+    if (['win32', 'linux'].includes(process.platform)) 关联文件入口.加入命令行(命令行)
     if (主窗口 !== null) {
       if (主窗口.isMinimized()) 主窗口.restore()
       主窗口.focus()

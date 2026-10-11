@@ -5,11 +5,10 @@ const { pathToFileURL } = require('url')
 const { execFile } = require('child_process')
 const { app } = require('electron')
 const 格式列表 = require('../documentFormats.json')
+const { 定位兼容引擎 } = require('./nativeRuntime')
 
 function 获取转换程序() {
-  const 文件 = path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, '../../.upgrade-private'), 'office-runtime', 'program', 'soffice.com')
-  if (!fs.existsSync(文件)) throw new Error('文档兼容引擎缺失，请重新安装完整 Windows 版。手机端请在设置中心配置文档转换服务。')
-  return 文件
+  return 定位兼容引擎({ 根目录: app.isPackaged ? process.resourcesPath : path.join(__dirname, '../../.upgrade-private') })
 }
 
 /** 转换器仅在独立临时目录处理字节；最终写盘仍由文件通道执行版本校验和原子替换。 */
@@ -33,7 +32,7 @@ async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
     const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to', `${输出扩展}:${过滤器}`, '--outdir', 输出目录, 输入]
     await new Promise((完成, 拒绝) => {
       let 超时 = false
-      const 进程 = execFile(程序, 参数, { windowsHide: true, maxBuffer: 1024 * 1024, encoding: 'utf8' }, 错误 => {
+      const 进程 = execFile(程序, 参数, { windowsHide: true, detached: process.platform !== 'win32', maxBuffer: 1024 * 1024, encoding: 'utf8' }, 错误 => {
         clearTimeout(计时)
         if (超时) 拒绝(new Error('文档转换超时，来源文件未修改，请重试或转换为标准格式后打开'))
         else if (错误) 拒绝(new Error('文档转换失败，请检查文件是否损坏、加密或不符合该格式'))
@@ -42,7 +41,11 @@ async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
       const 计时 = setTimeout(() => {
         超时 = true
         // Only stop this job's process tree; stopping the launcher alone leaves soffice.bin alive.
-        execFile('taskkill.exe', ['/PID', String(进程.pid), '/T', '/F'], { windowsHide: true }, () => { if (进程.exitCode === null) 进程.kill() })
+        if (process.platform === 'win32') execFile('taskkill.exe', ['/PID', String(进程.pid), '/T', '/F'], { windowsHide: true }, () => { if (进程.exitCode === null) 进程.kill() })
+        else if (Number.isInteger(进程.pid) && 进程.pid > 0) {
+          // detached gives this conversion its own process group, including soffice.bin.
+          try { process.kill(-进程.pid, 'SIGKILL') } catch { if (进程.exitCode === null) 进程.kill('SIGKILL') }
+        }
       }, 90000)
     })
     const 输出 = path.join(输出目录, `input.${输出扩展}`)

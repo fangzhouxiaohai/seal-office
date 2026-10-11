@@ -65,7 +65,7 @@ async function main() {
       if (!packageInfo || !/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)+$/.test(packageInfo[1])) throw new Error('安卓包名无效')
       report.sdkMetadata = { packageName: packageInfo[1], versionCode: packageInfo[2], versionName: packageInfo[3], minSdk: badging.match(/sdkVersion:'([^']+)'/)?.[1], targetSdk: badging.match(/targetSdkVersion:'([^']+)'/)?.[1], abi: badging.match(/native-code: (.+)/)?.[1], permissions: [...badging.matchAll(/uses-permission: name='([^']+)'/g)].map(item => item[1]) }
       const signature = await execute('java', ['-jar', path.join(tools, 'lib/apksigner.jar'), 'verify', '--verbose', '--print-certs', apkPath])
-      report.signature = { verified: true, v1: /v1 scheme.*: true/.test(signature), v2: /v2 scheme.*: true/.test(signature), certificateSha256: signature.match(/certificate SHA-256 digest: (\w+)/)?.[1] }
+      report.signature = { verified: true, v1: /v1 scheme.*: true/.test(signature), v2: /v2 scheme.*: true/.test(signature), v3: /v3 scheme.*: true/.test(signature), certificateSha256: signature.match(/certificate SHA-256 digest: (\w+)/)?.[1] }
     }
     const deviceIndex = args.indexOf('--device')
     if (deviceIndex >= 0) {

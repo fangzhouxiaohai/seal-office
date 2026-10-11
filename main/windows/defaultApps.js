@@ -37,6 +37,7 @@ function 创建注册执行器({ 可执行文件, 资源目录, 数据目录, �
 }
 
 function 创建默认程序服务({ 平台 = process.platform, 已打包, 可执行文件, 数据目录, 资源目录, 执行注册, 打开地址, 测试根 = '' }) {
+  if (平台 === 'linux') return require('../linux/defaultApps').创建Linux默认程序服务({ 已打包 })
   const 执行 = 执行注册 || 创建注册执行器({ 可执行文件, 资源目录, 数据目录, 测试根 })
   const 状态路径 = path.join(数据目录, 'default-app-prompt.json')
   let 队列 = Promise.resolve()

@@ -94,7 +94,8 @@ async function 字体(文档, 内容) {
   const fontkit = require('@pdf-lib/fontkit')
   const 目录 = process.platform === 'win32' ? path.join(process.env.WINDIR || 'C:\\Windows', 'Fonts') : '/usr/share/fonts'
   const 候选 = process.platform === 'win32' ? ['simhei.ttf', 'simsunb.ttf', 'simfang.ttf'] : ['truetype/noto/NotoSansCJK-Regular.ttc', 'truetype/dejavu/DejaVuSans.ttf']
-  const 路径 = 候选.map((名字) => path.join(目录, 名字)).find((名字) => fs.existsSync(名字))
+  const Linux字体 = [path.join(process.resourcesPath || '', 'fonts/NotoSansSC.ttf'), path.join(__dirname, '../../mobile/web/public/fonts/NotoSansSC.ttf')]
+  const 路径 = (process.platform === 'linux' ? Linux字体 : 候选.map((名字) => path.join(目录, 名字))).find((名字) => fs.existsSync(名字))
   if (!路径) throw new Error('系统未安装可用于 PDF 中文编辑的字体')
   文档.registerFontkit(fontkit)
   return 文档.embedFont(fs.readFileSync(路径), { subset: true })

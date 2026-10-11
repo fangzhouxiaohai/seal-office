@@ -53,7 +53,7 @@ function 核验清单(根目录, 清单) {
 
 function 检查安装目录(根目录) {
   const 清单路径 = path.join(根目录, 'main', 清单文件名)
-  if (!fs.existsSync(清单路径)) throw new Error('当前目录没有构建时生成的完整性清单，请使用 Windows 打包版本检查')
+  if (!fs.existsSync(清单路径)) throw new Error('当前目录没有构建时生成的完整性清单，请使用完整桌面安装版本检查')
   let 清单
   try {
     清单 = JSON.parse(fs.readFileSync(清单路径, 'utf8'))
