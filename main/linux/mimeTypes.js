@@ -22,12 +22,13 @@ const 映射 = {
   fodp: 'application/vnd.oasis.opendocument.presentation-flat-xml',
   pdf: 'application/pdf', ofd: 'application/ofd', csv: 'text/csv', tsv: 'text/tab-separated-values',
   txt: 'text/plain', md: 'text/markdown', html: 'text/html', htm: 'text/html', json: 'application/json',
-  rtf: 'application/rtf', xml: 'application/xml', mht: 'application/x-mimearchive', mhtml: 'application/x-mimearchive',
+  rtf: 'text/rtf', xml: 'text/xml', mht: 'application/x-mimearchive', mhtml: 'application/x-mimearchive',
   dbf: 'application/vnd.dbf', dif: 'application/x-dif', slk: 'application/x-sylk', prn: 'application/x-sealoffice-prn',
 }
 const 文件关联 = 格式.map(项 => {
   if (!映射[项.extension]) throw new Error(`缺少 Linux 文档 MIME 配置：${项.extension}`)
   return { ext: 项.extension, name: 项.label, description: 项.label, mimeType: 映射[项.extension].toLowerCase() }
 })
-const MIME类型 = [...new Set(文件关联.map(项 => 项.mimeType))]
-module.exports = { 文件关联, MIME类型 }
+const MIME别名 = ['application/rtf', 'application/xml']
+const MIME类型 = [...new Set([...文件关联.map(项 => 项.mimeType), ...MIME别名])]
+module.exports = { 文件关联, MIME类型, MIME别名 }
