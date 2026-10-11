@@ -32,9 +32,11 @@ npm run pack
 
 `static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已成功云打包并提供 `D:/downsoft/__UNI__B52B65B_1010231201.apk`。该 APK 已安装到当前 Android 14 模拟器验收；本轮源代码包含后续修复，旧 APK 不包含这些修改，需要重新云打包。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已提供最新云包 `__UNI__B52B65B_1011150212.apk`，版本 `1.9.11 / 10911`，已核验并发布为 [SealOfficeAndroid1.9.11.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk)。包内编辑器与当前 Android 资源构建一致，签名与旧包一致。1.9.9 旧包的 Android 14 模拟器验收作为历史基线保留，新包的原生文件选择、分享、键盘和生命周期仍需连接设备回归。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
-HBuilderX 默认查找 D/C/E 盘安装目录，其他路径用 `HBUILDERX_PATH` 或私有配置的 `hbuilderx` 指定。包名默认 `com.sealoffice.mobile`，脚本使用 DCloud 云证书、安全模式并关闭广告选项。自有证书在 HBuilderX 可视化打包界面配置，不把密码写进命令。应用图标源为 `static/icon.png`；各密度 Android 图标、自适应与单色图标、iOS/HarmonyOS 和网页图标已生成并配置，需通过新云包确认实际生效。
+发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
+
+HBuilderX 默认查找 D/C/E 盘安装目录，其他路径用 `HBUILDERX_PATH` 或私有配置的 `hbuilderx` 指定。包名默认 `com.sealoffice.mobile`，脚本使用 DCloud 云证书、安全模式并关闭广告选项。自有证书在 HBuilderX 可视化打包界面配置，不把密码写进命令。应用图标源为 `static/icon.png`；各密度 Android 图标、自适应与单色图标、iOS/HarmonyOS 和网页图标已生成并配置，新云包内图标资源已核验；桌面启动图标显示仍需设备验证。
 
 CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将其误报为打包成功。本机 GUI 已运行，但 CLI 暂不能连接；`check:android` 直接调用安装目录编译器完成了 UTS 检查。可在 HBuilderX 界面运行/发行安卓，无需重置个人配置。
 
@@ -42,7 +44,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 
 | 平台 | 命令 / 入口 | 验证状态 |
 | --- | --- | --- |
-| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 已收到用户云 APK，旧包在 Android 14 模拟器实测；新源码的 UTS → Kotlin、包内资源及图标检查通过，待重新云打包回归 |
+| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 1.9.11 云 APK 已发布；版本、签名、源码匹配、双 ABI、16 KB 对齐已核验；原生交互回归待设备连接 |
 | iOS | `npm --prefix mobile run build:ios`，HBuilderX 选择 iOS | 原生外壳与接口共用，配置已预留；尚未编译、签名或真机验证 |
 | HarmonyOS | `npm --prefix mobile run build:harmony`，HBuilderX 选择鸿蒙 | 外壳与接口共用，包名配置已预留；尚未编译、签名或真机验证 |
 | H5 / PC Web | `npm run web:build` → `mobile/unpackage/web/` | 手机和宽屏页面、文件往返、持久保存及中文 PDF 阅读/导出通过 |

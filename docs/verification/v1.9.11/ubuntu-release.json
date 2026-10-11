@@ -1,0 +1,23 @@
+{
+  "version": "1.9.11",
+  "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38125026043",
+  "buildSourceCommit": "e6facaaa37a8cb6b5b87f034be0c3a1bc592553d",
+  "package": {
+    "name": "SealOfficeUbuntu1.9.11-amd64.deb",
+    "size": 144783312,
+    "digest": "sha256:4cba6194106825c23e34397d89e715320f73a07693848c56014c46195052193c",
+    "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeUbuntu1.9.11-amd64.deb"
+  },
+  "passedInstalledPackageChecks": {
+    "ubuntu-22.04": 71,
+    "ubuntu-24.04": 71
+  },
+  "rendererSandboxBypassed": false,
+  "verificationArchive": {
+    "name": "SealOffice1.9.11-UbuntuVerification.zip",
+    "size": 140392,
+    "digest": "sha256:0242c80a5565a2bbf9f1c061dfb95148eda231e262d62ba1a80d75a14cf8760e",
+    "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-UbuntuVerification.zip"
+  },
+  "windowsOriginalTagCommit": "2d9b578db0c14dae54cc6452cc7ced85813ad69d"
+}

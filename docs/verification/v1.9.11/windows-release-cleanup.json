@@ -1,0 +1,365 @@
+{
+  "verifiedAt": "2026-10-11T08:25:00.520780+00:00",
+  "retainedVersion": "v1.9.11",
+  "removedWindowsPackages": 54,
+  "removedChecksumFiles": 12,
+  "removedWindowsOnlyReleaseRecords": 20,
+  "gitTagsDeleted": false,
+  "preservedNonWindowsReleases": [
+    "v1.9.10",
+    "v1.9.8",
+    "v1.9.3"
+  ],
+  "retained": [
+    {
+      "name": "SealOffice1.9.11.exe",
+      "size": 385763330,
+      "digest": "sha256:f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00",
+      "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11.exe"
+    },
+    {
+      "name": "SealOffice1.9.11.msix",
+      "size": 723483861,
+      "digest": "sha256:fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6",
+      "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11.msix"
+    },
+    {
+      "name": "SealOfficeSetup1.9.11.exe",
+      "size": 385988252,
+      "digest": "sha256:60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609",
+      "browser_download_url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeSetup1.9.11.exe"
+    }
+  ],
+  "removed": [
+    {
+      "tag": "v1.9.10",
+      "name": "SealOffice1.9.10.exe",
+      "bytes": 96915620
+    },
+    {
+      "tag": "v1.9.10",
+      "name": "SealOffice1.9.10.msix",
+      "bytes": 177676938
+    },
+    {
+      "tag": "v1.9.10",
+      "name": "SealOfficeSetup1.9.10.exe",
+      "bytes": 97140580
+    },
+    {
+      "tag": "v1.9.10",
+      "name": "SHA256SUMS.txt",
+      "bytes": 267
+    },
+    {
+      "tag": "v1.9.9",
+      "name": "SealOffice1.9.9.exe",
+      "bytes": 96909254
+    },
+    {
+      "tag": "v1.9.9",
+      "name": "SealOffice1.9.9.msix",
+      "bytes": 177665252
+    },
+    {
+      "tag": "v1.9.9",
+      "name": "SealOfficeSetup1.9.9.exe",
+      "bytes": 97134725
+    },
+    {
+      "tag": "v1.9.9",
+      "name": "SHA256SUMS.txt",
+      "bytes": 264
+    },
+    {
+      "tag": "v1.9.8",
+      "name": "SealOffice1.9.8.exe",
+      "bytes": 96907989
+    },
+    {
+      "tag": "v1.9.8",
+      "name": "SealOffice1.9.8.msix",
+      "bytes": 177667504
+    },
+    {
+      "tag": "v1.9.8",
+      "name": "SealOfficeSetup1.9.8.exe",
+      "bytes": 97133464
+    },
+    {
+      "tag": "v1.9.8",
+      "name": "SHA256SUMS.txt",
+      "bytes": 267
+    },
+    {
+      "tag": "v1.9.7",
+      "name": "SealOffice1.9.7.exe",
+      "bytes": 95960535
+    },
+    {
+      "tag": "v1.9.7",
+      "name": "SealOffice1.9.7.msix",
+      "bytes": 174645284
+    },
+    {
+      "tag": "v1.9.7",
+      "name": "SealOfficeSetup1.9.7.exe",
+      "bytes": 96185968
+    },
+    {
+      "tag": "v1.9.7",
+      "name": "SHA256SUMS.txt",
+      "bytes": 267
+    },
+    {
+      "tag": "v1.9.6",
+      "name": "SealOffice1.9.6.exe",
+      "bytes": 95962500
+    },
+    {
+      "tag": "v1.9.6",
+      "name": "SealOffice1.9.6.msix",
+      "bytes": 174642415
+    },
+    {
+      "tag": "v1.9.6",
+      "name": "SealOfficeSetup1.9.6.exe",
+      "bytes": 96187931
+    },
+    {
+      "tag": "v1.9.6",
+      "name": "SHA256SUMS.txt",
+      "bytes": 264
+    },
+    {
+      "tag": "v1.9.5",
+      "name": "SealOffice1.9.5.exe",
+      "bytes": 95958398
+    },
+    {
+      "tag": "v1.9.5",
+      "name": "SealOffice1.9.5.msix",
+      "bytes": 174641484
+    },
+    {
+      "tag": "v1.9.5",
+      "name": "SealOfficeSetup1.9.5.exe",
+      "bytes": 96183819
+    },
+    {
+      "tag": "v1.9.5",
+      "name": "SHA256SUMS.txt",
+      "bytes": 264
+    },
+    {
+      "tag": "v1.9.4",
+      "name": "SealOffice1.9.4.exe",
+      "bytes": 95955304
+    },
+    {
+      "tag": "v1.9.4",
+      "name": "SealOffice1.9.4.msix",
+      "bytes": 174640323
+    },
+    {
+      "tag": "v1.9.4",
+      "name": "SealOfficeSetup1.9.4.exe",
+      "bytes": 96180783
+    },
+    {
+      "tag": "v1.9.4",
+      "name": "SHA256SUMS.txt",
+      "bytes": 264
+    },
+    {
+      "tag": "v1.9.3",
+      "name": "SealOffice1.9.3.exe",
+      "bytes": 95957055
+    },
+    {
+      "tag": "v1.9.3",
+      "name": "SealOffice1.9.3.msix",
+      "bytes": 174636720
+    },
+    {
+      "tag": "v1.9.3",
+      "name": "SealOfficeSetup1.9.3.exe",
+      "bytes": 96182523
+    },
+    {
+      "tag": "v1.9.3",
+      "name": "SHA256SUMS.txt",
+      "bytes": 264
+    },
+    {
+      "tag": "v1.9.2",
+      "name": "SealOffice.1.9.2.exe",
+      "bytes": 95955504
+    },
+    {
+      "tag": "v1.9.2",
+      "name": "SealOffice.Setup.1.9.2.exe",
+      "bytes": 96180927
+    },
+    {
+      "tag": "v1.9.1",
+      "name": "SealOffice.1.9.1.exe",
+      "bytes": 95949126
+    },
+    {
+      "tag": "v1.9.1",
+      "name": "SealOffice.Setup.1.9.1.exe",
+      "bytes": 96174547
+    },
+    {
+      "tag": "v1.9.0",
+      "name": "SealOffice.1.9.0.exe",
+      "bytes": 88811665
+    },
+    {
+      "tag": "v1.9.0",
+      "name": "SealOffice.Setup.1.9.0.exe",
+      "bytes": 89037074
+    },
+    {
+      "tag": "v1.8.2",
+      "name": "SealOffice.1.8.2.exe",
+      "bytes": 88354913
+    },
+    {
+      "tag": "v1.8.2",
+      "name": "SealOffice.Setup.1.8.2.exe",
+      "bytes": 88580312
+    },
+    {
+      "tag": "v1.7.3",
+      "name": "SealOffice.1.7.3.exe",
+      "bytes": 88124117
+    },
+    {
+      "tag": "v1.7.3",
+      "name": "SealOffice.Setup.1.7.3.exe",
+      "bytes": 88349527
+    },
+    {
+      "tag": "v1.7.2",
+      "name": "SealOffice.1.7.2.exe",
+      "bytes": 88120891
+    },
+    {
+      "tag": "v1.7.2",
+      "name": "SealOffice.Setup.1.7.2.exe",
+      "bytes": 88346298
+    },
+    {
+      "tag": "v1.7.1",
+      "name": "SealOffice.1.7.1.exe",
+      "bytes": 88079337
+    },
+    {
+      "tag": "v1.7.1",
+      "name": "SealOffice.Setup.1.7.1.exe",
+      "bytes": 88304793
+    },
+    {
+      "tag": "v1.7.0",
+      "name": "SealOffice.1.7.0.exe",
+      "bytes": 88016904
+    },
+    {
+      "tag": "v1.7.0",
+      "name": "SealOffice.Setup.1.7.0.exe",
+      "bytes": 88242573
+    },
+    {
+      "tag": "v1.6.10",
+      "name": "SealOffice.1.6.10.exe",
+      "bytes": 87993118
+    },
+    {
+      "tag": "v1.6.10",
+      "name": "SealOffice.Setup.1.6.10.exe",
+      "bytes": 88218714
+    },
+    {
+      "tag": "v1.6.9",
+      "name": "SealOffice.1.6.9.exe",
+      "bytes": 87991381
+    },
+    {
+      "tag": "v1.6.9",
+      "name": "SealOffice.Setup.1.6.9.exe",
+      "bytes": 88217048
+    },
+    {
+      "tag": "v1.6.8",
+      "name": "SealOffice.1.6.8.exe",
+      "bytes": 87992362
+    },
+    {
+      "tag": "v1.6.8",
+      "name": "SealOffice.Setup.1.6.8.exe",
+      "bytes": 88217995
+    },
+    {
+      "tag": "v1.6.7",
+      "name": "SealOffice.1.6.7.exe",
+      "bytes": 87981763
+    },
+    {
+      "tag": "v1.6.7",
+      "name": "SealOffice.Setup.1.6.7.exe",
+      "bytes": 88207392
+    },
+    {
+      "tag": "v1.6.7",
+      "name": "SHA256SUMS.txt",
+      "bytes": 180
+    },
+    {
+      "tag": "v1.6.6",
+      "name": "SealOffice.1.6.6.exe",
+      "bytes": 87982651
+    },
+    {
+      "tag": "v1.6.6",
+      "name": "SealOffice.Setup.1.6.6.exe",
+      "bytes": 88208300
+    },
+    {
+      "tag": "v1.6.6",
+      "name": "SHA256SUMS.txt",
+      "bytes": 180
+    },
+    {
+      "tag": "v1.6.5",
+      "name": "SealOffice.1.6.5.exe",
+      "bytes": 87977221
+    },
+    {
+      "tag": "v1.6.5",
+      "name": "SealOffice.Setup.1.6.5.exe",
+      "bytes": 88202849
+    },
+    {
+      "tag": "v1.6.5",
+      "name": "SHA256SUMS.txt",
+      "bytes": 182
+    },
+    {
+      "tag": "v1.6.4",
+      "name": "SealOffice.1.6.4.exe",
+      "bytes": 87971339
+    },
+    {
+      "tag": "v1.6.4",
+      "name": "SealOffice.Setup.1.6.4.exe",
+      "bytes": 88196965
+    },
+    {
+      "tag": "v1.6.4",
+      "name": "SHA256SUMS.txt",
+      "bytes": 180
+    }
+  ]
+}

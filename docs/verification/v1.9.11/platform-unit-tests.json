@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-10-11T08:34:58.998133+00:00",
+  "sourceCommit": "e6facaaa37a8cb6b5b87f034be0c3a1bc592553d",
+  "desktopMain": {
+    "passed": true,
+    "tests": 925,
+    "files": 91,
+    "command": "npm run test:main"
+  },
+  "packaging": {
+    "passed": true,
+    "tests": 2,
+    "command": "npm run test:packaging"
+  },
+  "associationPrompt": {
+    "passed": true,
+    "tests": 10,
+    "command": "npx vitest run renderer/src/components/DefaultAppPrompt.test.tsx",
+    "sourceCommit": "79aa84f731ea94885a0d331a11b6dd391f4a1753"
+  },
+  "note": "Unit checks supplement real installed-package verification; they do not replace Android device tests."
+}

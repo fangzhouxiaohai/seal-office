@@ -1,10 +1,10 @@
 # 海豹办公 Seal Office
 
-海豹办公是面向 Windows 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面采用海豹办公自己的布局与操作语言；Office 文件只支持部分格式和对象往返，基础功能范围见[功能范围与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，新建弹窗、打印和模板内容见[1.8.1 升级说明](docs/v1.8.1-打印与模板升级.md)，DOCX 导入修复见[1.8.2 升级说明](docs/v1.8.2-DOCX导入修复.md)与[1.8.3 升级说明](docs/v1.8.3-DOCX导入修复.md)。
+海豹办公是面向 Windows 与 Ubuntu 的本地桌面办公软件，提供文字、表格、演示文稿编辑，以及 PDF 阅读和页面处理。首页与打开的文件共用固定在窗口底部的多标签栏。界面采用海豹办公自己的布局与操作语言；Office 文件只支持部分格式和对象往返，基础功能范围见[功能范围与已知限制](docs/v1.6.3-WPS对标与已知限制.md)，新建弹窗、打印和模板内容见[1.8.1 升级说明](docs/v1.8.1-打印与模板升级.md)，DOCX 导入修复见[1.8.2 升级说明](docs/v1.8.2-DOCX导入修复.md)与[1.8.3 升级说明](docs/v1.8.3-DOCX导入修复.md)。
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.11 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；用户已提供成功云打包的 Android APK，旧包在 Android 14 模拟器完成文件导入、编辑、保存与进程恢复验收。后续 Logo、分享、布局和交互修复需重新云打包验证；iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.11 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；用户已提供 1.9.11 云打包 APK，签名、版本、包内编辑器、双 ABI 和 16 KB 对齐已核验并上传发布页；此前 1.9.9 APK 已在 Android 14 模拟器完成导入、编辑、保存与恢复验收，新 APK 的原生交互回归仍待设备连接。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -20,6 +20,16 @@
 | 发布说明 | [v1.9.11 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11)及[修复与验收](docs/v1.9.11-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
+
+## Ubuntu 下载
+
+[SealOfficeUbuntu1.9.11-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeUbuntu1.9.11-amd64.deb) 为 x86_64 / amd64 安装包，安装依赖后可离线转换旧办公格式。Ubuntu 22.04 / 24.04 各通过 71 项实际安装、程序启动、文件读写及关联检查；[成品报告与截图](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-UbuntuVerification.zip)随包提供。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
+
+## Android 下载
+
+[SealOfficeAndroid1.9.11.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk) 为用户提供的 HBuilderX 云打包原文件，仅统一下载文件名；包名 `com.sealoffice.mobile`，版本 `1.9.11 / 10911`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。签名和原生库/ZIP 的 16 KB 对齐已核验，实际系统与品牌验收状态见 [APK 核验](docs/verification/v1.9.11/android-cloud-apk.json)。
+
+[完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip)包括桌面、移动项目、管理后台、转换服务及与云 APK 一致的内置编辑器资源，`release-source.json` 记录准确提交；本次源码主分支同步至 GitHub 和 GitCode。
 
 ### 安卓版界面原型操作教程
 

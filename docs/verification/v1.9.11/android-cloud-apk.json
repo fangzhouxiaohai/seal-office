@@ -1,0 +1,160 @@
+{
+  "inspectedAt": "2026-10-11T07:52:37.320Z",
+  "apkPath": "mobile/unpackage/dist/build/apk/__UNI__B52B65B_1011150212.apk",
+  "sha256": "a87830bb938fe2c86c889a759e6c247045e811a8ae7e16dea66f0a93c4d14936",
+  "bytes": 55811558,
+  "appId": "__UNI__B52B65B",
+  "version": {
+    "name": "1.9.11",
+    "code": "10911"
+  },
+  "build": {
+    "platform": "android",
+    "desktopVersion": "1.9.11",
+    "builtAt": "2026-10-10T19:46:11.578Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "embeddedEditor": {
+    "present": true,
+    "sha256": "c376b8a15a5a75f4a9136f01fd62ba5ae93dc4751060bfb9dc8a75d1fd5c330b",
+    "matchesCurrentSourceBuild": true
+  },
+  "duplicatedJavaScriptBytes": 0,
+  "sdkMetadata": {
+    "packageName": "com.sealoffice.mobile",
+    "versionCode": "10911",
+    "versionName": "1.9.11",
+    "minSdk": "28",
+    "targetSdk": "36",
+    "abi": "'arm64-v8a' 'armeabi-v7a'",
+    "permissions": [
+      "android.permission.INTERNET",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CAMERA",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "com.sealoffice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+    ]
+  },
+  "signature": {
+    "verified": true,
+    "v1": false,
+    "v2": false,
+    "v3": true,
+    "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+  },
+  "device": null,
+  "nativeLibraries16KiB": [
+    {
+      "name": "lib/arm64-v8a/libbreakpad-core.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libcronet.141.0.7340.3.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libgifimage.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libimagepipeline.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libnative-filters.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libnative-imagetranscoder.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libpl_droidsonroids_gif.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libstatic-webp.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libuniappx.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libuts-runtime.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    }
+  ],
+  "zipAlignment16KiB": {
+    "passed": true,
+    "tool": "Android SDK 37.0.0 zipalign -c -P 16 -v 4"
+  },
+  "releaseUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk",
+  "deviceVerification": {
+    "status": "pending",
+    "reason": "No ADB device connected during release inspection; previous Android 14 emulator baseline was APK 1.9.9"
+  },
+  "launcherIcon": {
+    "adaptiveIcon": true,
+    "foregroundResource": "res/yF.png",
+    "monochromeResource": "res/Gl.png",
+    "foregroundSize": [
+      432,
+      432
+    ],
+    "visualInspection": "Seal Office blue seal logo confirmed in packaged launcher foreground"
+  }
+}
