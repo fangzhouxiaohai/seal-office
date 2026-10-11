@@ -1,0 +1,177 @@
+{
+  "version": "1.9.11",
+  "registry": "ghcr.io",
+  "allVerified": true,
+  "allPublic": true,
+  "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38127399652",
+  "packages": [
+    {
+      "platform": "windows",
+      "version": "1.9.11",
+      "reference": "ghcr.io/fangzhouxiaohai/seal-office-windows:1.9.11",
+      "digest": "sha256:ee417f381eca44b4f89fd681785cf2430cf27b2113bdac25fb834d6f1edac2c6",
+      "packageUrl": "https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows",
+      "repository": "fangzhouxiaohai/seal-office",
+      "visibility": "public",
+      "tags": [
+        "latest",
+        "1.9.11"
+      ],
+      "verified": true,
+      "assets": [
+        {
+          "name": "SealOfficeSetup1.9.11.exe",
+          "size": 385988252,
+          "sha256": "60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609"
+        },
+        {
+          "name": "SealOffice1.9.11.exe",
+          "size": 385763330,
+          "sha256": "f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00"
+        },
+        {
+          "name": "SealOffice1.9.11.msix",
+          "size": 723483861,
+          "sha256": "fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6"
+        }
+      ],
+      "payload": [
+        {
+          "name": "SealOfficeSetup1.9.11.exe",
+          "size": 385988252,
+          "sha256": "60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609"
+        },
+        {
+          "name": "SealOffice1.9.11.exe",
+          "size": 385763330,
+          "sha256": "f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00"
+        },
+        {
+          "name": "SealOffice1.9.11.msix",
+          "size": 723483861,
+          "sha256": "fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6"
+        },
+        {
+          "name": "README.md",
+          "size": 698,
+          "sha256": "dbc485d4a81359d78a8d322436472350f04954ed291b818c15dd35576d84096e"
+        },
+        {
+          "name": "installer-metadata.json",
+          "size": 678,
+          "sha256": "3778f7273bbae94ee52f5c5d25ea06a77870d696c87297917f3d28b692b9068c"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 433,
+          "sha256": "2ba6ff32938b59a003a93102ac16cc5958b3035ec4074e2fdfb679010923dfb1"
+        }
+      ],
+      "workflowCommit": "3a9c64686049f231ead4ebb8647cfe26b381c35f",
+      "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38127399652",
+      "anonymousRegistryVerified": true
+    },
+    {
+      "platform": "android",
+      "version": "1.9.11",
+      "reference": "ghcr.io/fangzhouxiaohai/seal-office-android:1.9.11",
+      "digest": "sha256:ea22f21aab74c9072aefed41cfc611b9b485269f15ab3365a67dc92a2a025939",
+      "packageUrl": "https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android",
+      "repository": "fangzhouxiaohai/seal-office",
+      "visibility": "public",
+      "tags": [
+        "latest",
+        "1.9.11"
+      ],
+      "verified": true,
+      "assets": [
+        {
+          "name": "SealOfficeAndroid1.9.11.apk",
+          "size": 55811558,
+          "sha256": "a87830bb938fe2c86c889a759e6c247045e811a8ae7e16dea66f0a93c4d14936"
+        }
+      ],
+      "payload": [
+        {
+          "name": "SealOfficeAndroid1.9.11.apk",
+          "size": 55811558,
+          "sha256": "a87830bb938fe2c86c889a759e6c247045e811a8ae7e16dea66f0a93c4d14936"
+        },
+        {
+          "name": "README.md",
+          "size": 701,
+          "sha256": "5fd7df412e4fdb8e5e1dd9b0bf2b46b7861e78b64c9b6f2ac4c6212116818bf0"
+        },
+        {
+          "name": "installer-metadata.json",
+          "size": 360,
+          "sha256": "23bc4306a449e2200e5f8fa20e2b4078c5d1b8c71639be93ddebd19161604b98"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 260,
+          "sha256": "92f8e985cf196208d92b4427e13a4972ef6375b507d7080ca2aea569e468090f"
+        }
+      ],
+      "workflowCommit": "3a9c64686049f231ead4ebb8647cfe26b381c35f",
+      "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38127399652",
+      "anonymousRegistryVerified": true
+    },
+    {
+      "platform": "linux",
+      "version": "1.9.11",
+      "reference": "ghcr.io/fangzhouxiaohai/seal-office-linux:1.9.11",
+      "digest": "sha256:6591eae18e256597de5a46132237ccfb642928cf4ee8ae7755550086838493ff",
+      "packageUrl": "https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux",
+      "repository": "fangzhouxiaohai/seal-office",
+      "visibility": "public",
+      "tags": [
+        "latest",
+        "1.9.11"
+      ],
+      "verified": true,
+      "assets": [
+        {
+          "name": "SealOfficeUbuntu1.9.11-amd64.deb",
+          "size": 144783312,
+          "sha256": "4cba6194106825c23e34397d89e715320f73a07693848c56014c46195052193c"
+        },
+        {
+          "name": "SealOffice1.9.11-UbuntuVerification.zip",
+          "size": 140392,
+          "sha256": "0242c80a5565a2bbf9f1c061dfb95148eda231e262d62ba1a80d75a14cf8760e"
+        }
+      ],
+      "payload": [
+        {
+          "name": "SealOfficeUbuntu1.9.11-amd64.deb",
+          "size": 144783312,
+          "sha256": "4cba6194106825c23e34397d89e715320f73a07693848c56014c46195052193c"
+        },
+        {
+          "name": "SealOffice1.9.11-UbuntuVerification.zip",
+          "size": 140392,
+          "sha256": "0242c80a5565a2bbf9f1c061dfb95148eda231e262d62ba1a80d75a14cf8760e"
+        },
+        {
+          "name": "README.md",
+          "size": 720,
+          "sha256": "94280224c6adda361ddc43adef5f5340954e6171e3146e7842d94e3e14bb96cb"
+        },
+        {
+          "name": "installer-metadata.json",
+          "size": 539,
+          "sha256": "d90bfd065ad353d2de4c151e16f1ea3a910ead8ab9f9753e20eef41e04c653f1"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 371,
+          "sha256": "dc5843d454dbadf46a379d411814b0562fd6b10c0c7889a07df321d04dca6b77"
+        }
+      ],
+      "workflowCommit": "3a9c64686049f231ead4ebb8647cfe26b381c35f",
+      "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38127399652",
+      "anonymousRegistryVerified": true
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "tag": "v1.9.11",
+  "releaseUrl": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.11",
+  "repository": "gcw_pGfMiWVg/seal-office",
+  "verified": true,
+  "sourceRelease": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11",
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 873,
+      "sha256": "698f67c2c03723f61244b10d66e5f5782b6d2d64c3ba23ef19d12cf8cf5e0a80",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SHA256SUMS.txt"
+    },
+    {
+      "name": "SealOffice1.9.11-DocumentConverter.zip",
+      "size": 9836,
+      "sha256": "d8257c44263298772294ba25578024638f7c814c78e201895cc3c0df794ba7dd",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11-DocumentConverter.zip"
+    },
+    {
+      "name": "SealOffice1.9.11-ReleaseNotes.md",
+      "size": 12587,
+      "sha256": "c4d9d5d8598c914d06d86466622f9e2623bce04b330bb58a0f7e749a1f83b488",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11-ReleaseNotes.md"
+    },
+    {
+      "name": "SealOffice1.9.11-Source.zip",
+      "size": 62367365,
+      "sha256": "f02aa57fce3152da8ec3c04cdd900cd71e41db9bea9a23003e2ebac00be26e41",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip"
+    },
+    {
+      "name": "SealOffice1.9.11-UbuntuVerification.zip",
+      "size": 140392,
+      "sha256": "0242c80a5565a2bbf9f1c061dfb95148eda231e262d62ba1a80d75a14cf8760e",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11-UbuntuVerification.zip"
+    },
+    {
+      "name": "SealOffice1.9.11.exe",
+      "size": 385763330,
+      "sha256": "f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11.exe"
+    },
+    {
+      "name": "SealOffice1.9.11.msix",
+      "size": 723483861,
+      "sha256": "fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOffice1.9.11.msix"
+    },
+    {
+      "name": "SealOfficeAndroid1.9.11.apk",
+      "size": 55811558,
+      "sha256": "a87830bb938fe2c86c889a759e6c247045e811a8ae7e16dea66f0a93c4d14936",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk"
+    },
+    {
+      "name": "SealOfficeSetup1.9.11.exe",
+      "size": 385988252,
+      "sha256": "60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOfficeSetup1.9.11.exe"
+    },
+    {
+      "name": "SealOfficeUbuntu1.9.11-amd64.deb",
+      "size": 144783312,
+      "sha256": "4cba6194106825c23e34397d89e715320f73a07693848c56014c46195052193c",
+      "anonymousDownloadVerified": true,
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v1.9.11/SealOfficeUbuntu1.9.11-amd64.deb"
+    }
+  ]
+}

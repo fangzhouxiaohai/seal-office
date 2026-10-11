@@ -22,7 +22,7 @@ oras pull ghcr.io/fangzhouxiaohai/seal-office-linux:1.9.11
 
 请分别下载到不同目录，每个包都包含自己的 README.md、installer-metadata.json 和 SHA256SUMS.txt。Linux 可用 `sha256sum --check SHA256SUMS.txt` 验证；Windows 可用 `Get-FileHash 文件名 -Algorithm SHA256` 对照。
 
-GHCR 包首次发布默认私有；公开后支持匿名提取。若提示无权限，包的管理员需要在 Package 页面进入 **Package settings → Change visibility → Public**。发布流程的报告记录实际可见性，以报告和 GitHub 当前设置为准。
+本次三个包的实际可见性均为 **public**，已核对匿名访问、版本清单摘要和各文件的大小。发布流程的报告记录实际可见性；后续新增包若为私有，管理员可在 Package 页面进入 **Package settings → Change visibility → Public**。
 
 ## 发布与校验流程
 
@@ -31,3 +31,13 @@ GHCR 包首次发布默认私有；公开后支持匿名提取。若提示无权
 上传后的制品会按摘要重新下载，每个文件都重新校验。通过后才移动 `latest` 标签，并核实 Package 已关联当前仓库、版本标签正确。已经存在的版本若内容不同，流程拒绝覆盖。每个平台的 `published-package.json` 作为 Actions 验证附件保存。
 
 后续发布先完成三端安装文件验收、上传 Releases，再更新配置中的版本、文件名、大小和 SHA-256。日常 `pack` / `dist` 继续只打包 Android；Packages 流程分发已经存在的成品，不重新构建应用。
+
+## GitCode 成品同步
+
+两个仓库的源码分别推送至 `github` 与 `origin`。成品先在 GitHub Releases 发布并完成校验，再使用 [publish-gitcode-release.py](../scripts/publish-gitcode-release.py) 发布同一批文件到 GitCode：
+
+```sh
+python scripts/publish-gitcode-release.py 1.9.11
+```
+
+脚本需要 Python 和 `requests`，通过当前 Git 凭据助手使用已有的 GitCode 登录；令牌仅在进程内使用。执行前校验本地全部文件与 GitHub Release 的大小、SHA-256，并确认 GitCode 已有相同发布标签。已上传附件不会直接覆盖，而是重新下载核对；新附件通过 GitCode 返回的上传地址传输，完成后逐个匿名下载验证。报告保存在 `release/v1.9.11/gitcode-published-release.json`。
