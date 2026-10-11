@@ -105,4 +105,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           (cd release/ubuntu/reports && zip -r "../$RELEASE_REPORT" .)
-          gh release upload "$RELEASE_TAG" release/ubuntu/*.deb "release/ubuntu/$RELEASE_REPORT" --repo "$GITHUB_REPOSITORY"
+          # Only these two Ubuntu assets are refreshed, after both systems pass.
+          gh release upload "$RELEASE_TAG" release/ubuntu/*.deb "release/ubuntu/$RELEASE_REPORT" --repo "$GITHUB_REPOSITORY" --clobber

@@ -31,7 +31,7 @@ it('开关打开但系统未全部放行时先确认再自动设置', async () =
   expect(await screen.findByText('是否把海豹办公设为默认程序？')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: '立即设为默认' }))
   await waitFor(() => expect(应用).toHaveBeenCalledOnce())
-  expect((await screen.findAllByText('Windows 仍要求手动确认')).length).toBeGreaterThan(0)
+  expect((await screen.findAllByText('部分格式仍需手动确认')).length).toBeGreaterThan(0)
   expect(screen.getByText(/需要确认：\.pdf/)).toBeInTheDocument()
 })
 
@@ -64,7 +64,7 @@ it('自动设置后系统仍拦下时说明剩余格式并可打开系统页面'
   const 兜底 = vi.spyOn(桥接, 'setDefaultApp').mockResolvedValue({ 成功: true, 已全部默认: false, 未生效: ['pdf'] })
   渲染(<DefaultAppPrompt />)
   await userEvent.click(await screen.findByRole('button', { name: '立即设为默认' }))
-  expect((await screen.findAllByText('Windows 仍要求手动确认')).length).toBeGreaterThan(0)
+  expect((await screen.findAllByText('部分格式仍需手动确认')).length).toBeGreaterThan(0)
   expect(screen.getByText(/需要确认：\.pdf/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: '打开系统页面' }))
   await waitFor(() => expect(兜底).toHaveBeenCalledOnce())
