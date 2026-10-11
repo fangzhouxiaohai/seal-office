@@ -158,7 +158,8 @@ async function publish(ctx, localOnly) {
   if (existing.status === 0) {
     assert.equal(existing.stdout.trim(), digest, 'Existing version differs; refusing to replace a published version');
   } else {
-    oras(ctx, ['cp', ...registryArgs, '--from-oci-layout', localRef, ctx.ref]);
+    const copyRegistryArgs = process.env.ORAS_REGISTRY_CONFIG ? ['--to-registry-config', process.env.ORAS_REGISTRY_CONFIG] : [];
+    oras(ctx, ['cp', ...copyRegistryArgs, '--from-oci-layout', localRef, ctx.ref]);
   }
   assert.equal(oras(ctx, ['resolve', ...registryArgs, ctx.ref]).stdout.trim(), digest);
   oras(ctx, ['pull', ...registryArgs, `${ctx.ref.split(':')[0]}@${digest}`, '-o', pullDirectory]);
