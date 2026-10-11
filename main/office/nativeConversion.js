@@ -5,7 +5,7 @@ const { pathToFileURL } = require('url')
 const { execFile } = require('child_process')
 const { app } = require('electron')
 const 格式列表 = require('../documentFormats.json')
-const { 定位兼容引擎 } = require('./nativeRuntime')
+const { 定位兼容引擎, 选择兼容过滤器 } = require('./nativeRuntime')
 
 function 获取转换程序() {
   return 定位兼容引擎({ 根目录: app.isPackaged ? process.resourcesPath : path.join(__dirname, '../../.upgrade-private') })
@@ -29,7 +29,7 @@ async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
     // 独立配置拒绝运行文档宏，也不继承本机办公软件的信任目录。
     await fs.promises.writeFile(path.join(配置, 'user/registrymodifications.xcu'), '<?xml version="1.0"?><oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item></oor:items>')
     await fs.promises.writeFile(输入, 字节)
-    const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to', `${输出扩展}:${过滤器}`, '--outdir', 输出目录, 输入]
+    const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to', `${输出扩展}:${选择兼容过滤器(过滤器)}`, '--outdir', 输出目录, 输入]
     await new Promise((完成, 拒绝) => {
       let 超时 = false
       const 进程 = execFile(程序, 参数, { windowsHide: true, detached: process.platform !== 'win32', maxBuffer: 1024 * 1024, encoding: 'utf8' }, 错误 => {

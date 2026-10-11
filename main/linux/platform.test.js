@@ -2,6 +2,12 @@ const { 提取关联路径, 创建关联文件入口 } = require('../fileAssocia
 const { 创建Linux默认程序服务, 桌面文件 } = require('./defaultApps')
 const { MIME类型 } = require('./mimeTypes')
 describe('Ubuntu 文件打开与关联', () => {
+  it('Ubuntu LTS 转换过滤器兼容旧引擎，Windows 保留现有过滤器', () => {
+    const { 选择兼容过滤器 } = require('../office/nativeRuntime')
+    expect(选择兼容过滤器('Calc Office Open XML Template', 'linux')).toBe('Calc MS Excel 2007 XML Template')
+    expect(选择兼容过滤器('Calc Office Open XML Template', 'win32')).toBe('Calc Office Open XML Template')
+    expect(选择兼容过滤器('writer8', 'linux')).toBe('writer8')
+  })
   it('保留中文、空格和大小写不同的 Linux 文档，忽略参数、相对路径及 WPS 文件', async () => {
     const 文件 = ['/home/a/中文 文件.csv', '/home/a/REPORT.docx', '/home/a/report.docx']
     expect(提取关联路径([...文件, '--no-sandbox', 'relative.xls', '/home/a/a.wps'], 'linux')).toEqual(文件)

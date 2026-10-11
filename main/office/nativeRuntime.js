@@ -14,4 +14,14 @@ function 定位兼容引擎({ 平台 = process.platform, 根目录 }) {
   }
   throw new Error('当前桌面系统尚未配置文档兼容引擎')
 }
-module.exports = { 定位兼容引擎 }
+// Ubuntu LTS keeps older LibreOffice releases. These export filter names remain
+// available there, whereas the newer OOXML template filters arrived later.
+function 选择兼容过滤器(过滤器, 平台 = process.platform) {
+  if (平台 !== 'linux') return 过滤器
+  return {
+    'Calc Office Open XML Template': 'Calc MS Excel 2007 XML Template',
+    'Impress Office Open XML Template': 'Impress MS PowerPoint 2007 XML Template',
+    'Impress Office Open XML AutoPlay': 'Impress MS PowerPoint 2007 XML AutoPlay',
+  }[过滤器] || 过滤器
+}
+module.exports = { 定位兼容引擎, 选择兼容过滤器 }

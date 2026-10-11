@@ -2,6 +2,7 @@
 const fs = require('fs'), path = require('path'), os = require('os'), assert = require('assert/strict')
 const { spawn, execFileSync } = require('child_process')
 const { once } = require('events')
+const { createHash } = require('crypto')
 const root = path.resolve(__dirname, '..'), output = path.join(root, 'release/ubuntu/verification')
 fs.mkdirSync(output, { recursive: true })
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-ubuntu-verify-'))
@@ -28,6 +29,10 @@ async function connect(port, choose) {
     if (data.error || data.result?.exceptionDetails) job.reject(new Error(data.error?.message || data.result.exceptionDetails.exception?.description || 'Evaluation failed'))
     else job.resolve(data.result)
   })
+  ws.addEventListener('close', () => {
+    for (const job of pending.values()) { clearTimeout(job.timer); job.reject(new Error('Application debug connection closed')) }
+    pending.clear()
+  })
   const call = (method, params, timeout = 120000) => new Promise((resolve, reject) => {
     const id = ++next, timer = setTimeout(() => { pending.delete(id); reject(new Error('Verification timeout: ' + method)) }, timeout)
     pending.set(id, { resolve, reject, timer }); ws.send(JSON.stringify({ id, method, params }))
@@ -40,6 +45,10 @@ const models = {
   ppt: { 页面尺寸: { 宽: 960, 高: 540 }, 幻灯片: [{ id: 'p1', 背景色: '#FFFFFF', 文本框: [{ id: 't1', x: 40, y: 50, width: 700, height: 90, text: '中文格式验收 0012', 字号: 24, 颜色: '#222222' }] }] },
 }
 async function verify() {
+  const packageFile = path.join(root, 'release/ubuntu', `SealOfficeUbuntu${version}-amd64.deb`)
+  report.packageFile = path.basename(packageFile)
+  report.packageBytes = fs.statSync(packageFile).size
+  report.packageSha256 = createHash('sha256').update(fs.readFileSync(packageFile)).digest('hex')
   report.package = execFileSync('dpkg-query', ['-W', '-f=${Version} ${Architecture}', 'seal-office'], { encoding: 'utf8' })
   check(report.package === version + ' amd64', 'Deb package version and architecture')
   const desktop = fs.readFileSync('/usr/share/applications/sealoffice.desktop', 'utf8')
@@ -80,9 +89,13 @@ async function verify() {
   }
   const formats = require('../main/documentFormats.json').filter(item => item.conversion && ['word', 'table', 'ppt'].includes(item.type) && !item.readOnlySource && !['xml', 'mht', 'mhtml'].includes(item.extension))
   for (const format of formats) {
+    try {
     const model = models[format.type]
-    const result = await main.evaluate(`(async()=>{const p=process.mainModule.require('path'),e=process.mainModule.require('electron');const m=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/compatibleFormats'));const bytes=await m.写入兼容文档(${JSON.stringify(format.type)},${JSON.stringify(format.extension)},${JSON.stringify(model)});const read=await m.读取兼容文档(${JSON.stringify(format.extension)},bytes);return {bytes:bytes.length,type:read.类型,html:read.html,slides:read.演示文稿}})()`)
+    const destination = path.join(temp, 'roundtrip.' + format.extension)
+    const result = await main.evaluate(`(async()=>{const p=process.mainModule.require('path'),e=process.mainModule.require('electron'),f=process.mainModule.require('fs'),c=process.mainModule.require('child_process');const m=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/compatibleFormats'));const bytes=await m.写入兼容文档(${JSON.stringify(format.type)},${JSON.stringify(format.extension)},${JSON.stringify(model)});const read=await m.读取兼容文档(${JSON.stringify(format.extension)},bytes);f.writeFileSync(${JSON.stringify(destination)},bytes);const mime=c.execFileSync('xdg-mime',['query','filetype',${JSON.stringify(destination)}],{encoding:'utf8',timeout:15000}).trim();const defaultApp=c.execFileSync('xdg-mime',['query','default',mime],{encoding:'utf8',timeout:15000}).trim();return {bytes:bytes.length,type:read.类型,html:read.html,slides:read.演示文稿,mime,defaultApp}})()`)
     check(result.bytes > 0 && result.type === format.type && JSON.stringify(result).includes('0012'), format.extension + ' native offline save and reopen, including leading zeros')
+    check(result.defaultApp === 'sealoffice.desktop', format.extension + ' actual file MIME default: ' + result.mime)
+    } catch (error) { report.failures.push({ extension: format.extension, error: error.message }); console.error('FAIL ' + format.extension + ': ' + error.message) }
   }
   for (const extension of ['xlsb', 'xla']) {
     const data = fs.readFileSync(path.join(root, 'scripts/fixtures/documents/readonly.' + extension)).toString('base64')
@@ -95,7 +108,10 @@ async function verify() {
   await page.evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='首页'||b.getAttribute('aria-label')==='返回首页')?.click()")
   await main.evaluate(`(async()=>{const e=process.mainModule.require('electron'),f=process.mainModule.require('fs');const image=await e.BrowserWindow.getAllWindows()[0].webContents.capturePage();f.writeFileSync(${JSON.stringify(path.join(output, 'ubuntu-application.png'))},image.toPNG());return !image.isEmpty()})()`)
   check(fs.statSync(path.join(output, 'ubuntu-application.png')).size > 10000, 'Installed application screenshot captured')
-  await main.evaluate("process.mainModule.require('electron').app.exit(0)").catch(() => {})
+  await main.evaluate("setTimeout(()=>process.mainModule.require('electron').app.exit(0),250);true")
+  if (child.exitCode === null) await once(child, 'exit')
+  check(child.exitCode === 0, 'Installed application exits normally')
+  if (report.failures.length) throw new Error('Document compatibility verification failures: ' + report.failures.length)
 }
 verify().catch(error => { report.failures.push(error.stack); console.error(error.stack); process.exitCode = 1 }).finally(() => {
   for (const socket of sockets) socket.close()
