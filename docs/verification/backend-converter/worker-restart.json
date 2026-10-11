@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "checks": [
+    "Worker restart restores persisted enabled state and concurrency",
+    "Existing phone access token remains valid after restart",
+    "Real DOC roundtrip still passes after restart"
+  ]
+}

@@ -1,0 +1,36 @@
+[Unit]
+Description=Seal Office Managed Document Converter
+Requires=seal-office-converter-proc.service
+After=network.target seal-office-converter-proc.service
+
+[Service]
+Type=simple
+User=seal-converter
+Group=seal-converter
+RootDirectory=/opt/seal-office-converter/runtime
+WorkingDirectory=/app
+EnvironmentFile=/etc/seal-cloud/converter.env
+Environment=HOME=/tmp
+Environment=PATH=/usr/local/node/bin:/usr/bin:/bin
+Environment=SEAL_OFFICE_EXECUTABLE=/usr/bin/soffice
+ExecStart=/usr/local/node/bin/node /app/server/converter/managed.cjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+CapabilityBoundingSet=
+MemoryLimit=2G
+CPUShares=512
+LimitNOFILE=1024
+LimitNPROC=256
+TimeoutStopSec=100
+KillMode=mixed
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

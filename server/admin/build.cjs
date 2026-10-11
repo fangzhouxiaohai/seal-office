@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process')
 const here=__dirname,commit='72bfab22cee7f80f4e9a6feaf53a45ca492b9e36',checkout=path.join(here,'upstream'),ui=path.join(checkout,'aizuda-panshi-ui')
 if(!fs.existsSync(path.join(ui,'package.json'))){execFileSync('git',['clone','https://gitee.com/aizuda/panshi.git',checkout],{stdio:'inherit'});execFileSync('git',['checkout',commit],{cwd:checkout,stdio:'inherit'})}
-for(const file of ['main.ts','App.vue'])fs.copyFileSync(path.join(here,'overlay',file),path.join(ui,'src',file))
+for(const file of ['main.ts','App.vue','ConverterPanel.vue'])fs.copyFileSync(path.join(here,'overlay',file),path.join(ui,'src',file))
 fs.copyFileSync(path.join(here,'overlay','vite.config.ts'),path.join(ui,'vite.config.ts'))
 fs.mkdirSync(path.join(ui,'public'),{recursive:true})
 fs.copyFileSync(path.join(here,'../../build/icon.png'),path.join(ui,'public/seal-logo.png'))

@@ -33,7 +33,10 @@ test('默认关闭、协议必需、账号隔离、实际占用硬限制及管�
   assert.equal((await f.request('/v1/uploads',{nodeId:id,expected:0,bytes:2048},a.token)).status,413)
   assert.equal((await f.request('/v1/admin/overview',null,a.token)).status,401)
   const admin=await f.request('/v1/admin/login',{username:'admin',password:'admin-secret'});assert.equal(admin.status,200)
-  assert.equal((await f.request('/v1/admin/overview',null,admin.body.token)).body.users.length,2)
+  const overview=(await f.request('/v1/admin/overview',null,admin.body.token)).body
+  assert.equal(overview.users.length,2)
+  assert.deepEqual(overview.users.map(u=>u.phone).sort(),['138****0001','138****0002'])
+  assert.ok(!JSON.stringify(overview).includes('13800000001'));assert.ok(!JSON.stringify(overview).includes('13800000002'))
 })
 test('真实客户端加密、恢复密钥、下载解密、重命名、公开撤回与清空停用',async t=>{
   const f=await fixture(t),safeStorage={isEncryptionAvailable:()=>true,encryptString:s=>seal(Buffer.alloc(32,1),Buffer.from(s),'test-safe'),decryptString:b=>unseal(Buffer.alloc(32,1),b,'test-safe').toString()}

@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "file": "server/index.cjs",
+      "sha256": "8d078ee87ad8aab842906b92ef606cdc8e909f9f5f15e3ed356c9a61b6737cb2"
+    },
+    {
+      "file": "server/converterAdmin.cjs",
+      "sha256": "6bea8b5f741c9e8ae10ad6cd21ceb4bba6bd2635a4fe2ee9411c51ec1380ffa8"
+    },
+    {
+      "file": "server/converter/managed.cjs",
+      "sha256": "5df775c7d8df1aef65a7cbde59e3249420b9e0cd791c82a6a588390dc18490ca"
+    },
+    {
+      "file": "server/converter/index.cjs",
+      "sha256": "e1873666332f52d3fab368302f8fb879d14dfc3058305c5e8291bda0593c88a1"
+    },
+    {
+      "file": "main/documentFormats.json",
+      "sha256": "77b0598b36a1c4f9f68cc73af2cf76524daafc8b17eb75cd44122e80febfaab6"
+    },
+    {
+      "file": "server/deploy/nginx-https.conf",
+      "sha256": "053d3db222f9b206b4e0bf54624a73bfc8eff328c584d849f11edeeebc62e44f"
+    },
+    {
+      "file": "server/admin/dist/index.html",
+      "sha256": "46f626ca594dc6dcb857dcc6d3a55cf6a51060089b4cac35bb5fa17509171fbe"
+    }
+  ],
+  "converterEnvironmentMode": "0600",
+  "persistentConfigMode": "0600"
+}

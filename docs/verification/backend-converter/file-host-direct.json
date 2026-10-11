@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "file:// production page authenticates directly through HTTPS and CORS",
+    "DOC direct read retains Chinese and 0012",
+    "RTF direct read retains Chinese and 0012",
+    "PPT direct read retains Chinese and 0012",
+    "ODP direct read retains Chinese and 0012",
+    "RTF direct save and reopen retains Chinese and 0012"
+  ]
+}

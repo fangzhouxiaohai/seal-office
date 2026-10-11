@@ -1,0 +1,12 @@
+[Unit]
+Description=Proc filesystem for Seal Office Converter
+Before=seal-office-converter.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/mount -t proc -o nosuid,nodev,noexec proc /opt/seal-office-converter/runtime/proc
+ExecStop=/bin/umount /opt/seal-office-converter/runtime/proc
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,27 @@
+const {app,BrowserWindow}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict')
+const root=path.resolve(__dirname,'../..'),privateDir=path.join(root,'.upgrade-private/file-converter-verification')
+const configPath=process.argv.find(value=>value.startsWith('--remote-config='))?.slice(16)
+if(!configPath)throw new Error('Usage: electron mobile/tests/converter-file-host.cjs --remote-config=LOCAL_PRIVATE_JSON')
+const config=JSON.parse(fs.readFileSync(path.resolve(root,configPath),'utf8'))
+fs.mkdirSync(privateDir,{recursive:true})
+app.setPath('userData',path.join(privateDir,'file-converter-profile'));app.disableHardwareAcceleration()
+app.whenReady().then(async()=>{let win;const checks=[];try{
+  win=new BrowserWindow({show:false,width:412,height:915,webPreferences:{offscreen:true,contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:false}})
+  const evaluate=source=>win.webContents.executeJavaScript(`(async()=>{try{return {value:await (0,eval)(${JSON.stringify(source)})}}catch(e){return {error:e.message}}})()`).then(r=>{if(r.error)throw new Error(r.error);return r.value})
+  await win.loadFile(path.join(root,'mobile/static/office/index.html'))
+  for(let i=0;i<100&&!await evaluate('!!document.querySelector(".wps-app")');i++)await new Promise(r=>setTimeout(r,150))
+  assert.ok(await evaluate('!!document.querySelector(".wps-app")'))
+  await evaluate(`window.sealDocumentConversion.save(${JSON.stringify(config)})`)
+  assert.ok((await evaluate(`window.sealDocumentConversion.test({url:${JSON.stringify(config.url)}})`)).inputCount>40);checks.push('file:// production page authenticates directly through HTTPS and CORS')
+  await evaluate(`window.timer=setInterval(()=>{for(const modal of document.querySelectorAll('.ant-modal-confirm'))modal.querySelectorAll('.ant-modal-confirm-btns button')[1]?.click()},50);true`)
+  for(const extension of ['doc','rtf','ppt','odp']){
+    const bytes=fs.readFileSync(path.join(root,'.upgrade-private/format-samples/verify.'+extension))
+    const result=await evaluate(`window.electronAPI.office.readCompatible(${JSON.stringify(extension)},${JSON.stringify(bytes.toString('base64'))})`)
+    assert.ok(result.成功,result.错误);assert.match(JSON.stringify(result),/0012/);assert.match(JSON.stringify(result),/中文/);checks.push(extension.toUpperCase()+' direct read retains Chinese and 0012')
+  }
+  const model={段落:[{类型:'段落',文字:[{文本:'中文手机保存验收 0012'}]}]}
+  const saved=await evaluate(`window.electronAPI.office.writeCompatible('word','rtf',${JSON.stringify(model)})`);assert.ok(saved.成功,saved.错误)
+  const reopened=await evaluate(`window.electronAPI.office.readCompatible('rtf',${JSON.stringify(saved.数据)})`);assert.ok(reopened.成功);assert.match(reopened.html.replace(/<[^>]+>/g,''),/中文手机保存验收 0012/);checks.push('RTF direct save and reopen retains Chinese and 0012')
+  await evaluate('clearInterval(window.timer);window.sealDocumentConversion.clear()')
+  fs.writeFileSync(path.join(privateDir,'report.json'),JSON.stringify({passed:true,checks},null,2));console.log('PASS '+checks.length+' file-host direct checks');win.destroy();app.exit(0)
+}catch(e){console.error(e.message);win?.destroy();app.exit(1)}})

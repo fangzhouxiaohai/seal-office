@@ -1,0 +1,661 @@
+{
+  "version": "1.9.11",
+  "startedAt": "2026-10-11T06:29:09.339Z",
+  "checks": [
+    {
+      "operation": "service-config",
+      "status": "passed",
+      "behavior": "加密令牌不回显、鉴权测试、换地址不复用令牌、取消不上传"
+    },
+    {
+      "extension": "doc",
+      "operation": "read",
+      "milliseconds": 2713,
+      "warnings": []
+    },
+    {
+      "extension": "dot",
+      "operation": "read",
+      "milliseconds": 3264,
+      "warnings": []
+    },
+    {
+      "extension": "dotx",
+      "operation": "read",
+      "milliseconds": 225,
+      "warnings": []
+    },
+    {
+      "extension": "docm",
+      "operation": "read",
+      "milliseconds": 312,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "dotm",
+      "operation": "read",
+      "milliseconds": 296,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "rtf",
+      "operation": "read",
+      "milliseconds": 2557,
+      "warnings": []
+    },
+    {
+      "extension": "odt",
+      "operation": "read",
+      "milliseconds": 3437,
+      "warnings": []
+    },
+    {
+      "extension": "ott",
+      "operation": "read",
+      "milliseconds": 3480,
+      "warnings": []
+    },
+    {
+      "extension": "fodt",
+      "operation": "read",
+      "milliseconds": 3006,
+      "warnings": []
+    },
+    {
+      "extension": "xls",
+      "operation": "read",
+      "milliseconds": 195,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xlt",
+      "operation": "read",
+      "milliseconds": 183,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "xltx",
+      "operation": "read",
+      "milliseconds": 323,
+      "warnings": [
+        "自定义页边距未导入",
+        "部分字体样式未导入",
+        "部分水平对齐样式未导入",
+        "部分对齐样式未导入"
+      ]
+    },
+    {
+      "extension": "xlsm",
+      "operation": "read",
+      "milliseconds": 347,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xltm",
+      "operation": "read",
+      "milliseconds": 352,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlsb",
+      "operation": "read",
+      "milliseconds": 188,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xla",
+      "operation": "read",
+      "milliseconds": 178,
+      "warnings": [
+        "自定义页边距未导入",
+        "纸张方向未导入",
+        "部分数字格式未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本",
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "xlam",
+      "operation": "read",
+      "milliseconds": 345,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "ods",
+      "operation": "read",
+      "milliseconds": 201,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "ots",
+      "operation": "read",
+      "milliseconds": 203,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "fods",
+      "operation": "read",
+      "milliseconds": 188,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "dbf",
+      "operation": "read",
+      "milliseconds": 177,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "prn",
+      "operation": "read",
+      "milliseconds": 193,
+      "warnings": [
+        "PRN 按连续空格或制表符分列；无分隔的固定字段需核对边界。请另存为副本以保留来源文件"
+      ]
+    },
+    {
+      "extension": "dif",
+      "operation": "read",
+      "milliseconds": 175,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "slk",
+      "operation": "read",
+      "milliseconds": 182,
+      "warnings": [
+        "纸张方向未导入",
+        "移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本"
+      ]
+    },
+    {
+      "extension": "ppt",
+      "operation": "read",
+      "milliseconds": 3919,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pot",
+      "operation": "read",
+      "milliseconds": 3518,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "potx",
+      "operation": "read",
+      "milliseconds": 653,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "pptm",
+      "operation": "read",
+      "milliseconds": 737,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "potm",
+      "operation": "read",
+      "milliseconds": 730,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "pps",
+      "operation": "read",
+      "milliseconds": 3662,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "ppsx",
+      "operation": "read",
+      "milliseconds": 647,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "ppsm",
+      "operation": "read",
+      "milliseconds": 719,
+      "warnings": [
+        "宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式"
+      ]
+    },
+    {
+      "extension": "odp",
+      "operation": "read",
+      "milliseconds": 3572,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "otp",
+      "operation": "read",
+      "milliseconds": 3456,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "fodp",
+      "operation": "read",
+      "milliseconds": 7419,
+      "warnings": [
+        "文本框外观未完整导入",
+        "段落格式未完整导入",
+        "备注样式未完整导入",
+        "全局放映设置未完整导入"
+      ]
+    },
+    {
+      "extension": "xml",
+      "fixture": "word2003.xml",
+      "operation": "read"
+    },
+    {
+      "extension": "xml",
+      "fixture": "excel2003.xml",
+      "operation": "read"
+    },
+    {
+      "extension": "doc",
+      "operation": "write-read",
+      "milliseconds": 10780
+    },
+    {
+      "extension": "dot",
+      "operation": "write-read",
+      "milliseconds": 6495
+    },
+    {
+      "extension": "dotx",
+      "operation": "write-read",
+      "milliseconds": 726
+    },
+    {
+      "extension": "rtf",
+      "operation": "write-read",
+      "milliseconds": 6179
+    },
+    {
+      "extension": "odt",
+      "operation": "write-read",
+      "milliseconds": 6568
+    },
+    {
+      "extension": "ott",
+      "operation": "write-read",
+      "milliseconds": 6729
+    },
+    {
+      "extension": "fodt",
+      "operation": "write-read",
+      "milliseconds": 6443
+    },
+    {
+      "extension": "xls",
+      "operation": "write-read",
+      "milliseconds": 288
+    },
+    {
+      "extension": "xlt",
+      "operation": "write-read",
+      "milliseconds": 3275
+    },
+    {
+      "extension": "xltx",
+      "operation": "write-read",
+      "milliseconds": 484
+    },
+    {
+      "extension": "ods",
+      "operation": "write-read",
+      "milliseconds": 239
+    },
+    {
+      "extension": "ots",
+      "operation": "write-read",
+      "milliseconds": 3261
+    },
+    {
+      "extension": "fods",
+      "operation": "write-read",
+      "milliseconds": 343
+    },
+    {
+      "extension": "dbf",
+      "operation": "write-read",
+      "milliseconds": 369
+    },
+    {
+      "extension": "prn",
+      "operation": "write-read",
+      "milliseconds": 374
+    },
+    {
+      "extension": "dif",
+      "operation": "write-read",
+      "milliseconds": 427
+    },
+    {
+      "extension": "slk",
+      "operation": "write-read",
+      "milliseconds": 403
+    },
+    {
+      "extension": "ppt",
+      "operation": "write-read",
+      "milliseconds": 9652
+    },
+    {
+      "extension": "pot",
+      "operation": "write-read",
+      "milliseconds": 8537
+    },
+    {
+      "extension": "potx",
+      "operation": "write-read",
+      "milliseconds": 3366
+    },
+    {
+      "extension": "pps",
+      "operation": "write-read",
+      "milliseconds": 8965
+    },
+    {
+      "extension": "ppsx",
+      "operation": "write-read",
+      "milliseconds": 3550
+    },
+    {
+      "extension": "odp",
+      "operation": "write-read",
+      "milliseconds": 9555
+    },
+    {
+      "extension": "otp",
+      "operation": "write-read",
+      "milliseconds": 9307
+    },
+    {
+      "extension": "fodp",
+      "operation": "write-read",
+      "milliseconds": 8643
+    },
+    {
+      "operation": "settings-ui",
+      "status": "passed"
+    }
+  ],
+  "failures": [],
+  "requests": [
+    {
+      "input": "doc",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "dot",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "rtf",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "odt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "ott",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "fodt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "ppt",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pot",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pps",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "odp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "otp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "fodp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "xml",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "doc",
+      "type": "word"
+    },
+    {
+      "input": "doc",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "dot",
+      "type": "word"
+    },
+    {
+      "input": "dot",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "rtf",
+      "type": "word"
+    },
+    {
+      "input": "rtf",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "odt",
+      "type": "word"
+    },
+    {
+      "input": "odt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "ott",
+      "type": "word"
+    },
+    {
+      "input": "ott",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "docx",
+      "output": "fodt",
+      "type": "word"
+    },
+    {
+      "input": "fodt",
+      "output": "docx",
+      "type": "word"
+    },
+    {
+      "input": "xlsx",
+      "output": "xlt",
+      "type": "table"
+    },
+    {
+      "input": "xlsx",
+      "output": "ots",
+      "type": "table"
+    },
+    {
+      "input": "pptx",
+      "output": "ppt",
+      "type": "ppt"
+    },
+    {
+      "input": "ppt",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pptx",
+      "output": "pot",
+      "type": "ppt"
+    },
+    {
+      "input": "pot",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pptx",
+      "output": "pps",
+      "type": "ppt"
+    },
+    {
+      "input": "pps",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pptx",
+      "output": "odp",
+      "type": "ppt"
+    },
+    {
+      "input": "odp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pptx",
+      "output": "otp",
+      "type": "ppt"
+    },
+    {
+      "input": "otp",
+      "output": "pptx",
+      "type": "ppt"
+    },
+    {
+      "input": "pptx",
+      "output": "fodp",
+      "type": "ppt"
+    },
+    {
+      "input": "fodp",
+      "output": "pptx",
+      "type": "ppt"
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-10-11T06:32:08.134Z"
+}

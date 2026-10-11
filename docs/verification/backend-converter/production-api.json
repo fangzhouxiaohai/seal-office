@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "testedAt": "2026-10-11T14:27:40+0800",
+  "endpoint": "https://seal.xingmasoft.com/api/office-converter",
+  "engine": {
+    "ready": true,
+    "version": "LibreOffice 7.4.7.2 40(Build:2)",
+    "checkedAt": 1791700027081
+  },
+  "checks": [
+    "Existing admin credentials preserved",
+    "Production admin API returns only masked phone numbers",
+    "Managed worker connected and engine ready",
+    "First client token issued through authenticated admin",
+    "Configuration applied and service enabled",
+    "Public internal management routes blocked",
+    "Anonymous converter rejected",
+    "Admin session does not grant client conversion access",
+    "Client token does not grant admin access",
+    "HTTPS capabilities and file-host CORS",
+    "H5 preflight permitted",
+    "Real engine DOC roundtrip with Chinese and 0012",
+    "No plain client token in admin state"
+  ],
+  "realTest": {
+    "passed": true,
+    "finishedAt": 1791700057928,
+    "milliseconds": 4797,
+    "checks": [
+      "真实 DOC 二进制输出",
+      "DOC 重开为 DOCX",
+      "中文和前导零保留"
+    ]
+  },
+  "config": {
+    "enabled": true,
+    "concurrency": 1,
+    "tokenConfigured": true,
+    "updatedAt": 1791700051602,
+    "endpoint": "https://seal.xingmasoft.com/api/office-converter",
+    "maximumBytes": 20971520,
+    "timeoutSeconds": 90
+  }
+}

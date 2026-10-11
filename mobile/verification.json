@@ -209,7 +209,21 @@
       "status": "passed",
       "tests": 3,
       "realServiceIntegration": "local authenticated service tested",
-      "publicDeployment": "pending"
+      "publicDeployment": "passed",
+      "productionEndpoint": "https://seal.xingmasoft.com/api/office-converter",
+      "productionIntegration": {
+        "status": "passed",
+        "browserFlows": 64,
+        "reads": 37,
+        "saveAndReopen": 25,
+        "realHttpsConversions": 39,
+        "report": "../docs/verification/backend-converter/mobile-production.json"
+      },
+      "fileHostDirect": {
+        "status": "passed",
+        "checks": 6,
+        "report": "../docs/verification/backend-converter/file-host-direct.json"
+      }
     }
   },
   "functionalSmoke": [
@@ -233,7 +247,6 @@
     "360/390/820/1280px 窄屏、平板与 PC 布局"
   ],
   "pending": [
-    "Deploy converter service to user server and configure phone URL/token before using connected formats",
     "New Android cloud APK: launcher, system picker/share, keyboard, safe areas, back/lifecycle and format roundtrip regression",
     "Android 9–16 brand ROM devices beyond the existing Android 14 old-APK emulator baseline",
     "iOS/Harmony native compilation, signing and device validation",
@@ -245,6 +258,7 @@
     "web": "unpackage/web",
     "reports": "../docs/verification/v1.9.11",
     "conversionDeployment": "../server/converter/README.md",
-    "localPreview": "http://127.0.0.1:5194/"
+    "localPreview": "http://127.0.0.1:5194/",
+    "productionConversionDeployment": "../docs/后台文档转换部署与验收.md"
   }
 }

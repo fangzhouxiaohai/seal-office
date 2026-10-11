@@ -4,7 +4,9 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
 const { createConverterServer } = require('../../server/converter/index.cjs')
 const root = path.resolve(__dirname, '../..'), output = path.join(root, '.upgrade-private/mobile-format-verification')
 const formats = require('../../main/documentFormats.json')
-const token = 'synthetic_browser_test_' + 'z'.repeat(32)
+const remoteConfigPath = process.argv.find(value => value.startsWith('--remote-config='))?.slice(16)
+const remote = remoteConfigPath ? JSON.parse(fs.readFileSync(remoteConfigPath, 'utf8')) : null
+const token = remote?.token || 'synthetic_browser_test_' + 'z'.repeat(32)
 const readOnly = process.argv.includes('--read-only'), settingsOnly = process.argv.includes('--settings-only')
 const reportName = process.argv.find(value => value.startsWith('--report='))?.slice(9) || 'report.json'
 app.setPath('userData', path.join(output, 'profile-' + process.pid)); app.disableHardwareAcceleration()
@@ -17,15 +19,31 @@ app.whenReady().then(async () => {
     return require('../../server/converter/office.cjs').convertWithOffice(...args)
   } })
   await new Promise(resolve => converter.listen(0, '127.0.0.1', resolve))
-  const serviceUrl = 'http://127.0.0.1:' + converter.address().port
+  const serviceUrl = remote?.url || 'http://127.0.0.1:' + converter.address().port
+  let remoteQueue = Promise.resolve(), lastRemoteRequest = 0
   const webRoot = path.join(root, 'mobile/static/office'), mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.ttf': 'font/ttf' }
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
+    // The production H5 bridge maps project API URLs to its same-origin proxy.
+    if (remote && req.url.startsWith('/api/office-converter/')) {
+      try {
+        const chunks=[];for await(const chunk of req)chunks.push(chunk)
+        const body=Buffer.concat(chunks)
+        if(req.method==='POST'){
+          const input=JSON.parse(body.toString());report.requests.push({input:input.inputFormat,output:input.outputFormat,type:input.type})
+          const turn=remoteQueue.then(async()=>{await new Promise(r=>setTimeout(r,Math.max(0,3300-(Date.now()-lastRemoteRequest))));lastRemoteRequest=Date.now()});remoteQueue=turn.catch(()=>{});await turn
+        }
+        const response=await fetch(remote.url+req.url.slice('/api/office-converter'.length),{method:req.method,headers:{Authorization:req.headers.authorization||'','Content-Type':'application/json'},...(body.length?{body}:{})})
+        res.writeHead(response.status,{'Content-Type':response.headers.get('content-type')||'application/json'});res.end(Buffer.from(await response.arrayBuffer()))
+      }catch{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'生产转换代理请求失败'}))}
+      return
+    }
     const filename = path.resolve(webRoot, '.' + new URL(req.url, 'http://localhost').pathname.replace(/\/$/, '/index.html'))
     if (!filename.startsWith(webRoot + path.sep) || !fs.existsSync(filename)) { res.writeHead(404); res.end(); return }
     res.setHeader('Content-Type', mime[path.extname(filename)] || 'application/octet-stream'); fs.createReadStream(filename).pipe(res)
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   const win = new BrowserWindow({ show: false, width: 412, height: 915, webPreferences: { offscreen: true, backgroundThrottling: false, contextIsolation: true, sandbox: true, nodeIntegration: false } })
+  if (remote) win.webContents.session.webRequest.onBeforeRequest({urls:[serviceUrl+'/*']},(details,callback)=>{if(details.url.endsWith('/v1/convert')&&details.method==='POST')report.requests.push({operation:'remote-convert'});callback({})})
   win.webContents.session.on('will-download', (_, item) => item.cancel())
   const evaluate = async source => {
     const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await (0,eval)(${JSON.stringify(source)})}}catch(error){return {error:error.stack||String(error)}}})()`, true)
@@ -59,7 +77,7 @@ app.whenReady().then(async () => {
     report.checks.push({ operation: 'service-config', status: 'passed', behavior: '加密令牌不回显、鉴权测试、换地址不复用令牌、取消不上传' }); checkpoint()
     const selected = settingsOnly ? [] : formats.filter(f => f.conversion && !['xml', 'mht', 'mhtml'].includes(f.extension))
     let next = 0
-    await Promise.all([0,1].map(async () => {
+    await Promise.all((remote?[0]:[0,1]).map(async () => {
       while (next < selected.length) {
         const format = selected[next++], start = Date.now()
         try {
@@ -79,7 +97,7 @@ app.whenReady().then(async () => {
     }
     const writable = readOnly ? [] : selected.filter(f => !f.readOnlySource)
     next = 0
-    await Promise.all([0,1].map(async () => {
+    await Promise.all((remote?[0]:[0,1]).map(async () => {
       while (next < writable.length) {
         const format = writable[next++], start = Date.now()
         try {

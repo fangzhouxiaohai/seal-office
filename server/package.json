@@ -1,6 +1,6 @@
 {
   "name": "seal-office-cloud",
-  "version": "1.9.0",
+  "version": "1.9.11",
   "private": true,
   "engines": {
     "node": ">=20"

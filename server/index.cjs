@@ -5,6 +5,7 @@ const { randomUUID, randomBytes, randomInt, createHash, createHmac, timingSafeEq
 const { openStore } = require('./store.cjs')
 const { createSms } = require('./sms.cjs')
 const {validateIsolated:validatePublic}=require('./validateIsolated.cjs')
+const { createConverterAdmin } = require('./converterAdmin.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -12,6 +13,7 @@ const fail = (status, message) => { throw Object.assign(new Error(message), { st
 const uuid = value => typeof value === 'string' && /^[0-9a-f-]{36}$/.test(value)
 const safeEqual = (a, b) => typeof a === 'string' && typeof b === 'string' && a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
 const bytes = value => Buffer.byteLength(value || '')
+const maskPhone = value => String(value || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
 
 async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now } = {}) {
   const root = directory || env.SEAL_DATA_DIR || path.join(__dirname, 'data')
@@ -29,6 +31,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const adminHash = env.SEAL_ADMIN_PASSWORD_HASH || ''
   const codeHash = (phone, purpose, code) => createHmac('sha256', secret).update(`${phone}:${purpose}:${code}`).digest('hex')
   const audit = (user, action, detail = '') => db.run('INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)', [user, action, clock(), detail])
+  const converter = createConverterAdmin({ directory: root, env })
   const publicationMeta="LENGTH(CAST(COALESCE(text,'')||COALESCE(cover,'')||title||description||COALESCE(category,'')||COALESCE(name,'') AS BLOB))"
   const usage = user => Number(db.one('SELECT COALESCE(SUM(bytes),0) AS n FROM versions WHERE user_id=?', [user]).n) + Number(db.one(`SELECT COALESCE(SUM(bytes+${publicationMeta}),0) AS n FROM publications WHERE user_id=?`, [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) AS n FROM nodes WHERE user_id=?', [user]).n)
   const reservation = user => Number(db.one('SELECT COALESCE(SUM(total),0) AS n FROM uploads WHERE user_id=?', [user]).n)
@@ -102,7 +105,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         const token=/^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization||'')?.[1]
         if(!token||!adminSessions.has(hash(token))||adminSessions.get(hash(token))<clock())fail(401,'请先登录管理后台')
         if(route==='/v1/admin/logout'&&method==='POST'){adminSessions.delete(hash(token));return reply({loggedOut:true})}
-        if(route==='/v1/admin/overview'&&method==='GET')return reply({users:db.query('SELECT id,phone,enabled,autosave,created FROM users').map(u=>({...u,used:usage(u.id)})),publications:db.query('SELECT id,kind,title,description,cover,category,status,created FROM publications'),audit:db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200'),quota,smsConfigured:sender.configured,runtime:{diskFree:diskFree(),memory:process.memoryUsage().rss,uptime:process.uptime(),pendingUploads:db.one('SELECT COUNT(*) n FROM uploads').n},sms:{sign:env.SMS_SIGN_NAME||'',template:env.SMS_TEMPLATE_CODE||'',lastDay:db.one('SELECT COUNT(*) n FROM sends WHERE time>?',[clock()-86400000]).n}})
+        if(route==='/v1/admin/converter'&&method==='GET')return reply(await converter.status())
+        if(route==='/v1/admin/converter'&&method==='PATCH'){const result=await converter.update(await json());db.transaction(()=>audit('admin','converter-config',JSON.stringify({enabled:result.config.enabled,concurrency:result.config.concurrency})));return reply(result)}
+        if(route==='/v1/admin/converter/token'&&method==='POST'){const result=await converter.update({},true);db.transaction(()=>audit('admin','converter-token-reset',result.config.tokenFingerprint));return reply(result)}
+        if(route==='/v1/admin/converter/test'&&method==='POST'){const result=await converter.test();db.transaction(()=>audit('admin','converter-test',result.passed?'passed':'failed'));return reply(result)}
+        if(route==='/v1/admin/overview'&&method==='GET')return reply({users:db.query('SELECT id,phone,enabled,autosave,created FROM users').map(u=>({...u,phone:maskPhone(u.phone),used:usage(u.id)})),publications:db.query('SELECT id,kind,title,description,cover,category,status,created FROM publications'),audit:db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200'),quota,smsConfigured:sender.configured,runtime:{diskFree:diskFree(),memory:process.memoryUsage().rss,uptime:process.uptime(),pendingUploads:db.one('SELECT COUNT(*) n FROM uploads').n},sms:{sign:env.SMS_SIGN_NAME||'',template:env.SMS_TEMPLATE_CODE||'',lastDay:db.one('SELECT COUNT(*) n FROM sends WHERE time>?',[clock()-86400000]).n}})
         const review=/^\/v1\/admin\/publications\/([0-9a-f-]{36})(?:\/(download))?$/.exec(route)
         if(review?.[2]&&method==='GET'){const p=db.one("SELECT * FROM publications WHERE id=? AND status!='withdrawn'",[review[1]]);if(!p)fail(404,'公开内容不存在或已撤回');audit('admin','review-download',p.id);res.setHeader('Content-Type','application/octet-stream');return streamObject(p.blob,res)}
         if(review&&method==='PATCH'){const input=await json();if(!['approved','rejected','withdrawn'].includes(input.status))fail(400,'审核状态无效');const existing=db.one('SELECT id,status FROM publications WHERE id=?',[review[1]]);if(!existing)fail(404,'公开内容不存在');if(existing.status==='withdrawn'&&input.status!=='withdrawn')fail(400,'撤回内容已清除，请由上传者重新申请');db.transaction(()=>{db.run('UPDATE publications SET status=? WHERE id=?',[input.status,review[1]]);if(input.status==='withdrawn'){const p=db.one('SELECT blob FROM publications WHERE id=?',[review[1]]);unlink(path.join(objects,p.blob));db.run("UPDATE publications SET text='',cover='',bytes=0 WHERE id=?",[review[1]])}audit('admin','review',review[1]+':'+input.status)});return reply({status:input.status})}
@@ -242,7 +249,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试'}))}else res.destroy() }
   })
   server.requestTimeout=30000;server.headersTimeout=15000
-  return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);await new Promise(resolve=>server.close(resolve));db.close()} }
+  return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));db.close()} }
 }
 
 function clientIp(req){const remote=req.socket.remoteAddress;if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote)&&require('node:net').isIP(req.headers['x-real-ip']||''))return req.headers['x-real-ip'];return remote}
