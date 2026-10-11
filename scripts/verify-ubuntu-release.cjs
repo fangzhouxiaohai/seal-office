@@ -10,7 +10,8 @@ const version = require('../package.json').version
 const report = { version, os: fs.readFileSync('/etc/os-release', 'utf8'), arch: process.arch, sandboxBypassed: false, checks: [], failures: [] }
 const sockets = [], processes = []
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-const check = (condition, name) => { assert(condition, name); report.checks.push(name); console.log('PASS ' + name) }
+const checkpoint = () => fs.writeFileSync(path.join(output, 'ubuntu-verification.json'), JSON.stringify(report, null, 2) + '\n')
+const check = (condition, name) => { assert(condition, name); report.checks.push(name); checkpoint(); console.log('PASS ' + name) }
 async function connect(port, choose) {
   let target
   for (let n = 0; n < 400; n++) {
@@ -37,7 +38,7 @@ async function connect(port, choose) {
     const id = ++next, timer = setTimeout(() => { pending.delete(id); reject(new Error('Verification timeout: ' + method)) }, timeout)
     pending.set(id, { resolve, reject, timer }); ws.send(JSON.stringify({ id, method, params }))
   })
-  return { call, evaluate: async expression => (await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result.value }
+  return { call, close: () => ws.close(), evaluate: async expression => (await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result.value }
 }
 const models = {
   word: { 段落: [{ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字: [{ 文本: '中文格式验收 0012', 加粗: true }] }], 未覆盖: [] },
@@ -90,12 +91,13 @@ async function verify() {
   const formats = require('../main/documentFormats.json').filter(item => item.conversion && ['word', 'table', 'ppt'].includes(item.type) && !item.readOnlySource && !['xml', 'mht', 'mhtml'].includes(item.extension))
   for (const format of formats) {
     try {
+    report.phase = 'Document conversion: ' + format.extension; checkpoint()
     const model = models[format.type]
     const destination = path.join(temp, 'roundtrip.' + format.extension)
     const result = await main.evaluate(`(async()=>{const p=process.mainModule.require('path'),e=process.mainModule.require('electron'),f=process.mainModule.require('fs'),c=process.mainModule.require('child_process');const m=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/compatibleFormats'));const bytes=await m.写入兼容文档(${JSON.stringify(format.type)},${JSON.stringify(format.extension)},${JSON.stringify(model)});const read=await m.读取兼容文档(${JSON.stringify(format.extension)},bytes);f.writeFileSync(${JSON.stringify(destination)},bytes);const mime=c.execFileSync('xdg-mime',['query','filetype',${JSON.stringify(destination)}],{encoding:'utf8',timeout:15000}).trim();const defaultApp=c.execFileSync('xdg-mime',['query','default',mime],{encoding:'utf8',timeout:15000}).trim();return {bytes:bytes.length,type:read.类型,html:read.html,slides:read.演示文稿,mime,defaultApp}})()`)
     check(result.bytes > 0 && result.type === format.type && JSON.stringify(result).includes('0012'), format.extension + ' native offline save and reopen, including leading zeros')
     check(result.defaultApp === 'sealoffice.desktop', format.extension + ' actual file MIME default: ' + result.mime)
-    } catch (error) { report.failures.push({ extension: format.extension, error: error.message }); console.error('FAIL ' + format.extension + ': ' + error.message) }
+    } catch (error) { report.failures.push({ extension: format.extension, error: error.message }); checkpoint(); console.error('FAIL ' + format.extension + ': ' + error.message) }
   }
   for (const extension of ['xlsb', 'xla']) {
     const data = fs.readFileSync(path.join(root, 'scripts/fixtures/documents/readonly.' + extension)).toString('base64')
@@ -109,6 +111,8 @@ async function verify() {
   await main.evaluate(`(async()=>{const e=process.mainModule.require('electron'),f=process.mainModule.require('fs');const image=await e.BrowserWindow.getAllWindows()[0].webContents.capturePage();f.writeFileSync(${JSON.stringify(path.join(output, 'ubuntu-application.png'))},image.toPNG());return !image.isEmpty()})()`)
   check(fs.statSync(path.join(output, 'ubuntu-application.png')).size > 10000, 'Installed application screenshot captured')
   await main.evaluate("setTimeout(()=>process.mainModule.require('electron').app.exit(0),250);true")
+  // Node inspector can defer process exit while its debugger is connected.
+  main.close(); page.close()
   if (child.exitCode === null) await once(child, 'exit')
   check(child.exitCode === 0, 'Installed application exits normally')
   if (report.failures.length) throw new Error('Document compatibility verification failures: ' + report.failures.length)
@@ -117,5 +121,5 @@ verify().catch(error => { report.failures.push(error.stack); console.error(error
   for (const socket of sockets) socket.close()
   for (const child of processes) { if (child.exitCode === null) child.kill('SIGTERM') }
   report.passed = report.failures.length === 0; report.finishedAt = new Date().toISOString()
-  fs.writeFileSync(path.join(output, 'ubuntu-verification.json'), JSON.stringify(report, null, 2) + '\n')
+  checkpoint()
 })
