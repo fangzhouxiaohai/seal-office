@@ -127,6 +127,7 @@ const DocCard = ({
   }
 
   const 切换选择 = () => onToggleSelect?.(doc.id)
+  const 轻点打开 = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0)
 
   return React.createElement(
     React.Fragment,
@@ -137,10 +138,10 @@ const DocCard = ({
         className: `wps-doc-card${active ? ' wps-doc-card--active' : ''}${selectable && selected ? ' wps-doc-card--selected' : ''}${selectable ? ' wps-doc-card--selectable' : ''}`,
         role: 'group',
         tabIndex: 0,
-        'aria-label': selectable ? `${selected ? '取消选择' : '选择'} ${doc.name}` : `文档 ${doc.name}，按回车打开`,
+        'aria-label': selectable ? `${selected ? '取消选择' : '选择'} ${doc.name}` : `文档 ${doc.name}，${轻点打开 ? '轻点' : '按回车'}打开`,
         'aria-pressed': selectable ? selected : undefined,
-        onClick: () => (selectable ? 切换选择() : onSelect && onSelect(doc.id)),
-        onDoubleClick: () => (selectable ? 切换选择() : onOpen && onOpen(doc.id)),
+        onClick: () => (selectable ? 切换选择() : 轻点打开 ? onOpen?.(doc.id) : onSelect?.(doc.id)),
+        onDoubleClick: () => { if (!selectable && !轻点打开) onOpen?.(doc.id) },
         onKeyDown: (事件: React.KeyboardEvent<HTMLDivElement>) => {
           if (事件.target !== 事件.currentTarget) return
           if (事件.key === 'Enter') { 事件.preventDefault(); if (selectable) 切换选择(); else onOpen?.(doc.id) }

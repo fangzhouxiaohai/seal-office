@@ -48,6 +48,23 @@ describe('文档卡片', () => {
     expect(打开).toHaveBeenCalledWith(文档.id)
   })
 
+  it('触屏轻点直接打开文件，桌面选中行为不变', async () => {
+    const 原媒体 = window.matchMedia
+    const 媒体 = vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      ...原媒体(query), matches: query === '(pointer: coarse)',
+    }) as MediaQueryList)
+    try {
+      const 打开 = vi.fn(), 选中 = vi.fn()
+      渲染(<DocCard doc={文档} onOpen={打开} onSelect={选中} />)
+      await userEvent.click(screen.getByText('经营分析报告.docx'))
+      expect(打开).toHaveBeenCalledTimes(1)
+      expect(打开).toHaveBeenCalledWith(文档.id)
+      expect(选中).not.toHaveBeenCalled()
+    } finally {
+      媒体.mockRestore()
+    }
+  })
+
   it('键盘回车可打开文档卡片', async () => {
     const 打开 = vi.fn()
     渲染(<DocCard doc={文档} onOpen={打开} />)

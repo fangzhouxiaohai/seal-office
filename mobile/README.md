@@ -32,7 +32,9 @@ npm run pack
 
 `static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已提供最新云包 `__UNI__B52B65B_1012041850.apk`，版本 `1.9.12 / 10912`，已核验并发布为 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)。包内编辑器与当前 Android 资源构建一致，签名与上一版相同。1.9.9 旧包的 Android 14 模拟器验收作为历史基线保留，新包的原生文件选择、分享、键盘和生命周期仍需连接设备回归。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中只选择 Android。打包完成后提供 APK 文件或下载链接，再核对版本、签名和包内资源并更新发布页。不要把 `static/office/` 当作 APK。
+
+当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已提供云包 `__UNI__B52B65B_1012041850.apk`，版本 `1.9.12 / 10912`，已核验并发布为 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)。包内编辑器与发布时源码一致，签名与上一版相同。该已发布包随后在 Android 14 模拟器中完成启动、新建、输入、保存和重启恢复检查，同时发现网格卡片需双击、保存会弹系统分享的问题；这两项源码已修复，等待用户重新云打包的 APK，发布页当前附件尚不包含修复。其他品牌、iOS 和鸿蒙仍待真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
 发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
 
@@ -44,7 +46,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 
 | 平台 | 命令 / 入口 | 验证状态 |
 | --- | --- | --- |
-| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 1.9.12 云 APK 已发布；版本、签名、源码匹配、双 ABI、16 KB 对齐已核验；原生交互回归待设备连接 |
+| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 1.9.12 云 APK 已发布，Android 14 模拟器发现两项交互问题；源码已修复，等待替换 APK 和复测 |
 | iOS | `npm --prefix mobile run build:ios`，HBuilderX 选择 iOS | 原生外壳与接口共用，配置已预留；尚未编译、签名或真机验证 |
 | HarmonyOS | `npm --prefix mobile run build:harmony`，HBuilderX 选择鸿蒙 | 外壳与接口共用，包名配置已预留；尚未编译、签名或真机验证 |
 | H5 / PC Web | `npm run web:build` → `mobile/unpackage/web/` | 手机和宽屏页面、文件往返、持久保存及中文 PDF 阅读/导出通过 |
@@ -61,7 +63,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 | PDF 导出与打印 | 字体随包提供；Word 图片的旋转与翻转在导出副本中转为实际像素，保留显示方向；生成 PDF 后下载/系统分享，可继续用系统工具打印；网页排版与桌面 Chromium 打印引擎不完全相同 |
 | 演示导出 | HTML、PNG/JPEG、栅格 PDF、扫描件 PDF、图片型 PPTX；栅格 PDF 文字不可选择 |
 | AI / 云空间 / 知识库 / 市场 | 复用服务协议、加密、会话及工具；需要用户自己的配置/账号，本次未调用付费模型或生产账号 |
-| 本地文件 | 文件选择器导入应用文档空间，IndexedDB 持久保存；保存同时下载，原生端写入沙盒并打开系统分享 |
+| 本地文件 | 文件选择器导入应用文档空间，IndexedDB 持久保存；原生端保存到应用文档空间，显式导出才打开系统分享；网页版保存同时下载 |
 | 工作区恢复 | 页面隐藏、退后台和安卓返回触发备份；系统强制终止前未提交内容仍可能丢失 |
 | 安全配置 | WebCrypto 不可导出的包装密钥保护模型/云端安全记录；云文件继续使用 AES-GCM/HKDF 格式；普通本地文档和工作区备份不做全盘加密 |
 | 桌面系统功能 | Windows 格式关联、资源管理器预览、桌面/下载目录、独立演示窗口、桌面屏幕捕获及安装完整性检查不适用于移动/Web；相关设置已隐藏，无法使用的操作返回明确提示 |
@@ -95,7 +97,7 @@ Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 AR
 
 ## 操作视频与 APK 交付
 
-[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用 1.9.10 移动端生产界面原型，讲解日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。1.9.12 APK 由用户通过 HBuilderX 云打包提供，已核对版本、签名和包内资源并上传同版本发布附件；实际安装交互仍待设备连接。
+[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用 1.9.10 移动端生产界面原型，讲解日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。1.9.12 APK 由用户通过 HBuilderX 云打包提供，已核对版本、签名和包内资源并上传同版本发布附件；Android 14 模拟器的后续验收和待替换事项见[报告](../docs/verification/v1.9.12/android-emulator-smoke.json)。
 
 1.9.11 已接入用户确认的 PC / 移动两套界面图标。PC 使用细线条和彩色点缀，移动文件及功能入口使用彩色图形；窄屏与触屏平板按移动样式适配，PC Web 与桌面界面使用扁平皮肤。
 

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 // 运行实际生产编辑器和 Canvas，不以 jsdom 的空图片或模型模拟裁剪结果。
 module.exports = async function imageActions({ win, evaluate, output, checks }) {
   const wait = () => new Promise(resolve => setTimeout(resolve, 180))
-  const clickTool = async name => { await evaluate(`Array.from(document.querySelectorAll('.seal-image-toolbar button')).find(button=>button.textContent===${JSON.stringify(name)}).click()`); await wait() }
+  const clickTool = async name => { await evaluate(`(()=>{const find=()=>Array.from(document.querySelectorAll('.seal-image-toolbar button')).find(button=>button.textContent.startsWith(${JSON.stringify(name)}));let button=find();if(!button){document.querySelector('.wps-editor-canvas__content img')?.click();button=find()}if(!button)throw new Error('图片工具不可用：'+${JSON.stringify(name)});button.click()})()`); await wait() }
   const clickModal = async name => { await evaluate(`Array.from(document.querySelectorAll('.ant-modal-wrap')).filter(wrap=>getComputedStyle(wrap).display!=='none').flatMap(wrap=>Array.from(wrap.querySelectorAll('button'))).find(button=>button.textContent.replace(/\s/g,'')===${JSON.stringify(name.replace(/\s/g,''))}).click()`); await wait() }
   const closeModal = async () => { await evaluate(`Array.from(document.querySelectorAll('.ant-modal-wrap')).find(wrap=>getComputedStyle(wrap).display!=='none').querySelector('.ant-modal-close').click()`); await wait() }
   const imageState = () => evaluate(`(()=>{const image=document.querySelector('.wps-editor-canvas__content img');return {width:image.width,height:image.height,transform:image.style.transform,src:image.src}})()`)
@@ -27,7 +27,7 @@ module.exports = async function imageActions({ win, evaluate, output, checks }) 
   assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content img').closest('p').style.textAlign`), 'center')
   await clickTool('图片预览'); assert.ok(await evaluate(`document.querySelector('.seal-image-preview img').naturalWidth===200`)); await closeModal()
   await clickTool('更多功能')
-  await evaluate(`Array.from(document.querySelectorAll('.seal-image-menu .ant-dropdown-menu-item')).find(item=>item.textContent==='水平翻转').click()`); await wait()
+  await evaluate(`Array.from(document.querySelectorAll('.seal-image-menu [role="menuitem"]')).find(item=>item.textContent==='水平翻转').click()`); await wait()
   assert.match((await imageState()).transform, /scale\(-1, 1\)/)
   await new Promise(resolve=>setTimeout(resolve,300))
   await win.capturePage().then(image=>fs.writeFileSync(path.join(output,'pc-word-image.png'),image.toPNG()))
@@ -46,7 +46,7 @@ module.exports = async function imageActions({ win, evaluate, output, checks }) 
   await evaluate(`document.querySelector('.wps-editor-canvas__content img').click()`); await wait()
   await evaluate(`(()=>{const editor=document.querySelector('.wps-editor-canvas__content'),image=editor.querySelector('img'),target=Array.from(editor.querySelectorAll('p')).find(p=>p.textContent.includes('图片目标正文')),range=document.createRange();range.selectNodeContents(target);const rect=range.getBoundingClientRect(),from=image.getBoundingClientRect();image.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,isPrimary:true,pointerId:10,pointerType:'touch',clientX:from.left+10,clientY:from.top+10}));document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:10,pointerType:'touch',clientX:rect.left+5,clientY:rect.top+rect.height/2}));document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:10,pointerType:'touch',clientX:rect.left+5,clientY:rect.top+rect.height/2}))})()`); await wait()
   assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content img').closest('p').textContent`),'图片目标正文', '拖动需移动到正文目标，不复制图片或删除文字')
-  await clickTool('更多功能'); await evaluate(`Array.from(document.querySelectorAll('.seal-image-menu .ant-dropdown-menu-item')).find(item=>item.textContent==='删除图片').click()`); await wait()
+  await clickTool('更多功能'); await evaluate(`Array.from(document.querySelectorAll('.seal-image-menu [role="menuitem"]')).find(item=>item.textContent==='删除图片').click()`); await wait()
   assert.equal(await evaluate(`document.querySelectorAll('.wps-editor-canvas__content img').length`),0)
   await evaluate(`(()=>{const editor=document.querySelector('.wps-editor-canvas__content');editor.focus();editor.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))})()`); await new Promise(resolve=>setTimeout(resolve,450))
   await evaluate(`document.querySelector('.wps-editor-canvas__content img').click()`); await wait()

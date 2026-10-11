@@ -50,8 +50,9 @@ async function save(filename: string, data: string | Uint8Array, format?: string
   const content = typeof data === 'string' && format !== '二进制' ? core.textCodec.编码文本(data, encoding) : bytes(data, format)
   const previous = storage.existsSync(filename) ? storage.readFileSync(filename) : null
   const expected = previous ? hash(previous) : null
-  // A failed native export must not replace the local source or make its fingerprint stale.
-  await downloadFile(path.basename(filename), content)
+  // 保存到手机文档空间即可；只有显式导出/分享才唤起系统分享面板。
+  // 网页版仍通过下载给用户一份设备上的副本。
+  if (!window.sealNative) await downloadFile(path.basename(filename), content)
   if (storage.existsSync(filename) ? hash(storage.readFileSync(filename)) !== expected : expected !== null) throw new Error('导出期间文件发生变化，已导出副本但未覆盖本机来源，请重新打开')
   storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, content)
   try { await storage.flushStorage() }

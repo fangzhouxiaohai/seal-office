@@ -1,0 +1,27 @@
+{
+  "releasedApk": "SealOfficeAndroid1.9.12.apk",
+  "releasedApkSha256": "637395b8bb46a284fd93932bc1eb9799b47c87dd116945753c847911e5e39211",
+  "testEnvironment": "LDPlayer Android 14 emulator, 2026-10-12",
+  "passed": [
+    "Existing installation upgraded with the same signing certificate",
+    "Application launched to its home screen",
+    "New Word document accepted text input",
+    "Save persisted the document; text remained after force-stop and relaunch"
+  ],
+  "issuesInReleasedApk": [
+    "Tapping a grid document card only selected it; opening required a double tap",
+    "Saving a document also invoked Android ACTION_SEND and opened the system share chooser"
+  ],
+  "sourceFix": [
+    "Touching a document grid card now opens it directly while desktop mouse selection remains available",
+    "Native save now persists in the application document space without sharing; explicit export still opens the system share action"
+  ],
+  "sourceVerification": [
+    "Root and mobile TypeScript type checks passed",
+    "Mobile unit tests: 11 passed",
+    "Document card component tests: 14 passed",
+    "Local file WebView browser smoke: 18 checks passed"
+  ],
+  "releaseStatus": "The released APK predates these source fixes. A replacement APK must be cloud-built and verified before the release asset can be updated.",
+  "limits": "This emulator result does not verify other Android brands, iOS or HarmonyOS devices."
+}
