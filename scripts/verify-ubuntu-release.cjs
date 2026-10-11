@@ -58,7 +58,7 @@ async function verify() {
   const source = path.join(temp, '冷启动 中文.csv')
   fs.writeFileSync(source, '编号,内容\r\n0012,中文验收\r\n')
   const log = fs.openSync(path.join(output, 'application.log'), 'w')
-  const child = spawn('/usr/bin/sealoffice', ['--inspect=9231', '--remote-debugging-port=9230', '--user-data-dir=' + path.join(temp, 'profile'), source], { stdio: ['ignore', log, log] })
+  const child = spawn('/usr/bin/sealoffice', ['--inspect=9231', '--remote-debugging-port=9230', '--user-data-dir=' + path.join(temp, 'profile'), source], { detached: true, stdio: ['ignore', log, log] })
   processes.push(child)
   const main = await connect(9231, item => !!item.webSocketDebuggerUrl)
   const page = await connect(9230, item => item.url.endsWith('/dist/index.html'))
@@ -66,7 +66,7 @@ async function verify() {
     for (let n = 0; n < 200; n++) { if (await page.evaluate(expression)) return; await delay(100) }
     throw new Error('UI did not reach expected state: ' + expression)
   }
-  await wait("!!window.electronAPI && document.body.innerText.includes('冷启动 中文.csv')")
+  await wait("!!window.electronAPI && !!document.body && document.body.innerText.includes('冷启动 中文.csv')")
   check(await page.evaluate("!document.querySelector('.ant-modal-confirm-error')"), 'Cold launch opens Unicode CSV argument without an error')
   const info = await page.evaluate('window.electronAPI.getAppInfo()')
   check(info.版本 === version, 'Installed renderer preload and IPC version')
@@ -119,7 +119,13 @@ async function verify() {
 }
 verify().catch(error => { report.failures.push(error.stack); console.error(error.stack); process.exitCode = 1 }).finally(() => {
   for (const socket of sockets) socket.close()
-  for (const child of processes) { if (child.exitCode === null) child.kill('SIGTERM') }
+  for (const child of processes) {
+    if (child.exitCode === null && Number.isInteger(child.pid) && child.pid > 0) {
+      // Failed verification owns this fresh process group; close guards must
+      // not leave a CI application waiting for a user to dismiss a dialog.
+      try { process.kill(-child.pid, 'SIGKILL') } catch { child.kill('SIGKILL') }
+    }
+  }
   report.passed = report.failures.length === 0; report.finishedAt = new Date().toISOString()
   checkpoint()
 })
