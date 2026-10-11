@@ -1,4 +1,6 @@
-![海豹办公程序 Logo](mobile/web/public/icons/icon192.png)
+<p align="center">
+  <img src="mobile/web/public/icons/icon192.png" width="192" height="192" alt="海豹办公程序 Logo" />
+</p>
 
 # 海豹办公 Seal Office
 
