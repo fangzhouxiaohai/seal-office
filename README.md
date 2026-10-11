@@ -31,6 +31,8 @@
 
 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip)包括桌面、移动项目、管理后台、转换服务及与云 APK 一致的内置编辑器资源，`release-source.json` 记录准确提交；本次源码主分支同步至 GitHub 和 GitCode。
 
+三端成品同时发布到 [GitHub Releases](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11) 和 [GitCode Releases](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.11)。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
+
 ### 安卓版界面原型操作教程
 
 [横屏 1080p 普通话女声完整教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)覆盖 21 个章节，包含实际界面操作、区域放大、字幕与可跳转章节。录制来源是 1.9.10 移动生产构建，与安卓包共用编辑器；系统文件选择、权限和原生键盘以新版云 APK 为准。讲解稿与制作流程见 [教程源码](docs/promo/mobile/README.md)。

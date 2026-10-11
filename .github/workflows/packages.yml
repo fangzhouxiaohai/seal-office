@@ -1,0 +1,56 @@
+name: Publish platform installers to Packages
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/packages.yml'
+      - 'scripts/package-release.json'
+      - 'scripts/publish-packages.cjs'
+permissions:
+  contents: read
+concurrency:
+  group: platform-packages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows, android, linux]
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        with:
+          version: '1.3.0'
+      - name: Check release manifest and tamper detection
+        run: node --test scripts/publish-packages.test.cjs
+      - name: Download and verify original Release installers
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publish-packages.cjs prepare '${{ matrix.platform }}' '${{ runner.temp }}/package'
+      - name: Log in with repository package permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: printf '%s' "$GH_TOKEN" | oras login ghcr.io -u "$GITHUB_ACTOR" --password-stdin --registry-config '${{ runner.temp }}/oras-auth.json'
+      - name: Publish, download, verify and label latest
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ORAS_REGISTRY_CONFIG: ${{ runner.temp }}/oras-auth.json
+        run: node scripts/publish-packages.cjs publish '${{ matrix.platform }}' '${{ runner.temp }}/package'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-package-${{ matrix.platform }}
+          path: ${{ runner.temp }}/package/published-package.json
+          if-no-files-found: error
+      - name: Remove temporary registry login
+        if: always()
+        run: rm -f '${{ runner.temp }}/oras-auth.json'

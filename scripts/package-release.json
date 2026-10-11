@@ -1,0 +1,32 @@
+{
+  "repository": "fangzhouxiaohai/seal-office",
+  "version": "1.9.11",
+  "tag": "v1.9.11",
+  "created": "2026-10-10T20:05:56Z",
+  "platforms": {
+    "windows": {
+      "description": "海豹办公 Windows x64 安装版、便携版和微软商店上传包。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
+      "usage": "运行 SealOfficeSetup1.9.11.exe 安装，或直接运行 SealOffice1.9.11.exe。MSIX 用于微软合作伙伴中心上传，由商店签名后分发。",
+      "assets": [
+        { "name": "SealOfficeSetup1.9.11.exe", "size": 385988252, "sha256": "60e1280df4e32168b44220627ab2324a5cc88b18d0daa5350b80e4d0909a6609" },
+        { "name": "SealOffice1.9.11.exe", "size": 385763330, "sha256": "f22a7b52b34145c40a252266b36b9fd5d2fbe27dfa3277629eda022960b03b00" },
+        { "name": "SealOffice1.9.11.msix", "size": 723483861, "sha256": "fb90972d61a33ae4e52ad1fa900abb65d01afa2eddebd73f18d2c6e307dbc2f6" }
+      ]
+    },
+    "android": {
+      "description": "海豹办公 Android 9+ ARM 32/64 位原始云打包 APK。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
+      "usage": "将 SealOfficeAndroid1.9.11.apk 下载到 Android 手机并安装。最低 Android 9，目标 Android 16，包名 com.sealoffice.mobile。APK 未重新签名或修改。",
+      "assets": [
+        { "name": "SealOfficeAndroid1.9.11.apk", "size": 55811558, "sha256": "a87830bb938fe2c86c889a759e6c247045e811a8ae7e16dea66f0a93c4d14936" }
+      ]
+    },
+    "linux": {
+      "description": "海豹办公 Ubuntu amd64 DEB，已通过 Ubuntu 22.04 / 24.04 安装验证。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
+      "usage": "在 Ubuntu 22.04 / 24.04 x86_64 运行 sudo apt update，然后 sudo apt install ./SealOfficeUbuntu1.9.11-amd64.deb。启动命令：sealoffice。验收报告随包提供。",
+      "assets": [
+        { "name": "SealOfficeUbuntu1.9.11-amd64.deb", "size": 144783312, "sha256": "4cba6194106825c23e34397d89e715320f73a07693848c56014c46195052193c" },
+        { "name": "SealOffice1.9.11-UbuntuVerification.zip", "size": 140392, "sha256": "0242c80a5565a2bbf9f1c061dfb95148eda231e262d62ba1a80d75a14cf8760e" }
+      ]
+    }
+  }
+}
