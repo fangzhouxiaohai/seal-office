@@ -32,7 +32,7 @@
         {
           "name": "SealOfficeAndroid1.9.12.apk",
           "size": 55832153,
-          "sha256": "637395b8bb46a284fd93932bc1eb9799b47c87dd116945753c847911e5e39211"
+          "sha256": "592fa197a06aea0ed808a4db5a7b0f0f164cea4fab0176525f26bac49badf2ca"
         }
       ]
     },
@@ -42,13 +42,13 @@
       "assets": [
         {
           "name": "SealOfficeUbuntu1.9.12-amd64.deb",
-          "size": 144803852,
-          "sha256": "a976d8336019274814f67cd575fae3a80ddf5100b1625f365865fdf178ecb3e1"
+          "size": 144803976,
+          "sha256": "b51590064673c275cbc618a1816f3d2a2a6530bca5d023dea0e944c61c636fed"
         },
         {
           "name": "SealOffice1.9.12-UbuntuVerification.zip",
-          "size": 140636,
-          "sha256": "498a234c042e388ed1ce081dae9ef34e9d72a25681308c4bb901e45b307022c1"
+          "size": 140628,
+          "sha256": "fd1c5954f5bd1f43b7e0cd89256134500be5decce5e11e186ba2375004d0139d"
         }
       ]
     }
