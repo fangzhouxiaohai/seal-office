@@ -54,7 +54,7 @@ jobs:
       - name: Install package and offline conversion dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ./release/ubuntu/*.deb xvfb desktop-file-utils
+          sudo apt-get install -y ./release/ubuntu/*.deb xvfb desktop-file-utils libglib2.0-bin
           desktop-file-validate /usr/share/applications/sealoffice.desktop
           dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' seal-office libreoffice-writer libreoffice-calc libreoffice-impress
       - name: Verify installed application, files and rendering

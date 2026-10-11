@@ -19,6 +19,7 @@ function 定位兼容引擎({ 平台 = process.platform, 根目录 }) {
 function 选择兼容过滤器(过滤器, 平台 = process.platform) {
   if (平台 !== 'linux') return 过滤器
   return {
+    'Office Open XML Text Template': 'MS Word 2007 XML Template',
     'Calc Office Open XML Template': 'Calc MS Excel 2007 XML Template',
     'Impress Office Open XML Template': 'Impress MS PowerPoint 2007 XML Template',
     'Impress Office Open XML AutoPlay': 'Impress MS PowerPoint 2007 XML AutoPlay',

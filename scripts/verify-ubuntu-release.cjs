@@ -94,7 +94,19 @@ async function verify() {
     report.phase = 'Document conversion: ' + format.extension; checkpoint()
     const model = models[format.type]
     const destination = path.join(temp, 'roundtrip.' + format.extension)
-    const result = await main.evaluate(`(async()=>{const p=process.mainModule.require('path'),e=process.mainModule.require('electron'),f=process.mainModule.require('fs'),c=process.mainModule.require('child_process');const m=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/compatibleFormats'));const bytes=await m.写入兼容文档(${JSON.stringify(format.type)},${JSON.stringify(format.extension)},${JSON.stringify(model)});const read=await m.读取兼容文档(${JSON.stringify(format.extension)},bytes);f.writeFileSync(${JSON.stringify(destination)},bytes);const mime=c.execFileSync('xdg-mime',['query','filetype',${JSON.stringify(destination)}],{encoding:'utf8',timeout:15000}).trim();const defaultApp=c.execFileSync('xdg-mime',['query','default',mime],{encoding:'utf8',timeout:15000}).trim();return {bytes:bytes.length,type:read.类型,html:read.html,slides:read.演示文稿,mime,defaultApp}})()`)
+    const result = await main.evaluate(`(async()=>{
+      const p=process.mainModule.require('path'),e=process.mainModule.require('electron'),f=process.mainModule.require('fs'),c=process.mainModule.require('child_process');
+      const m=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/compatibleFormats'));
+      const bytes=await m.写入兼容文档(${JSON.stringify(format.type)},${JSON.stringify(format.extension)},${JSON.stringify(model)});
+      const read=await m.读取兼容文档(${JSON.stringify(format.extension)},bytes);
+      f.writeFileSync(${JSON.stringify(destination)},bytes);
+      const genericMime=c.execFileSync('xdg-mime',['query','filetype',${JSON.stringify(destination)}],{encoding:'utf8',timeout:15000}).trim();
+      const info=c.execFileSync('gio',['info','-a','standard::content-type',${JSON.stringify(destination)}],{encoding:'utf8',timeout:15000,env:{...process.env,LC_ALL:'C'}});
+      const mime=info.match(/standard::content-type: ([^\\s]+)/)?.[1];
+      if(!mime||mime==='application/octet-stream')throw new Error('Ubuntu desktop could not identify '+${JSON.stringify(format.extension)}+': '+info);
+      const defaultApp=c.execFileSync('xdg-mime',['query','default',mime],{encoding:'utf8',timeout:15000}).trim();
+      return {bytes:bytes.length,type:read.类型,html:read.html,slides:read.演示文稿,mime,genericMime,defaultApp};
+    })()`)
     check(result.bytes > 0 && result.type === format.type && JSON.stringify(result).includes('0012'), format.extension + ' native offline save and reopen, including leading zeros')
     check(result.defaultApp === 'sealoffice.desktop', format.extension + ' actual file MIME default: ' + result.mime)
     } catch (error) { report.failures.push({ extension: format.extension, error: error.message }); checkpoint(); console.error('FAIL ' + format.extension + ': ' + error.message) }

@@ -4,8 +4,15 @@ const { MIME类型 } = require('./mimeTypes')
 describe('Ubuntu 文件打开与关联', () => {
   it('Ubuntu LTS 转换过滤器兼容旧引擎，Windows 保留现有过滤器', () => {
     const { 选择兼容过滤器 } = require('../office/nativeRuntime')
-    expect(选择兼容过滤器('Calc Office Open XML Template', 'linux')).toBe('Calc MS Excel 2007 XML Template')
-    expect(选择兼容过滤器('Calc Office Open XML Template', 'win32')).toBe('Calc Office Open XML Template')
+    for (const [当前, LTS] of [
+      ['Office Open XML Text Template', 'MS Word 2007 XML Template'],
+      ['Calc Office Open XML Template', 'Calc MS Excel 2007 XML Template'],
+      ['Impress Office Open XML Template', 'Impress MS PowerPoint 2007 XML Template'],
+      ['Impress Office Open XML AutoPlay', 'Impress MS PowerPoint 2007 XML AutoPlay'],
+    ]) {
+      expect(选择兼容过滤器(当前, 'linux')).toBe(LTS)
+      expect(选择兼容过滤器(当前, 'win32')).toBe(当前)
+    }
     expect(选择兼容过滤器('writer8', 'linux')).toBe('writer8')
   })
   it('保留中文、空格和大小写不同的 Linux 文档，忽略参数、相对路径及 WPS 文件', async () => {
