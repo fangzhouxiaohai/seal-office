@@ -1,6 +1,6 @@
 # 海豹办公 uni-app x
 
-基于仓库当前桌面版 **1.9.11** 创建。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。
+基于仓库当前桌面版 **1.9.12** 创建。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 
@@ -32,9 +32,9 @@ npm run pack
 
 `static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已提供最新云包 `__UNI__B52B65B_1011150212.apk`，版本 `1.9.11 / 10911`，已核验并发布为 [SealOfficeAndroid1.9.11.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk)。包内编辑器与当前 Android 资源构建一致，签名与旧包一致。1.9.9 旧包的 Android 14 模拟器验收作为历史基线保留，新包的原生文件选择、分享、键盘和生命周期仍需连接设备回归。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+当前 AppID 为用户配置的 `__UNI__B52B65B`，用户已提供最新云包 `__UNI__B52B65B_1012041850.apk`，版本 `1.9.12 / 10912`，已核验并发布为 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)。包内编辑器与当前 Android 资源构建一致，签名与上一版相同。1.9.9 旧包的 Android 14 模拟器验收作为历史基线保留，新包的原生文件选择、分享、键盘和生命周期仍需连接设备回归。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
-发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
+发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
 
 HBuilderX 默认查找 D/C/E 盘安装目录，其他路径用 `HBUILDERX_PATH` 或私有配置的 `hbuilderx` 指定。包名默认 `com.sealoffice.mobile`，脚本使用 DCloud 云证书、安全模式并关闭广告选项。自有证书在 HBuilderX 可视化打包界面配置，不把密码写进命令。应用图标源为 `static/icon.png`；各密度 Android 图标、自适应与单色图标、iOS/HarmonyOS 和网页图标已生成并配置，新云包内图标资源已核验；桌面启动图标显示仍需设备验证。
 
@@ -44,7 +44,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 
 | 平台 | 命令 / 入口 | 验证状态 |
 | --- | --- | --- |
-| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 1.9.11 云 APK 已发布；版本、签名、源码匹配、双 ABI、16 KB 对齐已核验；原生交互回归待设备连接 |
+| Android | `mobile:build`，HBuilderX 运行 Android / 云打包 | 1.9.12 云 APK 已发布；版本、签名、源码匹配、双 ABI、16 KB 对齐已核验；原生交互回归待设备连接 |
 | iOS | `npm --prefix mobile run build:ios`，HBuilderX 选择 iOS | 原生外壳与接口共用，配置已预留；尚未编译、签名或真机验证 |
 | HarmonyOS | `npm --prefix mobile run build:harmony`，HBuilderX 选择鸿蒙 | 外壳与接口共用，包名配置已预留；尚未编译、签名或真机验证 |
 | H5 / PC Web | `npm run web:build` → `mobile/unpackage/web/` | 手机和宽屏页面、文件往返、持久保存及中文 PDF 阅读/导出通过 |
@@ -95,8 +95,8 @@ Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 AR
 
 ## 操作视频与 APK 交付
 
-[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用 1.9.10 移动端生产界面原型，讲解日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。新版 APK 由用户在 HBuilderX 云打包后提供，收到后再核对版本、签名、资源与实际安装行为，上传同版本发布附件。当前没有把旧 APK 当作 1.9.11 成品。
+[横屏女声操作教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)使用 1.9.10 移动端生产界面原型，讲解日常流程与功能入口；[制作源码](../docs/promo/mobile/README.md)随项目入库。1.9.12 APK 由用户通过 HBuilderX 云打包提供，已核对版本、签名和包内资源并上传同版本发布附件；实际安装交互仍待设备连接。
 
 1.9.11 已接入用户确认的 PC / 移动两套界面图标。PC 使用细线条和彩色点缀，移动文件及功能入口使用彩色图形；窄屏与触屏平板按移动样式适配，PC Web 与桌面界面使用扁平皮肤。
 
-本版手机与 PC 共用全部 50 种办公扩展名清单，同步 CSV/TSV 原格式保存、中文编码、OOXML 模板与宏正文导入、MHTML 和 OFD 阅读。旧表格使用离线兼容处理，旧文字、演示和部分开放格式使用用户确认的[自建文档转换服务](../server/converter/README.md)。手机设置中心可保存服务地址、加密访问令牌、测试连接；每次上传正文前确认，取消或失败保留来源。服务需实际部署后才能使用联网格式，完整范围见[文档格式支持](../docs/文档格式支持.md)。APK 继续由用户云打包后提供核验。
+本版手机与 PC 共用全部 50 种办公扩展名清单，同步 CSV/TSV 原格式保存、中文编码、OOXML 模板与宏正文导入、MHTML 和 OFD 阅读。旧表格使用离线兼容处理，旧文字、演示和部分开放格式使用用户确认的[自建文档转换服务](../server/converter/README.md)。手机设置中心可保存服务地址、加密访问令牌、测试连接；每次上传正文前确认，取消或失败保留来源。服务需实际部署后才能使用联网格式，完整范围见[文档格式支持](../docs/文档格式支持.md)。

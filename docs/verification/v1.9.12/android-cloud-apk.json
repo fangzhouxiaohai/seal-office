@@ -1,0 +1,19 @@
+{
+  "version": "1.9.12",
+  "packageName": "com.sealoffice.mobile",
+  "versionCode": 10912,
+  "minSdk": 28,
+  "targetSdk": 36,
+  "bytes": 55832153,
+  "sha256": "637395b8bb46a284fd93932bc1eb9799b47c87dd116945753c847911e5e39211",
+  "sourceOfficeJsSha256": "3cff1da72acadef5bf2b2b65286c8956c3c684c583bcf2206f301c5f07645e41",
+  "zipIntegrity": true,
+  "apkSignatureVerified": true,
+  "signerMatchesPreviousRelease": true,
+  "deviceSmokeTest": "not available: adb devices returned none",
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a"
+  ],
+  "nativeLibrary16KbAlignmentVerified": true
+}

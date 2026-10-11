@@ -99,7 +99,16 @@ def publish_one(asset):
 
 def main():
     # Snapshot already published public GitHub assets; every local file must match.
-    upstream_response = requests.get('https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/tags/' + TAG, timeout=30)
+    github_credential = subprocess.run(['git', 'credential', 'fill'], input='protocol=https\nhost=github.com\n\n',
+        text=True, capture_output=True, check=True, cwd=ROOT,
+        env={**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GCM_INTERACTIVE': 'never'})
+    github_fields = dict(line.split('=', 1) for line in github_credential.stdout.splitlines() if '=' in line)
+    github_token = github_fields.get('password')
+    headers = {'Accept': 'application/vnd.github+json', 'User-Agent': 'SealOffice-release'}
+    if github_token:
+        headers['Authorization'] = 'Bearer ' + github_token
+    upstream_response = requests.get('https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/tags/' + TAG,
+        headers=headers, timeout=30)
     if not upstream_response.ok:
         raise RuntimeError('GitHub public Release inventory unavailable')
     upstream = upstream_response.json()
