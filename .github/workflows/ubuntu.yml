@@ -26,6 +26,7 @@ jobs:
       - name: Verify platform integration
         run: npx vitest run --config vitest.main.config.js main/linux/platform.test.js main/fileAssociation.test.js main/windows/defaultApps.test.js main/main.test.js main/integrity.test.js
       - name: Build Ubuntu amd64 package
+        # Release upload happens separately after both installed-package checks.
         run: npm run dist:ubuntu
       - uses: actions/upload-artifact@v4
         with:
