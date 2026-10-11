@@ -173,5 +173,15 @@
       "workflowUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38127399652",
       "anonymousRegistryVerified": true
     }
-  ]
+  ],
+  "repositorySidebar": {
+    "verified": true,
+    "verificationSource": "用户刷新 GitHub 仓库首页后明确确认：已经显示三个包",
+    "date": "2026-10-11",
+    "packages": [
+      "seal-office-windows",
+      "seal-office-android",
+      "seal-office-linux"
+    ]
+  }
 }
