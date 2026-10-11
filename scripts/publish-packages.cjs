@@ -107,12 +107,14 @@ async function prepare(ctx, sourceDirectory) {
     'org.opencontainers.image.licenses': 'MIT'
   };
   await fsp.writeFile(path.join(ctx.directory, 'installer-config.json'), json({
-    artifact: 'seal-office-installers', version: release.version, packageTag: ctx.packageTag, platform: ctx.platform,
+    artifact: 'seal-office-installers', version: release.version,
+    ...(ctx.spec.packageTag ? { packageTag: ctx.packageTag } : {}), platform: ctx.platform,
     config: { Labels: annotations }, assets: ctx.spec.assets
   }));
   await fsp.writeFile(path.join(ctx.directory, 'annotations.json'), json({ '$manifest': annotations }));
   await fsp.writeFile(path.join(ctx.directory, 'installer-metadata.json'), json({
-    schemaVersion: 1, ...release, platforms: undefined, platform: ctx.platform, packageTag: ctx.packageTag, assets: ctx.spec.assets
+    schemaVersion: 1, ...release, platforms: undefined, platform: ctx.platform,
+    ...(ctx.spec.packageTag ? { packageTag: ctx.packageTag } : {}), assets: ctx.spec.assets
   }));
   await fsp.writeFile(path.join(ctx.directory, 'README.md'),
     `# 海豹办公 ${ctx.packageTag} · ${ctx.platform}\n\n${ctx.spec.description}\n\n` +
