@@ -1255,7 +1255,7 @@ const DocEditor = () => {
       },
     }),
     React.createElement(SelectionFloatPanel, {
-      打开: 选区浮窗.打开,
+      打开: !菜单可见 && 选区浮窗.打开,
       位置: 选区浮窗.位置,
       按钮: 选区浮窗.按钮,
       on关闭: 选区浮窗.关闭,

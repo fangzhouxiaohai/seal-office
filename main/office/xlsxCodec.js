@@ -1,6 +1,7 @@
 const ExcelJS = require('exceljs')
 const JSZip = require('jszip')
 const path = require('path')
+const { 规范Xlsx命名空间 } = require('./xlsxNamespaces')
 
 const 单张图片字节上限 = 5 * 1024 * 1024
 const 工作簿图片字节上限 = 20 * 1024 * 1024
@@ -605,8 +606,9 @@ function 工作表转Html(工作表) {
 async function 读取xlsx(数据) {
   const 原始数据 = Buffer.from(数据)
   const 压缩包 = await JSZip.loadAsync(原始数据)
+  const 兼容数据 = await 规范Xlsx命名空间(压缩包, 原始数据)
   const 工作簿 = new ExcelJS.Workbook()
-  await 工作簿.xlsx.load(原始数据)
+  await 工作簿.xlsx.load(兼容数据)
   const 主题颜色 = await 读取主题颜色(压缩包)
   const 筛选列表 = await 读取筛选列表(压缩包, 工作簿.worksheets.length)
   const 保护列表 = await 读取保护列表(压缩包, 工作簿.worksheets.length)

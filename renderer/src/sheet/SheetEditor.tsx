@@ -39,6 +39,7 @@ import { 应用工作表拼写建议, 扫描工作表拼写 } from './sheetSpell
 import SheetToolbar from './SheetToolbar'
 import { SheetStatusBar, SheetTabs } from './SheetChrome'
 import ContextMenu from '../components/ContextMenu'
+import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
@@ -298,7 +299,7 @@ const SheetEditor = () => {
   const 冻结 = 工作表.冻结
   const 已拆分 = 拆分映射[工作表.id] === true
 
-  /** 选区浮窗：拖选多格或选区内有内容时浮出；位置以选区左上角单元格为锚点 */
+  /** 选区浮窗：拖选多格时围绕整个可见选区定位。 */
   const [浮窗位置, set浮窗位置] = useState<{ x: number; y: number; 在上方: boolean } | null>(null)
   const 选区跨多格 = 选区.起点.行 !== 选区.终点.行 || 选区.起点.列 !== 选区.终点.列
   const 取选区文本 = (): string => {
@@ -323,8 +324,7 @@ const SheetEditor = () => {
     if (!选区跨多格) { set浮窗位置(null); return }
     const 网格 = 编辑区引用.current
     if (!网格) { set浮窗位置(null); return }
-    const 锚点地址 = 生成地址(Math.min(选区.起点.行, 选区.终点.行), Math.min(选区.起点.列, 选区.终点.列))
-    const 锚点 = 网格.querySelector(`[data-地址="${锚点地址}"]`) as HTMLElement | null
+    const 锚点 = 网格.querySelectorAll('.wps-sheet__cell--selected')
     set浮窗位置(从元素计算浮窗位置(锚点, { 宽: window.innerWidth, 高: window.innerHeight }))
   }, [选区, 选区跨多格, 工作表])
   useEffect(() => {
@@ -333,12 +333,8 @@ const SheetEditor = () => {
       set浮窗位置(null)
     }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 收起() }
-    window.addEventListener('scroll', 收起, true)
-    window.addEventListener('resize', 收起)
     document.addEventListener('keydown', 键盘)
     return () => {
-      window.removeEventListener('scroll', 收起, true)
-      window.removeEventListener('resize', 收起)
       document.removeEventListener('keydown', 键盘)
     }
   }, [])
@@ -1259,6 +1255,7 @@ const SheetEditor = () => {
       x: 菜单坐标.x,
       y: 菜单坐标.y,
       items: 构建表格菜单(),
+      取锚点: () => 读取可见矩形(编辑区引用.current?.querySelectorAll('.wps-sheet__cell--selected') ?? []),
       onCommand: (命令标识: string, 参数?: string) => {
         if (命令标识 === '__close__') {
           关闭菜单()
@@ -1274,7 +1271,7 @@ const SheetEditor = () => {
       },
     }),
     React.createElement(SelectionFloatPanel, {
-      打开: 浮窗位置 !== null,
+      打开: !菜单可见 && 浮窗位置 !== null,
       位置: 浮窗位置,
       按钮: 构建表格浮窗按钮({ 执行命令, 取选区文本, 选区有内容 }),
       on关闭: () => set浮窗位置(null),

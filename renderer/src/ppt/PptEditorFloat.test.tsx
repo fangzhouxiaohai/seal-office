@@ -72,7 +72,7 @@ describe('演示编辑器选区浮窗', () => {
       expect(within(面板).getByRole('button', { name: 名称 })).toBeInTheDocument()
     }
     fireEvent.scroll(window)
-    await waitFor(() => expect(screen.queryByRole('toolbar', { name: '选中对象操作' })).toBeNull())
+    expect(screen.getByRole('toolbar', { name: '选中对象操作' })).toBeInTheDocument()
   })
 
   it('对象操作接到真实对象操作：锁定对象时如实给出原因', async () => {

@@ -42,6 +42,7 @@ import SlideCanvas from './SlideCanvas'
 import SlideshowView from './SlideshowView'
 import { NotesView, SlideSorterView } from './PptViews'
 import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
+import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档, 读取本地文件内容 } from '../fileOpen'
@@ -527,8 +528,7 @@ const PptEditor = () => {
     if (浮窗标识 === '' || 当前视图 !== '普通') { set浮窗位置(null); return }
     const 画布 = 画布引用.current
     if (!画布) { set浮窗位置(null); return }
-    const 锚点 = (画布.querySelector(`[data-对象标识="${浮窗标识}"], [data-框标识="${浮窗标识}"]`)
-      ?? 画布.querySelector('.wps-ppt-box--selected, .wps-ppt-image--selected')) as HTMLElement | null
+    const 锚点 = 画布.querySelectorAll('.wps-ppt-box--selected, .wps-ppt-image--selected')
     set浮窗位置(从元素计算浮窗位置(锚点, { 宽: window.innerWidth, 高: window.innerHeight }))
   }, [浮窗标识, 选中对象, 选中框标识, 当前视图, 当前幻灯片])
   useEffect(() => {
@@ -537,12 +537,8 @@ const PptEditor = () => {
       set浮窗位置(null)
     }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 收起() }
-    window.addEventListener('scroll', 收起, true)
-    window.addEventListener('resize', 收起)
     document.addEventListener('keydown', 键盘)
     return () => {
-      window.removeEventListener('scroll', 收起, true)
-      window.removeEventListener('resize', 收起)
       document.removeEventListener('keydown', 键盘)
     }
   }, [])
@@ -1375,6 +1371,7 @@ const PptEditor = () => {
       x: 菜单坐标.x,
       y: 菜单坐标.y,
       items: 构建演示菜单(),
+      取锚点: () => 读取可见矩形(画布引用.current?.querySelectorAll('.wps-ppt-box--selected, .wps-ppt-image--selected') ?? []),
       onCommand: (命令标识: string, 参数?: string) => {
         if (命令标识 === '__close__') {
           关闭菜单()
@@ -1390,7 +1387,7 @@ const PptEditor = () => {
       },
     }),
     React.createElement(SelectionFloatPanel, {
-      打开: 浮窗位置 !== null,
+      打开: !菜单可见 && 浮窗位置 !== null,
       位置: 浮窗位置,
       按钮: 构建演示浮窗按钮({ 执行命令, 对象操作, 取选区文本: 取选中文本, 有文本对象 }),
       on关闭: () => set浮窗位置(null),

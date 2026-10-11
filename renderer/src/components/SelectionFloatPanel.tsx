@@ -1,7 +1,8 @@
 // 选区浮窗：选中内容后浮出的功能面板。定位、跟随、关闭规则都集中在这里，四类文件共用。
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from './Icon'
+import { 计算边缘位置, 读取可见矩形, 读取范围可见矩形, use边缘浮层 } from './overlayPlacement'
 
 export interface 浮窗按钮 {
   /** 稳定标识：命令 id 或动作名 */
@@ -33,26 +34,20 @@ export interface 浮窗位置 {
   /** 保留原选区，渲染后按面板实际尺寸重新定位。 */
   锚点?: 选区矩形
   上边界?: number
+  取锚点?: () => 选区矩形 | null
+  maxWidth?: number
+  maxHeight?: number
 }
 
 const 面板宽度估算 = 360
 const 面板高度估算 = 46
 const 与选区间距 = 8
-const 视口留白 = 12
 
-/** 依据选区矩形算出面板位置：优先放在选区上方，空间不足改放下方，并水平居中且不出屏 */
+/** 在选区四周择位；空间不足时缩小面板，保持与选区的间隔。 */
 export function 计算浮窗位置(选区: 选区矩形, 视口: { 宽: number; 高: number; 上边界?: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
   if (!(选区.width > 0) && !(选区.height > 0)) return null
-  const 期望左 = 选区.left + 选区.width / 2 - 面板尺寸.宽 / 2
-  const 最大左 = Math.max(视口留白, 视口.宽 - 面板尺寸.宽 - 视口留白)
-  const x = Math.min(最大左, Math.max(视口留白, 期望左))
-  const 上方 = 选区.top - 面板尺寸.高 - 与选区间距
-  const 最小上 = Math.max(视口留白, 视口.上边界 ?? 0)
-  const 边界 = 视口.上边界 === undefined ? {} : { 上边界: 视口.上边界 }
-  if (上方 >= 最小上) return { x, y: 上方, 在上方: true, 锚点: 选区, ...边界 }
-  const 下方 = 选区.bottom + 与选区间距
-  const 最大上 = Math.max(最小上, 视口.高 - 面板尺寸.高 - 视口留白)
-  return { x, y: Math.max(最小上, Math.min(最大上, 下方)), 在上方: false, 锚点: 选区, ...边界 }
+  const p = 计算边缘位置(选区, 面板尺寸, 视口)
+  return p ? { ...p, 在上方: p.边缘 === 'top', 锚点: 选区 } : null
 }
 
 function 编辑区上边界(元素: HTMLElement): number | undefined {
@@ -66,10 +61,13 @@ function 编辑区上边界(元素: HTMLElement): number | undefined {
 }
 
 /** 表格、演示、PDF 这类没有 DOM 选区的模块：以锚点元素的矩形定位浮窗 */
-export function 从元素计算浮窗位置(元素: HTMLElement | null, 视口: { 宽: number; 高: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
+export function 从元素计算浮窗位置(元素: HTMLElement | Iterable<Element> | null, 视口: { 宽: number; 高: number }, 面板尺寸 = { 宽: 面板宽度估算, 高: 面板高度估算 }): 浮窗位置 | null {
   if (!元素) return null
-  const 矩形 = 元素.getBoundingClientRect()
-  return 计算浮窗位置({ left: 矩形.left, top: 矩形.top, right: 矩形.right, bottom: 矩形.bottom, width: 矩形.width, height: 矩形.height }, { ...视口, 上边界: 编辑区上边界(元素) }, 面板尺寸)
+  const 列表 = 元素 instanceof Element ? [元素] : Array.from(元素)
+  const 取锚点 = () => 读取可见矩形(列表)
+  const 矩形 = 取锚点()
+  const p = 矩形 && 计算浮窗位置(矩形, 视口, 面板尺寸)
+  return p ? { ...p, 取锚点 } : null
 }
 
 /** 取当前选区矩形；没有有效选区或环境不提供矩形时返回 null */
@@ -102,7 +100,7 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
   const 面板引用 = useRef<HTMLDivElement>(null)
   const 关闭引用 = useRef(on关闭)
   关闭引用.current = on关闭
-  const [实测位置, set实测位置] = useState<浮窗位置 | null>(null)
+  const 实测位置 = use边缘浮层(打开, 面板引用, () => 位置?.取锚点 ? 位置.取锚点() : 位置?.锚点 ?? null, { 宽: 360, 高: 46 }, undefined, undefined, 位置?.锚点 ? undefined : 位置 ?? undefined)
   useEffect(() => {
     if (!打开) return
     const 外部交互 = (事件: Event) => {
@@ -115,25 +113,6 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
       document.removeEventListener('focusin', 外部交互, true)
     }
   }, [打开])
-  useLayoutEffect(() => {
-    if (!打开 || !位置 || !按钮.length) return
-    const 面板 = 面板引用.current
-    if (!面板) return
-    const 定位 = () => {
-      const 矩形 = 面板.getBoundingClientRect()
-      if (!矩形.width || !矩形.height) return
-      const 视口 = { 宽: document.documentElement.clientWidth || window.innerWidth, 高: document.documentElement.clientHeight || window.innerHeight }
-      const 新位置 = 位置.锚点
-        ? 计算浮窗位置(位置.锚点, { ...视口, 上边界: 位置.上边界 }, { 宽: 矩形.width, 高: 矩形.height })
-        : { ...位置, x: Math.max(视口留白, Math.min(位置.x, 视口.宽 - 矩形.width - 视口留白)), y: Math.max(视口留白, Math.min(位置.y, 视口.高 - 矩形.height - 视口留白)) }
-      set实测位置(旧 => 旧?.x === 新位置?.x && 旧?.y === 新位置?.y && 旧?.在上方 === 新位置?.在上方 ? 旧 : 新位置)
-    }
-    定位()
-    const 观察 = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(定位)
-    观察?.observe(面板)
-    window.addEventListener('resize', 定位)
-    return () => { 观察?.disconnect(); window.removeEventListener('resize', 定位) }
-  }, [打开, 位置, 按钮])
   if (!打开 || 位置 === null || 按钮.length === 0) return null
   const 显示位置 = 实测位置 ?? 位置
   const 图标映射: Record<string, string> = { brush: 'format-painter', strike: 'strikethrough', highlight: 'shading', color: 'wordart', clear: 'trash', list: 'bullet-list', 'number-list': 'numbered-list', sparkle: 'ai', fill: 'shading', merge: 'table', wrap: 'paragraph-mark', sum: 'formula', delete: 'trash' }
@@ -145,15 +124,16 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
   return createPortal(
     <div
       ref={面板引用}
-      className={`wps-float-panel${显示位置.在上方 ? '' : ' wps-float-panel--below'}`}
-      style={{ left: 显示位置.x, top: 显示位置.y, ...(显示位置.上边界 === undefined ? {} : { maxHeight: `max(46px, calc(100vh - ${显示位置.上边界 + 12}px))` }) }}
+      className={`wps-float-panel${实测位置?.边缘 === 'top' ? '' : ' wps-float-panel--below'}`}
+      data-edge={实测位置?.边缘}
+      style={{ left: 显示位置.x, top: 显示位置.y, maxWidth: 显示位置.maxWidth, maxHeight: 显示位置.maxHeight, visibility: 实测位置 ? undefined : 'hidden' }}
       role="toolbar"
       aria-label={名称}
       // 阻止默认不改变选区，用户点完面板还能继续操作选中的内容
       onMouseDown={(事件) => 事件.preventDefault()}
       onContextMenu={(事件) => 事件.preventDefault()}
     >
-      <div className="wps-float-panel__actions">{按钮.map((项, 下标) => {
+      <div className="wps-float-panel__actions" style={{ maxHeight: 显示位置.maxHeight ? Math.max(14, 显示位置.maxHeight - 18) : undefined }}>{按钮.map((项, 下标) => {
         const 需要分割线 = 下标 > 0 && 按钮[下标 - 1].分组 !== 项.分组 && 分组.length > 1
         return (
           <React.Fragment key={项.id}>
@@ -190,7 +170,7 @@ interface 钩子选项 {
 
 /**
  * 选中内容后自动浮出面板：监听选区变化与滚动，返回面板所需的状态。
- * 面板不会抢走焦点，滚动或选区消失即关闭，Esc 也可以关闭。
+ * 面板不会抢走焦点，滚动时跟随选区；选区消失或 Esc 时关闭。
  */
 export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
   const [打开, set打开] = useState(false)
@@ -226,13 +206,15 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       const 新位置 = 计算浮窗位置(矩形, { 宽: window.innerWidth, 高: window.innerHeight, 上边界 }, 面板)
       if (新位置 === null) { 关闭(); return }
       set按钮(新按钮)
-      set位置(新位置)
+      const 范围 = 选择?.getRangeAt(0).cloneRange()
+      const 取锚点 = () => 读取范围可见矩形(范围 ?? null)
+      set位置({ ...新位置, 取锚点 })
       set打开(true)
     }
     const 收起 = (事件: Event) => {
-      // 小窗口内浮窗自身滚动不能收起；文档或窗口滚动仍收起。
+      // 面板自身滚动不改变锚点；文档滚动则重新测量。
       if (事件.target instanceof Element && 事件.target.closest('.wps-float-panel')) return
-      关闭()
+      同步()
     }
     const 指针按下 = (事件: MouseEvent) => {
       const 目标 = 事件.target
@@ -258,7 +240,7 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
     document.addEventListener('mousedown', 指针按下, true)
     document.addEventListener('mouseup', 指针松开)
     document.addEventListener('keyup', 按键松开)
-    // 滚动会改变选区位置，先收起避免面板与内容错位
+    // 内容滚动与窗口缩放后重新测量选区。
     window.addEventListener('scroll', 收起, true)
     window.addEventListener('resize', 收起)
     document.addEventListener('keydown', 键盘)

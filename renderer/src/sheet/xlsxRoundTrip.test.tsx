@@ -10,8 +10,27 @@ import GridView from './GridView'
 const require = createRequire(import.meta.url)
 const ExcelJS = require('exceljs')
 const { 读取xlsx, 写入xlsx } = require('../../../main/office/xlsxCodec')
+const { 创建带前缀表格 } = require('../../../test/fixtures/prefixedXlsx.cjs')
 
 describe('真实 XLSX 导入、计算与保存重开', () => {
+  it('显式 XML 前缀和绝对关系的工作簿可编辑、重算并保存重开全部工作表', async () => {
+    const 导入 = await 读取xlsx(await 创建带前缀表格({ 关系前缀: 'link' }))
+    const 工作表 = 导入.工作表列表.map((表: any) => 从Html表格构建工作表(净化富文本(表.html), 表.名称, 表.页面设置, 表.元数据)!)
+    expect(读取单元格(工作表[0], 'C3').显示值).toBe('30.00')
+    工作表[0] = 写入单元格(工作表[0], 'B3', '5')
+    expect(读取单元格(工作表[0], 'C3').显示值).toBe('50.00')
+    const 数据 = await 写入xlsx(导出为Xlsx(工作表))
+    const 重开 = await 读取xlsx(数据)
+    expect(重开.工作表列表.map((表: any) => 表.名称)).toEqual(['逐条验收', '测试证据'])
+    const 表 = 重开.工作表列表[0]
+    const 模型 = 从Html表格构建工作表(表.html, 表.名称, 表.页面设置, 表.元数据)!
+    expect(读取单元格(模型, 'C3').显示值).toBe('50.00')
+    expect(读取单元格(模型, 'A3').原始值).toBe('x:文字 & <x:c>\n正常显示')
+    expect(表.元数据.合并区域).toContain('A1:C1')
+    expect(表.元数据.冻结).toEqual({ 行: 2, 列: 1 })
+    expect(表.元数据.单元格验证.A3.选项).toEqual(['待办', '完成'])
+    expect(重开.工作表列表[1].html).toContain('第二张工作表')
+  })
   it('文本型公式原文保存后仍是文本，直接数值引用保持数值缓存', async () => {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('类型')

@@ -1,7 +1,8 @@
 // 右键菜单：浮层定位，支持分组分割与命令派发。
 // 经 portal 挂到 body 并用 fixed 定位：视口坐标不受任何定位祖先/transform 影响，菜单始终贴着光标。
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { 合并矩形, 读取可见矩形, 读取范围可见矩形, use边缘浮层, type 边界矩形, type 浮层边缘 } from './overlayPlacement'
 
 export interface 菜单分割线 {
   type: 'divider'
@@ -55,6 +56,12 @@ interface Props {
   items: 菜单节点[]
   /** 命中菜单项时的回调 */
   onCommand: (命令标识: string, 参数?: string) => void
+  取锚点?: () => 边界矩形 | null
+  取避让?: () => 边界矩形[]
+  优先边缘?: 浮层边缘[]
+  className?: string
+  名称?: string
+  子菜单?: boolean
 }
 
 /** 判断节点是否为菜单项 */
@@ -76,38 +83,30 @@ const 菜单面板宽 = 220
 const 项高 = 32
 const 菜单最大高 = 320
 /** 菜单左上角相对光标的微小间隙，符合桌面右键菜单的贴边习惯 */
-const 光标间隙 = 2
 
-const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
+const ContextMenu = ({ open, x, y, items, onCommand, 取锚点, 取避让, 优先边缘, className = '', 名称 = '上下文菜单', 子菜单 = false }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
-  const [偏移, set偏移] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
-
+  const 范围 = useRef<Range | null>(null), 上次打开 = useRef(false)
+  if (open && !上次打开.current) {
+    const 选区 = window.getSelection()
+    范围.current = 选区 && !选区.isCollapsed && 选区.rangeCount ? 选区.getRangeAt(0).cloneRange() : null
+  }
+  上次打开.current = open
+  const 默认锚点 = () => {
+    const r = 读取范围可见矩形(范围.current)
+    const 图 = 读取可见矩形(document.querySelector('.seal-image-frame'))
+    return 合并矩形([...(r ? [r] : []), ...(图 ? [图] : [])])
+  }
+  const 项总数 = items.reduce((n, 项) => n + (项.type === 'group' ? 项.子项.length + (项.标题 ? 1 : 0) : 1), 0)
+  const 偏移 = use边缘浮层(open, 引用, 取锚点 ?? 默认锚点, { 宽: 菜单面板宽, 高: Math.min(项总数 * 项高 + 8, 菜单最大高) }, 优先边缘 ?? ['right', 'left', 'bottom', 'top'], 取避让, 子菜单 ? undefined : { x, y })
   useEffect(() => {
-    if (!open) {
-      return
-    }
-    const 视口宽 = window.innerWidth
-    const 视口高 = window.innerHeight
-    // 计算菜单实际高度（受最大高度限制）
-    const 项总数 = items.reduce((合计, 节点) => {
-      if (节点.type === 'group') {
-        return 合计 + 节点.子项.length + (节点.标题 !== undefined ? 1 : 0)
-      }
-      return 合计 + 1
-    }, 0)
-    const 原始高 = 项总数 * 项高 + 8
-    const 面板高 = Math.min(原始高, 菜单最大高)
-    // 定位：菜单左上角贴着光标（间隙 2px）；越出视口边缘时向左/向上翻转
-    let 左 = x + 光标间隙
-    if (左 + 菜单面板宽 > 视口宽 - 8) {
-      左 = Math.max(8, x - 菜单面板宽 - 光标间隙)
-    }
-    let 上 = y + 光标间隙
-    if (上 + 面板高 > 视口高 - 8) {
-      上 = Math.max(8, y - 面板高 - 光标间隙)
-    }
-    set偏移({ top: 上, left: 左 })
-  }, [open, x, y, items])
+    if (!open || 子菜单) return
+    document.body.classList.add('seal-context-menu-open')
+    return () => { document.body.classList.remove('seal-context-menu-open') }
+  }, [open, 子菜单])
+  useEffect(() => {
+    if (open && 子菜单) 引用.current?.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus()
+  }, [open, 子菜单])
 
   useEffect(() => {
     if (!open) {
@@ -139,9 +138,9 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       'div',
       {
         key: `item-${下标}`,
-        className: 类名,
+        className: `${类名}${节点.commandId === 'delete' ? ' wps-context-menu__item--danger' : ''}`,
         role: 'menuitem',
-        tabIndex: -1,
+        tabIndex: 节点.disabled ? -1 : 0,
         'aria-disabled': 节点.disabled === true,
         onClick: (事件: React.MouseEvent) => {
           事件.stopPropagation()
@@ -201,18 +200,32 @@ const ContextMenu = ({ open, x, y, items, onCommand }: Props) => {
       'div',
       {
         ref: 引用,
-        className: 'wps-context-menu',
+        className: `wps-context-menu ${className}`,
         role: 'menu',
-        'aria-label': '上下文菜单',
+        'aria-label': 名称,
+        'data-edge': 偏移?.边缘,
         style: {
           position: 'fixed',
           top: 0,
           left: 0,
-          transform: `translate(${偏移.left}px, ${偏移.top}px)`,
+          transform: `translate(${偏移?.x ?? 0}px, ${偏移?.y ?? 0}px)`,
+          maxWidth: 偏移?.maxWidth,
+          maxHeight: 偏移?.maxHeight,
+          visibility: 偏移 ? undefined : 'hidden',
           zIndex: 9999,
         },
-        onMouseDown: (事件: React.MouseEvent) => 事件.stopPropagation(),
+        onMouseDown: (事件: React.MouseEvent) => { 事件.preventDefault(); 事件.stopPropagation() },
         onContextMenu: (事件: React.MouseEvent) => 事件.preventDefault(),
+        onKeyDown: (事件: React.KeyboardEvent<HTMLDivElement>) => {
+          const 项 = Array.from(引用.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])') ?? [])
+          const i = 项.indexOf(document.activeElement as HTMLElement)
+          if (事件.key === 'Escape' || 事件.key === 'Tab' || 子菜单 && 事件.key === 'ArrowLeft') { if (事件.key !== 'Tab') 事件.preventDefault(); 事件.stopPropagation(); onCommand('__close__'); return }
+          if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(事件.key)) {
+            事件.preventDefault(); 事件.stopPropagation()
+            const 下标 = 事件.key === 'Home' ? 0 : 事件.key === 'End' ? 项.length - 1 : 事件.key === 'ArrowDown' ? (i + 1) % 项.length : (i <= 0 ? 项.length : i) - 1
+            项[下标]?.focus(); 项[下标]?.scrollIntoView?.({ block: 'nearest' })
+          } else if (事件.key === 'Enter' || 事件.key === ' ') { 事件.preventDefault(); 事件.stopPropagation(); (document.activeElement as HTMLElement)?.click() }
+        },
       },
       渲染内容()
     ),

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { App, Button, Checkbox, Dropdown, InputNumber, Modal } from 'antd'
+import { App, Button, Checkbox, InputNumber, Modal } from 'antd'
+import ContextMenu from '../components/ContextMenu'
+import { 合并矩形, 读取可见矩形, use边缘浮层 } from '../components/overlayPlacement'
 import { 对齐图片, 图片可用宽度, 正文位置, 移动图片到选区, 调整图片尺寸, 读取图片尺寸, 显示缩放, 屏幕矩形 } from './imageEditing'
 import { 图片变换样式, 规范角度, 读取图片变换, type 图片变换 } from '../office/imageTransform'
 import { 检查裁剪, 裁剪图片像素, 识别用图片, type 图片裁剪 } from './imagePixels'
@@ -31,6 +33,8 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const [裁剪, 设裁剪] = useState<图片裁剪>({ ...空裁剪 })
   const [等待位置, 设等待位置] = useState(false)
   const [处理中, 设处理中] = useState(false)
+  const [更多展开, 设更多展开] = useState(false)
+  useEffect(() => { 设更多展开(false) }, [图片, 文档标识, 只读])
   const [识别图片, 设识别图片] = useState<{ 数据: string; 类型: string; 名称: string } | null>(null)
   const [拖动预览, 设拖动预览] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
   const 比例 = useRef(1)
@@ -39,6 +43,10 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const 回调 = useRef({ 开始修改, 完成修改 })
   const 当前文档 = useRef(文档标识)
   const 当前图片 = useRef(图片)
+  const 工具条 = useRef<HTMLDivElement>(null)
+  const 更多按钮 = useRef<HTMLButtonElement>(null)
+  const 取图片保护区 = () => 合并矩形([读取可见矩形(当前图片.current), 读取可见矩形(document.querySelector('.seal-image-rotate'))].filter((r): r is NonNullable<typeof r> => r !== null))
+  const 工具位置 = use边缘浮层(Boolean(图片 && 位置 && !只读), 工具条, 取图片保护区, { 宽: 144, 高: 266 }, ['right', 'left', 'top', 'bottom'])
   const 忽略点击到 = useRef(0)
   const 异步序号 = useRef(0)
   回调.current = { 开始修改, 完成修改 }
@@ -208,11 +216,11 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
       const 目标 = 事件.target as HTMLElement
       if (!编辑区.current?.contains(目标) && !目标.closest('.seal-image-tools,.seal-image-menu,.ant-modal-root')) { 取消手势.current?.(); 设图片(null); 设等待位置(false) }
     }
-    const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') { const 活动 = Boolean(取消手势.current); 取消手势.current?.(); 设等待位置(false); if (!活动 && !弹窗 && !识别图片) 设图片(null) } }
+    const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') { if (更多展开) { 设更多展开(false); return }; const 活动 = Boolean(取消手势.current); 取消手势.current?.(); 设等待位置(false); if (!活动 && !弹窗 && !识别图片) 设图片(null) } }
     刷新(); document.addEventListener('scroll', 刷新, true); window.addEventListener('resize', 刷新)
     document.addEventListener('mousedown', 外部点击); document.addEventListener('keydown', 键盘)
     return () => { 观察.disconnect(); 大小观察?.disconnect(); document.removeEventListener('scroll', 刷新, true); window.removeEventListener('resize', 刷新); document.removeEventListener('mousedown', 外部点击); document.removeEventListener('keydown', 键盘) }
-  }, [图片, 弹窗, 识别图片])
+  }, [图片, 弹窗, 识别图片, 更多展开])
 
   const 打开尺寸 = () => { if (!图片) return; try { const 当前 = 读取图片尺寸(图片); 比例.current = 当前.宽 / 当前.高; 设尺寸(当前); 设锁定比例(true); 设弹窗('尺寸') } catch (错误) { 报错(错误) } }
   const 应用尺寸 = () => {
@@ -277,7 +285,7 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
         <button type="button" className="seal-image-rotate" aria-label="拖动旋转图片" title="拖动旋转，方向键微调，Shift 按 15° 调整" disabled={处理中} onPointerDown={开始旋转} onKeyDown={事件 => { if (事件.key === 'ArrowLeft' || 事件.key === 'ArrowRight') { 事件.preventDefault(); 修改变换({ 旋转: 预览变换.旋转 + (事件.key === 'ArrowLeft' ? -1 : 1) * (事件.shiftKey ? 15 : 1) }) } }}>↻</button>
       </div>
       {拖动预览 && <div className="seal-image-drag-preview" style={拖动预览}>拖到正文文字的位置</div>}
-      <div role="toolbar" aria-label="图片工具" className="seal-image-toolbar" style={{ left: Math.max(8, Math.min(Math.max(位置.right + 12, 位置.left + 位置.width / 2 + Math.sin(位置.angle * Math.PI / 180) * (位置.height / 2 + 26) + 30), window.innerWidth - 156)), top: Math.max((document.querySelector('.wps-titlebar')?.getBoundingClientRect().bottom ?? 0) + 8, Math.min(位置.boundTop, window.innerHeight - 340)) }} onMouseDown={事件 => 事件.preventDefault()}>
+      <div ref={工具条} role="toolbar" aria-label="图片工具" className="seal-image-toolbar" data-edge={工具位置?.边缘} style={{ left: 工具位置?.x, top: 工具位置?.y, maxWidth: 工具位置?.maxWidth, maxHeight: 工具位置?.maxHeight, visibility: 工具位置 ? undefined : 'hidden' }} onMouseDown={事件 => 事件.preventDefault()}>
         <button type="button" disabled={处理中} onClick={() => 设弹窗('布局')}>布局选项</button>
         <button type="button" disabled={处理中} onClick={() => { 设裁剪({ ...空裁剪 }); 设弹窗('裁剪') }}>图片裁剪</button>
         <button type="button" disabled={处理中} onClick={() => 设弹窗('预览')}>图片预览</button>
@@ -285,10 +293,11 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
         <button type="button" disabled={处理中} onClick={打开尺寸}>尺寸</button>
         <button type="button" disabled={处理中} onClick={() => void 打开识别()}>提取文字</button>
         <button type="button" disabled={处理中} aria-pressed={等待位置} onClick={() => 设等待位置(当前 => !当前)}>移动图片</button>
-        <Dropdown overlayClassName="seal-image-menu" trigger={['click']} disabled={处理中} menu={{ items: [{ key: 'horizontal', label: '水平翻转' }, { key: 'vertical', label: '垂直翻转' }, { key: 'reset', label: '恢复旋转与翻转' }, { type: 'divider' }, { key: 'delete', label: '删除图片', danger: true }], onClick: ({ key }) => { if (key === 'horizontal') 修改变换({ 水平翻转: !预览变换.水平翻转 }); else if (key === 'vertical') 修改变换({ 垂直翻转: !预览变换.垂直翻转 }); else if (key === 'reset') 修改变换({ 旋转: 0, 水平翻转: false, 垂直翻转: false }); else if (key === 'delete') { 修改(图 => 图.remove()); 设图片(null) } } }}><button type="button">更多功能</button></Dropdown>
+        <button ref={更多按钮} type="button" className="seal-image-more" aria-haspopup="menu" aria-expanded={更多展开} disabled={处理中} onClick={事件 => { 事件.stopPropagation(); 设更多展开(v => !v) }} onKeyDown={事件 => { if (事件.key === 'ArrowRight' || 事件.key === 'ArrowDown') { 事件.preventDefault(); 设更多展开(true) } }}>更多功能<span aria-hidden="true">›</span></button>
         {等待位置 && <span role="status">点击正文中的目标位置</span>}
         {处理中 && <span role="status">正在处理图片…</span>}
       </div>
+      <ContextMenu open={更多展开} x={0} y={0} 子菜单 名称="更多图片功能" className="seal-image-menu seal-image-menu--more" 取锚点={() => 读取可见矩形(更多按钮.current)} 取避让={() => [取图片保护区(), 读取可见矩形(工具条.current)].filter((r): r is NonNullable<typeof r> => r !== null)} 优先边缘={['right', 'left', 'bottom', 'top']} items={[{ type: 'item', commandId: 'horizontal', label: '水平翻转' }, { type: 'item', commandId: 'vertical', label: '垂直翻转' }, { type: 'item', commandId: 'reset', label: '恢复旋转与翻转' }, { type: 'divider' }, { type: 'item', commandId: 'delete', label: '删除图片' }]} onCommand={key => { 设更多展开(false); 更多按钮.current?.focus(); if (key === 'horizontal') 修改变换({ 水平翻转: !预览变换.水平翻转 }); else if (key === 'vertical') 修改变换({ 垂直翻转: !预览变换.垂直翻转 }); else if (key === 'reset') 修改变换({ 旋转: 0, 水平翻转: false, 垂直翻转: false }); else if (key === 'delete') { 修改(图 => 图.remove()); 设图片(null) } }} />
     </div>}
     <Modal title="布局选项" open={弹窗 === '布局'} footer={null} onCancel={() => 设弹窗(null)} centered width={420}>
       <p>图片随正文排列。下面的对齐操作将图片独立为一段，正文文字保留在前后段落中。</p>

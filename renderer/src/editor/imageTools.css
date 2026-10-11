@@ -77,6 +77,12 @@
 }
 .seal-image-toolbar button:hover { background: var(--bg-hover); }
 .seal-image-toolbar button[aria-pressed="true"] { color: var(--brand); background: var(--brand-soft); }
+.seal-image-toolbar .seal-image-more { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.seal-image-more>span { font-size: 20px; line-height: 1; color: var(--text-2); }
+.seal-image-more[aria-expanded="true"] { background: var(--bg-hover); }
+.wps-context-menu.seal-image-menu--more { width: 162px; box-sizing: border-box; }
+.seal-context-menu-open .seal-image-toolbar { visibility: hidden !important; }
+.seal-image-menu .wps-context-menu__item--danger { color: var(--danger, #ef4444); }
 .seal-image-tools button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .seal-image-tools button:disabled { color: var(--text-3); cursor: default; }
 .seal-image-toolbar [role="status"] { flex-basis: 100%; padding: var(--space-1) var(--space-2); color: var(--text-2); font-size: 12px; }
@@ -92,12 +98,12 @@
 .seal-image-crop-source img { display: block; max-width: 100%; max-height: 280px; object-fit: contain; }
 .seal-image-crop-area { position: absolute; border: 2px solid var(--brand); box-shadow: 0 0 0 600px #0008; pointer-events: none; }
 @media (max-width: 820px), (pointer: coarse) {
-  :root { --image-handle-target: 36px; --image-handle-size: 10px; }
-  .seal-image-rotate { top: -44px; width: 36px; height: 36px; }
-  .seal-image-rotate::after { top: 35px; }
-  .seal-image-toolbar { left: 12px !important; top: auto !important; bottom: 104px; width: calc(100vw - 24px); display: grid; grid-template-columns: repeat(3, 1fr); max-height: 190px; }
-  .seal-image-toolbar button { min-height: 36px; height: auto; text-align: center; }
+  :root { --image-handle-target: 44px; --image-handle-size: 10px; }
+  .seal-image-rotate { top: -48px; width: 44px; height: 44px; }
+  .seal-image-rotate::after { top: 43px; height: 5px; }
+  .seal-image-toolbar { width: calc(100vw - 24px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-height: 190px; }
+  .seal-image-toolbar button { min-height: 44px; height: auto; text-align: center; }
+  .seal-image-menu .wps-context-menu__item { min-height: 44px; box-sizing: border-box; }
   .seal-image-toolbar [role="status"] { grid-column: 1 / -1; }
-  html.seal-keyboard-open .seal-image-toolbar { bottom: 38px; }
 }
 @media (max-width: 480px) { .seal-image-size .ant-input-number { width: 120px; } }

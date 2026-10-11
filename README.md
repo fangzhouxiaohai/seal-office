@@ -8,20 +8,20 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.11 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；用户已提供 1.9.11 云打包 APK，签名、版本、包内编辑器、双 ABI 和 16 KB 对齐已核验并上传发布页；此前 1.9.9 APK 已在 Android 14 模拟器完成导入、编辑、保存与恢复验收，新 APK 的原生交互回归仍待设备连接。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.12 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.12 Android 资源已准备，需等待用户完成新版 HBuilderX 云打包。已有的 1.9.11 云打包 APK 签名、版本、包内编辑器、双 ABI 和 16 KB 对齐已核验并上传发布页；此前 1.9.9 APK 已在 Android 14 模拟器完成导入、编辑、保存与恢复验收。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
 ## Windows 下载
 
-当前预发布版本：**1.9.11**，适用于 Windows x64。本版修复 CSV 原格式保存，并将文件关联、打开与保存入口统一到 50 种办公文档格式；内置 Windows 离线引擎处理旧版 Office、模板和开放文档，提供 OFD 阅读、打印和 PDF 导出。宏和加载项导入正文后另存普通格式。两套界面图标、扁平主题和 150% 默认缩放继续保留。具体读写能力见[文档格式支持](docs/文档格式支持.md)。
+当前预发布版本：**1.9.12**，适用于 Windows x64。本版修复使用命名空间前缀和绝对关系路径的 XLSX 打开错误，优化登录窗口，并让文字、表格、演示、PDF 与图片选区的浮窗及右键菜单动态避让内容。沿用 50 种已登记办公格式、现有图标风格和 150% 默认缩放。具体读写能力见[文档格式支持](docs/文档格式支持.md)。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.11.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.11.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeSetup1.9.11.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.11.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.11 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11)及[修复与验收](docs/v1.9.11-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.12.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.12.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeSetup1.9.12.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.12.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.12 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.12)及[修复与验收](docs/v1.9.12-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
@@ -33,9 +33,9 @@
 
 [SealOfficeAndroid1.9.11.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOfficeAndroid1.9.11.apk) 为用户提供的 HBuilderX 云打包原文件，仅统一下载文件名；包名 `com.sealoffice.mobile`，版本 `1.9.11 / 10911`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。签名和原生库/ZIP 的 16 KB 对齐已核验，实际系统与品牌验收状态见 [APK 核验](docs/verification/v1.9.11/android-cloud-apk.json)。
 
-[完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.11/SealOffice1.9.11-Source.zip)包括桌面、移动项目、管理后台、转换服务及与云 APK 一致的内置编辑器资源，`release-source.json` 记录准确提交；本次源码主分支同步至 GitHub 和 GitCode。
+[1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 仍以已验收的 1.9.11 版本为准。源码主分支同步至 GitHub 和 GitCode。
 
-三端成品同时发布到 [GitHub Releases](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11) 和 [GitCode Releases](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.11)。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
+当前 [Windows 1.9.12](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.12)、[Ubuntu 1.9.11](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11) 和 [Android 1.9.11](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.11) 分别提供已打包成品，GitCode 发布页同步对应版本。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
 
 ### 安卓版界面原型操作教程
 

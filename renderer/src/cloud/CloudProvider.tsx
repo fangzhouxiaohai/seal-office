@@ -1,5 +1,6 @@
-import React,{createContext,useCallback,useContext,useEffect,useState} from 'react'
+import React,{createContext,useCallback,useContext,useEffect,useRef,useState} from 'react'
 import {App,Button,Checkbox,Input,Modal} from 'antd'
+import {CloudLoginForm} from './CloudLoginForm'
 export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string}
 export interface CloudState {account:CloudAccount|null;unlocked:boolean;statuses:Record<string,string>;pending:number;recoveryPending?:string}
 const initial:CloudState={account:null,unlocked:false,statuses:{},pending:0}
@@ -16,22 +17,18 @@ export const useCloud=()=>useContext(Context)
 export function CloudProvider({children}:{children:React.ReactNode}){
   const {modal,message}=App.useApp(),[state,setState]=useState(initial),[open,setOpen]=useState(false),[busy,setBusy]=useState(false)
   const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[agreed,setAgreed]=useState(false),[recovery,setRecovery]=useState(''),[shownRecovery,setShownRecovery]=useState(''),[confirmedRecovery,setConfirmedRecovery]=useState(false),[cooldown,setCooldown]=useState(0)
+  const [loginError,setLoginError]=useState(''),operationPending=useRef(false)
   const refresh=useCallback(async()=>{const result=await cloudCall<CloudState>('status');setState(result)},[])
   useEffect(()=>{void refresh().catch(e=>message.error(e.message))},[refresh,message])
   useEffect(()=>{if(state.recoveryPending)setShownRecovery(state.recoveryPending)},[state.recoveryPending])
   useEffect(()=>{if(!cooldown)return;const timer=window.setTimeout(()=>setCooldown(cooldown-1),1000);return()=>clearTimeout(timer)},[cooldown])
-  const run=async(task:()=>Promise<any>)=>{if(busy)return;setBusy(true);try{await task();await refresh()}catch(e){modal.error({title:'云端操作未完成',content:e instanceof Error?e.message:'请稍后重试'})}finally{setBusy(false)}}
-  const send=()=>run(async()=>{await cloudCall('code',{phone});setCooldown(60);message.success('验证码已发送')})
+  const run=async(task:()=>Promise<any>,inline=false)=>{if(operationPending.current)return;operationPending.current=true;setBusy(true);if(inline)setLoginError('');try{await task();await refresh()}catch(e){const error=e instanceof Error?e.message:'请稍后重试';if(inline)setLoginError(error);else modal.error({title:'云端操作未完成',content:error})}finally{operationPending.current=false;setBusy(false)}}
+  const send=()=>{if(cooldown||!/^1[3-9]\d{9}$/.test(phone))return;void run(async()=>{await cloudCall('code',{phone});setCooldown(60);message.success('验证码已发送')},true)}
   const enable=()=>run(async()=>{const result=await cloudCall<CloudState&{recovery:string}>('enable',{consent:agreed});setShownRecovery(result.recovery);setConfirmedRecovery(false);setState(result)})
-  const configure=()=>{setCode('');setRecovery('');setAgreed(false);setOpen(true)}
+  const configure=()=>{setCode('');setRecovery('');setAgreed(false);setLoginError('');setOpen(true)}
   return <Context.Provider value={{state,refresh,configure,call:cloudCall}}>{children}
-    <Modal title="账号与云空间" open={open} centered footer={null} onCancel={()=>setOpen(false)} width={560}>
-      <p>登录海豹办公账号，即可按需开通加密云空间。</p>
-      {!state.account?<>
-        <Input aria-label="手机号" placeholder="手机号" maxLength={11} value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,''))}/>
-        <div className="seal-cloud-form"><Input aria-label="验证码" placeholder="短信验证码" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,''))}/><Button disabled={cooldown>0||busy||!/^1[3-9]\d{9}$/.test(phone)} onClick={send}>{cooldown?`${cooldown} 秒后重试`:'获取验证码'}</Button></div>
-        <Button type="primary" loading={busy} disabled={code.length!==6} onClick={()=>run(async()=>{await cloudCall('login',{phone,code});message.success('登录成功')})}>登录</Button>
-      </>:<>
+    <Modal title={state.account?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={!state.account?'seal-login-modal':undefined} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current)setOpen(false)}} width={state.account?560:440}>
+      {!state.account?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(async()=>{await cloudCall('login',{phone,code});setCode('');message.success('登录成功')},true)}}/>:<>
         <p>已登录：{state.account.phone} <Button size="small" onClick={()=>run(()=>cloudCall('logout'))}>退出登录</Button></p>
         {!state.account.enabled?<>
           <div className="seal-cloud-agreement"><h3>云服务协议与隐私说明</h3><p>开通后，你主动上传或开启自动保存的文件会在本机加密后上传到海豹办公云服务。每账号提供 300 MB 实际配额，文件、历史版本、回收站和公开副本计入用量。服务器能够知道账号、密文大小与访问时间，无法直接解密私有文档内容和文件名。</p><p>恢复密钥由你保管。全部授权设备和恢复密钥丢失后，运营人员无法找回文件。公开发布与在线 AI 处理另行授权；公开副本可被他人及管理员阅读。清空停用后活动数据删除，备份最多保留 7 天；他人已下载的副本无法收回。</p></div>

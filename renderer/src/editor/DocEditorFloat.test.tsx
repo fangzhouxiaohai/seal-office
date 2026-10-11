@@ -127,7 +127,7 @@ describe('文字编辑器选区浮窗', () => {
     }
   })
 
-  it('滚动、Esc 与选区消失都会收起面板', async () => {
+  it('滚动时保留面板，Esc 与选区消失收起面板', async () => {
     const { container } = 渲染带文档的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开浮窗文档' }))
     选中正文(container, '浮窗测试')
@@ -136,7 +136,7 @@ describe('文字编辑器选区浮窗', () => {
     fireEvent.scroll(screen.getByRole('toolbar', { name: '选中内容操作' }).querySelector('.wps-float-panel__actions')!)
     expect(screen.getByRole('toolbar', { name: '选中内容操作' })).toBeInTheDocument()
     fireEvent.scroll(window)
-    await waitFor(() => expect(screen.queryByRole('toolbar', { name: '选中内容操作' })).toBeNull())
+    expect(screen.getByRole('toolbar', { name: '选中内容操作' })).toBeInTheDocument()
 
     选中正文(container, '浮窗测试')
     await screen.findByRole('toolbar', { name: '选中内容操作' })

@@ -9,6 +9,10 @@ import * as 像素操作 from './imagePixels'
 afterEach(() => { document.querySelectorAll('[data-test-canvas]').forEach(节点 => 节点.remove()); vi.restoreAllMocks(); Reflect.deleteProperty(window, 'electronAPI') })
 
 function 准备(只读 = false) {
+  const 原矩形 = HTMLElement.prototype.getBoundingClientRect
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    return this.classList.contains('seal-image-more') ? { left: 340, top: 390, right: 470, bottom: 418, x: 340, y: 390, width: 130, height: 28, toJSON: () => ({}) } : 原矩形.call(this)
+  })
   const 根 = document.createElement('div')
   根.dataset.testCanvas = 'true'
   根.contentEditable = String(!只读)
@@ -120,6 +124,18 @@ describe('图片调整工具', () => {
     expect(document.querySelector('.seal-image-preview img')).toHaveAttribute('src', 图.src)
     expect(图.outerHTML).toBe(原图)
     expect(完成).toHaveBeenCalledTimes(2)
+  })
+
+  it('方向键打开更多菜单，Escape 关闭菜单并保留图片工具', async () => {
+    const { 图 } = 准备()
+    await userEvent.click(图)
+    const 更多 = screen.getByRole('button', { name: '更多功能' })
+    fireEvent.keyDown(更多, { key: 'ArrowRight' })
+    expect(await screen.findByRole('menuitem', { name: '水平翻转' })).toBeInTheDocument()
+    expect(更多).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(更多).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('toolbar', { name: '图片工具' })).toBeInTheDocument()
   })
 
   it('拖动四角保持比例，完成时提交一次', async () => {
