@@ -1,4 +1,4 @@
-"""Publish verified Windows artifacts to GitHub Releases using Git credentials.
+"""Publish verified Windows, Android and Ubuntu artifacts to GitHub Releases.
 
 Run after committing and pushing the tested code and version tag to both remotes.
 Requires Python 3.11+ and requests; no credentials are saved or printed.
@@ -42,9 +42,16 @@ def main():
     msix = json.loads((release_dir / f'SealOffice{version}.msix.verification.json').read_text(encoding='utf-8-sig'))
     if not integrity.get('passed') or integrity.get('version') != version or msix.get('version') != f'{version}.0' or not msix.get('hasBlockMap'):
         raise SystemExit('Verified package reports for this version are required')
-    names = [f'SealOfficeSetup{version}.exe', f'SealOffice{version}.exe', f'SealOffice{version}.msix']
+    names = [f'SealOfficeSetup{version}.exe', f'SealOffice{version}.exe', f'SealOffice{version}.msix',
+             f'SealOfficeAndroid{version}.apk', f'SealOfficeUbuntu{version}-amd64.deb']
+    verified_packages = {item['name']: item for item in integrity.get('packages', [])}
+    if set(verified_packages) != set(names):
+        raise SystemExit('All five platform installers must pass release verification')
     sums = dict(line.split('  ', 1)[::-1] for line in (release_dir / 'SHA256SUMS.txt').read_text(encoding='utf-8-sig').splitlines() if line)
-    files = [release_dir / name for name in names] + [release_dir / 'SHA256SUMS.txt']
+    files = [release_dir / name for name in names] + [release_dir / name for name in [
+        'release-integrity.json', f'SealOffice{version}.msix.verification.json',
+        'android-verification.json', 'Ubuntu22.04Verification.json', 'Ubuntu24.04Verification.json',
+        'SHA256SUMS.txt']]
     store_materials = release_dir / f'SealOffice{version}-LenovoAssets.zip'
     if store_materials.is_file():
         files.append(store_materials)
@@ -68,7 +75,9 @@ def main():
         with file.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
         expected[file.name] = digest
-        if file.name in names and sums.get(file.name) != digest:
+        if file.name in names and (sums.get(file.name) != digest or
+                                  verified_packages[file.name]['sha256'] != digest or
+                                  verified_packages[file.name]['bytes'] != file.stat().st_size):
             raise SystemExit(f'Checksum mismatch: {file.name}')
         if ' ' in file.name:
             raise SystemExit('Release filenames must not contain spaces')
@@ -110,9 +119,7 @@ def main():
     releases = call('GET', f'{API}/releases', params={'per_page': 100})
     release = next((r for r in releases if r['tag_name'] == tag), None)
     if release is None:
-        release = call('POST', f'{API}/releases', json={'tag_name': tag, 'target_commitish': head, 'name': f'海豹办公 {version} 预发布版', 'body': body, 'draft': True, 'prerelease': True, 'make_latest': 'false'})
-    elif not release['prerelease']:
-        raise SystemExit('Refusing to replace an existing stable release')
+        release = call('POST', f'{API}/releases', json={'tag_name': tag, 'target_commitish': head, 'name': f'海豹办公 {version}', 'body': body, 'draft': True, 'prerelease': False, 'make_latest': 'true'})
     upload_url = release['upload_url'].split('{', 1)[0]
     verified = []
     for file in files:
@@ -128,7 +135,7 @@ def main():
             raise SystemExit(f'Remote asset differs or upload is incomplete: {file.name}; existing data was preserved')
         verified.append({'name': asset_name, 'bytes': size, 'sha256': digest, 'url': asset['browser_download_url']})
         print(json.dumps({'phase': 'verified', 'name': file.name}, ensure_ascii=False), flush=True)
-    release = call('PATCH', f'{API}/releases/{release["id"]}', json={'body': body, 'target_commitish': head, 'draft': False, 'prerelease': True, 'make_latest': 'false'})
+    release = call('PATCH', f'{API}/releases/{release["id"]}', json={'body': body, 'target_commitish': head, 'draft': False, 'prerelease': False, 'make_latest': 'true'})
     result = {'version': version, 'commit': head, 'tag': tag, 'url': release['html_url'], 'draft': release['draft'], 'prerelease': release['prerelease'], 'assets': verified}
     (release_dir / 'published-release.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({'phase': 'published', 'url': result['url'], 'assetCount': len(verified)}, ensure_ascii=False), flush=True)

@@ -71,7 +71,8 @@ jobs:
           path: release/ubuntu/verification/*
           if-no-files-found: error
   publish:
-    if: github.ref == 'refs/heads/main'
+    # A normal push only builds and verifies; release assets are published together across platforms.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: [build, verify]
     runs-on: ubuntu-22.04
     permissions:

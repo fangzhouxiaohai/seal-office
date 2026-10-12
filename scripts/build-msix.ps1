@@ -20,6 +20,7 @@ param(
   [string]$MaxVersionTested = '10.0.22621.0',
   [string]$Source = '',
   [string]$Output = '',
+  [string]$Layout = '',
   [string]$MakeAppx = 'E:\Temp\sdkbuildtools\bin\10.0.28000.0\x64\makeappx.exe',
   [string]$Assets = '',
   [switch]$Sign,
@@ -37,7 +38,7 @@ if (-not (Test-Path -LiteralPath $Source)) { throw "找不到应用目录：$Sou
 if (-not (Test-Path -LiteralPath $MakeAppx)) { throw "找不到 makeappx：$MakeAppx" }
 if (-not (Test-Path -LiteralPath (Join-Path $Source 'SealOffice.exe'))) { throw "应用目录里没有 SealOffice.exe：$Source" }
 
-$布局 = [IO.Path]::GetFullPath((Join-Path $根 "release\msix-layout-$应用版本"))
+$布局 = [IO.Path]::GetFullPath($(if ($Layout) { $Layout } else { Join-Path $根 "release\msix-layout-$应用版本" }))
 $发布目录 = [IO.Path]::GetFullPath((Join-Path $根 'release')) + [IO.Path]::DirectorySeparatorChar
 if (-not $布局.StartsWith($发布目录, [StringComparison]::OrdinalIgnoreCase)) { throw 'MSIX 临时目录必须位于项目发布目录内' }
 if (Test-Path -LiteralPath $布局) { Remove-Item -LiteralPath $布局 -Recurse -Force }
