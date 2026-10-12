@@ -16,6 +16,7 @@ interface Props {
 type 阅读状态 = '空白' | '加载中' | '就绪' | '失败'
 interface 页面文字项 { 文本: string; x: number; y: number; 宽: number; 高: number }
 interface PDF页面尺寸 { 宽: number; 高: number }
+const 短文档完整渲染页数 = 8
 
 /** 只在页面进入阅读区附近时创建画布；离开后释放画布内存。 */
 function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError }: {
@@ -210,6 +211,13 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       }
       关闭文档 = 结果.关闭
       set文档(结果.文档)
+      // 普通文档直接创建全部页面画布，确保打开后立即可以像 WPS 一样连续向下滚动。
+      // 只有长文档才按视口附近页面虚拟化，避免大量画布同时占用内存。
+      const 首批渲染页数 = 结果.文档.numPages <= 短文档完整渲染页数 ? 结果.文档.numPages : 3
+      set活跃页(new Set(Array.from(
+        { length: 首批渲染页数 },
+        (_, 索引) => 索引 + 1,
+      )))
       set状态('就绪')
     }).catch((错误: unknown) => {
       if (已取消) return
@@ -244,6 +252,11 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       else 右 = 中
     }
     set当前页(Math.min(总页数, 左 + 1))
+    if (总页数 <= 短文档完整渲染页数) {
+      const 全部页面 = new Set(Array.from({ length: 总页数 }, (_, 索引) => 索引 + 1))
+      set活跃页((旧值) => 旧值.size === 全部页面.size ? 旧值 : 全部页面)
+      return
+    }
     const 预载距离 = Math.max(600, 舞台.clientHeight)
     左 = 0; 右 = 总页数
     while (左 < 右) {
@@ -273,7 +286,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     const 舞台 = 阅读区.current
     const 页面 = 页节点.current[页码 - 1]
     if (舞台 && 页面) {
-      舞台.scrollTop += 页面.getBoundingClientRect().top - 舞台.getBoundingClientRect().top
+      const 顶部差 = 页面.getBoundingClientRect().top - 舞台.getBoundingClientRect().top
+      舞台.scrollTop += 顶部差
       更新可视页()
     }
   }
@@ -311,6 +325,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       <div className="pdf-viewer__toolbar">
         <span className="pdf-viewer__name" title={文件名}>{数据 ? 文件名 : '文档预览'}</span>
         <div className="pdf-viewer__controls">
+          <span className="pdf-viewer__mode" title="滚轮或触控板可连续查看全部页面">连续滚动</span>
           <button type="button" aria-label="上一页" title="上一页" disabled={状态 !== '就绪' || 当前页 <= 1} onClick={() => 翻页(-1)}><Icon name="arrow-left" size={15} /></button>
           <span className="pdf-viewer__counter" aria-live="polite">{总页数 > 0 ? `第 ${当前页} 页 / 共 ${总页数} 页` : '未打开文件'}</span>
           <button type="button" aria-label="下一页" title="下一页" disabled={状态 !== '就绪' || 当前页 >= 总页数} onClick={() => 翻页(1)}><Icon name="arrow-left" size={15} className="pdf-viewer__forward" /></button>
@@ -335,6 +350,9 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       <div
         ref={阅读区}
         className="pdf-viewer__stage"
+        data-view-mode="continuous"
+        tabIndex={0}
+        aria-label="PDF 连续滚动阅读区"
         onScroll={更新可视页}
         onContextMenu={(事件) => {
           事件.preventDefault()

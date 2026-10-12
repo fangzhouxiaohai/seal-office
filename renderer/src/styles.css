@@ -873,6 +873,24 @@ button {
   background: var(--bg-app);
 }
 
+/* PDF 主区由阅读器自身滚动，防止外层主区和页面画布形成两个滚动容器。 */
+.wps-main--pdf {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wps-main--pdf > .pdf-workbench {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.wps-main--pdf .pdf-viewer {
+  min-height: 0;
+}
+
 /* 文档标签栏 */
 .wps-doc-tabs {
   display: flex;

@@ -8,20 +8,20 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.12 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.12 HBuilderX 云打包 APK 的签名、版本、包内编辑器、双 ABI 和 16 KB 对齐已核验并上传发布页。此前 1.9.9 APK 已在 Android 14 模拟器完成导入、编辑、保存与恢复验收；当前环境未连接设备，因此 1.9.12 APK 尚未执行真机或模拟器交互验收。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.14 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.14 已完成 Android 内置编辑器资源构建、结构检查和单元测试，云 APK 需在 HBuilderX CLI 可连接的环境中重新提交后再发布。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
 ## Windows 下载
 
-当前预发布版本：**1.9.12**，适用于 Windows x64。本版修复使用命名空间前缀和绝对关系路径的 XLSX 打开错误，优化登录窗口，并让文字、表格、演示、PDF 与图片选区的浮窗及右键菜单动态避让内容。沿用 50 种已登记办公格式、现有图标风格和 150% 默认缩放。具体读写能力见[文档格式支持](docs/文档格式支持.md)。
+当前版本：**1.9.14**，适用于 Windows x64。本版把 PDF 阅读修正为同一阅读区内连续纵向滚动，同时保留上一页、下一页和输入页码跳转；普通文档完整渲染，长文档只渲染阅读区附近画布。沿用 50 种已登记办公格式、现有图标风格和 150% 默认缩放。具体读写能力见[文档格式支持](docs/文档格式支持.md)。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.12.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.12.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeSetup1.9.12.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.12.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.12 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.12)及[修复与验收](docs/v1.9.12-修复与验收.md)。 |
+| 便携版 | [SealOffice1.9.14.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14.exe)，下载后直接运行。 |
+| 安装版 | [SealOfficeSetup1.9.14.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeSetup1.9.14.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.14.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.14 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.14)及[修复与验收](docs/v1.9.14-修复与验收.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 

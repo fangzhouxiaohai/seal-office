@@ -135,18 +135,21 @@ describe('PDF 阅读预览', () => {
     expect(Number.parseFloat(画布.style.width)).toBeCloseTo(600 * 64, 0)
   })
 
-  it('连续排出所有页，滚动更新页码，输入页码可直接跳转并只渲染附近页面', async () => {
+  it('普通文档连续渲染全部页，滚动更新页码并保留指定页跳转', async () => {
     const 取页面 = vi.fn(async () => ({
       getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
       render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
       getTextContent: async () => ({ items: [] }),
     }))
-    PDF模拟.取文档.mockReturnValue({ promise: Promise.resolve({ numPages: 12, getPage: 取页面 }), destroy: vi.fn() })
-    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="长文档.pdf" />)
-    await screen.findByText('第 1 页 / 共 12 页')
+    PDF模拟.取文档.mockReturnValue({ promise: Promise.resolve({ numPages: 2, getPage: 取页面 }), destroy: vi.fn() })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="两页文档.pdf" />)
+    await screen.findByText('第 1 页 / 共 2 页')
     const 舞台 = container.querySelector('.pdf-viewer__stage') as HTMLDivElement
     const 页 = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')]
-    expect(页).toHaveLength(12)
+    expect(页).toHaveLength(2)
+    expect(舞台).toHaveAttribute('data-view-mode', 'continuous')
+    expect(screen.getByText('连续滚动')).toBeInTheDocument()
+    await waitFor(() => expect(页.every((节点) => 节点.querySelector('canvas'))).toBe(true))
     Object.defineProperty(舞台, 'clientHeight', { configurable: true, value: 600 })
     舞台.getBoundingClientRect = () => ({ top: 0, bottom: 600 } as DOMRect)
     页.forEach((节点, 索引) => {
@@ -154,19 +157,36 @@ describe('PDF 阅读预览', () => {
     })
     fireEvent.scroll(舞台)
     await waitFor(() => expect(页[0].querySelector('canvas')).not.toBeNull())
-    expect(页[9].querySelector('canvas')).toBeNull()
+    expect(页[1].querySelector('canvas')).not.toBeNull()
 
-    舞台.scrollTop = 2100
+    舞台.scrollTop = 1100
     fireEvent.scroll(舞台)
-    await screen.findByText('第 3 页 / 共 12 页')
-    await waitFor(() => expect(页[2].querySelector('canvas')).not.toBeNull())
-    expect(页[0].querySelector('canvas')).toBeNull()
+    await screen.findByText('第 2 页 / 共 2 页')
+    await waitFor(() => expect(页[1].querySelector('canvas')).not.toBeNull())
+    expect(页[0].querySelector('canvas')).not.toBeNull()
 
-    fireEvent.change(screen.getByRole('spinbutton', { name: '跳转页码' }), { target: { value: '10' } })
+    舞台.scrollTop = 0
+    fireEvent.change(screen.getByRole('spinbutton', { name: '跳转页码' }), { target: { value: '2' } })
     fireEvent.click(screen.getByRole('button', { name: '跳转到指定页' }))
-    await screen.findByText('第 10 页 / 共 12 页')
-    expect(舞台.scrollTop).toBe(9000)
-    await waitFor(() => expect(页[9].querySelector('canvas')).not.toBeNull())
-    expect(取页面).toHaveBeenCalledWith(10)
+    await screen.findByText('第 2 页 / 共 2 页')
+    expect(舞台.scrollTop).toBe(1000)
+    await waitFor(() => expect(页[1].querySelector('canvas')).not.toBeNull())
+    expect(取页面).toHaveBeenCalledWith(2)
+  })
+
+  it('长文档保留全部连续页面占位，但只渲染阅读区附近的画布', async () => {
+    const 取页面 = vi.fn(async () => ({
+      getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
+      render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+      getTextContent: async () => ({ items: [] }),
+    }))
+    PDF模拟.取文档.mockReturnValue({ promise: Promise.resolve({ numPages: 30, getPage: 取页面 }), destroy: vi.fn() })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="超长文档.pdf" />)
+    await screen.findByText('第 1 页 / 共 30 页')
+    const 页 = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')]
+    expect(页).toHaveLength(30)
+    await waitFor(() => expect(页[0].querySelector('canvas')).not.toBeNull())
+    expect(页[29].querySelector('canvas')).toBeNull()
+    expect(取页面).not.toHaveBeenCalledWith(30)
   })
 })
