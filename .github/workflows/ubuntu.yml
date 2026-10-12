@@ -2,7 +2,7 @@ name: Ubuntu desktop package
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
     paths:
       - '.github/workflows/ubuntu.yml'
       - 'build/electron-ubuntu.cjs'
@@ -71,6 +71,7 @@ jobs:
           path: release/ubuntu/verification/*
           if-no-files-found: error
   publish:
+    if: github.ref == 'refs/heads/main'
     needs: [build, verify]
     runs-on: ubuntu-22.04
     permissions:

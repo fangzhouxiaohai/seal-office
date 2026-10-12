@@ -1,7 +1,8 @@
 {
   "name": "seal-office",
-  "version": "1.9.12",
+  "version": "1.9.13",
   "description": "海豹办公 Seal Office",
+  "homepage": "https://github.com/fangzhouxiaohai/seal-office",
   "main": "main/main.js",
   "author": "饮风一笑",
   "license": "MIT",
