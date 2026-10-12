@@ -23,6 +23,77 @@ async function pdfFromHtml(html: string): Promise<Uint8Array> {
     catch (error) { reject(error) }
   })
 }
+
+/** 手机打印预览按屏幕排版逐页截图，避免大文档的 pdfmake 排版阻塞 WebView。 */
+async function printPdfFromHtml(html: string): Promise<Uint8Array> {
+  const frame = document.createElement('iframe')
+  frame.sandbox.add('allow-same-origin')
+  frame.style.cssText = 'position:fixed;left:-20000px;top:0;border:0;width:794px;height:1123px'
+  document.body.appendChild(frame)
+  try {
+    const loaded = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('打印页面加载超时')), 10000)
+      frame.onload = () => { clearTimeout(timer); resolve() }
+    })
+    frame.srcdoc = html
+    await loaded
+    const doc = frame.contentDocument
+    if (!doc) throw new Error('无法读取打印页面')
+    const style = doc.createElement('style')
+    style.textContent = `@font-face{font-family:SealPrintChinese;src:url('./fonts/NotoSansSC.ttf') format('truetype');font-display:block}
+html,body{margin:0!important;padding:0!important;width:794px!important;max-width:794px!important;background:#fff!important}
+body{box-sizing:border-box;padding:48px 54px!important;color:#20242b;font-family:SealPrintChinese,Arial,sans-serif;line-height:1.45}
+img{max-width:100%}table{border-collapse:collapse}`
+    doc.head.appendChild(style)
+    // 保留来源字体优先级；手机缺少该字体时回退到包内中文字体。
+    for (const node of doc.body.querySelectorAll<HTMLElement>('[style*="font-family"]')) {
+      const original = node.style.fontFamily
+      if (original) node.style.fontFamily = `${original.replace(/SealOfficeCJK/g, 'SealPrintChinese').replace(/,\s*(?:sans-serif|serif)\s*$/i, '')}, SealPrintChinese, Arial, sans-serif`
+    }
+    await Promise.race([doc.fonts.load('16px SealPrintChinese'), new Promise((resolve) => setTimeout(resolve, 8000))]).catch(() => {})
+    await Promise.all([...doc.images].map((image) => Promise.race([image.decode().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 3000))])))
+    const overlays = [...doc.body.querySelectorAll<HTMLElement>('.seal-print-watermark,.seal-print-header,.seal-print-footer')]
+    overlays.forEach((node) => node.remove())
+    const source = doc.createElement('div')
+    source.style.cssText = 'width:686px;box-sizing:border-box'
+    while (doc.body.firstChild) source.appendChild(doc.body.firstChild)
+    doc.body.appendChild(source)
+    const pageWidth = 794, pageHeight = 1123, contentPageHeight = 1027
+    const sourceTop = source.getBoundingClientRect().top
+    const contentEnds = [...source.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6,li,tr,img,svg,canvas,hr')]
+      .filter((node) => node.textContent?.trim() || ['IMG', 'SVG', 'CANVAS', 'HR'].includes(node.tagName))
+      .map((node) => node.getBoundingClientRect().bottom - sourceTop)
+    const contentHeight = contentEnds.length
+      ? contentEnds.reduce((最大, 位置) => Math.max(最大, 位置), 0)
+      : Math.max(source.scrollHeight, source.getBoundingClientRect().height)
+    const pageCount = Math.max(1, Math.ceil(contentHeight / contentPageHeight))
+    if (pageCount > 200) throw new Error('文档超过 200 页，请分段打印')
+    const { toJpeg } = await import('html-to-image')
+    const pdf = await PDFDocument.create()
+    for (let index = 0; index < pageCount; index += 1) {
+      const clip = doc.createElement('div')
+      clip.style.cssText = `position:relative;overflow:hidden;width:${pageWidth}px;height:${pageHeight}px;background:#fff`
+      const pageBody = doc.createElement('div')
+      pageBody.style.cssText = `position:absolute;top:48px;left:54px;width:686px;height:${contentPageHeight}px;overflow:hidden`
+      const content = source.cloneNode(true) as HTMLElement
+      content.style.cssText = `position:absolute;top:${-index * contentPageHeight}px;left:0;width:686px`
+      pageBody.appendChild(content)
+      clip.appendChild(pageBody)
+      for (const overlay of overlays) clip.appendChild(overlay.cloneNode(true))
+      doc.body.appendChild(clip)
+      try {
+        window.dispatchEvent(new CustomEvent('seal-print-preview-progress', { detail: { current: index + 1, total: pageCount } }))
+        const imageUrl = await Promise.race([
+          toJpeg(clip, { width: pageWidth, height: pageHeight, pixelRatio: 1.25, quality: .9, skipFonts: true, backgroundColor: '#fff' }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`第 ${index + 1} 页生成超时`)), 8000)),
+        ])
+        const image = await pdf.embedJpg(Buffer.from(imageUrl.split(',')[1], 'base64'))
+        pdf.addPage([595.28, 841.89]).drawImage(image, { x: 0, y: 0, width: 595.28, height: 841.89 })
+      } finally { clip.remove() }
+    }
+    return pdf.save()
+  } finally { frame.remove() }
+}
 async function ofdPdf(html: string): Promise<Uint8Array> {
   const frame = document.createElement('iframe')
   frame.sandbox.add('allow-same-origin')
@@ -62,7 +133,7 @@ export async function installExportAdapters(core: any, save: any, handle: any) {
   handle('pdf.export', async (html: string, name: string) => {
     const selected = await core.platform.dialog.showSaveDialog({ defaultPath: name }); return save(selected.filePath, await pdfFromHtml(html))
   })
-  handle('document.printPreview', async (html: string, format: string) => ({ 成功: true, 数据: format === 'pdf' ? html : Buffer.from(await pdfFromHtml(html)).toString('base64') }))
+  handle('document.printPreview', async (html: string, format: string) => ({ 成功: true, 数据: format === 'pdf' ? html : Buffer.from(await printPdfFromHtml(html)).toString('base64') }))
   handle('document.print', async (html: string, format: string) => {
     const data = format === 'pdf' ? Buffer.from(html, 'base64') : await pdfFromHtml(html)
     await downloadFile('打印文档.pdf', data, 'application/pdf'); return { 成功: true }

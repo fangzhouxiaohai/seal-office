@@ -19,3 +19,18 @@ it('打印预览使用同一份 PDF 数据交给系统打印', async () => {
   await waitFor(() => expect(打印).toHaveBeenCalledWith('JVBERi0x', 'pdf'))
   expect(关闭).toHaveBeenCalledOnce()
 })
+
+it('预览生成失败后可重试，生成过程显示当前页进度', async () => {
+  const resolveNext: { current?: (value: { 成功: boolean; 数据?: string; 错误?: string }) => void } = {}
+  const 预览 = vi.spyOn(桥接, 'printPreview')
+    .mockRejectedValueOnce(new Error('转换失败'))
+    .mockImplementationOnce(() => new Promise<{ 成功: boolean; 数据?: string; 错误?: string }>((resolve) => { resolveNext.current = resolve }))
+  render(<AntdApp><PrintPreview 内容="<p>多页正文</p>" 格式="html" 标题="测试" onClose={vi.fn()} /></AntdApp>)
+  expect(await screen.findByRole('alert')).toHaveTextContent('转换失败')
+  fireEvent.click(screen.getByRole('button', { name: '重试预览' }))
+  window.dispatchEvent(new CustomEvent('seal-print-preview-progress', { detail: { current: 3, total: 8 } }))
+  expect(await screen.findByRole('status')).toHaveTextContent('第 3 / 8 页')
+  resolveNext.current?.({ 成功: true, 数据: 'JVBERi0x' })
+  expect(await screen.findByText('预览数据：JVBERi0x')).toBeInTheDocument()
+  expect(预览).toHaveBeenCalledTimes(2)
+})

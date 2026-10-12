@@ -263,6 +263,37 @@
   cursor: not-allowed;
 }
 
+.pdf-viewer__jump {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 4px;
+}
+
+.pdf-viewer__jump input {
+  width: 54px;
+  min-height: 32px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-viewer__jump input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.pdf-viewer__controls .pdf-viewer__jump button {
+  width: auto;
+  padding: 0 8px;
+}
+
 .pdf-viewer__counter,
 .pdf-viewer__zoom {
   color: var(--text-2);
@@ -278,8 +309,6 @@
 }
 
 .pdf-viewer__stage {
-  display: flex;
-  justify-content: safe center;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -290,8 +319,7 @@
 }
 
 .pdf-viewer__empty {
-  align-self: center;
-  margin-inline: auto;
+  margin: 16px auto;
   color: var(--text-2);
   font-size: 14px;
   line-height: 1.5;
@@ -307,9 +335,10 @@
   box-shadow: var(--shadow-card);
 }
 
-.pdf-viewer__page { position: relative; flex: 0 0 auto; margin-inline: auto; align-self: flex-start; background: white; box-shadow: var(--shadow-card); }
-.pdf-viewer__page[hidden] { display: none; }
+.pdf-viewer__pages { display: flex; flex-direction: column; align-items: center; gap: 24px; width: max-content; min-width: 100%; margin-inline: auto; }
+.pdf-viewer__page { position: relative; flex: 0 0 auto; background: white; box-shadow: var(--shadow-card); }
 .pdf-viewer__page .pdf-viewer__canvas { display: block; margin: 0; box-shadow: none; }
+.pdf-viewer__page-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; color: var(--text-2); text-align: center; }
 .pdf-viewer__text-layer { position: absolute; inset: 0; overflow: hidden; user-select: text; }
 .pdf-viewer__text-layer span { position: absolute; display: block; white-space: pre; color: transparent; line-height: 1; user-select: text; cursor: text; }
 .pdf-viewer__text-layer span::selection { background: rgba(61, 124, 220, .35); }

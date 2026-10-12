@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
@@ -15,19 +15,101 @@ interface Props {
 
 type 阅读状态 = '空白' | '加载中' | '就绪' | '失败'
 interface 页面文字项 { 文本: string; x: number; y: number; 宽: number; 高: number }
+interface PDF页面尺寸 { 宽: number; 高: number }
+
+/** 只在页面进入阅读区附近时创建画布；离开后释放画布内存。 */
+function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError }: {
+  文档: PDFDocumentProxy
+  页码: number
+  缩放: number
+  可用宽度: number | null
+  on尺寸: (页码: number, 尺寸: PDF页面尺寸) => void
+  onError: (页码: number, 错误: unknown) => void
+}) {
+  const 画布 = useRef<HTMLCanvasElement | null>(null)
+  const [文字项, set文字项] = useState<页面文字项[]>([])
+  const [错误, set错误] = useState(false)
+
+  useEffect(() => {
+    let 已取消 = false
+    let 渲染任务: RenderTask | null = null
+    set文字项([])
+    set错误(false)
+    void (async () => {
+      try {
+        const 页面 = await 文档.getPage(页码)
+        if (已取消) return
+        const 视口 = 页面.getViewport({ scale: 缩放 })
+        const 原始宽度 = 视口.width / 缩放
+        const 原始高度 = 视口.height / 缩放
+        on尺寸(页码, { 宽: 原始宽度, 高: 原始高度 })
+        const 默认适配宽度 = Math.min(原始宽度 * 默认文件缩放, 可用宽度 ?? Infinity)
+        const 显示宽度 = 默认适配宽度 * 缩放 / 默认文件缩放
+        const 显示高度 = 原始高度 * 显示宽度 / 原始宽度
+        const 节点 = 画布.current
+        const 画笔 = 节点?.getContext('2d')
+        if (!节点 || !画笔) throw new Error('无法创建页面画布')
+        const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
+        // 每页各自限制画布像素，长文档滚动时不会一次创建所有页的画布。
+        const 画布像素上限 = 16_000_000
+        const 期望像素 = 显示宽度 * 显示高度 * 像素比 * 像素比
+        const 渲染比 = 期望像素 > 画布像素上限 ? Math.sqrt(画布像素上限 / 期望像素) : 1
+        const 渲染视口 = 页面.getViewport({ scale: 显示宽度 / 原始宽度 * 渲染比 })
+        节点.width = Math.max(1, Math.floor(渲染视口.width * 像素比))
+        节点.height = Math.max(1, Math.floor(渲染视口.height * 像素比))
+        节点.style.width = `${显示宽度}px`
+        节点.style.height = `${显示高度}px`
+        渲染任务 = 页面.render({
+          canvas: 节点,
+          canvasContext: 画笔,
+          viewport: 渲染视口,
+          transform: 像素比 === 1 ? undefined : [像素比, 0, 0, 像素比, 0, 0],
+        })
+        await 渲染任务.promise
+        const 文本内容 = await 页面.getTextContent()
+        if (已取消) return
+        const 比例 = 显示宽度 / 视口.width
+        const 行: 页面文字项[] = []
+        for (const 原项 of 文本内容.items) {
+          const 项 = 原项 as unknown as { str?: string; transform?: number[]; width?: number; height?: number }
+          if (!项.str || !项.transform || 项.transform.length < 6) continue
+          const [x, y] = 视口.convertToViewportPoint(项.transform[4], 项.transform[5])
+          const 高 = Math.max(1, (项.height || Math.hypot(项.transform[2], 项.transform[3])) * 缩放 * 比例)
+          行.push({ 文本: 项.str, x: x * 比例, y: y * 比例 - 高, 宽: Math.max(1, (项.width || 1) * 缩放 * 比例), 高 })
+        }
+        set文字项(行)
+      } catch (原因) {
+        if (已取消 || (原因 instanceof Error && 原因.name === 'RenderingCancelledException')) return
+        set错误(true)
+        onError(页码, 原因)
+      }
+    })()
+    return () => { 已取消 = true; 渲染任务?.cancel() }
+  }, [文档, 页码, 缩放, 可用宽度, on尺寸, onError])
+
+  return <>
+    <canvas ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${页码} 页`} />
+    <div className="pdf-viewer__text-layer" aria-label={`第 ${页码} 页可选择的 PDF 文字`}>
+      {文字项.map((项, 索引) => <span key={索引} style={{ left: 项.x, top: 项.y, minWidth: 项.宽, height: 项.高, fontSize: 项.高 }}>{项.文本}</span>)}
+    </div>
+    {错误 && <span className="pdf-viewer__page-error" role="status">第 {页码} 页无法显示</span>}
+  </>
+}
 
 const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
+  const [跳转页码, set跳转页码] = useState('1')
   const [缩放, set缩放] = useState(默认文件缩放)
   const [可用宽度, set可用宽度] = useState<number | null>(null)
-  const [页面文字, set页面文字] = useState('')
-  const [文字项, set文字项] = useState<页面文字项[]>([])
-  const [页面尺寸, set页面尺寸] = useState({ 宽: 0, 高: 0 })
+  const [页面尺寸, set页面尺寸] = useState<Record<number, PDF页面尺寸>>({})
+  const [活跃页, set活跃页] = useState<Set<number>>(() => new Set([1]))
   const [复制状态, set复制状态] = useState('')
-  const 画布 = useRef<HTMLCanvasElement | null>(null)
   const 阅读区 = useRef<HTMLDivElement | null>(null)
+  const 页节点 = useRef<Array<HTMLDivElement | null>>([])
+  const 页码输入 = useRef<HTMLInputElement | null>(null)
+  const 右键页码 = useRef(1)
   const 报错回调 = useRef(onError)
   报错回调.current = onError
 
@@ -78,7 +160,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const 处理菜单命令 = (命令标识: string): boolean => {
     const 选中 = 菜单选区.current || 取选中文字()
     if (命令标识 === '__pdfCopySelection__') { void navigator.clipboard.writeText(选中).then(() => set复制状态('已复制选中文字')).catch(() => set复制状态('复制失败，请检查剪贴板权限')); return true }
-    if (命令标识 === '__pdfCopyPage__') { void 复制本页(); return true }
+    if (命令标识 === '__pdfCopyPage__') { void 复制本页(右键页码.current); return true }
     if (命令标识 === '__pdfCopyAll__') { void 复制全文(); return true }
     if (!命令标识.startsWith('__ai__:')) return false
     const 指令 = 通用AI指令.find((项) => 项.id === 命令标识.slice('__ai__:'.length))
@@ -111,9 +193,11 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     let 关闭文档: (() => void) | null = null
     set文档(null)
     set当前页(1)
+    set跳转页码('1')
     set缩放(默认文件缩放)
-    set页面文字('')
-    set文字项([])
+    set页面尺寸({})
+    set活跃页(new Set([1]))
+    页节点.current = []
     if (!数据) {
       set状态('空白')
       return
@@ -138,76 +222,73 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     }
   }, [数据, 文件名])
 
-  useEffect(() => {
-    if (文档 === null || 状态 !== '就绪') return
-    let 已取消 = false
-    let 渲染任务: RenderTask | null = null
-    set页面文字('')
-    set文字项([])
-    void (async () => {
-      try {
-        const 页面 = await 文档.getPage(当前页)
-        if (已取消) return
-        const 视口 = 页面.getViewport({ scale: 缩放 })
-        const 节点 = 画布.current
-        const 画笔 = 节点?.getContext('2d')
-        if (!节点 || !画笔) throw new Error('无法创建页面画布')
-        const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
-        const 原始宽度 = 视口.width / 缩放
-        const 显示宽度 = Math.min(原始宽度, 可用宽度 ?? 原始宽度) * 缩放
-        const 显示高度 = 视口.height * 显示宽度 / 视口.width
-        // 高倍缩放（最高 6400%）不可能按显示尺寸分配画布，超过预算时降采样渲染再由 CSS 放大
-        const 画布像素上限 = 16_000_000
-        const 期望像素 = 显示宽度 * 显示高度 * 像素比 * 像素比
-        const 渲染比 = 期望像素 > 画布像素上限 ? Math.sqrt(画布像素上限 / 期望像素) : 1
-        const 渲染视口 = 渲染比 === 1 ? 视口 : 页面.getViewport({ scale: 缩放 * 渲染比 })
-        节点.width = Math.max(1, Math.floor(渲染视口.width * 像素比))
-        节点.height = Math.max(1, Math.floor(渲染视口.height * 像素比))
-        节点.style.width = `${显示宽度}px`
-        节点.style.height = `${显示高度}px`
-        set页面尺寸({ 宽: 显示宽度, 高: 显示高度 })
-        渲染任务 = 页面.render({
-          canvas: 节点,
-          canvasContext: 画笔,
-          viewport: 渲染视口,
-          transform: 像素比 === 1 ? undefined : [像素比, 0, 0, 像素比, 0, 0],
-        })
-        await 渲染任务.promise
-        const 文本内容 = await 页面.getTextContent()
-        if (已取消) return
-        const 比例 = 显示宽度 / 视口.width
-        const 行 = [] as 页面文字项[]
-        for (const 原项 of 文本内容.items) {
-          const 项 = 原项 as unknown as { str?: string; transform?: number[]; width?: number; height?: number }
-          if (!项.str || !项.transform || 项.transform.length < 6) continue
-          const [x, y] = 视口.convertToViewportPoint(项.transform[4], 项.transform[5])
-          const 高 = Math.max(1, (项.height || Math.hypot(项.transform[2], 项.transform[3])) * 缩放 * 比例)
-          行.push({ 文本: 项.str, x: x * 比例, y: y * 比例 - 高, 宽: Math.max(1, (项.width || 1) * 缩放 * 比例), 高 })
-        }
-        set文字项(行)
-        set页面文字(行.map((项) => 项.文本).join(' '))
-      } catch (错误) {
-        if (已取消 || (错误 instanceof Error && 错误.name === 'RenderingCancelledException')) return
-        set状态('失败')
-        报错回调.current?.(`无法显示「${文件名}」第 ${当前页} 页：${错误 instanceof Error ? 错误.message : '页面渲染失败'}`)
-      }
-    })()
-    return () => {
-      已取消 = true
-      渲染任务?.cancel()
-    }
-  }, [文档, 状态, 当前页, 缩放, 文件名, 可用宽度])
-
   const 总页数 = 文档?.numPages ?? 0
-  const 翻页 = (差值: number) => set当前页((页码) => Math.min(总页数, Math.max(1, 页码 + 差值)))
+  const 记录页面尺寸 = useCallback((页码: number, 尺寸: PDF页面尺寸) => {
+    set页面尺寸((旧值) => 旧值[页码]?.宽 === 尺寸.宽 && 旧值[页码]?.高 === 尺寸.高 ? 旧值 : { ...旧值, [页码]: 尺寸 })
+  }, [])
+  const 报告页面错误 = useCallback((页码: number, 错误: unknown) => {
+    报错回调.current?.(`无法显示「${文件名}」第 ${页码} 页：${错误 instanceof Error ? 错误.message : '页面渲染失败'}`)
+  }, [文件名])
+
+  /** 二分查找视口附近的页，只保留附近页画布，同时让页码随滚动更新。 */
+  const 更新可视页 = () => {
+    const 舞台 = 阅读区.current
+    if (!舞台 || !文档 || 舞台.clientHeight <= 0) return
+    const 节点 = 页节点.current
+    const 区域 = 舞台.getBoundingClientRect()
+    const 中线 = 区域.top + 舞台.clientHeight / 2
+    let 左 = 0; let 右 = 总页数
+    while (左 < 右) {
+      const 中 = (左 + 右) >>> 1
+      if ((节点[中]?.getBoundingClientRect().bottom ?? Infinity) < 中线) 左 = 中 + 1
+      else 右 = 中
+    }
+    set当前页(Math.min(总页数, 左 + 1))
+    const 预载距离 = Math.max(600, 舞台.clientHeight)
+    左 = 0; 右 = 总页数
+    while (左 < 右) {
+      const 中 = (左 + 右) >>> 1
+      if ((节点[中]?.getBoundingClientRect().bottom ?? Infinity) < 区域.top - 预载距离) 左 = 中 + 1
+      else 右 = 中
+    }
+    const 附近 = new Set<number>()
+    for (let 索引 = 左; 索引 < 总页数; 索引 += 1) {
+      const 矩形 = 节点[索引]?.getBoundingClientRect()
+      if (!矩形 || 矩形.top > 区域.bottom + 预载距离) break
+      附近.add(索引 + 1)
+    }
+    set活跃页((旧值) => 旧值.size === 附近.size && [...附近].every((页) => 旧值.has(页)) ? 旧值 : 附近)
+  }
+
+  useEffect(() => { 更新可视页() }, [文档, 缩放, 可用宽度, 页面尺寸])
+  useEffect(() => {
+    if (document.activeElement !== 页码输入.current) set跳转页码(String(当前页))
+  }, [当前页])
+
+  const 跳转到页 = (页码: number) => {
+    if (状态 !== '就绪' || !Number.isInteger(页码) || 页码 < 1 || 页码 > 总页数) return
+    set当前页(页码)
+    set跳转页码(String(页码))
+    set活跃页((旧值) => new Set(旧值).add(页码))
+    const 舞台 = 阅读区.current
+    const 页面 = 页节点.current[页码 - 1]
+    if (舞台 && 页面) {
+      舞台.scrollTop += 页面.getBoundingClientRect().top - 舞台.getBoundingClientRect().top
+      更新可视页()
+    }
+  }
+  const 翻页 = (差值: number) => 跳转到页(Math.min(总页数, Math.max(1, 当前页 + 差值)))
   const 调整缩放 = (方向: '放大' | '缩小') => set缩放((当前) => {
     const 下一个 = 方向 === '放大' ? 放大一档(当前) : 缩小一档(当前)
     return 下一个 ?? 当前
   })
-  const 复制本页 = async () => {
-    if (!页面文字.trim()) return
+  const 复制本页 = async (页码 = 当前页) => {
+    if (!文档) return
     try {
-      await navigator.clipboard.writeText(页面文字)
+      const 内容 = await (await 文档.getPage(页码)).getTextContent()
+      const 文字 = 内容.items.map((项) => 'str' in 项 ? 项.str : '').join(' ').trim()
+      if (!文字) { set复制状态('这页 PDF 没有可复制的文字'); return }
+      await navigator.clipboard.writeText(文字)
       set复制状态('已复制本页文字')
     } catch { set复制状态('复制失败，请检查剪贴板权限') }
   }
@@ -233,11 +314,20 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           <button type="button" aria-label="上一页" title="上一页" disabled={状态 !== '就绪' || 当前页 <= 1} onClick={() => 翻页(-1)}><Icon name="arrow-left" size={15} /></button>
           <span className="pdf-viewer__counter" aria-live="polite">{总页数 > 0 ? `第 ${当前页} 页 / 共 ${总页数} 页` : '未打开文件'}</span>
           <button type="button" aria-label="下一页" title="下一页" disabled={状态 !== '就绪' || 当前页 >= 总页数} onClick={() => 翻页(1)}><Icon name="arrow-left" size={15} className="pdf-viewer__forward" /></button>
+          <form className="pdf-viewer__jump" onSubmit={(事件) => {
+            事件.preventDefault()
+            const 页码 = Number(跳转页码)
+            if (Number.isInteger(页码) && 页码 >= 1 && 页码 <= 总页数) 跳转到页(页码)
+            else { set复制状态(`请输入 1 至 ${总页数} 的页码`); 页码输入.current?.focus() }
+          }}>
+            <input ref={页码输入} type="number" inputMode="numeric" min={1} max={总页数 || 1} value={跳转页码} disabled={状态 !== '就绪'} aria-label="跳转页码" onChange={(事件) => set跳转页码(事件.target.value)} />
+            <button type="submit" aria-label="跳转到指定页" title="跳转到指定页" disabled={状态 !== '就绪'}>跳转</button>
+          </form>
           <span className="pdf-viewer__divider" aria-hidden="true" />
           <button type="button" aria-label="缩小" title="缩小" disabled={状态 !== '就绪' || 缩小一档(缩放) === null} onClick={() => 调整缩放('缩小')}><Icon name="zoom-out" size={15} /></button>
           <span className="pdf-viewer__zoom" aria-live="polite">{缩放百分比文本(缩放)}</span>
           <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 放大一档(缩放) === null} onClick={() => 调整缩放('放大')}><Icon name="zoom-in" size={15} /></button>
-          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={!页面文字.trim()} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
+          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={状态 !== '就绪'} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
           <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
         </div>
       </div>
@@ -245,8 +335,11 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       <div
         ref={阅读区}
         className="pdf-viewer__stage"
+        onScroll={更新可视页}
         onContextMenu={(事件) => {
           事件.preventDefault()
+          const 页 = (事件.target as HTMLElement).closest<HTMLElement>('[data-pdf-page]')?.dataset.pdfPage
+          右键页码.current = 页 ? Number(页) : 当前页
           菜单选区.current = 取选中文字()
           set菜单坐标({ x: 事件.clientX, y: 事件.clientY })
           set菜单可见(true)
@@ -255,12 +348,25 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
         {状态 === '空白' && <div className="pdf-viewer__empty">选择本机 PDF 文件后，在这里阅读页面</div>}
         {状态 === '加载中' && <div className="pdf-viewer__empty" role="status">正在打开 PDF 文件…</div>}
         {状态 === '失败' && <div className="pdf-viewer__empty" role="status">无法预览这份 PDF 文件</div>}
-        <div className="pdf-viewer__page" style={页面尺寸.宽 ? { width: 页面尺寸.宽, height: 页面尺寸.高 } : undefined} hidden={状态 !== '就绪'}>
-          <canvas ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${当前页} 页`} />
-          <div className="pdf-viewer__text-layer" aria-label="可选择的 PDF 文字">
-            {文字项.map((项, 索引) => <span key={索引} style={{ left: 项.x, top: 项.y, minWidth: 项.宽, height: 项.高, fontSize: 项.高 }}>{项.文本}</span>)}
-          </div>
-        </div>
+        {状态 === '就绪' && 文档 && <div className="pdf-viewer__pages" aria-label={`PDF 全部 ${总页数} 页`}>
+          {Array.from({ length: 总页数 }, (_, 索引) => {
+            const 页码 = 索引 + 1
+            const 原始尺寸 = 页面尺寸[页码] ?? 页面尺寸[1] ?? { 宽: 600, 高: 800 }
+            const 默认适配宽度 = Math.min(原始尺寸.宽 * 默认文件缩放, 可用宽度 ?? Infinity)
+            const 宽 = 默认适配宽度 * 缩放 / 默认文件缩放
+            const 高 = 原始尺寸.高 * 宽 / 原始尺寸.宽
+            return <div
+              key={页码}
+              ref={(节点) => { 页节点.current[索引] = 节点 }}
+              className="pdf-viewer__page"
+              data-pdf-page={页码}
+              aria-label={`第 ${页码} 页`}
+              style={{ width: 宽, height: 高 }}
+            >
+              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 可用宽度={可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} />}
+            </div>
+          })}
+        </div>}
       </div>
       <SelectionFloatPanel
         打开={!菜单可见 && 选区浮窗.打开}

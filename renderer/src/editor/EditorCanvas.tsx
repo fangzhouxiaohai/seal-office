@@ -175,7 +175,8 @@ const EditorCanvas = ({
     position: 'relative',
     boxSizing: 'border-box',
   }
-  const 水印文本 = 水印文案[watermark]
+  const 水印图片 = watermark.startsWith('图片:') ? watermark.slice(3) : undefined
+  const 水印文本 = 水印图片 ? undefined : 水印文案[watermark] ?? (watermark !== '无' ? watermark : undefined)
 
   const 容器类名 = [
     'wps-editor-canvas',
@@ -193,7 +194,9 @@ const EditorCanvas = ({
     React.createElement(
       'div',
       { className: 'wps-editor-canvas__paper', style: 纸张样式 },
-      水印文本 !== undefined
+      水印图片
+        ? React.createElement('img', { className: 'wps-editor-canvas__watermark wps-editor-canvas__watermark--image', src: 水印图片, alt: '', 'aria-hidden': true })
+        : 水印文本 !== undefined
         ? React.createElement(
             'div',
             {

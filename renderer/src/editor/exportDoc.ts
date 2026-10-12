@@ -1,8 +1,12 @@
 // 导出文档：拼装独立 HTML 文件，或从编辑区 HTML 抽取纯文本。
 // 下载通过浏览器原生 Blob 触发，不依赖主进程。
 
-export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '', 页脚Html = ''): string {
+export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '', 页脚Html = '', 水印 = '无'): string {
   const 安全标题 = 标题.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const 图片 = 水印.startsWith('图片:') ? 水印.slice(3) : ''
+  const 安全图片 = /^data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(图片) ? 图片 : ''
+  const 水印内容 = 安全图片 ? `<img src="${安全图片}" alt="">` : 水印 !== '无' && !图片
+    ? 水印.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''
   const 附加样式 = 页眉Html || 页脚Html ? `<style>
 @page { margin: 25mm 20mm; }
 .seal-print-header { position: fixed; top: 0; left: 0; right: 0; font-size: 10pt; }
@@ -20,8 +24,10 @@ export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '
 <meta name="generator" content="海豹办公 Seal Office">
 <title>${安全标题}</title>
 ${附加样式}
+${水印内容 ? `<style>.seal-print-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)${安全图片 ? '' : ' rotate(-30deg)'};z-index:1;opacity:${安全图片 ? '.24' : '.18'};font:700 72px sans-serif;color:#64748b;white-space:nowrap;pointer-events:none}.seal-print-watermark img{display:block;max-width:500px;max-height:680px}</style>` : ''}
 </head>
 <body>
+${水印内容 ? `<div class="seal-print-watermark" aria-hidden="true">${水印内容}</div>` : ''}
 ${页眉Html ? `<div class="seal-print-header">${页眉Html}</div>` : ''}
 ${页脚Html ? `<div class="seal-print-footer">${页脚Html}</div>` : ''}
 ${页眉Html || 页脚Html ? `<table class="seal-print-layout">${页眉Html ? '<thead><tr><td></td></tr></thead>' : ''}${页脚Html ? '<tfoot><tr><td></td></tr></tfoot>' : ''}<tbody><tr><td>${正文Html}</td></tr></tbody></table>` : 正文Html}

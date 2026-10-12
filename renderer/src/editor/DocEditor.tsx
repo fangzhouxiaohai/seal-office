@@ -818,7 +818,7 @@ const DocEditor = () => {
       const 正文 = 编辑区引用.current?.innerHTML
       if (!正文) { message.warning('文档为空，无法打印'); return }
       const 名称 = 当前文档?.name ?? '未命名文档'
-      set打印预览({ 内容: 导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html), 标题: 名称 })
+      set打印预览({ 内容: 导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html, 视图.水印), 标题: 名称 })
       return
     }
     const 命令 = 命令表[命令标识]

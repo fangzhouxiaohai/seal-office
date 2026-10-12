@@ -45,10 +45,13 @@ describe('PDF 阅读预览', () => {
     Object.defineProperty(舞台, 'clientWidth', { configurable: true, value: 400 })
     舞台.style.padding = '24px'
     fireEvent(window, new Event('resize'))
-    const 画布 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
-    await waitFor(() => expect(画布.style.width).toBe('528px'))
+    const 画布 = await waitFor(() => {
+      const 节点 = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement | null
+      expect(节点?.style.width).toBe('352px')
+      return 节点!
+    })
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(616, 1))
+    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(352 * 1.75 / 1.5, 1))
   })
 
   it('解析失败时通知工作台并显示失败状态', async () => {
@@ -130,5 +133,40 @@ describe('PDF 阅读预览', () => {
     // 6400% 下按显示尺寸分配画布会申请数亿像素，实际渲染按预算降采样
     expect(画布.width * 画布.height).toBeLessThanOrEqual(16_000_000)
     expect(Number.parseFloat(画布.style.width)).toBeCloseTo(600 * 64, 0)
+  })
+
+  it('连续排出所有页，滚动更新页码，输入页码可直接跳转并只渲染附近页面', async () => {
+    const 取页面 = vi.fn(async () => ({
+      getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
+      render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+      getTextContent: async () => ({ items: [] }),
+    }))
+    PDF模拟.取文档.mockReturnValue({ promise: Promise.resolve({ numPages: 12, getPage: 取页面 }), destroy: vi.fn() })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="长文档.pdf" />)
+    await screen.findByText('第 1 页 / 共 12 页')
+    const 舞台 = container.querySelector('.pdf-viewer__stage') as HTMLDivElement
+    const 页 = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')]
+    expect(页).toHaveLength(12)
+    Object.defineProperty(舞台, 'clientHeight', { configurable: true, value: 600 })
+    舞台.getBoundingClientRect = () => ({ top: 0, bottom: 600 } as DOMRect)
+    页.forEach((节点, 索引) => {
+      节点.getBoundingClientRect = () => ({ top: 索引 * 1000 - 舞台.scrollTop, bottom: (索引 + 1) * 1000 - 舞台.scrollTop } as DOMRect)
+    })
+    fireEvent.scroll(舞台)
+    await waitFor(() => expect(页[0].querySelector('canvas')).not.toBeNull())
+    expect(页[9].querySelector('canvas')).toBeNull()
+
+    舞台.scrollTop = 2100
+    fireEvent.scroll(舞台)
+    await screen.findByText('第 3 页 / 共 12 页')
+    await waitFor(() => expect(页[2].querySelector('canvas')).not.toBeNull())
+    expect(页[0].querySelector('canvas')).toBeNull()
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: '跳转页码' }), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: '跳转到指定页' }))
+    await screen.findByText('第 10 页 / 共 12 页')
+    expect(舞台.scrollTop).toBe(9000)
+    await waitFor(() => expect(页[9].querySelector('canvas')).not.toBeNull())
+    expect(取页面).toHaveBeenCalledWith(10)
   })
 })

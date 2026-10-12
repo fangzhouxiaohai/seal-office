@@ -154,7 +154,7 @@ function 生成字符样式(配置) {
   if (配置.颜色) 样式 += `color:${配置.颜色};`
   if (配置.底纹) 样式 += `background-color:${配置.底纹};`
   if (配置.字号) 样式 += `font-size:${配置.字号}pt;`
-  if (配置.字体) 样式 += `font-family:'${配置.字体.replace(/[\\'"<>&]/g, 字符 => '\\' + 字符.codePointAt(0).toString(16) + ' ')}';`
+  if (配置.字体) 样式 += `font-family:'${配置.字体.replace(/[\\'"<>&]/g, 字符 => '\\' + 字符.codePointAt(0).toString(16) + ' ')}','SealOfficeCJK',sans-serif;`
   if (配置.字间距) 样式 += `letter-spacing:${配置.字间距}pt;`
   if (配置.基线) 样式 += `vertical-align:${配置.基线 === 'superscript' ? 'super' : 配置.基线 === 'subscript' ? 'sub' : 'baseline'};`
   return 样式
@@ -750,9 +750,26 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
       if (!/<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(内容)) continue
       const 图片读取 = await 读取正文图片(压缩包, 内容, 警告, 部件)
       const 局部样式 = { ...样式定义, 图片: 图片读取.图片 }
-      const html = 渲染Body(图片读取.正文, 编号映射, 局部样式)
+      // Word 常把水印放在页眉 VML 图层，而非 document.xml 的页面设置中。
+      // 先抽出被标记为 WaterMark 的对象，避免它被当作普通页眉图片排在正文上方。
+      let 页眉正文 = 图片读取.正文
+      for (const 匹配 of 页眉正文.matchAll(/<w:pict(?=[\s>])[^>]*>[\s\S]*?<\/w:pict>/gi)) {
+        const 对象 = 匹配[0]
+        if (!/watermark/i.test(对象)) continue
+        const 图片 = 图片读取.图片.get(对象)
+        const 图片源 = 图片?.match(/\bsrc="(data:image\/(?:png|jpeg|gif|webp);base64,[^"]+)"/i)?.[1]
+        const 文本标签 = 对象.match(/<v:textpath(?=[\s/>])[^>]*>/i)?.[0]
+        const 文本 = 文本标签 ? 取属性(文本标签, 'v:textpath', 'string') : null
+        if (图片源 && 图片源.length <= 8_000_000) 结果.水印 = `图片:${图片源}`
+        else if (文本) 结果.水印 = 文本.slice(0, 100)
+        else { 警告.push('页眉水印未完整导入'); continue }
+        页眉正文 = 页眉正文.replace(对象, '')
+        警告.push('水印可预览，但当前版本无法将其写回 DOCX；保存时请保留原文件')
+      }
+      const html = /<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(页眉正文)
+        ? 渲染Body(页眉正文, 编号映射, 局部样式) : ''
       if (存在未保留的域或制表符(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
-      警告.push(...收集未导入警告(图片读取.正文, 图片读取.图片).map((项) => `${名称}：${项}`))
+      警告.push(...收集未导入警告(页眉正文, 图片读取.图片).map((项) => `${名称}：${项}`))
       候选.push({ 类型: 取属性(项[0], `w:${种类}Reference`, 'w:type') ?? 'default', html })
     }
     // 首页页脚要有 w:titlePg、奇偶页页脚要有 settings.xml 的 w:evenAndOddHeaders 才会生效；

@@ -1254,6 +1254,7 @@ button {
 
 .seal-print-preview .pdf-viewer { height: min(70vh, 760px); }
 .seal-print-preview__loading { min-height: 180px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.seal-print-preview__error { min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
 
 /* 页面水印：居中斜置、不拦截交互 */
 .wps-editor-canvas__watermark {
@@ -1270,6 +1271,7 @@ button {
   white-space: nowrap;
   z-index: 0;
 }
+.wps-editor-canvas__watermark--image { max-width: 65%; max-height: 65%; width: auto; height: auto; transform: translate(-50%, -50%); opacity: .24; }
 
 .wps-editor-canvas__watermark ~ .wps-editor-canvas__content {
   position: relative;

@@ -49,6 +49,11 @@ html[data-seal-platform="app"] { --seal-bottom-inset: 0px; }
   .ant-drawer-content-wrapper { max-width: 100%; }
   .ant-modal { max-width: calc(100% - 24px); margin-inline: auto; }
   .ant-modal-body { max-height: 70dvh; overflow-y: auto; }
+  .seal-print-preview .pdf-viewer { min-height: 0; height: min(62dvh, 680px); }
+  .seal-print-preview .pdf-viewer__toolbar { flex-wrap: wrap; gap: 6px; padding: 8px; }
+  .seal-print-preview .pdf-viewer__name { flex-basis: 100%; }
+  .seal-print-preview .pdf-viewer__controls { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; justify-content: center; gap: 5px; }
+  .seal-print-preview .pdf-viewer__stage { padding: 12px; }
   .ant-input, .ant-input-number-input, textarea, select { font-size: 16px; }
   .wps-ribbon, .wps-ribbon-tabs, .wps-ribbon-panel { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
   .wps-ribbon-tabs { flex-wrap: nowrap; white-space: nowrap; }

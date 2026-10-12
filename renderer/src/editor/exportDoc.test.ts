@@ -10,6 +10,15 @@ describe('导出文档', () => {
     expect(结果).toContain('<p>正文</p>')
   })
 
+  it('打印 HTML 保留文字或图片水印，且不执行水印文字中的标签', () => {
+    const 文字 = 导出为Html('测试', '<p>正文</p>', '', '', '<script>danger</script>')
+    expect(文字).toContain('class="seal-print-watermark"')
+    expect(文字).toContain('&lt;script&gt;danger&lt;/script&gt;')
+    expect(文字).not.toContain('<script>danger</script>')
+    const 图片 = 导出为Html('测试', '<p>正文</p>', '', '', '图片:data:image/png;base64,AQID')
+    expect(图片).toContain('<img src="data:image/png;base64,AQID"')
+  })
+
   it('文本输出按段落转换为换行', () => {
     expect(导出为文本('<p>第一段</p><p>第二段</p>')).toBe('第一段\n第二段')
   })
