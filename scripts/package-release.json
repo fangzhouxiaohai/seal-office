@@ -1,49 +1,49 @@
 {
   "repository": "fangzhouxiaohai/seal-office",
-  "version": "1.9.13",
-  "tag": "v1.9.13",
-  "created": "2026-10-12T08:04:37Z",
+  "version": "1.9.14",
+  "tag": "v1.9.14",
+  "created": "2026-10-12T18:40:50Z",
   "platforms": {
     "windows": {
       "description": "海豹办公 Windows x64 安装版、便携版和微软商店上传包。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
-      "usage": "运行 SealOfficeSetup1.9.13.exe 安装，或直接运行 SealOffice1.9.13.exe。MSIX 用于微软合作伙伴中心上传，由商店签名后分发。",
+      "usage": "运行 SealOfficeSetup1.9.14.exe 安装，或直接运行 SealOffice1.9.14.exe。MSIX 用于微软合作伙伴中心上传，由商店签名后分发。",
       "assets": [
         {
-          "name": "SealOfficeSetup1.9.13.exe",
-          "size": 386012886,
-          "sha256": "8ee2e2d7d8a35006b2d972258ca635d8a57c3db3e6ead8938e0222312a827caf"
+          "name": "SealOfficeSetup1.9.14.exe",
+          "size": 386020014,
+          "sha256": "389c87f7c13591820a5d5dabd004abb04f134d44742a0b2bc3b5010a08f7e1df"
         },
         {
-          "name": "SealOffice1.9.13.exe",
-          "size": 385787967,
-          "sha256": "b0a7157111a303267a9f0cd545ba1abaed13ff8e3419a66f6a6a0c29d44f2c08"
+          "name": "SealOffice1.9.14.exe",
+          "size": 385795001,
+          "sha256": "c6d7929bbe22df71a0ad9081cbdfa6751e9b3a3f5310754b8eeb9ba088a7529d"
         },
         {
-          "name": "SealOffice1.9.13.msix",
-          "size": 723420275,
-          "sha256": "de7d98302a259a8406b6912d6e1eb7d5132140f8d1b0a3a6e34a975f4b03d9f5"
+          "name": "SealOffice1.9.14.msix",
+          "size": 723514580,
+          "sha256": "8f77a92debcfa93cb109332ab8d5426196272c7e22cab50441d9827c9299405f"
         }
       ]
     },
     "android": {
       "description": "海豹办公 Android 9+ ARM 32/64 位原始云打包 APK。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
-      "usage": "将 SealOfficeAndroid1.9.13.apk 下载到 Android 手机并安装。最低 Android 9，目标 Android 16，包名 com.sealoffice.mobile。APK 未重新签名或修改。",
+      "usage": "将 SealOfficeAndroid1.9.14.apk 下载到 Android 手机并安装。最低 Android 9，目标 Android 16，包名 com.sealoffice.mobile。APK 未重新签名或修改。",
       "assets": [
         {
-          "name": "SealOfficeAndroid1.9.13.apk",
+          "name": "SealOfficeAndroid1.9.14.apk",
           "size": 55836249,
-          "sha256": "feb0794012ffced174cccac43e7feeb6af01db98ec1406f874f61d80058cea9b"
+          "sha256": "939f5324e3cb73dde4bc7cd40df9dbeadbbe56544e58e751694a5814b92218ff"
         }
       ]
     },
     "linux": {
       "description": "海豹办公 Ubuntu amd64 DEB，已通过 Ubuntu 22.04 / 24.04 安装验证。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
-      "usage": "在 Ubuntu 22.04 / 24.04 x86_64 运行 sudo apt update，然后 sudo apt install ./SealOfficeUbuntu1.9.13-amd64.deb。启动命令：sealoffice。验收报告见仓库 Release。",
+      "usage": "在 Ubuntu 22.04 / 24.04 x86_64 运行 sudo apt update，然后 sudo apt install ./SealOfficeUbuntu1.9.14-amd64.deb。启动命令：sealoffice。验收报告见仓库 Release。",
       "assets": [
         {
-          "name": "SealOfficeUbuntu1.9.13-amd64.deb",
-          "size": 144806608,
-          "sha256": "344096c5b58dacae09c861894dbe2153e7f9b74c76f14466a266fdd05b63dc95"
+          "name": "SealOfficeUbuntu1.9.14-amd64.deb",
+          "size": 144806384,
+          "sha256": "98230a2b3d22e34dc4194bfe6d258daff4841823e60f6da741c6e88d7159a6a5"
         }
       ]
     }

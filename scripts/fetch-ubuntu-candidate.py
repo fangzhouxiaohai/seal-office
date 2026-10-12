@@ -54,7 +54,8 @@ def main(run_id):
         return response.json()
 
     run = api(f'/actions/runs/{run_id}')
-    if run['status'] != 'completed' or run['conclusion'] != 'success' or run['head_branch'] != 'codex/pdf-print-preview':
+    allowed_branches = {'main', 'codex/pdf-print-preview'}
+    if run['status'] != 'completed' or run['conclusion'] != 'success' or run['head_branch'] not in allowed_branches:
         raise RuntimeError('Ubuntu candidate workflow has not passed on the expected branch')
     artifacts = {item['name']: item for item in api(f'/actions/runs/{run_id}/artifacts?per_page=100')['artifacts']}
     names = ['ubuntu-deb', 'verification-ubuntu-22.04', 'verification-ubuntu-24.04']

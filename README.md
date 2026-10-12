@@ -27,7 +27,7 @@
 
 ## Ubuntu 下载
 
-[SealOfficeUbuntu1.9.12-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeUbuntu1.9.12-amd64.deb) 为 x86_64 / amd64 安装包，安装依赖后可离线转换旧办公格式。Ubuntu 22.04 / 24.04 各通过 71 项实际安装、程序启动、文件读写及关联检查；[成品报告与截图](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-UbuntuVerification.zip)随包提供。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
+[SealOfficeUbuntu1.9.14-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeUbuntu1.9.14-amd64.deb) 为 x86_64 / amd64 安装包，包含本版 PDF 连续滚动修复，安装依赖后可离线转换旧办公格式。Ubuntu 22.04 / 24.04 各通过 71 项实际安装、程序启动、文件读写及关联检查；[成品报告与截图](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14-UbuntuVerification.zip)随包提供。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
 
 ## Android 下载
 
@@ -35,7 +35,7 @@
 
 [1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
 
-当前 [1.9.12 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.12)集中提供 Windows、Ubuntu 和 Android 成品，[GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.12)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
+当前 [1.9.14 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.14)集中提供 Windows、Ubuntu 和 Android 成品，[GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.14)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
 
 ### 安卓版界面原型操作教程
 

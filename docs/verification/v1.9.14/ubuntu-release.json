@@ -1,0 +1,33 @@
+{
+  "version": "1.9.14",
+  "platform": "Ubuntu amd64",
+  "sourceCommit": "f8cf2ff823c9c034d0331ed06746ebaaa4fca8b2",
+  "workflowRun": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/38289608404",
+  "package": {
+    "name": "SealOfficeUbuntu1.9.14-amd64.deb",
+    "bytes": 144806384,
+    "sha256": "98230a2b3d22e34dc4194bfe6d258daff4841823e60f6da741c6e88d7159a6a5"
+  },
+  "verificationArchive": {
+    "name": "SealOffice1.9.14-UbuntuVerification.zip",
+    "bytes": 139912,
+    "sha256": "177cfe5c60e4ae58bd5baae1e26ac66408ae12f2aeaee4d727a3b985f0268af2"
+  },
+  "installedPackageChecks": [
+    {
+      "os": "Ubuntu 22.04.5 LTS",
+      "checks": 71,
+      "failures": 0,
+      "passed": true,
+      "sandboxBypassed": false
+    },
+    {
+      "os": "Ubuntu 24.04.5 LTS",
+      "checks": 71,
+      "failures": 0,
+      "passed": true,
+      "sandboxBypassed": false
+    }
+  ],
+  "passed": true
+}
