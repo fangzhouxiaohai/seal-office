@@ -1,0 +1,19 @@
+name: Retire superseded Windows package version
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  retire:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify 1.9.13 is latest and remove only the old Windows version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/retire-windows-package.cjs
