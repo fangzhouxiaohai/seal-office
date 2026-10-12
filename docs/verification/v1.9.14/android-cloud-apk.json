@@ -1,0 +1,52 @@
+{
+  "inspectedAt": "2026-10-12T18:27:41.522Z",
+  "releasedApk": "SealOfficeAndroid1.9.14.apk",
+  "sha256": "939f5324e3cb73dde4bc7cd40df9dbeadbbe56544e58e751694a5814b92218ff",
+  "bytes": 55836249,
+  "appId": "__UNI__B52B65B",
+  "version": {
+    "name": "1.9.14",
+    "code": "10914"
+  },
+  "build": {
+    "platform": "android",
+    "desktopVersion": "1.9.14",
+    "builtAt": "2026-10-12T17:48:23.992Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "embeddedEditor": {
+    "present": true,
+    "sha256": "5b26daf15ad2054503da606422572048b279a59f917ddbd1357b55aa7446044a",
+    "matchesCurrentSourceBuild": true
+  },
+  "duplicatedJavaScriptBytes": 0,
+  "sdkMetadata": {
+    "packageName": "com.sealoffice.mobile",
+    "versionCode": "10914",
+    "versionName": "1.9.14",
+    "minSdk": "28",
+    "targetSdk": "36",
+    "abi": "'arm64-v8a' 'armeabi-v7a'"
+  },
+  "signature": {
+    "verified": true,
+    "v1": false,
+    "v2": false,
+    "v3": true,
+    "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+  },
+  "device": null,
+  "nativeLibraries16KiB": [
+    { "name": "lib/arm64-v8a/libbreakpad-core.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libcronet.141.0.7340.3.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libgifimage.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libimagepipeline.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libnative-filters.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libnative-imagetranscoder.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libpl_droidsonroids_gif.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libstatic-webp.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libuniappx.so", "loadAlignments": [16384, 16384, 16384], "compatible": true },
+    { "name": "lib/arm64-v8a/libuts-runtime.so", "loadAlignments": [16384, 16384, 16384], "compatible": true }
+  ]
+}

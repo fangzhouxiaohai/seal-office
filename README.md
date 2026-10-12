@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.14 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.14 已完成 Android 内置编辑器资源构建、结构检查和单元测试，云 APK 需在 HBuilderX CLI 可连接的环境中重新提交后再发布。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.14 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.14 Android 云 APK 已核对签名、版本、包内编辑器、双 ABI 和 16 KiB 对齐并上传发布页。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -31,7 +31,7 @@
 
 ## Android 下载
 
-[SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk) 为用户提供的 HBuilderX 云打包原文件，仅统一下载文件名；包名 `com.sealoffice.mobile`，版本 `1.9.12 / 10912`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。签名和原生库/ZIP 的 16 KB 对齐已核验，实际系统与品牌验收状态见 [APK 核验](docs/verification/v1.9.12/android-cloud-apk.json)。
+[SealOfficeAndroid1.9.14.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeAndroid1.9.14.apk) 为 HBuilderX 云打包原文件，仅统一下载文件名；包名 `com.sealoffice.mobile`，版本 `1.9.14 / 10914`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 签名、原生库 16 KiB 对齐和包内 PDF 连续滚动编辑器与当前源码的一致性已核验，实际范围见 [APK 核验](docs/verification/v1.9.14/android-cloud-apk.json)。
 
 [1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
 
