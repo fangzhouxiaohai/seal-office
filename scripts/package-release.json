@@ -5,6 +5,7 @@
   "created": "2026-10-12T18:40:50Z",
   "platforms": {
     "windows": {
+      "packageTag": "1.9.14-r1",
       "description": "海豹办公 Windows x64 安装版、便携版和微软商店上传包。使用 ORAS 提取安装文件，直接下载见仓库 Releases。",
       "usage": "运行 SealOfficeSetup1.9.14.exe 安装，或直接运行 SealOffice1.9.14.exe。MSIX 用于微软合作伙伴中心上传，由商店签名后分发。",
       "assets": [
