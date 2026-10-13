@@ -1,0 +1,24 @@
+{
+  "version": "1.9.14.0",
+  "architecture": "x64",
+  "package": {
+    "name": "SealOffice1.9.14.msix",
+    "bytes": 723514578,
+    "sha256": "db437e6920d7b378040b034b411598fa9a8855df16418a66934249d0998aafb3"
+  },
+  "manifest": {
+    "identityName": "45C56666.seal-office",
+    "publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
+    "publisherDisplayName": "星马软件",
+    "packageDisplayName": "seal-office",
+    "applicationDisplayName": "seal-office"
+  },
+  "requiredEntries": {
+    "AppxManifest.xml": true,
+    "AppxBlockMap.xml": true,
+    "SealOffice.exe": true,
+    "resources/app.asar": true
+  },
+  "storeSigningRequired": true,
+  "passed": true
+}

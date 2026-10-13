@@ -1,6 +1,9 @@
 <#
   用 makeappx 手工打 MSIX/APPX 包（不依赖 electron-builder 的 appx 目标联网下载示例资源）。
 
+  命名规则：只有微软商店 MSIX 清单使用已保留名 seal-office。
+  NSIS、便携版、Android、Ubuntu 及程序界面默认使用“海豹办公”，不得跟随此参数改名。
+
   为什么手工打包：electron-builder 的 AppxTarget 会从 GitHub 拉取示例磁贴资源，本机到该主机不通，
   构建中途 ECONNRESET 失败；而 makeappx 本身完全离线，磁贴资源我们用 build/appx 里自己生成的。
 
@@ -13,7 +16,7 @@ param(
   [string]$IdentityName = 'Placeholder.SealOffice',
   [string]$Publisher = 'CN=00000000-0000-0000-0000-000000000000',
   [string]$PublisherDisplayName = '星马软件',
-  [string]$DisplayName = '海豹办公',
+  [string]$DisplayName = 'seal-office',
   [string]$Description = '海豹办公 Seal Office — 本地办公套件',
   [string]$Version = '',
   [string]$MinVersion = '10.0.17763.0',
