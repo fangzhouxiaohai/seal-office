@@ -5,6 +5,20 @@ export type 演示工具 = '无' | '画笔' | '橡皮' | '激光笔'
 export interface 笔画 { 点: Array<{ x: number; y: number }> }
 export interface 批迹 { 颜色: string; 笔宽: number; 笔画: Array<Array<{ x: number; y: number }>> }
 
+export const 放映浮层层级 = { 批迹: 4, 遮屏: 5, 边缘感应: 6, 控件: 7 } as const
+const 最大笔画点数 = 2000
+
+/** 单击也应保存为圆点；旧的单点笔画在退出放映前一并修正，避免整批笔迹保存失败。 */
+export function 规范化批迹(批迹: 批迹): 批迹 {
+  return {
+    ...批迹,
+    笔画: 批迹.笔画.filter(笔画 => 笔画.length > 0).map(笔画 => {
+      const 有限笔画 = 笔画.slice(0, 最大笔画点数).map(点 => ({ x: 点.x, y: 点.y }))
+      return 有限笔画.length === 1 ? [有限笔画[0], { ...有限笔画[0] }] : 有限笔画
+    }),
+  }
+}
+
 /** 把屏幕坐标换算成画布坐标，越界点裁剪到画布范围内。 */
 export function 屏幕转画布(事件: { clientX: number; clientY: number }, 区域: DOMRect): { x: number; y: number } {
   const 比例 = Math.min(区域.width / 画布宽, 区域.height / 画布高)
@@ -34,13 +48,17 @@ export function 临时批迹层({ 工具, 颜色, 笔宽, 批迹, 激光位置, 
     if (工具 === '激光笔') { on激光(点); return }
     绘制中.current = true
     事件.currentTarget.setPointerCapture?.(事件.pointerId)
-    on批迹({ ...批迹, 笔画: [...批迹.笔画, [点]] })
+    on批迹({ ...批迹, 笔画: [...批迹.笔画, [点, { ...点 }]] })
   }
   const 处理移动 = (事件: React.PointerEvent<SVGSVGElement>) => {
     const 点 = 屏幕转画布(事件, 事件.currentTarget.getBoundingClientRect())
     if (工具 === '激光笔') { on激光(点); return }
     if (!绘制中.current || 工具 !== '画笔') return
-    const 笔画列表 = 批迹.笔画.map((笔画, 序号) => 序号 === 批迹.笔画.length - 1 ? [...笔画, 点] : 笔画)
+    const 笔画列表 = 批迹.笔画.map((笔画, 序号) => {
+      if (序号 !== 批迹.笔画.length - 1 || 笔画.length >= 最大笔画点数) return 笔画
+      const 末点 = 笔画[笔画.length - 1]
+      return 末点?.x === 点.x && 末点.y === 点.y ? 笔画 : [...笔画, 点]
+    })
     on批迹({ ...批迹, 笔画: 笔画列表 })
   }
   const 处理抬起 = (事件: React.PointerEvent<SVGSVGElement>) => {
@@ -48,7 +66,7 @@ export function 临时批迹层({ 工具, 颜色, 笔宽, 批迹, 激光位置, 
     if (事件.currentTarget.hasPointerCapture?.(事件.pointerId)) 事件.currentTarget.releasePointerCapture?.(事件.pointerId)
   }
   return <svg className="wps-present-ink" viewBox={`0 0 ${画布宽} ${画布高}`} width="100%" height="100%"
-    style={{ position: 'absolute', inset: 0, zIndex: 4, cursor: 工具 === '画笔' ? 'crosshair' : 工具 === '橡皮' ? 'cell' : 'none', touchAction: 'none' }}
+    style={{ position: 'absolute', inset: 0, zIndex: 放映浮层层级.批迹, cursor: 工具 === '画笔' ? 'crosshair' : 工具 === '橡皮' ? 'cell' : 'none', touchAction: 'none' }}
     onPointerDown={处理按下} onPointerMove={处理移动} onPointerUp={处理抬起} onPointerCancel={处理抬起}>
     {批迹.笔画.map((笔画, 序号) => <polyline key={序号} points={笔画.map(点 => `${点.x},${点.y}`).join(' ')} fill="none" stroke={批迹.颜色} strokeWidth={批迹.笔宽} strokeLinecap="round" strokeLinejoin="round" />)}
     {工具 === '激光笔' && 激光位置 && <circle cx={激光位置.x} cy={激光位置.y} r={12} fill="#E34D59" opacity={0.75} />}

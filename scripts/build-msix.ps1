@@ -24,7 +24,7 @@ param(
   [string]$Source = '',
   [string]$Output = '',
   [string]$Layout = '',
-  [string]$MakeAppx = 'E:\Temp\sdkbuildtools\bin\10.0.28000.0\x64\makeappx.exe',
+  [string]$MakeAppx = '',
   [string]$Assets = '',
   [switch]$Sign,
   [string]$CertSubject = ''
@@ -37,9 +37,36 @@ if (-not $Source) { $Source = Join-Path $根 "release\v$应用版本\win-unpacke
 if (-not $Output) { $Output = Join-Path $根 "release\v$应用版本\SealOffice$应用版本.msix" }
 if (-not $Assets) { $Assets = Join-Path $根 'build\appx' }
 
+if (-not $MakeAppx) {
+  $候选 = [Collections.Generic.List[string]]::new()
+  $命令 = Get-Command makeappx.exe -ErrorAction SilentlyContinue
+  if ($命令) { $候选.Add($命令.Source) }
+
+  $SDK根目录 = [Collections.Generic.List[string]]::new()
+  $SDK注册表 = 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots'
+  if (Test-Path -LiteralPath $SDK注册表) {
+    $注册目录 = (Get-ItemProperty -LiteralPath $SDK注册表 -ErrorAction SilentlyContinue).KitsRoot10
+    if ($注册目录) { $SDK根目录.Add($注册目录) }
+  }
+  if (${env:ProgramFiles(x86)}) { $SDK根目录.Add((Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10')) }
+  foreach ($盘 in Get-PSDrive -PSProvider FileSystem) {
+    $SDK根目录.Add((Join-Path $盘.Root 'Applications\ProgramFiles-x86\Windows Kits\10'))
+  }
+
+  foreach ($SDK根 in $SDK根目录 | Select-Object -Unique) {
+    if (-not (Test-Path -LiteralPath $SDK根)) { continue }
+    Get-ChildItem -Path (Join-Path $SDK根 'bin\*\x64\makeappx.exe') -File -ErrorAction SilentlyContinue |
+      Sort-Object FullName -Descending |
+      ForEach-Object { $候选.Add($_.FullName) }
+  }
+  $MakeAppx = $候选 | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+
 if (-not (Test-Path -LiteralPath $Source)) { throw "找不到应用目录：$Source" }
-if (-not (Test-Path -LiteralPath $MakeAppx)) { throw "找不到 makeappx：$MakeAppx" }
-if (-not (Test-Path -LiteralPath (Join-Path $Source 'SealOffice.exe'))) { throw "应用目录里没有 SealOffice.exe：$Source" }
+if (-not $MakeAppx -or -not (Test-Path -LiteralPath $MakeAppx)) {
+  throw '找不到 makeappx.exe。请安装 Windows 10/11 SDK，或通过 -MakeAppx 传入完整路径。'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $Source '海豹办公.exe'))) { throw "应用目录里没有 海豹办公.exe：$Source" }
 
 $布局 = [IO.Path]::GetFullPath($(if ($Layout) { $Layout } else { Join-Path $根 "release\msix-layout-$应用版本" }))
 $发布目录 = [IO.Path]::GetFullPath((Join-Path $根 'release')) + [IO.Path]::DirectorySeparatorChar
@@ -88,7 +115,7 @@ $清单 = @"
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
   <Applications>
-    <Application Id="SealOffice" Executable="SealOffice.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="SealOffice" Executable="海豹办公.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="$DisplayName"
         Description="$Description"

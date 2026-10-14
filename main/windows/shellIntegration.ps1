@@ -186,7 +186,9 @@ function Get-DefaultState {
   $items = @($taskSupported | ForEach-Object {
     $len = [uint32]32768; $text = [System.Text.StringBuilder]::new(32768)
     $code = [SealAssoc]::AssocQueryString(0, 2, ".$_", 'open', $text, [ref]$len)
-    if ($code -ne 0 -and $code -ne -2147024894 -and $code -ne -2147023728 -and $code -ne -2147023741) { throw "默认程序查询失败：$_，系统状态 $code" }
+    # 0x800401F5（“找不到应用程序”）表示该扩展名当前没有可用的默认处理程序，
+    # 与“文件/关联不存在”一样应当作为未设置返回，而不是阻断首次默认程序提示。
+    if ($code -ne 0 -and $code -ne -2147221003 -and $code -ne -2147024894 -and $code -ne -2147023728 -and $code -ne -2147023741) { throw "默认程序查询失败：$_，系统状态 $code" }
     @{ 扩展名=$_; 默认程序=$text.ToString(); 已默认=($code -eq 0 -and [string]::Equals($text.ToString(), $ExecutableFile, [StringComparison]::OrdinalIgnoreCase)) }
   })
   return $items

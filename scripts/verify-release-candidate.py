@@ -11,9 +11,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
 RELEASE = ROOT / 'release' / f'v{VERSION}'
-NAMES = [f'SealOfficeSetup{VERSION}.exe', f'SealOffice{VERSION}.exe',
-         f'SealOffice{VERSION}.msix', f'SealOfficeAndroid{VERSION}.apk',
-         f'SealOfficeUbuntu{VERSION}-amd64.deb']
+NAMES = [f'海豹办公安装程序{VERSION}.exe', f'海豹办公{VERSION}.exe',
+         f'SealOffice{VERSION}.msix', f'海豹办公Android{VERSION}.apk',
+         f'海豹办公Ubuntu{VERSION}-amd64.deb']
 
 
 def sha256(path):
@@ -48,7 +48,7 @@ def main():
     with zipfile.ZipFile(paths[NAMES[2]]) as archive:
         names = set(archive.namelist())
         require(archive.testzip() is None, 'MSIX CRC verification failed')
-        require({'AppxManifest.xml', 'AppxBlockMap.xml', 'SealOffice.exe', 'resources/app.asar'} <= names,
+        require({'AppxManifest.xml', 'AppxBlockMap.xml', '海豹办公.exe', 'resources/app.asar'} <= names,
                 'MSIX has missing application files')
         manifest = ET.fromstring(archive.read('AppxManifest.xml'))
         identity = manifest.find('{http://schemas.microsoft.com/appx/manifest/foundation/windows10}Identity')

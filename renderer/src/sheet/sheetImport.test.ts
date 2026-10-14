@@ -12,9 +12,11 @@ describe('表格 HTML 导入', () => {
   it('空白单元格的数据验证与工作表保护从元数据恢复', () => {
     const 表 = 从Html表格构建工作表('<table><tr><td></td></tr></table>', '受控表', undefined, {
       单元格验证: { C3: { 类型: '列表', 选项: ['待办', '完成'], 允许空白: false } },
+      超链接: { D4: 'https://example.com/资料?q=𠀀' },
       保护: '本机',
     })!
     expect(读取单元格(表, 'C3').数据验证).toEqual({ 类型: '列表', 选项: ['待办', '完成'], 允许空白: false })
+    expect(读取单元格(表, 'D4').超链接).toBe('https://example.com/资料?q=𠀀')
     expect(表.保护).toBe('本机')
   })
   it('导入基础格式、合并、行列尺寸与视图设置', () => {

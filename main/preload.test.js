@@ -226,4 +226,27 @@ describe('预加载桥接', () => {
       else delete require.cache[预加载路径]
     }
   })
+
+  it('Access 数据库能力只经受限数据库通道调用', async () => {
+    const 电子路径 = require.resolve('electron')
+    const 预加载路径 = require.resolve('./preload')
+    require('electron')
+    const 原电子导出 = require.cache[电子路径].exports
+    const 原预加载缓存 = require.cache[预加载路径]
+    let 对外接口
+    const 调用 = vi.fn().mockResolvedValue({ 成功: true })
+    require.cache[电子路径].exports = { contextBridge: { exposeInMainWorld: (_名称, 接口) => { 对外接口 = 接口 } }, ipcRenderer: { invoke: 调用 } }
+    delete require.cache[预加载路径]
+    try {
+      require('./preload')
+      await 对外接口.database.status()
+      expect(调用).toHaveBeenLastCalledWith('database.status')
+      await 对外接口.database.invoke('readTable', { 路径: 'C:\\数据.accdb', 表名: '客户' })
+      expect(调用).toHaveBeenLastCalledWith('database.invoke', 'readTable', { 路径: 'C:\\数据.accdb', 表名: '客户' })
+    } finally {
+      require.cache[电子路径].exports = 原电子导出
+      if (原预加载缓存) require.cache[预加载路径] = 原预加载缓存
+      else delete require.cache[预加载路径]
+    }
+  })
 })

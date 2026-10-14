@@ -46,6 +46,8 @@ export interface SheetCell {
   数据验证?: 单元格数据验证
   /** 本地批注；空白单元格也可以附带批注 */
   批注?: string
+  /** XLSX 单元格超链接；编辑文字时随单元格保留。 */
+  超链接?: string
 }
 
 export interface SheetImage {

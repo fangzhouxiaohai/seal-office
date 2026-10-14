@@ -2,6 +2,7 @@
 // 回复、对象锚点与解决状态没有对应的原生属性，保存在海豹办公扩展部件中，并在文档中说明。
 const { 读取部件 } = require('./parts')
 const { 关联目标 } = require('./relations')
+const { 解码Xml实体 } = require('../xmlEntities')
 
 const 内容类型 = {
   批注: 'application/vnd.openxmlformats-officedocument.presentationml.comments+xml',
@@ -20,12 +21,7 @@ const 转义 = (文本) => String(文本)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&apos;')
 
-const 解码 = (文本) => String(文本).replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (匹配) => {
-  const 映射 = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&apos;': "'" }
-  if (匹配 in 映射) return 映射[匹配]
-  if (匹配.startsWith('&#x')) return String.fromCharCode(parseInt(匹配.slice(3, -1), 16))
-  return String.fromCharCode(parseInt(匹配.slice(2, -1), 10))
-})
+const 解码 = (文本) => 解码Xml实体(文本, '演示文稿批注')
 
 /** 读取标签属性，兼容单引号与属性间空白；与主编解码器使用同一规则。 */
 function 读取属性表(标签) {

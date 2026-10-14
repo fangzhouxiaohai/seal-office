@@ -631,7 +631,7 @@ export default function AiAssistant() {
 
   return <>
     {放映中 ? null : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
-    <Drawer className="assistant-drawer" title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} placement="right" width="min(460px, 100vw)" mask={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
+    <Drawer className="assistant-drawer" title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} placement="right" width="min(460px, 100vw)" mask={false} closable={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
         <div className="assistant-drawer__header"><strong>{配置展开 ? '模型设置' : '文件对话'}</strong><div className="assistant-drawer__header-actions"><Button className="assistant-new-chat" size="small" icon={<Icon name="plus" size={14} />} disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button className="assistant-settings-toggle" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={14} />} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
         {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }}>
@@ -683,7 +683,7 @@ export default function AiAssistant() {
         </div>
         <div className="assistant-drawer__composer">
           <Input.TextArea aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={3} disabled={清除中} placeholder="输入需求，或输入 /help 查看命令" onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
-          <div className="assistant-drawer__composer-actions"><span>Ctrl+Enter 发送 · /help</span><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || 当前待确认 ? '加入队列' : '发送'}</Button></div></div>
+          <div className="assistant-drawer__composer-actions"><div className="assistant-drawer__composer-left"><Button className="assistant-collapse" type="text" shape="circle" icon={<Icon name="arrow-left" size={17} />} aria-label="收起智能助手" title="收起智能助手" onClick={() => set打开(false)} /><span>Ctrl+Enter 发送 · /help</span></div><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || 当前待确认 ? '加入队列' : '发送'}</Button></div></div>
         </div>
       </div>
     </Drawer>

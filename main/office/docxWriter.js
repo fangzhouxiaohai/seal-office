@@ -25,6 +25,9 @@ const {
   VerticalAlign,
   XmlComponent,
   XmlAttributeComponent,
+  ExternalHyperlink,
+  InternalHyperlink,
+  Bookmark,
 } = require('docx')
 const JSZip = require('jszip')
 const { 验证段落属性 } = require('./paragraphProperties')
@@ -148,8 +151,34 @@ class 页码域 extends XmlComponent {
   }
 }
 
-/** 把一个文字片段转为 docx 的 TextRun */
+function 校验链接目标(目标) {
+  if (typeof 目标 !== 'string') throw new Error('超链接目标无效，无法保存')
+  const 结果 = 目标.trim()
+  if (结果.length === 0 || 结果.length > 32768 || /[\u0000-\u001f\u007f]/.test(结果)) throw new Error('超链接目标无效，无法保存')
+  if (结果.startsWith('#')) 校验书签名称(结果.slice(1), '文档内超链接缺少有效书签名称，无法保存')
+  const 协议 = 结果.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase()
+  if (协议 && ['javascript', 'vbscript', 'data'].includes(协议)) throw new Error('超链接协议不安全，无法保存')
+  return 结果
+}
+
+function 校验书签名称(名称, 错误消息 = '书签名称无效，无法保存') {
+  if (typeof 名称 !== 'string' || 名称.length === 0 || 名称.length > 32768 || /[\u0000-\u001f\u007f]/.test(名称)) throw new Error(错误消息)
+  return 名称
+}
+
+/** 把一个文字片段转为 docx 的段落子节点。 */
 function 建文字(片段, 图片预算) {
+  if (片段.书签 !== undefined) {
+    const 名称 = 校验书签名称(片段.书签)
+    return new Bookmark({ id: 名称, children: [建文字({ ...片段, 书签: undefined }, 图片预算)] })
+  }
+  if (片段.链接 !== undefined) {
+    const 目标 = 校验链接目标(片段.链接)
+    const 子节点 = 建文字({ ...片段, 链接: undefined }, 图片预算)
+    return 目标.startsWith('#')
+      ? new InternalHyperlink({ children: [子节点], anchor: 目标.slice(1) })
+      : new ExternalHyperlink({ children: [子节点], link: 目标 })
+  }
   if (片段.域 !== undefined) {
     // 页码类域写回真正的域代码，Word 打开时会重新计算，不会被固定成保存时看到的数字
     if (!['PAGE', 'NUMPAGES'].includes(片段.域)) throw new Error('页码域类型无效，无法保存')

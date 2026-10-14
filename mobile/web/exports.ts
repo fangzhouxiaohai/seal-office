@@ -24,8 +24,8 @@ async function pdfFromHtml(html: string): Promise<Uint8Array> {
   })
 }
 
-/** 手机打印预览按屏幕排版逐页截图，避免大文档的 pdfmake 排版阻塞 WebView。 */
-async function printPdfFromHtml(html: string): Promise<Uint8Array> {
+/** 屏幕栅格化仅保留给明确需要图片型页面的场景；普通打印预览应保留可检索文字。 */
+export async function rasterPdfFromHtml(html: string): Promise<Uint8Array> {
   const frame = document.createElement('iframe')
   frame.sandbox.add('allow-same-origin')
   frame.style.cssText = 'position:fixed;left:-20000px;top:0;border:0;width:794px;height:1123px'
@@ -133,7 +133,7 @@ export async function installExportAdapters(core: any, save: any, handle: any) {
   handle('pdf.export', async (html: string, name: string) => {
     const selected = await core.platform.dialog.showSaveDialog({ defaultPath: name }); return save(selected.filePath, await pdfFromHtml(html))
   })
-  handle('document.printPreview', async (html: string, format: string) => ({ 成功: true, 数据: format === 'pdf' ? html : Buffer.from(await printPdfFromHtml(html)).toString('base64') }))
+  handle('document.printPreview', async (html: string, format: string) => ({ 成功: true, 数据: format === 'pdf' ? html : Buffer.from(await pdfFromHtml(html)).toString('base64') }))
   handle('document.print', async (html: string, format: string) => {
     const data = format === 'pdf' ? Buffer.from(html, 'base64') : await pdfFromHtml(html)
     await downloadFile('打印文档.pdf', data, 'application/pdf'); return { 成功: true }

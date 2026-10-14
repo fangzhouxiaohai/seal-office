@@ -46,7 +46,7 @@ const models = {
   ppt: { 页面尺寸: { 宽: 960, 高: 540 }, 幻灯片: [{ id: 'p1', 背景色: '#FFFFFF', 文本框: [{ id: 't1', x: 40, y: 50, width: 700, height: 90, text: '中文格式验收 0012', 字号: 24, 颜色: '#222222' }] }] },
 }
 async function verify() {
-  const packageFile = path.join(root, 'release/ubuntu', `SealOfficeUbuntu${version}-amd64.deb`)
+  const packageFile = path.join(root, 'release/ubuntu', `海豹办公Ubuntu${version}-amd64.deb`)
   report.packageFile = path.basename(packageFile)
   report.packageBytes = fs.statSync(packageFile).size
   report.packageSha256 = createHash('sha256').update(fs.readFileSync(packageFile)).digest('hex')
@@ -54,7 +54,7 @@ async function verify() {
   check(report.package === version + ' amd64', 'Deb package version and architecture')
   const desktop = fs.readFileSync('/usr/share/applications/sealoffice.desktop', 'utf8')
   check(desktop.includes('MimeType=') && desktop.includes('text/csv') && /Exec=.* %U/.test(desktop), 'Desktop launcher and CSV MIME registration')
-  check(!fs.existsSync('/opt/SealOffice/resources/office-runtime/program/soffice.com'), 'Linux package excludes Windows compatibility binaries')
+  check(!fs.existsSync('/opt/海豹办公/resources/office-runtime/program/soffice.com'), 'Linux package excludes Windows compatibility binaries')
   const source = path.join(temp, '冷启动 中文.csv')
   fs.writeFileSync(source, '编号,内容\r\n0012,中文验收\r\n')
   const log = fs.openSync(path.join(output, 'application.log'), 'w')

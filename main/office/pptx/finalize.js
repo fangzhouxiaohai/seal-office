@@ -6,16 +6,11 @@ const 自定义属性内容类型 = 'application/vnd.openxmlformats-officedocume
 const 自定义属性关系类型 = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties'
 const 属性格式标识 = '{D5CDD505-2E9C-101B-9397-08002B2CF9AE}'
 const 时间格式 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/
+const { 解码Xml实体 } = require('../xmlEntities')
 
 const 是记录 = (值) => typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
-const 实体映射 = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&apos;': "'" }
-
 function 反转义(文本) {
-  return String(文本).replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (匹配) => {
-    if (匹配 in 实体映射) return 实体映射[匹配]
-    if (匹配.startsWith('&#x')) return String.fromCharCode(parseInt(匹配.slice(3, -1), 16))
-    return String.fromCharCode(parseInt(匹配.slice(2, -1), 10))
-  })
+  return 解码Xml实体(文本, '演示文稿定稿信息')
 }
 
 function 转义(文本) {

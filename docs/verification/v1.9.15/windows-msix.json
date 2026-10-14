@@ -1,0 +1,35 @@
+{
+  "version": "1.9.15.0",
+  "architecture": "x64",
+  "package": {
+    "name": "SealOffice1.9.15.msix",
+    "bytes": 737726706,
+    "sha256": "5addff054d50e52ef7a1c45096b554540dcfb33ac1ef356775148b3cb1e784cc"
+  },
+  "manifest": {
+    "identityName": "45C56666.seal-office",
+    "publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
+    "publisherDisplayName": "星马软件",
+    "packageDisplayName": "seal-office",
+    "applicationDisplayName": "seal-office",
+    "executable": "海豹办公.exe",
+    "fileTypeCount": 50
+  },
+  "requiredEntries": {
+    "AppxManifest.xml": true,
+    "AppxBlockMap.xml": true,
+    "海豹办公.exe": true,
+    "resources/app.asar": true,
+    "Assets/StoreLogo.png": true
+  },
+  "payload": {
+    "sourceExecutableSha256": "9aa706c2e602063cce35582b1505e43e6dc56e2b694e616c0e9f0fe618c64109",
+    "packageExecutableSha256": "9aa706c2e602063cce35582b1505e43e6dc56e2b694e616c0e9f0fe618c64109",
+    "sourceAppAsarSha256": "a4d80fc85f61f5a5d8d886db0fdc5290249cf758ed9ae2a912b5cc7f8c752364",
+    "packageAppAsarSha256": "a4d80fc85f61f5a5d8d886db0fdc5290249cf758ed9ae2a912b5cc7f8c752364",
+    "matchesWinUnpacked": true
+  },
+  "signatureStatus": "NotSigned",
+  "storeSigningRequired": true,
+  "passed": true
+}

@@ -55,4 +55,17 @@ describe('顶栏', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: '关于我们' }))
     expect(打开关于).toHaveBeenCalledOnce()
   })
+
+  it('右上角语言菜单可切换英语，并立即使用英文顶栏文案', async () => {
+    const 切换语言 = vi.fn()
+    render(<TitleBar pageName="首页" homeMode 语言="en-US" on切换语言={切换语言} />)
+    expect(screen.getByText('Home')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search recent documents by name or content')).toBeInTheDocument()
+    const 入口 = screen.getByRole('button', { name: 'Switch interface language' })
+    expect(入口).toHaveTextContent('EN')
+    expect(入口).toHaveAttribute('aria-haspopup', 'menu')
+    await userEvent.click(入口)
+    await userEvent.click(await screen.findByText('简体中文'))
+    expect(切换语言).toHaveBeenCalledWith('zh-CN')
+  })
 })

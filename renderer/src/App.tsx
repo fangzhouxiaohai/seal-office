@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { App as AntdApp, ConfigProvider, Modal, theme as antdTheme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import enUS from 'antd/locale/en_US'
 import { AppProvider, useAppStore } from './store'
 import { MODULES } from './routes'
 import { NEW_DOC_NAMES } from './navConfig'
@@ -32,6 +33,7 @@ import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
 import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
+import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
 
 /** 动态 Ant Design 主题配置 */
 const 主题配置 = ({ 深色, 移动 }: { 深色: boolean; 移动: boolean }) => ({
@@ -54,7 +56,7 @@ const 外壳 = () => {
   const { message, modal } = AntdApp.useApp()
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
   const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, pdfDocuments, 保存PDF文档, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
-  const { 主题, 切换主题 } = useSettings()
+  const { 主题, 切换主题, 语言, 设置语言 } = useSettings()
   const cloud = useCloud()
 
   const 是首页 = module === 'home'
@@ -67,6 +69,7 @@ const 外壳 = () => {
   const [本次通知, set本次通知] = useState<Array<本机通知 & { 标识: number; 时间: string }>>([])
   const 通知序号 = React.useRef(0)
   const [模板库打开, set模板库打开] = useState(false)
+  const [新建Access请求, set新建Access请求] = useState(0)
   const 当前模块 = MODULES[module]
   const 星标数 = docs.filter((文档) => 文档.starred).length
 
@@ -92,11 +95,11 @@ const 外壳 = () => {
       const 通知 = (事件 as CustomEvent<本机通知>).detail
       if (!通知 || typeof 通知.标题 !== 'string' || typeof 通知.内容 !== 'string') return
       通知序号.current += 1
-      set本次通知((当前) => [{ ...通知, 标识: 通知序号.current, 时间: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }, ...当前].slice(0, 30))
+      set本次通知((当前) => [{ ...通知, 标识: 通知序号.current, 时间: new Date().toLocaleTimeString(语言, { hour: '2-digit', minute: '2-digit' }) }, ...当前].slice(0, 30))
     }
     window.addEventListener(本机通知事件名, 记录通知)
     return () => window.removeEventListener(本机通知事件名, 记录通知)
-  }, [])
+  }, [语言])
 
   const 打开本地文件 = () => {
     void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告, 页面设置, 文件指纹) => createDoc(类型, 内容, { 路径, 警告, 页面设置, 文件指纹 }))
@@ -292,7 +295,12 @@ const 外壳 = () => {
       { className: 是首页 ? 'wps-main' : 'wps-main wps-main--editor' },
       // 页面级兜底：单个页面异常时仍保留顶栏与侧栏可用
       React.createElement(ErrorBoundary, null, 是首页
-        ? React.createElement(HomePage, { 模板库打开, 关闭模板库: () => set模板库打开(false) })
+        ? React.createElement(HomePage, {
+            模板库打开,
+            关闭模板库: () => set模板库打开(false),
+            新建Access请求,
+            on新建Access已处理: () => set新建Access请求(0),
+          })
         : React.createElement(页面组件, null))
     )
   }
@@ -316,6 +324,8 @@ const 外壳 = () => {
       on关于: () => set关于弹窗打开(true),
       主题深色: 主题 === '深色',
       on切换主题: 切换主题,
+      语言,
+      on切换语言: 设置语言,
     }),
     React.createElement(CloudAutosave),
     是首页
@@ -331,6 +341,10 @@ const 外壳 = () => {
             navKey,
             onNavigate: (键: string) => handleNav(键, (文本: string) => message.info(文本)),
             onNewDoc: (类型: 'word' | 'table' | 'ppt' | 'pdf') => createDoc(类型),
+            onNewAccess: () => {
+              set新建Access请求((当前) => 当前 + 1)
+              handleNav('database', (文本: string) => message.info(文本))
+            },
             onOpenTemplate: () => set模板库打开(true),
             onOpenFile: () => {
               // 与首页空状态共用同一条打开链路
@@ -440,9 +454,9 @@ const 外壳 = () => {
 
 /** 在当前主题下创建组件库上下文，使弹窗和表单也随主题切换。 */
 export const 动态主题容器 = ({ children }: { children: React.ReactNode }) => {
-  const { 主题 } = useSettings()
+  const { 主题, 语言 } = useSettings()
   return React.createElement(ConfigProvider, {
-    locale: zhCN,
+    locale: 语言 === 'en-US' ? enUS : zhCN,
     theme: 主题配置({ 深色: 主题 === '深色', 移动: useIconPlatform() === 'mobile' }),
     button: { autoInsertSpace: false },
   }, children)
@@ -458,6 +472,7 @@ const App = ({ 初始最近文档, 跨端导航 }: { 初始最近文档?: DocIte
       React.createElement(
         AntdApp,
         null,
+        React.createElement(InterfaceLanguageAdapter, null),
         React.createElement(SettingsErrorFeedback, null),
         React.createElement(
           ErrorBoundary,

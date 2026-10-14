@@ -6,7 +6,12 @@ module.exports = {
   appId: build.appId,
   productName: build.productName,
   directories: { output: 'release/ubuntu', buildResources: 'build' },
-  files: build.files,
+  // Reuse the verified Linux Electron runtime checked into the private upgrade
+  // workspace. On Windows, electron-builder's temporary cache can disappear
+  // between download and stat, which makes an otherwise valid Ubuntu build
+  // fail nondeterministically.
+  electronDist: '.upgrade-private/electron-linux-25.9.8',
+  files: [...build.files, '!node_modules/@napi-rs/canvas-win32-*/**'],
   extraMetadata: { desktopName: 'sealoffice.desktop' },
   extraResources: [
     { from: 'mobile/web/public/fonts/NotoSansSC.ttf', to: 'fonts/NotoSansSC.ttf' },
@@ -24,7 +29,7 @@ module.exports = {
     desktop: { entry: { Name: '海豹办公', 'Name[en]': 'Seal Office', Comment: '文字、表格、演示和 PDF 办公软件' } },
   },
   deb: {
-    artifactName: 'SealOfficeUbuntu${version}-amd64.deb',
+    artifactName: '海豹办公Ubuntu${version}-amd64.deb',
     depends: ['libgtk-3-0', 'libnotify4', 'libnss3', 'libxss1', 'libxtst6', 'xdg-utils', 'libatspi2.0-0', 'libuuid1', 'libsecret-1-0', 'libasound2 | libasound2t64', 'libgbm1', 'libdrm2', 'libxkbcommon0', 'libcups2 | libcups2t64', 'libreoffice-writer', 'libreoffice-calc', 'libreoffice-impress', 'libreoffice-base-core', 'libreoffice-base-drivers', 'fonts-noto-cjk'],
   },
 }

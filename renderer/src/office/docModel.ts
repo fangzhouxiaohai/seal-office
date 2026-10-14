@@ -34,6 +34,10 @@ export interface 文字片段 {
   图片?: 文档图片
   /** 页码类域：保存时写回域代码，而不是固定文字 */
   域?: 'PAGE' | 'NUMPAGES'
+  /** 外部链接使用原始目标；文档内链接以 #书签名 表示。 */
+  链接?: string
+  /** 文档内跳转目标；使用零宽标记保留 DOCX 书签的位置与原名。 */
+  书签?: string
 }
 
 /** 文本段落，含标题与列表项 */
@@ -132,6 +136,7 @@ interface 格式状态 {
   /** 字间距，单位磅，可为负数 */
   字间距?: number
   基线?: '上标' | '下标' | '正常'
+  链接?: string
 }
 
 const 初始格式: 格式状态 = {
@@ -139,6 +144,30 @@ const 初始格式: 格式状态 = {
   倾斜: false,
   下划线: false,
   删除线: false,
+}
+
+/**
+ * 保留链接在 OOXML 关系里的原始写法，不采用 DOM 的绝对地址规范化结果。
+ * 明确拒绝能执行脚本或内嵌主动内容的协议；其余标准/自定义协议都可往返。
+ */
+function 读取链接目标(元素: HTMLElement): string | undefined {
+  const 原值 = 元素.getAttribute('data-seal-link') ?? 元素.getAttribute('href')
+  if (原值 === null) return undefined
+  const 目标 = 原值.trim()
+  if (目标.length === 0 || 目标.length > 32768 || /[\u0000-\u001f\u007f]/.test(目标)) return undefined
+  const 协议 = 目标.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase()
+  if (协议 && ['javascript', 'vbscript', 'data'].includes(协议)) return undefined
+  return 目标
+}
+
+function 读取书签名称(元素: HTMLElement, 未覆盖: Set<string>): string | undefined {
+  const 原值 = 元素.getAttribute('data-seal-bookmark')
+  if (原值 === null) return undefined
+  if (原值.length === 0 || 原值.length > 32768 || /[\u0000-\u001f\u007f]/.test(原值)) {
+    未覆盖.add('书签目标')
+    return undefined
+  }
+  return 原值
 }
 
 /** 标题标签到级别的映射 */
@@ -335,6 +364,7 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
     基线: 样式.verticalAlign === 'baseline' ? '正常'
       : 样式.verticalAlign === 'super' || 标签 === 'SUP' ? '上标'
         : 样式.verticalAlign === 'sub' || 标签 === 'SUB' ? '下标' : 父格式.基线,
+    链接: 标签 === 'A' ? 读取链接目标(元素) : 父格式.链接,
   }
   return 新格式
 }
@@ -358,6 +388,7 @@ function 建片段(文本: string, 格式: 格式状态): 文字片段 {
     字体: 格式.字体,
     ...(格式.字间距 !== undefined ? { 字间距: 格式.字间距 } : {}),
     ...(格式.基线 ? { 基线: 格式.基线 } : {}),
+    ...(格式.链接 ? { 链接: 格式.链接 } : {}),
   }
 }
 
@@ -458,6 +489,11 @@ function 收集片段(节点: Node, 格式: 格式状态, 未覆盖: Set<string>
     }
     if (当前.tagName === 'BR') {
       结果.push({ ...建片段('', 当前格式), 换行: true })
+      return
+    }
+    if (当前.hasAttribute('data-seal-bookmark')) {
+      const 书签 = 读取书签名称(当前, 未覆盖)
+      if (书签 !== undefined) 结果.push({ ...建片段('', 当前格式), 书签 })
       return
     }
     // 页码域占位：保留域类型与它上次显示的文字，保存时写回真正的域代码
@@ -577,6 +613,12 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     return
   }
 
+  if (节点.hasAttribute('data-seal-bookmark')) {
+    const 书签 = 读取书签名称(节点, 上下文.未覆盖)
+    if (书签 !== undefined) 取当前段落(上下文, 0, '左', '无').文字.push({ ...建片段('', 格式), 书签 })
+    return
+  }
+
   // 页码域占位：正文与页脚里的页码都不会被固定成保存时看到的数字
   const 域片段 = 读取域片段(节点, 格式, 上下文.未覆盖)
   if (域片段 !== null) {
@@ -688,7 +730,10 @@ export function 解析文档(正文Html: string, 部分: '正文' | '页眉' | '
   if (容器.querySelector('.wps-toc')) 上下文.未覆盖.add('自动目录')
   if (容器.querySelector('.wps-drop-cap')) 上下文.未覆盖.add('首字下沉')
   if (容器.querySelector('.wps-insert, .wps-delete')) 上下文.未覆盖.add('修订标记')
-  if (容器.querySelector('a[href]')) 上下文.未覆盖.add('超链接目标')
+  for (const 链接 of 容器.querySelectorAll<HTMLElement>('a')) {
+    const 有目标 = 链接.hasAttribute('data-seal-link') || 链接.hasAttribute('href')
+    if (有目标 && 读取链接目标(链接) === undefined) 上下文.未覆盖.add('超链接目标')
+  }
   if (容器.querySelector('svg')) 上下文.未覆盖.add('矢量图形')
   if (容器.querySelector('video, audio, canvas, iframe, object, embed')) 上下文.未覆盖.add('媒体或嵌入对象')
   for (const 元素 of 容器.querySelectorAll<HTMLElement>('p, div, h1, h2, h3, h4, h5, h6, li, blockquote, section, article')) {

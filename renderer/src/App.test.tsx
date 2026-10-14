@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createRequire } from 'node:module'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { theme } from 'antd'
 import App, { 动态主题容器 } from './App'
@@ -15,9 +15,10 @@ const { 读取docx } = 加载模块('../../main/office/docxReader.js')
 
 /** 通过首页居中新建弹窗选择文档类型。 */
 const 通过新建菜单创建 = async (名称: string) => {
-  const 选项: Record<string, string> = { 新建文字: '文字文档', 新建表格: '电子表格', 新建演示: '演示文稿' }
+  const 选项: Record<string, string> = { 新建文字: '文字文档', 新建表格: '电子表格', 新建演示: '演示文稿', '新建 PDF': '^PDF' }
   await userEvent.click(screen.getByRole('button', { name: '新建' }))
-  await userEvent.click(await screen.findByRole('button', { name: new RegExp(选项[名称] ?? 名称) }))
+  const 弹窗 = await screen.findByRole('dialog', { name: '新建文档' })
+  await userEvent.click(within(弹窗).getByRole('button', { name: new RegExp(选项[名称] ?? 名称) }))
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
@@ -489,6 +490,37 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
     await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     expect(screen.getByText('新建')).toBeInTheDocument()
+  })
+
+  it('首页新建 Access 默认创建 ACCDB 并直接进入数据库工作区', async () => {
+    const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
+    const 创建 = vi.fn().mockResolvedValue({ 成功: true, 路径: 'C:\\数据\\新建数据库.accdb' })
+    const 调用 = vi.fn().mockResolvedValue({
+      成功: true,
+      数据: { tables: [], queries: [], relationships: [], 提供者: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 格式代际: 'Access 2007–2024 / Microsoft 365（ACCDB）' },
+    })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      database: {
+        status: vi.fn().mockResolvedValue({ 成功: true, 可用: true, 平台支持: true, 提供者: [{ 名称: 'Microsoft.ACE.OLEDB.16.0', 位数: 64 }] }),
+        create: 创建,
+        pick: vi.fn(),
+        invoke: 调用,
+      },
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+      backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+      reportUnsavedCount: vi.fn().mockResolvedValue({ 成功: true }),
+    } })
+    try {
+      render(<App 初始最近文档={[]} />)
+      await 通过新建菜单创建('Access 数据库')
+      expect(await screen.findByRole('heading', { name: 'Access 数据库' })).toBeInTheDocument()
+      await waitFor(() => expect(创建).toHaveBeenCalledOnce())
+      expect(创建).toHaveBeenCalledWith('新建数据库.accdb')
+      expect(调用).toHaveBeenCalledWith('inspect', expect.objectContaining({ 路径: 'C:\\数据\\新建数据库.accdb' }))
+    } finally {
+      if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
+      else Reflect.deleteProperty(window, 'electronAPI')
+    }
   })
 
   it('首页与多个文档显示在固定底部标签栏，切换不丢失编辑状态', async () => {

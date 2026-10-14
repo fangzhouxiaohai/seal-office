@@ -2,6 +2,12 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   cloud: { invoke: (action, input) => ipcRenderer.invoke('cloud.invoke', action, input) },
+  database: {
+    status: () => ipcRenderer.invoke('database.status'),
+    pick: () => ipcRenderer.invoke('database.pick'),
+    create: (默认名称) => ipcRenderer.invoke('database.create', 默认名称),
+    invoke: (操作, 输入) => ipcRenderer.invoke('database.invoke', 操作, 输入),
+  },
   showSaveDialog: (默认文件名, 保存类型) => ipcRenderer.invoke('file.showSaveDialog', 默认文件名, 保存类型),
   showOpenDialog: (打开类型) => ipcRenderer.invoke('file.showOpenDialog', 打开类型),
   showOpenDialogMany: (打开类型) => ipcRenderer.invoke('file.showOpenDialogMany', 打开类型),

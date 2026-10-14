@@ -75,13 +75,15 @@ describe('本地工作台', () => {
     expect(localStorage.getItem('seal-local-calendar-v1')).toBe('{损坏')
   })
 
-  it('应用入口可以进入日历和脑图', async () => {
+  it('应用入口可以进入日历、脑图和 Access 数据库', async () => {
     const 用户 = userEvent.setup()
     渲染(<AppsPage />)
     await 用户.click(screen.getByRole('button', { name: /本机日历/ }))
     expect(screen.getByTestId('当前状态')).toHaveTextContent('home|calendar|')
     await 用户.click(screen.getByRole('button', { name: /脑图/ }))
     expect(screen.getByTestId('当前状态')).toHaveTextContent('home|mindmap|')
+    await 用户.click(screen.getByRole('button', { name: /Access 数据库/ }))
+    expect(screen.getByTestId('当前状态')).toHaveTextContent('home|database|')
   })
 
   it('首页栏目进入日历后展示可操作页面', async () => {

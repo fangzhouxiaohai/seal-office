@@ -62,11 +62,30 @@ describe('htmlToDocxModel 样式保真', () => {
     expect(模型.段落[2]).toMatchObject({ 文字: [], 间距: { 段前: 360 } })
   })
 
-  it('无法写回的图形与链接仍提示风险，普通缩进不再被误拦截', () => {
+  it('图形仍提示风险，安全超链接进入可保存模型且普通缩进不再被误拦截', () => {
     const 模型 = htmlToDocxModel('<div class="wps-chart" contenteditable="false"><svg></svg></div><p style="margin-left:24px"><a href="https://example.com">官网</a></p>')
     expect(模型.未覆盖).toContain('图表')
     expect(模型.未覆盖).not.toContain('段落缩进或间距')
-    expect(模型.未覆盖).toContain('超链接目标')
+    expect(模型.未覆盖).not.toContain('超链接目标')
+    expect(模型.段落[1]).toMatchObject({ 文字: [expect.objectContaining({ 文本: '官网', 链接: 'https://example.com' })] })
+  })
+
+  it('优先保留关系中的原始链接文字，危险协议仍进入损失清单', () => {
+    const 安全 = htmlToDocxModel('<p><a href="https://normalized.invalid/" data-seal-link="https://例子.test/资料?q=𠀀&amp;e=😀">资料</a></p>')
+    expect(安全.未覆盖).toEqual([])
+    expect(安全.段落[0]).toMatchObject({ 文字: [expect.objectContaining({ 链接: 'https://例子.test/资料?q=𠀀&e=😀' })] })
+    const 危险 = htmlToDocxModel('<p><a data-seal-link="javascript:alert(1)">危险</a></p>')
+    expect(危险.未覆盖).toContain('超链接目标')
+    expect(危险.段落[0]).toMatchObject({ 文字: [expect.not.objectContaining({ 链接: expect.anything() })] })
+  })
+
+  it('文档内书签零宽标记与对应链接一起进入可保存模型', () => {
+    const 模型 = htmlToDocxModel('<p><span data-seal-bookmark="章节𠀀" contenteditable="false"></span><a data-seal-link="#章节𠀀">跳转</a></p>')
+    expect(模型.未覆盖).toEqual([])
+    expect(模型.段落[0]).toMatchObject({ 文字: [
+      expect.objectContaining({ 文本: '', 书签: '章节𠀀' }),
+      expect.objectContaining({ 文本: '跳转', 链接: '#章节𠀀' }),
+    ] })
   })
 
   it('上标、下标与段内换行是可保存的常规文字格式', () => {

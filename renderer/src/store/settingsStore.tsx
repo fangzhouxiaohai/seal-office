@@ -4,12 +4,14 @@ import { useState, createContext, useContext, useEffect, useRef, type ReactNode 
 import { App as AntdApp } from 'antd'
 import { 主题名, 应用主题 } from '../styles/themes'
 
+export type 界面语言 = 'zh-CN' | 'en-US'
+
 export interface SettingsState {
   主题: 主题名
   切换主题: () => void
   恢复默认主题: () => void
-  语言: string
-  设置语言: (语言: string) => void
+  语言: 界面语言
+  设置语言: (语言: 界面语言) => void
   /** 每次启动检查默认程序：打开时启动即校验，不是默认程序就静默设为默认 */
   启动时检查默认程序: boolean
   设置启动时检查默认程序: (开启: boolean) => void
@@ -47,7 +49,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [错误, set错误] = useState<设置错误 | null>(初始主题.错误
     ? { 标题: '读取主题设置失败', 内容: 初始主题.错误 } : null)
 
-  const [语言, set语言] = useState<string>('zh-CN')
+  const [初始语言] = useState<{ 值: 界面语言; 错误: string | null }>(() => {
+    try {
+      const 已保存 = localStorage.getItem('seal-language')
+      return { 值: 已保存 === 'en-US' ? 'en-US' : 'zh-CN', 错误: null }
+    } catch (原因) {
+      return { 值: 'zh-CN', 错误: 原因 instanceof Error ? 原因.message : '无法读取本机语言设置' }
+    }
+  })
+  const [语言, set语言] = useState<界面语言>(初始语言.值)
+  useEffect(() => {
+    if (初始语言.错误) set错误({ 标题: '读取语言设置失败', 内容: 初始语言.错误 })
+  }, [初始语言.错误])
 
   // 默认打开：启动时检查文件关联，发现不是默认程序时提示用户确认
   const [启动时检查默认程序, set启动时检查默认程序] = useState<boolean>(() => {
@@ -68,7 +81,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const 恢复默认主题 = () => set主题('浅色')
 
-  const 设置语言 = (新语言: string) => {
+  const 设置语言 = (新语言: 界面语言) => {
     try {
       localStorage.setItem('seal-language', 新语言)
     } catch (原因) {
@@ -77,6 +90,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
     set语言(新语言)
   }
+
+  useEffect(() => {
+    document.documentElement.lang = 语言
+  }, [语言])
 
   // 初始应用主题
   useEffect(() => {

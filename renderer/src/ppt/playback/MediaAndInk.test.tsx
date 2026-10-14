@@ -5,7 +5,7 @@ import SlideshowView from '../SlideshowView'
 import { 创建演示文稿, 创建幻灯片, type 演示对象 } from '../deck'
 import { 创建媒体对象, 创建墨迹对象 } from '../model/mediaObjects'
 import { SlideObjects } from '../render/SlideObjects'
-import { 临时批迹层, 橡皮移除, 屏幕转画布, type 批迹 } from './PresenterTools'
+import { 临时批迹层, 放映浮层层级, 橡皮移除, 规范化批迹, 屏幕转画布, type 批迹 } from './PresenterTools'
 
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
@@ -99,6 +99,12 @@ describe('放映动作与音效', () => {
     安装接口()
     render(<AntdApp><SlideshowView 文稿={含媒体文稿(媒体对象())} 当前索引={0} on翻页={vi.fn()} on退出={vi.fn()} /></AntdApp>)
     for (const 名称 of ['画笔', '橡皮', '清除', '激光笔', '黑屏', '白屏']) expect(screen.getByRole('button', { name: 名称 })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '画笔' }))
+    const 画布 = document.querySelector('.wps-present-ink') as SVGSVGElement
+    const 工具停靠 = document.querySelector('.wps-slideshow__dock--top') as HTMLElement
+    expect(Number(工具停靠.style.zIndex)).toBe(放映浮层层级.控件)
+    expect(Number(画布.style.zIndex)).toBe(放映浮层层级.批迹)
+    expect(Number(工具停靠.style.zIndex)).toBeGreaterThan(Number(画布.style.zIndex))
     fireEvent.click(screen.getByRole('button', { name: '黑屏' }))
     expect(document.querySelector('.wps-slideshow__screen')?.getAttribute('data-屏幕')).toBe('黑')
     fireEvent.click(screen.getByRole('button', { name: '白屏' }))
@@ -132,5 +138,30 @@ describe('临时批迹工具', () => {
     画布.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 }))
     expect(on批迹).toHaveBeenCalled()
     expect((on批迹.mock.calls[0][0] as 批迹).笔画[0][0]).toEqual({ x: 100, y: 100 })
+    expect((on批迹.mock.calls[0][0] as 批迹).笔画[0]).toHaveLength(2)
+  })
+
+  it('退出前把旧单点笔画规范为可保存圆点，并限制每笔最多两千点', () => {
+    const 超长 = Array.from({ length: 2100 }, (_, 索引) => ({ x: 索引 / 10, y: 100 }))
+    const 结果 = 规范化批迹({ 颜色: '#E34D59', 笔宽: 3, 笔画: [[{ x: 20, y: 30 }], 超长, []] })
+    expect(结果.笔画).toHaveLength(2)
+    expect(结果.笔画[0]).toEqual([{ x: 20, y: 30 }, { x: 20, y: 30 }])
+    expect(结果.笔画[1]).toHaveLength(2000)
+    expect(() => 创建墨迹对象(结果.笔画, 结果.颜色, 结果.笔宽)).not.toThrow()
+  })
+
+  it('单击画笔后退出并保留，不再出现笔迹点数错误', async () => {
+    安装接口()
+    const 保留 = vi.fn()
+    render(<AntdApp><SlideshowView 文稿={含媒体文稿(媒体对象())} 当前索引={0} on翻页={vi.fn()} on退出={vi.fn()} on保留笔迹={保留} /></AntdApp>)
+    fireEvent.click(screen.getByRole('button', { name: '画笔' }))
+    const 画布 = document.querySelector('svg.wps-present-ink') as SVGSVGElement
+    画布.getBoundingClientRect = () => ({ left: 0, top: 0, width: 960, height: 540, right: 960, bottom: 540, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    fireEvent(画布, new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 200, clientY: 180 }))
+    fireEvent(画布, new MouseEvent('pointerup', { bubbles: true, cancelable: true, clientX: 200, clientY: 180 }))
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(await screen.findByRole('button', { name: '保留笔迹' }))
+    expect(保留).toHaveBeenCalledTimes(1)
+    expect(保留.mock.calls[0][0].笔画[0]).toHaveLength(2)
   })
 })

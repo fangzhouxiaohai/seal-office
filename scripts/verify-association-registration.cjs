@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {randomUUID}=require('node:crypto'),{execFileSync}=require('node:child_process')
 if(process.platform!=='win32')throw new Error('This verification requires Windows')
 const app=path.resolve(process.argv[2]||'release/v1.9.1/win-unpacked')
-const executable=path.join(app,'SealOffice.exe'),script=path.join(app,'resources/shell-integration/shellIntegration.ps1'),icons=path.join(app,'resources/file-icons')
+const executable=path.join(app,'海豹办公.exe'),script=path.join(app,'resources/shell-integration/shellIntegration.ps1'),icons=path.join(app,'resources/file-icons')
 for(const file of [executable,script])assert.ok(fs.existsSync(file))
 const testRoot='Software\\SealOfficeIntegrationTests\\'+randomUUID()
 assert.match(testRoot,/^Software\\SealOfficeIntegrationTests\\[a-f0-9-]{36}$/)

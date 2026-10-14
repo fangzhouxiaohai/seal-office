@@ -22,6 +22,21 @@ const 构造模型 = () => ({
 })
 
 describe('docx 往返保真', () => {
+  it('中日韩、RTL、组合音标、ZWJ emoji、扩展汉字与 XML 符号完整往返', async () => {
+    const 文本 = '中文 日本語 한국어 𠀀𠮷 | العربية עברית | e\u0301 | 👩🏽‍💻🏳️‍🌈 | ∑∫√∞≠≤≥ | & < > " \' | 空格\u00A0\u202F\u3000'
+    const 数据 = await 生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本 }] }] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    expect(xml).toContain('𠀀𠮷')
+    expect(xml).toContain('👩🏽‍💻🏳️‍🌈')
+    expect(xml).toContain('&amp; &lt; &gt;')
+    const 读回 = await 读取docx(数据)
+    for (const 片段 of ['𠀀𠮷', 'العربية', 'עברית', 'e\u0301', '👩🏽‍💻🏳️‍🌈', '∑∫√∞≠≤≥', '&amp;', '&lt;', '&gt;', '\u00A0\u202F\u3000']) {
+      expect(读回.html).toContain(片段)
+    }
+    expect(读回.警告).toEqual([])
+  })
+
   it('文档默认段落格式与样式继承按属性叠加，直接格式覆盖相同字段', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr><w:pStyle w:val="正文"/><w:ind w:left="720"/></w:pPr><w:r><w:t>继承段落格式</w:t></w:r></w:p></w:body></w:document>')
@@ -231,18 +246,45 @@ describe('docx 往返保真', () => {
     await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '字距', 字间距: 999999 }] }] })).rejects.toThrow('字间距')
   })
 
-  it('普通段落间距不再误报，未覆盖的超链接目标仍提示风险', async () => {
+  it('普通段落间距与外部超链接目标完整导入，不再误报覆盖风险', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:p>' +
       '<w:pPr><w:spacing w:before="240" w:after="120" w:line="360" w:lineRule="auto"/></w:pPr>' +
       '<w:hyperlink r:id="rId7"><w:r><w:t>官网</w:t></w:r></w:hyperlink>' +
       '</w:p></w:body></w:document>')
+    压缩包.file('word/_rels/document.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com/search?a=1&amp;b=中文" TargetMode="External"/>' +
+      '</Relationships>')
     const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
     expect(结果.html).toContain('margin-top:12pt')
     expect(结果.html).toContain('margin-bottom:6pt')
     expect(结果.html).toContain('line-height:1.5')
     expect(结果.警告).not.toContain('段落间距未完整导入')
-    expect(结果.警告).toContain('超链接目标未导入')
+    expect(结果.警告).not.toContain('超链接目标未导入')
+    expect(结果.html).toContain('data-seal-link="https://example.com/search?a=1&amp;b=中文"')
+  })
+
+  it('外部与文档内超链接保存后保持目标，危险协议明确拒绝', async () => {
+    const 外部目标 = 'https://example.com/资料?q=扩展汉字𠀀&emoji=😀'
+    const 数据 = await 生成docx({ 段落: [{ 类型: '段落', 文字: [
+      { 文本: '', 书签: '章节一' },
+      { 文本: '外部链接', 链接: 外部目标, 加粗: true },
+      { 文本: '内部链接', 链接: '#章节一' },
+    ] }] })
+    const 压缩包 = await JSZip.loadAsync(数据)
+    const xml = await 压缩包.file('word/document.xml').async('string')
+    const rels = await 压缩包.file('word/_rels/document.xml.rels').async('string')
+    expect(xml).toContain('w:anchor="章节一"')
+    expect(xml).toContain('w:name="章节一"')
+    expect(rels).toContain('relationships/hyperlink')
+    expect(rels).toContain('扩展汉字𠀀')
+    const 读回 = await 读取docx(数据)
+    expect(读回.警告).toEqual([])
+    expect(读回.html).toContain(`data-seal-link="${外部目标.replace(/&/g, '&amp;')}"`)
+    expect(读回.html).toContain('data-seal-link="#章节一"')
+    expect(读回.html).toContain('data-seal-bookmark="章节一"')
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '危险', 链接: 'javascript:alert(1)' }] }] })).rejects.toThrow('协议不安全')
+    await expect(生成docx({ 段落: [{ 类型: '段落', 文字: [{ 文本: '', 书签: '\u0000' }] }] })).rejects.toThrow('书签名称无效')
   })
 
   it('上标、下标、段内换行与表格内多段格式写入真实 DOCX', async () => {

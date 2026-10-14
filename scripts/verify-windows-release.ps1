@@ -1,10 +1,10 @@
 ﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw | ConvertFrom-Json).version
+$taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
 $taskRelease = Join-Path $taskRoot "release\v$taskVersion"
 $taskLabel = if ($InstalledExecutable) { 'installed' } elseif ($Portable) { 'portable' } else { 'unpacked' }
-$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "SealOffice$taskVersion.exe" } else { Join-Path $taskRelease 'win-unpacked\SealOffice.exe' }
+$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "海豹办公$taskVersion.exe" } else { Join-Path $taskRelease 'win-unpacked\海豹办公.exe' }
 if ($Portable -and $InstalledExecutable) { throw '便携版与安装目录验收不可同时指定' }
 $taskDirectory = Join-Path 'E:\Temp' ('seal-windows-release-' + [guid]::NewGuid().ToString('N'))
 $taskRegistry = 'Software\SealOfficeIntegrationTests\' + [guid]::NewGuid().ToString()
@@ -48,7 +48,7 @@ try {
         foreach ($taskItem in $taskSnapshot) { if ($taskIds.Contains([uint32]$taskItem.ParentProcessId)) { [void]$taskIds.Add([uint32]$taskItem.ProcessId) } }
       } while ($taskCount -ne $taskIds.Count)
       foreach ($taskItem in $taskSnapshot) {
-        if ($taskIds.Contains([uint32]$taskItem.ProcessId) -and $taskItem.Name -match '^SealOffice.*\.exe$') { Stop-Process -Id $taskItem.ProcessId -Force -ErrorAction SilentlyContinue }
+        if ($taskIds.Contains([uint32]$taskItem.ProcessId) -and $taskItem.Name -match '^海豹办公.*\.exe$') { Stop-Process -Id $taskItem.ProcessId -Force -ErrorAction SilentlyContinue }
       }
     }
   }

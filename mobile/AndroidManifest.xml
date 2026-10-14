@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="com.sealoffice.mobile">
+  <!-- 当前应用只需要联网；文件通过系统选择器导入，导出先写入应用沙箱再交给系统分享。
+       显式移除 HBuilderX 基座可能合并进来的相机、定位和旧式外部存储权限，
+       避免商店权限声明与产品实际功能、隐私说明不一致。 -->
+  <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
   <!-- 保持 uni-app x 的 onBackPress 可用，保护未保存文档；迁移预测返回后再开启。 -->
   <application android:enableOnBackInvokedCallback="false" tools:replace="android:enableOnBackInvokedCallback" />
 </manifest>

@@ -131,6 +131,22 @@ export interface 演示捕获接口 {
   recognitionStatus: () => Promise<识别状态结果>
   recognize: (数据: string, 类型: string) => Promise<{ 成功: boolean; 文本?: string; 错误?: string }>
 }
+export type Access数据库操作 = 'inspect' | 'query' | 'readTable' | 'execute' | 'insert' | 'update' | 'delete' | 'createTable' | 'dropTable' | 'importRows'
+export type Access单元格值 = string | number | boolean | null | { __type: 'binary'; length: number }
+export interface Access字段信息 { name: string; type: string; dataType?: number | string | null; ordinal?: number | null; maxLength?: number | null; nullable: boolean; defaultValue?: Access单元格值 }
+export interface Access索引信息 { name: string; columns: string[]; primary: boolean; unique: boolean }
+export interface Access表信息 { name: string; type: string; columns: Access字段信息[]; indexes: Access索引信息[]; primaryKey: string[] }
+export interface Access关系信息 { name: string; primaryTable: string; primaryColumn: string; foreignTable: string; foreignColumn: string }
+export interface Access数据库结构 { tables: Access表信息[]; queries: Array<{ name: string; type: string }>; relationships: Access关系信息[]; 提供者?: string; 位数?: number; 格式代际?: string }
+export interface Access查询结果 { columns: Array<{ name: string; type: string }>; rows: Array<Record<string, Access单元格值>>; truncated: boolean; rowCount: number; 提供者?: string; 位数?: number; 格式代际?: string }
+export interface Access操作结果<T = Record<string, unknown>> { 成功: boolean; 数据?: T; 路径?: string; 已取消?: boolean; 需要旧版转换?: boolean; 安装地址?: string; 错误?: string }
+export interface Access数据库状态 { 成功: boolean; 可用?: boolean; 平台支持?: boolean; 提供者?: Array<{ 名称: string; 位数: number }>; 安装地址?: string; 兼容范围?: { 直接读写?: string[]; 不支持?: string[] }; 错误?: string }
+export interface Access数据库接口 {
+  status: () => Promise<Access数据库状态>
+  pick: () => Promise<Access操作结果>
+  create: (默认名称?: string) => Promise<Access操作结果>
+  invoke: <T = Record<string, unknown>>(操作: Access数据库操作, 输入: Record<string, unknown>) => Promise<Access操作结果<T>>
+}
 export type 生成版式 = '标题幻灯片' | '标题和内容' | '空白'
 export interface 生成提纲项 { 页标识: string; 标题: string; 版式: 生成版式; 要点: string[] }
 export interface 生成页面项 { 页标识: string; 标题: string; 正文: string; 版式?: 生成版式; 要点: string[] }
@@ -160,6 +176,7 @@ export interface 演示生成接口 {
   }
 }
 export interface 电子接口 {
+  database?: Access数据库接口
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf' | 'ofd') => Promise<string | null>
   showOpenDialog: (打开类型?: 'word' | 'table' | 'ppt' | 'pdf') => Promise<string | null>
   showOpenDialogMany: (打开类型: 'pdf' | 'ppt') => Promise<string[]>
@@ -250,6 +267,14 @@ const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? win
 const 失败 = <T = never>(提示: string): Promise<{ 成功: boolean; 数据?: T; 错误: string }> => Promise.resolve({ 成功: false, 错误: 提示 })
 export const 桥接 = {
   get 可用() { return 取后端() !== null },
+  database: {
+    get 可用() { return typeof 取后端()?.database?.invoke === 'function' },
+    status: (): Promise<Access数据库状态> => 取后端()?.database?.status() ?? Promise.resolve({ 成功: true, 可用: false, 平台支持: false, 错误: 'Access 数据库功能仅支持 Windows 桌面版' }),
+    pick: (): Promise<Access操作结果> => 取后端()?.database?.pick() ?? 失败('当前环境不支持选择 Access 数据库'),
+    create: (默认名称?: string): Promise<Access操作结果> => 取后端()?.database?.create(默认名称) ?? 失败('当前环境不支持创建 Access 数据库'),
+    invoke: <T = Record<string, unknown>>(操作: Access数据库操作, 输入: Record<string, unknown>): Promise<Access操作结果<T>> =>
+      取后端()?.database?.invoke<T>(操作, 输入) ?? 失败('当前环境不支持 Access 数据库操作'),
+  },
   get 放映全屏可用() { return typeof 取后端()?.enterSlideshowFullscreen === 'function' },
   enterSlideshowFullscreen: (): Promise<放映全屏结果> => 取后端()?.enterSlideshowFullscreen?.() ?? 失败('当前环境不支持系统全屏'),
   exitSlideshowFullscreen: (标识: string) => 取后端()?.exitSlideshowFullscreen?.(标识) ?? 失败('当前环境不支持恢复窗口'),

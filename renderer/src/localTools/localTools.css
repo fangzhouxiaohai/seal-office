@@ -67,9 +67,54 @@
 .local-files__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .local-files__muted { color: var(--text-2); font-size: 12px; }
 .local-files__empty { margin: 0; padding: var(--space-6) var(--space-4); color: var(--text-2); }
+.database-page { max-width: 1600px; }
+.database-welcome { max-width: 760px; margin: var(--space-8) auto 0; box-shadow: var(--shadow-card); }
+.database-welcome .ant-card-body { display: grid; gap: var(--space-4); padding: var(--space-6); }
+.database-welcome > .ant-card-body > label, .database-sql-card label { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.database-advanced-connection { width: min(100%, 620px); border: 1px solid var(--border); border-radius: var(--radius-control); padding: var(--space-3); }
+.database-advanced-connection > summary { cursor: pointer; font-weight: 600; }
+.database-advanced-connection__fields { display: grid; gap: var(--space-2); margin-top: var(--space-3); text-align: left; }
+.database-advanced-connection__fields label { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.database-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
+.database-summary > div:first-child { min-width: 0; }
+.database-summary strong, .database-summary span { display: block; }
+.database-summary span { margin-top: var(--space-1); overflow: hidden; color: var(--text-2); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.database-layout { display: grid; grid-template-columns: minmax(210px, 250px) minmax(0, 1fr); gap: var(--space-4); align-items: start; min-height: 680px; }
+.database-sidebar { position: sticky; top: 0; display: flex; flex-direction: column; min-height: 640px; max-height: min(76vh, 820px); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
+.database-sidebar__header { display: flex; align-items: center; justify-content: space-between; min-height: 42px; padding: 0 var(--space-3); border-bottom: 1px solid var(--border-subtle); }
+.database-sidebar__header:not(:first-child) { border-top: 1px solid var(--border); }
+.database-object-list { display: grid; align-content: start; min-height: 44px; max-height: 240px; overflow: auto; padding: var(--space-2); }
+.database-object-list button { width: 100%; min-height: 34px; overflow: hidden; padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text-1); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font: inherit; }
+.database-object-list button:hover { background: var(--bg-hover); }
+.database-object-list button.is-active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.database-object-list button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.database-object-list > span { padding: var(--space-2); color: var(--text-3); font-size: 12px; }
+.database-sidebar__footer { display: grid; gap: var(--space-2); margin-top: auto; padding: var(--space-3); border-top: 1px solid var(--border); }
+.database-main { min-width: 0; }
+.database-main > .ant-tabs > .ant-tabs-nav { margin-bottom: var(--space-4); }
+.database-table-card, .database-schema-grid .ant-card, .database-relations-card, .database-sql-card { overflow: hidden; border: 0; border-radius: var(--radius-card); background: var(--bg-card); box-shadow: var(--shadow-card); }
+.database-table-card { padding: var(--space-4) var(--space-6); }
+.database-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+.database-table-toolbar > strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+.database-table-card > .ant-alert { margin-bottom: var(--space-4); }
+.database-table-card .ant-table-wrapper { max-width: 100%; }
+.database-table-card .ant-table-thead { position: sticky; top: 0; z-index: 2; }
+.database-table-card .ant-table-cell { white-space: nowrap; }
+.database-table-card .ant-table-pagination { margin-bottom: 0; }
+.database-schema-grid { display: grid; gap: var(--space-4); }
+.database-schema-grid .ant-card-body, .database-relations-card .ant-card-body, .database-sql-card .ant-card-body { padding: var(--space-4) var(--space-6); }
+.database-sql-card .ant-card-body { display: grid; gap: var(--space-3); }
+.database-sql-card p { margin: 0; color: var(--text-2); font-size: 12px; line-height: 1.6; }
+.database-sql-card textarea { font-family: var(--font-code, ui-monospace, Consolas, monospace); }
+.database-row-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-4); max-height: min(60vh, 620px); overflow: auto; padding-right: var(--space-2); }
+.database-row-form .ant-form-item { min-width: 0; }
+.database-page button:focus-visible, .database-page input:focus-visible, .database-page textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 @container wps-main (max-width: 900px) {
   .calendar-layout, .diagram-layout { grid-template-columns: 1fr; }
   .diagram-inspector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .database-layout { grid-template-columns: 1fr; }
+  .database-sidebar { position: static; min-height: 0; max-height: none; }
+  .database-object-list { max-height: 180px; }
 }
 @container wps-main (max-width: 620px) {
   .local-page__header { flex-direction: column; }
@@ -77,6 +122,9 @@
   .calendar-grid__day { min-height: 54px; }
   .local-files__row { grid-template-columns: minmax(0, 1fr) 80px; }
   .local-files__row > :nth-child(2), .local-files__row > :nth-child(3) { display: none; }
+  .database-summary, .database-table-toolbar { align-items: flex-start; flex-direction: column; }
+  .database-table-card { padding-inline: var(--space-4); }
+  .database-row-form { grid-template-columns: 1fr; }
 }
 @container wps-main (max-width: 480px) {
   .calendar-card__nav, .calendar-grid { min-width: 350px; }

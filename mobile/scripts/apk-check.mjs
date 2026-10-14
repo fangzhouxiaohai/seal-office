@@ -63,9 +63,11 @@ async function main() {
       const badging = await execute(path.join(tools, process.platform === 'win32' ? 'aapt.exe' : 'aapt'), ['dump', 'badging', apkPath])
       const packageInfo = badging.match(/package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'/)
       if (!packageInfo || !/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)+$/.test(packageInfo[1])) throw new Error('安卓包名无效')
-      report.sdkMetadata = { packageName: packageInfo[1], versionCode: packageInfo[2], versionName: packageInfo[3], minSdk: badging.match(/sdkVersion:'([^']+)'/)?.[1], targetSdk: badging.match(/targetSdkVersion:'([^']+)'/)?.[1], abi: badging.match(/native-code: (.+)/)?.[1], permissions: [...badging.matchAll(/uses-permission: name='([^']+)'/g)].map(item => item[1]) }
+      report.sdkMetadata = { packageName: packageInfo[1], versionCode: packageInfo[2], versionName: packageInfo[3], minSdk: badging.match(/sdkVersion:'([^']+)'/)?.[1], targetSdk: badging.match(/targetSdkVersion:'([^']+)'/)?.[1], abi: badging.match(/native-code: (.+)/)?.[1], debuggable: /(?:^|\n)application-debuggable(?:\n|$)/.test(badging), permissions: [...badging.matchAll(/uses-permission: name='([^']+)'/g)].map(item => item[1]) }
+      await execute(path.join(tools, process.platform === 'win32' ? 'zipalign.exe' : 'zipalign'), ['-c', '-P', '16', '-v', '4', apkPath])
+      report.sdkMetadata.zipAligned = true
       const signature = await execute('java', ['-jar', path.join(tools, 'lib/apksigner.jar'), 'verify', '--verbose', '--print-certs', apkPath])
-      report.signature = { verified: true, v1: /v1 scheme.*: true/.test(signature), v2: /v2 scheme.*: true/.test(signature), v3: /v3 scheme.*: true/.test(signature), certificateSha256: signature.match(/certificate SHA-256 digest: (\w+)/)?.[1] }
+      report.signature = { verified: true, v1: /v1 scheme.*: true/.test(signature), v2: /v2 scheme.*: true/.test(signature), v3: /v3 scheme.*: true/.test(signature), certificateDn: signature.match(/certificate DN: (.+)/)?.[1], certificateSha256: signature.match(/certificate SHA-256 digest: (\w+)/)?.[1] }
     }
     const deviceIndex = args.indexOf('--device')
     if (deviceIndex >= 0) {
@@ -87,6 +89,11 @@ async function main() {
   if (args.includes('--require-current') && !report.embeddedEditor.matchesCurrentSourceBuild) throw new Error('APK 不包含当前构建的修复，请重新云打包')
   if (args.includes('--require-current') && report.sdkMetadata) {
     if (Number(report.sdkMetadata.minSdk) !== 28 || Number(report.sdkMetadata.targetSdk) !== 36 || !report.sdkMetadata.abi?.includes('armeabi-v7a') || !report.sdkMetadata.abi?.includes('arm64-v8a')) throw new Error('APK 的 Android 9–16 或双 ABI 配置未生效')
+    if (report.sdkMetadata.debuggable || !report.sdkMetadata.zipAligned) throw new Error('APK 必须关闭调试并通过 16 KiB ZIP 对齐校验')
+    if (!report.signature?.verified || (!report.signature.v2 && !report.signature.v3) || /Android Debug/i.test(report.signature.certificateDn || '')) throw new Error('APK 未使用可上架的 v2/v3 发布签名')
+    const forbiddenPermissions = ['android.permission.CAMERA', 'android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION', 'android.permission.READ_EXTERNAL_STORAGE', 'android.permission.WRITE_EXTERNAL_STORAGE']
+    const declaredForbiddenPermissions = report.sdkMetadata.permissions.filter(permission => forbiddenPermissions.includes(permission))
+    if (declaredForbiddenPermissions.length) throw new Error('APK 仍声明未使用权限：' + declaredForbiddenPermissions.join('、'))
     if (report.nativeLibraries16KiB.some(item => !item.compatible)) throw new Error('APK 存在未满足 16 KiB ELF 加载对齐的原生库')
   }
 }

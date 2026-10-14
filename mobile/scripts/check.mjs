@@ -12,6 +12,10 @@ for (const filename of ['App.uvue', 'main.uts', 'web/public/uni.webview.js', 'we
 assert.equal(manifest['app-android'].distribute.minSdkVersion, 28, '最低安卓版本应为 Android 9')
 assert.equal(manifest['app-android'].distribute.targetSdkVersion, 36, '目标安卓版本应为 Android 16')
 assert.deepEqual(manifest['app-android'].distribute.abiFilters, ['armeabi-v7a', 'arm64-v8a'])
+const excludedPermissions = new Set(manifest['app-android'].distribute.excludePermissions)
+for (const permission of ['CAMERA', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE']) {
+  assert.ok(excludedPermissions.has(`<uses-permission android:name="android.permission.${permission}"/>`), `manifest.json 必须强制移除未使用权限 ${permission}`)
+}
 const iconGroups = [manifest['app-android'].distribute.icons, manifest['app-ios'].distribute.icons, manifest['app-harmony'].distribute.icons]
 for (const group of iconGroups) for (const filename of Object.values(group)) await fs.access(path.join(directory, filename))
 const iosIcon = await fs.readFile(path.join(directory, manifest['app-ios'].distribute.icons.appstore))
@@ -20,6 +24,9 @@ for (const filename of ['nativeResources/android/res/mipmap-anydpi-v26/icon.xml'
 const androidManifest = await fs.readFile(path.join(directory, 'AndroidManifest.xml'), 'utf8')
 assert.match(androidManifest, /package="com\.sealoffice\.mobile"/)
 assert.match(androidManifest, /android:enableOnBackInvokedCallback="false"/)
+for (const permission of ['CAMERA', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE']) {
+  assert.match(androidManifest, new RegExp(`android\\.permission\\.${permission}" tools:node="remove"`), `必须移除未使用权限 ${permission}`)
+}
 const pkg = JSON.parse(await fs.readFile(path.join(directory, 'package.json'), 'utf8'))
 assert.ok(pkg.scripts.build.endsWith(' android')); assert.equal(pkg.scripts.pack, pkg.scripts['pack:android'])
 console.log('uni-app x 结构、页面、各端 Logo、Android 9–16/双 ABI、返回保护与默认安卓流程检查通过。')

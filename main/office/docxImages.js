@@ -1,13 +1,9 @@
 const path = require('path')
 const { 读取图片信息, 文档最大图片字节 } = require('./imageData')
+const { 解码Xml实体 } = require('./xmlEntities')
 
 const 转义 = (文本) => String(文本).replace(/[&<>"']/g, (字) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[字]))
-const 解码属性 = (文本) => 文本.replace(/&(?:amp|lt|gt|quot|apos);|&#(?:x[\da-f]+|\d+);/gi, (项) => {
-  const 标准 = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" }
-  if (标准[项]) return 标准[项]
-  const 数值 = 项.startsWith('&#x') ? parseInt(项.slice(3, -1), 16) : Number(项.slice(2, -1))
-  return Number.isInteger(数值) && 数值 > 0 && 数值 <= 0x10ffff ? String.fromCodePoint(数值) : 项
-})
+const 解码属性 = (文本) => 解码Xml实体(文本, '文字文档图片')
 function 属性(标签, 名称) {
   const 匹配 = 标签.match(new RegExp(`(?:^|\\s)${名称}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`))
   return 匹配 ? 解码属性(匹配[1] ?? 匹配[2]) : null

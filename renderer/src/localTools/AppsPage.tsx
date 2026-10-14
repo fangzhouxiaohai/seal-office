@@ -27,6 +27,7 @@ export default function AppsPage() {
     { 名称: '表格', 说明: '整理与计算数据', 图标: 'doc-table', 分类: '编辑文件', 打开: () => createDoc('table') },
     { 名称: '演示', 说明: '制作幻灯片', 图标: 'doc-ppt', 分类: '编辑文件', 打开: () => createDoc('ppt') },
     { 名称: 'PDF 工具', 说明: '阅读和处理 PDF 文件', 图标: 'pdf', 分类: '编辑文件', 打开: () => createDoc('pdf') },
+    { 名称: 'Access 数据库', 说明: '维护 MDB 与 ACCDB 数据库', 图标: 'doc-table', 分类: '编辑文件', 打开: () => setNavKey('database') },
     { 名称: '本机日历', 说明: '安排日程并导出日历文件', 图标: 'calendar', 分类: '本地工具', 打开: () => setNavKey('calendar') },
     { 名称: '脑图', 说明: '梳理主题与分支', 图标: 'mindmap', 分类: '本地工具', 打开: () => setNavKey('mindmap') },
     { 名称: '流程图', 说明: '绘制步骤和连接关系', 图标: 'flow', 分类: '本地工具', 打开: () => setNavKey('flow') },

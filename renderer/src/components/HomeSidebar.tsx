@@ -8,6 +8,8 @@ interface Props {
   navKey: string
   onNavigate: (键: string) => void
   onNewDoc: (类型: 'word' | 'table' | 'ppt' | 'pdf') => void
+  /** 新建 Access 2007（ACCDB）数据库并进入数据库工作区 */
+  onNewAccess: () => void
   onOpenTemplate: () => void
   onOpenFile: () => void
   /** 占位功能点击提示 */
@@ -34,12 +36,14 @@ const 本地项 = [
   { key: 'download', label: '下载', icon: 'download-file' },
 ]
 
-const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile, onNotify, onOpenPdf, onOpenHelp }: Props) => {
+const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate, onOpenFile, onNotify, onOpenPdf, onOpenHelp }: Props) => {
   const [新建弹窗打开, 设新建弹窗打开] = useState(false)
   const 新建选项 = [
     { 类型: 'word' as const, 标题: '文字文档', 描述: '撰写报告、简历和公文', 图标: 'doc-word' },
     { 类型: 'table' as const, 标题: '电子表格', 描述: '整理数据、计算和统计', 图标: 'doc-table' },
     { 类型: 'ppt' as const, 标题: '演示文稿', 描述: '制作汇报和培训课件', 图标: 'doc-ppt' },
+    { 类型: 'pdf' as const, 标题: 'PDF', 描述: '新建空白 PDF', 图标: 'doc-pdf' },
+    { 类型: 'access' as const, 标题: 'Access 数据库', 描述: '新建空白数据库', 图标: 'doc-table' },
   ]
 
   const 渲染导航项 = (项: { key: string; label: string; icon: string }, 占位: boolean) =>
@@ -165,7 +169,11 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onOpenTemplate, onOpenFile,
     }, React.createElement('div', { className: 'wps-newdoc-options' },
       ...新建选项.map((选项) => React.createElement('button', {
         key: 选项.类型, type: 'button', className: 'wps-newdoc-option',
-        onClick: () => { 设新建弹窗打开(false); onNewDoc(选项.类型) },
+        onClick: () => {
+          设新建弹窗打开(false)
+          if (选项.类型 === 'access') onNewAccess()
+          else onNewDoc(选项.类型)
+        },
       }, React.createElement(Icon, { name: 选项.图标, size: 32 }),
       React.createElement('strong', null, 选项.标题), React.createElement('span', null, 选项.描述))),
       React.createElement('button', { type: 'button', className: 'wps-newdoc-option wps-newdoc-option--template',

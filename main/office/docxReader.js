@@ -5,6 +5,7 @@ const JSZip = require('jszip')
 const path = require('path')
 const { 缩进字段, 间距字段, 扩展字段, 属性有效 } = require('./paragraphProperties')
 const { 读取正文图片 } = require('./docxImages')
+const { 解码Xml实体 } = require('./xmlEntities')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 预设边距 = { 常规: [1440, 1350], 窄: [540, 540], 适中: [1440, 1080], 宽: [1440, 2160] }
@@ -24,19 +25,73 @@ function 转义(文本) {
 }
 
 function 解码Xml(文本) {
-  return 文本.replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[\da-f]+);/gi, 实体 => {
-    const 名称 = 实体.slice(1, -1)
-    if (名称[0] !== '#') return { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" }[名称.toLowerCase()]
-    const 码点 = 名称[1].toLowerCase() === 'x' ? parseInt(名称.slice(2), 16) : Number(名称.slice(1))
-    if (!Number.isInteger(码点) || 码点 > 0x10ffff || 码点 >= 0xd800 && 码点 <= 0xdfff) throw new Error('文档包含无效 XML 字符')
-    return String.fromCodePoint(码点)
-  })
+  return 解码Xml实体(文本, '文字文档')
 }
 
 /** 提取某段 XML 里第一个 <标签 ... 属性="值"> 的属性值 */
 function 取属性(片段, 标签, 属性) {
-  const 匹配 = 片段.match(new RegExp(`<${标签}(?=[\\s/>])[^>]*\\s${属性}="([^"]*)"`, 'i'))
-  return 匹配 === null ? null : 解码Xml(匹配[1])
+  const 匹配 = 片段.match(new RegExp(`<${标签}(?=[\\s/>])[^>]*\\s${属性}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'i'))
+  return 匹配 === null ? null : 解码Xml(匹配[2])
+}
+
+function 关系部件路径(部件) {
+  const 片段 = 部件.split('/')
+  return [...片段.slice(0, -1), '_rels', `${片段.at(-1)}.rels`].join('/')
+}
+
+/** 每个 OOXML 部件拥有独立关系表，正文、页眉和页脚不能混用关系编号。 */
+async function 读取关系映射(压缩包, 部件) {
+  const 文件 = 压缩包.file(关系部件路径(部件))
+  const xml = 文件 ? await 文件.async('string') : ''
+  return new Map([...xml.matchAll(/<(?:[\w]+:)?Relationship(?=[\s/>])[^>]*>/gi)].map((项) => {
+    const 标签 = 项[0].match(/^<([\w:]+)/)?.[1] ?? 'Relationship'
+    return [取属性(项[0], 标签, 'Id'), {
+      路径: 取属性(项[0], 标签, 'Target'),
+      类型: 取属性(项[0], 标签, 'Type'),
+      外部: /^external$/i.test(取属性(项[0], 标签, 'TargetMode') ?? ''),
+    }]
+  }).filter(([编号]) => 编号 !== null))
+}
+
+function 校验链接目标(目标) {
+  if (typeof 目标 !== 'string') return null
+  const 结果 = 目标.trim()
+  if (结果.length === 0 || 结果.length > 32768 || /[\u0000-\u001f\u007f]/.test(结果)) return null
+  const 协议 = 结果.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase()
+  if (协议 && ['javascript', 'vbscript', 'data'].includes(协议)) return null
+  return 结果
+}
+
+function 校验书签名称(名称) {
+  if (typeof 名称 !== 'string' || 名称.length === 0 || 名称.length > 32768 || /[\u0000-\u001f\u007f]/.test(名称)) return null
+  return 名称
+}
+
+/** 解析段落中超链接所在范围，run 命中该范围时把对应 HTML 包回 a 标签。 */
+function 解析超链接范围(段落Xml, 样式定义) {
+  const 范围 = []
+  for (const 匹配 of 段落Xml.matchAll(/<w:hyperlink(?=[\s>])[^>]*>[\s\S]*?<\/w:hyperlink>/gi)) {
+    const 开始标签 = 匹配[0].slice(0, 匹配[0].indexOf('>') + 1)
+    const 关系编号 = 取属性(开始标签, 'w:hyperlink', 'r:id')
+    const 书签 = 取属性(开始标签, 'w:hyperlink', 'w:anchor')
+    const 位置 = 取属性(开始标签, 'w:hyperlink', 'w:docLocation')
+    let 目标 = null
+    if (关系编号) {
+      const 关系 = 样式定义?.关系?.get(关系编号)
+      if (关系?.路径 && 关系.类型?.endsWith('/hyperlink') && 关系.外部) {
+        目标 = 关系.路径 + ((书签 ?? 位置) ? `#${书签 ?? 位置}` : '')
+      }
+    } else if (书签) {
+      目标 = `#${书签}`
+    }
+    目标 = 校验链接目标(目标)
+    if (目标 === null) {
+     样式定义?.警告?.push('超链接目标未导入')
+      continue
+    }
+    范围.push({ 开始: 匹配.index, 结束: 匹配.index + 匹配[0].length, 目标 })
+  }
+  return 范围
 }
 
 /** 判断某个子标签是否出现（带 w: 命名空间前缀） */
@@ -404,6 +459,7 @@ function 存在未保留的域或制表符(内容) {
 /** 解析一个 <w:p> 段落为 HTML；列表项返回 li 内容由外层聚合 */
 function 解析段落(段落Xml, 编号映射, 样式定义) {
   段落Xml = 展开简单域(段落Xml)
+  const 超链接范围 = 解析超链接范围(段落Xml, 样式定义)
   const pPr匹配 = 段落Xml.match(/<w:pPr(?:\s[^>]*)?>([\s\S]*?)<\/w:pPr>/i)
   const 段落样式 = pPr匹配 === null ? null : 取属性(pPr匹配[1], 'w:pStyle', 'w:val')
   const 实际段落属性 = 样式定义 === undefined ? pPr匹配?.[1] || '' : 合并段落排版([
@@ -430,10 +486,13 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
   // 页码域按 Word 的域结构解析：begin → instrText 指令 → separate → 缓存结果 → end。
   // 能写回的域输出为带标记的占位，保存时重新写成域代码，页码不会被写死。
   const 域栈 = []
+  let 当前链接 = null
   const 输出片段 = (html, 文本 = html) => {
+    const 带链接Html = 当前链接 === null ? html
+      : `<a href="${转义(当前链接)}" data-seal-link="${转义(当前链接)}" rel="noopener noreferrer">${html}</a>`
     const 域 = 域栈.at(-1)
-    if (!域) 片段列表.push(html)
-    else if (域.阶段 === '结果') { 域.缓存.push(文本); 域.缓存片段.push(html) }
+    if (!域) 片段列表.push(带链接Html)
+    else if (域.阶段 === '结果') { 域.缓存.push(文本); 域.缓存片段.push(带链接Html) }
   }
   const 结束域 = () => {
     const 域 = 域栈.pop()
@@ -443,10 +502,18 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
       ? `<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`
       : 域.缓存片段.join(''), 域.缓存.join(''))
   }
-  // 逐个 run 解析：rPr 决定字符样式，w:t 与 w:br 决定内容
-  const run正则 = /<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/gi
+  // 按原始顺序解析书签起点与 run。书签用零宽 HTML 标记保留，内部超链接重存后仍有真实落点。
+  const run正则 = /<w:bookmarkStart(?=[\s/>])[^>]*\/?\s*>|<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/gi
   let run匹配
   while ((run匹配 = run正则.exec(段落Xml)) !== null) {
+    当前链接 = 超链接范围.find((项) => run匹配.index >= 项.开始 && run匹配.index + run匹配[0].length <= 项.结束)?.目标 ?? null
+    if (/^<w:bookmarkStart/i.test(run匹配[0])) {
+      const 原名称 = 取属性(run匹配[0], 'w:bookmarkStart', 'w:name')
+      const 名称 = 校验书签名称(原名称)
+      if (名称 !== null) 片段列表.push(`<span data-seal-bookmark="${转义(名称)}" contenteditable="false"></span>`)
+      else if (原名称 !== null) 样式定义?.警告?.push('书签目标未导入')
+      continue
+    }
     const runXml = run匹配[1]
     const rPr匹配 = runXml.match(/<w:rPr(?:\s[^>]*)?>([\s\S]*?)<\/w:rPr>/i)
     const rPr = rPr匹配 === null ? null : rPr匹配[1]
@@ -699,7 +766,6 @@ function 收集未导入警告(bodyXml, 图片) {
       [...bodyXml.matchAll(/<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/gi)].some((项) => /<w:(?:t|drawing|pict)(?=[\s/>])/.test(项[0]) && /<w:br(?=[\s/>])[^>]*w:type="page"/.test(项[0]))) {
     警告.push('段内分页或分栏换行未完整导入')
   }
-  if (有标签('w:hyperlink')) 警告.push('超链接目标未导入')
   // 合并单元格已按 colspan / rowspan 导入，只有越界或无法解析的跨度才无法保留
   const 格子跨度异常 = [...bodyXml.matchAll(/<w:gridSpan(?=[\s/>])[^>]*>/gi)].some((项) => {
     const 值 = 取属性(项[0], 'w:gridSpan', 'w:val')
@@ -717,17 +783,9 @@ function 收集未导入警告(bodyXml, 图片) {
 async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式定义, 警告) {
   const 节 = [...documentXml.matchAll(/<w:sectPr(?=[\s>])[^>]*>([\s\S]*?)<\/w:sectPr>/gi)].at(-1)?.[1] ?? ''
   if (!节) return {}
-  const 关系Xml = await 压缩包.file('word/_rels/document.xml.rels')?.async('string') ?? ''
   const 设置文件 = 压缩包.file('word/settings.xml')
   const 设置Xml = 设置文件 === null || 设置文件 === undefined ? '' : await 设置文件.async('string')
-  const 关系 = new Map([...关系Xml.matchAll(/<(?:[\w]+:)?Relationship(?=[\s/>])[^>]*>/gi)].map((项) => {
-    const 标签 = 项[0].match(/^<([\w:]+)/)[1]
-    return [取属性(项[0], 标签, 'Id'), {
-      路径: 取属性(项[0], 标签, 'Target'),
-      类型: 取属性(项[0], 标签, 'Type'),
-      外部: 取属性(项[0], 标签, 'TargetMode') === 'External',
-    }]
-  }))
+  const 关系 = await 读取关系映射(压缩包, 'word/document.xml')
   const 结果 = {}
   for (const [种类, 键] of [['header', '页眉Html'], ['footer', '页脚Html']]) {
     const 引用 = [...节.matchAll(new RegExp(`<w:${种类}Reference(?=[\\s/>])[^>]*>`, 'gi'))]
@@ -749,7 +807,7 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
       const 内容 = xml.match(new RegExp(`<w:${种类 === 'header' ? 'hdr' : 'ftr'}(?=[\\s>])[^>]*>([\\s\\S]*?)<\\/w:${种类 === 'header' ? 'hdr' : 'ftr'}>`, 'i'))?.[1] ?? ''
       if (!/<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(内容)) continue
       const 图片读取 = await 读取正文图片(压缩包, 内容, 警告, 部件)
-      const 局部样式 = { ...样式定义, 图片: 图片读取.图片 }
+      const 局部样式 = { ...样式定义, 图片: 图片读取.图片, 关系: await 读取关系映射(压缩包, 部件) }
       // Word 常把水印放在页眉 VML 图层，而非 document.xml 的页面设置中。
       // 先抽出被标记为 WaterMark 的对象，避免它被当作普通页眉图片排在正文上方。
       let 页眉正文 = 图片读取.正文
@@ -811,6 +869,7 @@ async function 读取docx(数据) {
   const 样式文件 = 压缩包.file('word/styles.xml')
   const 样式定义 = 解析样式定义(样式文件 !== null && 样式文件 !== undefined ? await 样式文件.async('string') : null)
   样式定义.警告 = 警告
+  样式定义.关系 = await 读取关系映射(压缩包, 'word/document.xml')
   const 图片读取 = await 读取正文图片(压缩包, 取Body(documentXml), 警告)
   const bodyXml = 图片读取.正文
   样式定义.图片 = 图片读取.图片

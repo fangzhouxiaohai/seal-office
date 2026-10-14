@@ -96,7 +96,7 @@ jobs:
           const fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('assert/strict');
           const version = require('./package.json').version;
           assert(/^\d+\.\d+\.\d+$/.test(version));
-          const filename = `SealOfficeUbuntu${version}-amd64.deb`;
+          const filename = `海豹办公Ubuntu${version}-amd64.deb`;
           const bytes = fs.readFileSync(path.join('release/ubuntu', filename));
           const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
           for (const os of ['ubuntu-22.04', 'ubuntu-24.04']) {

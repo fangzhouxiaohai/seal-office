@@ -2,6 +2,7 @@ const { 写入切换, 读取切换 } = require('./pptx/transitions')
 const { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展, 收集图表构建 } = require('./pptx/animations')
 const { 读取原生对象 } = require('./pptx/elements')
 const JSZip = require('jszip')
+const { 解码Xml实体 } = require('./xmlEntities')
 const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
@@ -745,17 +746,7 @@ function 写入占位符绑定(xml, 占位符列表, 版式) {
 }
 
 function 解码(文本) {
-  const 实体映射 = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&apos;': "'" }
-  // 单次正则匹配所有命名实体和数字实体（十进制/十六进制），避免顺序问题
-  return 文本.replace(/&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (匹配) => {
-    if (匹配 in 实体映射) {
-      return 实体映射[匹配]
-    }
-    if (匹配.startsWith('&#x')) {
-      return String.fromCharCode(parseInt(匹配.slice(3, -1), 16))
-    }
-    return String.fromCharCode(parseInt(匹配.slice(2, -1), 10))
-  })
+  return 解码Xml实体(文本, '演示文稿')
 }
 
 module.exports = { 读取pptx, 写入pptx }

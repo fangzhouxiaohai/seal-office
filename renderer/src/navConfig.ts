@@ -36,6 +36,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'market', label: '演示模板市场', icon: 'doc-ppt', implemented: true },
     { key: 'trash', label: '云空间回收站', icon: 'trash', implemented: true },
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
+    { key: 'database', label: 'Access 数据库', icon: 'doc-table', implemented: true },
     { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
     { key: 'flow', label: '流程图', icon: 'flow', implemented: true },
     { key: 'calendar', label: '日历', icon: 'calendar', implemented: true },

@@ -90,3 +90,36 @@ describe('启动时检查默认程序开关', () => {
     expect(screen.getByText('设置不可写')).toBeInTheDocument()
   })
 })
+
+describe('界面语言持久化', () => {
+  const 语言探针 = () => {
+    const { 语言, 设置语言 } = useSettings()
+    return <>
+      <output data-testid="界面语言">{语言}</output>
+      <button onClick={() => 设置语言('en-US')}>切换英语</button>
+    </>
+  }
+  const 渲染语言 = () => render(
+    <SettingsProvider>
+      <ConfigProvider><AntdApp><SettingsErrorFeedback /><语言探针 /></AntdApp></ConfigProvider>
+    </SettingsProvider>
+  )
+
+  beforeEach(() => localStorage.removeItem('seal-language'))
+  afterEach(() => { vi.restoreAllMocks(); document.documentElement.lang = 'zh-CN' })
+
+  it('默认使用中文，切换英语后写入本机记录并更新文档语言', async () => {
+    渲染语言()
+    expect(screen.getByTestId('界面语言')).toHaveTextContent('zh-CN')
+    await userEvent.click(screen.getByRole('button', { name: '切换英语' }))
+    expect(screen.getByTestId('界面语言')).toHaveTextContent('en-US')
+    expect(localStorage.getItem('seal-language')).toBe('en-US')
+    expect(document.documentElement).toHaveAttribute('lang', 'en-US')
+  })
+
+  it('重启后恢复已保存的英语界面', () => {
+    localStorage.setItem('seal-language', 'en-US')
+    渲染语言()
+    expect(screen.getByTestId('界面语言')).toHaveTextContent('en-US')
+  })
+})

@@ -84,8 +84,9 @@ app.whenReady().then(async () => {
     assert.ok(await evaluate(`document.body.textContent.includes('工作状态恢复失败')`), '损坏的工作区备份应提示，不能静默覆盖')
     await evaluate(`Array.from(document.querySelectorAll('.ant-modal button')).find(button=>button.textContent.includes('保留原备份并继续')).click()`)
     for (let attempt = 0; attempt < 80; attempt++) { if (await evaluate(`document.body.textContent.includes('原备份已保留')`)) break; await new Promise(resolve => setTimeout(resolve, 50)) }
-    await evaluate(`Array.from(document.querySelectorAll('.ant-modal button')).find(button=>button.textContent.includes('确') && !button.textContent.includes('保留'))?.click()`)
-    for (let attempt = 0; attempt < 80; attempt++) { if (!(await evaluate(`!!document.querySelector('.ant-modal')`))) break; await new Promise(resolve => setTimeout(resolve, 50)) }
+    await evaluate(`Array.from(document.querySelectorAll('.ant-modal')).find(modal=>modal.textContent.includes('原备份已保留'))?.querySelector('button')?.click()`)
+    for (let attempt = 0; attempt < 80; attempt++) { if (!(await evaluate(`document.body.textContent.includes('原备份已保留')`))) break; await new Promise(resolve => setTimeout(resolve, 50)) }
+    assert.equal(await evaluate(`document.body.textContent.includes('原备份已保留')`), false, '备份说明弹窗应能关闭')
     checks.push('无效工作区备份被阻止且允许保留后继续')
     await evaluate(`window.electronAPI.ai.clearConfig();window.electronAPI.backupClear()`)
     await win.capturePage().then(image => fs.writeFileSync(path.join(output, 'pc-web.png'), image.toPNG()))
@@ -121,7 +122,7 @@ app.whenReady().then(async () => {
     await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
     const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
-    assert.equal(navigation.length, 15, '移动端已实现功能入口数量')
+    assert.equal(navigation.length, 16, '移动端已实现功能入口数量')
     for (const item of navigation) {
       await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').click()`)
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -136,7 +137,7 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').getAttribute('aria-current')`), 'page', item.label + '必须真的切换到目标')
     }
     await evaluate(`document.querySelector('.ant-drawer-close').click()`)
-    checks.push('移动端 15 个功能入口逐一点击、导航状态及视口检查')
+    checks.push('移动端 16 个功能入口逐一点击、导航状态及视口检查')
     for (const item of [{key:'table',selector:'.wps-sheet-toolbar'}, {key:'ppt',selector:'.wps-ppt-canvas'}, {key:'pdf',selector:'.wps-main--pdf'}]) {
       await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
       await new Promise(resolve => setTimeout(resolve, 350))

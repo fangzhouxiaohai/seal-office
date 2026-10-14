@@ -28,6 +28,38 @@ describe('编辑区到真实 DOCX 的段落格式往返', () => {
     }
   })
 
+  it('超链接经过净化和连续三次保存仍保留精确目标与文字格式', async () => {
+    const 目标 = 'https://例子.test/资料?q=𠀀&emoji=😀'
+    let html = `<p><a href="https://normalized.invalid/" data-seal-link="${目标.replace('&', '&amp;')}"><strong>资料链接</strong></a></p>`
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      html = 净化富文本(html)
+      expect(html).toContain('data-seal-link=')
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.未覆盖).toEqual([])
+      expect(模型.段落[0]).toMatchObject({ 文字: [expect.objectContaining({ 文本: '资料链接', 加粗: true, 链接: 目标 })] })
+      const 读取 = await 读取docx(await 生成docx(模型))
+      expect(读取.警告).toEqual([])
+      html = 读取.html
+    }
+  })
+
+  it('页内书签和跳转经过净化与连续三次保存仍保持对应关系', async () => {
+    let html = '<p><span data-seal-bookmark="章节𠀀" contenteditable="false"></span><a data-seal-link="#章节𠀀">回到章节</a></p>'
+    for (let 次数 = 0; 次数 < 3; 次数++) {
+      html = 净化富文本(html)
+      expect(html).toContain('data-seal-bookmark="章节𠀀"')
+      const 模型 = htmlToDocxModel(html)
+      expect(模型.未覆盖).toEqual([])
+      expect(模型.段落[0]).toMatchObject({ 文字: [
+        expect.objectContaining({ 书签: '章节𠀀' }),
+        expect.objectContaining({ 链接: '#章节𠀀' }),
+      ] })
+      const 读取 = await 读取docx(await 生成docx(模型))
+      expect(读取.警告).toEqual([])
+      html = 读取.html
+    }
+  })
+
   it('表格宽度、边框、底色和内边距保存后不强制替换或追加空行', async () => {
     let html = '<table style="width:300pt;border-collapse:collapse"><tr><td style="width:180pt;padding:3pt 6pt;border:1pt solid #C00000;background-color:#FFFF00"><p>单元格</p></td><td style="width:120pt;padding:3pt 6pt;border:1pt solid #C00000"><p>第二格</p></td></tr></table><p>表后正文</p>'
     for (let 次数 = 0; 次数 < 3; 次数++) {

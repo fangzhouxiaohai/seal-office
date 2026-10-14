@@ -15,7 +15,7 @@ import './settings.css'
 const SettingsPage = () => {
   const 桌面系统功能 = !document.documentElement.dataset.sealPlatform
   const { message, modal } = AntdApp.useApp()
-  const { 主题, 切换主题, 恢复默认主题, 启动时检查默认程序, 设置启动时检查默认程序 } = useSettings()
+  const { 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序 } = useSettings()
   const { goHome } = useAppStore()
   const [翻译地址, 设翻译地址] = useState('')
   const [翻译密钥, 设翻译密钥] = useState('')
@@ -160,6 +160,7 @@ const SettingsPage = () => {
       设恢复中(false)
     }
     恢复默认主题()
+    设置语言('zh-CN')
     设翻译地址('')
     设翻译密钥('')
     设已配置翻译密钥(false)
@@ -224,6 +225,17 @@ const SettingsPage = () => {
             '外观设置',
             `当前主题：${主题}；切换浅色或深色界面主题，立即生效并自动保存`,
             <Switch checked={主题 === '深色'} onChange={切换主题} checkedChildren="深色" unCheckedChildren="浅色" aria-label="外观设置" />
+          )}
+          {设置行(
+            '界面语言',
+            '切换软件菜单、按钮、提示和组件语言；不会翻译文档正文或文件名',
+            <Select
+              aria-label="界面语言"
+              value={语言}
+              style={{ width: 132 }}
+              onChange={(值) => 设置语言(值 === 'en-US' ? 'en-US' : 'zh-CN')}
+              options={[{ value: 'zh-CN', label: '简体中文' }, { value: 'en-US', label: 'English' }]}
+            />
           )}
         </div>
 

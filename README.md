@@ -8,34 +8,50 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.14 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.14 Android 云 APK 已核对签名、版本、包内编辑器、双 ABI 和 16 KiB 对齐并上传发布页。iOS/鸿蒙尚未编译与真机验证。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，共用当前桌面版 1.9.15 的编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器；1.9.15 Android 云 APK 已核对签名、版本、包内编辑器、双 ABI 和 16 KiB 对齐，HarmonyOS App Pack 已使用华为发布证书与 Release Profile 正式签名并通过 SDK 验签。两者仍需在目标真机上完成发布前验收。iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
+## 1.9.15 本次升级
+
+- 顶栏右上角新增全局中英文切换，支持“简体中文 / English”即时切换并在重启后保留；首页、新建弹窗、设置、编辑器菜单、公共提示和 Ant Design 组件随语言变化，文字文档的“开始、插入、页面布局、引用、审阅、视图”六个功能区也已完整覆盖。切换不会翻译用户文档正文、表格内容、幻灯片内容或自定义文件名。
+- 首页“新建文档”弹窗新增“PDF”和“Access 数据库”；Access 默认新建 Access 2007 引入的 `.accdb` 文件，并在创建完成后直接进入数据库工作区。
+- Windows 桌面版新增 Access 数据库工作区，范围为 Access 2003 MDB 与 Access 2007 至当前版本的 ACCDB；支持结构、表、字段、索引、关系和保存查询查看，表数据增删改查、SQL、CSV 导入导出及新建 ACCDB。修复 Access 工作脚本超过 Windows 命令行长度上限，以及标准 `Data Source` 连接键被错误序列化导致运行环境已安装仍无法创建或重开的问题。Access 专属窗体、报表、VBA、宏、ActiveX 和 OLE 不在当前范围内。
+- 修复 F5 全屏放映启用画笔后其它工具无法点击的问题；单击形成的笔迹会规范为可保存笔画，不再触发“笔画点数须为 2 到 2000”。右上工具栏和右下放映按钮在 2 秒无操作后贴边隐藏，鼠标移到相应屏幕边缘、键盘聚焦或悬停时恢复显示。
+- 智能助手移除顶部关闭按钮，在输入区左下角改为“收起智能助手”图标，行为仍是收起当前助手窗口。
+- 扩充 DOCX、XLSX、PPTX 对 Unicode、XML 数字实体、特殊符号和安全超链接的读写处理；遇到确实无法可靠往返的对象仍提示保真风险，不覆盖来源文件。
+- 桌面端与移动项目版本统一为 1.9.15；Windows 安装版、Windows 便携版和 Ubuntu DEB 使用中文名“海豹办公”，MSIX 仍保留商店名称 `seal-office`。
+
+Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。
+
 ## Windows 下载
 
-当前版本：**1.9.14**，适用于 Windows x64。本版把 PDF 阅读修正为同一阅读区内连续纵向滚动，同时保留上一页、下一页和输入页码跳转；普通文档完整渲染，长文档只渲染阅读区附近画布。沿用 50 种已登记办公格式、现有图标风格和 150% 默认缩放。具体读写能力见[文档格式支持](docs/文档格式支持.md)。
+当前版本：**1.9.15**，适用于 Windows x64。本版新增中英文界面切换、Access 2003 MDB 与 Access 2007 至今 ACCDB 数据库工作区，并修复演示全屏画笔与贴边工具栏等问题。沿用 50 种已登记办公格式、现有图标风格和 150% 默认缩放。具体改动见[1.9.15 发布说明](docs/v1.9.15-发布与移动平台上架说明.md)，读写能力见[文档格式支持](docs/文档格式支持.md)。
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [SealOffice1.9.14.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14.exe)，下载后直接运行。 |
-| 安装版 | [SealOfficeSetup1.9.14.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeSetup1.9.14.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.14.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.14 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.14)及[修复与验收](docs/v1.9.14-修复与验收.md)。 |
+| 便携版 | [海豹办公1.9.15.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%AC1.9.15.exe)，下载后直接运行。 |
+| 安装版 | [海豹办公安装程序1.9.15.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%AC%E5%AE%89%E8%A3%85%E7%A8%8B%E5%BA%8F1.9.15.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice1.9.15.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice1.9.15.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 发布说明 | [v1.9.15 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)及[发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
 ## Ubuntu 下载
 
-[SealOfficeUbuntu1.9.14-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeUbuntu1.9.14-amd64.deb) 为 x86_64 / amd64 安装包，包含本版 PDF 连续滚动修复，安装依赖后可离线转换旧办公格式。Ubuntu 22.04 / 24.04 各通过 71 项实际安装、程序启动、文件读写及关联检查；[成品报告与截图](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOffice1.9.14-UbuntuVerification.zip)随包提供。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
+[海豹办公Ubuntu1.9.15-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACUbuntu1.9.15-amd64.deb) 为 x86_64 / amd64 安装包，包含本版中英文界面与文档兼容性更新，安装依赖后可离线转换旧办公格式。本包已完成 Debian 包结构、桌面入口、主程序、MIME 关联和 `app.asar` 静态核验；公开部署前仍建议在 Ubuntu 22.04 / 24.04 真机执行安装与 GUI 验收。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
 
 ## Android 下载
 
-[SealOfficeAndroid1.9.14.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.14/SealOfficeAndroid1.9.14.apk) 为 HBuilderX 云打包原文件，仅统一下载文件名；包名 `com.sealoffice.mobile`，版本 `1.9.14 / 10914`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 签名、原生库 16 KiB 对齐和包内 PDF 连续滚动编辑器与当前源码的一致性已核验，实际范围见 [APK 核验](docs/verification/v1.9.14/android-cloud-apk.json)。
+[海豹办公Android1.9.15.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACAndroid1.9.15.apk) 为 HBuilderX 云打包正式 APK；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 发布签名、ZIP 对齐、全部 64 位原生库 16 KiB ELF 对齐和包内编辑器与当前源码的一致性均已核验，实际范围见 [APP 备案包信息](docs/v1.9.15-APP备案包信息.md)。
+
+## HarmonyOS 下载
+
+[海豹办公HarmonyOS1.9.15.app](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACHarmonyOS1.9.15.app) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
 
 [1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
 
-当前 [1.9.14 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.14)集中提供 Windows、Ubuntu 和 Android 成品，[GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.14)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
+当前 [1.9.15 GitHub 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)集中提供 Windows、Ubuntu、Android 和 HarmonyOS 正式成品，[1.9.15 GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.15)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
 
 ### 安卓版界面原型操作教程
 
@@ -85,9 +101,9 @@ DOC、XLS、PPT 模板是真实旧式二进制格式，新版通过内置离线�
 - 表格编辑器：多工作表、基础公式、排序、筛选、冻结、合并、基础格式、批注、数据验证和无密码工作表保护；支持 CSV/TSV 原格式导入与保存、PNG/JPEG 静态图片、XLSX 往返及 Windows 旧版/开放表格转换。
 - 文件工作区：文字、表格、演示和 PDF 文件页移除全局左栏，通过底部固定标签切换文件和返回首页，正文使用完整工作区。
 - 演示编辑器：幻灯片与文本框编辑、浏览排序、逐页备注，以及原生对象（图片、图形、矢量图标、艺术字、表格、柱状/折线/饼图、流程/层级/循环/脑图、公式、附件、音视频、笔迹）、主题与母版版式、页面尺寸与背景、页脚日期页码、切换与对象动画、批注与本机排版检查、繁简转换、文档定稿与文档比对、自定义放映与演讲者视图、窗口阅读视图、导出图片/PDF/讲义/图片型 PPT、截屏与录屏、图片转文字、翻译与语义校对、讲稿与讲解音频；放映铺满当前窗口所在屏幕，隐藏智能助手，退出恢复窗口及助手对话；支持部分 PPTX 内容读写。详细范围与限制见[演示文稿能力与兼容范围](#演示文稿能力与兼容范围)。
-- PDF 工具：居中预览、翻页、缩放，右侧折叠工具栏，以及页面提取、合并、删除和旋转。
+- PDF 工具：可从首页新建空白 PDF，支持居中预览、翻页、缩放，右侧折叠工具栏，以及页面提取、合并、删除和旋转。
 - 智能助手：支持按文件隔离的加密持久记忆、自动模型摘要压缩、真实任务计划、原生工具循环与失败结果纠正，可先规划后执行。长回复按批刷新，大文件分页读取，大批修改分页审阅；取消、保存路径绑定和重开恢复贯穿整个任务。内置 DeepSeek、豆包、智谱和 Kimi 服务预设，支持自定义兼容接口；实时显示服务商返回的思考与正文，六档思考强度默认高，支持停止生成。通过对话生成文字改写、段落排版、单元格或演示文本修改；按当前文件的段落/对象标识及原文校验，预览确认后应用，可撤销并保存重开。
-- 本地工具：日历、脑图、流程图和常用目录浏览，数据保存在本机。
+- 本地工具：日历、脑图、流程图、常用目录浏览，以及 Windows Access 数据库工作区；数据保存在本机。
 - 文件与设置：最近文档（支持拖入文件打开与批量移除记录）、关闭前同步备份与静默恢复、底部标签管理、主题切换、双击关闭标签、新文件提醒、七种右键新建菜单、默认程序全自动关联（设置中心可选择每次启动检查并自动设为默认）、手动设为默认程序及安装完整性检查；关闭时若有未保存文档，弹窗提供取消、保存后退出（先按原路径保存全部未保存文档，没有路径的先询问位置）与不保存退出三种选择。打开成功不提示，打开失败通过固定弹窗说明原因，退出未保存确认与联系客服使用统一的自定义弹窗。文件在应用外被修改或导入不完整时提示风险并保护来源文件。
 - 选区浮窗与右键菜单：在文字里选中一段文字、表格里拖选多格、幻灯片里点选对象、PDF 阅读区选中文字后，编辑区上方自动浮出操作面板（复制、剪切、格式刷、字体与段落格式、突出显示、字体颜色、对齐、合并居中、求和、清除内容等），并附带 AI 快捷动作（润色、扩写、缩写、重写、语气调整、翻译、解释、总结、续写、问答）；面板不抢焦点、随滚动或 Esc 收起，AI 结果按“预览确认后写回”处理。四类文件的右键菜单同步补齐调色板、数据操作与 AI 分组。
 - 视图缩放：文字、表格、演示与 PDF 阅读都支持按住 Ctrl（macOS 为 Command）滚动滚轮缩放页面内容，向上放大、向下缩小；也可用状态栏的减号、百分比与加号控制，点百分比回到百分之百。四类文件打开默认 150%，共用 8.33%–6400% 的百分比档位（8.33、12.5、25、33、50、66、75、90、100、110、125、150、175、200、250、300、400、500、600、800、1000、1200、1600、2000、2400、3200、4000、4800、6400）；缩放只改变本机查看比例，不写入文档，也不影响打印与导出的页面尺寸。
@@ -334,9 +350,18 @@ renderer/src/
 
 ## 版本
 
-当前版本：1.7.1。
+当前开发版本：1.9.15。升级内容见上方“1.9.15 本次升级”；以下为仓库保留的历史版本记录。
 
-### v1.7.1（最新）
+### v1.9.15（当前开发版）
+
+- 首页新建弹窗增加 PDF 与 Access，新建 Access 默认生成 `.accdb`。
+- 新增 Windows Access 2003 MDB / Access 2007 至今 ACCDB 数据库工作区。
+- 修复全屏放映画笔遮挡工具和单点笔迹保存失败，放映控制菜单改为 2 秒贴边隐藏。
+- 智能助手关闭入口移到底部左下角并改为收起图标；补强 Office 文档符号、实体和超链接兼容处理。
+
+详细范围见本 README 上方的“1.9.15 本次升级”和 [1.9.15 发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。
+
+### v1.7.1
 
 - 安装后自动注册七种右键新建模板，完整保留原菜单并在卸载时按实际归属恢复。
 - 设置按钮改为“设为默认程序”，注册四种实际支持的文件关联并进入系统专属确认页面。

@@ -47,6 +47,23 @@ describe('真实 XLSX 导入、计算与保存重开', () => {
     expect(saved.worksheets[0].getCell('C1').value).toEqual({ formula: 'B1', result: 30000 })
   })
 
+  it('单元格超链接经过编辑模型和保存重开仍保留目标', async () => {
+    const 目标 = 'https://example.com/资料?q=𠀀&emoji=😀'
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('链接')
+    ws.getCell('A1').value = { text: '查看资料', hyperlink: 目标 }
+    const 导入 = await 读取xlsx(await wb.xlsx.writeBuffer())
+    expect(导入.警告).not.toContain('超链接未导入')
+    const source = 导入.工作表列表[0]
+    let sheet = 从Html表格构建工作表(source.html, source.名称, source.页面设置, source.元数据)!
+    expect(读取单元格(sheet, 'A1').超链接).toBe(目标)
+    sheet = 写入单元格(sheet, 'A1', '更新后的链接文字')
+    expect(读取单元格(sheet, 'A1').超链接).toBe(目标)
+    const 重开 = await 读取xlsx(await 写入xlsx(导出为Xlsx(sheet)))
+    expect(重开.工作表列表[0].元数据.超链接.A1).toBe(目标)
+    expect(重开.工作表列表[0].html).toContain('更新后的链接文字')
+  })
+
   it('带格式的数值与公式按原值运算，保存保留数值缓存、百分比精度及彩色边框', async () => {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('经营看板')

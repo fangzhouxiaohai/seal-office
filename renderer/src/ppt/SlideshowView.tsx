@@ -11,7 +11,7 @@ import { 桥接 } from '../ipc/bridge'
 import { 标记放映开始 } from './presentationState'
 import { type 演示文稿, type 演示对象 } from './deck'
 import { 读取页面尺寸 } from './model/themes'
-import { 临时批迹层, 橡皮移除, type 批迹, type 演示工具 } from './playback/PresenterTools'
+import { 临时批迹层, 放映浮层层级, 橡皮移除, 规范化批迹, type 批迹, type 演示工具 } from './playback/PresenterTools'
 import { 构造演讲者快照 } from './playback/presenterSnapshot'
 import { 默认放映偏好, type 放映偏好 } from './playback/放映偏好'
 
@@ -31,6 +31,8 @@ interface Props {
 }
 
 const 空批迹 = (颜色 = '#E34D59', 笔宽 = 3): 批迹 => ({ 颜色, 笔宽, 笔画: [] })
+const 控件自动隐藏毫秒 = 2000
+type 停靠位置 = '顶部' | '底部'
 
 const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 序列, 偏好 = 默认放映偏好, 请求演讲者 = false, on保留笔迹 }: Props) => {
   const { modal } = AntdApp.useApp()
@@ -44,13 +46,37 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
   const [批迹, set批迹] = React.useState<批迹>(() => 空批迹())
   const [激光位置, set激光位置] = React.useState<{ x: number; y: number } | null>(null)
   const 批迹引用 = React.useRef(批迹); 批迹引用.current = 批迹
+  const [停靠可见, set停靠可见] = React.useState<Record<停靠位置, boolean>>({ 顶部: true, 底部: true })
+  const 隐藏计时器 = React.useRef<Partial<Record<停靠位置, number>>>({})
+  const 取消隐藏 = React.useCallback((位置: 停靠位置) => {
+    const 计时器 = 隐藏计时器.current[位置]
+    if (计时器 !== undefined) window.clearTimeout(计时器)
+    delete 隐藏计时器.current[位置]
+  }, [])
+  const 安排隐藏 = React.useCallback((位置: 停靠位置) => {
+    取消隐藏(位置)
+    隐藏计时器.current[位置] = window.setTimeout(() => {
+      set停靠可见(当前 => ({ ...当前, [位置]: false }))
+      delete 隐藏计时器.current[位置]
+    }, 控件自动隐藏毫秒)
+  }, [取消隐藏])
+  const 显示停靠 = React.useCallback((位置: 停靠位置, 自动隐藏 = true) => {
+    取消隐藏(位置)
+    set停靠可见(当前 => 当前[位置] ? 当前 : { ...当前, [位置]: true })
+    if (自动隐藏) 安排隐藏(位置)
+  }, [取消隐藏, 安排隐藏])
+  React.useEffect(() => {
+    安排隐藏('顶部'); 安排隐藏('底部')
+    return () => { 取消隐藏('顶部'); 取消隐藏('底部') }
+  }, [安排隐藏, 取消隐藏])
   const 结束放映 = React.useCallback(() => {
-    const 当前 = 批迹引用.current
+    const 当前 = 规范化批迹(批迹引用.current)
     if (!当前.笔画.length || !保留引用.current) { 退出引用.current(); return }
     modal.confirm({
       title: '保留手写笔迹？',
       content: '选择保留会把当前页的临时笔迹作为可编辑对象写入文稿并进入撤销历史；选择放弃只结束放映，不修改文稿。',
       okText: '保留笔迹', cancelText: '放弃笔迹',
+      centered: true,
       onOk: () => { 保留引用.current?.(当前); 退出引用.current() },
       onCancel: () => 退出引用.current(),
     })
@@ -282,6 +308,16 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     type: 'button', className: `wps-slideshow__tool${激活 ? ' is-active' : ''}`, 'aria-pressed': 激活, title: 提示,
     onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 执行() },
   }, 名称)
+  const 停靠属性 = (位置: 停靠位置, 方位类名: string) => ({
+    className: `wps-slideshow__dock ${方位类名}${停靠可见[位置] ? '' : ' is-hidden'}`,
+    style: { zIndex: 放映浮层层级.控件 },
+    onPointerEnter: () => 显示停靠(位置, false),
+    onPointerLeave: () => 安排隐藏(位置),
+    onFocusCapture: () => 显示停靠(位置, false),
+    onBlurCapture: (事件: React.FocusEvent<HTMLDivElement>) => {
+      if (!事件.currentTarget.contains(事件.relatedTarget as Node | null)) 安排隐藏(位置)
+    },
+  })
   return createPortal(React.createElement(
     'div',
     {
@@ -299,21 +335,26 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
       工具, 颜色: 批迹.颜色, 笔宽: 批迹.笔宽, 批迹, 激光位置,
       on批迹: set批迹, on激光: set激光位置, on橡皮: 位置 => set批迹(当前 => 橡皮移除(当前, 位置)),
     }),
-    屏幕 !== '无' && React.createElement('div', { className: 'wps-slideshow__screen', 'data-屏幕': 屏幕, 'aria-label': 屏幕 === '黑' ? '黑屏' : '白屏' }),
+    屏幕 !== '无' && React.createElement('div', { className: 'wps-slideshow__screen', style: { zIndex: 放映浮层层级.遮屏 }, 'data-屏幕': 屏幕, 'aria-label': 屏幕 === '黑' ? '黑屏' : '白屏' }),
     React.createElement(
       'div',
       { className: 'wps-slideshow__indicator' },
       `${安全位置 + 1} / ${总页数}${状态?.暂停 ? '　已暂停' : ''}${批迹.笔画.length ? `　笔迹 ${批迹.笔画.length} 笔` : ''}`
     ),
-    React.createElement('div', { className: 'wps-slideshow__tools', role: 'toolbar', 'aria-label': '演示工具' },
-      按钮('画笔', 工具 === '画笔', () => set工具(值 => 值 === '画笔' ? '无' : '画笔'), '画笔（I）：临时批迹，退出时可选择保留'),
-      按钮('橡皮', 工具 === '橡皮', () => set工具(值 => 值 === '橡皮' ? '无' : '橡皮'), '橡皮：擦除临时批迹'),
-      按钮('清除', false, () => set批迹(当前 => ({ ...当前, 笔画: [] })), '清除全部临时批迹'),
-      按钮('激光笔', 工具 === '激光笔', () => { set激光位置(null); set工具(值 => 值 === '激光笔' ? '无' : '激光笔') }, '激光笔（L）'),
-      按钮('黑屏', 屏幕 === '黑', () => set屏幕(值 => 值 === '黑' ? '无' : '黑'), '黑屏（B）'),
-      按钮('白屏', 屏幕 === '白', () => set屏幕(值 => 值 === '白' ? '无' : '白'), '白屏（W）')),
-    React.createElement('button', { type: 'button', className: 'wps-slideshow__presenter', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); if (演讲者) { void 桥接.presenter.close(演讲者.会话标识); set演讲者(null) } else void 打开演讲者() } }, 演讲者 ? '关闭演讲者视图' : '演讲者视图'),
-    React.createElement('button', { type: 'button', className: 'wps-slideshow__pause', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 控制器.current?.暂停(!状态?.暂停) } }, 状态?.暂停 ? '继续放映' : '暂停放映')
+    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--top', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'top', 'aria-hidden': true, onPointerEnter: () => 显示停靠('顶部') }),
+    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--bottom', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'bottom', 'aria-hidden': true, onPointerEnter: () => 显示停靠('底部') }),
+    React.createElement('div', 停靠属性('顶部', 'wps-slideshow__dock--top'),
+      React.createElement('div', { className: 'wps-slideshow__tools', role: 'toolbar', 'aria-label': '演示工具' },
+        按钮('画笔', 工具 === '画笔', () => set工具(值 => 值 === '画笔' ? '无' : '画笔'), '画笔（I）：临时批迹，退出时可选择保留'),
+        按钮('橡皮', 工具 === '橡皮', () => set工具(值 => 值 === '橡皮' ? '无' : '橡皮'), '橡皮：擦除临时批迹'),
+        按钮('清除', false, () => set批迹(当前 => ({ ...当前, 笔画: [] })), '清除全部临时批迹'),
+        按钮('激光笔', 工具 === '激光笔', () => { set激光位置(null); set工具(值 => 值 === '激光笔' ? '无' : '激光笔') }, '激光笔（L）'),
+        按钮('黑屏', 屏幕 === '黑', () => set屏幕(值 => 值 === '黑' ? '无' : '黑'), '黑屏（B）'),
+        按钮('白屏', 屏幕 === '白', () => set屏幕(值 => 值 === '白' ? '无' : '白'), '白屏（W）'))),
+    React.createElement('div', 停靠属性('底部', 'wps-slideshow__dock--bottom'),
+      React.createElement('div', { className: 'wps-slideshow__bottom-tools', role: 'toolbar', 'aria-label': '放映控制' },
+        React.createElement('button', { type: 'button', className: 'wps-slideshow__presenter', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); if (演讲者) { void 桥接.presenter.close(演讲者.会话标识); set演讲者(null) } else void 打开演讲者() } }, 演讲者 ? '关闭演讲者视图' : '演讲者视图'),
+        React.createElement('button', { type: 'button', className: 'wps-slideshow__pause', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 控制器.current?.暂停(!状态?.暂停) } }, 状态?.暂停 ? '继续放映' : '暂停放映')))
   ), document.body)
 }
 

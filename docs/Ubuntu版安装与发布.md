@@ -25,7 +25,9 @@ npm ci
 npm run dist:ubuntu
 ```
 
-生成文件位于 `release/ubuntu/SealOfficeUbuntu1.9.14-amd64.deb`。只生成目录时运行 `npm run pack:ubuntu`。Ubuntu 的构建配置为 `build/electron-ubuntu.cjs`，只使用 Linux Electron 运行库及系统转换引擎，不携带 Windows 版 LibreOffice 和 PowerShell 注册组件。`npm run pack`、`npm run dist` 继续只提交 Android 打包。
+1.9.15 起生成文件使用中文名 `release/ubuntu/海豹办公Ubuntu<版本>-amd64.deb`。只生成目录时运行 `npm run pack:ubuntu`。Ubuntu 的构建配置为 `build/electron-ubuntu.cjs`，只使用 Linux Electron 运行库及系统转换引擎，不携带 Windows 版 LibreOffice 和 PowerShell 注册组件。`npm run pack`、`npm run dist` 继续只提交 Android 打包。
+
+正式发布仍应在 Linux 或 Ubuntu CI 上运行 `npm run dist:ubuntu`。如需在 Windows 上制作候选包，可先用 electron-builder 和 Linux Electron 运行库生成 `release/ubuntu/linux-unpacked`，再运行 `npm run package:ubuntu:windows`；仓库脚本会生成标准 `debian-binary`、`control.tar.xz` 和 `data.tar.xz`，保留可执行权限、安装脚本、桌面入口与 MIME 声明。Windows 只能完成包结构校验，安装、AppArmor、桌面关联和运行验收仍须回到 Ubuntu 22.04/24.04 执行。
 
 Ubuntu 22.04 的 LibreOffice 7.3 与 Ubuntu 24.04 的 LibreOffice 24.2 使用长期存在的 Word/Excel/PowerPoint 模板导出过滤器，避免套用 Windows 26.8 新增的过滤器名称；名称参照 [LibreOffice 转换过滤器文档](https://help.libreoffice.org/latest/en-US/text/shared/guide/convertfilters.html)。Linux PDF 中文编辑随包提供 Noto Sans SC 字体及 OFL 许可证。
 

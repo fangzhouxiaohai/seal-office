@@ -5,7 +5,7 @@
 ## 版本与文件名
 
 - 同步修改 `package.json` 与 `package-lock.json` 中的版本。
-- 安装版：`SealOfficeSetup<版本>.exe`；便携版：`SealOffice<版本>.exe`。
+- 安装版：`海豹办公安装程序<版本>.exe`；便携版：`海豹办公<版本>.exe`。
 - 微软商店包：`SealOffice<版本>.msix`；所有安装包文件名不含空格。
 - 产物目录：`release/v<版本>/`。保留历史版本，不覆盖旧发布包。
 

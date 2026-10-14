@@ -12,6 +12,7 @@ import { 通过对话框打开文件 } from '../fileOpen'
 import CalendarPage from '../localTools/CalendarPage'
 import DiagramPage from '../localTools/DiagramPage'
 import AppsPage from '../localTools/AppsPage'
+import DatabasePage from '../localTools/DatabasePage'
 import LocalFilesPage, { type 本机位置 } from '../localTools/LocalFilesPage'
 import { 读取搜索文字, 搜索片段 } from '../search/contentSearch'
 import CloudFilesPage from '../cloud/CloudFilesPage'
@@ -31,9 +32,11 @@ const 标题映射: Record<string, string> = {
 interface HomePageProps {
   模板库打开?: boolean
   关闭模板库?: () => void
+  新建Access请求?: number
+  on新建Access已处理?: () => void
 }
 
-const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) => {
+const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求 = 0, on新建Access已处理 }: HomePageProps) => {
   const { message, modal } = AntdApp.useApp()
   const cloud = useCloud()
   const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
@@ -192,6 +195,10 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库 }: HomePageProps) =
     : navKey === 'knowledge' ? React.createElement(KnowledgePage)
     : navKey === 'market' ? React.createElement(PresentationMarketPage)
     : navKey === 'calendar' ? React.createElement(CalendarPage)
+    : navKey === 'database' ? React.createElement(DatabasePage, {
+        初始新建请求: 新建Access请求 || undefined,
+        on初始新建已处理: on新建Access已处理,
+      })
     : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })
       : navKey === 'flow' ? React.createElement(DiagramPage, { 类型: '流程图' })
         : navKey === 'apps' ? React.createElement(AppsPage)

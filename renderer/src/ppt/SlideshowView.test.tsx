@@ -104,6 +104,36 @@ describe('本机幻灯片切换', () => {
     expect(事件.defaultPrevented).toBe(false)
     fireEvent.click(screen.getByRole('button',{name:'暂停放映'}));expect(screen.getByRole('button',{name:'继续放映'})).toBeInTheDocument()
   })
+  it('右上角和右下角控件在两秒后贴边，鼠标触及对应边缘后恢复', () => {
+    vi.useFakeTimers()
+    try {
+      安装全屏接口()
+      const { unmount } = 渲染放映()
+      const 顶部 = document.querySelector('.wps-slideshow__dock--top') as HTMLElement
+      const 底部 = document.querySelector('.wps-slideshow__dock--bottom') as HTMLElement
+      expect(顶部).not.toHaveClass('is-hidden')
+      expect(底部).not.toHaveClass('is-hidden')
+      act(() => { vi.advanceTimersByTime(2000) })
+      expect(顶部).toHaveClass('is-hidden')
+      expect(底部).toHaveClass('is-hidden')
+
+      fireEvent.pointerEnter(document.querySelector('[data-dock-edge="top"]')!)
+      expect(顶部).not.toHaveClass('is-hidden')
+      fireEvent.pointerEnter(顶部)
+      act(() => { vi.advanceTimersByTime(2500) })
+      expect(顶部).not.toHaveClass('is-hidden')
+      fireEvent.pointerLeave(顶部)
+      act(() => { vi.advanceTimersByTime(2000) })
+      expect(顶部).toHaveClass('is-hidden')
+
+      fireEvent.pointerEnter(document.querySelector('[data-dock-edge="bottom"]')!)
+      expect(底部).not.toHaveClass('is-hidden')
+      unmount()
+    } finally {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
   it('零页模型直接进入放映时安全退出并显示原因', async () => {
     const { 进入 } = 安装全屏接口()
     const 退出 = vi.fn()

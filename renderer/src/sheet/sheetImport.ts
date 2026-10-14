@@ -6,6 +6,7 @@ import { 生成地址, 解析地址 } from './address'
 export interface Xlsx工作表元数据 {
   单元格格式?: Record<string, CellFormat>
   单元格验证?: Record<string, 单元格数据验证>
+  超链接?: Record<string, string>
   合并区域?: string[]
   列宽?: Record<number, number>
   行高?: Record<number, number>
@@ -35,6 +36,7 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   const 元数据地址 = [
     ...Object.keys(元数据?.单元格格式 ?? {}),
     ...Object.keys(元数据?.单元格验证 ?? {}),
+    ...Object.keys(元数据?.超链接 ?? {}),
     ...(元数据?.合并区域 ?? []).flatMap((区域) => 区域.split(':')),
   ].map(解析地址).filter((位置): 位置 is { 行: number; 列: number } => 位置 !== null)
   const 元数据最大行 = Math.max(-1, ...元数据地址.map((位置) => 位置.行), ...Object.keys(元数据?.行高 ?? {}).map(Number))
@@ -76,6 +78,11 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     const 位置 = 解析地址(地址)
     if (!位置 || 位置.行 >= 行数 || 位置.列 >= 列数) return
     工作表.单元格[地址] = { ...读取单元格(工作表, 地址), 数据验证: 规则 }
+  })
+  Object.entries(元数据?.超链接 ?? {}).forEach(([地址, 超链接]) => {
+    const 位置 = 解析地址(地址)
+    if (!位置 || 位置.行 >= 行数 || 位置.列 >= 列数 || typeof 超链接 !== 'string') return
+    工作表.单元格[地址] = { ...读取单元格(工作表, 地址), 超链接 }
   })
   Object.entries(元数据?.列宽 ?? {}).forEach(([列, 宽]) => {
     if (Number.isInteger(Number(列)) && Number(列) >= 0 && Number(列) < 列数 && Number.isFinite(宽)) 工作表.列宽[Number(列)] = 宽

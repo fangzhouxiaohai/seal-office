@@ -20,6 +20,18 @@ function 附加图片说明(字节数) {
 }
 
 describe('xlsxCodec', () => {
+  it('中日韩、RTL、组合音标、ZWJ emoji、扩展汉字与 XML 符号完整往返', async () => {
+    const 文本 = '中文 日本語 한국어 𠀀𠮷 | العربية עברית | e\u0301 | 👩🏽‍💻🏳️‍🌈 | ∑∫√∞≠≤≥ | & < > " \' | 空格\u00A0\u202F\u3000'
+    const 数据 = await 写入xlsx({ 工作表: [{ 名称: 'Unicode符号', 数据: [[文本]] }] })
+    const 工作簿 = new ExcelJS.Workbook()
+    await 工作簿.xlsx.load(数据)
+    expect(工作簿.worksheets[0].getCell('A1').text).toBe(文本)
+    const 读回 = await 读取xlsx(数据)
+    for (const 片段 of ['𠀀𠮷', 'العربية', 'עברית', 'e\u0301', '👩🏽‍💻🏳️‍🌈', '∑∫√∞≠≤≥', '&amp;', '&lt;', '&gt;', '\u00A0\u202F\u3000']) {
+      expect(读回.html).toContain(片段)
+    }
+  })
+
   describe('读取xlsx', () => {
     it('普通默认视图的三张空表不产生导入风险', async () => {
       const workbook = new ExcelJS.Workbook()
@@ -362,14 +374,27 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(结果.警告.join('；')).toMatch(/图表/)
   })
 
-  it('合并区域可导入，超链接仍给出保真警告', async () => {
+  it('合并区域与普通单元格超链接可完整导入', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('链接表')
     表.mergeCells('A1:B1')
     表.getCell('A1').value = { text: '主页', hyperlink: 'https://example.com' }
     const 结果 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
     expect(结果.工作表列表[0].元数据.合并区域).toContain('A1:B1')
-    expect(结果.警告.join('；')).toMatch(/超链接/)
+    expect(结果.工作表列表[0].元数据.超链接.A1).toBe('https://example.com')
+    expect(结果.警告.join('；')).not.toMatch(/超链接/)
+  })
+
+  it('单元格超链接写入后目标和显示文字完整读回，危险协议拒绝保存', async () => {
+    const 目标 = 'https://example.com/资料?q=𠀀&emoji=😀'
+    const 数据 = await 写入xlsx({ 工作表: [{ 名称: '链接', 数据: [[{ 文字: [{ 文本: '查看资料' }], 超链接: 目标 }]] }] })
+    const 工作簿 = new ExcelJS.Workbook()
+    await 工作簿.xlsx.load(数据)
+    expect(工作簿.worksheets[0].getCell('A1').value).toMatchObject({ text: '查看资料', hyperlink: 目标 })
+    const 读回 = await 读取xlsx(数据)
+    expect(读回.工作表列表[0].元数据.超链接.A1).toBe(目标)
+    expect(读回.警告).not.toContain('超链接未导入')
+    await expect(写入xlsx({ 工作表: [{ 名称: '危险', 数据: [[{ 文字: [{ 文本: '危险' }], 超链接: 'javascript:alert(1)' }]] }] })).rejects.toThrow('超链接')
   })
 
   it('应把公式作为 XLSX 公式写入并在读取时保留公式原文', async () => {

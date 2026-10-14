@@ -5,6 +5,8 @@ import React, { useState } from 'react'
 import { Dropdown, Input, Tooltip } from 'antd'
 import Icon from './Icon'
 import SealLogo from './SealLogo'
+import { 翻译界面文本 } from '../i18n/interfaceLanguage'
+import type { 界面语言 } from '../store/settingsStore'
 
 interface Props {
   pageName: string
@@ -32,6 +34,9 @@ interface Props {
   /** 当前是否深色主题（太阳/月亮切换按钮） */
   主题深色?: boolean
   on切换主题?: () => void
+  /** 全局界面语言；右上角语言菜单会立即切换并由设置层持久化。 */
+  语言?: 界面语言
+  on切换语言?: (语言: 界面语言) => void
 }
 
 const TitleBar = ({
@@ -51,9 +56,12 @@ const TitleBar = ({
   on关于,
   主题深色 = false,
   on切换主题,
+  语言 = 'zh-CN',
+  on切换语言,
 }: Props) => {
   const [关键词, set关键词] = useState('')
   const 搜索值 = homeMode && 外部搜索词 !== undefined ? 外部搜索词 : 关键词
+  const 文案 = (原文: string) => 翻译界面文本(原文, 语言)
 
   const 处理输入 = (值: string) => {
     set关键词(值)
@@ -69,13 +77,13 @@ const TitleBar = ({
   const 渲染图标按钮 = (标题: string, 图标: string, 标签: string, 点击?: () => void) =>
     React.createElement(
       Tooltip,
-      { title: 标题 },
+      { title: 文案(标题) },
       React.createElement(
         'button',
         {
           type: 'button',
           className: 'wps-icon-button',
-          'aria-label': 标签,
+          'aria-label': 文案(标签),
           onClick: () => {
             if (点击 !== undefined) 点击()
           },
@@ -92,8 +100,8 @@ const TitleBar = ({
         trigger: ['click'],
         menu: {
           items: [
-            { key: 'settings', label: '全局设置' },
-            { key: 'about', label: '关于我们' },
+            { key: 'settings', label: 文案('全局设置') },
+            { key: 'about', label: 文案('关于我们') },
           ],
           onClick: ({ key }: { key: string }) => {
             if (key === 'settings' && onShowSettings !== undefined) onShowSettings()
@@ -107,7 +115,7 @@ const TitleBar = ({
         {
           type: 'button',
           className: 'wps-icon-button',
-          'aria-label': '全局设置',
+          'aria-label': 文案('全局设置'),
           'aria-haspopup': 'menu',
         },
         React.createElement(Icon, { name: 'sliders', size: 18 })
@@ -118,19 +126,51 @@ const TitleBar = ({
   const 渲染主题切换 = () =>
     React.createElement(
       Tooltip,
-      { title: 主题深色 ? '切换为浅色模式' : '切换为深色模式' },
+      { title: 文案(主题深色 ? '切换为浅色模式' : '切换为深色模式') },
       React.createElement(
         'button',
         {
           type: 'button',
           className: 'wps-icon-button',
-          'aria-label': '切换深浅模式',
+          'aria-label': 文案('切换深浅模式'),
           'aria-pressed': 主题深色,
           onClick: () => {
             if (on切换主题 !== undefined) on切换主题()
           },
         },
         React.createElement(Icon, { name: 主题深色 ? 'moon' : 'sun', size: 18 })
+      )
+    )
+
+  /** 语言菜单使用原生按钮触发，支持键盘操作并明确暴露当前选择。 */
+  const 渲染语言切换 = () =>
+    React.createElement(
+      Dropdown,
+      {
+        trigger: ['click'],
+        menu: {
+          selectable: true,
+          selectedKeys: [语言],
+          items: [
+            { key: 'zh-CN', label: '简体中文' },
+            { key: 'en-US', label: 'English' },
+          ],
+          onClick: ({ key }: { key: string }) => {
+            if ((key === 'zh-CN' || key === 'en-US') && on切换语言 !== undefined) on切换语言(key)
+          },
+        },
+      },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button wps-language-switcher',
+          'aria-label': 文案('切换界面语言'),
+          'aria-haspopup': 'menu',
+          title: 文案('切换界面语言'),
+        },
+        React.createElement(Icon, { name: 'language', size: 17 }),
+        React.createElement('span', { className: 'wps-language-switcher__label', lang: 语言 }, 语言 === 'en-US' ? 'EN' : '中')
       )
     )
 
@@ -144,13 +184,13 @@ const TitleBar = ({
         渲染全局设置(),
         React.createElement(
           Tooltip,
-          { title: '登录账号与管理云空间' },
+          { title: 语言 === 'en-US' ? 'Sign in and manage cloud space' : '登录账号与管理云空间' },
           React.createElement(
             'button',
             {
               type: 'button',
               className: 'wps-titlebar__avatar',
-              'aria-label': '未登录，点击登录',
+              'aria-label': 语言 === 'en-US' ? 'Not signed in. Click to sign in.' : '未登录，点击登录',
               onClick: () => {
                 if (onLogin !== undefined) onLogin()
               },
@@ -189,7 +229,7 @@ const TitleBar = ({
         React.createElement(SealLogo, { size: 28 })
       ),
       React.createElement('span', { className: 'wps-titlebar__divider' }),
-      React.createElement('span', { className: 'wps-titlebar__page' }, pageName)
+      React.createElement('span', { className: 'wps-titlebar__page' }, 文案(pageName))
     ),
     React.createElement(
       'div',
@@ -197,25 +237,26 @@ const TitleBar = ({
       homeMode
         ? React.createElement(Input, {
             className: 'wps-titlebar__search wps-titlebar__search--home',
-            placeholder: '搜索最近文档名称或内容',
-            'aria-label': '搜索最近文档名称或内容',
+            placeholder: 文案('搜索最近文档名称或内容'),
+            'aria-label': 文案('搜索最近文档名称或内容'),
             allowClear: true,
             value: 搜索值,
             onChange: (事件: React.ChangeEvent<HTMLInputElement>) => 处理输入(事件.target.value),
             prefix: React.createElement(Icon, { name: 'search', size: 16 }),
           })
         : documentName !== undefined
-          ? React.createElement('span', { className: 'wps-titlebar__doc' }, documentName)
+          ? React.createElement('span', { className: 'wps-titlebar__doc' }, 文案(documentName))
           : React.createElement(Input, {
               className: 'wps-titlebar__search',
-              placeholder: '搜索文件、模板',
+              placeholder: 文案('搜索文件、模板'),
+              'aria-label': 文案('搜索文件、模板'),
               allowClear: true,
               value: 关键词,
               onChange: (事件: React.ChangeEvent<HTMLInputElement>) => 处理输入(事件.target.value),
               prefix: React.createElement(Icon, { name: 'search', size: 16 }),
             })
     ),
-    React.createElement('div', { className: 'wps-titlebar__actions' }, 渲染右侧(), 渲染主题切换())
+    React.createElement('div', { className: 'wps-titlebar__actions' }, 渲染右侧(), 渲染语言切换(), 渲染主题切换())
   )
 }
 

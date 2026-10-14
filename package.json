@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "description": "海豹办公 Seal Office",
   "homepage": "https://github.com/fangzhouxiaohai/seal-office",
   "main": "main/main.js",
@@ -30,7 +30,8 @@
     "web:build": "npm --prefix mobile run build:web",
     "mobile:check": "npm --prefix mobile run check",
     "pack:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir --publish never",
-    "dist:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64 --publish never"
+    "dist:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64 --publish never",
+    "package:ubuntu:windows": "node scripts/package-deb-on-windows.cjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
@@ -73,7 +74,7 @@
   },
   "build": {
     "appId": "com.sealoffice.desktop",
-    "productName": "SealOffice",
+    "productName": "海豹办公",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -163,10 +164,10 @@
     },
     "npmRebuild": false,
     "portable": {
-      "artifactName": "SealOffice${version}.exe"
+      "artifactName": "海豹办公${version}.exe"
     },
     "nsis": {
-      "artifactName": "SealOfficeSetup${version}.exe",
+      "artifactName": "海豹办公安装程序${version}.exe",
       "include": "build/installer.nsh",
       "oneClick": false,
       "perMachine": false,

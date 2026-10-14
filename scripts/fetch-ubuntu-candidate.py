@@ -81,7 +81,7 @@ def main(run_id):
             if archive.testzip() is not None:
                 raise RuntimeError(f'{name}: artifact ZIP CRC failed')
             if name == 'ubuntu-deb':
-                filename = f'SealOfficeUbuntu{VERSION}-amd64.deb'
+                filename = f'海豹办公Ubuntu{VERSION}-amd64.deb'
                 if archive.namelist() != [filename]:
                     raise RuntimeError('Ubuntu package artifact contains unexpected files')
                 destination = DESTINATION / filename

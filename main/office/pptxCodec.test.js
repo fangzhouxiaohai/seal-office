@@ -255,6 +255,11 @@ describe('pptxCodec', () => {
       expect(文本).toContain('<')
       expect(文本).toContain('>')
     })
+
+    it('数字实体按完整 Unicode 码点解码，不截断扩展汉字和 emoji', async () => {
+      const result = await 读取pptx(await 构造有效演示([文字幻灯片('扩展字&#x20000; 表情&#128512;')] ))
+      expect(result.演示文稿.幻灯片列表[0].title).toContain('扩展字𠀀 表情😀')
+    })
   })
 
   describe('写入pptx', () => {
@@ -271,6 +276,12 @@ describe('pptxCodec', () => {
       const zip = await JSZip.loadAsync(result)
       const slide1File = Object.keys(zip.files).find(f => f.includes('slide1.xml'))
       expect(slide1File).toBeDefined()
+    })
+
+    it('中日韩、RTL、组合音标、ZWJ emoji 与 XML 符号可完整写入并读回', async () => {
+      const 文本 = '中文 日本語 한국어 𠀀𠮷 | العربية עברית | e\u0301 | 👩🏽‍💻🏳️‍🌈 | ∑∫√∞≠≤≥ | & < > " \' | 空格\u00A0\u202F\u3000'
+      const 读回 = await 读取pptx(await 写入pptx({ 幻灯片: [{ 文本 }] }))
+      expect(读回.演示文稿.幻灯片列表[0].文本框列表.map((框) => 框.text).join('\n')).toContain(文本)
     })
 
     it('缺失保存模型明确报错，不生成默认内容', async () => {

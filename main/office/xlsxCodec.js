@@ -2,12 +2,22 @@ const ExcelJS = require('exceljs')
 const JSZip = require('jszip')
 const path = require('path')
 const { 规范Xlsx命名空间 } = require('./xlsxNamespaces')
+const { 解码Xml实体 } = require('./xmlEntities')
 
 const 单张图片字节上限 = 5 * 1024 * 1024
 const 工作簿图片字节上限 = 20 * 1024 * 1024
 const 图片尺寸上限 = 4096
 const 图片行上限 = 500
 const 图片列上限 = 50
+
+function 校验超链接目标(目标) {
+  if (typeof 目标 !== 'string') return null
+  const 结果 = 目标.trim()
+  if (结果.length === 0 || 结果.length > 32768 || /[\u0000-\u001f\u007f]/.test(结果)) return null
+  const 协议 = 结果.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase()
+  if (协议 && ['javascript', 'vbscript', 'data'].includes(协议)) return null
+  return 结果
+}
 
 function 识别图片格式(数据) {
   if (!Buffer.isBuffer(数据)) return null
@@ -349,10 +359,16 @@ function 读取工作表验证(工作表, 警告) {
 
 function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜色) {
   const 单元格格式 = {}
+  const 超链接 = {}
   工作表.eachRow({ includeEmpty: true }, (行) => {
     行.eachCell({ includeEmpty: true }, (单元格) => {
       const 格式 = 读取基础格式(单元格, 警告, 主题颜色)
       if (Object.keys(格式).length > 0) 单元格格式[单元格.address] = 格式
+      if (单元格.hyperlink) {
+        const 目标 = 校验超链接目标(单元格.hyperlink)
+        if (目标) 超链接[单元格.address] = 目标
+        else 警告.add('超链接未导入')
+      }
     })
   })
   const 列宽 = {}
@@ -379,6 +395,7 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
   }
   return {
     单元格格式,
+    超链接,
     单元格验证: 读取工作表验证(工作表, 警告),
     合并区域: [...(工作表.model.merges ?? [])],
     列宽, 行高,
@@ -394,13 +411,7 @@ function 读取Xml属性(标记, 名称) {
 }
 
 function 反转义Xml(文本) {
-  return 文本.replace(/&(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (实体) => {
-    const 固定 = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" }
-    if (固定[实体]) return 固定[实体]
-    const 十六进制 = 实体.startsWith('&#x')
-    const 数值 = parseInt(实体.slice(十六进制 ? 3 : 2, -1), 十六进制 ? 16 : 10)
-    return Number.isInteger(数值) && 数值 >= 0 && 数值 <= 0x10ffff ? String.fromCodePoint(数值) : 实体
-  })
+  return 解码Xml实体(文本, '电子表格')
 }
 
 async function 工作表Xml路径列表(压缩包) {
@@ -570,7 +581,7 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
     if (保护列表[索引] === '外部') 警告.add('工作表保护设置未导入')
     工作表.eachRow({ includeEmpty: true }, (行) => {
       行.eachCell({ includeEmpty: true }, (单元格) => {
-        if (单元格.hyperlink) 警告.add('超链接未导入')
+        if (单元格.hyperlink && !校验超链接目标(单元格.hyperlink)) 警告.add('超链接未导入')
         if (单元格.note && 读取批注文本(单元格.note) === null) 警告.add('批注未导入')
         else if (单元格.note && typeof 单元格.note !== 'string') 警告.add('批注格式未导入')
         const 值 = 单元格.value
@@ -683,6 +694,7 @@ async function 写入xlsx(模型) {
         const 目标单元 = 工作表.getCell(行号 + 1, 列号 + 1)
         if (单元 && typeof 单元 === 'object' && typeof 单元.公式 === 'string') {
           if (单元.公式.trim() === '') throw new Error('单元格公式不能为空')
+          if (单元.超链接 !== undefined) throw new Error('公式单元格暂不能同时保存超链接')
           目标单元.value = { formula: 单元.公式, result: 单元.结果 }
           if (typeof 单元.批注 === 'string' && 单元.批注.trim()) 目标单元.note = 单元.批注
           写入基础格式(目标单元, 单元.格式)
@@ -696,7 +708,13 @@ async function 写入xlsx(模型) {
         } else {
           文本 = String(单元)
         }
-        目标单元.value = 单元 && typeof 单元 === 'object' && 单元.类型 === '文本' ? 文本 : 转单元格值(文本)
+        if (单元 && typeof 单元 === 'object' && 单元.超链接 !== undefined) {
+          const 超链接 = 校验超链接目标(单元.超链接)
+          if (!超链接) throw new Error('单元格超链接目标无效，无法保存')
+          目标单元.value = { text: 文本, hyperlink: 超链接 }
+        } else {
+          目标单元.value = 单元 && typeof 单元 === 'object' && 单元.类型 === '文本' ? 文本 : 转单元格值(文本)
+        }
         if (单元 && typeof 单元 === 'object' && typeof 单元.批注 === 'string' && 单元.批注.trim()) {
           目标单元.note = 单元.批注
         }

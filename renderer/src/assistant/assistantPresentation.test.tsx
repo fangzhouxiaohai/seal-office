@@ -23,6 +23,8 @@ it('设置面板的思考强度用于下一次请求，历史和最终回复按�
   } })
   render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
   await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+  expect(document.querySelector('.assistant-drawer .ant-drawer-close')).toBeNull()
+  expect(screen.getByRole('button', { name: '收起智能助手' })).toBeInTheDocument()
   expect(await screen.findByRole('region', { name: 'Python内容' })).toBeInTheDocument()
   expect(document.querySelector('.assistant-drawer__composer .ant-select')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: '模型设置' }))
@@ -47,4 +49,7 @@ it('设置面板的思考强度用于下一次请求，历史和最终回复按�
   await waitFor(() => expect(清理).toHaveBeenCalledOnce())
   expect(screen.queryByRole('region', { name: 'JSON内容' })).not.toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Python内容' })).not.toBeInTheDocument()
+  const 抽屉容器 = document.querySelector('.assistant-drawer')?.closest('.ant-drawer-content-wrapper') as HTMLElement
+  await userEvent.click(screen.getByRole('button', { name: '收起智能助手' }))
+  await waitFor(() => expect(抽屉容器).toHaveClass('ant-drawer-content-wrapper-hidden'))
 })

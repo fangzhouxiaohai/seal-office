@@ -7,7 +7,7 @@ const { spawn } = require('child_process')
 const root = path.resolve(__dirname, '../..')
 const config = JSON.parse(fs.readFileSync(path.join(root, 'docs/promo/storyboard.json'), 'utf8'))
 const work = path.join(root, `release/promo/work-v${config.版本}`)
-const executable = path.join(root, `release/v${config.版本}/win-unpacked/SealOffice.exe`)
+const executable = path.join(root, `release/v${config.版本}/win-unpacked/海豹办公.exe`)
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 async function listener() {
   const server = net.createServer()

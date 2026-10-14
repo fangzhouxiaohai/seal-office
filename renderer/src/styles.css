@@ -149,8 +149,29 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 200px;
+  flex: 0 0 248px;
   justify-content: flex-end;
+}
+
+.wps-language-switcher {
+  width: auto;
+  min-width: 46px;
+  gap: 4px;
+  padding-inline: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wps-language-switcher__label {
+  min-width: 16px;
+  line-height: 1;
+  text-align: center;
+}
+
+.wps-icon-button:focus-visible,
+.wps-language-switcher:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .wps-icon-button {
@@ -3275,6 +3296,14 @@ button {
     flex: 0 0 auto;
     gap: 4px;
   }
+  .wps-language-switcher {
+    width: 30px;
+    min-width: 30px;
+    padding-inline: 0;
+  }
+  .wps-language-switcher__label {
+    display: none;
+  }
   .wps-homebody {
     flex-direction: column;
   }
@@ -3311,11 +3340,20 @@ button {
   }
 }
 
+@media (pointer: coarse) {
+  .wps-icon-button,
+  .wps-language-switcher,
+  .wps-titlebar__avatar {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
 /* 切换与动画沿用现有属性面板令牌；舞台缩放与效果平移分层。 */
 .wps-playback-stage { position: relative; transform-origin: center; flex: none; overflow: hidden; }
 .wps-playback-layer { position: absolute; inset: 0; overflow: hidden; }
 .wps-playback-layer.wps-slideshow__page { animation: none; transform-origin: center; }
-.wps-slideshow__pause { position: fixed; right: var(--space-4); bottom: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-slideshow__pause { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
 .wps-slideshow__pause:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-slideshow__pause:hover { background: var(--bg-hover); }
 .wps-animation-panel label { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
@@ -3425,15 +3463,26 @@ button {
 .wps-media-poster__hint { font-size: 12px; }
 .wps-media-audio { position: relative; display: block; }
 .wps-media-audio audio { position: absolute; left: 0; right: 0; bottom: var(--space-2); width: auto; height: 32px; margin: 0 var(--space-2); }
-.wps-slideshow__tools { position: fixed; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); }
+.wps-slideshow__dock { position: fixed; right: var(--space-4); max-width: calc(100vw - 2 * var(--space-4)); transition: transform 180ms ease, opacity 180ms ease; will-change: transform; }
+.wps-slideshow__dock--top { top: var(--space-4); }
+.wps-slideshow__dock--bottom { bottom: var(--space-4); }
+.wps-slideshow__dock.is-hidden { transform: translateX(calc(100% + var(--space-4) - 10px)); opacity: .82; }
+.wps-slideshow__dock::before { content: ''; position: absolute; left: 0; top: 50%; width: 10px; height: 40px; border-radius: var(--radius-control) 0 0 var(--radius-control); background: var(--brand); opacity: 0; transform: translateY(-50%); pointer-events: none; }
+.wps-slideshow__dock.is-hidden::before { opacity: .85; }
+.wps-slideshow__edge-hotzone { position: fixed; right: 0; width: 16px; height: 96px; cursor: default; }
+.wps-slideshow__edge-hotzone--top { top: 0; }
+.wps-slideshow__edge-hotzone--bottom { bottom: 0; }
+.wps-slideshow__tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); box-shadow: var(--shadow-card); }
+.wps-slideshow__bottom-tools { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
 .wps-slideshow__tool { min-height: 32px; padding: var(--space-1) var(--space-3); border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--text-1); font: inherit; font-size: 12px; }
 .wps-slideshow__tool:hover { background: var(--bg-hover); }
 .wps-slideshow__tool:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-slideshow__tool.is-active { border-color: var(--brand); color: var(--brand); font-weight: 600; }
-.wps-slideshow__screen { position: fixed; inset: 0; z-index: 5; }
+.wps-slideshow__screen { position: fixed; inset: 0; }
 .wps-slideshow__screen[data-屏幕='黑'] { background: #000000; }
 .wps-slideshow__screen[data-屏幕='白'] { background: #FFFFFF; }
 .wps-slideshow.is-tool-active { cursor: crosshair; }
+@media (prefers-reduced-motion: reduce) { .wps-slideshow__dock { transition: none; } }
 /* 工具面板：截屏、录屏与图片转文字共用右侧任务窗格 */
 .wps-tools-panel__tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
 .wps-tools-panel__tabs button { min-height: 32px; padding: var(--space-1) var(--space-2); border: 1px solid transparent; border-bottom: 0; border-radius: var(--radius-control) var(--radius-control) 0 0; background: transparent; color: var(--text-2); font: inherit; }
@@ -3464,7 +3513,7 @@ button {
 .wps-recognition-panel__file-name { color: var(--text-2); margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
 @media (max-width: 768px) { .wps-tools-panel__tabs { flex-wrap: wrap; } .wps-capture-panel__sources, .wps-recording-panel__sources { max-height: 160px; } }
 /* ==================== 演讲者视图与阅读视图（任务 7） ==================== */
-.wps-slideshow__presenter { position: fixed; right: calc(var(--space-4) + 132px); bottom: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
+.wps-slideshow__presenter { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); padding: var(--space-2) var(--space-4); }
 .wps-slideshow__presenter:hover { background: var(--bg-hover); }
 .wps-slideshow__presenter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .wps-presenter { display: flex; flex-direction: column; min-height: 100vh; margin: 0; background: var(--presentation-bg); color: #FFFFFF; font-size: 14px; }

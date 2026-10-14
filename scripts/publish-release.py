@@ -42,8 +42,8 @@ def main():
     msix = json.loads((release_dir / f'SealOffice{version}.msix.verification.json').read_text(encoding='utf-8-sig'))
     if not integrity.get('passed') or integrity.get('version') != version or msix.get('version') != f'{version}.0' or not msix.get('hasBlockMap'):
         raise SystemExit('Verified package reports for this version are required')
-    names = [f'SealOfficeSetup{version}.exe', f'SealOffice{version}.exe', f'SealOffice{version}.msix',
-             f'SealOfficeAndroid{version}.apk', f'SealOfficeUbuntu{version}-amd64.deb']
+    names = [f'海豹办公安装程序{version}.exe', f'海豹办公{version}.exe', f'SealOffice{version}.msix',
+             f'海豹办公Android{version}.apk', f'海豹办公Ubuntu{version}-amd64.deb']
     verified_packages = {item['name']: item for item in integrity.get('packages', [])}
     if set(verified_packages) != set(names):
         raise SystemExit('All five platform installers must pass release verification')

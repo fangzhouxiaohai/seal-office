@@ -17,4 +17,8 @@ describe('文档格式能力一致性', () => {
       if (项.conversion && !项.readOnlySource) expect(项.outputFilter).toBeTruthy()
     }
   })
+  it('Windows 未找到默认应用时按未关联处理，不把系统状态误报为查询失败', () => {
+    const 脚本 = fs.readFileSync(path.join(__dirname, 'windows/shellIntegration.ps1'), 'utf8')
+    expect(脚本).toContain('$code -ne -2147221003')
+  })
 })
