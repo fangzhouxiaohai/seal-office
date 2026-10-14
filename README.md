@@ -30,24 +30,24 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 | 版本 | 下载与使用 |
 | --- | --- |
-| 便携版 | [海豹办公1.9.15.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%AC1.9.15.exe)，下载后直接运行。 |
-| 安装版 | [海豹办公安装程序1.9.15.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%AC%E5%AE%89%E8%A3%85%E7%A8%8B%E5%BA%8F1.9.15.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice1.9.15.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice1.9.15.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
+| 便携版 | [海豹办公1.9.15 便携版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Windows-x64-portable.exe)，下载后直接运行。 |
+| 安装版 | [海豹办公1.9.15 安装版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Windows-x64-setup.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
+| 微软商店包 | [SealOffice 1.9.15 MSIX](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-MicrosoftStore-x64.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
 | 发布说明 | [v1.9.15 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)及[发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。 |
 
 如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
 
 ## Ubuntu 下载
 
-[海豹办公Ubuntu1.9.15-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACUbuntu1.9.15-amd64.deb) 为 x86_64 / amd64 安装包，包含本版中英文界面与文档兼容性更新，安装依赖后可离线转换旧办公格式。本包已完成 Debian 包结构、桌面入口、主程序、MIME 关联和 `app.asar` 静态核验；公开部署前仍建议在 Ubuntu 22.04 / 24.04 真机执行安装与 GUI 验收。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
+[海豹办公 Ubuntu 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Ubuntu-amd64.deb) 为 x86_64 / amd64 安装包，包含本版中英文界面与文档兼容性更新，安装依赖后可离线转换旧办公格式。本包已完成 Debian 包结构、桌面入口、主程序、MIME 关联和 `app.asar` 静态核验；公开部署前仍建议在 Ubuntu 22.04 / 24.04 真机执行安装与 GUI 验收。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
 
 ## Android 下载
 
-[海豹办公Android1.9.15.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACAndroid1.9.15.apk) 为 HBuilderX 云打包正式 APK；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 发布签名、ZIP 对齐、全部 64 位原生库 16 KiB ELF 对齐和包内编辑器与当前源码的一致性均已核验，实际范围见 [APP 备案包信息](docs/v1.9.15-APP备案包信息.md)。
+[海豹办公 Android 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Android.apk) 为 HBuilderX 云打包正式 APK；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 发布签名、ZIP 对齐、全部 64 位原生库 16 KiB ELF 对齐和包内编辑器与当前源码的一致性均已核验，实际范围见 [APP 备案包信息](docs/v1.9.15-APP备案包信息.md)。
 
 ## HarmonyOS 下载
 
-[海豹办公HarmonyOS1.9.15.app](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/%E6%B5%B7%E8%B1%B9%E5%8A%9E%E5%85%ACHarmonyOS1.9.15.app) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
+[海豹办公 HarmonyOS 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-HarmonyOS.app) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
 
 [1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
 
