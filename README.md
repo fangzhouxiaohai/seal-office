@@ -47,7 +47,7 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 ## HarmonyOS 下载
 
-[海豹办公 HarmonyOS 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-HarmonyOS.app) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
+[海豹办公 HarmonyOS 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-HarmonyOS.app.zip) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；因 GitHub 不接受直接上传 `.app` 扩展名，下载附件为 ZIP，解压后即得到原始正式签名 `.app`。包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
 
 [1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
 
