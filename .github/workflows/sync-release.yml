@@ -1,6 +1,13 @@
 name: Sync verified release from GitCode
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-release.yml'
+      - 'scripts/release-mirror.json'
+      - 'scripts/sync-release-mirror.py'
+      - 'scripts/test_sync_release_mirror.py'
 permissions:
   contents: read
 concurrency:
