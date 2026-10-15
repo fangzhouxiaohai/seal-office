@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
       - name: Test manifest validation and replacement guards
-        run: python -m unittest discover -s scripts -p 'sync-release-mirror.test.py'
+        run: python -m unittest discover -s scripts -p 'test_sync_release_mirror.py'
       - name: Copy exact verified release bytes without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}
