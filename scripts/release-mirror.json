@@ -7,8 +7,8 @@
     {"name":"SealOffice-1.9.15-Windows-x64-setup.exe.blockmap","size":409347,"sha256":"faf0026b00556dd036f282051da4f635054313167531d2fc18e5450527aeaa21"},
     {"name":"SealOffice-1.9.15-MicrosoftStore-x64.msix","size":737748791,"sha256":"9875682553e3db9e800b29368760a2158206690aa52bdf528c6c6cc082b1127a"},
     {"name":"SealOffice-1.9.15-Ubuntu-amd64.deb","size":121964372,"sha256":"4e2ea42760203118a1a0de88a6cf0f728873748552193ed000ffb2e606992581"},
-    {"name":"SealOffice-1.9.15-Android.apk","size":55967495,"sha256":"cb195989bf05bf43331daaaeec318959bb5f0d681ce4fafc009af38f2cb1c34b"},
-    {"name":"SealOffice-1.9.15-HarmonyOS.app.zip","size":27827650,"sha256":"37e28d9e04a302d446c5323e89cab7d31432bda55ed3b651d82191dac0da70e6"},
-    {"name":"SHA256SUMS.txt","size":744,"sha256":"0512875d34e4186b6157378e584f14a52113fb2403dd90521fdc684718be0084"}
+    {"name":"SealOffice-1.9.15-Android.apk","size":76891846,"sha256":"bbb2bee31dfe90bccf3fed4aa13602357103b1b051d5d01a3c353bf210e60d52"},
+    {"name":"SealOffice-1.9.15-HarmonyOS.app.zip","size":47989359,"sha256":"583c939282e86992f8f2cb2543787ff6e80b7d054222a414c46b8aa4e03c1789"},
+    {"name":"SHA256SUMS.txt","size":737,"sha256":"d8a8277f12b1ce9380156c1ee0ed0ac807b02e3b84336e31b69117036d3b3677"}
   ]
 }
