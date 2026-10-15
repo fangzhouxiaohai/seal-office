@@ -3,6 +3,8 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import tempfile
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('release_mirror', HERE / 'sync-release-mirror.py')
@@ -40,6 +42,24 @@ class MirrorGuards(unittest.TestCase):
         self.assertTrue(mirror.matches(actual, expected))
         for key, value in [('state', 'starter'), ('size', expected['size'] + 1), ('digest', 'sha256:' + '0' * 64)]:
             self.assertFalse(mirror.matches({**actual, key: value}, expected))
+
+    def test_unchanged_installers_skip_download_but_checksums_are_still_checked(self):
+        assets = [{**asset, 'state': 'uploaded', 'digest': 'sha256:' + asset['sha256']} for asset in self.config['assets']]
+        published = {'tag_name': self.config['tag'], 'html_url': 'https://github.com/example/release', 'assets': assets}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sums = directory / 'SHA256SUMS.txt'
+            sums.write_text(''.join(f"{a['sha256']}  {a['name']}\n" for a in self.config['assets'] if a['name'] != sums.name))
+            with patch.object(mirror, 'release', return_value=published), \
+                 patch.object(mirror, 'download', return_value=sums) as download, \
+                 patch.object(mirror, 'replace', return_value={'verified': True}) as replace, \
+                 patch('builtins.print'), \
+                 patch('sys.argv', ['mirror', '--directory', str(directory)]):
+                mirror.main()
+            self.assertEqual(download.call_count, 1)
+            self.assertEqual(download.call_args.args[1]['name'], sums.name)
+            self.assertEqual(replace.call_count, 1)
+            self.assertTrue(json.loads((directory / 'mirror-report.json').read_text())['complete'])
 
 
 if __name__ == '__main__':

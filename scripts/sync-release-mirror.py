@@ -150,7 +150,7 @@ def main():
     directory = args.directory.resolve()
     directory.mkdir(parents=True, exist_ok=True)
     tag = config['tag']
-    release(tag)
+    existing = {asset['name']: asset for asset in release(tag)['assets']}
     sums = next(a for a in config['assets'] if a['name'] == 'SHA256SUMS.txt')
     sums_path = download(tag, sums, directory)
     checksums = {line.split('  ', 1)[1]: line.split('  ', 1)[0] for line in sums_path.read_text().splitlines()}
@@ -159,6 +159,11 @@ def main():
         raise RuntimeError('Checksum file does not cover exactly the pinned release assets')
 
     def sync(asset):
+        # Keep already verified desktop attachments in place during a mobile-only
+        # refresh; do not download gigabytes of unchanged installers again.
+        if matches(existing.get(asset['name'], {}), asset):
+            print(json.dumps({'githubAlreadyVerified': asset['name']}), flush=True)
+            return {'name': asset['name'], 'sha256': asset['sha256'], 'verified': True, 'unchanged': True}
         path = download(tag, asset, directory)
         return replace(tag, asset, path, directory)
 
