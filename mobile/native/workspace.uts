@@ -1,0 +1,15 @@
+// Only the bundled entry document can receive the native bridge or replace the workspace.
+// Image/font/API errors must not tear down a successfully loaded document.
+export function isWorkspaceDocument(url: string): boolean {
+  const path = url.split('?')[0].split('#')[0]
+  return (path.startsWith('/') || path.startsWith('file://')) && path.endsWith('/static/office/index.html')
+}
+
+export function onUIThread(task: () => void) {
+  // #ifdef APP-ANDROID
+  UTSAndroid.getUniActivity()?.runOnUiThread(task)
+  // #endif
+  // #ifndef APP-ANDROID
+  task()
+  // #endif
+}

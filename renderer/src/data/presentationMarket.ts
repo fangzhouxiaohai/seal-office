@@ -27,7 +27,7 @@ export const marketStyles=[
 export interface MarketTemplate {id:string;name:string;category:string;topic:string;style:number;description:string;pages:number}
 export const marketTemplates:MarketTemplate[]=topics.flatMap(([category,...titles])=>titles.flatMap((topic,ti)=>marketStyles.map((style,index)=>({id:`seal-market-${topics.findIndex(t=>t[0]===category)}-${ti}-${index}`,name:`${topic} · ${style.name}`,category,topic,style:index,description:'9 页原创模板，含目录、指标、对比、流程、进度、数据表与行动计划；示例数据可替换。',pages:9}))))
 
-export function createMarketDeck(template:MarketTemplate):演示文稿 {
+export function createMarketDeck(template:MarketTemplate,coverOnly=false):演示文稿 {
   const style=marketStyles[template.style],deck=创建演示文稿(template.name+'.pptx')
   const text=(x:number,y:number,w:number,h:number,value:string,size=24,color:string=style.ink)=>({...创建文本框(x,y,w,h,value,size),颜色:color})
   const shape=(x:number,y:number,w:number,h:number,fill:string,kind:'矩形'|'圆角矩形'|'椭圆'='圆角矩形')=>({...创建图形(kind),x,y,width:w,height:h,形状:{...创建图形(kind).形状!,填充:fill,线条:fill,线宽:0}})
@@ -40,6 +40,7 @@ export function createMarketDeck(template:MarketTemplate):演示文稿 {
   deck.资源索引={[illustration.id]:{指纹:illustration.id,类型:'image/png',字节数:illustration.bytes}}
   cover.文本框列表=[{...text(60,155,520,170,template.topic,48,'#FFFFFF'),加粗:true},text(64,352,500,70,`${template.category} / 汇报人：请填写\n日期：请填写`,23,'#FFFFFF'),text(64,460,700,30,'海豹办公 · 原创可编辑演示模板',16,'#FFFFFF')]
   cover.对象列表=[{id:crypto.randomUUID(),类型:'图片',x:594,y:94,width:340,height:340,资源标识:illustration.id}]
+  if(coverOnly){deck.幻灯片列表=[{...cover,背景填充:{类型:'纯色',颜色:cover.背景色}}];return deck}
   const agenda=page('汇报目录',2)
   const headings=['目标与背景','关键成果','问题与建议','执行路径','下一步行动']
   headings.forEach((v,i)=>{agenda.文本框列表.push(text(78,155+i*57,72,44,`0${i+1}`,26,style.color),text(178,155+i*57,650,44,v,25))})

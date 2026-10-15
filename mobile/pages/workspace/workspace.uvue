@@ -11,11 +11,13 @@
 
 <script lang="uts">
 import { shareExport } from '../../native/share.uts'
+import { isWorkspaceDocument, onUIThread } from '../../native/workspace.uts'
 export default {
   data() {
     return {
       source: '/static/office/index.html?native=1',
       errorText: '',
+      alive: true,
       token: Date.now().toString() + '-' + Math.random().toString() + '-' + Math.random().toString(),
       atHome: true,
       unsaved: 0,
@@ -32,6 +34,7 @@ export default {
   onReady() { this.updateSafeArea() },
   onResize() { this.updateSafeArea() },
   onUnload() {
+    this.alive = false
     uni.$off('seal-persist-workspace', this.persistWorkspace)
     this.tasks.forEach((task: RequestTask) => { task.abort() })
     this.tasks.clear()
@@ -39,14 +42,17 @@ export default {
   onBackPress(): boolean {
     this.persistWorkspace()
     if (!this.atHome) {
-      this.evaluate("window.dispatchEvent(new Event('seal-native-back'))")
+      this.evaluate("window.dispatchEvent(new Event('seal-native-back',{cancelable:true}))")
       return true
     }
-    if (this.unsaved > 0) {
-      uni.showToast({ title: '还有未保存的文件，请先保存或关闭文件', icon: 'none' })
-      return true
-    }
+    // 首页返回桌面而非销毁进程；工作区备份仍可完成，未保存文档下次恢复。
+    // #ifdef APP-ANDROID
+    UTSAndroid.getUniActivity()?.moveTaskToBack(true)
+    return true
+    // #endif
+    // #ifndef APP-ANDROID
     return false
+    // #endif
   },
   methods: {
     updateSafeArea() {
@@ -58,7 +64,8 @@ export default {
     },
     evaluate(script: string) {
       // #ifdef APP
-      uni.createWebViewContext('seal-office')?.evalJS(script)
+      // 网络、分块和文件回调可能运行在后台线程。全部脚本统一切回 UI 线程。
+      onUIThread(() => { if (this.alive && this.errorText.length == 0) uni.createWebViewContext('seal-office')?.evalJS(script) })
       // #endif
     },
     persistWorkspace() { this.evaluate("window.dispatchEvent(new Event('seal-persist-workspace'))") },
@@ -69,7 +76,7 @@ export default {
     onLoaded(event: UniWebViewLoadEvent) {
       // 只有安装包内的办公页面能够获得原生接口。
       const src = event.detail.src
-      if ((!src.startsWith('/') && !src.startsWith('file://')) || src.indexOf('/static/office/index.html') < 0) { this.errorText = '请在应用内打开本地工作台'; return }
+      if (!isWorkspaceDocument(src)) return
       let platform = 'web'
       // #ifdef APP-ANDROID
       platform = 'android'
@@ -83,7 +90,12 @@ export default {
       const config: UTSJSONObject = { token: this.token, platform: platform }
       this.evaluate('window.sealNative=' + JSON.stringify(config) + ";window.dispatchEvent(new Event('seal-native-ready'))")
     },
-    onError(event: UniWebViewErrorEvent) { this.errorText = event.detail.errMsg },
+    onError(event: UniWebViewErrorEvent) {
+      const url = event.detail.fullUrl.length > 0 ? event.detail.fullUrl : event.detail.src
+      console.warn('办公 WebView 加载错误', event.detail.errCode, url.split('?')[0])
+      if (!isWorkspaceDocument(url)) return
+      this.errorText = '本地工作台加载失败（' + event.detail.errCode.toString() + '），请重新打开'
+    },
     reloadOffice() { this.errorText = ''; this.source = '/static/office/index.html?native=1&reload=' + Date.now().toString() },
     onMessage(event: UniWebViewMessageEvent) {
       event.detail.data.forEach((message: UTSJSONObject) => {
@@ -116,7 +128,7 @@ export default {
           this.reply({ id: id, type: 'end', status: response.statusCode, headers: response.header, data: response.data == null ? '' : uni.arrayBufferToBase64(response.data!) })
         },
         fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) },
-        complete: (_) => { this.tasks.delete(id) }
+        complete: (_) => { onUIThread(() => { this.tasks.delete(id) }) }
       })
       task.onHeadersReceived((response) => { this.reply({ id: id, type: 'headers', status: response.statusCode, headers: response.header }) })
       task.onChunkReceived((chunk) => { this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(chunk.data) }) })
@@ -143,7 +155,7 @@ export default {
         filePath: filename, data: data, encoding: 'base64',
         success: (_) => {
           this.reply({ id: id, type: 'saved', path: filename })
-          shareExport(filename, message.getString('mime') ?? 'application/octet-stream', (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) })
+          onUIThread(() => { shareExport(filename, message.getString('mime') ?? 'application/octet-stream', (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) }) })
         },
         fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
       })

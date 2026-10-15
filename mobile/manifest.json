@@ -34,11 +34,6 @@
           "xhdpi": "static/icon.png",
           "xxhdpi": "static/icon.png",
           "xxxhdpi": "static/icon.png"
-        },
-        "brand": {
-          "xhdpi": "static/icon.png",
-          "xxhdpi": "static/icon.png",
-          "xxxhdpi": "static/icon.png"
         }
       },
       "targetSdkVersion": 36

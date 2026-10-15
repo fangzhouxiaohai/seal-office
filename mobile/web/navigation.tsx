@@ -18,11 +18,30 @@ export default function MobileNavigation() {
     setOpen(false)
   }
   useEffect(() => {
-    const back = () => { if (open) setOpen(false); else store.goHome() }
+    const back = (event: Event) => {
+      if (event.defaultPrevented) return
+      if (open) { setOpen(false); return }
+      const close = document.querySelector<HTMLButtonElement>('.ant-modal-wrap:not([style*="display: none"]) .ant-modal-close, .ant-drawer-open .ant-drawer-close, .ant-drawer-open .assistant-collapse')
+      if (close) { close.click(); return }
+      // 不可关闭的恢复密钥/保存对话框仍由用户完成，不跳转到底层首页。
+      if (document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open')) return
+      // 先给当前模块处理内部层级，避免监听器注册顺序把子目录直接跳回首页。
+      if (!window.dispatchEvent(new Event('seal-before-native-back', {cancelable:true}))) return
+      store.goHome()
+    }
     const persist = () => { void store.刷新工作状态备份().then((result) => { if (!result.成功) message.error(result.错误 || '保存工作区失败') }).catch((error) => message.error(error instanceof Error ? error.message : '保存工作区失败')) }
     window.addEventListener('seal-native-back', back); window.addEventListener('seal-persist-workspace', persist)
-    if (window.sealNative) window.uni?.webView?.postMessage({ data: { action: 'state', token: window.sealNative.token, atHome: store.module === 'home' && !open, unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length } })
-    return () => { window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist) }
+    let lastState = ''
+    const report = () => {
+      if (!window.sealNative) return
+      const state = { action: 'state', token: window.sealNative.token, atHome: store.module === 'home' && store.navKey === 'home' && !open && !document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open'), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
+      const value = JSON.stringify(state)
+      if (value !== lastState) { lastState = value; window.uni?.webView?.postMessage({ data: state }) }
+    }
+    const observer = new MutationObserver(report)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] })
+    report()
+    return () => { observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist) }
   }, [store, open, message])
   return <>
     <nav className="seal-mobile-nav" aria-label="移动工作台导航">
