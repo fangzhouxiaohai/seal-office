@@ -1,0 +1,29 @@
+name: Sync verified release from GitCode
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verified-release-mirror
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+      - name: Test manifest validation and replacement guards
+        run: python -m unittest discover -s scripts -p 'sync-release-mirror.test.py'
+      - name: Copy exact verified release bytes without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/sync-release-mirror.py --directory '${{ runner.temp }}/release-mirror'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-release-mirror-report
+          path: ${{ runner.temp }}/release-mirror/mirror-report.json
+          if-no-files-found: warn
