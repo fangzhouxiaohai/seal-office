@@ -18,6 +18,7 @@
     "check:android": "node scripts/native-check.mjs",
     "check:apk": "node scripts/apk-check.mjs",
     "test:browser": "node scripts/browser-check.mjs",
+    "test:regressions": "node scripts/browser-check.mjs --regressions",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

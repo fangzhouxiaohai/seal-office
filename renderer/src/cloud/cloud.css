@@ -20,7 +20,7 @@
 .seal-login__dialog-title{font-size:13px;font-weight:400;color:var(--text-2)}
 .seal-login-modal .ant-modal-close{top:18px;right:18px;width:32px;height:32px;border-radius:6px;color:var(--text-2)}
 .seal-login__brand{text-align:center;padding:18px 0 28px}
-.seal-login__brand img{display:block;margin:0 auto 16px}
+.seal-login__brand img{display:block;width:64px;height:64px;aspect-ratio:1;object-fit:contain;margin:0 auto 16px}
 .seal-login__brand h2{margin:0 0 8px;font-size:23px;line-height:1.4;font-weight:600;letter-spacing:.02em;color:var(--text-1)}
 .seal-login__brand p{margin:0;font-size:13px;line-height:1.6;color:var(--text-2)}
 .seal-login__field{margin-bottom:20px}

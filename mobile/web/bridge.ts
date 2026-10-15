@@ -148,7 +148,8 @@ async function initialize() {
   core.generation.注册演示生成通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private' })
   core.cloud.注册云端通道(ipcMain, { cloudService: cloud, 助手服务: assistant })
   const recording = core.recording.创建录制服务({ 捕获源: null, 最大字节: 100 * 1024 * 1024 })
-  core.presentation.注册演示通道(ipcMain, { 识别服务: core.recognition.创建识别服务({ 助手服务: assistant }), 录制服务: recording })
+  // 第二个参数是演示资源存储；服务依赖必须放在第三个参数，否则模板恢复/读取图片都会调用到错误的对象。
+  core.presentation.注册演示通道(ipcMain, undefined, { 识别服务: core.recognition.创建识别服务({ 助手服务: assistant }), 录制服务: recording })
   handle('presentation.recording.save', async (data: string, format: string, name: string) => {
     const result = await recording.保存录制({ 数据: data, 格式: format, 建议名: name })
     if (!result.取消) await platform.exportStoredFile(result.路径)

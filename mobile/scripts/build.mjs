@@ -15,7 +15,12 @@ export async function buildPlatform(platform = 'android') {
   await fs.writeFile(manifestFile, JSON.stringify(manifest, null, 2) + '\n')
   await buildCore()
   const output = platform === 'web' ? path.join(directory, 'unpackage/web') : path.join(directory, 'static/office')
-  await build({ configFile: path.join(directory, 'web.vite.config.mjs'), build: { outDir: output } })
+  await build({ configFile: path.join(directory, 'web.vite.config.mjs'),
+    // 本地 IIFE 位于页面根目录，不再位于 Vite 的 assets/ 分块目录。
+    // 在首次构建时就将 JS 引用的图片等资源按页面目录解析，避免二次合并后丢失 assets/。
+    ...(platform === 'web' ? {} : { experimental: { renderBuiltUrl(filename, { hostType }) {
+      return hostType === 'js' ? { runtime: `new URL(${JSON.stringify(filename)}, document.baseURI).href` } : { relative: true }
+    } } }), build: { outDir: output } })
   if (platform !== 'web') {
     // Android/iOS 的 file:// 页面使用普通脚本，避免本地 ES module 的跨域限制。
     const htmlFile = path.join(output, 'index.html'), html = await fs.readFile(htmlFile, 'utf8')

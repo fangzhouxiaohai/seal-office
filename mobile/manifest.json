@@ -31,9 +31,9 @@
       },
       "splashScreens": {
         "icon": {
-          "xhdpi": "static/icon.png",
-          "xxhdpi": "static/icon.png",
-          "xxxhdpi": "static/icon.png"
+          "xhdpi": "static/splash/android/icon-xhdpi.png",
+          "xxhdpi": "static/splash/android/icon-xxhdpi.png",
+          "xxxhdpi": "static/splash/android/icon-xxxhdpi.png"
         }
       },
       "targetSdkVersion": 36

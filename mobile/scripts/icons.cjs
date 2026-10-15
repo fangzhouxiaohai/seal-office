@@ -23,6 +23,10 @@ app.whenReady().then(async () => {
     const destination = path.join(project, filename)
     fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, Buffer.from(data, 'base64'))
   }
+  // Android SplashScreen 使用 288dp 容器；专用留白图让海豹标识实际显示为 96dp。
+  // 不缩小桌面应用图标，也不添加底部品牌图。
+  for (const [density, size] of [['xhdpi', 576], ['xxhdpi', 864], ['xxxhdpi', 1152]]) await draw(`static/splash/android/icon-${density}.png`, size, 1 / 3)
+  if (!process.argv.includes('--splash-only')) {
   for (const size of [72, 96, 144, 192]) await draw(`static/icons/android/icon${size}.png`, size)
   await draw('nativeResources/android/res/drawable-nodpi/icon_foreground.png', 432, 66 / 108)
   await draw('nativeResources/android/res/drawable-nodpi/icon_monochrome.png', 432, 66 / 108, null, true)
@@ -30,5 +34,6 @@ app.whenReady().then(async () => {
   await draw('static/icons/harmony/foreground.png', 1024, 0.66)
   await draw('static/icons/harmony/background.png', 1024, 0, '#FFFFFF')
   for (const size of [32, 180, 192, 512]) await draw(`web/public/icons/icon${size}.png`, size, size === 180 ? 0.84 : 1, '#FFFFFF')
-  win.destroy(); console.log('海豹 Logo：Android 密度/自适应/单色、iOS、鸿蒙、H5 图标已生成。'); app.exit(0)
+  }
+  win.destroy(); console.log(process.argv.includes('--splash-only') ? 'Android 启动页专用留白 Logo 已生成：96dp、单图标、三种密度。' : '海豹 Logo：Android 密度/自适应/单色、启动图、iOS、鸿蒙、H5 图标已生成。'); app.exit(0)
 }).catch(error => { console.error(error); app.exit(1) })

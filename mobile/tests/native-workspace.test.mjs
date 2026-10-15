@@ -32,8 +32,11 @@ test('安卓启动页只配置一个正方形主图标',async()=>{
   const manifest=JSON.parse(await fs.readFile(new URL('../manifest.json',import.meta.url),'utf8'))
   const splash=manifest['app-android'].distribute.splashScreens
   assert.equal(Object.hasOwn(splash,'brand'),false)
-  for(const name of Object.values(splash.icon)){
+  for(const [density,size] of [['xhdpi',576],['xxhdpi',864],['xxxhdpi',1152]]){
+    const name=splash.icon[density]
+    assert.equal(name,`static/splash/android/icon-${density}.png`)
     const png=await fs.readFile(new URL('../'+name,import.meta.url))
-    assert.equal(png.readUInt32BE(16),png.readUInt32BE(20))
+    assert.equal(png.readUInt32BE(16),size)
+    assert.equal(png.readUInt32BE(20),size)
   }
 })
