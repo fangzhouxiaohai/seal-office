@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-10-16T16:38:37Z",
+  "subject": "opendesign/mockups/admin-console/index.html",
+  "reviewer": "Independent OpenDesign verifier",
+  "status": "passed-with-notes",
+  "requirements": [
+    {
+      "id": "palette-and-refinement",
+      "status": "passed",
+      "detail": "Mockup tokens (#142e57 sidebar, #2463eb brand, #f4f6f9 canvas, #e9eef5 border, th #f8fafd / row hover #fafcff, card radius 16 / control 10 / pill 7) match the deployed overlay theme (App.vue theme object and CSS) token for token; no new design system was introduced. Screenshots show one cool-navy sidebar, one brand-blue accent (active nav pill, table sort arrow, pagination current page, primary buttons), tabular-nums on all times/sizes, consistent white cards with light borders. Login (navy brand panel + white form), sidebar and content read as one system. Tables are readable, status pills are consistent (green 已开通/开启, grey 关闭, amber 待审核). No clipping, misalignment or unreadable contrast found at 1440."
+    },
+    {
+      "id": "list-search",
+      "status": "passed-with-notes",
+      "detail": "Users 1440 shows the search toolbar (搜索号码前3位、后4位或账号标识) plus the sort hint; audit 1440 shows search (搜索号码片段、操作类型或记录内容) plus the 全部动作 dropdown; 演示模板审核 / 知识内容审核 1440 show search (搜索标题、分类或说明) plus the 全部状态 filter; converter jobs search (搜索格式、结果或失败原因) is present in the deployed source (ConverterPanel.vue) and covered by the harness check 转换任务列表按格式与结果搜索, but the provided admin-converter-1440.png is cut off above the 近期转换任务 card, so that one toolbar is not visually confirmable from the supplied captures. NOTE: the users search filters phone + account id only (App.vue users computed); 实际占用 (space usage), which the requirement lists, is not searchable, and the placeholder honestly mentions only 号码/账号标识."
+    },
+    {
+      "id": "user-times-descending",
+      "status": "passed",
+      "detail": "admin-users-1440.png shows both new columns (注册时间, 最后一次操作时间) in the expected column order. Row 1 last action 2026-10-16 23:17 is newer than row 2 2026-10-07 00:17, i.e. the default order is last-action descending; the 时间 column on the audit page is likewise 00:17 > 00:16 > 00:15. Source confirms the lastAction column carries defaultSortOrder:'descend'."
+    },
+    {
+      "id": "responsive",
+      "status": "passed-with-notes",
+      "detail": "No page-level horizontal overflow at 960 or 390 (bottom-edge pixel crops of page-1-960 and page-1/5-390 show no horizontal scrollbar; layouts fit the viewport, the mobile nav collapses into a scrollable top strip, stat cards stack). NOTE 1: at 960 the 7-column users table is wider than its card and is visibly truncated at the card edge; it sits in an in-card horizontal scroll container (:scroll-x=\"1080\"), so data is reachable, but Chromium overlay scrollbars plus no custom scrollbar styling mean the static capture shows no scroll affordance. NOTE 2: on page-5-390 the horizontally scrolled nav strip leaves the active 文档转换 pill clipped at the strip's right edge (cosmetic only). 1440 layouts have wide empty card space but no defects."
+    },
+    {
+      "id": "client-untouched",
+      "status": "passed",
+      "detail": "Nothing in the reviewed artifacts or the two relevant commits (7408f57 feat, b979301 docs) touches client-side files. Commit file lists contain only server/admin/overlay/App.vue, server/admin/overlay/ConverterPanel.vue, server/index.cjs, server/test/cloud.test.cjs, scripts/verify-admin-experience.cjs, docs/** and opendesign/**; no desktop/mobile sources appear. All screenshots are admin-console UI only."
+    }
+  ],
+  "evidence": [
+    "docs/verification/admin-console/admin-users-1440.png",
+    "docs/verification/admin-console/admin-audit-1440.png",
+    "docs/verification/admin-console/admin-converter-1440.png",
+    "docs/verification/admin-console/production-admin-login.png",
+    "docs/verification/admin-console/admin-ui.json",
+    "docs/verification/admin-console/production-admin-ui.json",
+    "E:/seal-office/.upgrade-private/admin-experience/page-0-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-1-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-2-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-3-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-4-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-5-1440.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-1-960.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-1-390.png",
+    "E:/seal-office/.upgrade-private/admin-experience/page-5-390.png",
+    "E:/seal-office/.upgrade-private/admin-experience/login-1440.png",
+    "server/admin/overlay/App.vue",
+    "server/admin/overlay/ConverterPanel.vue"
+  ],
+  "notes": [
+    "Audit page shows Chinese action labels (登录云空间, 审核公开内容, 提交公开申请, and 管理员 as the acting account) and masked numbers only (138****0000, 139****0000); no full phone number appears in any reviewed screenshot or in the mockup.",
+    "The production login capture renders 登录管理后台 in a pale periwinkle rather than full brand blue because the button is in its disabled state while the password field is empty (:disabled=\"!password||busy\"); the enabled primary colour is #2463eb per the theme, so this is a state, not a palette defect.",
+    "Mockup review was done on the HTML source (browser tool unavailable: no desktop browser connected, single attempt as instructed); the mockup's structure, tokens, spacing scale and component states were compared directly against the overlay source and the captures.",
+    "Implementation and mockup agree on column order/labels, pill palette and toolbar layout; the only copy drift seen is the users subtitle (implementation adds 注册时间), which matches the new columns.",
+    "Spacing is comfortable and consistent at 1440 (34/36px page padding, 20-28px card padding); nothing appears cramped. Empty space under short tables at 1440 is a data-volume artifact, not a layout defect."
+  ]
+}
