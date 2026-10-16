@@ -1,10 +1,19 @@
 {
-  "generated": "2026-10-10T18:04:26.827772+00:00",
+  "generated": "2026-10-16T16:26:29.182584+00:00",
   "sections": [
     {
       "id": "mockups",
       "label": "Mockups",
       "groups": [
+        {
+          "slug": "admin-console",
+          "files": [
+            {
+              "label": "index.html",
+              "path": "mockups/admin-console/index.html"
+            }
+          ]
+        },
         {
           "slug": "ui-icons",
           "files": [

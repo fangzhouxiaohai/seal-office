@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>海豹办公 · 云端管理控制台 · 设计稿</title>
+<style>
+  /* ===== 设计令牌（与 server/admin/overlay/App.vue 保持一致）=====
+     画布 #f4f6f9 · 侧栏 #142e57 · 品牌蓝 #2463eb
+     文字 900/700/500/400 · 描边 #e9eef5 · 状态色见 .pill-*
+     温度：冷 · 强调色 1 个 · 数字全部 tabular-nums */
+  :root{
+    --navy:#142e57; --navy-hover:#213e65; --navy-line:#2b4a76;
+    --brand:#2463eb; --brand-deep:#1b4fd0; --brand-tint:#eef3ff;
+    --canvas:#f4f6f9; --card:#fff; --line:#e9eef5; --line-soft:#f1f5fa;
+    --ink-900:#18233b; --ink-700:#3d4e69; --ink-500:#64748b; --ink-400:#8592a6; --ink-300:#a9b4c4;
+    --ok:#248966; --ok-bg:#edf9f3; --warn:#af7620; --warn-bg:#fff8e9; --bad:#bc4954; --bad-bg:#fff0f0;
+    --radius-card:16px; --radius-ctl:10px; --radius-pill:7px;
+    --shadow-card:0 1px 2px rgba(20,46,87,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#e8ecf2;color:var(--ink-900);font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .review-chrome{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:18px;padding:12px 22px;background:#1b2536;color:#cfd8e6}
+  .review-chrome strong{font-size:12px;font-weight:600;letter-spacing:.4px}
+  .review-chrome nav{display:flex;gap:6px;flex-wrap:wrap}
+  .review-chrome button{font:inherit;font-size:12px;padding:7px 14px;border-radius:99px;border:1px solid #35435c;background:#232f45;color:#c6d2e3;cursor:pointer}
+  .review-chrome button:hover{border-color:#4d61a1;color:#fff}
+  .review-chrome button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .review-chrome .hint{margin-left:auto;font-size:11px;color:#8b97ab}
+  .screen{display:none}
+  .screen.active{display:block}
+  .app{display:flex;min-height:calc(100vh - 50px)}
+  .sidebar{position:relative;display:flex;flex-direction:column;width:244px;flex:0 0 244px;background:var(--navy);color:#fff;padding:30px 18px}
+  .brand{display:flex;align-items:center;gap:12px;padding:0 12px 34px}
+  .brand .mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(#2f5b96,#1d3f6d);display:grid;place-items:center;font-size:17px;font-weight:700}
+  .brand b{display:block;font-size:20px;font-weight:650}
+  .brand span{display:block;font-size:11px;color:#afc0d9;margin-top:5px}
+  .nav-caption{padding:0 16px 12px;color:#97accb;font-size:11px;letter-spacing:2px}
+  .nav-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:#bfcee2;text-align:left;padding:15px;border-radius:10px;margin-bottom:6px;font:inherit;font-size:14px;cursor:pointer}
+  .nav-item:hover{background:var(--navy-hover);color:#fff}
+  .nav-item.active{background:var(--brand);color:#fff;font-weight:600}
+  .nav-index{font-size:11px;opacity:.75;font-variant-numeric:tabular-nums}
+  .nav-count{margin-left:auto;border-radius:6px;background:#ffffff24;padding:1px 6px;font-size:11px}
+  .sidebar-note{margin-top:auto;padding:24px 14px 4px;font-size:12px;color:#b8c9df}
+  .sidebar-note b{font-weight:500}
+  .sidebar-note p{line-height:1.8;color:#8fa8c9;font-size:11px;margin:10px 0 0}
+  .workspace{display:flex;flex-direction:column;min-width:0;flex:1;background:var(--canvas)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;height:76px;background:#fff;border-bottom:1px solid var(--line);padding:0 36px}
+  .breadcrumb{font-size:13px;color:#728096}
+  .breadcrumb span{margin:0 14px;color:#bcc6d3}
+  .topbar-actions{display:flex;align-items:center;gap:12px;color:#4c5b72;font-size:13px}
+  .avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--brand-tint);color:var(--brand);font-size:12px;font-weight:600}
+  main{padding:34px 36px 44px;max-width:1600px;width:100%;margin:0 auto;flex:1}
+  .eyebrow{font-size:12px;font-weight:650;letter-spacing:1.4px;color:var(--ink-500)}
+  .page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:26px}
+  .page-heading h1{font-size:28px;margin:10px 0 8px;letter-spacing:.5px}
+  .page-heading p{margin:0;font-size:13px;color:#788397}
+  .refresh-area{display:flex;align-items:center;gap:16px}
+  .refresh-area span{font-size:12px;color:#919bad}
+  .btn{font:inherit;font-weight:600;font-size:14px;min-height:34px;padding:0 16px;border-radius:var(--radius-ctl);border:1px solid #dde3ec;background:#fff;color:#33415c;cursor:pointer}
+  .btn:hover{border-color:#c6d2e2;color:#18233b}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-deep);border-color:var(--brand-deep)}
+  .btn.warning{background:#fff;border-color:#f2ddbd;color:var(--warn)}
+  .btn.danger{background:#fff;border-color:#f4d3d5;color:var(--bad)}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .stat-card{padding:25px 28px;border:1px solid var(--line);border-radius:var(--radius-card);background:var(--card);box-shadow:var(--shadow-card)}
+  .stat-card>span{font-size:13px;color:var(--ink-500)}
+  .stat-card>strong{display:block;font-size:36px;font-weight:650;line-height:1.5;margin-top:14px;font-variant-numeric:tabular-nums}
+  .stat-card small{font-size:13px;font-weight:400;color:#91a0b3;margin-left:10px}
+  .stat-card p{font-size:12px;color:#99a3b3;margin:10px 0 0}
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-top:24px}
+  .card{border:1px solid var(--line);border-radius:var(--radius-card);background:var(--card);box-shadow:var(--shadow-card)}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px 0}
+  .card-head h2{margin:0;font-size:17px;font-weight:650}
+  .card-body{padding:20px 24px 24px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;border-radius:9px;padding:3px 10px;background:#f2f5f9;color:#66768f}
+  .badge.ok{background:var(--ok-bg);color:var(--ok)}
+  .badge.warn{background:var(--warn-bg);color:var(--warn)}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:6px 0 22px}
+  .metrics span{display:block;color:#8290a4;font-size:12px}
+  .metrics strong{display:block;font-size:24px;font-weight:600;margin-top:10px;font-variant-numeric:tabular-nums}
+  .metrics small{font-size:12px;font-weight:400;color:#8997aa;margin-left:7px}
+  .privacy-note{border-radius:10px;background:#f1f5fd;padding:17px 20px;font-size:12px}
+  .privacy-note b{color:#2458a9}
+  .privacy-note p{margin:8px 0 0;line-height:1.8;color:#71829d}
+  dl.detail{margin:0}
+  dl.detail>div{padding:15px 0;border-bottom:1px solid var(--line-soft)}
+  dl.detail dt{font-size:12px;color:#8290a4}
+  dl.detail dd{margin:8px 0 0;font-size:14px;color:var(--ink-700)}
+  .note{margin:18px 0 0;font-size:12px;line-height:1.8;color:#96a0b0}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .search{display:flex;align-items:center;gap:9px;flex:1 1 260px;max-width:360px;height:38px;padding:0 13px;border:1px solid #dde3ec;border-radius:var(--radius-ctl);background:#fff;color:var(--ink-400)}
+  .search input{border:0;outline:0;flex:1;font:inherit;font-size:13px;color:var(--ink-900);min-width:0}
+  .search input::placeholder{color:#a9b4c4}
+  .select{display:flex;align-items:center;gap:8px;height:38px;padding:0 13px;border:1px solid #dde3ec;border-radius:var(--radius-ctl);background:#fff;font-size:13px;color:var(--ink-700)}
+  .count{margin-left:auto;font-size:12px;color:#8592a6;font-variant-numeric:tabular-nums}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:#f8fafd;border-bottom:1px solid var(--line);color:#5b6b84;font-size:12px;font-weight:600;text-align:left;padding:12px 16px;white-space:nowrap}
+  thead th.num{text-align:right}
+  tbody td{padding:14px 16px;border-bottom:1px solid var(--line-soft);color:var(--ink-700);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:#fafcff}
+  .mono{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;color:#6b7a92}
+  .stamp{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-700)}
+  .stamp em{font-style:normal;color:var(--ink-300)}
+  .pill{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:var(--radius-pill);font-size:12px;background:#f2f5f9;color:#66768f}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.bad{background:var(--bad-bg);color:var(--bad)}
+  .num{font-variant-numeric:tabular-nums}
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px;color:var(--ink-400);font-size:12px}
+  .pager i{font-style:normal;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#f4f6fa;color:var(--ink-500)}
+  .pager i.on{background:var(--brand);color:#fff;font-weight:600}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{font:inherit;font-size:12px;padding:7px 13px;border-radius:99px;border:1px solid #dde3ec;background:#fff;color:#5b6b84;cursor:pointer}
+  .chip.on{border-color:var(--brand);background:var(--brand-tint);color:var(--brand-deep);font-weight:600}
+  .converter-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+  .toolbar-note{font-size:12px;color:#96a0b0;line-height:1.8;margin:16px 0 0}
+  /* 规范页 */
+  .spec{padding:34px 36px;max-width:1180px;margin:0 auto}
+  .spec h1{font-size:26px;margin:0 0 6px}
+  .spec>p{margin:0 0 30px;font-size:13px;color:#788397}
+  .spec h2{font-size:15px;margin:34px 0 14px;letter-spacing:.4px}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px}
+  .swatch{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+  .swatch .fill{height:64px}
+  .swatch .meta{padding:10px 12px;font-size:11px;color:#6b7a92;line-height:1.7}
+  .swatch .meta b{display:block;font-size:12px;color:var(--ink-900);font-weight:600}
+  .type-row{display:flex;align-items:baseline;gap:22px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+  .type-row code{font-family:"Cascadia Mono",Consolas,monospace;font-size:11px;color:#8592a6;min-width:190px}
+  .demo-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 0}
+  @media(max-width:1100px){.grid-2{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
+  @media(max-width:860px){.app{display:block}.sidebar{position:static;width:100%;flex:none}.sidebar nav{display:flex;gap:6px;overflow:auto}.nav-item{width:auto;white-space:nowrap;padding:12px}.nav-index,.nav-caption,.sidebar-note{display:none}.converter-stats{grid-template-columns:1fr}.toolbar .search{max-width:none}}
+</style>
+</head>
+<body>
+  <div class="review-chrome">
+    <strong>海豹办公 · 云端管理控制台 · 设计稿</strong>
+    <nav id="screens">
+      <button type="button" data-target="ov" aria-pressed="true">运行概览</button>
+      <button type="button" data-target="users">账号与用量</button>
+      <button type="button" data-target="audit">操作记录</button>
+      <button type="button" data-target="converter">文档转换</button>
+      <button type="button" data-target="spec">规范</button>
+    </nav>
+    <span class="hint">静态设计稿 · 数据为示意</span>
+  </div>
+
+  <!-- ============ 运行概览 ============ -->
+  <section class="screen active" id="ov">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">豹</span><div><b>海豹办公</b><span>云端管理控制台</span></div></div>
+        <span class="nav-caption">工作台</span>
+        <nav>
+          <button type="button" class="nav-item active"><span class="nav-index">01</span>运行概览<span class="nav-count">2</span></button>
+          <button type="button" class="nav-item"><span class="nav-index">02</span>账号与用量</button>
+          <button type="button" class="nav-item"><span class="nav-index">03</span>演示模板审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">04</span>知识内容审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">05</span>操作记录</button>
+          <button type="button" class="nav-item"><span class="nav-index">06</span>文档转换</button>
+        </nav>
+        <div class="sidebar-note"><b>私有资料保持加密</b><p>此工作台仅审核用户主动发布的公开资料。</p></div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="breadcrumb">海豹办公 <span>/</span> 管理工作台</span>
+          <div class="topbar-actions"><span class="avatar">管</span><span>管理员</span><button type="button" class="btn" style="border:0;background:transparent;color:#4c5b72">退出登录</button></div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div><span class="eyebrow">云端管理</span><h1>运行概览</h1><p>服务运行与空间使用情况</p></div>
+            <div class="refresh-area"><span>更新于 09:41:20</span><button type="button" class="btn">刷新数据</button></div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><span>账号总数</span><strong>128<small>个</small></strong><p>已注册的海豹办公账号</p></div>
+            <div class="stat-card"><span>实际文件占用</span><strong>1 842.60<small>MB</small></strong><p>包含历史版本与回收站</p></div>
+            <div class="stat-card"><span>等待审核</span><strong>2<small>项</small></strong><p>演示模板与知识公开申请</p></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h2>云服务运行</h2><span class="badge ok">已连接</span></div>
+              <div class="card-body">
+                <div class="metrics">
+                  <div><span>服务器剩余磁盘</span><strong>61.24<small>GB</small></strong></div>
+                  <div><span>进程内存</span><strong>186<small>MB</small></strong></div>
+                  <div><span>待提交上传</span><strong>0<small>项</small></strong></div>
+                  <div><span>每账号实际配额</span><strong>300<small>MB</small></strong></div>
+                </div>
+                <div class="privacy-note"><b>客户端加密保护</b><p>私有文件名、正文与资料索引以密文保存，管理员无法在此工作台打开私有文档。</p></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>短信服务</h2><span class="badge ok">已配置</span></div>
+              <div class="card-body">
+                <dl class="detail"><div><dt>短信签名</dt><dd>海豹办公</dd></div><div><dt>验证码模板</dt><dd>SMS_0000000</dd></div><div><dt>24 小时发送请求</dt><dd class="num">36 次</dd></div></dl>
+                <p class="note">配置状态仅表示服务接入情况，实际送达取决于运营商报备与短信发送结果。</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 账号与用量 ============ -->
+  <section class="screen" id="users">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">豹</span><div><b>海豹办公</b><span>云端管理控制台</span></div></div>
+        <span class="nav-caption">工作台</span>
+        <nav>
+          <button type="button" class="nav-item"><span class="nav-index">01</span>运行概览</button>
+          <button type="button" class="nav-item active"><span class="nav-index">02</span>账号与用量</button>
+          <button type="button" class="nav-item"><span class="nav-index">03</span>演示模板审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">04</span>知识内容审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">05</span>操作记录</button>
+          <button type="button" class="nav-item"><span class="nav-index">06</span>文档转换</button>
+        </nav>
+        <div class="sidebar-note"><b>私有资料保持加密</b><p>此工作台仅审核用户主动发布的公开资料。</p></div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="breadcrumb">海豹办公 <span>/</span> 管理工作台</span>
+          <div class="topbar-actions"><span class="avatar">管</span><span>管理员</span><button type="button" class="btn" style="border:0;background:transparent;color:#4c5b72">退出登录</button></div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div><span class="eyebrow">云端管理</span><h1>账号与用量</h1><p>查看账号状态与实际空间占用</p></div>
+            <div class="refresh-area"><span>更新于 09:41:20</span><button type="button" class="btn">刷新数据</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>账号列表</h2><span class="count">128 个账号 · 已开通 96</span></div>
+            <div class="card-body">
+              <div class="toolbar">
+                <label class="search"><span>⌕</span><input type="text" value="" placeholder="搜索号码前3位、后4位或账号标识"/></label>
+                <span class="count">按最后一次操作时间倒序 · 点击表头可切换排序</span>
+              </div>
+              <table>
+                <thead><tr>
+                  <th>手机号</th><th>账号标识</th><th>云空间</th><th>自动保存</th>
+                  <th>注册时间</th><th>最后一次操作时间</th><th class="num">实际占用</th>
+                </tr></thead>
+                <tbody>
+                  <tr><td class="num">138****0000</td><td class="mono">a7f3…c21e</td><td><span class="pill ok">已开通</span></td><td><span class="pill ok">开启</span></td><td class="stamp">2026-09-18 10:22</td><td class="stamp">2026-10-17 09:36</td><td class="num">142.08 MB</td></tr>
+                  <tr><td class="num">139****8812</td><td class="mono">2b90…77af</td><td><span class="pill ok">已开通</span></td><td><span class="pill">关闭</span></td><td class="stamp">2026-09-21 15:04</td><td class="stamp">2026-10-16 22:11</td><td class="num">88.40 MB</td></tr>
+                  <tr><td class="num">137****0455</td><td class="mono">c118…4de3</td><td><span class="pill">关闭</span></td><td><span class="pill">关闭</span></td><td class="stamp">2026-10-02 08:47</td><td class="stamp">2026-10-12 19:02</td><td class="num">0.00 MB</td></tr>
+                  <tr><td class="num">150****3366</td><td class="mono">e5d2…9b10</td><td><span class="pill ok">已开通</span></td><td><span class="pill ok">开启</span></td><td class="stamp">2026-10-14 11:30</td><td class="stamp">—</td><td class="num">12.96 MB</td></tr>
+                </tbody>
+              </table>
+              <div class="pager"><span>共 128 条</span><i>‹</i><i class="on">1</i><i>2</i><i>3</i><i>›</i></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 操作记录 ============ -->
+  <section class="screen" id="audit">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">豹</span><div><b>海豹办公</b><span>云端管理控制台</span></div></div>
+        <span class="nav-caption">工作台</span>
+        <nav>
+          <button type="button" class="nav-item"><span class="nav-index">01</span>运行概览</button>
+          <button type="button" class="nav-item"><span class="nav-index">02</span>账号与用量</button>
+          <button type="button" class="nav-item"><span class="nav-index">03</span>演示模板审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">04</span>知识内容审核</button>
+          <button type="button" class="nav-item active"><span class="nav-index">05</span>操作记录</button>
+          <button type="button" class="nav-item"><span class="nav-index">06</span>文档转换</button>
+        </nav>
+        <div class="sidebar-note"><b>私有资料保持加密</b><p>此工作台仅审核用户主动发布的公开资料。</p></div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="breadcrumb">海豹办公 <span>/</span> 管理工作台</span>
+          <div class="topbar-actions"><span class="avatar">管</span><span>管理员</span><button type="button" class="btn" style="border:0;background:transparent;color:#4c5b72">退出登录</button></div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div><span class="eyebrow">云端管理</span><h1>操作记录</h1><p>查看云端操作与审核记录</p></div>
+            <div class="refresh-area"><span>更新于 09:41:20</span><button type="button" class="btn">刷新数据</button></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>最近操作记录</h2><span class="count">最近 200 条</span></div>
+            <div class="card-body">
+              <div class="toolbar">
+                <label class="search"><span>⌕</span><input type="text" value="" placeholder="搜索号码片段、操作类型或记录内容"/></label>
+                <span class="select">全部动作 ▾</span>
+                <span class="count">36 / 200 条记录</span>
+              </div>
+              <table>
+                <thead><tr><th>时间</th><th>操作账号</th><th>动作</th><th>记录</th></tr></thead>
+                <tbody>
+                  <tr><td class="stamp">2026-10-17 09:36</td><td class="num">138****0000</td><td>登录云空间</td><td>—</td></tr>
+                  <tr><td class="stamp">2026-10-17 09:12</td><td>管理员</td><td>修改转换配置</td><td>启用 · 并发 2</td></tr>
+                  <tr><td class="stamp">2026-10-16 22:11</td><td class="num">139****8812</td><td>提交公开申请</td><td>公开内容 #3f8a1b02</td></tr>
+                  <tr><td class="stamp">2026-10-16 21:40</td><td>管理员</td><td>审核公开内容</td><td>公开内容 #3f8a1b02 · 已公开</td></tr>
+                  <tr><td class="stamp">2026-10-15 18:03</td><td class="num">137****0455</td><td>清空并停用云空间</td><td>—</td></tr>
+                </tbody>
+              </table>
+              <div class="pager"><span>共 200 条</span><i>‹</i><i class="on">1</i><i>2</i><i>›</i></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 文档转换 ============ -->
+  <section class="screen" id="converter">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">豹</span><div><b>海豹办公</b><span>云端管理控制台</span></div></div>
+        <span class="nav-caption">工作台</span>
+        <nav>
+          <button type="button" class="nav-item"><span class="nav-index">01</span>运行概览</button>
+          <button type="button" class="nav-item"><span class="nav-index">02</span>账号与用量</button>
+          <button type="button" class="nav-item"><span class="nav-index">03</span>演示模板审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">04</span>知识内容审核</button>
+          <button type="button" class="nav-item"><span class="nav-index">05</span>操作记录</button>
+          <button type="button" class="nav-item active"><span class="nav-index">06</span>文档转换</button>
+        </nav>
+        <div class="sidebar-note"><b>私有资料保持加密</b><p>此工作台仅审核用户主动发布的公开资料。</p></div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="breadcrumb">海豹办公 <span>/</span> 管理工作台</span>
+          <div class="topbar-actions"><span class="avatar">管</span><span>管理员</span><button type="button" class="btn" style="border:0;background:transparent;color:#4c5b72">退出登录</button></div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div><span class="eyebrow">云端管理</span><h1>文档转换</h1><p>管理手机兼容格式转换、访问令牌与任务状态</p></div>
+          </div>
+          <div class="filters"><button type="button" class="btn">刷新转换状态</button><button type="button" class="btn">测试真实文档转换</button></div>
+          <div class="converter-stats">
+            <div class="stat-card"><span>转换服务</span><strong style="font-size:26px">已启用</strong><p>LibreOffice 7.4.7.2</p></div>
+            <div class="stat-card"><span>正在运行 / 并发上限</span><strong>1<small>/ 2</small></strong><p>最近任务仅记录格式、大小与结果</p></div>
+            <div class="stat-card"><span>本次启动成功 / 失败</span><strong>182<small>/ 3</small></strong><p>服务重启后此统计重新计数</p></div>
+          </div>
+          <div class="grid-2">
+            <div class="card"><div class="card-head"><h2>转换接口与访问令牌</h2></div><div class="card-body">
+              <dl class="detail"><div><dt>手机服务地址</dt><dd>https://seal.xingmasoft.com/api/office-converter</dd></div><div><dt>访问令牌</dt><dd>已配置 · 指纹 a3f2c8d1</dd></div><div><dt>接口</dt><dd>GET /v1/capabilities<br/>POST /v1/convert</dd></div></dl>
+              <p class="note">手机设置 → 文档格式兼容，填写此地址和访问令牌。每次上传正文前由用户确认；任务结束后删除正文临时文件。</p>
+            </div></div>
+            <div class="card"><div class="card-head"><h2>运行配置</h2></div><div class="card-body">
+              <dl class="detail"><div><dt>接收新的转换请求</dt><dd>开启</dd></div><div><dt>同时处理任务数</dt><dd>2 个</dd></div><div><dt>单文件限制 / 转换超时</dt><dd>20 MiB / 90 秒</dd></div><div><dt>最后真实转换测试</dt><dd>通过 · 2026-10-16 21:05</dd></div></dl>
+              <p class="note">暂停会拒绝新请求，已经开始的任务继续完成。宏只导入正文，不执行或回写宏。设置与令牌重置会记入后台操作记录。</p>
+            </div></div>
+          </div>
+          <div class="card" style="margin-top:24px"><div class="card-head"><h2>近期转换任务</h2><span class="count">本次启动最多 100 条</span></div>
+            <div class="card-body">
+              <div class="toolbar">
+                <label class="search"><span>⌕</span><input type="text" value="" placeholder="搜索格式、结果或失败原因"/></label>
+                <span class="count">匹配 12 / 100 条</span>
+              </div>
+              <table>
+                <thead><tr><th>开始时间</th><th>格式</th><th class="num">文件大小</th><th class="num">用时</th><th>结果</th><th>原因</th></tr></thead>
+                <tbody>
+                  <tr><td class="stamp">2026-10-17 09:30</td><td class="mono">DOC → DOCX</td><td class="num">1.24 MiB</td><td class="num">2.18 秒</td><td><span class="pill ok">成功</span></td><td>—</td></tr>
+                  <tr><td class="stamp">2026-10-17 09:12</td><td class="mono">PPT → PPTX</td><td class="num">8.05 MiB</td><td class="num">6.42 秒</td><td><span class="pill ok">成功</span></td><td>—</td></tr>
+                  <tr><td class="stamp">2026-10-16 22:47</td><td class="mono">XLS → XLSX</td><td class="num">0.86 MiB</td><td class="num">1.03 秒</td><td><span class="pill bad">失败</span></td><td>输入文件受密码保护</td></tr>
+                </tbody>
+              </table>
+              <p class="toolbar-note">不记录文件名、正文、访问令牌或私有云资料。此列表用于检查转换成功率与失败原因。</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 规范 ============ -->
+  <section class="screen" id="spec">
+    <div class="spec">
+      <h1>云端管理控制台 · 视觉规范</h1>
+      <p>与生产页面（server/admin/overlay/App.vue）同源：冷色温度、单一品牌蓝、白卡片 + 浅描边、数字等宽对齐。仅调整排版节奏、层次与列表工具条，不改变信息架构与审核流程。</p>
+
+      <h2>颜色</h2>
+      <div class="swatches">
+        <div class="swatch"><div class="fill" style="background:#142e57"></div><div class="meta"><b>侧栏深蓝</b>#142e57</div></div>
+        <div class="swatch"><div class="fill" style="background:#2463eb"></div><div class="meta"><b>品牌蓝 / 主操作</b>#2463eb</div></div>
+        <div class="swatch"><div class="fill" style="background:#eef3ff"></div><div class="meta"><b>品牌浅底</b>#eef3ff</div></div>
+        <div class="swatch"><div class="fill" style="background:#f4f6f9"></div><div class="meta"><b>页面画布</b>#f4f6f9</div></div>
+        <div class="swatch"><div class="fill" style="background:#e9eef5"></div><div class="meta"><b>描边</b>#e9eef5</div></div>
+        <div class="swatch"><div class="fill" style="background:#18233b"></div><div class="meta"><b>正文</b>#18233b</div></div>
+        <div class="swatch"><div class="fill" style="background:#64748b"></div><div class="meta"><b>次要文字</b>#64748b</div></div>
+        <div class="swatch"><div class="fill" style="background:#248966"></div><div class="meta"><b>成功</b>#248966</div></div>
+        <div class="swatch"><div class="fill" style="background:#af7620"></div><div class="meta"><b>等待 / 警告</b>#af7620</div></div>
+        <div class="swatch"><div class="fill" style="background:#bc4954"></div><div class="meta"><b>失败 / 拒绝</b>#bc4954</div></div>
+      </div>
+
+      <h2>字体与层级</h2>
+      <div class="type-row"><code>28 / 650 · 页面标题</code><span style="font-size:28px;font-weight:650">账号与用量</span></div>
+      <div class="type-row"><code>17 / 650 · 卡片标题</code><span style="font-size:17px;font-weight:650">最近操作记录</span></div>
+      <div class="type-row"><code>14 / 400 · 正文与表格</code><span>私有文件名、正文与资料索引以密文保存</span></div>
+      <div class="type-row"><code>13 / 400 · 说明文字</code><span style="font-size:13px;color:#788397">查看云端操作与审核记录</span></div>
+      <div class="type-row"><code>12 / 600 · 表头与标签</code><span style="font-size:12px;font-weight:600;color:#5b6b84">最后一次操作时间</span></div>
+      <div class="type-row"><code>数字 · tabular-nums</code><span class="num" style="font-size:18px">138****0000 · 1 842.60 MB · 2026-10-17 09:36</span></div>
+
+      <h2>组件状态</h2>
+      <div class="demo-row">
+        <button type="button" class="btn primary">登录管理后台</button>
+        <button type="button" class="btn">刷新数据</button>
+        <button type="button" class="btn danger">下架</button>
+        <span class="pill ok">已开通</span><span class="pill">关闭</span><span class="pill warn">待审核</span><span class="pill bad">已拒绝</span>
+        <span class="badge ok">已连接</span><span class="badge warn">未配置</span>
+      </div>
+      <div class="demo-row">
+        <label class="search" style="max-width:340px"><span>⌕</span><input type="text" placeholder="搜索号码片段、操作类型或记录内容"/></label>
+        <span class="select">全部动作 ▾</span>
+      </div>
+
+      <h2>列表规范</h2>
+      <p style="font-size:13px;color:#788397;margin:0">每个列表页顶部固定一条工具条：左为搜索框（占满 360px 上限），中为筛选，右为结果计数；表格表头浅底 #f8fafd、行高 14px 内边距、悬停行 #fafcff；时间列使用 <span class="num">YYYY-MM-DD HH:mm</span> 等宽格式；状态使用圆角标签（12px 文字，高 24px）；底部为分页与总数。</p>
+    </div>
+  </section>
+
+<script>
+  const bar = document.getElementById('screens')
+  bar.addEventListener('click', event => {
+    const button = event.target.closest('button[data-target]')
+    if (!button) return
+    for (const item of bar.querySelectorAll('button')) item.setAttribute('aria-pressed', String(item === button))
+    for (const screen of document.querySelectorAll('.screen')) screen.classList.toggle('active', screen.id === button.dataset.target)
+    window.scrollTo(0, 0)
+  })
+</script>
+</body>
+</html>
