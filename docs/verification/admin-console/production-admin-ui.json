@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "checks": [
+    "正式 HTTPS 站点返回 200",
+    "新版管理前端资产在站点 CSP 下加载，字节数与本地构建一致（609558 / 11533）",
+    "登录表单、品牌标识与主色渲染",
+    "未登录管理接口返回 401",
+    "公开转换能力接口返回 200"
+  ],
+  "screenshots": [
+    "production-admin-login.png",
+    "admin-users-1440.png",
+    "admin-audit-1440.png",
+    "admin-converter-1440.png"
+  ],
+  "notes": [
+    "生产管理员密码不持有，未执行登录后的线上操作；登录后界面操作由本地 Electron 验收覆盖（见 admin-ui.json）"
+  ]
+}

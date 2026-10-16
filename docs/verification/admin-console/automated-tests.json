@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "adminUiBuild": {
+    "command": "node server/admin/build.cjs",
+    "output": "server/admin/dist"
+  },
+  "backend": {
+    "command": "npm --prefix server test",
+    "passed": 13,
+    "failed": 0
+  },
+  "converterProtocol": {
+    "command": "node --test server/converter/test.cjs",
+    "passed": 3,
+    "failed": 0
+  },
+  "adminBrowser": {
+    "runner": "scripts/verify-admin-experience.cjs",
+    "passed": 36,
+    "report": "admin-ui.json"
+  }
+}

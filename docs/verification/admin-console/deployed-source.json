@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "release": "1.9.11-adminui-20261017-002104",
+  "releaseDir": "/www/wwwroot/seal.xingmasoft.com/releases/1.9.11-adminui-20261017-002104",
+  "previousRelease": "releases/1.9.11-converter-20261011-142631",
+  "service": {
+    "name": "seal-cloud.service",
+    "restartedAt": "2026-10-17 00:22:32 +08:00",
+    "state": "active"
+  },
+  "checks": [
+    {
+      "file": "server/index.cjs",
+      "sha256": "92a191f208c7d443d94a3abedee5e794dcef076f9f9e0e8dec4c2005b12162bf"
+    },
+    {
+      "file": "server/admin/dist/index.html",
+      "md5": "58983200413a951adeb31fd5e488f828"
+    },
+    {
+      "file": "server/admin/dist/assets/index-DviUCKDN.js",
+      "md5": "eed7eb5ec1c8d030d2c4713efbd84e67",
+      "sha256": "31801ea6be3d198040861ea31926d0bfe7cbc6ff28610a01321b8f420fac58d5"
+    },
+    {
+      "file": "server/admin/dist/assets/index-tu6UnV5t.css",
+      "md5": "efb9f7fb2b81a5ffaf1739063e4d8c3f",
+      "sha256": "01036df67c7f67d22af5c54bd712c16c206f89977f8e7fee58f15874d2629b90"
+    }
+  ],
+  "nginxSiteConfMd5": "b060e677f0a2219081a54d8ee3e0c492",
+  "rollback": "cd /www/wwwroot/seal.xingmasoft.com && ln -sfn releases/1.9.11-converter-20261011-142631 current && systemctl restart seal-cloud.service"
+}

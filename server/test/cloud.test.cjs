@@ -36,6 +36,7 @@ test('默认关闭、协议必需、账号隔离、实际占用硬限制及管�
   const overview=(await f.request('/v1/admin/overview',null,admin.body.token)).body
   assert.equal(overview.users.length,2)
   assert.deepEqual(overview.users.map(u=>u.phone).sort(),['138****0001','138****0002'])
+  assert.ok(overview.users.every(u=>u.created>0&&u.lastAction>0))
   assert.ok(!JSON.stringify(overview).includes('13800000001'));assert.ok(!JSON.stringify(overview).includes('13800000002'))
 })
 test('真实客户端加密、恢复密钥、下载解密、重命名、公开撤回与清空停用',async t=>{
