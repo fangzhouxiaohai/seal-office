@@ -1,7 +1,6 @@
 // 表格数据模型：单元格、格式与工作表的读写与重算。
 // 全部为纯函数，返回新的工作表对象，便于配合撤销重做使用。
 
-import { 求值公式 } from './formula'
 import {
   展开区域,
   生成地址,
@@ -9,7 +8,9 @@ import {
   解析地址,
   type 单元格位置,
 } from './address'
-import { 格式化数字, type 数字格式 } from './numberFormat'
+import { 格式化数字, 格式化来源数字, type 数字格式 } from './numberFormat'
+import { 应用结构引用调整, 标记结构调整 } from './structureReferences'
+import { 计算溢出工作簿 } from './spillCalculation'
 
 export interface CellFormat {
   字体?: string
@@ -23,6 +24,8 @@ export interface CellFormat {
   垂直对齐?: 'top' | 'middle' | 'bottom'
   自动换行?: boolean
   数字格式?: 数字格式
+  /** 来源 OOXML 数字格式代码；日期、时间、科学计数、分数和自定义代码保持原文。 */
+  数字格式代码?: string
   小数位?: number
   边框?: { 上?: boolean; 下?: boolean; 左?: boolean; 右?: boolean }
   边框颜色?: { 上?: string; 下?: string; 左?: string; 右?: string }
@@ -39,6 +42,17 @@ export interface SheetCell {
   显示值: string
   /** 未经显示格式转换的公式结果，用于引用和 XLSX 数值缓存。 */
   计算值?: number | string
+  /** 来源 XLSX 的公式与类型化缓存；当前引擎未支持时仍可无损保存。 */
+  公式来源?: { 原始值: string; 结果?: number | string | boolean | { error: string }; 数组范围?: string; 动态数组?: boolean; 数组缓存?: Record<string, number | string | boolean | { error: string }> }
+  /** 来源缓存可能已过期，不能把它呈现为本机重新计算的结果。 */
+  公式状态?: '来源缓存' | '依赖缓存' | '待计算'
+  /** Derived spill cells never own an editable expression. Rebuilt on every recalculation. */
+  溢出锚点?: string
+  溢出范围?: string
+  溢出错误?: string
+  动态数组?: boolean
+  布尔结果?: boolean
+  计算错误?: boolean
   格式: CellFormat
   /** 从表格文件导入的文本单元格类型，未编辑时保持原始类型 */
   值类型?: '文本'
@@ -72,6 +86,10 @@ export const 默认页面设置: 页面设置 = { 页边距: '常规', 方向: '
 export interface Sheet {
   id: string
   name: string
+  /** 整个工作簿共用的日期基准，来源为 1904 时保留。 */
+  日期系统1904?: boolean
+  /** Explicit workbook calculation semantics. Omitted means the default Excel mode. */
+  公式兼容模式?: 'Excel' | 'WPS'
   /** 键为地址，例如 A1；未出现的地址视为空单元格 */
   单元格: Record<string, SheetCell>
   行数: number
@@ -150,6 +168,8 @@ export function 检查工作表更新(原表: Sheet, 新表: Sheet, 允许解除
     const 原值 = 原表.单元格[地址]?.原始值 ?? ''
     const 新值 = 新表.单元格[地址]?.原始值 ?? ''
     if (原值 === 新值) continue
+    const 锚点 = 原表.单元格[地址]?.溢出锚点
+    if (锚点 && 原表.行数 === 新表.行数 && 原表.列数 === 新表.列数 && 原表.单元格[锚点]?.原始值 === 新表.单元格[锚点]?.原始值) return `${地址} 是动态数组结果，请编辑锚点 ${锚点}`
     const 规则 = 新表.单元格[地址]?.数据验证 ?? 原表.单元格[地址]?.数据验证
     const 待验证值 = 新值.startsWith('=') ? String(新表.单元格[地址]?.计算值 ?? 新表.单元格[地址]?.显示值 ?? '') : 新值
     if (规则 && !验证输入(待验证值, 规则)) return `${地址} 不符合数据验证规则`
@@ -186,7 +206,7 @@ export function 检查工作簿更新(原值: readonly Sheet[], 新值: readonly
 }
 
 /** 把原始值按格式渲染为展示值 */
-function 渲染原始值(原始值: string, 格式: CellFormat): string {
+function 渲染原始值(原始值: string, 格式: CellFormat, 日期系统1904 = false): string {
   if (原始值.length === 0) {
     return ''
   }
@@ -194,6 +214,7 @@ function 渲染原始值(原始值: string, 格式: CellFormat): string {
   if (!Number.isFinite(数值)) {
     return 原始值
   }
+  if (格式.数字格式代码) return 格式化来源数字(数值, 格式.数字格式代码, 日期系统1904)
   const 数字格式 = 格式.数字格式 ?? '常规'
   if (数字格式 === '常规') {
     return 原始值
@@ -206,55 +227,17 @@ function 渲染原始值(原始值: string, 格式: CellFormat): string {
  * 求值过程中维护正在求值的地址集合，用于检出循环引用。
  * 正在求值集合在所有单元格求值过程中共享，确保跨单元格循环引用可被检测。
  */
-export function 重算工作表(工作表: Sheet): Sheet {
-  const 缓存 = new Map<string, number | string>()
-  const 正在求值 = new Set<string>()
+export function 重算工作表(工作表: Sheet, 工作簿?: readonly Sheet[]): Sheet {
+  const 来源 = 工作簿 ? 工作簿.map(表 => 表.id === 工作表.id ? 工作表 : 表) : [工作表]
+  const result = 计算溢出工作簿(来源, 渲染原始值).find(表 => 表.id === 工作表.id)!
+  return result === 工作表 ? { ...result, 单元格: { ...result.单元格 } } : result
+}
 
-  const 求计算值 = (地址: string): number | string => {
-    const 已缓存 = 缓存.get(地址)
-    if (已缓存 !== undefined) {
-      return 已缓存
-    }
-    const 单元 = 工作表.单元格[地址]
-    if (单元 === undefined) {
-      return ''
-    }
-    if (正在求值.has(地址)) {
-      return '#错误'
-    }
-    const 原始值 = 单元.原始值
-    if (单元.值类型 === '文本' || !原始值.startsWith('=')) {
-      const 数值 = Number(原始值)
-      const 结果 = 单元.值类型 !== '文本' && 原始值.trim() !== '' && Number.isFinite(数值) ? 数值 : 原始值
-      缓存.set(地址, 结果)
-      return 结果
-    }
-    正在求值.add(地址)
-    const 求值结果 = 求值公式(
-      原始值,
-      (引用地址) => 求计算值(引用地址),
-      正在求值,
-      地址
-    )
-    正在求值.delete(地址)
-    缓存.set(地址, 求值结果.值)
-    return 求值结果.值
-  }
-
-  const 新单元格: Record<string, SheetCell> = {}
-  Object.keys(工作表.单元格).forEach((地址) => {
-    const 单元 = 工作表.单元格[地址]
-    const 计算值 = 求计算值(地址)
-    const 是公式 = 单元.值类型 !== '文本' && 单元.原始值.startsWith('=')
-    const { 计算值: _旧计算值, ...原单元 } = 单元
-    新单元格[地址] = {
-      ...原单元,
-      ...(是公式 ? { 计算值 } : {}),
-      显示值: 单元.值类型 === '文本' ? 单元.原始值 : 渲染原始值(是公式 ? String(计算值) : 单元.原始值, 单元.格式),
-    }
-  })
-
-  return { ...工作表, 单元格: 新单元格 }
+/** 跨表依赖也按原始值递归计算；每张工作表保持原有标识与格式。 */
+export function 重算工作簿(工作簿: Sheet[]): Sheet[] {
+  工作簿 = 应用结构引用调整(工作簿)
+  const 结果 = 计算溢出工作簿(工作簿, 渲染原始值)
+  return 结果.every((表, 索引) => 表 === 工作簿[索引]) ? 工作簿 : 结果
 }
 
 let 工作表标识序号 = 0
@@ -310,19 +293,30 @@ export function 设置页面设置(工作表: Sheet, 更新: Partial<页面设�
 
 /** 写入单元格原始值并重算 */
 export function 写入单元格(工作表: Sheet, 地址: string, 原始值: string): Sheet {
-  const 原单元 = 读取单元格(工作表, 地址)
-  const { 值类型: _导入值类型, ...更新前单元 } = 原单元
+  return 批量写入单元格(工作表, { [地址]: 原始值 })
+}
+
+/** Paste/fill is one transaction: validate ownership before writing and recalculate only after all inputs exist. */
+export function 批量写入单元格(工作表: Sheet, 更新: Record<string, string>): Sheet {
+  for (const 地址 of Object.keys(更新)) {
+    const 原单元 = 读取单元格(工作表, 地址)
+    if (原单元.溢出锚点 && !Object.prototype.hasOwnProperty.call(更新, 原单元.溢出锚点)) throw new Error(`${地址} 是动态数组结果，请编辑锚点 ${原单元.溢出锚点}`)
+  }
   const 新单元格 = { ...工作表.单元格 }
-  if (原始值.length === 0 && Object.keys(原单元.格式).length === 0 && !原单元.批注 && !原单元.数据验证) {
-    delete 新单元格[地址]
-  } else {
-    新单元格[地址] = { ...更新前单元, 原始值, 显示值: 原始值 }
+  for (const [地址, 原始值] of Object.entries(更新)) {
+    const 原单元 = 读取单元格(工作表, 地址)
+    const { 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, 溢出锚点: _溢出源, 溢出范围: _溢出范围, 溢出错误: _溢出错误, 计算值: _计算值, 计算错误: _计算错误, 布尔结果: _布尔, 动态数组: _动态, ...更新前单元 } = 原单元
+    if (原始值.length === 0 && Object.keys(原单元.格式).length === 0 && !原单元.批注 && !原单元.数据验证) delete 新单元格[地址]
+    else 新单元格[地址] = { ...更新前单元, 原始值, 显示值: 原始值 }
   }
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
 }
 
 /** 批量清空单元格内容，保留格式 */
 export function 清空单元格(工作表: Sheet, 地址列表: string[]): Sheet {
+  const 删除锚点 = new Set(地址列表)
+  const 子格 = 地址列表.find(地址 => 工作表.单元格[地址]?.溢出锚点 && !删除锚点.has(工作表.单元格[地址].溢出锚点!))
+  if (子格) throw new Error(`${子格} 是动态数组结果，请编辑锚点 ${工作表.单元格[子格].溢出锚点}`)
   const 新单元格 = { ...工作表.单元格 }
   地址列表.forEach((地址) => {
     const 单元 = 新单元格[地址]
@@ -332,7 +326,7 @@ export function 清空单元格(工作表: Sheet, 地址列表: string[]): Sheet
     if (Object.keys(单元.格式).length === 0 && !单元.批注 && !单元.数据验证) {
       delete 新单元格[地址]
     } else {
-      const { 值类型: _导入值类型, ...保留属性 } = 单元
+      const { 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, ...保留属性 } = 单元
       新单元格[地址] = { ...保留属性, 原始值: '', 显示值: '' }
     }
   })
@@ -371,7 +365,9 @@ export function 设置格式(工作表: Sheet, 区域: string, 格式: Partial<C
   位置列表.forEach((位置) => {
     const 地址 = 生成地址(位置.行, 位置.列)
     const 单元 = 新单元格[地址] ?? { ...空单元格 }
-    新单元格[地址] = { ...单元, 格式: { ...单元.格式, ...格式 } }
+    const 新格式 = { ...单元.格式, ...格式 }
+    if (格式.数字格式 !== undefined || 格式.小数位 !== undefined) delete 新格式.数字格式代码
+    新单元格[地址] = { ...单元, 格式: 新格式 }
   })
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
 }
@@ -500,14 +496,14 @@ export function 插入行(工作表: Sheet, 行: number): Sheet {
       )
     )
   }
-  return {
+  return 标记结构调整(工作表, {
     ...工作表,
     单元格: 新单元格,
     行数: 工作表.行数 + 1,
     行高: 新行高,
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).map((图片) => 图片.行 >= 有效行 ? { ...图片, 行: 图片.行 + 1 } : 图片),
-  }
+  }, '行', 有效行, false)
 }
 
 /**
@@ -549,14 +545,14 @@ export function 插入列(工作表: Sheet, 列: number): Sheet {
       )
     )
   }
-  return {
+  return 标记结构调整(工作表, {
     ...工作表,
     单元格: 新单元格,
     列数: 工作表.列数 + 1,
     列宽: 新列宽,
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).map((图片) => 图片.列 >= 有效列 ? { ...图片, 列: 图片.列 + 1 } : 图片),
-  }
+  }, '列', 有效列, false)
 }
 
 /**
@@ -621,14 +617,14 @@ export function 删除行(工作表: Sheet, 行: number): Sheet {
       )
     }
   }
-  return {
+  return 标记结构调整(工作表, {
     ...工作表,
     单元格: 新单元格,
     行数: 工作表.行数 - 1,
     行高: 新行高,
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).filter((图片) => 图片.行 !== 行).map((图片) => 图片.行 > 行 ? { ...图片, 行: 图片.行 - 1 } : 图片),
-  }
+  }, '行', 行, true)
 }
 
 /**
@@ -693,12 +689,12 @@ export function 删除列(工作表: Sheet, 列: number): Sheet {
       )
     }
   }
-  return {
+  return 标记结构调整(工作表, {
     ...工作表,
     单元格: 新单元格,
     列数: 工作表.列数 - 1,
     列宽: 新列宽,
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).filter((图片) => 图片.列 !== 列).map((图片) => 图片.列 > 列 ? { ...图片, 列: 图片.列 - 1 } : 图片),
-  }
+  }, '列', 列, true)
 }

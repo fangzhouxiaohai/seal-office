@@ -7,17 +7,10 @@ import { 共享校验模块 } from '../scripts/shared-validation-plugin.mjs'
 import { inlineMarketImages } from '../scripts/inline-image-plugin.mjs'
 const directory = fileURLToPath(new URL('.', import.meta.url))
 const pkg = JSON.parse(fs.readFileSync(path.join(directory, '../package.json'), 'utf8'))
-const localPdfWorker = {
-  name: 'seal-local-pdf-worker', enforce: 'pre',
-  transform(source, id) {
-    if (id.replaceAll('\\', '/').endsWith('/renderer/src/pdf/pdfLoader.ts')) return source
-      .replace("import workerUrl from './pdfWorker.ts?worker&url'", `import LocalPdfWorker from '${path.join(directory, 'web/pdfWorker.ts').replaceAll('\\', '/')}?worker&inline'`)
-      .replace('pdfjs.GlobalWorkerOptions.workerSrc = workerUrl', 'if (!pdfjs.GlobalWorkerOptions.workerPort) pdfjs.GlobalWorkerOptions.workerPort = new LocalPdfWorker()')
-  }
-}
 export default defineConfig({
   root: path.join(directory, 'web'), base: './', publicDir: path.join(directory, 'web/public'),
-  plugins: [localPdfWorker, 共享校验模块(), inlineMarketImages(), react()],
+  plugins: [共享校验模块(), inlineMarketImages(), react()],
+  resolve: { alias: [{ find: './pdfWorkerFactory', replacement: path.join(directory, 'web/pdfWorkerFactory.ts') }] },
   esbuild: { charset: 'ascii' },
   define: { __APP_VERSION__: JSON.stringify(pkg.version), __SEAL_PLATFORM__: JSON.stringify(process.env.SEAL_PLATFORM || 'web') },
   worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },

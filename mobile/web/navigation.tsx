@@ -1,14 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { App, Button, Drawer } from 'antd'
 import { useAppStore } from '../../renderer/src/store'
 import { useCloud } from '../../renderer/src/cloud/CloudProvider'
 import { useSettings } from '../../renderer/src/store/settingsStore'
 import Icon from '../../renderer/src/components/Icon'
-import { NAV_GROUPS } from '../../renderer/src/navConfig'
+import { NAV_GROUPS, navigationAvailable } from '../../renderer/src/navConfig'
 import { 通过对话框打开文件 } from '../../renderer/src/fileOpen'
 
 export default function MobileNavigation() {
   const [open, setOpen] = useState(false), store = useAppStore(), cloud = useCloud(), settings = useSettings(), { message, modal } = App.useApp()
+  const route = { module: store.module, navKey: store.navKey, tab: store.activeWorkspaceTabId }
+  const routes = useRef([route]), restoring = useRef(false)
+  useEffect(() => {
+    if (restoring.current) { restoring.current = false; return }
+    if (route.module === 'home' && route.navKey === 'home') { routes.current = [route]; return }
+    const previous = routes.current[routes.current.length - 1]
+    if (JSON.stringify(previous) !== JSON.stringify(route)) routes.current.push(route)
+  }, [route.module, route.navKey, route.tab])
   const navigate = (key: string) => {
     store.goHome()
     store.handleNav(key, (text) => message.info(text))
@@ -18,19 +26,36 @@ export default function MobileNavigation() {
     setOpen(false)
   }
   useEffect(() => {
+    const send = (action: string) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token } })
+    const visible = (node: Element) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden' && getComputedStyle(node).display !== 'none' && !node.querySelector('.ant-zoom-leave,.ant-fade-leave')
     const back = (event: Event) => {
       if (event.defaultPrevented) return
+      event.preventDefault()
       if (open) { setOpen(false); return }
-      const close = document.querySelector<HTMLButtonElement>('.ant-modal-wrap:not([style*="display: none"]) .ant-modal-close, .ant-drawer-open .ant-drawer-close, .ant-drawer-open .assistant-collapse')
-      if (close) { close.click(); return }
+      const overlays = [...document.querySelectorAll('.ant-modal-wrap,.ant-drawer-open')].filter(visible)
+      const top = overlays[overlays.length - 1]
+      if (top) {
+        const close = top.querySelector<HTMLButtonElement>('.ant-modal-close,.ant-drawer-close,.assistant-collapse,.ant-modal-confirm-btns button:not(:disabled):not(.ant-btn-dangerous)')
+        if (close) close.click()
+        return
+      }
       // 不可关闭的恢复密钥/保存对话框仍由用户完成，不跳转到底层首页。
-      if (document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open')) return
       // 先给当前模块处理内部层级，避免监听器注册顺序把子目录直接跳回首页。
       if (!window.dispatchEvent(new Event('seal-before-native-back', {cancelable:true}))) return
-      store.goHome()
+      if (store.module === 'home' && store.navKey === 'home') {
+        void store.刷新工作状态备份().then(result => { if (result.成功) send('back-root'); else message.error(result.错误 || '保存工作区失败，请重试') }).catch(() => message.error('保存工作区失败，请重试'))
+        return
+      }
+      routes.current.pop()
+      const previous = routes.current[routes.current.length - 1]
+      restoring.current = true
+      if (previous?.tab && previous.module !== 'home' && store.workspaceTabs.some(tab => tab.id === previous.tab)) store.selectWorkspaceTab(previous.tab)
+      else store.setModule(previous?.module ?? 'home')
+      store.setNavKey(previous?.navKey ?? 'home')
     }
     const persist = () => { void store.刷新工作状态备份().then((result) => { if (!result.成功) message.error(result.错误 || '保存工作区失败') }).catch((error) => message.error(error instanceof Error ? error.message : '保存工作区失败')) }
-    window.addEventListener('seal-native-back', back); window.addEventListener('seal-persist-workspace', persist)
+    const healthy = () => send('healthy')
+    window.addEventListener('seal-native-back', back); window.addEventListener('seal-persist-workspace', persist); window.addEventListener('seal-native-probe', healthy)
     let lastState = ''
     const report = () => {
       if (!window.sealNative) return
@@ -41,7 +66,7 @@ export default function MobileNavigation() {
     const observer = new MutationObserver(report)
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] })
     report()
-    return () => { observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist) }
+    return () => { observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist); window.removeEventListener('seal-native-probe', healthy) }
   }, [store, open, message])
   return <>
     <nav className="seal-mobile-nav" aria-label="移动工作台导航">
@@ -54,7 +79,7 @@ export default function MobileNavigation() {
       <div className="seal-mobile-create">
         {([{ key: 'word', label: '文字', icon: 'doc-word' }, { key: 'table', label: '表格', icon: 'doc-table' }, { key: 'ppt', label: '演示', icon: 'doc-ppt' }, { key: 'pdf', label: 'PDF', icon: 'doc-pdf' }] as const).map((item) => <Button key={item.key} data-document-type={item.key} onClick={() => { store.createDoc(item.key); setOpen(false) }}><Icon name={item.icon} size={36}/>{item.label}</Button>)}
       </div>
-      <div className="seal-mobile-function-grid">{NAV_GROUPS.flat().filter((item) => item.implemented && !['desktop', 'download'].includes(item.key)).map((item) => <button key={item.key} data-nav-key={item.key} aria-current={store.navKey === item.key ? 'page' : undefined} onClick={() => navigate(item.key)}><Icon name={item.icon} size={32}/><span>{item.key === 'document' ? '应用文档空间' : item.label}</span></button>)}</div>
+      <div className="seal-mobile-function-grid">{NAV_GROUPS.flat().filter((item) => item.implemented && navigationAvailable(item.key) && !['desktop', 'download'].includes(item.key)).map((item) => <button key={item.key} data-nav-key={item.key} aria-current={store.navKey === item.key ? 'page' : undefined} onClick={() => navigate(item.key)}><Icon name={item.icon} size={32}/><span>{item.key === 'document' ? '应用文档空间' : item.label}</span></button>)}</div>
       <div className="seal-mobile-account"><Button onClick={() => { cloud.configure(); setOpen(false) }}>账号与云空间</Button><Button onClick={settings.切换主题}>切换{settings.主题 === '深色' ? '浅' : '深'}色</Button></div>
     </Drawer>
   </>

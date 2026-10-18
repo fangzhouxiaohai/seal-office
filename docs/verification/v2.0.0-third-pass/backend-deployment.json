@@ -1,0 +1,149 @@
+{
+  "passed": true,
+  "version": "2.0.0",
+  "scope": "backend-and-managed-worker",
+  "completed": "2026-10-18T12:17:12.086Z",
+  "publicOrigin": "https://seal.xingmasoft.com",
+  "release": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-realtime-20261018-195452",
+  "previousRelease": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-workerfix-20261018-163947",
+  "stage": {
+    "passed": true,
+    "dependencyVersions": {
+      "@alicloud/dysmsapi20170525": "4.5.0",
+      "@alicloud/openapi-client": "0.4.15",
+      "jszip": "3.10.1",
+      "pdf-lib": "1.17.1",
+      "sql.js": "1.14.1"
+    },
+    "legacyMigrationTables": [
+      "users",
+      "sessions",
+      "nodes",
+      "versions",
+      "uploads",
+      "publications"
+    ],
+    "workerModuleLoad": true,
+    "isolatedWorker": {
+      "passed": true,
+      "uid": 995,
+      "selfTestCount": 4,
+      "pdfValidation": {
+        "pages": 5,
+        "blankPage": 4,
+        "blankText": true,
+        "blankInkPixels": 0,
+        "method": "PyMuPDF text extraction and raster pixels"
+      }
+    }
+  },
+  "cutover": {
+    "success": true,
+    "started": "2026-10-18T12:14:21.915Z",
+    "completed": "2026-10-18T12:14:37.735Z",
+    "workerDirectorySwapped": true,
+    "fullBackup": "/www/backup/seal-cloud/2.0.0-backend-realtime-20261018-195452",
+    "rolledBack": false,
+    "legacyTablesPreserved": true,
+    "productionAccountOperations": 0
+  },
+  "apiCapabilities": {
+    "version": 1,
+    "collaboration": 1,
+    "realtime": 1,
+    "accountConversion": 1,
+    "quota": 300000000,
+    "chunkSize": 1048576,
+    "sms": true,
+    "encryption": "AES-256-GCM",
+    "agreementVersion": "2026-10-08"
+  },
+  "anonymousStatuses": {
+    "conversion/capabilities": 401,
+    "shares": 401,
+    "teams": 401,
+    "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+    "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+  },
+  "worker": {
+    "matchesFrozenRelease": true,
+    "pdfLib": "1.17.1",
+    "ready": true,
+    "enabled": true,
+    "concurrency": 2,
+    "active": 0,
+    "selfTest": {
+      "passed": true,
+      "finishedAt": 1792325825686,
+      "milliseconds": 8789,
+      "checks": [
+        "真实 DOC 二进制输出",
+        "DOC 重开为 DOCX",
+        "中文和前导零保留",
+        "DOCX 转 PDF 且实际页树有效"
+      ]
+    },
+    "selfTestCount": 4
+  },
+  "complexPdf": {
+    "source": "synthetic complex-sections-saved.docx",
+    "sourceBytes": 16745,
+    "bytes": 53479,
+    "sha256": "b3e3daf2810e66dfde76014fa5c32fc24b7b5e0df3a7a541d746c767c0864e2a",
+    "actualEndpoint": "managed /internal/convert, verified after final worker switch",
+    "validation": {
+      "pages": 5,
+      "blankPage": 4,
+      "blankText": true,
+      "blankInkPixels": 0,
+      "method": "actual managed endpoint output, PyMuPDF text+raster"
+    },
+    "stagedIndependentVisualReport": "docs/verification/v2.0.0-third-pass/worker-pdf-visual.json",
+    "localArtifact": ".upgrade-private/realtime-backend-deployment/actual-worker-complex.pdf"
+  },
+  "preservation": {
+    "settings": true,
+    "tokenHash": true,
+    "env": true,
+    "nginx": true,
+    "admin": true,
+    "webPointerAtBackendCompletion": true,
+    "databasePermissions": true,
+    "previousDatabaseTables": [
+      "audit",
+      "codes",
+      "node_tags",
+      "nodes",
+      "publications",
+      "sends",
+      "session_devices",
+      "sessions",
+      "shares",
+      "tags",
+      "team_invites",
+      "team_members",
+      "team_nodes",
+      "team_versions",
+      "teams",
+      "uploads",
+      "users",
+      "versions"
+    ],
+    "differentTables": [],
+    "persistentTablesPreserved": true,
+    "backupMode": "700"
+  },
+  "statistics": {
+    "beforeArchived": true,
+    "workerCountersRestarted": true,
+    "semantics": "Existing worker counters/recent metadata are memory-only and reset when its process restarts. Complete old status and drained status are retained in the private 0700 deployment backup; persistent configuration/tokenHash are unchanged.",
+    "archivePaths": [
+      "worker-status-before.json",
+      "worker-status-drained.json"
+    ]
+  },
+  "productionAccountOperations": 0,
+  "smsRequests": 0,
+  "invitationsSent": 0,
+  "secretHandling": "Existing private connection and pinned SSH host key; no password/token/env contents in this report."
+}

@@ -11,7 +11,7 @@ const pkg = require('../package.json')
 
 const root = path.resolve(__dirname, '..')
 const source = path.join(root, 'release', 'ubuntu', 'linux-unpacked')
-const output = path.join(root, 'release', 'ubuntu', `海豹办公Ubuntu${pkg.version}-amd64.deb`)
+const output = path.join(root, 'release', 'ubuntu', require('./artifact-names.cjs').artifactName('ubuntu', pkg.version))
 const staging = fs.mkdtempSync(path.join(os.tmpdir(), `seal-office-deb-${pkg.version}-`))
 const dataRoot = path.join(staging, 'data')
 const controlRoot = path.join(staging, 'control')
@@ -59,7 +59,7 @@ Terminal=false
 Type=Application
 Icon=sealoffice
 StartupWMClass=sealoffice
-Name[en]=Seal Office
+Name[en]=海豹办公
 Comment=文字、表格、演示和 PDF 办公软件
 MimeType=${MIME类型.join(';')};
 Categories=Office;

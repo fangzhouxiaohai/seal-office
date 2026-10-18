@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "passed": true,
+  "scope": "fifth-pass English artifacts; Chinese product identity preserved",
+  "artifactNames": {
+    "windowsSetup": "seal-office-setup-${version}.exe",
+    "windowsPortable": "seal-office-${version}-portable.exe",
+    "ubuntu": "seal-office-${version}-amd64.deb",
+    "web": "seal-office-${version}-web.zip",
+    "android": "seal-office-${version}-android.apk",
+    "harmony": "seal-office-${version}-harmony.hap"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "bytes": 5628,
+      "sha256": "3466611d40d774dcc1a91daeff02012439aa47d4a0b093134a7bc1b65625eb7d"
+    },
+    {
+      "path": "build/artifact-names.json",
+      "bytes": 310,
+      "sha256": "7c75de15448a862c4fd0942f7b3d8193ec11423caa8f13ab53045af55b53856f"
+    },
+    {
+      "path": "build/electron-ubuntu.cjs",
+      "bytes": 1927,
+      "sha256": "d3e627ce12dc17dac47005c979fbbb72b987dd5e130dc0d5d7b96c48459cef88"
+    },
+    {
+      "path": "build/installer.nsh",
+      "bytes": 1024,
+      "sha256": "9d2f3602cfee6920f2375507abdd0e45a594d4581784adc160667b77e8fe7691"
+    },
+    {
+      "path": "mobile/manifest.json",
+      "bytes": 2795,
+      "sha256": "7bf881d9ca74384745054446f994e85628dd78872b1ca7c7de4a9a7b95743ad4"
+    }
+  ]
+}

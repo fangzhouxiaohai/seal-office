@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "started": "2026-10-18T17:31:05.976Z",
+  "completed": "2026-10-18T17:31:08.213Z",
+  "release": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-diagram-20261019-013031",
+  "previous": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-realtime-20261018-195452",
+  "backup": "/www/backup/seal-cloud/2.0.0-backend-diagram-20261019-013031",
+  "health": {
+    "caps": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymous": {
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401
+    }
+  },
+  "allExistingTablesPreserved": true,
+  "converterRestarted": false,
+  "dependenciesChanged": false,
+  "adminPreserved": true,
+  "adminRelativeLinkAndContentVerified": true,
+  "nginxPreserved": true,
+  "webPreserved": true,
+  "envPreserved": true,
+  "productionAccountOperations": 0,
+  "initialAttempt": {
+    "rolledBack": true,
+    "reason": "The admin symlink resolves through current/admin/dist. The initial guard incorrectly required the resolved directory to stay unchanged after a backend swap. The corrected guard verifies the unchanged link text, unchanged admin bytes and the exact expected new release directory.",
+    "priorServiceHealthVerified": true,
+    "evidence": "backend-initial-rollback.json"
+  }
+}

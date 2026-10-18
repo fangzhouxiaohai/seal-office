@@ -19,3 +19,13 @@ it('演示助手入口打开可处理演示文稿的内置助手', async () => {
     可用.mockRestore()
   }
 })
+
+it('最左侧团队入口进入真实团队导航并显示选中状态', async () => {
+  const navigate = vi.fn(), notify = vi.fn()
+  render(<HomeRail activeKey="team" onNotify={notify} onNavigate={navigate} />)
+  const button = screen.getByRole('button', { name: '团队空间' })
+  await userEvent.click(button)
+  expect(navigate).toHaveBeenCalledWith('team')
+  expect(button).toHaveClass('wps-homerail__item--active')
+  expect(notify).not.toHaveBeenCalled()
+})

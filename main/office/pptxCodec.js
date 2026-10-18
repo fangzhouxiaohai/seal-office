@@ -3,6 +3,7 @@ const { 写入动画, 读取动画, 写入播放扩展, 读取播放扩展, 收�
 const { 读取原生对象 } = require('./pptx/elements')
 const JSZip = require('jszip')
 const { 解码Xml实体 } = require('./xmlEntities')
+const { 规范Office命名空间 } = require('./ooxmlNamespaces')
 const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
@@ -242,6 +243,7 @@ async function 读取pptx(数据) {
   } catch {
     throw new Error('演示文件无效：不是有效的 PPTX 压缩包')
   }
+  await 规范Office命名空间(压缩包, 'ppt')
   const { 幻灯片路径: 文件名, 清单Xml } = await 读取幻灯片路径(压缩包)
   const 幻灯片列表 = []
   const 警告 = new Set()

@@ -6,6 +6,9 @@ const { openStore } = require('./store.cjs')
 const { createSms } = require('./sms.cjs')
 const {validateIsolated:validatePublic}=require('./validateIsolated.cjs')
 const { createConverterAdmin } = require('./converterAdmin.cjs')
+const { createCollaboration } = require('./collaboration.cjs')
+const { createAccountConversion } = require('./accountConversion.cjs')
+const { createRealtime } = require('./realtime.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -15,11 +18,12 @@ const safeEqual = (a, b) => typeof a === 'string' && typeof b === 'string' && a.
 const bytes = value => Buffer.byteLength(value || '')
 const maskPhone = value => String(value || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
 
-async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now } = {}) {
+async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now,conversionTimeout=100000 } = {}) {
   const root = directory || env.SEAL_DATA_DIR || path.join(__dirname, 'data')
   const db = await openStore(root)
-  const objects = path.join(root, 'objects'), incoming = path.join(root, 'incoming')
+  const objects = path.join(root, 'objects'), incoming = path.join(root, 'incoming'), teamObjects = path.join(root,'team-objects')
   fs.mkdirSync(objects, { recursive: true, mode: 0o700 }); fs.mkdirSync(incoming, { recursive: true, mode: 0o700 })
+  fs.mkdirSync(teamObjects,{recursive:true,mode:0o700})
   const secretFile = path.join(root, 'otp.secret')
   if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, randomBytes(32), { mode: 0o600 })
   const secret = fs.readFileSync(secretFile)
@@ -32,8 +36,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const codeHash = (phone, purpose, code) => createHmac('sha256', secret).update(`${phone}:${purpose}:${code}`).digest('hex')
   const audit = (user, action, detail = '') => db.run('INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)', [user, action, clock(), detail])
   const converter = createConverterAdmin({ directory: root, env })
+  const accountConversion=createAccountConversion({db,converter,clock,timeoutMs:conversionTimeout})
   const publicationMeta="LENGTH(CAST(COALESCE(text,'')||COALESCE(cover,'')||title||description||COALESCE(category,'')||COALESCE(name,'') AS BLOB))"
-  const usage = user => Number(db.one('SELECT COALESCE(SUM(bytes),0) AS n FROM versions WHERE user_id=?', [user]).n) + Number(db.one(`SELECT COALESCE(SUM(bytes+${publicationMeta}),0) AS n FROM publications WHERE user_id=?`, [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) AS n FROM nodes WHERE user_id=?', [user]).n)
+  const collaborationUsage=user=>Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(envelope AS BLOB))),0) n FROM shares WHERE owner_id=?',[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) n FROM tags WHERE user_id=?',[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) n FROM teams WHERE owner_id=?',[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(m.envelope AS BLOB))),0) n FROM team_members m JOIN teams t ON t.id=m.team_id WHERE t.owner_id=?',[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(i.envelope AS BLOB))),0) n FROM team_invites i JOIN teams t ON t.id=i.team_id WHERE t.owner_id=?',[user]).n)
+  const realtimeUsage=user=>Number(db.one("SELECT COALESCE(SUM(LENGTH(seed)+LENGTH(COALESCE(checkpoint,''))),0) n FROM realtime_rooms WHERE owner_id=?",[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(u.cipher)),0) n FROM realtime_updates u JOIN realtime_rooms r ON r.id=u.room_id WHERE r.owner_id=?',[user]).n)+Number(db.one('SELECT COUNT(*)*160 n FROM realtime_receipts p JOIN realtime_rooms r ON r.id=p.room_id WHERE r.owner_id=?',[user]).n)
+  const usage = user => realtimeUsage(user) + collaborationUsage(user) + Number(db.one('SELECT COALESCE(SUM(bytes),0) AS n FROM versions WHERE user_id=?', [user]).n) + Number(db.one(`SELECT COALESCE(SUM(bytes+${publicationMeta}),0) AS n FROM publications WHERE user_id=?`, [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) AS n FROM nodes WHERE user_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(v.bytes),0) n FROM team_versions v JOIN teams t ON t.id=v.team_id WHERE t.owner_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(n.meta AS BLOB))),0) n FROM team_nodes n JOIN teams t ON t.id=n.team_id WHERE t.owner_id=?', [user]).n)
   const reservation = user => Number(db.one('SELECT COALESCE(SUM(total),0) AS n FROM uploads WHERE user_id=?', [user]).n)
   const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
   const nodeFor = (id, user, allowDeleted = false) => {
@@ -62,14 +69,16 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   }
   const unlink = filename => { try { fs.unlinkSync(filename) } catch (e) { if (e.code !== 'ENOENT') throw e } }
   const clearOrphans=()=>{
-    const blobs=new Set(db.query("SELECT blob FROM versions UNION SELECT blob FROM publications WHERE status!='withdrawn'").map(n=>n.blob)),uploads=new Set(db.query('SELECT id FROM uploads').map(n=>n.id))
+    const blobs=new Set(db.query("SELECT blob FROM versions UNION SELECT blob FROM publications WHERE status!='withdrawn'").map(n=>n.blob)),uploads=new Set(db.query('SELECT id FROM uploads').map(n=>n.id)),teamBlobs=new Set(db.query('SELECT blob FROM team_versions').map(n=>n.blob))
     for(const filename of fs.readdirSync(objects))if(uuid(filename)&&!blobs.has(filename))unlink(path.join(objects,filename))
     for(const filename of fs.readdirSync(incoming))if(uuid(filename)&&!uploads.has(filename))unlink(path.join(incoming,filename))
+    for(const filename of fs.readdirSync(teamObjects))if(uuid(filename)&&!teamBlobs.has(filename))unlink(path.join(teamObjects,filename))
   }
   // Expired reservations cannot consume quota forever. Restart keeps completed chunks resumable.
   db.transaction(() => {
     for (const u of db.query('SELECT id FROM uploads WHERE created<?', [clock() - 86400000])) { unlink(path.join(incoming, u.id)); db.run('DELETE FROM uploads WHERE id=?', [u.id]) }
     db.run('DELETE FROM sessions WHERE expires<?', [clock()]); db.run('DELETE FROM sends WHERE time<?', [clock() - 86400000])
+    db.run('DELETE FROM session_devices WHERE session_hash NOT IN (SELECT hash FROM sessions)')
   })
   clearOrphans()
   const cleanup=()=>db.transaction(()=>{
@@ -79,20 +88,24 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       for(const u of db.query('SELECT id FROM uploads WHERE node_id=?',[n.id]))unlink(path.join(incoming,u.id));db.run('DELETE FROM uploads WHERE node_id=?',[n.id]);db.run('DELETE FROM nodes WHERE id=?',[n.id])
     }
     db.run('DELETE FROM codes WHERE expires<?',[clock()]);db.run('DELETE FROM sessions WHERE expires<?',[clock()]);db.run('DELETE FROM sends WHERE time<?',[clock()-86400000])
+    db.run('DELETE FROM session_devices WHERE session_hash NOT IN (SELECT hash FROM sessions)')
   })
-  const cleanupTimer=setInterval(()=>{try{cleanup();clearOrphans()}catch{console.error('Cloud cleanup failed; retry on next maintenance cycle')}},3600000);cleanupTimer.unref()
+  const cleanupTimer=setInterval(()=>{try{cleanup();db.transaction(()=>realtime.cleanup());clearOrphans()}catch{console.error('Cloud cleanup failed; retry on next maintenance cycle')}},3600000);cleanupTimer.unref()
   function streamObject(blob,res){const filename=path.join(objects,blob);if(!fs.existsSync(filename))fail(503,'文件暂时不可用，请联系维护人员');const stream=fs.createReadStream(filename);stream.on('error',()=>res.destroy());return stream.pipe(res)}
   async function body(req, limit = 2 * CHUNK) {
     const chunks = []; let size = 0
     for await (const chunk of req) { size += chunk.length; if (size > limit) fail(413, '请求内容过大'); chunks.push(chunk) }
+    if(req._sealSessionHash&&!db.one('SELECT hash FROM sessions WHERE hash=? AND expires>?',[req._sealSessionHash,clock()]))fail(401,'设备会话已撤销或过期')
     return Buffer.concat(chunks)
   }
+  const collaboration = createCollaboration({ db, clock, objects, teamObjects, usage, reservation, quota, ensureDisk, nodeFor, streamObject, audit })
+  const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Content-Security-Policy', "default-src 'none'")
     try {
       const url = new URL(req.url, 'http://localhost'), route = url.pathname, method = req.method
-      const json = async limit => { const raw = await body(req, limit); if (!route.startsWith('/v1/admin/') && !route.startsWith('/v1/auth/') && !route.endsWith('/report') && route !== '/v1/space/enable' && user && !db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled) fail(403,'云空间已停用'); try { return JSON.parse(raw.toString('utf8')) } catch { fail(400, '请求数据无效') } }
+      const json = async limit => { const raw = await body(req, limit); if (!route.startsWith('/v1/admin/') && !route.startsWith('/v1/auth/') && !route.startsWith('/v1/devices') && !route.endsWith('/report') && route !== '/v1/space/enable' && user && !db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled) fail(403,'云空间已停用'); try { return JSON.parse(raw.toString('utf8')) } catch { fail(400, '请求数据无效') } }
       const reply = value => { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify(value)) }
       if(route==='/v1/admin/login'&&method==='POST'){
         const input=await json(),ip=clientIp(req),item=adminAttempts.get(ip)||{count:0,time:clock()}
@@ -119,9 +132,9 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
-      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
+      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
-      const session = bearer && db.one('SELECT * FROM sessions WHERE hash=? AND expires>?', [hash(bearer), clock()])
+      const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
       const user = session && db.one('SELECT * FROM users WHERE id=?', [session.user_id])
       if (route === '/v1/auth/code' && method === 'POST') {
         const input = await json(), purpose = input.purpose || 'login', phone = purpose === 'purge' ? user?.phone : input.phone
@@ -141,7 +154,8 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         const u = db.transaction(() => {
           let row = db.one('SELECT * FROM users WHERE phone=?', [input.phone])
           if (!row) { db.run('INSERT INTO users(id,phone,created) VALUES(?,?,?)',[randomUUID(),input.phone,clock()]); row=db.one('SELECT * FROM users WHERE phone=?',[input.phone]) }
-          db.run('INSERT INTO sessions VALUES(?,?,?)',[hash(token),row.id,clock()+30*86400000]); audit(row.id,'login'); return row
+          const deviceId=uuid(input.deviceId)?input.deviceId:randomUUID(),deviceName=typeof input.deviceName==='string'&&input.deviceName.trim()?input.deviceName.trim().slice(0,80):'当前设备'
+          db.run('INSERT INTO sessions VALUES(?,?,?)',[hash(token),row.id,clock()+30*86400000]);db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)',[hash(token),row.id,deviceId,deviceName,clock(),clock()]); audit(row.id,'login'); return row
         })
         return reply({ token, account: account(u) })
       }
@@ -153,6 +167,12 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         return reply({ id:p.id, title:p.title, name:p.name, text:p.text, kind:p.kind, description:p.description })
       }
       if (!user) fail(401, '登录已过期，请重新登录')
+      req._sealSessionHash=session.hash
+      if(!session.device_id)db.transaction(()=>db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)',[session.hash,user.id,randomUUID(),'已登录设备',clock(),clock()]))
+      if(clock()-session.last_seen>60000)db.transaction(()=>db.run('UPDATE session_devices SET last_seen=? WHERE session_hash=?',[clock(),session.hash]))
+      if(await realtime.handle({route,method,req,res,user,session,json,reply}))return
+      if(await collaboration.handle({route,method,req,res,user,session:db.one('SELECT s.*,d.device_id FROM sessions s JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=?',[session.hash]),json,body,reply}))return
+      if(await accountConversion.handle({route,method,req,res,user,session,json,reply}))return
       const reportMatch=/^\/v1\/public\/([0-9a-f-]{36})\/report$/.exec(route)
       if(reportMatch&&method==='POST'){
         const input=await json();if(typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>500)fail(400,'请填写 1–500 字的举报理由')
@@ -161,7 +181,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         db.transaction(()=>audit(user.id,'public-report',reportMatch[1]+':'+input.reason.trim()));return reply({received:true})
       }
       if (route === '/v1/me' && method === 'GET') return reply(account(user))
-      if (route === '/v1/auth/logout' && method === 'POST') { db.transaction(()=>db.run('DELETE FROM sessions WHERE hash=?',[hash(bearer)])); return reply({ loggedOut:true }) }
+      if (route === '/v1/auth/logout' && method === 'POST') { db.transaction(()=>{db.run('DELETE FROM sessions WHERE hash=?',[hash(bearer)]);db.run('DELETE FROM session_devices WHERE session_hash=?',[hash(bearer)])}); return reply({ loggedOut:true }) }
       if (route === '/v1/space/enable' && method === 'POST') {
         const input=await json(); if(input.agreementVersion!=='2026-10-08'||input.consent!==true||typeof input.envelope!=='string'||bytes(input.envelope)>4096) fail(400,'请同意云服务协议并创建加密密钥')
         if(user.enabled) return reply(account(user))
@@ -174,11 +194,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       if (route === '/v1/space/purge' && method === 'POST') {
         const input=await json(); if(input.confirm!=='清空并停用云空间') fail(400,'请确认清空操作');verifyCode(user.phone,'purge',input.code)
         const blobs=db.query('SELECT blob FROM versions WHERE user_id=? UNION SELECT blob FROM publications WHERE user_id=?',[user.id,user.id]), pending=db.query('SELECT id FROM uploads WHERE user_id=?',[user.id])
-        db.transaction(()=>{for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL WHERE id=?',[user.id]);audit(user.id,'purge-space')})
-        for(const b of blobs)unlink(path.join(objects,b.blob));for(const u of pending)unlink(path.join(incoming,u.id))
+        db.transaction(()=>{realtime.purgeUser(user.id);blobs.push(...collaboration.purgeUser(user.id));for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL WHERE id=?',[user.id]);audit(user.id,'purge-space')})
+        for(const b of blobs)unlink(path.join(b.team?teamObjects:objects,b.blob));for(const u of pending)unlink(path.join(incoming,u.id))
         return reply({enabled:false,autosave:false,deleted:true,backupRetentionDays:7})
       }
-      if (route === '/v1/nodes' && method === 'GET') return reply({items:db.query('SELECT id,parent,kind,meta,version,deleted,updated FROM nodes WHERE user_id=? ORDER BY updated DESC',[user.id])})
+      if (route === '/v1/nodes' && method === 'GET') return reply({items:db.query('SELECT id,parent,kind,meta,version,deleted,updated FROM nodes WHERE user_id=? ORDER BY updated DESC',[user.id]).map(n=>({...n,tagIds:db.query('SELECT tag_id FROM node_tags WHERE node_id=? AND user_id=?',[n.id,user.id]).map(t=>t.tag_id)}))})
       if (route === '/v1/nodes' && method === 'POST') {
         const input=await json(20*CHUNK); if(!uuid(input.id)||!['file','folder','library','knowledge'].includes(input.kind)||typeof input.meta!=='string'||bytes(input.meta)>18*CHUNK) fail(400,'云文件信息无效或索引超过 18 MiB')
         ensureDisk(bytes(input.meta));parentFor(input.parent,user.id);if(usage(user.id)+reservation(user.id)+bytes(input.meta)>quota)fail(413,'云空间不足')
@@ -205,6 +225,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       }
       if(route==='/v1/uploads'&&method==='POST'){
         const input=await json();if(input.automatic&&!db.one('SELECT autosave FROM users WHERE id=?',[user.id]).autosave)fail(403,'自动保存已关闭');const n=nodeFor(input.nodeId,user.id);if(!['file','knowledge'].includes(n.kind)||!Number.isSafeInteger(input.bytes)||input.bytes<28||input.bytes>quota||input.expected!==n.version)fail(input.expected!==n.version?409:400,'文件版本冲突或大小无效')
+        if(db.one("SELECT id FROM realtime_rooms WHERE kind='share' AND node_id=?",[n.id]))fail(409,'文件已启用实时共同编辑，请从共享文档同步；旧版整文件上传不会覆盖实时内容')
         ensureDisk(input.bytes);if(usage(user.id)+reservation(user.id)+input.bytes>quota)fail(413,'云空间不足，请清理历史版本或回收站')
         const id=randomUUID();fs.writeFileSync(path.join(incoming,id),Buffer.alloc(0),{mode:0o600});db.transaction(()=>db.run('INSERT INTO uploads(id,user_id,node_id,expected,total,created,automatic) VALUES(?,?,?,?,?,?,?)',[id,user.id,n.id,input.expected,input.bytes,clock(),input.automatic?1:0]));return reply({id,offset:0,chunkSize:CHUNK})
       }
@@ -220,6 +241,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         }
         if(method==='POST'&&umatch[2]){
           const n=nodeFor(u.node_id,user.id);if(n.version!==u.expected)fail(409,'其他设备已保存新版本，请保留冲突副本');if(fs.statSync(filename).size!==u.total)fail(400,'上传尚未完成')
+          if(db.one("SELECT id FROM realtime_rooms WHERE kind='share' AND node_id=?",[n.id]))fail(409,'文件已启用实时共同编辑，整文件上传已停止；本机修改已保留')
           const id=randomUUID();fs.renameSync(filename,path.join(objects,id))
           try {db.transaction(()=>{db.run('INSERT INTO versions(id,node_id,user_id,version,blob,bytes,created,upload_id) VALUES(?,?,?,?,?,?,?,?)',[id,n.id,user.id,n.version+1,id,u.total,clock(),u.id]);db.run('UPDATE nodes SET version=?,updated=? WHERE id=?',[n.version+1,clock(),n.id]);db.run('DELETE FROM uploads WHERE id=?',[u.id])})}catch(error){fs.renameSync(path.join(objects,id),filename);throw error}
           return reply({id:n.id,version:n.version+1,used:usage(user.id)})

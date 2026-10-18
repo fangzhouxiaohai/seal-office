@@ -1,0 +1,344 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T15:44:54.275Z",
+  "scope": "Fourth-pass diagram project correction, complete frozen regressions, English package names and synchronized public Web",
+  "fullWpsParityAchieved": false,
+  "renderer": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 255,
+    "tests": 2491,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-fourth-renderer.json",
+      "bytes": 1012427,
+      "sha256": "0c9de0ebf5f596fbcece947490a111344fd4001649791c37f23d1f8773160127"
+    }
+  },
+  "main": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 107,
+    "tests": 1032,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-fourth-main.json",
+      "bytes": 442934,
+      "sha256": "4ddf00cf38022a6b4f0d8374ec79099571c94d5ebaa624c1e3ad1e9d5ccd5593"
+    }
+  },
+  "units": {
+    "server": {
+      "passed": true,
+      "tests": 30,
+      "log": {
+        "path": ".tmp-v200-fourth-server.log",
+        "bytes": 3395,
+        "sha256": "68e1846db9793d996b44e78bd2038c1ff5a5fa5ac4f7a962090a45752a0338ed"
+      }
+    },
+    "mobile-unit": {
+      "passed": true,
+      "tests": 27,
+      "log": {
+        "path": ".tmp-v200-fourth-mobile-unit.log",
+        "bytes": 3092,
+        "sha256": "e4dbbd0f764f29dc723f045afbc482b5eccea82b747207d278aa6b5e51d56cac"
+      }
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 11,
+      "log": {
+        "path": ".tmp-v200-fourth-packaging.log",
+        "bytes": 1274,
+        "sha256": "eb9f21b1082c6c70a1398608b31cf9117e32569088d7565e4dabebd72b63dc58"
+      }
+    },
+    "oci-packaging": {
+      "passed": true,
+      "tests": 2,
+      "log": {
+        "path": ".tmp-v200-fourth-oci-packaging.log",
+        "bytes": 294,
+        "sha256": "128ba51ac9c536c22806b7321c1481d5dc9d4e7e1f814f9ac5a601069cdd8810"
+      }
+    }
+  },
+  "pythonTests": {
+    "deployment": {
+      "passed": true,
+      "tests": 5,
+      "log": {
+        "path": ".tmp-v200-fourth-deploy-unit.log",
+        "bytes": 108,
+        "sha256": "c040585f8f0a9d76658b070d1b20c2b91c30a6cf32b829783c85750de8557638"
+      }
+    },
+    "naming": {
+      "passed": true,
+      "tests": 2,
+      "log": {
+        "path": ".tmp-v200-fourth-naming-python.log",
+        "bytes": 105,
+        "sha256": "4cd49ad0c73a8aa832fab522c6a78b7c7920d0020aa82b81b4234fa118a1a5f0"
+      }
+    },
+    "mirror": {
+      "passed": true,
+      "tests": 6,
+      "log": {
+        "path": ".tmp-v200-fourth-release-mirror.log",
+        "bytes": 109,
+        "sha256": "69b98f322f46743f3bc0db9ea8e06896431cdf41fe3a0227d167160684a833d5"
+      }
+    }
+  },
+  "typecheck": {
+    "passed": true,
+    "rootAndMobile": true
+  },
+  "sourceFreeze": {
+    "capturedAt": "2026-10-18T14:47:28.790Z",
+    "files": 1506,
+    "allSha256Verified": true,
+    "manifest": {
+      "path": ".upgrade-private/v200-fourth-source.json",
+      "bytes": 273633,
+      "sha256": "891019f5b105fb6c481847566f61d40ae33092cb946c7c5cfcb24db20fa52e80"
+    }
+  },
+  "nativeWpsDiagramAnalysis": "wps-diagram-native.json",
+  "diagramProjects": "diagram-projects.json",
+  "naming": "package-naming.json",
+  "compatibleFormats": {
+    "passed": true,
+    "checks": 37
+  },
+  "packagedCodecs": {
+    "passed": true,
+    "checks": 11
+  },
+  "windowsRuntime": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 135
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 135
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "desktopIntegrityFilesPerPlatform": 135,
+  "mobile": {
+    "passed": true,
+    "report": "mobile.json",
+    "cloudReady": [
+      {
+        "platform": "android",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/android",
+        "snapshotFiles": 59
+      },
+      {
+        "platform": "harmony",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/harmony",
+        "snapshotFiles": 59
+      }
+    ],
+    "apkOrHapGenerated": false
+  },
+  "web": {
+    "publicUrl": "https://seal.xingmasoft.com/office/",
+    "releaseId": "2.0.0-web-20261018-231336",
+    "status": "published-verified",
+    "browserChecks": 10
+  },
+  "historicalCompatibilityReference": "historical-compatibility-reference.json",
+  "artifacts": [
+    {
+      "name": "seal-office-setup-2.0.0.exe",
+      "path": "release/v2.0.0/seal-office-setup-2.0.0.exe",
+      "bytes": 399084965,
+      "sha256": "b2a2f81fcb01ce05e3c7a97d3e93945e590259d349efd2afdcc6790b1c19b589"
+    },
+    {
+      "name": "seal-office-2.0.0-portable.exe",
+      "path": "release/v2.0.0/seal-office-2.0.0-portable.exe",
+      "bytes": 398859502,
+      "sha256": "8244175376468e6912b216917155bd2434e6ec5980f2a165b4ed27c963e707ac"
+    },
+    {
+      "name": "seal-office-2.0.0-amd64.deb",
+      "path": "release/v2.0.0/seal-office-2.0.0-amd64.deb",
+      "bytes": 125920840,
+      "sha256": "c941bde772f619bc25e4048478160dea208ec804f4d2bfbad968c42eaeb4844f"
+    },
+    {
+      "name": "seal-office-2.0.0-web.zip",
+      "path": "release/web-2.0.0-fourth-pass/seal-office-2.0.0-web.zip",
+      "bytes": 56211984,
+      "sha256": "e6f08324e2d554c3375e530a78362e876733768b888ded8f5181e95b586614e6"
+    }
+  ],
+  "applicationIntegrityManifestSha256": "415732ed04cfc9de5cdf1fa0f736c195183f0b976fbc7b0e575b82f0b69bb462",
+  "limitations": [
+    "WPS native inspection in this correction is static plugin analysis; Windows UI capture initialization failed, so no vendor UI runtime observation is claimed.",
+    "Diagram projects remain local to the device/browser, with no new cloud sync or realtime diagram coediting.",
+    "Prior detailed formula/revision/layout/object and collaboration boundaries remain; this does not establish complete WPS parity.",
+    "Linux cross-build archive checks passed; Linux installation and GUI runtime were not performed.",
+    "Windows unpacked and portable runtime checks passed; EXEs are unsigned and NSIS installation/uninstallation was not performed.",
+    "Android/Harmony cloud snapshots and UTS/browser checks passed; APK/HAP generation, signing and physical-device validation remain for the user."
+  ],
+  "webLoading": {
+    "report": "web-loading.json",
+    "compressedEntryReductionPercent": 83.72,
+    "threeColdWorkflowsPassed": true,
+    "originalPdfLayoutDeadlineMs": 60000,
+    "resourcePreparationDeadlineMs": 180000
+  },
+  "webHosting": {
+    "report": "web-release-resilience.json",
+    "fontGzip": true,
+    "retainedHistoricalAssetCount": 23,
+    "automaticRollbackEvidence": true
+  },
+  "regressionAudit": {
+    "testOnlyAmendments": [
+      {
+        "appliedAt": "2026-10-18T15:11:57.164Z",
+        "reason": "Await real lazy module in homepage regression",
+        "changedFiles": [
+          {
+            "path": "renderer/src/pages/HomePage.test.tsx",
+            "bytes": 6124,
+            "sha256": "3de189c272ef89d858edf34d8437df0a102aa7577727560422a39931337136d9"
+          }
+        ],
+        "previousManifestSha256": "21422dd3b22c66dd40b78aa9115895e2ec551a05bd0e2505d64d2cc7fdd1f480",
+        "runtimeSourceUnchanged": true,
+        "assertionsAndDeadlinesUnchanged": true,
+        "evidenceDirectory": ".upgrade-private/v200-fourth-pass/cold-module-test-failure",
+        "requiredFinalGate": "A new whole renderer run after this amendment must pass with 2491 tests and 255 files."
+      },
+      {
+        "appliedAt": "2026-10-18T15:34:34.289Z",
+        "reason": "Wait for actual lazy template cards in external Windows runtime harness",
+        "changedFiles": [
+          {
+            "path": "scripts/verify-windows-release.cjs",
+            "bytes": 24540,
+            "sha256": "c227004626357e5d042f6d78cde1594ab40ed696bf8ae3d14da66c989a5f7e9d"
+          }
+        ],
+        "previousManifestSha256": "9a58a7635edef0e460bd4d69668eee82de18793f9c91f5b0b97e4052f0834444",
+        "runtimeSourceUnchanged": true,
+        "packagedPayloadUnchanged": true,
+        "affectsWholeRenderer": false,
+        "assertionsAndDeadlinesUnchanged": true,
+        "evidenceDirectory": ".upgrade-private/v200-fourth-pass/desktop-lazy-test-failure",
+        "requiredFinalGate": "Rerun all three Windows runtime phases on both unpacked and portable packages."
+      },
+      {
+        "appliedAt": "2026-10-18T15:43:14.356Z",
+        "reason": "Explicit UTF-8 in Windows Web acceptance tool",
+        "changedFiles": [
+          {
+            "path": "scripts/deploy-web.py",
+            "bytes": 25078,
+            "sha256": "8e40f62c5b25ff8acd77b8f2e4ac926c5d0140e567182a963e88a630884fba4a"
+          },
+          {
+            "path": "scripts/deploy-web.test.py",
+            "bytes": 4132,
+            "sha256": "4d2d222bc63130d56bf09928046ef7ce18670b1c00075950a34cbbfd90f37fda"
+          },
+          {
+            "path": "scripts/finalize-v200-fourth-pass.cjs",
+            "bytes": 11533,
+            "sha256": "417e822918a7b5547ae4845967fc9e5b31ae1bf78de3f1db54a7a063a98e484e"
+          }
+        ],
+        "previousManifestSha256": "2d182365b56ccfcdf280d481652e8ef2113e63f1b072c47b73123b008488d8e6",
+        "runtimeSourceUnchanged": true,
+        "packagedPayloadUnchanged": true,
+        "affectsWholeRenderer": false,
+        "requiredFinalGate": "Five deploy tests and all three actual public cold-profile workflows must pass.",
+        "evidenceDirectory": ".upgrade-private/v200-fourth-pass/windows-utf8-web-acceptance-failure"
+      }
+    ],
+    "finalWholeRendererStartedAfterAllApplicableAmendments": true,
+    "failedPrecedingRunPreserved": true
+  },
+  "publicScreenshots": [
+    {
+      "path": "docs/screenshots/v2.0.0-fourth-pass/mindmap-projects-1280.png",
+      "sha256": "a37122303eedb13b0a77be02efcb63e951ee9dcfd4e9dd60d4519e216d1887cd",
+      "source": ".upgrade-private/public-web-verification/public-mindmap-projects-1280.png"
+    },
+    {
+      "path": "docs/screenshots/v2.0.0-fourth-pass/flow-projects-390.png",
+      "sha256": "979c53c1b50368695dac8307a14ae008ce26a4a952e0f017523d4775a941948c",
+      "source": ".upgrade-private/public-web-verification/public-flow-projects-390.png"
+    },
+    {
+      "path": "docs/screenshots/v2.0.0-fourth-pass/template-public.png",
+      "sha256": "2ffbafb5bb673914687ddc870f169cf2fccc56dfe1a2223cc27dc6adad94bc05",
+      "source": ".upgrade-private/public-web-verification/public-template.png"
+    }
+  ],
+  "publicVisualReview": {
+    "reviewedAt": "2026-10-18T15:45:45.437Z",
+    "method": "Direct visual inspection of three actual public-browser screenshots via view_image",
+    "passed": true,
+    "checked": [
+      "Desktop mindmap list displays two separate project cards with actions and unobscured navigation",
+      "390px flowchart list presents multiple vertically scrollable projects without horizontal overflow",
+      "Nine-page business template preview displays embedded original photography and editable-template action"
+    ],
+    "screenshots": [
+      "docs/screenshots/v2.0.0-fourth-pass/mindmap-projects-1280.png",
+      "docs/screenshots/v2.0.0-fourth-pass/flow-projects-390.png",
+      "docs/screenshots/v2.0.0-fourth-pass/template-public.png"
+    ]
+  }
+}

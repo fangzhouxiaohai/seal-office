@@ -1,6 +1,6 @@
 // 左侧导航：首页、设置、帮助视图均渲染完整分组导航，编辑器视图渲染返回入口与模块名。
 import React from 'react'
-import { NAV_GROUPS } from '../navConfig'
+import { NAV_GROUPS, navigationAvailable } from '../navConfig'
 import Icon from './Icon'
 import { 提取大纲, type 目录项 } from '../editor/toc'
 
@@ -90,7 +90,7 @@ const Sidebar = ({
       React.createElement(
         'div',
         { key: `分组-${分组下标}`, className: 'wps-sidebar__group' },
-        分组.map((项) =>
+        分组.filter(项 => navigationAvailable(项.key)).map((项) =>
           React.createElement(
             'div',
             {

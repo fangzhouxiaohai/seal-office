@@ -26,6 +26,15 @@ class MirrorGuards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 mirror.validate_manifest(config)
 
+    def test_accepts_new_english_installer_names_without_rewriting_historical_manifest(self):
+        config = copy.deepcopy(self.config)
+        config['tag'] = 'v2.0.0'
+        config['assets'] = [{**config['assets'][0], 'name': mirror.artifact_name(platform, '2.0.0')} for platform in mirror.TEMPLATES] + [next(asset for asset in config['assets'] if asset['name'] == 'SHA256SUMS.txt')]
+        self.assertIs(mirror.validate_manifest(config), config)
+        config['assets'][0]['name'] = 'seal-office-setup-2.0.1.exe'
+        with self.assertRaises(ValueError):
+            mirror.validate_manifest(config)
+
     def test_rejects_weak_hash_invalid_size_and_duplicate(self):
         for key, value in [('sha256', '0' * 32), ('size', 0), ('size', True)]:
             config = copy.deepcopy(self.config)

@@ -1,0 +1,33 @@
+.seal-fullscreen-reader { position:fixed; inset:0; z-index:2200; display:flex; flex-direction:column; width:100%; height:100vh; height:100dvh; min-height:0; box-sizing:border-box; margin:0; background:var(--bg-card,#fff); color:var(--text-1,#202632); padding-top:env(safe-area-inset-top,0px); padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px); }
+.seal-fullscreen-reader:focus { outline:none; }
+.seal-fullscreen-reader__toolbar,.seal-fullscreen-reader__footer { display:flex; flex:0 0 auto; align-items:center; flex-wrap:wrap; gap:6px; padding:6px 10px; background:var(--bg-card,#fff); border-bottom:1px solid var(--border,#ddd); }
+.seal-fullscreen-reader__toolbar button,.seal-fullscreen-reader__footer button { min-height:40px; min-width:40px; border:1px solid var(--border,#ddd); border-radius:6px; background:var(--bg-card,#fff); color:inherit; font:inherit; padding:6px 9px; }
+.seal-fullscreen-reader button:focus-visible { outline:2px solid var(--brand,#3877d6); outline-offset:1px; }
+.seal-fullscreen-reader button:disabled { opacity:.4; }
+.seal-fullscreen-reader__title { flex:1 1 80px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; }
+.seal-fullscreen-reader__footer { justify-content:center; border-top:1px solid var(--border,#ddd); border-bottom:0; padding-bottom:max(6px,env(safe-area-inset-bottom,0px)); font-size:13px; }
+.seal-fullscreen-reader__footer small { flex:1 1 100%; text-align:center; color:var(--text-2,#666); }
+.seal-word-reader__viewport { flex:1 1 auto; min-height:0; min-width:0; position:relative; overflow:auto; touch-action:pan-x pan-y; overscroll-behavior:contain; }
+.seal-word-reader__viewport--pages { overflow-y:hidden; scroll-snap-type:x mandatory; }
+.seal-word-reader__content { box-sizing:border-box; padding:20px; line-height:1.8; overflow-wrap:anywhere; user-select:text; -webkit-user-select:text; }
+.seal-word-reader__viewport--pages .seal-word-reader__content { width:var(--reading-width); height:var(--reading-height); column-width:calc(var(--reading-width) - 40px); column-gap:40px; column-fill:auto; }
+.seal-word-reader__snap { position:absolute; top:0; height:1px; pointer-events:none; scroll-snap-align:start; scroll-snap-stop:always; }
+.seal-word-reader__content :is(p,li,div,span,font,td,th,a,em,strong,b,i,u,s,code) { font-size:inherit!important; line-height:inherit!important; }
+.seal-word-reader__content :is(img,svg,table,video) { max-width:100%!important; }
+.seal-word-reader__content img { height:auto; max-height:calc(var(--reading-height) - 40px); object-fit:contain; }
+.seal-word-reader__content table { width:auto!important; table-layout:fixed; border-collapse:collapse; }
+.seal-word-reader__content :is(td,th) { overflow-wrap:anywhere; }
+.seal-word-reader__content h1 { font-size:1.8em!important; }
+.seal-word-reader__content h2 { font-size:1.5em!important; }
+.seal-word-reader__content h3 { font-size:1.3em!important; }
+.seal-word-reader__content .wps-page-break,.seal-word-reader__content [data-seal-page-break] { break-before:column; height:0; margin:0; padding:0; }
+.seal-word-reader__content [hidden],.seal-word-reader__content [data-seal-docx-package] { display:none!important; }
+.pdf-viewer--fullscreen { min-height:0!important; }
+.pdf-viewer__stage.pdf-viewer__stage--paged { padding:0!important; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-gutter:auto; }
+.pdf-viewer__pages.pdf-viewer__pages--paged { flex-direction:row; align-items:stretch; gap:0; margin:0; min-height:100%; }
+.pdf-viewer__slide { flex:0 0 auto; height:100%; overflow:auto; scroll-snap-align:start; scroll-snap-stop:always; box-sizing:border-box; padding:12px; touch-action:pan-x pan-y; }
+.pdf-viewer__slide .pdf-viewer__page { margin-inline:auto; }
+.pdf-viewer--fullscreen .pdf-viewer__toolbar { padding-top:6px; flex-wrap:wrap; gap:6px; }
+.pdf-viewer--fullscreen .pdf-viewer__controls { flex:1 1 100%; min-width:0; flex-wrap:wrap; }
+.pdf-viewer--fullscreen .pdf-viewer__controls button { min-width:36px; min-height:40px; }
+.pdf-viewer--fullscreen .pdf-viewer__stage { min-height:0; }

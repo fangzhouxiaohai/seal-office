@@ -1,6 +1,6 @@
 {
   "name": "seal-office-uniapp-x",
-  "version": "1.9.15",
+  "version": "2.0.0",
   "private": true,
   "description": "海豹办公 uni-app x：Android、iOS、HarmonyOS、移动 H5 与 PC Web",
   "type": "module",
@@ -16,7 +16,9 @@
     "check": "node scripts/check.mjs",
     "typecheck": "node ../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "check:android": "node scripts/native-check.mjs",
+    "check:harmony": "node scripts/native-check.mjs --harmony",
     "check:apk": "node scripts/apk-check.mjs",
+    "check:hap": "node scripts/hap-check.mjs",
     "test:browser": "node scripts/browser-check.mjs",
     "test:regressions": "node scripts/browser-check.mjs --regressions",
     "test": "node --test tests/*.test.mjs"

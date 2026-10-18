@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "build": {
+    "platform": "android",
+    "desktopVersion": "2.0.0",
+    "builtAt": "2026-10-18T08:57:13.873Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "officeJsSha256": "71a108a88bb02bf47e206952c90439d0200dbb149a671e74c475138dcd0b2398",
+  "scheme": "file",
+  "syntheticKeyOnly": true,
+  "realAccounts": false,
+  "trials": [
+    {
+      "nativeInsertText": true,
+      "interCharacterDelayMs": 0,
+      "characters": 14,
+      "fullValueBeforeSave": true,
+      "fullValuePassedToSaveService": true,
+      "focusLost": 0,
+      "plaintextInLocalStorage": false
+    },
+    {
+      "nativeInsertText": true,
+      "interCharacterDelayMs": 120,
+      "characters": 14,
+      "fullValueBeforeSave": true,
+      "fullValuePassedToSaveService": true,
+      "focusLost": 0,
+      "plaintextInLocalStorage": false
+    }
+  ],
+  "probe": {
+    "backupClears": 1,
+    "focus": [],
+    "inputs": [
+      {
+        "length": 1,
+        "active": true
+      },
+      {
+        "length": 2,
+        "active": true
+      },
+      {
+        "length": 3,
+        "active": true
+      },
+      {
+        "length": 4,
+        "active": true
+      },
+      {
+        "length": 5,
+        "active": true
+      },
+      {
+        "length": 6,
+        "active": true
+      },
+      {
+        "length": 7,
+        "active": true
+      },
+      {
+        "length": 8,
+        "active": true
+      },
+      {
+        "length": 9,
+        "active": true
+      },
+      {
+        "length": 10,
+        "active": true
+      },
+      {
+        "length": 11,
+        "active": true
+      },
+      {
+        "length": 12,
+        "active": true
+      },
+      {
+        "length": 13,
+        "active": true
+      },
+      {
+        "length": 14,
+        "active": true
+      },
+      {
+        "length": 1,
+        "active": true
+      },
+      {
+        "length": 2,
+        "active": true
+      },
+      {
+        "length": 3,
+        "active": true
+      },
+      {
+        "length": 4,
+        "active": true
+      },
+      {
+        "length": 5,
+        "active": true
+      },
+      {
+        "length": 6,
+        "active": true
+      },
+      {
+        "length": 7,
+        "active": true
+      },
+      {
+        "length": 8,
+        "active": true
+      },
+      {
+        "length": 9,
+        "active": true
+      },
+      {
+        "length": 10,
+        "active": true
+      },
+      {
+        "length": 11,
+        "active": true
+      },
+      {
+        "length": 12,
+        "active": true
+      },
+      {
+        "length": 13,
+        "active": true
+      },
+      {
+        "length": 14,
+        "active": true
+      }
+    ]
+  },
+  "browserErrors": [],
+  "externalRequests": []
+}

@@ -1,0 +1,388 @@
+{
+  "version": "2.0.0",
+  "status": "published-verified",
+  "published": true,
+  "publicUrl": "https://seal.xingmasoft.com/office/",
+  "releaseId": "2.0.0-web-20261019-013108",
+  "completedAt": "2026-10-18T17:34:57.175Z",
+  "productionAccountOperations": 0,
+  "credentialsIncluded": false,
+  "sourceFrozen": true,
+  "preparation": {
+    "backup": "/root/seal-web-deploy/2.0.0-web-20261019-013108",
+    "previousWeb": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.0.0-web-20261018-231336",
+    "backendCurrent": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-diagram-20261019-013031",
+    "admin": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-diagram-20261019-013031/admin/dist",
+    "sshPinned": true
+  },
+  "isolatedNginxPlan": {
+    "passed": true,
+    "activeConfigUnchanged": true,
+    "backendPointerUnchanged": true,
+    "nginxCandidateSyntax": true,
+    "privateBackupMode": 448
+  },
+  "localProductionCspPreflight": {
+    "passed": true,
+    "version": "2.0.0",
+    "group": "all",
+    "origin": "local-production-CSP",
+    "checks": [
+      "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+      "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+      "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+      "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+      "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+      "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+      "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+      "1280px真实四协作入口、登录提示和无横向溢出",
+      "390px真实四协作入口、登录提示和无横向溢出",
+      "360px真实四协作入口、登录提示和无横向溢出"
+    ],
+    "apiCapabilities": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymousStatuses": {
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "devices": 401,
+      "tags": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+    },
+    "template": {
+      "pages": 9,
+      "images": [
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        }
+      ]
+    },
+    "projectLists": [
+      {
+        "type": "脑图",
+        "width": 1280,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      },
+      {
+        "type": "流程图",
+        "width": 390,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      }
+    ],
+    "errors": [],
+    "requestCount": 32,
+    "externalRequests": 0,
+    "productionAccountOperations": 0,
+    "pdfWorker": true
+  },
+  "publishedHealth": {
+    "passed": true,
+    "release": "2.0.0-web-20261019-013108",
+    "directory": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.0.0-web-20261019-013108",
+    "backup": "/root/seal-web-deploy/2.0.0-web-20261019-013108",
+    "previousWeb": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.0.0-web-20261018-231336",
+    "backendPointerUnchanged": true,
+    "adminUnchanged": true,
+    "unauthorizedGateway": 401,
+    "assetCount": 38,
+    "nginxHash": "324fe93eddfc72a869d22397457d39d3072b6e61ef05d407e1d5984440c0aeec",
+    "completedAt": "2026-10-18T17:34:12.001Z",
+    "browserCheck": "pending public browser acceptance",
+    "browserAcceptance": {
+      "passed": true,
+      "version": "2.0.0",
+      "group": "all",
+      "origin": "https://seal.xingmasoft.com/office/",
+      "checks": [
+        "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+        "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+        "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+        "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+        "1280px真实四协作入口、登录提示和无横向溢出",
+        "390px真实四协作入口、登录提示和无横向溢出",
+        "360px真实四协作入口、登录提示和无横向溢出",
+        "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+        "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+        "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出"
+      ],
+      "apiCapabilities": {
+        "version": 1,
+        "collaboration": 1,
+        "realtime": 1,
+        "diagramRealtime": 1,
+        "accountConversion": 1,
+        "quota": 300000000,
+        "chunkSize": 1048576,
+        "sms": true,
+        "encryption": "AES-256-GCM",
+        "agreementVersion": "2026-10-08"
+      },
+      "anonymousStatuses": {
+        "conversion/capabilities": 401,
+        "shares": 401,
+        "devices": 401,
+        "tags": 401,
+        "teams": 401,
+        "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+        "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+        "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+      },
+      "template": {
+        "pages": 9,
+        "images": [
+          {
+            "valid": true,
+            "inline": true
+          },
+          {
+            "valid": true,
+            "inline": true
+          },
+          {
+            "valid": true,
+            "inline": true
+          },
+          {
+            "valid": true,
+            "inline": true
+          },
+          {
+            "valid": true,
+            "inline": true
+          },
+          {
+            "valid": true,
+            "inline": true
+          }
+        ]
+      },
+      "projectLists": [
+        {
+          "type": "脑图",
+          "width": 1280,
+          "projects": 2,
+          "independentIds": true,
+          "reloaded": true,
+          "renamed": true,
+          "previewImagesDecoded": true,
+          "unobscuredNavigation": true
+        },
+        {
+          "type": "流程图",
+          "width": 390,
+          "projects": 2,
+          "independentIds": true,
+          "reloaded": true,
+          "renamed": true,
+          "previewImagesDecoded": true,
+          "unobscuredNavigation": true
+        }
+      ],
+      "errors": [],
+      "requestCount": 60,
+      "externalRequests": 0,
+      "productionAccountOperations": 0,
+      "pdfWorker": true,
+      "allGroupsCompleted": true,
+      "processWatchdogMs": 240000,
+      "mainJsSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+      "groups": [
+        {
+          "name": "documents",
+          "passed": true,
+          "checks": 7
+        },
+        {
+          "name": "templates",
+          "passed": true,
+          "checks": 2
+        },
+        {
+          "name": "projects",
+          "passed": true,
+          "checks": 3
+        }
+      ]
+    }
+  },
+  "publicBrowserAcceptance": {
+    "passed": true,
+    "version": "2.0.0",
+    "group": "all",
+    "origin": "https://seal.xingmasoft.com/office/",
+    "checks": [
+      "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+      "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+      "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+      "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+      "1280px真实四协作入口、登录提示和无横向溢出",
+      "390px真实四协作入口、登录提示和无横向溢出",
+      "360px真实四协作入口、登录提示和无横向溢出",
+      "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+      "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+      "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出"
+    ],
+    "apiCapabilities": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymousStatuses": {
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "devices": 401,
+      "tags": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+    },
+    "template": {
+      "pages": 9,
+      "images": [
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        }
+      ]
+    },
+    "projectLists": [
+      {
+        "type": "脑图",
+        "width": 1280,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      },
+      {
+        "type": "流程图",
+        "width": 390,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      }
+    ],
+    "errors": [],
+    "requestCount": 60,
+    "externalRequests": 0,
+    "productionAccountOperations": 0,
+    "pdfWorker": true,
+    "allGroupsCompleted": true,
+    "processWatchdogMs": 240000,
+    "mainJsSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+    "groups": [
+      {
+        "name": "documents",
+        "passed": true,
+        "checks": 7
+      },
+      {
+        "name": "templates",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "projects",
+        "passed": true,
+        "checks": 3
+      }
+    ]
+  },
+  "frozenBuild": {
+    "platform": "web",
+    "desktopVersion": "2.0.0",
+    "builtAt": "2026-10-18T16:49:32.676Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android",
+    "mainAsset": "assets/index-42a45dc8.js",
+    "mainJsSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d"
+  },
+  "artifacts": {
+    "zip": "release/web-2.0.0-fifth-pass/seal-office-2.0.0-web.zip",
+    "zipSha256": "6f25e930f9603edbb8f2d3e2a0577b393bef45fc93764d28f92bcadbd16ec144",
+    "bytes": 56221460,
+    "tarSha256": "eeb52aa1020064be39d644240d67b9236f011141b65ffdabeea0f3e37e539a6b"
+  },
+  "backendPreservedByWebDeployer": true,
+  "rollback": "Automatic old pointer/config restoration on HTTP/hash or browser acceptance failure; refusal to overwrite a newer deployment",
+  "limitations": [
+    "Public account login/SMS/member invitations are not performed. Multi-account realtime is tested with isolated local HTTP fixture.",
+    "Browser CSP and viewport checks do not replace physical Android/Harmony validation."
+  ]
+}

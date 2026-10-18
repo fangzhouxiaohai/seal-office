@@ -15,10 +15,10 @@ function 获取转换程序() {
 async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
   const 来源 = 格式列表.find(项 => 项.extension === 输入扩展)
   const 目标 = 格式列表.find(项 => 项.extension === 输出扩展)
-  if (!来源 || !目标 || !['word', 'table', 'ppt'].includes(类型)) throw new Error('文档转换格式无效')
+  if (!来源 || !目标 || !['word', 'table', 'ppt'].includes(类型) || (来源.type !== 类型 && 输入扩展 !== 'xml') || (目标.type !== 类型 && 输出扩展 !== 'pdf')) throw new Error('文档转换格式无效')
   if (目标.readOnlySource) throw new Error('该格式含宏、加载项或二进制内容，不能直接回写，请另存为普通文档格式')
   const 标准扩展 = { word: 'docx', table: 'xlsx', ppt: 'pptx' }[类型]
-  const 过滤器 = 输出扩展 === 标准扩展 ? { word: 'Office Open XML Text', table: 'Calc Office Open XML', ppt: 'Impress Office Open XML' }[类型] : 目标.outputFilter
+  const 过滤器 = 输出扩展 === 'pdf' ? { word: 'writer_pdf_Export', table: 'calc_pdf_Export', ppt: 'impress_pdf_Export' }[类型] : 输出扩展 === 标准扩展 ? { word: 'Office Open XML Text', table: 'Calc Office Open XML', ppt: 'Impress Office Open XML' }[类型] : 目标.outputFilter
   if (!过滤器 || ['xml', 'mhtml'].includes(过滤器)) throw new Error('这种格式需要专用写入处理')
   const 程序 = 获取转换程序()
   const 临时 = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'seal-office-convert-'))
@@ -29,7 +29,9 @@ async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
     // 独立配置拒绝运行文档宏，也不继承本机办公软件的信任目录。
     await fs.promises.writeFile(path.join(配置, 'user/registrymodifications.xcu'), '<?xml version="1.0"?><oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item></oor:items>')
     await fs.promises.writeFile(输入, 字节)
-    const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to', `${输出扩展}:${选择兼容过滤器(过滤器)}`, '--outdir', 输出目录, 输入]
+    // Keep duplex parity: Writer's implicitly inserted odd/even blank pages must remain physical PDF pages.
+    const Pdf参数 = 输出扩展 === 'pdf' && 类型 === 'word' ? ':' + JSON.stringify({ IsSkipEmptyPages: { type: 'boolean', value: 'false' } }) : ''
+    const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to', `${输出扩展}:${选择兼容过滤器(过滤器)}${Pdf参数}`, '--outdir', 输出目录, 输入]
     await new Promise((完成, 拒绝) => {
       let 超时 = false
       const 进程 = execFile(程序, 参数, { windowsHide: true, detached: process.platform !== 'win32', maxBuffer: 1024 * 1024, encoding: 'utf8' }, 错误 => {
@@ -50,7 +52,12 @@ async function 转换文档(字节, 输入扩展, 输出扩展, 类型) {
     })
     const 输出 = path.join(输出目录, `input.${输出扩展}`)
     if (!fs.existsSync(输出) || fs.statSync(输出).size === 0) throw new Error('兼容引擎没有生成有效文档，文件可能已损坏、加密或格式不受支持')
-    return await fs.promises.readFile(输出)
+    const 结果 = await fs.promises.readFile(输出)
+    if (输出扩展 === 'pdf') {
+      const { PDFDocument } = require('pdf-lib')
+      if (!结果.subarray(0, 5).equals(Buffer.from('%PDF-')) || !/%%EOF\s*$/.test(结果.subarray(-2048).toString('latin1')) || !(await PDFDocument.load(结果, { updateMetadata: false, throwOnInvalidObject: true })).getPageCount()) throw new Error('兼容引擎没有生成有效 PDF')
+    }
+    return 结果
   } finally {
     await fs.promises.rm(临时, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
   }

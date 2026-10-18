@@ -1,0 +1,106 @@
+/* Built UI + real encrypted HTTP service. Native runs simulate only the host
+ * transport, forwarding exclusively to the isolated fixture, never production. */
+const { app, BrowserWindow, net } = require('electron')
+const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict'), { pathToFileURL } = require('node:url'), Y = require('yjs')
+const { createLocalCollaborationFixture } = require('../../server/test/collaborationFixture.cjs')
+if (!global.fetch) global.fetch = net.fetch.bind(net)
+const option = key => process.argv.find(value => value.startsWith('--' + key + '='))?.split('=')[1]
+const mode = option('mode') || 'web', group = option('group') || 'personal'
+assert.ok(['web', 'native-file', 'native-http'].includes(mode)); assert.ok(['personal', 'team'].includes(group))
+const root = path.resolve(__dirname, mode === 'web' ? '../unpackage/web' : '../static/office')
+const output = path.resolve(__dirname, '../../.upgrade-private/v200-fifth-pass/diagram-browser', mode + '-' + group)
+const startedAt = new Date().toISOString(), hash = file => require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+const bundleFile = path.join(root, mode === 'web' ? fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1] : 'office.js'), bundleSha256 = hash(bundleFile)
+app.setPath('userData', path.join(output, 'profile-' + process.pid)); app.disableHardwareAcceleration()
+const checks = [], errors = [], windows = [], offline = new Set(), requests = [], controllers = new Map()
+let fixture, server, finished = false
+const watchdog = setTimeout(() => { if (!finished) { fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, checks, errors, error: '120 second process watchdog' }, null, 2)); app.exit(1) } }, 120000)
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+async function evaluate(win, code) { const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await(${code})}}catch(error){return{error:error.stack||String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value }
+async function wait(win, code, label) { for (let n = 0; n < 180; n++) { if (await evaluate(win, code)) return; await new Promise(resolve => setTimeout(resolve, 80)) } throw new Error('等待失败：' + label) }
+async function click(win, label) { return evaluate(win, `(()=>{const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&(item.getAttribute('aria-label')===${JSON.stringify(label)}||item.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g, ''))}));if(!button)throw new Error('缺少按钮 '+${JSON.stringify(label)});if(button.disabled)throw new Error('按钮不可用 '+${JSON.stringify(label)});button.click();return true})()`) }
+async function input(win, label, text) { return evaluate(win, `(()=>{const element=document.querySelector('[aria-label='+${JSON.stringify(JSON.stringify(label))}+']')||[...document.querySelectorAll('label')].find(item=>item.textContent.trim()===${JSON.stringify(label)})?.querySelector('input,textarea');if(!element||element.disabled)throw new Error('输入框不可用 '+${JSON.stringify(label)});Object.getOwnPropertyDescriptor(element.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(element,${JSON.stringify(text)});element.dispatchEvent(new Event('input',{bubbles:true}));return true})()`) }
+async function api(win, action, value = {}) { const result = await evaluate(win, `window.electronAPI.cloud.invoke(${JSON.stringify(action)},${JSON.stringify(value)})`); assert.equal(result.成功, true, result.错误); return result.数据 }
+async function ready(win) { await wait(win, '!!window.electronAPI&&!!document.querySelector(".wps-app")', '生产页面初始化') }
+async function reload(win) { await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.webContents.reload() }); await ready(win) }
+async function navigate(win, key, text) {
+  if (await evaluate(win, 'innerWidth<900')) { await click(win, '全部功能'); await wait(win, `!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(win, `document.querySelector('[data-nav-key="${key}"]').click()`) }
+  else await click(win, text)
+  await wait(win, `[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const rect=panel.getBoundingClientRect();return !rect.height||rect.top>=innerHeight||rect.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '移动导航收起')
+}
+async function openLibrary(win, type, title) { await navigate(win, type === 'mindmap' ? 'mindmap' : 'flow', type === 'mindmap' ? '脑图' : '流程图'); await wait(win, `[...document.querySelectorAll('button')].some(item=>item.textContent==='云端与协作')`, '云项目入口'); await click(win, '云端与协作'); await wait(win, `[...document.querySelectorAll('button')].some(item=>item.getAttribute('aria-label')===${JSON.stringify('打开云项目：' + title)})`, '云项目列表'); await click(win, '打开云项目：' + title); await wait(win, `!!document.querySelector('[data-diagram-cloud-editor]')`, '云编辑器') }
+async function connected(win, readonly = false) { await wait(win, `document.querySelector('.diagram-cloud-status')?.textContent.includes(${JSON.stringify(readonly ? '实时只读查看' : '实时共同编辑已连接')})`, '协作连接') }
+async function flush(win) { await wait(win, `document.querySelector('[aria-label="立即同步"]')?.disabled===false`, '同步按钮就绪'); await click(win, '立即同步'); await wait(win, `document.querySelector('[aria-label="立即同步"]')?.disabled===false`, '本机安全队列同步'); }
+async function has(win, text) { await wait(win, `[...document.querySelectorAll('.diagram-node[data-node-id]')].some(item=>item.getAttribute('aria-label').startsWith(${JSON.stringify(text)}))`, '远端节点 ' + text) }
+function decode(value) { if (value instanceof Y.Text) return value.toString(); if (value instanceof Y.Array) return value.toArray().map(decode); if (value instanceof Y.Map) { if (value.get('__seal_crdt_id_list__')) return value.get('order').toArray().filter((id, i, arr) => arr.indexOf(id) === i && value.get('items').has(id)).map(id => decode(value.get('items').get(id))); return Object.fromEntries([...value.entries()].map(([key, item]) => [key, decode(item)])) }; return value }
+async function latest(actor, binding) { const snapshot = await actor.realtimeSnapshot({ binding }), doc = new Y.Doc(); try { if (snapshot.checkpoint) Y.applyUpdate(doc, Buffer.from(snapshot.checkpoint, 'base64')); if (snapshot.seed) Y.applyUpdate(doc, Buffer.from(snapshot.seed, 'base64')); let after = snapshot.checkpoint ? snapshot.checkpointSeq : 0, page = snapshot; do { for (const item of page.updates || []) { Y.applyUpdate(doc, Buffer.from(item.update, 'base64')); after = Math.max(after, item.seq) }; if (after >= page.head) break; page = await actor.realtimePull({ binding, after }) } while (true); return decode(doc.getMap('document').get('model')) } finally { doc.destroy() } }
+async function createWindow(actor, phone, origin) {
+  const win = new BrowserWindow({ show: false, width: 1280, height: 950, webPreferences: { partition: 'diagram-' + process.pid + '-' + actor, offscreen: false, contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false } }); windows.push(win)
+  win.webContents.on('will-prevent-unload', event => event.preventDefault())
+  win.webContents.on('console-message', (_, level, message) => { if (level >= 3 && !/ERR_ABORTED|favicon|Failed to load resource/.test(message)) errors.push(actor + ': ' + message) })
+  win.webContents.session.webRequest.onBeforeRequest({ urls: [origin + '/api/*'] }, (detail, callback) => callback({ cancel: offline.has(actor) }))
+  if (mode !== 'web') {
+    await win.loadURL('about:blank'); const cdp = win.webContents.debugger; cdp.attach('1.3'); await cdp.sendCommand('Page.enable'); await cdp.sendCommand('Runtime.enable'); await cdp.sendCommand('Runtime.addBinding', { name: '__sealDiagramNative' })
+    await cdp.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `window.sealNative={token:'isolated-diagram-${actor}',platform:'android'};window.__uniapp_x_postMessage=({data})=>window.__sealDiagramNative(JSON.stringify(data));` })
+    cdp.on('message', async (_, method, params) => {
+      if (method !== 'Runtime.bindingCalled' || params.name !== '__sealDiagramNative') return
+      let data
+      const deliver = event => evaluate(win, `window.sealReceiveNative?.(${JSON.stringify(event)})`).catch(() => {})
+      try {
+        data = JSON.parse(params.payload); assert.equal(data.token, 'isolated-diagram-' + actor)
+        if (data.action === 'state') return
+        if (data.action === 'abort') { controllers.get(data.id)?.abort(); return }
+        assert.equal(data.action, 'request', 'Unexpected native operation'); const target = new URL(data.url)
+        assert.ok(target.origin === 'https://seal.xingmasoft.com' || target.origin === origin, 'Native request outside approved fixture mapping'); assert.ok(target.pathname.startsWith('/api/'))
+        requests.push({ actor, route: target.pathname, native: true }); if (offline.has(actor)) throw new Error('模拟原生宿主断网')
+        const controller = new AbortController(); controllers.set(data.id, controller)
+        const response = await fetch(fixture.url + target.pathname.slice(4) + target.search, { method: data.method, headers: data.headers, body: data.body ? Buffer.from(data.body, 'base64') : undefined, signal: controller.signal })
+        await deliver({ id: data.id, type: 'headers', status: response.status, headers: Object.fromEntries(response.headers) })
+        const bytes = Buffer.from(await response.arrayBuffer()); if (bytes.length) await deliver({ id: data.id, type: 'chunk', data: bytes.toString('base64') }); await deliver({ id: data.id, type: 'end' })
+      } catch (error) { if (data?.id) await deliver({ id: data.id, type: 'error', error: error.message }); else errors.push(error.message) } finally { if (data) controllers.delete(data.id) }
+    })
+  }
+  await win.loadURL(mode === 'native-file' ? pathToFileURL(path.join(root, 'index.html')).href + '?native=1' : origin + '/office/' + (mode !== 'web' ? '?native=1' : '')); await ready(win)
+  fixture.advance(61000); await api(win, 'code', { phone }); await api(win, 'login', { phone, code: fixture.codes.get(phone) }); await api(win, 'unlock', { recovery: fixture.recoveries.get(phone) }); await reload(win); return win
+}
+async function screenshots(win, stem) { for (const width of [1280, 820, 390, 360]) { win.setContentSize(width, 950); await evaluate(win, 'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'); const size = await evaluate(win, '({width:innerWidth,scroll:document.documentElement.scrollWidth})'); assert.ok(size.scroll <= size.width + 1, JSON.stringify(size)); fs.writeFileSync(path.join(output, stem + '-' + width + '.png'), (await win.capturePage()).toPNG()) }; checks.push(stem + '：1280 / 820 / 390 / 360 px 无页面横向溢出') }
+app.whenReady().then(async () => {
+  fs.mkdirSync(output, { recursive: true })
+  try {
+    fixture = await createLocalCollaborationFixture()
+    server = http.createServer((request, response) => {
+      if (request.url.startsWith('/api/')) { requests.push({ route: request.url }); const upstream = http.request(fixture.url + request.url.slice(4), { method: request.method, headers: { ...request.headers, host: new URL(fixture.url).host } }, result => { response.writeHead(result.statusCode, result.headers); result.pipe(response) }); upstream.on('error', () => { response.writeHead(502); response.end() }); request.pipe(upstream); return }
+      const filename = path.resolve(root, '.' + decodeURIComponent(new URL(request.url, 'http://localhost').pathname).replace(/^\/office\//, '/').replace(/\/$/, '/index.html'))
+      if (!filename.startsWith(root + path.sep) || !fs.existsSync(filename)) { response.writeHead(404); response.end(); return }
+      response.writeHead(200, { 'Content-Type': types[path.extname(filename)] || 'application/octet-stream', ...(mode === 'web' ? { 'Content-Security-Policy': csp } : {}) }); fs.createReadStream(filename).pipe(response)
+    }); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); const origin = 'http://127.0.0.1:' + server.address().port
+    const type = group === 'team' ? 'flowchart' : 'mindmap', title = group === 'team' ? '团队跨端流程' : '个人跨端脑图'
+    const model = { format: 'seal-diagram', schema: 1, type: type === 'mindmap' ? '脑图' : '流程图', title, graph: { 节点: [{ id: 'root', 文本: '中心主题', x: 100, y: 100 }, { id: 'child', 文本: '分支', x: 400, y: 100 }], 连线: [{ id: 'edge', 起点: 'root', 终点: 'child' }] } }, filename = title + (type === 'mindmap' ? '.sealmind' : '.sealflow'), data = Buffer.from(JSON.stringify(model)).toString('base64')
+    let saved, team, shared, invitation, binding
+    if (group === 'personal') { saved = await fixture.a.save({ linkId: require('node:crypto').randomUUID(), name: title, filename, data }); binding = { kind: 'node', id: saved.id }; shared = await fixture.a.shareCreate({ id: saved.id, recipientPhone: '13800111002', permission: 'edit' }) }
+    else { team = await fixture.a.teamCreate({ name: '跨端协作验收' }); invitation = await fixture.a.teamInvite({ id: team.id, recipientPhone: '13800111002', role: 'viewer' }); saved = await fixture.a.teamSave({ id: team.id, name: title, filename, data }); binding = { kind: 'team', id: team.id, nodeId: saved.id } }
+    const a = await createWindow('owner', '13800111001', origin), b = await createWindow('member', '13800111002', origin)
+    await api(b, group === 'personal' ? 'shareAccept' : 'teamAccept', { credential: group === 'personal' ? shared.credential : invitation.credential }); await reload(b)
+    await openLibrary(a, type, title); await connected(a)
+    if (group === 'personal') { await navigate(b, 'shared', '共享'); await wait(b, `[...document.querySelectorAll('button')].some(item=>item.getAttribute('aria-label')===${JSON.stringify('打开共享副本 ' + title)})`, '共享页图形'); await click(b, '打开共享副本 ' + title); await connected(b) }
+    else { await navigate(b, 'team', '团队空间'); await wait(b, `[...document.querySelectorAll('.seal-drive-file-open')].some(item=>item.title===${JSON.stringify(title)}&&!item.disabled)`, '团队文件入口'); await click(b, title); await connected(b, true); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'editor' }); await connected(b); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), false) }
+    await input(a, '文字', '所有者中文😀'); await input(b, '节点备注', '成员备注𠀀'); await Promise.all([flush(a), flush(b)]); await has(b, '所有者中文😀'); await wait(a, `document.querySelector('[aria-label="节点备注"]')?.value==='成员备注𠀀'`, '并行字段合并')
+    checks.push('两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并')
+    await click(b, '添加节点'); await input(b, '文字', '移动新节点'); await flush(b); await has(a, '移动新节点'); await click(b, '撤销'); await flush(b); await has(a, type === 'mindmap' ? '新分支' : '新步骤'); await click(b, '重做'); await flush(b); await has(a, '移动新节点')
+    const merged = await latest(fixture.a, binding); assert.equal(merged.graph.节点[0].文本, '所有者中文😀'); assert.equal(merged.graph.节点[0].备注, '成员备注𠀀'); assert.equal(merged.graph.节点.length, 3)
+    checks.push('远端新增节点、分离撤销/重做、服务端最新加密图形验证')
+    offline.add('member'); await flush(b); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('离线编辑')`, '断网识别'); await input(b, '节点备注', '离线恢复备注'); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('待同步')`, '断网加密队列'); await flush(b); await reload(b); await openLibrary(b, type, title); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('离线编辑')`, '重载后完成本机恢复'); await wait(b, `[...document.querySelectorAll('.diagram-node')].some(node=>node.getAttribute('aria-label')==='移动新节点，有备注')`, '本机草稿中的备注节点'); await click(b, '移动新节点，有备注'); await wait(b, `document.querySelector('[aria-label="节点备注"]')?.value==='离线恢复备注'`, '真正重载后加密草稿恢复')
+    offline.delete('member'); await evaluate(b, 'window.dispatchEvent(new Event("online"))'); await connected(b); await flush(b); await wait(a, `[...document.querySelectorAll('.diagram-node')].some(node=>node.getAttribute('aria-label')==='移动新节点，有备注')`, '离线备注到达所有者'); await click(a, '移动新节点，有备注'); await wait(a, `document.querySelector('[aria-label="节点备注"]')?.value==='离线恢复备注'`, '重新连接队列合并'); checks.push('断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步')
+    await screenshots(b, group)
+    // Real pointer gesture in the narrow production page; no model shortcuts.
+    await click(b, '适配画布'); const cdp = b.webContents.debugger; if (!cdp.isAttached()) cdp.attach('1.3'); await cdp.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 }); const beforeZoom = await evaluate(b, 'document.querySelector("[aria-label=画布缩放]").textContent'); const box = await evaluate(b, '(()=>{const r=document.querySelector(".diagram-scroll").getBoundingClientRect();return{x:r.x+r.width/2,y:Math.min(r.bottom,innerHeight-110)-25}})()')
+    const touch = (x, y, id) => ({ x, y, id, radiusX: 2, radiusY: 2, force: 1 }); await cdp.sendCommand('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(box.x - 20, box.y, 1), touch(box.x + 20, box.y, 2)] }); await cdp.sendCommand('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [touch(box.x - 55, box.y, 1), touch(box.x + 55, box.y, 2)] }); await cdp.sendCommand('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(b, `document.querySelector('[aria-label="画布缩放"]').textContent!==${JSON.stringify(beforeZoom)}`, '移动双指缩放'); checks.push('360 px 原生触摸双指缩放')
+    if (group === 'personal') { await fixture.a.shareRevoke({ id: shared.id }); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('访问权限已撤销')`, '共享撤销'); await input(a, '节点备注', '撤销后所有者继续同步'); await flush(a); assert.equal((await latest(fixture.a, binding)).graph.节点.find(node => node.文本 === '移动新节点').备注, '撤销后所有者继续同步') }
+    else { await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'viewer' }); await connected(b, true); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); await input(a, '文字', '降权后仍可查看远端更新'); await flush(a); await has(b, '降权后仍可查看远端更新'); await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'editor' }); await connected(b); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), false); await input(b, '节点备注', '重新授权后继续协作'); await flush(b); assert.equal((await latest(fixture.a, binding)).graph.节点.find(node=>node.文本==='降权后仍可查看远端更新').备注, '重新授权后继续协作'); await fixture.a.teamRemoveMember({ id: team.id, userId: fixture.b.status().account.id }); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('访问权限已撤销')`, '团队移除') }
+    assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); checks.push(group === 'team' ? '团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写' : '共享撤销由服务端执行、禁写且所有者仍能继续同步')
+    assert.ok(requests.some(item => item.route.includes('/realtime/'))); if (mode !== 'web') assert.ok(requests.some(item => item.native)); assert.deepEqual(errors, []); assert.equal(hash(bundleFile), bundleSha256, 'Production bundle changed during acceptance')
+    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: true, version: '2.0.0', startedAt, bundleSha256, harnessSha256: hash(__filename), mode, group, checks, errors, nativeHostSimulated: mode !== 'web', productionRequests: 0, requests: requests.length, completedAt: new Date().toISOString() }, null, 2)); console.log(JSON.stringify({ passed: true, mode, group, checks }, null, 2))
+  } catch (error) { const states = await Promise.all(windows.map(win => evaluate(win, '({body:document.body.innerText.slice(-3000),url:location.href})').catch(() => null))); fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, mode, group, checks, errors, states, error: error.stack }, null, 2)); console.error(error); process.exitCode = 1 }
+  finally { finished = true; clearTimeout(watchdog); for (const controller of controllers.values()) controller.abort(); windows.forEach(win => win.destroy()); server?.closeAllConnections?.(); server?.close(); await fixture?.cleanup(); app.exit(process.exitCode || 0) }
+})

@@ -9,6 +9,7 @@ export interface 下拉选项 {
 }
 
 interface Props {
+  commandId?: string
   icon: string
   label: string
   size?: 'large' | 'small'
@@ -26,7 +27,7 @@ interface Props {
    * antd 浮层渲染在 body 下会抢走焦点并折叠编辑区选区，
    * 需在此刻保存选区快照，等到菜单项 click 时选区已经丢失。
    */
-  onDropdownOpen?: () => void
+  onDropdownOpen?: (beforeFocus?: boolean) => void
 }
 
 /**
@@ -43,6 +44,7 @@ function 规范化选项(选项列表: Array<string | 下拉选项>): 下拉选�
 }
 
 const RibbonButton = ({
+  commandId,
   icon,
   label,
   size = 'large',
@@ -75,6 +77,7 @@ const RibbonButton = ({
           style: { maxHeight: 'min(60vh, 420px)', overflowY: 'auto' },
         },
         trigger: ['click'],
+        autoFocus: true,
         disabled,
         // 浮层打开瞬间保存选区，此时编辑区选区尚未被浮层折叠
         onOpenChange: (打开: boolean) => {
@@ -85,7 +88,7 @@ const RibbonButton = ({
       },
       React.createElement(
         'button',
-        { type: 'button', className: 类名, 'aria-label': label, title: disabledReason ?? label, disabled, onMouseDown: 保持选区 },
+        { type: 'button', className: 类名, 'aria-label': label, 'data-seal-command-menu': commandId, title: disabledReason ?? label, disabled, onPointerDown: () => onDropdownOpen?.(true), onClick: () => onDropdownOpen?.(true), onMouseDown: 保持选区 },
         React.createElement(Icon, { name: icon, size: 16 }),
         React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
         React.createElement('span', { className: 'wps-ribbon-button__caret' })
@@ -102,6 +105,7 @@ const RibbonButton = ({
       title: disabledReason ?? label,
       disabled,
       onMouseDown: 保持选区,
+      onPointerDown: () => onDropdownOpen?.(true),
       onClick: disabled ? undefined : onClick,
     },
     React.createElement(Icon, { name: icon, size: size === 'large' ? 20 : 16 }),

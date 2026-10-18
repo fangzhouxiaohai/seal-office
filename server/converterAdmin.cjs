@@ -15,12 +15,16 @@ function createConverterAdmin({ directory, env = process.env, request = fetch } 
   }
   const endpoint = (env.SEAL_PUBLIC_ORIGIN || 'https://seal.xingmasoft.com').replace(/\/$/, '') + '/api/office-converter'
   const publicConfig = () => ({ enabled: settings.enabled, concurrency: settings.concurrency, tokenConfigured: Boolean(settings.tokenHash), tokenFingerprint: settings.tokenHash ? settings.tokenHash.slice(0, 12) : '', updatedAt: settings.updatedAt, endpoint, maximumBytes: 20 * 1024 * 1024, timeoutSeconds: 90 })
-  async function worker(route, method = 'GET', body, timeout = 10000) {
+  async function worker(route, method = 'GET', body, timeout = 10000, signal) {
     if (!controlToken) throw Object.assign(new Error('转换管理通道尚未配置'), { status: 503 })
     let response
-    try { response = await request(base + '/internal/' + route, { method, headers: { Authorization: 'Bearer ' + controlToken, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(timeout) }) }
-    catch { throw Object.assign(new Error('转换引擎服务未连接，请检查运行状态'), { status: 503 }) }
-    const value = await response.json()
+    const timeoutSignal=AbortSignal.timeout(timeout),combined=signal?AbortSignal.any([signal,timeoutSignal]):timeoutSignal
+    try { response = await request(base + '/internal/' + route, { method,redirect:'error', headers: { Authorization: 'Bearer ' + controlToken, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: combined }) }
+    catch { if(signal?.aborted)throw signal.reason||Object.assign(new Error('文档转换已取消'),{status:499});if(timeoutSignal.aborted)throw Object.assign(new Error('文档转换服务响应超时'),{status:504});throw Object.assign(new Error('转换引擎服务未连接，请检查运行状态'), { status: 503 }) }
+    const responseLimit=Math.ceil(20*1024*1024/3)*4+4096
+    const chunks=[];let size=0
+    try{for await(const chunk of response.body){size+=chunk.length;if(size>responseLimit){await response.body.cancel?.().catch(()=>{});throw Object.assign(new Error('转换服务返回文件超过20 MiB'),{status:502})}chunks.push(chunk)}}catch(error){if(signal?.aborted)throw signal.reason||error;if(timeoutSignal.aborted)throw Object.assign(new Error('文档转换服务响应超时'),{status:504});throw error}
+    let value;try{value=JSON.parse(Buffer.concat(chunks).toString())}catch{throw Object.assign(new Error('转换工作进程返回无效数据'),{status:502})}
     if (!response.ok) throw Object.assign(new Error(value.error || '转换管理请求失败'), { status: response.status })
     return value
   }
@@ -49,8 +53,9 @@ function createConverterAdmin({ directory, env = process.env, request = fetch } 
     return { config: publicConfig(), ...(rotate ? { token } : {}) }
   }
   const update = (input, rotate = false) => exclusive(() => apply(input, rotate))
+  const accountWorker=async(route,method='GET',body,signal)=>{try{await sync();return await worker(route,method,body,100000,signal)}catch(error){if(signal?.aborted)throw signal.reason||error;if(error.status===401||error.status===404)throw Object.assign(new Error('转换工作进程尚未支持账号网关或管理通道配置不一致，请联系维护人员升级'),{status:503});throw error}}
   const timer = setInterval(() => { if (controlToken) void sync().catch(() => {}) }, 15000)
   timer.unref()
-  return { status, update, test: () => worker('test', 'POST', {}, 190000), publicConfig, close: () => clearInterval(timer) }
+  return { status, update, test: () => worker('test', 'POST', {}, 190000),accountCapabilities:signal=>accountWorker('capabilities','GET',undefined,signal),accountConvert:(input,signal)=>accountWorker('convert','POST',input,signal), publicConfig, close: () => clearInterval(timer) }
 }
 module.exports = { createConverterAdmin }

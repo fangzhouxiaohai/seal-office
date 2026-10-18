@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "date": "2026-10-18",
+  "scope": "Collaboration renderer, browser/mobile cloud bridge, credential entry and account conversion client",
+  "credentialsIncluded": false,
+  "sourceFrozen": true,
+  "checks": {
+    "rendererIntegration": {
+      "passed": 18,
+      "failed": 0,
+      "files": [
+        "renderer/src/collaboration/CollaborationPages.test.tsx",
+        "renderer/src/components/HomeRail.test.tsx",
+        "renderer/src/components/HomeSidebar.test.tsx",
+        "renderer/src/pages/ConversionServiceSettings.test.tsx",
+        "renderer/src/cloud/CloudFilesPage.test.tsx"
+      ],
+      "externalIO": "Actual cloud IPC handler, encryption, private local copies and temporary loopback HTTP cloud server; only OS UI surfaces and an explicit network-failure response are substituted",
+      "coverage": [
+        "Login gates for share/device/tag/team entry points",
+        "Share create and full-fragment-link accept, local copy open, explicit synchronization, optimistic version conflict and revoke",
+        "Device register/rename persistence and current-device revoke clearing the session",
+        "Tag CRUD, assignment/filter, tagged folder browsing, persistence and file retention after tag removal",
+        "Team viewer UI restrictions, server rejection following role downgrade, owner folder create/rename and persistence",
+        "Fragment secret cleared from the address bar, wrong-account import failure preserving current documents, successful invite consumption",
+        "Visible read-failure feedback and recovery using the actual server",
+        "Existing cloud browser, navigation and conversion-settings regressions"
+      ]
+    },
+    "accountConversionClient": {
+      "passed": 1,
+      "failed": 0,
+      "file": "mobile/tests/account-conversion.test.mjs",
+      "externalIO": "Actual HTTP account gateway and managed converter protocol with a deterministic injected engine",
+      "coverage": ["Default current-account authentication", "Per-document upload consent and cancellation", "Manual token configuration precedence and encrypted local storage", "Unauthenticated failure preserving source bytes"],
+      "limitation": "This protocol test does not validate LibreOffice document-format fidelity"
+    },
+    "productionBrowser": {
+      "passed": true,
+      "file": "mobile/tests/collaboration-browser.cjs",
+      "route": "/office/",
+      "viewports": [1280, 390, 360],
+      "externalIO": "Production browser bundle with no Electron preload, same-origin /api proxy to a temporary real cloud server and independent test accounts",
+      "csp": "Same strict script-src self policy as mobile/deploy/nginx.conf.example; no unsafe-eval allowance",
+      "coverage": ["Account login/unlock", "Hash team invite confirmation with secret excluded from HTTP request URLs", "Viewer write controls disabled", "Private share/team download copied into writable application document storage", "Local copy save does not silently overwrite team cloud content", "Share/device/tag/team navigation at all three widths", "No horizontal page overflow or browser console errors"],
+      "screenshots": ["collaboration-shared-1280.png", "collaboration-device-1280.png", "collaboration-tag-1280.png", "collaboration-team-1280.png", "collaboration-shared-390.png", "collaboration-device-390.png", "collaboration-tag-390.png", "collaboration-team-390.png", "collaboration-shared-360.png", "collaboration-device-360.png", "collaboration-tag-360.png", "collaboration-team-360.png"],
+      "artifactDirectory": ".upgrade-private/collaboration-verification",
+      "releaseBoundary": "A local production build was verified. Final combined release build and deployed public-origin acceptance remain with the parent release task."
+    },
+    "typecheck": { "renderer": "passed", "browserMobile": "passed" }
+  },
+  "limitations": [
+    "Collaboration uses explicit save-then-sync with optimistic cloud versions; simultaneous realtime co-editing and automatic merge are not implemented.",
+    "Generated invitation credentials and fragment links are copied only by the user; no SMS, email or messaging invitation is sent by this UI.",
+    "Read access controls future cloud requests. An already downloaded offline copy cannot be remotely withdrawn.",
+    "Synchronization bindings are established when opening a share/team copy from these pages; after an application restart, reopen through the corresponding page to establish its cloud binding again.",
+    "Android and HarmonyOS physical-device behavior is not certified by these browser checks.",
+    "This work implements the listed general collaboration features and does not claim complete WPS feature parity."
+  ]
+}

@@ -49,8 +49,8 @@ async function validateLocalInput(bytes, extension) {
 }
 async function 转换文档(bytes, inputFormat, outputFormat, type) {
   const source = formats.find(f => f.extension === inputFormat)
-  const target = formats.find(f => f.extension === outputFormat && f.type === type && !f.readOnlySource)
-  if (!source || !target || (source.type !== type && inputFormat !== 'xml')) throw new Error('文档转换格式无效')
+  const target = formats.find(f => f.extension === outputFormat && (f.type === type || f.extension === 'pdf') && !f.readOnlySource)
+  if (!['word','table','ppt'].includes(type) || !source || !target || (source.type !== type && inputFormat !== 'xml')) throw new Error('文档转换格式无效')
   if (bytes.length > 100 * 1024 * 1024) throw new Error('单个文件不能超过 100 MiB')
   if (templateTypes[outputFormat] && inputFormat === { word: 'docx', table: 'xlsx', ppt: 'pptx' }[type]) {
     const zip = await JSZip.loadAsync(bytes), [part, contentType] = templateTypes[outputFormat], declaration = zip.file('[Content_Types].xml')

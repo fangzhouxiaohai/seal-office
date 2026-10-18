@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "archiveTests": [
+    {
+      "mode": "portable",
+      "log": ".tmp-v200-fifth-portable-archive.log",
+      "passed": true,
+      "files": 19570,
+      "folders": 1623,
+      "uncompressedBytes": 2121549600,
+      "physicalArchiveBytes": 398496721,
+      "observedWarning": "There are data after the end of archive"
+    },
+    {
+      "mode": "installer",
+      "log": ".tmp-v200-fifth-installer-archive.log",
+      "passed": true,
+      "files": 19570,
+      "folders": 1623,
+      "uncompressedBytes": 2121549600,
+      "physicalArchiveBytes": 398496721,
+      "observedWarning": "There are data after the end of archive"
+    }
+  ],
+  "installationTestPerformed": false,
+  "limitation": "Embedded archive integrity does not establish NSIS installation/uninstallation."
+}

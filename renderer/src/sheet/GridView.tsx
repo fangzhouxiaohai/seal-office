@@ -14,6 +14,7 @@ interface Props {
   选区: 选区范围
   编辑地址: string | null
   编辑值: string
+  只读?: boolean
   /** 缩放比例，使用 zoom 实现，避免 transform 影响滚动与命中区域 */
   scale?: number
   /** 冻结前若干行与列；零表示该方向不冻结 */
@@ -23,6 +24,8 @@ interface Props {
   on选中: (位置: 单元格位置, 扩展选区: boolean) => void
   on双击: (地址: string) => void
   on编辑值变化: (值: string) => void
+  on组合开始?: () => void
+  on组合结束?: (值: string) => void
   on提交编辑: () => void
   on取消编辑: () => void
   on选中整列: (列: number) => void
@@ -72,12 +75,15 @@ const GridView = ({
   选区,
   编辑地址,
   编辑值,
+  只读 = false,
   scale = 1,
   冻结,
   隐藏行,
   on选中,
   on双击,
   on编辑值变化,
+  on组合开始,
+  on组合结束,
   on提交编辑,
   on取消编辑,
    on选中整列,
@@ -173,6 +179,7 @@ const GridView = ({
         'wps-sheet__cell',
         选中 ? 'wps-sheet__cell--selected' : '',
         编辑中 ? 'wps-sheet__cell--editing' : '',
+        单元.溢出锚点 || 单元.溢出范围 ? 'wps-sheet__cell--spill' : '',
         单元.批注 ? 'wps-sheet__cell--commented' : '',
       ]
         .filter((项) => 项.length > 0)
@@ -185,7 +192,10 @@ const GridView = ({
             key: 地址,
             className: 类名,
             'data-地址': 地址,
-            title: 单元.批注 ? `批注：${单元.批注}` : undefined,
+            'data-spill-anchor': 单元.溢出锚点 ?? (单元.溢出范围 ? 地址 : undefined),
+            'aria-readonly': 单元.溢出锚点 || 只读 ? true : undefined,
+            title: [单元.批注 ? `批注：${单元.批注}` : '', 单元.溢出锚点 ? `动态数组结果，请编辑锚点 ${单元.溢出锚点}` : 单元.溢出范围 ? `动态数组区域 ${单元.溢出范围}` : '', 单元.溢出错误 ?? '', 单元.公式状态 === '待计算' ? '公式等待兼容软件计算' : 单元.公式状态 ? '使用来源缓存或依赖来源缓存，结果可能已过期' : ''].filter(Boolean).join('\n') || undefined,
+            'data-formula-state': 单元.公式状态,
             style: {
               gridColumn: 合并 !== null && 合并.是左上角 ? `${列 + 2} / span ${合并.跨度列}` : 列 + 2,
               gridRow: 合并 !== null && 合并.是左上角 ? `${行 + 2} / span ${合并.跨度行}` : 行 + 2,
@@ -239,9 +249,11 @@ const GridView = ({
                 className: 'wps-sheet__editor',
                 'aria-label': `${地址} 选项`,
                 value: 编辑值,
+                disabled: 只读,
                 autoFocus: true,
                 onChange: (事件: React.ChangeEvent<HTMLSelectElement>) => on编辑值变化(事件.target.value),
                 onKeyDown: (事件: React.KeyboardEvent) => {
+                  if (事件.nativeEvent.isComposing || 事件.nativeEvent.keyCode === 229) return
                   if (事件.key === 'Enter') on提交编辑()
                   if (事件.key === 'Escape') on取消编辑()
                 },
@@ -255,10 +267,14 @@ const GridView = ({
             ? React.createElement('input', {
                 className: 'wps-sheet__editor',
                 value: 编辑值,
+                readOnly: 只读,
                 autoFocus: true,
                 onChange: (事件: React.ChangeEvent<HTMLInputElement>) =>
                   on编辑值变化(事件.target.value),
+                onCompositionStart: on组合开始,
+                onCompositionEnd: (事件: React.CompositionEvent<HTMLInputElement>) => on组合结束?.(事件.currentTarget.value),
                 onKeyDown: (事件: React.KeyboardEvent) => {
+                  if (事件.nativeEvent.isComposing || 事件.nativeEvent.keyCode === 229) return
                   if (事件.key === 'Enter') {
                     on提交编辑()
                   }

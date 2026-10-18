@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Button, Modal } from 'antd'
 import Icon from './Icon'
+import { navigationAvailable } from '../navConfig'
 
 interface Props {
   /** 当前导航键（recent / star / shared） */
@@ -27,6 +28,7 @@ const 云盘项 = [
   { key: 'market', label: '演示模板市场', icon: 'doc-ppt' },
   { key: 'device', label: '我的设备', icon: 'device' },
   { key: 'tag', label: '标签', icon: 'tag' },
+  { key: 'team', label: '团队空间', icon: 'users' },
   { key: 'trash', label: '回收站', icon: 'trash' },
 ]
 
@@ -44,7 +46,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
     { 类型: 'ppt' as const, 标题: '演示文稿', 描述: '制作汇报和培训课件', 图标: 'doc-ppt' },
     { 类型: 'pdf' as const, 标题: 'PDF', 描述: '新建空白 PDF', 图标: 'doc-pdf' },
     { 类型: 'access' as const, 标题: 'Access 数据库', 描述: '新建空白数据库', 图标: 'doc-table' },
-  ]
+  ].filter(项 => 项.类型 !== 'access' || navigationAvailable('database'))
 
   const 渲染导航项 = (项: { key: string; label: string; icon: string }, 占位: boolean) =>
     React.createElement(
@@ -99,14 +101,14 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
       React.createElement(Icon, { name: 'clock', size: 0, className: 'wps-hidden' }),
       渲染导航项({ key: 'recent', label: '最近', icon: 'clock' }, false),
       渲染导航项({ key: 'star', label: '星标', icon: 'star' }, false),
-      渲染导航项({ key: 'shared', label: '共享', icon: 'share' }, true)
+      渲染导航项({ key: 'shared', label: '共享', icon: 'share' }, false)
     ),
     // 云盘（占位）
     React.createElement(
       'div',
       { className: 'wps-homenav' },
       渲染组标题('云盘'),
-      云盘项.map((项) => 渲染导航项(项, ['device','tag'].includes(项.key)))
+      云盘项.map((项) => 渲染导航项(项, false))
     ),
     // 本机文件夹
     React.createElement(
@@ -142,6 +144,9 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
       ),
       渲染导航项({ key: 'mindmap', label: '脑图', icon: 'mindmap' }, false),
       渲染导航项({ key: 'flow', label: '流程图', icon: 'flow' }, false),
+      渲染导航项({ key: 'multitable', label: '多维表格', icon: 'doc-table' }, false),
+      渲染导航项({ key: 'design', label: '设计', icon: 'edit' }, false),
+      渲染导航项({ key: 'notes', label: '笔记', icon: 'doc-word' }, false),
       渲染导航项({ key: 'calendar', label: '日历', icon: 'calendar' }, false),
       渲染导航项({ key: 'apps', label: '应用', icon: 'apps' }, false),
       React.createElement(
@@ -165,6 +170,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
     React.createElement(Modal, {
       title: '新建文档', open: 新建弹窗打开, centered: true, footer: null,
       width: 640, onCancel: () => 设新建弹窗打开(false),
+      styles: { body: { maxHeight: '75vh', overflowY: 'auto' } },
       destroyOnHidden: true,
     }, React.createElement('div', { className: 'wps-newdoc-options' },
       ...新建选项.map((选项) => React.createElement('button', {
@@ -180,6 +186,18 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         onClick: () => { 设新建弹窗打开(false); onOpenTemplate() },
       }, React.createElement(Icon, { name: 'grid', size: 32 }),
       React.createElement('strong', null, '模板库'), React.createElement('span', null, '从现成内容开始编辑'))
+    ), React.createElement('h3', { className: 'wps-newdoc-service-title' }, '应用服务'),
+    React.createElement('div', { className: 'wps-newdoc-services' },
+      ...[
+        { key: 'multitable', label: '多维表格', icon: 'doc-table' },
+        { key: 'mindmap', label: '思维导图', icon: 'mindmap' },
+        { key: 'flow', label: '流程图', icon: 'flow' },
+        { key: 'design', label: '设计', icon: 'edit' },
+        { key: 'knowledge', label: '知识库', icon: 'knowledge' },
+        { key: 'notes', label: '笔记', icon: 'doc-word' },
+      ].map(item => React.createElement('button', { key: item.key, type: 'button', 'data-new-service': item.key,
+        onClick: () => { 设新建弹窗打开(false); onNavigate(item.key) },
+      }, React.createElement(Icon, { name: item.icon, size: 24 }), React.createElement('span', null, item.label)))
     ))
   )
 }

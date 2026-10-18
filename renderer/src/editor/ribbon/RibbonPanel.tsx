@@ -21,7 +21,7 @@ interface Props {
   /** 查询下拉按钮当前应展示的值 */
   获取当前值?: (命令标识: string) => string | undefined
   /** 下拉浮层打开前触发，用于保存编辑区选区快照 */
-  onDropdownOpen?: () => void
+  onDropdownOpen?: (beforeFocus?: boolean) => void
 }
 
 const RibbonPanel = ({
@@ -50,6 +50,7 @@ const RibbonPanel = ({
         组.items.map((项) =>
           React.createElement(RibbonButton, {
             key: `${组.name}-${项.commandId}-${项.label}`,
+            commandId: 项.commandId,
             icon: 项.icon,
             label: 项.commandId === 'view.zoomReset' && 缩放 !== undefined ? 缩放百分比文本(缩放) : 项.label,
             size: 项.kind === 'small' ? 'small' : 'large',
@@ -57,7 +58,7 @@ const RibbonPanel = ({
             disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,
             disabledReason: 获取禁用原因?.(项.commandId),
             currentValue: 项.options !== undefined ? (获取当前值?.(项.commandId) ?? 项.currentValue) : undefined,
-            options: 项.options,
+            options: 项.commandId === 'font.name' && document.documentElement.dataset.sealPlatform ? ['思源黑体', '思源宋体', 'Arial', 'Times New Roman'] : 项.options,
             onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
             onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
             onDropdownOpen,

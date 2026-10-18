@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "artifacts": [
+    {
+      "name": "海豹办公安装程序2.0.0.exe",
+      "bytes": 392135898,
+      "sha256": "c768a07751901c0e9081cbcf54277d79f3061d5c38f82df2de308bbb3d481c4a"
+    },
+    {
+      "name": "海豹办公2.0.0.exe",
+      "bytes": 391910433,
+      "sha256": "86b2eedbe001d48f185614fc98bd67401ebd27d92281aaa0717118177db8e8d5"
+    },
+    {
+      "name": "海豹办公Ubuntu2.0.0-amd64.deb",
+      "bytes": 121988764,
+      "sha256": "6f438c050f89d047f439cca2f9a392a033471b3b1f8fc008cdb796aa4698e17a"
+    }
+  ]
+}

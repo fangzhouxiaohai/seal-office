@@ -1,0 +1,188 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T13:26:03.754Z",
+  "status": "observed-native-static",
+  "target": {
+    "name": "kpromeprocesson.dll",
+    "digest": {
+      "sha256": "15eb6cee24aeaa405e280a1a7be8eb4e20a2a188a1e0a050be2a44d76284c88c"
+    },
+    "local_path": "C:\\Users\\A\\AppData\\Local\\Kingsoft\\WPS Office\\12.1.0.26895\\office6\\addons\\kpromeprocesson\\kpromeprocesson.dll",
+    "format": "pe",
+    "architecture": "x86"
+  },
+  "provider": {
+    "id": "rea-workflow",
+    "name": "REA composed investigation workflow",
+    "version": "1"
+  },
+  "method": "Project-local official REA MCP stdio transport with Ghidra; ephemeral read-only source import and default autoanalysis, xrefs -> containing procedure -> analyze_function.",
+  "overviewEvidenceId": "ev_5421fc8287c2baef4ee7fbc482010ca8a7a87dd79c50230a448b718d6cd81acc",
+  "functions": [
+    {
+      "meaning": "创建文件",
+      "observation": "读取 name/category/template/def_temp_id，构造包含 groupid、name、parentid、add_name_index 的独立文件创建请求；有未登录失败分支。",
+      "authority": "shipped-artifact",
+      "confidence": "observed",
+      "evidenceId": "ev_ec91c09238211d684e179bf797d214ec204b7785a2751516144917c891ef1224",
+      "procedure": "FUN_10016b70",
+      "address": "0x10016b70",
+      "body": {
+        "available": true,
+        "provenance": "ghidra-function-body-address-set",
+        "ranges": [
+          {
+            "start": "0x10016b70",
+            "end": "0x100171f0"
+          }
+        ],
+        "total_bytes": 1665,
+        "span_bytes": 1665,
+        "non_contiguous": false,
+        "contains_entry": true
+      },
+      "analysisLimitations": [
+        "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+        "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+        "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+        "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+      ],
+      "evidenceFile": ".upgrade-private/v200-fourth-pass/wps-processon-native/009-analyze_function.json",
+      "evidenceSha256": "b131791c575fff86849bbd1fda67d0e0d21a50696d97b11211dafab5b60efcf2"
+    },
+    {
+      "meaning": "按文件重命名",
+      "observation": "校验参数，构造 groups/files 路径以及 groupid、fileid、fname 参数；有请求失败分支。",
+      "authority": "shipped-artifact",
+      "confidence": "observed",
+      "evidenceId": "ev_329cac02f15e88cce393523f3f5fb92a582d7aa326aced7c1895082f95ccd761",
+      "procedure": "FUN_1002a770",
+      "address": "0x1002a770",
+      "body": {
+        "available": true,
+        "provenance": "ghidra-function-body-address-set",
+        "ranges": [
+          {
+            "start": "0x1002a770",
+            "end": "0x1002af4d"
+          }
+        ],
+        "total_bytes": 2014,
+        "span_bytes": 2014,
+        "non_contiguous": false,
+        "contains_entry": true
+      },
+      "analysisLimitations": [
+        "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+        "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+        "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+        "Synthetic Ghidra entry-point references without actionable memory sources are omitted.",
+        "Ghidra Listing reports a terminal call at 0x1002af06 to EXTERNAL:0x4b5 API-MS-WIN-CRT-RUNTIME-L1-1-0.DLL::_invalid_parameter_noinfo_noreturn (external=true, thunk=false, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return."
+      ],
+      "evidenceFile": ".upgrade-private/v200-fourth-pass/wps-processon-native/012-analyze_function.json",
+      "evidenceSha256": "8562a048ddc72de0717d97695bad9f50baafc6e8c5fafd5a412f7ad63ae44ad7"
+    },
+    {
+      "meaning": "打开/导入分派",
+      "observation": "区分 importfile/openfile/newfile，包含 fileid 缺失、浏览器缺失和导入地址缺失分支。",
+      "authority": "shipped-artifact",
+      "confidence": "observed",
+      "evidenceId": "ev_74e2be58386d404706bfb44e00f385c11b166388b0a9cab614575216e8ae30e5",
+      "procedure": "FUN_1000ad30",
+      "address": "0x1000ad30",
+      "body": {
+        "available": true,
+        "provenance": "ghidra-function-body-address-set",
+        "ranges": [
+          {
+            "start": "0x1000ad30",
+            "end": "0x1000b206"
+          }
+        ],
+        "total_bytes": 1239,
+        "span_bytes": 1239,
+        "non_contiguous": false,
+        "contains_entry": true
+      },
+      "analysisLimitations": [
+        "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+        "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+        "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+        "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+      ],
+      "evidenceFile": ".upgrade-private/v200-fourth-pass/wps-processon-native/018-analyze_function.json",
+      "evidenceSha256": "56dcac4ed456dacfe7ceec9b8703f4e34e5955216b135cdb2644c0b744b55e01"
+    },
+    {
+      "meaning": "删除确认",
+      "observation": "构造删除确认对话框，提示删除后可从回收站恢复，再调用删除处理。",
+      "authority": "shipped-artifact",
+      "confidence": "observed",
+      "evidenceId": "ev_470dd6b0fa9bc3320a642303cf2c3b7bea6430709eb026bdffe3a94abe1e4109",
+      "procedure": "FUN_1002e590",
+      "address": "0x1002e590",
+      "body": {
+        "available": true,
+        "provenance": "ghidra-function-body-address-set",
+        "ranges": [
+          {
+            "start": "0x1002e590",
+            "end": "0x1002e900"
+          }
+        ],
+        "total_bytes": 881,
+        "span_bytes": 881,
+        "non_contiguous": false,
+        "contains_entry": true
+      },
+      "analysisLimitations": [
+        "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+        "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+        "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+        "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+      ],
+      "evidenceFile": ".upgrade-private/v200-fourth-pass/wps-processon-native/019-analyze_function.json",
+      "evidenceSha256": "b90f0908c05649f2546d87e552be81246af22f80a285119a072c2049afac50ad"
+    }
+  ],
+  "installedResources": {
+    "path": ".upgrade-private/v200-fourth-pass/wps-installed-resource-observations.json",
+    "sha256": "eb69c9f8a6025d711c94ad180d066307fd157c0770d1e214e5c4cd97ca19f394"
+  },
+  "conclusion": {
+    "observed": "本机插件有独立文件的创建、打开/导入、按 fileid 重命名、删除及回收站提示路径。",
+    "analystInference": "海豹办公应以项目身份保存多张脑图和流程图，列表管理是对用户明确提供行为的独立实现。",
+    "runtimeObserved": false,
+    "vendorCodeCopiedIntoImplementation": false,
+    "vendorServiceRequestsMade": 0
+  },
+  "runtimeBlocker": {
+    "tool": "Windows Computer Use node_repl / @oai/sky",
+    "attempts": 2,
+    "resetAttempted": true,
+    "error": "failed to write kernel assets: 系统找不到指定的路径。 (os error 3)",
+    "targetActionsPerformed": 0
+  },
+  "limitations": [
+    "静态反编译不能证明 WPS 项目列表的完整交互、权限、云同步或当前账号状态。",
+    "未操作本机 WPS 窗口，未访问厂商私有云 API，也未复制插件代码、资源或接口到应用。",
+    "Ghidra 生成伪代码不是原始源码，参数和函数名可能不完整；逻辑名称是分析者依据调用和字符串作出的解释。",
+    "本轮聚焦脑图/流程图多项目生命周期，不代表 WPS 全部功能已经分析或完全复刻。"
+  ],
+  "coverage": [
+    "Derived by an REA composed workflow.",
+    "A headless Ghidra session contains exactly one imported Program, unlike Hopper's multi-document GUI session.",
+    "Cancelling an active Ghidra request terminates its ephemeral database and discards session annotations. The selected target remains open; the next provider query imports the original artifact again.",
+    "Charset is reported, while a non-missing terminator cannot distinguish a present terminator from a fixed or Pascal layout.",
+    "Default-space addresses use lowercase 0x-prefixed hexadecimal; other address spaces use <percent-encoded-space>:0x<hex>.",
+    "External functions and local thunks are distinct; procedure metadata identifies both and preserves a thunk target when Ghidra resolves one.",
+    "Memory-block end addresses are exclusive; permissions come from Ghidra MemoryBlock flags rather than inference from section names.",
+    "Only Ghidra-defined string Data is observed; packed or undefined string bytes may be absent. Completeness applies to that inventory, and an empty search does not establish that text is absent from the artifact. If an address is known, use read_bytes and xrefs to inspect bytes and references.",
+    "The Windows bridge uses authenticated IPv4 loopback because Node path-based IPC does not expose Java AF_UNIX sockets; the endpoint file contains no bearer token.",
+    "The imported Program and temporary project are ephemeral and deleted on close. Annotation operations edit session database metadata; original executable bytes are never written.",
+    "The session serves operations only after Ghidra reports default auto-analysis complete; incomplete analysis does not expose partial results.",
+    "The target references PDB kpromeprocesson.pdb (GUID b8be31fd-d41b-4ecc-907c-87dcee8f4de9, age (hex) 1, signature unknown, version RSDS); Ghidra reports load state unknown. Original names and types may be missing; an empty name search does not prove a procedure is absent. Use list_procedures and address-based analysis to inspect recovered functions. REA does not admit a caller-selected PDB companion.",
+    "Windows Ghidra P0 accepts native x86 and x86-64 PE applications and DLLs, and explicitly selected raw 6502 images; managed, hostile, sensitive, and mutable-path targets are unsupported.",
+    "Windows sessions require the matching packaged Windows x64 native addon, local NTFS targets and runtimes, and Windows 10 or later. Native handles enforce path admission, private DACLs, and Job Object ownership automatically."
+  ]
+}

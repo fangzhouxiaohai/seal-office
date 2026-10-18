@@ -1,10 +1,10 @@
-﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '')
+﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '', [ValidateSet('first','repeat','confirm')][string[]]$Phases = @('first','repeat','confirm'))
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
 $taskRelease = Join-Path $taskRoot "release\v$taskVersion"
 $taskLabel = if ($InstalledExecutable) { 'installed' } elseif ($Portable) { 'portable' } else { 'unpacked' }
-$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "海豹办公$taskVersion.exe" } else { Join-Path $taskRelease 'win-unpacked\海豹办公.exe' }
+$taskFile = if ($InstalledExecutable) { $InstalledExecutable } elseif ($Portable) { Join-Path $taskRelease "seal-office-$taskVersion-portable.exe" } else { Join-Path $taskRelease 'win-unpacked\海豹办公.exe' }
 if ($Portable -and $InstalledExecutable) { throw '便携版与安装目录验收不可同时指定' }
 $taskDirectory = Join-Path 'E:\Temp' ('seal-windows-release-' + [guid]::NewGuid().ToString('N'))
 $taskRegistry = 'Software\SealOfficeIntegrationTests\' + [guid]::NewGuid().ToString()
@@ -23,7 +23,7 @@ try {
 }
 New-Item -ItemType Directory -Path $taskDirectory | Out-Null
 try {
-  foreach ($taskPhase in @('first', 'repeat', 'confirm')) {
+  foreach ($taskPhase in $Phases) {
     # --skip-default-app-check：验收不得改动本机真实的文件关联，并保留首次询问弹窗供截图
     $taskArguments = @("--user-data-dir=`"$taskDirectory`"", '--remote-debugging-address=127.0.0.1', "--remote-debugging-port=$taskPagePort", "--inspect=127.0.0.1:$taskMainPort", '--skip-default-app-check')
     $taskAssociationFile = '-'
@@ -52,7 +52,7 @@ try {
       }
     }
   }
-  [pscustomobject]@{ 版本=$taskVersion; 成品=$taskLabel; 三次启动正常退出=$true } | ConvertTo-Json
+  [pscustomobject]@{ 版本=$taskVersion; 成品=$taskLabel; 核验阶段=$Phases; 全部所选启动正常退出=$true } | ConvertTo-Json
 } finally {
   if ($taskRegistry -notmatch '^Software\\SealOfficeIntegrationTests\\[a-f0-9-]{36}$') { throw '测试注册表清理位置越界' }
   [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($taskRegistry, $false)

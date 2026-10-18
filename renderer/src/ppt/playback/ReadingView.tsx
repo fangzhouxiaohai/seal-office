@@ -4,6 +4,7 @@ import { 播放画面 } from './PlaybackPage'
 import { 标记放映开始 } from '../presentationState'
 import { 画布宽, 画布高, type 演示文稿 } from '../deck'
 import type { 图片地址表 } from '../render/SlideObjects'
+import { dispatchShortcut } from '../../shortcuts/shortcuts'
 
 interface Props {
   文稿: 演示文稿
@@ -71,11 +72,15 @@ export default function 阅读视图({ 文稿, 起始索引, 序列, 图片地�
     const 处理按键 = (事件: KeyboardEvent) => {
       // 隔离编辑器的保存、增删页与标签切换快捷键；阅读视图自行处理翻页
       事件.stopImmediatePropagation()
-      if (事件.key === 'Escape') { 事件.preventDefault(); 退出引用.current(); return }
-      if (!['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'ArrowLeft', 'ArrowUp', 'PageUp'].includes(事件.key)) return
-      事件.preventDefault()
-      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(事件.key)) 控制.current?.单击()
-      else 控制.current?.后退()
+      if (事件.key==='Tab' || 事件.target instanceof HTMLButtonElement && ['Enter',' '].includes(事件.key)) return
+      dispatchShortcut(事件,'slideshow',command=>{
+        if(command==='show.exit')退出引用.current()
+        else if(command==='show.next')控制.current?.单击()
+        else if(command==='show.previous')控制.current?.后退()
+        else if(command==='show.first'||command==='show.last')控制.current?.首尾(command==='show.last')
+        else if(command==='show.pause')控制.current?.暂停(!控制.current.快照.暂停)
+        else return false
+      })
     }
     document.addEventListener('keydown', 处理按键, true)
     return () => document.removeEventListener('keydown', 处理按键, true)

@@ -1,0 +1,270 @@
+{
+  "status": "passed",
+  "version": "2.0.0",
+  "frozenAt": "2026-10-18T11:36:58.816Z",
+  "scope": "Word/PDF mobile fullscreen reading and gestures",
+  "sourceHashes": {
+    "renderer/src/editor/readingInteractions.ts": "900839748696e03803fddee7243926120b7cb5c3833c90b6325151dc85b49edd",
+    "renderer/src/editor/WordReadingView.tsx": "f2f4ba2739551d3390c468bc94b164b045a1b17c37322e220205532a4c62ad02",
+    "renderer/src/editor/reading.css": "3b797b15a5abbd734bdf14f6af1704f25f8aa94fe13ebb035b40683da1318125",
+    "renderer/src/editor/DocEditor.tsx": "7a98ff40c322f6fcfb3b3554412359fb9afcb266dcf9de8f2ea5e5dbb4816d01",
+    "renderer/src/editor/MobileReadingToolbar.tsx": "5434b14606bb1dc8fbb4ee73162b076930cef175c1cbf42b509c1654a7546159",
+    "renderer/src/pdf/PdfViewer.tsx": "60790ad564e66abf18b3f2076aaa9de7549e67b6fadaded4cdd5ee805ae9a60c",
+    "renderer/src/editor/readingInteractions.test.tsx": "1b7b2033cdb3d022d90585a9de2aa8b9add95b394ff7fb89584b321b0699135e",
+    "renderer/src/editor/DocEditorReading.test.tsx": "31be3ad3a61cfc92ea3976dda85ffa0372549f3baa1a3137e5cd554681f56b18",
+    "renderer/src/pdf/PdfViewer.test.tsx": "832a02450b4a276cfc3a1e7724be5621bd33abbb10b073f9dd4df8b0d815c26e",
+    "mobile/tests/reading-pages-actions.cjs": "5fbcb376a043583da31da8683008ca66a79e06d9c28675b7c8cde25b55cbe18d"
+  },
+  "implementation": {
+    "word": "Independent sanitized read-only browser-column screen pages; the original editor DOM/HTML/page settings/history remain intact. This is explicitly labelled 阅读页 / 按屏重排, not a native Word physical page number.",
+    "pdf": "Physical PDF page count and rendered canvases retained; continuous and horizontal scroll-snap modes, nearby-page virtualization, viewport/pixel rendering limits preserved.",
+    "gestures": "Single-finger scrolling remains browser-native; only intentional two-touch pinch is prevented and owned by the reader. Interactive controls, IME and residual touch after pinch are guarded.",
+    "fullscreen": "Fullscreen API when available, denied/unsupported WebView fixed-viewport fallback, safe-area CSS, background inert/focus trap, Escape/native Back and focus restoration.",
+    "state": "Word stores page/zoom/mode/progress per opened document. PDF restores original mode/zoom, maps the same physical page after exit/mode change and waits for the real viewport width before restoring scroll."
+  },
+  "tests": {
+    "local": {
+      "passed": true,
+      "files": 3,
+      "cases": 19,
+      "command": "npx vitest run renderer/src/editor/readingInteractions.test.tsx renderer/src/editor/DocEditorReading.test.tsx renderer/src/pdf/PdfViewer.test.tsx",
+      "log": ".tmp-reading-final-tests.log"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npx tsc --noEmit",
+      "log": ".tmp-reading-final-typecheck.log"
+    },
+    "production": {
+      "passed": true,
+      "sharedFinalResources": false,
+      "privateBundle": ".upgrade-private/reading-pages/dist",
+      "chrome": {
+        "report": ".upgrade-private/reading-pages/chrome-report.json",
+        "host": "Chrome headless real native CDP touchscreen",
+        "checks": [
+          "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+          "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换"
+        ],
+        "results": [
+          {
+            "protocol": "http",
+            "host": "CDP native touchscreen",
+            "word": {
+              "initial": {
+                "pages": 26,
+                "page": 1,
+                "fullscreen": "viewport"
+              },
+              "swipePage": 2,
+              "zoomBefore": 1,
+              "zoomAfter": 1.5,
+              "anchor": {
+                "left": 209,
+                "top": 640.53125,
+                "viewportLeft": 0,
+                "viewportRight": 390,
+                "viewportTop": 53,
+                "viewportBottom": 771
+              },
+              "widths": [
+                {
+                  "width": 360,
+                  "left": 0,
+                  "right": 360,
+                  "height": 672,
+                  "pages": 38,
+                  "scroll": 360
+                },
+                {
+                  "width": 390,
+                  "left": 0,
+                  "right": 390,
+                  "height": 718,
+                  "pages": 31,
+                  "scroll": 390
+                },
+                {
+                  "width": 820,
+                  "left": 0,
+                  "right": 820,
+                  "height": 718,
+                  "pages": 16,
+                  "scroll": 820
+                }
+              ]
+            },
+            "pdf": {
+              "pages": 3,
+              "swipePage": "第 2 页 / 共 3 页",
+              "zoomBefore": "150%",
+              "zoomAfter": 225,
+              "anchor": {
+                "left": 97,
+                "top": 35
+              }
+            }
+          }
+        ],
+        "errors": []
+      },
+      "electron": {
+        "windowOptions": {
+          "show": false,
+          "offscreen": false,
+          "backgroundThrottling": false
+        },
+        "report": ".upgrade-private/reading-pages/report.json",
+        "checks": [
+          "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+          "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+          "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+          "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换"
+        ],
+        "results": [
+          {
+            "protocol": "http",
+            "host": "CDP native touchscreen",
+            "word": {
+              "initial": {
+                "pages": 26,
+                "page": 1,
+                "fullscreen": "viewport"
+              },
+              "swipePage": 2,
+              "zoomBefore": 1,
+              "zoomAfter": 1.5,
+              "anchor": {
+                "left": 317,
+                "top": 591.9375,
+                "viewportLeft": 0,
+                "viewportRight": 390,
+                "viewportTop": 53,
+                "viewportBottom": 771
+              },
+              "widths": [
+                {
+                  "width": 360,
+                  "left": 0,
+                  "right": 360,
+                  "height": 672,
+                  "pages": 38,
+                  "scroll": 360
+                },
+                {
+                  "width": 390,
+                  "left": 0,
+                  "right": 390,
+                  "height": 718,
+                  "pages": 31,
+                  "scroll": 390
+                },
+                {
+                  "width": 820,
+                  "left": 0,
+                  "right": 820,
+                  "height": 718,
+                  "pages": 16,
+                  "scroll": 820
+                }
+              ]
+            },
+            "pdf": {
+              "pages": 3,
+              "swipePage": "第 2 页 / 共 3 页",
+              "zoomBefore": "150%",
+              "zoomAfter": 225,
+              "anchor": {
+                "left": 97,
+                "top": 35
+              }
+            }
+          },
+          {
+            "protocol": "file",
+            "host": "CDP native touchscreen",
+            "word": {
+              "initial": {
+                "pages": 26,
+                "page": 1,
+                "fullscreen": "viewport"
+              },
+              "swipePage": 2,
+              "zoomBefore": 1,
+              "zoomAfter": 1.5,
+              "anchor": {
+                "left": 317,
+                "top": 591.9375,
+                "viewportLeft": 0,
+                "viewportRight": 390,
+                "viewportTop": 53,
+                "viewportBottom": 771
+              },
+              "widths": [
+                {
+                  "width": 360,
+                  "left": 0,
+                  "right": 360,
+                  "height": 672,
+                  "pages": 38,
+                  "scroll": 360
+                },
+                {
+                  "width": 390,
+                  "left": 0,
+                  "right": 390,
+                  "height": 718,
+                  "pages": 31,
+                  "scroll": 390
+                },
+                {
+                  "width": 820,
+                  "left": 0,
+                  "right": 820,
+                  "height": 718,
+                  "pages": 16,
+                  "scroll": 820
+                }
+              ]
+            },
+            "pdf": {
+              "pages": 3,
+              "swipePage": "第 2 页 / 共 3 页",
+              "zoomBefore": "150%",
+              "zoomAfter": 225,
+              "anchor": {
+                "left": 97,
+                "top": 35
+              }
+            }
+          }
+        ],
+        "errors": [],
+        "blocked": []
+      },
+      "strictAssertions": [
+        "Word real native single-finger horizontal swipe, two-touch pinch outward and inward; touched text stays within visible reading page",
+        "Word 360/390/820px, fullscreen continuous/page switch, same page+zoom on reentry, original HTML+DOM identity preserved",
+        "PDF native touch physical page 1→2, 150%→225% anchored zoom, same page on width/orientation changes",
+        "PDF exit restores 150%/continuous mode/focus and stays on physical page 2; explicit mode switching stays on page 2",
+        "Visible 连续滚动 text removed; accessible mode names remain",
+        "No runtime console errors or external network requests in Electron HTTP/file runs"
+      ]
+    }
+  },
+  "screenshots": [
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\word-fullscreen-pages-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\word-fullscreen-pages-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\word-fullscreen-pages-820.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\pdf-fullscreen-pages-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\pdf-fullscreen-pages-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\reading-pages\\pdf-fullscreen-pages-820.png"
+  ],
+  "boundaries": [
+    "This evidence uses actual browser touchscreen input via CDP emulation, not a physical Android/Harmony handset. Native cloud packages and physical-device acceptance remain a later release step.",
+    "Production runs deliberately exercise the denied Fullscreen API WebView fallback. Successful/denied native fullscreen events, native Back, Escape, focus and IME are additionally covered by hook tests; OS-level fullscreen chrome on physical devices is not claimed verified.",
+    "Word pages reflow with viewport/font/zoom; paragraph/table fragmentation follows the browser. A pinch retains the touched text in the visible screen page; exact pixel position can change during reflow. Physical Word pagination remains a separate capability.",
+    "Electron 25 offscreen rendering does not implement native touchscreen dispatch; final production verification uses ordinary hidden windows. The helper has an explicitly labelled wheel/DOM-pinch fallback for OSR and never labels it real touchscreen.",
+    "No formal dist/static/unpackage output, package version, native credentials or PDF export policy was changed by this scope."
+  ]
+}

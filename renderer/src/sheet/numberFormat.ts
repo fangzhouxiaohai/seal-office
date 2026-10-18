@@ -1,6 +1,14 @@
 // 数字格式化：按单元格格式把数值渲染为展示文本。
+import { format } from 'ssf'
 
 export type 数字格式 = '常规' | '数值' | '货币' | '百分比' | '千位分隔'
+
+/** 只接收 OOXML 格式代码和原始数值，不把预览字符串写回原始数据。 */
+export function 格式化来源数字(值: number, 格式代码: string, 日期系统1904 = false): string {
+  if (!Number.isFinite(值)) return String(值)
+  if (!格式代码 || 格式代码.length > 4096) return String(值)
+  try { return format(格式代码, 值, { date1904: 日期系统1904 }) } catch { return String(值) }
+}
 
 /** 为整数部分插入千位分隔符，保留符号与小数部分 */
 function 加千位分隔(文本: string): string {

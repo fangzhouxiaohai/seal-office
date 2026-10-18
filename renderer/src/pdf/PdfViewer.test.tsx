@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PdfViewer from './PdfViewer'
+import { saveShortcutOverrides, SHORTCUT_STORAGE_KEY } from '../shortcuts/shortcuts'
 
 const PDF模拟 = vi.hoisted(() => ({ 取文档: vi.fn() }))
 vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
@@ -9,9 +10,90 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
 }))
 
 describe('PDF 阅读预览', () => {
+  afterEach(()=>{vi.restoreAllMocks()})
   beforeEach(() => {
+    localStorage.removeItem(SHORTCUT_STORAGE_KEY)
     vi.clearAllMocks()
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as CanvasRenderingContext2D)
+  })
+
+  it('退出全屏先按原阅读区实际宽度排版，再恢复同一物理页，避免旧宽度定位落到下一页', async () => {
+    const rect=HTMLElement.prototype.getBoundingClientRect,computed=window.getComputedStyle
+    vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockImplementation(function(this:HTMLElement){return this.classList.contains('pdf-viewer__stage')?(this.dataset.viewMode==='pages'?390:300):0})
+    vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockImplementation(function(this:HTMLElement){return this.classList.contains('pdf-viewer__stage')?600:0})
+    vi.spyOn(window,'getComputedStyle').mockImplementation((node,pseudo)=>{const style=computed(node,pseudo);if(node instanceof HTMLElement&&node.classList.contains('pdf-viewer__stage'))return {...style,paddingLeft:node.dataset.viewMode==='pages'?'0px':'24px',paddingRight:node.dataset.viewMode==='pages'?'0px':'24px'} as CSSStyleDeclaration;return style})
+    vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(this:HTMLElement){if(this.classList.contains('pdf-viewer__stage'))return {top:0,bottom:600,left:0,right:this.clientWidth,width:this.clientWidth,height:600} as DOMRect;if(this.dataset.pdfPage){const stage=this.closest<HTMLElement>('.pdf-viewer__stage')!,index=Number(this.dataset.pdfPage)-1,height=Number.parseFloat(this.style.height),top=stage.dataset.viewMode==='pages'?12:24+index*(height+24)-stage.scrollTop;return {top,bottom:top+height,left:0,right:300,width:300,height} as DOMRect}return rect.call(this)})
+    PDF模拟.取文档.mockReturnValue({promise:Promise.resolve({numPages:3,getPage:vi.fn(async()=>({getViewport:({scale}:{scale:number})=>({width:600*scale,height:800*scale}),render:()=>({promise:Promise.resolve(),cancel:vi.fn()}),getTextContent:async()=>({items:[]})}))}),destroy:vi.fn()})
+    const {container}=render(<PdfViewer 数据={btoa('%PDF-1.7')} />)
+    await screen.findByText('第 1 页 / 共 3 页')
+    await waitFor(()=>expect(container.querySelector<HTMLCanvasElement>('canvas')?.style.width).toBe('252px'))
+    fireEvent.click(screen.getByRole('button',{name:'全屏左右翻页阅读'}))
+    fireEvent.click(screen.getByRole('button',{name:'下一页'}));await screen.findByText('第 2 页 / 共 3 页')
+    fireEvent.click(screen.getByRole('button',{name:'放大'}))
+    fireEvent.click(screen.getByRole('button',{name:'退出全屏阅读'}))
+    await waitFor(()=>expect(container.querySelector<HTMLCanvasElement>('canvas')?.style.width).toBe('252px'))
+    expect(screen.getByText('第 2 页 / 共 3 页')).toBeInTheDocument()
+    const stage=container.querySelector<HTMLElement>('.pdf-viewer__stage')!
+    expect(stage.scrollTop).toBeCloseTo(384)
+  })
+
+  it('左右分页沿用真实页码、全屏双指缩放后返回连续阅读并恢复原缩放和焦点', async () => {
+    PDF模拟.取文档.mockReturnValue({promise:Promise.resolve({numPages:3,getPage:vi.fn(async()=>({getViewport:({scale}:{scale:number})=>({width:600*scale,height:800*scale}),render:()=>({promise:Promise.resolve(),cancel:vi.fn()}),getTextContent:async()=>({items:[]})}))}),destroy:vi.fn()})
+    const {container}=render(<PdfViewer 数据={btoa('%PDF-1.7')} />)
+    await screen.findByText('第 1 页 / 共 3 页')
+    const original=container.querySelector('.pdf-viewer__stage') as HTMLElement
+    Object.defineProperty(original,'clientWidth',{configurable:true,value:390});Object.defineProperty(original,'clientHeight',{configurable:true,value:600});fireEvent(window,new Event('resize'))
+    fireEvent.click(screen.getByRole('button',{name:'全屏左右翻页阅读'}))
+    const reader=screen.getByRole('dialog',{name:'PDF 阅读预览'}),stage=reader.querySelector('.pdf-viewer__stage') as HTMLElement
+    Object.defineProperty(stage,'clientWidth',{configurable:true,value:390});Object.defineProperty(stage,'clientHeight',{configurable:true,value:600});fireEvent(window,new Event('resize'))
+    expect(stage).toHaveAttribute('data-view-mode','pages');expect(reader.querySelectorAll('[data-pdf-slide]')).toHaveLength(3)
+    await waitFor(()=>expect(reader.querySelector<HTMLCanvasElement>('.pdf-viewer__canvas')?.style.width).toBe('366px'))
+    stage.scrollLeft=390;fireEvent.scroll(stage);await screen.findByText('第 2 页 / 共 3 页')
+    const touch=(type:string,points:number[][])=>{const event=new Event(type,{bubbles:true,cancelable:true});Object.defineProperty(event,'touches',{value:points.map(([clientX,clientY])=>({clientX,clientY}))});fireEvent(stage.querySelector('[data-pdf-slide="2"]')!,event);return event}
+    expect(touch('touchstart',[[100,150],[200,150]]).defaultPrevented).toBe(true)
+    touch('touchmove',[[50,150],[250,150]]);touch('touchend',[])
+    await screen.findByText('300%')
+    fireEvent.click(screen.getByRole('button',{name:'退出全屏阅读'}))
+    expect(screen.queryByRole('dialog',{name:'PDF 阅读预览'})).toBeNull()
+    expect(container.querySelector('.pdf-viewer__stage')).toHaveAttribute('data-view-mode','continuous')
+    expect(screen.getByText('150%')).toBeInTheDocument()
+    await waitFor(()=>expect(screen.getByRole('button',{name:'全屏左右翻页阅读'})).toHaveFocus())
+    expect(screen.queryByText('连续滚动')).toBeNull()
+  })
+
+  it('兼容 WPS PDF 缩放键位：实际大小、适应页宽与整页，并允许改绑导航', async () => {
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({ numPages: 3, getPage: vi.fn(async () => ({ getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }), render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }), getTextContent: async () => ({ items: [] }) })) }),
+      destroy: vi.fn(),
+    })
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="缩放快捷键.pdf" />)
+    const stage = container.querySelector('.pdf-viewer__stage') as HTMLElement
+    Object.defineProperty(stage, 'clientWidth', { configurable: true, value: 400 })
+    Object.defineProperty(stage, 'clientHeight', { configurable: true, value: 500 })
+    stage.style.padding = '24px'
+    fireEvent(window, new Event('resize'))
+    const canvas = await waitFor(() => {
+      const node = container.querySelector('.pdf-viewer__canvas') as HTMLCanvasElement
+      expect(node?.style.width).toBe('352px')
+      return node
+    })
+    fireEvent.keyDown(stage, { key: '1', ctrlKey: true })
+    await waitFor(() => expect(Number.parseFloat(canvas.style.width)).toBeCloseTo(600))
+    fireEvent.keyDown(stage, { key: '2', ctrlKey: true })
+    await waitFor(() => expect(Number.parseFloat(canvas.style.width)).toBeCloseTo(352))
+    fireEvent.keyDown(stage, { key: '0', ctrlKey: true })
+    await waitFor(() => expect(Number.parseFloat(canvas.style.height)).toBeCloseTo(452))
+    const pageInput = screen.getByRole('spinbutton', { name: '跳转页码' })
+    fireEvent.keyDown(pageInput, { key: '1', ctrlKey: true })
+    expect(Number.parseFloat(canvas.style.height)).toBeCloseTo(452)
+    saveShortcutOverrides({ 'pdf:view.nextPage': ['Ctrl+Alt+N'] })
+    const old = new KeyboardEvent('keydown', { key: 'ArrowDown', ctrlKey: true, bubbles: true, cancelable: true })
+    fireEvent(stage, old)
+    expect(old.defaultPrevented).toBe(true)
+    const remapped = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, altKey: true, bubbles: true, cancelable: true })
+    fireEvent(stage, remapped)
+    expect(remapped.defaultPrevented).toBe(true)
+    localStorage.removeItem(SHORTCUT_STORAGE_KEY)
   })
 
   it('显示真实页数，并允许翻页和调整缩放', async () => {
@@ -148,7 +230,8 @@ describe('PDF 阅读预览', () => {
     const 页 = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')]
     expect(页).toHaveLength(2)
     expect(舞台).toHaveAttribute('data-view-mode', 'continuous')
-    expect(screen.getByText('连续滚动')).toBeInTheDocument()
+    expect(screen.queryByText('连续滚动')).toBeNull()
+    expect(screen.getByRole('button',{name:'切换左右翻页'})).toBeInTheDocument()
     await waitFor(() => expect(页.every((节点) => 节点.querySelector('canvas'))).toBe(true))
     Object.defineProperty(舞台, 'clientHeight', { configurable: true, value: 600 })
     舞台.getBoundingClientRect = () => ({ top: 0, bottom: 600 } as DOMRect)

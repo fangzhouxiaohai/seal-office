@@ -1,0 +1,574 @@
+{
+  "oracle": "LibreOffice 26.8.1 hard recalculation",
+  "pipeline": "real main/office/xlsxCodec.js new formulas",
+  "date1904": true,
+  "dateBasisEvidence": "Input/output raw workbookPr both assert date1904=\"1\" or \"true\"; ExcelJS incorrectly parses the latter as false",
+  "exceljsDate1904": false,
+  "cases": 33,
+  "passed": 33,
+  "failed": [],
+  "encodingDifferences": 0,
+  "rows": [
+    {
+      "formula": "=YEAR(0)",
+      "encoded": "YEAR(0)",
+      "oracleFormula": "YEAR(0)",
+      "engine": {
+        "值": 1904,
+        "错误": false
+      },
+      "known": 1904,
+      "oracle": 1904,
+      "prefixedEngine": {
+        "值": 1904,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=MONTH(0)",
+      "encoded": "MONTH(0)",
+      "oracleFormula": "MONTH(0)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DAY(0)",
+      "encoded": "DAY(0)",
+      "oracleFormula": "DAY(0)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(1904,1,1)",
+      "encoded": "DATE(1904,1,1)",
+      "oracleFormula": "DATE(1904,1,1)",
+      "engine": {
+        "值": 0,
+        "错误": false
+      },
+      "known": 0,
+      "oracle": 0,
+      "prefixedEngine": {
+        "值": 0,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(1904,2,29)",
+      "encoded": "DATE(1904,2,29)",
+      "oracleFormula": "DATE(1904,2,29)",
+      "engine": {
+        "值": 59,
+        "错误": false
+      },
+      "known": 59,
+      "oracle": 59,
+      "prefixedEngine": {
+        "值": 59,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(2024,1,1)",
+      "encoded": "DATE(2024,1,1)",
+      "oracleFormula": "DATE(2024,1,1)",
+      "engine": {
+        "值": 43830,
+        "错误": false
+      },
+      "known": 43830,
+      "oracle": 43830,
+      "prefixedEngine": {
+        "值": 43830,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DATEVALUE(\"2024-01-01\")",
+      "encoded": "DATEVALUE(\"2024-01-01\")",
+      "oracleFormula": "DATEVALUE(\"2024-01-01\")",
+      "engine": {
+        "值": 43830,
+        "错误": false
+      },
+      "known": 43830,
+      "oracle": 43830,
+      "prefixedEngine": {
+        "值": 43830,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=YEAR(Data!A3)",
+      "encoded": "YEAR(Data!A3)",
+      "oracleFormula": "YEAR(Data!A3)",
+      "engine": {
+        "值": 2024,
+        "错误": false
+      },
+      "known": 2024,
+      "oracle": 2024,
+      "prefixedEngine": {
+        "值": 2024,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DAYS(1,0)",
+      "encoded": "_xlfn.DAYS(1,0)",
+      "oracleFormula": "_xlfn.DAYS(1,0)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DAYS(\"2024-01-02\",Data!A3)",
+      "encoded": "_xlfn.DAYS(\"2024-01-02\",Data!A3)",
+      "oracleFormula": "_xlfn.DAYS(\"2024-01-02\",Data!A3)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=EDATE(0,1)",
+      "encoded": "EDATE(0,1)",
+      "oracleFormula": "EDATE(0,1)",
+      "engine": {
+        "值": 31,
+        "错误": false
+      },
+      "known": 31,
+      "oracle": 31,
+      "prefixedEngine": {
+        "值": 31,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=EOMONTH(0,0)",
+      "encoded": "EOMONTH(0,0)",
+      "oracleFormula": "EOMONTH(0,0)",
+      "engine": {
+        "值": 30,
+        "错误": false
+      },
+      "known": 30,
+      "oracle": 30,
+      "prefixedEngine": {
+        "值": 30,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WEEKDAY(0)",
+      "encoded": "WEEKDAY(0)",
+      "oracleFormula": "WEEKDAY(0)",
+      "engine": {
+        "值": 6,
+        "错误": false
+      },
+      "known": 6,
+      "oracle": 6,
+      "prefixedEngine": {
+        "值": 6,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WEEKNUM(0)",
+      "encoded": "WEEKNUM(0)",
+      "oracleFormula": "WEEKNUM(0,1)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=ISOWEEKNUM(0)",
+      "encoded": "_xlfn.ISOWEEKNUM(0)",
+      "oracleFormula": "_xlfn.ISOWEEKNUM(0)",
+      "engine": {
+        "值": 53,
+        "错误": false
+      },
+      "known": 53,
+      "oracle": 53,
+      "prefixedEngine": {
+        "值": 53,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=TIME(13,30,0)",
+      "encoded": "TIME(13,30,0)",
+      "oracleFormula": "TIME(13,30,0)",
+      "engine": {
+        "值": 0.5625,
+        "错误": false
+      },
+      "known": 0.5625,
+      "oracle": 0.5625,
+      "prefixedEngine": {
+        "值": 0.5625,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=TIMEVALUE(\"13:30\")",
+      "encoded": "TIMEVALUE(\"13:30\")",
+      "oracleFormula": "TIMEVALUE(\"13:30\")",
+      "engine": {
+        "值": 0.5625,
+        "错误": false
+      },
+      "known": 0.5625,
+      "oracle": 0.5625,
+      "prefixedEngine": {
+        "值": 0.5625,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=HOUR(0.5)",
+      "encoded": "HOUR(0.5)",
+      "oracleFormula": "HOUR(0.5)",
+      "engine": {
+        "值": 12,
+        "错误": false
+      },
+      "known": 12,
+      "oracle": 12,
+      "prefixedEngine": {
+        "值": 12,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=MINUTE(0.5625)",
+      "encoded": "MINUTE(0.5625)",
+      "oracleFormula": "MINUTE(0.5625)",
+      "engine": {
+        "值": 30,
+        "错误": false
+      },
+      "known": 30,
+      "oracle": 30,
+      "prefixedEngine": {
+        "值": 30,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=SECOND(TIME(1,2,3))",
+      "encoded": "SECOND(TIME(1,2,3))",
+      "oracleFormula": "SECOND(TIME(1,2,3))",
+      "engine": {
+        "值": 3,
+        "错误": false
+      },
+      "known": 3,
+      "oracle": 3,
+      "prefixedEngine": {
+        "值": 3,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6)",
+      "encoded": "NETWORKDAYS(0,6)",
+      "oracleFormula": "NETWORKDAYS(0,6)",
+      "engine": {
+        "值": 5,
+        "错误": false
+      },
+      "known": 5,
+      "oracle": 5,
+      "prefixedEngine": {
+        "值": 5,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY(0,1)",
+      "encoded": "WORKDAY(0,1)",
+      "oracleFormula": "WORKDAY(0,1)",
+      "engine": {
+        "值": 3,
+        "错误": false
+      },
+      "known": 3,
+      "oracle": 3,
+      "prefixedEngine": {
+        "值": 3,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6,Data!H1:H1)",
+      "encoded": "NETWORKDAYS(0,6,Data!H1:H1)",
+      "oracleFormula": "NETWORKDAYS(0,6,Data!H1)",
+      "engine": {
+        "值": 4,
+        "错误": false
+      },
+      "known": 4,
+      "oracle": 4,
+      "prefixedEngine": {
+        "值": 4,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY(0,1,Data!H2:H2)",
+      "encoded": "WORKDAY(0,1,Data!H2:H2)",
+      "oracleFormula": "WORKDAY(0,1,Data!H2)",
+      "engine": {
+        "值": 4,
+        "错误": false
+      },
+      "known": 4,
+      "oracle": 4,
+      "prefixedEngine": {
+        "值": 4,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS.INTL(0,6,11)",
+      "encoded": "NETWORKDAYS.INTL(0,6,11)",
+      "oracleFormula": "NETWORKDAYS.INTL(0,6,11)",
+      "engine": {
+        "值": 6,
+        "错误": false
+      },
+      "known": 6,
+      "oracle": 6,
+      "prefixedEngine": {
+        "值": 6,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS.INTL(0,6,11,Data!H1:H1)",
+      "encoded": "NETWORKDAYS.INTL(0,6,11,Data!H1:H1)",
+      "oracleFormula": "NETWORKDAYS.INTL(0,6,11,Data!H1)",
+      "engine": {
+        "值": 5,
+        "错误": false
+      },
+      "known": 5,
+      "oracle": 5,
+      "prefixedEngine": {
+        "值": 5,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY.INTL(0,1,11)",
+      "encoded": "WORKDAY.INTL(0,1,11)",
+      "oracleFormula": "WORKDAY.INTL(0,1,11)",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY.INTL(0,1,11,Data!H3:H3)",
+      "encoded": "WORKDAY.INTL(0,1,11,Data!H3:H3)",
+      "oracleFormula": "WORKDAY.INTL(0,1,11,Data!H3)",
+      "engine": {
+        "值": 3,
+        "错误": false
+      },
+      "known": 3,
+      "oracle": 3,
+      "prefixedEngine": {
+        "值": 3,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=IF(TRUE,YEAR(0),1900)",
+      "encoded": "IF(TRUE,YEAR(0),1900)",
+      "oracleFormula": "IF(TRUE(),YEAR(0),1900)",
+      "engine": {
+        "值": 1904,
+        "错误": false
+      },
+      "known": 1904,
+      "oracle": 1904,
+      "prefixedEngine": {
+        "值": 1904,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=IFERROR(1/0,DATE(1904,1,1))",
+      "encoded": "IFERROR(1/0,DATE(1904,1,1))",
+      "oracleFormula": "IFERROR(1/0,DATE(1904,1,1))",
+      "engine": {
+        "值": 0,
+        "错误": false
+      },
+      "known": 0,
+      "oracle": 0,
+      "prefixedEngine": {
+        "值": 0,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=IFNA(NA(),DAY(0))",
+      "encoded": "_xlfn.IFNA(NA(),DAY(0))",
+      "oracleFormula": "_xlfn.IFNA(NA(),DAY(0))",
+      "engine": {
+        "值": 1,
+        "错误": false
+      },
+      "known": 1,
+      "oracle": 1,
+      "prefixedEngine": {
+        "值": 1,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(9999,12,31)",
+      "encoded": "DATE(9999,12,31)",
+      "oracleFormula": "DATE(9999,12,31)",
+      "engine": {
+        "值": 2957003,
+        "错误": false
+      },
+      "known": 2957003,
+      "oracle": 2957003,
+      "prefixedEngine": {
+        "值": 2957003,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6,Data!H4:H4)",
+      "encoded": "NETWORKDAYS(0,6,Data!H4:H4)",
+      "oracleFormula": "NETWORKDAYS(0,6,Data!H4)",
+      "engine": {
+        "值": 5,
+        "错误": false
+      },
+      "known": 5,
+      "oracle": 5,
+      "prefixedEngine": {
+        "值": 5,
+        "错误": false
+      },
+      "encodingEquivalent": true,
+      "matches": true
+    }
+  ]
+}

@@ -19,6 +19,7 @@ test('清单只记录实际打包的主进程文件与页面文件', () => {
       'main/main-test.js',
       'main/integrity-manifest.json',
       'main/pdf/node_modules/.vitest/cache/package.json',
+      'main/office/__fixtures__/complexWord.cjs',
       'dist/index.html',
     ]
     for (const 相对路径 of 文件) {
@@ -51,6 +52,7 @@ test('清单排除规则与 Windows 打包配置同步', () => {
     '!main/main-test.js',
     '!main/**/node_modules/**',
     '!main/**/.vitest/**',
+    '!main/**/__fixtures__/**',
   ])
   for (const 路径 of [
     'main/main.js',
@@ -65,5 +67,6 @@ test('清单排除规则与 Windows 打包配置同步', () => {
     'main/main-test.js',
     'main/pdf/node_modules/.vitest/cache/package.json',
     'main/pdf/.vitest/cache/package.json',
+    'main/office/__fixtures__/complexWord.cjs',
   ]) assert.equal(是构建文件(路径), false, 路径)
 })

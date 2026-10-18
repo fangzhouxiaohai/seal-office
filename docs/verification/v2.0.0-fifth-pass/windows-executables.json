@@ -1,0 +1,20 @@
+[
+  {
+    "name": "seal-office-2.0.0-portable.exe",
+    "bytes": 398852619,
+    "productName": "海豹办公",
+    "productVersion": "2.0.0",
+    "fileVersion": "2.0.0",
+    "signatureStatus": "NotSigned",
+    "sha256": "77dac7e2f596e1eecc1c18f545d52d6999a95c5c1958dd86c8a9b8e61b168b26"
+  },
+  {
+    "name": "seal-office-setup-2.0.0.exe",
+    "bytes": 399078083,
+    "productName": "海豹办公",
+    "productVersion": "2.0.0",
+    "fileVersion": "2.0.0",
+    "signatureStatus": "NotSigned",
+    "sha256": "7dff73db3ab55d1cd276e0119043031d8614b770304915e8f65e3821f6f0d9f1"
+  }
+]

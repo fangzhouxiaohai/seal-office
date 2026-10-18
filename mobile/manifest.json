@@ -2,8 +2,8 @@
   "name": "海豹办公",
   "appid": "__UNI__B52B65B",
   "description": "海豹办公：文字、表格、演示、PDF 与智能助手",
-  "versionName": "1.9.15",
-  "versionCode": "10915",
+  "versionName": "2.0.0",
+  "versionCode": "20000",
   "vueVersion": "3",
   "uni-app-x": {
     "styleIsolationVersion": "2"
@@ -53,6 +53,17 @@
       "icons": {
         "foreground": "static/icons/harmony/foreground.png",
         "background": "static/icons/harmony/background.png"
+      },
+      "signingConfigs": {
+        "release": {
+          "certpath": "E:/seal-office/.upgrade-private/harmony-signing/SealOfficeRelease2026.cer",
+          "keyAlias": "sealoffice-release",
+          "keyPassword": "0000003B392CFE54677908E6176F5909F13F16563011AA9381E073AC8E06C83C2AF7162D949119A704B729FC7EC11A3813676BF0CCCBC58491A429CB740353CFD07233991B89D3BA3E703B",
+          "profile": "E:/seal-office/.upgrade-private/harmony-signing/SealOfficeReleaseProfile2026Release.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "E:/seal-office/.upgrade-private/harmony-signing/seal-office-release.p12",
+          "storePassword": "0000003B632FBA755DD868A4410EBA1CFB900A865AEA9B80B45B9A2F7FD1A59ED6EFC194359AA7896AE4E6C7671CB12C0A6AB09B933902E8765A14BA9B7FD15C28FD1A86EC7E5BB64C40AC"
+        }
       }
     }
   },

@@ -52,7 +52,8 @@ async function 验收() {
       await 等待片刻(100)
     }
     const 弹窗标题 = await 执行("[...document.querySelectorAll('.ant-modal')].filter(项=>项.getClientRects().length>0).map(项=>项.querySelector('.ant-modal-title,.ant-modal-confirm-title')?.textContent||项.textContent?.slice(0,100))")
-    throw new Error('成品未达到预期状态：' + 表达式 + '；可见弹窗：' + JSON.stringify(弹窗标题))
+    const 编辑状态 = await 执行("({标题:document.querySelector('.wps-titlebar__doc')?.textContent,编辑框:document.querySelector('.wps-ppt-box__editor')?.value,焦点:document.activeElement?.className,文本框:[...document.querySelectorAll('.wps-ppt-box')].map(项=>项.textContent)})")
+    throw new Error('成品未达到预期状态：' + 表达式 + '；可见弹窗：' + JSON.stringify(弹窗标题) + '；验收编辑状态：' + JSON.stringify(编辑状态))
   }
   const 找按钮 = 名称 => `[...document.querySelectorAll('button')].find(项=>项.textContent.trim()===${JSON.stringify(名称)}||项.getAttribute('aria-label')===${JSON.stringify(名称)})`
   const 可见弹窗 = "[...document.querySelectorAll('.ant-modal')].some(项=>项.getClientRects().length>0)"
@@ -135,6 +136,7 @@ async function 验收() {
       await 截图('new-document-modal')
       await 执行("document.querySelector('.wps-newdoc-option--template').click()")
       await 等待("document.querySelector('.ant-drawer-title')?.textContent==='模板库'")
+      await 等待("document.querySelectorAll('.template-library__card').length>=20")
       检查(await 执行("document.querySelectorAll('.template-library__card').length>=20"), '成品模板库包含丰富的文字、表格和演示模板')
       await 截图('template-library')
       await 执行("document.querySelector('button[aria-label=\"预览个人简历\"]').click()")
@@ -184,20 +186,24 @@ async function 验收() {
             await 点击('插入'); await 点击('文本框')
             await 执行(`document.querySelector('.wps-ppt-box:last-child').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));true`)
             await 等待("Boolean(document.querySelector('.wps-ppt-box__editor'))")
-            await 执行(`(()=>{const 输入=document.querySelector('.wps-ppt-box__editor');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(输入,${JSON.stringify(文本)});输入.dispatchEvent(new Event('input',{bubbles:true}));return true})()`)
+            await 执行(`(()=>{const 输入=document.querySelector('.wps-ppt-box__editor');输入.focus();if(document.activeElement!==输入)throw new Error('PPTX 验收文本框未取得焦点');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(输入,${JSON.stringify(文本)});输入.dispatchEvent(new Event('input',{bubbles:true}));return true})()`)
             await 等待片刻(100)
             await 执行("document.querySelector('.wps-ppt-box__editor').blur();true")
+            await 等待("!document.querySelector('.wps-ppt-box__editor')")
             内容表达式 = `[...document.querySelectorAll('.wps-ppt-box')].some(项=>项.textContent.includes(${JSON.stringify(文本)}))`
           }
+          if (扩展 === 'pptx') console.log('PPTX 验收：等待输入内容进入编辑模型')
           await 等待(内容表达式)
           await 等待("Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))")
           if (扩展 === 'pptx') await 点击('开始')
           await 点击('保存'); await 等待("!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')")
+          if (扩展 === 'pptx') console.log('PPTX 验收：已保存，准备关闭重开')
           检查(!await 执行(可见弹窗), `${扩展} 实际编辑后保存成功`)
           await 点击(`关闭 ${名称}`)
           await 执行("document.querySelector('.wps-global-tabs__home').click()")
           await 点击('打开'); await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
           检查(!await 执行(`(${可见弹窗})||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))`), `${扩展} 保存重开无导入及未保存误报`)
+          if (扩展 === 'pptx') console.log('PPTX 验收：等待保存重开的文本内容')
           await 等待(内容表达式)
           检查(true, `${扩展} 编辑内容保存重开后完整保留`)
           await 截图('shell-new-' + 扩展)

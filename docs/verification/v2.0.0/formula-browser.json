@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "protocol": "file",
+      "cases": 235,
+      "registered": 245,
+      "failed": [],
+      "date1904Cases": 33,
+      "date1904Failed": [],
+      "instanceIsolation": true,
+      "unsupportedCorrect": true,
+      "division": {
+        "值": "#错误",
+        "错误": true
+      },
+      "libraryError": {
+        "值": "#错误",
+        "错误": true
+      },
+      "localDate": 45292,
+      "localDate1904": 43830,
+      "timezone": "Asia/Shanghai"
+    },
+    {
+      "protocol": "http",
+      "cases": 235,
+      "registered": 245,
+      "failed": [],
+      "date1904Cases": 33,
+      "date1904Failed": [],
+      "instanceIsolation": true,
+      "unsupportedCorrect": true,
+      "division": {
+        "值": "#错误",
+        "错误": true
+      },
+      "libraryError": {
+        "值": "#错误",
+        "错误": true
+      },
+      "localDate": 45292,
+      "localDate1904": 43830,
+      "timezone": "Asia/Shanghai"
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

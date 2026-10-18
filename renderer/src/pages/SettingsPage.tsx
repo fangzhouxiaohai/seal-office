@@ -8,6 +8,8 @@ import { 读取翻译配置, 保存翻译配置, 清除翻译配置 } from '../e
 import AiSettingsCard from '../assistant/AiSettingsCard'
 import CloudSettings from '../cloud/CloudSettings'
 import ConversionServiceSettings from './ConversionServiceSettings'
+import ShortcutSettingsCard from '../shortcuts/ShortcutSettingsCard'
+import { resetShortcutOverrides } from '../shortcuts/shortcuts'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
 import './settings.css'
@@ -149,6 +151,7 @@ const SettingsPage = () => {
       localStorage.removeItem('seal-language')
       localStorage.removeItem('seal-session-restore')
       localStorage.removeItem('seal-tab-double-click-close')
+      resetShortcutOverrides()
       保存提醒目录(null)
       await 清除翻译配置()
       await window.sealDocumentConversion?.clear()
@@ -177,7 +180,7 @@ const SettingsPage = () => {
   const 请求恢复默认 = () => {
     modal.confirm({
       title: '确认恢复初始设置',
-      content: '将清除当前界面、工作偏好、提醒、翻译及智能助手模型配置。已保存的文档文件不会删除。',
+      content: '将清除当前界面、工作偏好、快捷键、提醒、翻译及智能助手模型配置。已保存的文档文件不会删除。',
       okText: '确认恢复',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -256,6 +259,7 @@ const SettingsPage = () => {
         {/* 组件管理 */}
         <CloudSettings />
         <ConversionServiceSettings />
+        <ShortcutSettingsCard />
         {桌面系统功能 ? <>{组标题('组件管理')}
         <div className="settings-wps-card">
           {设置行(

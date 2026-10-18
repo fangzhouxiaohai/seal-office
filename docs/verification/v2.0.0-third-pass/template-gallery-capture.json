@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "templates": 12,
+  "sections": [
+    {
+      "name": "商务演示 / 9 页",
+      "bottom": 401.671875
+    },
+    {
+      "name": "教育培训 / 9 页",
+      "bottom": 401.671875
+    },
+    {
+      "name": "产品介绍 / 9 页",
+      "bottom": 401.671875
+    },
+    {
+      "name": "项目汇报 / 9 页",
+      "bottom": 721.84375
+    },
+    {
+      "name": "季度总结 / 9 页",
+      "bottom": 721.84375
+    },
+    {
+      "name": "创业路演 / 9 页",
+      "bottom": 721.84375
+    },
+    {
+      "name": "年度计划 / 9 页",
+      "bottom": 1042.015625
+    },
+    {
+      "name": "市场营销 / 9 页",
+      "bottom": 1042.015625
+    },
+    {
+      "name": "科技方案 / 9 页",
+      "bottom": 1042.015625
+    },
+    {
+      "name": "财务经营 / 9 页",
+      "bottom": 1362.1875
+    },
+    {
+      "name": "品牌活动 / 9 页",
+      "bottom": 1362.1875
+    },
+    {
+      "name": "学术答辩 / 9 页",
+      "bottom": 1362.1875
+    }
+  ],
+  "images": true,
+  "height": 1416,
+  "errors": [],
+  "fixture": "existing frozen production template fixture",
+  "indexSha256": "db61e87098530ec38a0dc0887dab8a956e3e575c3ee5be6c75a82bb68aaec474",
+  "screenshot": "docs/verification/v2.0.0-third-pass/presentation-templates.png",
+  "capturedAt": "2026-10-18T12:38:38.255Z"
+}

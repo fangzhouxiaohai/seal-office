@@ -1,0 +1,962 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T09:06:06.592Z",
+  "reaVersion": "6.5.0",
+  "ghidraVersion": "12.1.4",
+  "wpsVersion": "12.1.0.26895",
+  "method": "REA MCP stdio sessions with project-local Ghidra and JDK; original native targets remain immutable",
+  "fullWpsParityAchieved": false,
+  "allWpsCommandsExecuted": false,
+  "components": [
+    {
+      "name": "xlsxrw.dll",
+      "attempts": [
+        {
+          "directory": "xlsxrw",
+          "status": "auto-analysis-complete",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/001-binary_session.json",
+              "rawRecordSha256": "5e171f173942fcc43f79b344bb1f376d93f5498c2411df997a1e4ba56367bc4a",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/002-open_binary.json",
+              "rawRecordSha256": "958c97c664fe5700294613befb282325617f0981f427ab74438350cdc13d6806",
+              "failed": false,
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/003-binary_overview.json",
+              "rawRecordSha256": "86a4866339e45287c89f59d82f36d0018ee7499be246a375fb97c0574332b7ad",
+              "failed": false,
+              "evidenceId": "ev_da401180406b74b4ab565f3e3a81064d3a098a0700dd49d44fc51d8d85ca04d8",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6",
+              "inventory": {
+                "procedures": 13730,
+                "definedStrings": 9213,
+                "imageBase": "0x10000000"
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/004-search_strings.json",
+              "rawRecordSha256": "d21886d40476b67e35677c26ff933aed34434d21ffb9c1bb7c11eb8290417ddb",
+              "failed": false,
+              "evidenceId": "ev_581e0a6d6cba230b7b8c889d3d7c1ca2a8be9737561db7a89e10a83cd07c4f7d",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "search_procedures",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/005-search_procedures.json",
+              "rawRecordSha256": "804dcac85177b951402ea3b4c6aacca4fbe3047bb7ea3cec528fbd29ae95d1c2",
+              "failed": false,
+              "evidenceId": "ev_ef530b40cb73ac58a47fec1c1aa3df67b76f91529962aba487f4ac3b53d23b42",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/006-xrefs.json",
+              "rawRecordSha256": "15a2e519e33eab6ec9773320ad5da24c0ba0cffde43443b2f3e460d1ff56a8cf",
+              "failed": false,
+              "evidenceId": "ev_c33967ee7c249af9d7263857c0e1ee9ad2c2dcf7cca443ebc6e761c1b69ec08b",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/007-xrefs.json",
+              "rawRecordSha256": "0f9850426a59fd1306e839160fb233f66a580c8e533e3d731614fe8242a418ec",
+              "failed": false,
+              "evidenceId": "ev_fe34a4caf0773ebcf13fc28116ffc19ca02a7d1a374a3190848b50f7854238bf",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/008-analyze_function.json",
+              "rawRecordSha256": "1a19a8ede6d5c90b5c40166f44c90e2a5b19388308baa0513d07d293750288e6",
+              "failed": false,
+              "evidenceId": "ev_9460f0e739a8f1f3e62baa08168ba164644edeae726cd94770bf8f60b97900a2",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6",
+              "function": {
+                "address": "0x10123c10",
+                "name": "FUN_10123c10",
+                "bodyBytes": 3039,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 23,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted.",
+                  "Ghidra Listing reports a terminal call at 0x1012425d to EXTERNAL:0x713 API-MS-WIN-CRT-RUNTIME-L1-1-0.DLL::_invalid_parameter_noinfo_noreturn (external=true, thunk=false, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return.",
+                  "Ghidra Listing reports a terminal call at 0x10124898 to 0x10198ba0 VCRUNTIME140.DLL::_CxxThrowException (external=false, thunk=true, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/009-analyze_function.json",
+              "rawRecordSha256": "7c7feba5d946dbcfd762f6565ac0cc60e9d51f7452cc500aebd640db190d5fe2",
+              "failed": false,
+              "evidenceId": "ev_d93cf355e770e7b82b70959705e09cf9cfa5331a533ff7073cd3f4aa73f559eb",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6",
+              "function": {
+                "address": "0x10169e50",
+                "name": "FUN_10169e50",
+                "bodyBytes": 702,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 2,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/010-search_strings.json",
+              "rawRecordSha256": "fd1c4e0d4002d4985f4e1b6bea68169a604cba63edcd6483f245063d9826f3c1",
+              "failed": false,
+              "evidenceId": "ev_92e87c32284ea03dd9fb8c8f095e9ebefbebcb4cdcadd0337c5fac6a6de7d026",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/011-xrefs.json",
+              "rawRecordSha256": "66053b961ad3c2e45de628204e976ad8cb119fa539d8d747d0a02c067dfb7087",
+              "failed": false,
+              "evidenceId": "ev_9eda7134033e6a191a89119b8e2ec3729bf074472a0000d4c750d010c4a73e8a",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/012-analyze_function.json",
+              "rawRecordSha256": "96be2c7b8b71cc04d59b685759c4465ecf72651a8a1dddfbcaf64b1436fd4f78",
+              "failed": false,
+              "evidenceId": "ev_6ea03ae3fa6352633ef4e0383ee09819057ea97d0a6021354c362cf6fba2d6a2",
+              "targetSha256": "a8460912e88fec4604959e19ab330cf4da6733bfc5b49368fd3d0ce68dce2be6",
+              "function": {
+                "address": "0x10169700",
+                "name": "FUN_10169700",
+                "bodyBytes": 1202,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 7,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/xlsxrw/013-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        }
+      ],
+      "currentStatus": "auto-analysis-complete"
+    },
+    {
+      "name": "wppcore.dll",
+      "attempts": [
+        {
+          "directory": "wppcore",
+          "status": "auto-analysis-complete",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/001-binary_session.json",
+              "rawRecordSha256": "49e547e20c254599f420a4764243c4e7286986b051f25500d63dd2e458de736d",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/002-open_binary.json",
+              "rawRecordSha256": "e30ade6946651094d561cf14e31327466971631430cc1d0a7e1dfc504185ae66",
+              "failed": false,
+              "targetSha256": "9d55b64b54a0d6b70cfe2f8ffae0009831962e27e347a5fd2ee2c2e52b9ee270",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/003-binary_overview.json",
+              "rawRecordSha256": "5b499750010189fe3518c7e663193ea5dc32d0f6d2e14e6d1701d486a3f69f05",
+              "failed": false,
+              "evidenceId": "ev_2c436d7b680c00cfd41c6c249bcdad70c0eb23998afb8112896ffa7eab8e0527",
+              "targetSha256": "9d55b64b54a0d6b70cfe2f8ffae0009831962e27e347a5fd2ee2c2e52b9ee270",
+              "inventory": {
+                "procedures": 83769,
+                "definedStrings": 20943,
+                "imageBase": "0x10000000"
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/004-search_strings.json",
+              "rawRecordSha256": "9e1ae2c040b4cf6e311d70af04fc60b6581163ca2b8ed0d6a96080f07e790606",
+              "failed": false,
+              "evidenceId": "ev_64396f9550be814aefe98120783686854ef537b2ba78c6e342bed39c4f53f355",
+              "targetSha256": "9d55b64b54a0d6b70cfe2f8ffae0009831962e27e347a5fd2ee2c2e52b9ee270"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/005-xrefs.json",
+              "rawRecordSha256": "73f0de34cce9efe9e041f793816d9c8556d40a83c32a91b5c542a1284158985e",
+              "failed": false,
+              "evidenceId": "ev_cfca7633d207df5e3655444d25258c048314a9f103c15e61c56a20142b484be8",
+              "targetSha256": "9d55b64b54a0d6b70cfe2f8ffae0009831962e27e347a5fd2ee2c2e52b9ee270"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/006-analyze_function.json",
+              "rawRecordSha256": "409feaf080e1edccfe4419ac1a1d6962e239492fefd39a47763628aa640b3f67",
+              "failed": false,
+              "evidenceId": "ev_712a5907e7ec581a9d8534d708899643ae6630b1f6b571c0409ee03dbf42ede6",
+              "targetSha256": "9d55b64b54a0d6b70cfe2f8ffae0009831962e27e347a5fd2ee2c2e52b9ee270",
+              "function": {
+                "address": "0x101cf050",
+                "name": "FUN_101cf050",
+                "bodyBytes": 378,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 2,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wppcore/007-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        }
+      ],
+      "currentStatus": "auto-analysis-complete"
+    },
+    {
+      "name": "wpsio.dll",
+      "attempts": [
+        {
+          "directory": "wpsio",
+          "status": "auto-analysis-complete",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/001-binary_session.json",
+              "rawRecordSha256": "1bd73f123a25fb188ac44b788d059a133684e1a21dfae428da70801c8410c8ba",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/002-open_binary.json",
+              "rawRecordSha256": "0115bb00f92b58a21a6fc387d2ecaebb65fe1f31fd7bd4d1777b1c49cf8aa365",
+              "failed": false,
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/003-binary_overview.json",
+              "rawRecordSha256": "0640cecfeb35928af5f263d5a23d89812928e9ab2019f981606c9ace8d442bcd",
+              "failed": false,
+              "evidenceId": "ev_62ec8058fed9c5a507ea81c896f9555e07788fcbbb05226efdf32af488a21248",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "inventory": {
+                "procedures": 18339,
+                "definedStrings": 11386,
+                "imageBase": "0x10000000"
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/004-search_strings.json",
+              "rawRecordSha256": "7e2698ef3aff69aef6fb762942002397ba22dac9551a2e004a6161c945d0048d",
+              "failed": false,
+              "evidenceId": "ev_64232532360504f20912f2872bbba942fae28111bec047fbab1ca9c92048d9d4",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/005-xrefs.json",
+              "rawRecordSha256": "285ce2078fe66962dfee049bcf631aa2de6b5a624b93fa859faf09ad6d5c758d",
+              "failed": false,
+              "evidenceId": "ev_c892fb4026cfcc2fa79945d346d76f914d1648ad1b843568ffe7567007afc846",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/006-analyze_function.json",
+              "rawRecordSha256": "1b6c4cf591ab7b05e56725843c0dfc544e2300b4abd27aa731f59c628cdf4a34",
+              "failed": true,
+              "error": {
+                "code": "resource_constraint",
+                "message": "The operation completed, but its complete MCP response exceeds the stdio response budget. The analysis result was not truncated. Call inspect_analysis_view with the supplied continuation arguments to read retained pseudocode. Follow coverage.next_offset for subsequent pages; reduce the page limit if needed, or export the complete retained Evidence.",
+                "retryable": false
+              }
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/007-xrefs.json",
+              "rawRecordSha256": "b13dc2203ae1d6950f2a5c402465afc1a5448feb9c50c383a3724cb6a4257df7",
+              "failed": false,
+              "evidenceId": "ev_a6b09349c31ebb3f1abfcd4059b55608d355dde32a68dab27aabd9b298acc62a",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/008-xrefs.json",
+              "rawRecordSha256": "bb096baf23b60abaef420c4613d971f8ac60c4438b072baaa1368176631eab0f",
+              "failed": false,
+              "evidenceId": "ev_02bd22ab7d7b72ae4171e20a0108fcab37dadbdeeeb99dec116f616cbd417533",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "inspect_analysis_view",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/009-inspect_analysis_view.json",
+              "rawRecordSha256": "5bd425b8d48467f8fd1bb17215e1ce1a9c6ba0c23600772c4a9c14822f85a736",
+              "failed": false,
+              "evidenceId": "ev_2d4865d33f01d93cea3e0bcafcfc95e436b372c473a073cef1681ff5d1225c9a",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/010-resolve_containing_procedure.json",
+              "rawRecordSha256": "8e47560afb9b3afa34132805d48756fdb087d8f110b51ad1060b59c3834965dd",
+              "failed": false,
+              "evidenceId": "ev_7db1103876d2afc1abe5e59b27f6ef3955a3ff13b8c807e611b2ab5263eb7aa6",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/011-resolve_containing_procedure.json",
+              "rawRecordSha256": "c4947f605931408682c9e10b2bcc8ea6f5477942740222f7cd0c3e877fd288e3",
+              "failed": false,
+              "evidenceId": "ev_dd541e8d06b7b24f2fd8c3e33d573c5a0e65bb14b897184c2cc0b05f0bad6bf3",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/012-analyze_function.json",
+              "rawRecordSha256": "09eaf32f602fcee61497277358956ef3146c0b9203e83ace68425818d2ebc520",
+              "failed": false,
+              "evidenceId": "ev_349036834651c655f12c943aefad952054417ce8051e5acc8801c5705e982c1f",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "function": {
+                "address": "0x1025f360",
+                "name": "FUN_1025f360",
+                "bodyBytes": 308,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 11,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/013-analyze_function.json",
+              "rawRecordSha256": "32caffe8fb0923e5359028c1077390f7beff876d76220ce7654c45939f63be35",
+              "failed": false,
+              "evidenceId": "ev_7a504974be7636521968d69b93699035f1403f7434531d83bf5af056c731dd86",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "function": {
+                "address": "0x10279370",
+                "name": "FUN_10279370",
+                "bodyBytes": 240,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 11,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "search_procedures",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/014-search_procedures.json",
+              "rawRecordSha256": "344eacbffe81a1b0bb70bd53db05e9671de8a7f34463a975c895e4dbcecae2dc",
+              "failed": false,
+              "evidenceId": "ev_700505b186af20f45cb0e64b57c32fb0b9c67ae63eee610174219f7c64b703bf",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/015-analyze_function.json",
+              "rawRecordSha256": "76f991579c864acf171db221e09c6e10296760404cb637efd4056ee8267ccc10",
+              "failed": false,
+              "evidenceId": "ev_3012a517f9b836e87f7d724933e24947d60939b25a61032e098906f1bda8124f",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "function": {
+                "address": "0x1025f500",
+                "name": "FUN_1025f500",
+                "bodyBytes": 252,
+                "pseudocodeAvailable": true,
+                "callers": 2,
+                "callees": 7,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/016-analyze_function.json",
+              "rawRecordSha256": "4fd860c07ab8930384adc1bb5cdbb349f7ebb5e17888e19bc66c27ac063ec102",
+              "failed": false,
+              "evidenceId": "ev_138f24f6188652da81ca960ea3838f19e01e2f860699df53c3cc4b41ba71a434",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "function": {
+                "address": "0x10140700",
+                "name": "KTxDocumentImporter::ImportSection",
+                "bodyBytes": 222,
+                "pseudocodeAvailable": true,
+                "callers": 7,
+                "callees": 8,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted.",
+                  "Ghidra Listing reports a terminal call at 0x101407d9 to 0x101ba502 VCRUNTIME140.DLL::_CxxThrowException (external=false, thunk=true, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/017-analyze_function.json",
+              "rawRecordSha256": "de871b7ab03bea162f1cc30320cc2cb6d8b946cce9468446640855bb0d1d8caa",
+              "failed": false,
+              "evidenceId": "ev_a2cd924fd00e4d7fb009aa6238b0c15df472ac257455415a3cda5ade3d5d425a",
+              "targetSha256": "c0c7375af6398a9ea7d982b4b5c3f7e9163b04eb01c1dba69dfd8f8e743c8926",
+              "function": {
+                "address": "0x10138f50",
+                "name": "KTxPropertyHelper::SetRevisionToRunPropertyBag",
+                "bodyBytes": 256,
+                "pseudocodeAvailable": true,
+                "callers": 3,
+                "callees": 6,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpsio/018-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        }
+      ],
+      "currentStatus": "auto-analysis-complete"
+    },
+    {
+      "name": "etcore.dll",
+      "attempts": [
+        {
+          "directory": "etcore",
+          "status": "failed",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore/001-binary_session.json",
+              "rawRecordSha256": "f34de08e4a487d1ee6188c142c6a9608ad793b13d92b32b1631c0ddb6c8aab08",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore/002-open_binary.json",
+              "rawRecordSha256": "2e158a9f2b8468922337a0dda3dd45415082fa110a50a85b6c5c713fcfbe6f78",
+              "failed": false,
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore/003-binary_overview.json",
+              "rawRecordSha256": "740b50e8b6a80773196c41bab9a750937f79783bc6ea5d64eb958bc6914c78ee",
+              "failed": true,
+              "error": {
+                "code": "provider_timeout",
+                "message": "Analysis took too long. Try a smaller request, then run `rea doctor` if it continues.",
+                "retryable": true
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore/004-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        },
+        {
+          "directory": "etcore-retry",
+          "status": "auto-analysis-complete",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/001-binary_session.json",
+              "rawRecordSha256": "2e7c1f12d3fa1d1a1c35dfe6fceb9916dfd6779a81bbc10560d926e02e4ee993",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/002-open_binary.json",
+              "rawRecordSha256": "2e158a9f2b8468922337a0dda3dd45415082fa110a50a85b6c5c713fcfbe6f78",
+              "failed": false,
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/003-binary_overview.json",
+              "rawRecordSha256": "6e321405f2f6c22d61e3887b9765076fa6b671b188b7c4acf82b0f434ed6e53e",
+              "failed": false,
+              "evidenceId": "ev_276e8af2c49947ebc721fa16456661e16195a1f9cf172db771dcf1ab6bfbb9b3",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5",
+              "inventory": {
+                "procedures": 162539,
+                "definedStrings": 38617,
+                "imageBase": "0x10000000"
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/004-search_strings.json",
+              "rawRecordSha256": "47030fb9aefc7405b1e7596804c8a9cb7dafb0e039c98e64ef219bb9591c4315",
+              "failed": false,
+              "evidenceId": "ev_927e15e3fc71956b0607cf4ea0e8e74571bbea43577eba257a22bb70bdc99d25",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/005-xrefs.json",
+              "rawRecordSha256": "a91a0b9c34e90c3d88c0d216b416a5b8e363a4c3a1f3b8e89d252a4b41181264",
+              "failed": false,
+              "evidenceId": "ev_648b8552286083881fa9f46dc599c5b405c8c9653c4044e17ce4ef77bba4cf51",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/006-xrefs.json",
+              "rawRecordSha256": "bbfdf765e30266607f3fc5dadc4e407dcb32f51358476b96e699610f2d59aeff",
+              "failed": false,
+              "evidenceId": "ev_f434574459ed8a1a5154067cbf12d58c9779cc8c263c34d231df114417230c6f",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/007-xrefs.json",
+              "rawRecordSha256": "f9d8f8b57e0715f9badecfc489ae51e05efcb29d2463e58afdda0ab8595c107f",
+              "failed": false,
+              "evidenceId": "ev_50f10b62b017a2955fb5e711f5fe70155771e73d761c477c824a40015ebf790a",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/008-resolve_containing_procedure.json",
+              "rawRecordSha256": "0c49e425f81ccdfd1bc99b6982778d507784712a0b8e239da80daccb284ae21d",
+              "failed": false,
+              "evidenceId": "ev_07877202c047566b7f2aba34903380b49a87a7d6a63a8b5590f28fc1838ba216",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/009-resolve_containing_procedure.json",
+              "rawRecordSha256": "aff75bfecf3ef0368f45bd8ff7f6c41e6c94fd01b72add18848a4626835e35f9",
+              "failed": false,
+              "evidenceId": "ev_a1cce3c08f4231c16d31afc9443fd3ddb149b9e75ef06da2f979a25ce71c2276",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/010-resolve_containing_procedure.json",
+              "rawRecordSha256": "5848e178bbe75fc2af0aa9ca6bb95d71d268e7c6fb512bd10e589cc2552027cd",
+              "failed": false,
+              "evidenceId": "ev_fb4feabb81f5d6cc5b556f3af1b53dad99e8c7b9ed305332e5c6e44d8c4ad5f6",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/011-analyze_function.json",
+              "rawRecordSha256": "ffa72ce7b9d86ac1a796e05611dcf1a3ffa314cc4d010dd8c8d7ddda6bb0c64a",
+              "failed": false,
+              "evidenceId": "ev_79650a9a3625a3f9c7f699edec01dff593bc17491af981bc3f69fc6f15786191",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5",
+              "function": {
+                "address": "0x10426f8c",
+                "name": "FUN_10426f8c",
+                "bodyBytes": 1649,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 23,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/012-analyze_function.json",
+              "rawRecordSha256": "06b925a431ec34815b6183007e91ea710b2cbe5ea612f36e0eab109c3afb3591",
+              "failed": true,
+              "error": {
+                "code": "resource_constraint",
+                "message": "The operation completed, but its complete MCP response exceeds the stdio response budget. The analysis result was not truncated. Call inspect_analysis_view with the supplied continuation arguments to read retained pseudocode. Follow coverage.next_offset for subsequent pages; reduce the page limit if needed, or export the complete retained Evidence.",
+                "retryable": false
+              }
+            },
+            {
+              "operation": "inspect_analysis_view",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/013-inspect_analysis_view.json",
+              "rawRecordSha256": "7b06824a5e115a81fe3c89925629211543f2864dc6cdd2a3380ad01fdce9e9f2",
+              "failed": false,
+              "evidenceId": "ev_b462e5049f6a69425d84e302a2862087bd47c971f2f8401ae52c9df77a44fb18",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "inspect_analysis_view",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/014-inspect_analysis_view.json",
+              "rawRecordSha256": "55486f4f2f804fcfb2b2185ae3202f8b7e9f20793de1e387c57cba8b9fb1eef2",
+              "failed": false,
+              "evidenceId": "ev_8b51069cb4284f77a7762b0e9e4d8fe96849a3863587c2d2a65f4151e8d35762",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/015-resolve_containing_procedure.json",
+              "rawRecordSha256": "662eeec1e7cccb99e8658885acb41ef6b60a237ac1b4a68ad593f880bef734be",
+              "failed": false,
+              "evidenceId": "ev_5385fb64049838be7def39ffa59041a937b8746bfbd732f5e0d95b8802ed3d44",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/016-xrefs.json",
+              "rawRecordSha256": "043333003637484415773b254f51c41995d00c5165771d7e0fc9289536e46c43",
+              "failed": false,
+              "evidenceId": "ev_e8982ca09e38ea76e11f0f4583ce0a5faa5e0c7d6f0d799dee85179474a52097",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/017-xrefs.json",
+              "rawRecordSha256": "42a7a5dcec6fedd3a01b68de0960e0d12cc69f2138c17e22dfa41b8420ff38f3",
+              "failed": false,
+              "evidenceId": "ev_202a59124786ab20ed80af46ff5036fdd32bbe21b6456c2972f6942873000f57",
+              "targetSha256": "a4a99dc0038ab4fa60160fbe3d0fe65605aaa23126efc7c016c43cc3aac994a5"
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/etcore-retry/018-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        }
+      ],
+      "currentStatus": "auto-analysis-complete"
+    },
+    {
+      "name": "wpscore.dll",
+      "attempts": [
+        {
+          "directory": "wpscore",
+          "status": "failed",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore/001-binary_session.json",
+              "rawRecordSha256": "57ab630353fc8f1111c4d2ea0ec2f6c9413c3fac519aa9b16208b9715e1098d6",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore/002-open_binary.json",
+              "rawRecordSha256": "b3960966cb3cbdff6b339d4c7777a167c9102554e6d4aec83aba38476c99a76f",
+              "failed": false,
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore/003-binary_overview.json",
+              "rawRecordSha256": "60cde03b77cf95ac95064bdb9536730bc0e2d8345e6bd2c3dd20eafaef8e6855",
+              "failed": true,
+              "error": {
+                "code": "provider_timeout",
+                "message": "Analysis took too long. Try a smaller request, then run `rea doctor` if it continues.",
+                "retryable": true
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore/004-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        },
+        {
+          "directory": "wpscore-retry",
+          "status": "auto-analysis-complete",
+          "closed": true,
+          "records": [
+            {
+              "operation": "binary_session",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/001-binary_session.json",
+              "rawRecordSha256": "45d24fd674e6f6e16290cbf0a7488fbbc52c6aa402c1f86e1cfc9c5ccc56c663",
+              "failed": false
+            },
+            {
+              "operation": "open_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/002-open_binary.json",
+              "rawRecordSha256": "b3960966cb3cbdff6b339d4c7777a167c9102554e6d4aec83aba38476c99a76f",
+              "failed": false,
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691",
+              "architecture": "x86"
+            },
+            {
+              "operation": "binary_overview",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/003-binary_overview.json",
+              "rawRecordSha256": "8e804a6a9f22a8a220b1e642b54f4de82a10d9c4732666f5afe2ad6a52e91e9e",
+              "failed": false,
+              "evidenceId": "ev_0bef5c75cd91867389a23bbf7344879b01dfabe726ea2a122fff1deae489520d",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691",
+              "inventory": {
+                "procedures": 144808,
+                "definedStrings": 27988,
+                "imageBase": "0x10000000"
+              }
+            },
+            {
+              "operation": "search_strings",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/004-search_strings.json",
+              "rawRecordSha256": "f868e980480a048af2d158aeb1fd361a44fe109be562d46bc7cdaa02ade1cc22",
+              "failed": false,
+              "evidenceId": "ev_c17df353ef5c1944ca552e78c6250ea98cf2f26c8239555325a06ed909a7410e",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/005-xrefs.json",
+              "rawRecordSha256": "e6acac33211b7d1aab0ec2b1067ed8a0960f7471f9926d625d9846bdb3ee327a",
+              "failed": false,
+              "evidenceId": "ev_603d57d4e92fdc5c67f85f5f5b927e1fda64067376d176ec6eada148f061a229",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/006-xrefs.json",
+              "rawRecordSha256": "cd0fe2480c5105de1bddab6d32a9fe48438d4f5cfcb3900ec2214bbf7ccaf7df",
+              "failed": false,
+              "evidenceId": "ev_49d9d3777fcd2bcbc0cfe76a268ac431ef08c5aac7c2c5a36e9f286d9a14752d",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "xrefs",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/007-xrefs.json",
+              "rawRecordSha256": "b64655e57f0d8440f4d2a64b85a9ff394cf5ce2be269e736ae31edd316823033",
+              "failed": false,
+              "evidenceId": "ev_b4338ed249082e7826599729641dbfb01149d0db7e69b8b0c0d1406d04553ed5",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/008-resolve_containing_procedure.json",
+              "rawRecordSha256": "3e153a2bea4ccbaae397b0d6af7dcaf8120c59152737e68f8cc6f1525a2623d5",
+              "failed": false,
+              "evidenceId": "ev_e301921f9f401e74115a0cae8c48641c35c777428613ab0a086fb9a3c472818d",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/009-resolve_containing_procedure.json",
+              "rawRecordSha256": "7816eaf85286ea4873d042ca1d971d0645b8d9c5f9e692645d051d42333ae9da",
+              "failed": false,
+              "evidenceId": "ev_f3da49082974cb7c9908760400e031a30b77dbe57d6bfc7a7533915095f134e8",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "resolve_containing_procedure",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/010-resolve_containing_procedure.json",
+              "rawRecordSha256": "f3c81ba3cb8dfac613ab3b1d0decd1528710ab48aaa762f9f69d9c436790a569",
+              "failed": false,
+              "evidenceId": "ev_8eaa94b005c36bb5d89cca9483859533a88edcbaef1877284acb2d0816e8f258",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691"
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/011-analyze_function.json",
+              "rawRecordSha256": "1e65f253ab46fb5c569955ebb0258b3b338cbd7291da5c2d35e8f578992a8a36",
+              "failed": false,
+              "evidenceId": "ev_200810739050037299d7dda37c58ffb0ad073c57819b035a9478254de0a725d7",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691",
+              "function": {
+                "address": "0x113136b0",
+                "name": "FUN_113136b0",
+                "bodyBytes": 1473,
+                "pseudocodeAvailable": true,
+                "callers": 29,
+                "callees": 28,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted."
+                ]
+              }
+            },
+            {
+              "operation": "analyze_function",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/012-analyze_function.json",
+              "rawRecordSha256": "25d29d2e064e9f9156abbf2bf9de474713d4ea928285733daa597a82c934c874",
+              "failed": false,
+              "evidenceId": "ev_20226a9c941ec964fa52970fe254f013f2886652183fdbbf7ddb152f26d47ed2",
+              "targetSha256": "166528ceafd5fe2f578f444fdfa5839beda57c3e48e37ef66c5139801514c691",
+              "function": {
+                "address": "0x10cb5670",
+                "name": "FUN_10cb5670",
+                "bodyBytes": 3130,
+                "pseudocodeAvailable": true,
+                "callers": 1,
+                "callees": 13,
+                "limitations": [
+                  "Unresolved computed or indirect flows without target addresses are not represented as reference edges.",
+                  "Thunk and external classifications are Ghidra FunctionManager observations; they do not resolve targetless calls.",
+                  "Pseudocode and assembly are Ghidra-specific representations, not original source or Hopper-equivalent text.",
+                  "Synthetic Ghidra entry-point references without actionable memory sources are omitted.",
+                  "Ghidra Listing reports a terminal call at 0x10cb6038 to EXTERNAL:0x1ced API-MS-WIN-CRT-RUNTIME-L1-1-0.DLL::_invalid_parameter_noinfo_noreturn (external=true, thunk=false, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return.",
+                  "Ghidra Listing reports a terminal call at 0x10cb60c6 to EXTERNAL:0x1ced API-MS-WIN-CRT-RUNTIME-L1-1-0.DLL::_invalid_parameter_noinfo_noreturn (external=true, thunk=false, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return.",
+                  "Ghidra Listing reports a terminal call at 0x10cb61fb to EXTERNAL:0x1ced API-MS-WIN-CRT-RUNTIME-L1-1-0.DLL::_invalid_parameter_noinfo_noreturn (external=true, thunk=false, hasNoReturn=true); fallthrough is excluded by Ghidra's flow model. This records Ghidra's FunctionManager flag, not an independent verification that the callee cannot return."
+                ]
+              }
+            },
+            {
+              "operation": "close_binary",
+              "rawRecord": ".upgrade-private/wps-native-v2.0.0/wpscore-retry/013-close_binary.json",
+              "rawRecordSha256": "fb3beac94c0871148d4cdb98bf38d13aafaa4e281a422cb0995a943c16648a51",
+              "failed": false
+            }
+          ]
+        }
+      ],
+      "currentStatus": "auto-analysis-complete"
+    }
+  ],
+  "observations": [
+    {
+      "component": "xlsxrw.dll",
+      "address": "0x10169e50",
+      "evidence": "ev_d93cf355e770e7b82b70959705e09cf9cfa5331a533ff7073cd3f4aa73f559eb",
+      "confidence": "observed",
+      "finding": "Conditional futureMetadata writer emits the standard dynamic-array extension URI and dynamic/collapsed flags; another branch writes rich-value future metadata.",
+      "implementedIndependently": "Standard XLDAPR cell metadata roundtrip; unknown rich-value metadata remains an explicit fidelity boundary."
+    },
+    {
+      "component": "xlsxrw.dll",
+      "address": "0x10169700",
+      "evidence": "ev_6ea03ae3fa6352633ef4e0383ee09819057ea97d0a6021354c362cf6fba2d6a2",
+      "confidence": "observed",
+      "finding": "Workbook metadata-part creation, metadata types, future metadata and cell metadata are separate writer stages."
+    },
+    {
+      "component": "xlsxrw.dll",
+      "address": "0x10123c10",
+      "evidence": "ev_9460f0e739a8f1f3e62baa08168ba164644edeae726cd94770bf8f60b97900a2",
+      "confidence": "observed",
+      "finding": "A name-enumeration/filter path distinguishes xlfn and wpsfn prefixes; this does not establish complete formula parsing or evaluation semantics."
+    },
+    {
+      "component": "wppcore.dll",
+      "address": "0x101cf050",
+      "evidence": "ev_712a5907e7ec581a9d8534d708899643ae6630b1f6b571c0409ee03dbf42ede6",
+      "confidence": "observed",
+      "finding": "Serialization path handles layout/follow identifiers, transition, timing, theme override and color mapping as separate fields; indirect callees and complete motion behavior remain unresolved."
+    },
+    {
+      "component": "wpsio.dll",
+      "report": "docs/v2.0.0-WPS文字引擎观察.md",
+      "confidence": "observed",
+      "finding": "Five bounded native paths cover footnote-part acquisition/content indexing, field begin/separator/end, section import and revision property association. The report separates observations from inferred semantics."
+    },
+    {
+      "component": "etcore.dll",
+      "address": "0x10426f8c",
+      "evidence": "ev_79650a9a3625a3f9c7f699edec01dff593bc17491af981bc3f69fc6f15786191",
+      "confidence": "observed",
+      "finding": "A formula optimization result path assembles source/optimized expressions, their durations, sheet/range, first-cell value and a separate dynamic-array flag into a suggestion list. This is diagnostic/result presentation evidence, not the formula evaluator or spill algorithm."
+    },
+    {
+      "component": "etcore.dll",
+      "address": "0x103fb668",
+      "evidence": "ev_04921646e3c58e76b558c6cbc29f76ae00775785c94dae07ec91938159a78f6f",
+      "confidence": "observed",
+      "finding": "Retained pseudocode inspected through two pages identifies command registration, including put_Date1904. Its callback address is not a recovered Ghidra procedure; the date setter algorithm remains unresolved. Registration does not prove date conversion semantics."
+    },
+    {
+      "component": "wpscore.dll",
+      "address": "0x113136b0",
+      "evidence": "ev_200810739050037299d7dda37c58ffb0ad073c57819b035a9478254de0a725d7",
+      "confidence": "observed",
+      "finding": "An actual revision rendering path conditionally installs a revision-field filter according to capability/current state, then restores prior filtering. Eleven indirect calls remain unresolved; complete revision layout/history is not established."
+    },
+    {
+      "component": "wpscore.dll",
+      "address": "0x10cb5670",
+      "evidence": "ev_20226a9c941ec964fa52970fe254f013f2886652183fdbbf7ddb152f26d47ed2",
+      "confidence": "observed",
+      "finding": "A table-transpose impact/confirmation path includes annotations, bookmarks, fields, revisions and recalculation. It is not the acceptance-of-revisions algorithm. Sixty-five indirect calls and truncated value-flow observations limit further inference."
+    }
+  ],
+  "limitations": [
+    "Default Ghidra auto-analysis completion is not proof that every function, runtime path or WPS feature was understood or reconstructed.",
+    "Missing original symbols, unresolved indirect calls, compiler transformations and packed/undefined strings limit static results.",
+    "Initial 20-minute imports for the two largest engines timed out; separate retries use a 60-minute deadline and retain the original failures.",
+    "No WPS binaries, private implementation, icons or vendor templates are included in product builds; public OOXML specifications and independent fixtures drive implementation.",
+    "Exact pagination/fonts, every formula parameter, dynamic spilling, full native revision history and every cloud/team feature have not been proven equivalent."
+  ]
+}

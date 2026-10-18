@@ -1,0 +1,38 @@
+[
+  {
+    "recordedAt": "2026-10-18T14:22:54.408Z",
+    "classification": "release tooling and static hosting only; product/runtime/renderer/main unit-test inputs unchanged",
+    "reason": "Live acceptance found old lazy chunks served as HTML after cutover and cold PDF font downloads timed out. Retain immutable previous chunks; declare font MIME types and gzip font transfer. Keep failed public deployment and automatic rollback evidence.",
+    "changes": [
+      {
+        "path": "scripts/deploy-web.py",
+        "oldSha256": "35ef98a4f4c88654c8fed53d5a22ce4eea529042d77a34c6cb137cd81aad175b",
+        "newSha256": "096e506e05fa8a403b6d817df728e29ffb70780b62d9501b8ece26bfcc3f913d"
+      }
+    ],
+    "added": [
+      {
+        "path": "scripts/retain-web-session-assets.cjs",
+        "bytes": 3103,
+        "sha256": "b1dd650d1cdc4f9b63388d92a92139560c34feeed7d1b5759f1ce385ccdc3623"
+      },
+      {
+        "path": "scripts/retain-web-session-assets.test.cjs",
+        "bytes": 3138,
+        "sha256": "c4d17a5e6723243da94e793ae8f2266c35427021ce33d09e924cd71c021ec387"
+      },
+      {
+        "path": "mobile/deploy/nginx.conf.example",
+        "bytes": 2552,
+        "sha256": "ea0cec946c58d2e448f0d38dbe8d59542c11bea388616b18ccae443c7815d587"
+      }
+    ],
+    "requiredValidation": [
+      "retain-web-session-assets node:test 6 cases",
+      "deploy-web Python unit tests 4 cases",
+      "isolated NGINX syntax plan",
+      "public old-chunk content/hash checks",
+      "gzip font headers and cold-profile public PDF + full UI acceptance"
+    ]
+  }
+]

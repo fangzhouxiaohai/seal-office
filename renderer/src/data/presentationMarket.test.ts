@@ -1,11 +1,21 @@
 import {describe,it,expect} from 'vitest'
-import {marketTemplates,createMarketDeck} from './presentationMarket'
+import {marketTemplates,professionalMarketTemplates,marketCatalog,createMarketDeck} from './presentationMarket'
 import {构建演示保存模型} from '../ppt/saveModel'
 import {写入pptx,读取pptx} from '../../../main/office/pptxCodec.js'
 import {解析页面背景} from '../ppt/model/masters'
 import {marketResourceEntries} from './marketIllustrations'
 
 describe('原创演示市场实际文件链路',()=>{
+  it('市场新增十二套主题内容，卡片封面和完整文稿来自同一个真实模型',()=>{
+    expect(professionalMarketTemplates).toHaveLength(12);expect(marketCatalog).toHaveLength(312)
+    expect(new Set(marketCatalog.map(item=>item.id)).size).toBe(312)
+    for(const template of professionalMarketTemplates){
+      const cover=createMarketDeck(template,true),deck=createMarketDeck(template)
+      expect(cover.幻灯片列表).toHaveLength(1);expect(deck.幻灯片列表).toHaveLength(9)
+      expect(cover.幻灯片列表[0].文本框列表.map(({text,x,y,width,height})=>({text,x,y,width,height}))).toEqual(deck.幻灯片列表[0].文本框列表.map(({text,x,y,width,height})=>({text,x,y,width,height})))
+      expect(marketResourceEntries(deck)).toHaveLength(2)
+    }
+  })
   it('300 套模板均有九页、有效坐标和原生表格图表',()=>{
     expect(new Set(marketTemplates.map(t=>t.id)).size).toBe(300)
     for(const template of marketTemplates){

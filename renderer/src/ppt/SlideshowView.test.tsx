@@ -4,8 +4,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { App as AntdApp } from 'antd'
 import SlideshowView from './SlideshowView'
 import { 添加幻灯片, 创建演示文稿 } from './deck'
+import {saveShortcutOverrides,resetShortcutOverrides} from '../shortcuts/shortcuts'
 
-afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
+afterEach(() => { Reflect.deleteProperty(window, 'electronAPI');resetShortcutOverrides() })
 
 function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, 会话标识: '放映会话' })) {
   const 退出 = vi.fn().mockResolvedValue({ 成功: true })
@@ -19,6 +20,18 @@ function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, �
 }
 
 const 渲染放映 = (on退出 = vi.fn()) => render(<AntdApp><SlideshowView 文稿={创建演示文稿()} 当前索引={0} on翻页={vi.fn()} on退出={on退出} /></AntdApp>)
+
+it('放映根实际获得焦点时也能改绑黑屏/退出，普通弹窗键位不会泄漏',()=>{
+  安装全屏接口();saveShortcutOverrides({'slideshow:show.black':['K'],'slideshow:show.exit':['Q']})
+  const exit=vi.fn();渲染放映(exit)
+  const root=screen.getByRole('dialog',{name:'幻灯片放映'})
+  fireEvent.keyDown(root,{key:'b'});expect(document.querySelector('.wps-slideshow__screen')).toBeNull()
+  fireEvent.keyDown(root,{key:'k'});expect(document.querySelector('[data-屏幕="黑"]')).not.toBeNull()
+  const modal=document.createElement('div');modal.setAttribute('role','dialog');root.append(modal)
+  fireEvent.keyDown(modal,{key:'q'});expect(exit).not.toHaveBeenCalled();modal.remove()
+  fireEvent.keyDown(root,{key:'Escape'});expect(exit).not.toHaveBeenCalled()
+  fireEvent.keyDown(root,{key:'q'});expect(exit).toHaveBeenCalledOnce()
+})
 
 describe('演讲者视图接入', () => {
   function 安装演讲者接口(打开结果: Record<string, unknown> = { 成功: true, 会话标识: '演讲者会话', 显示器名称: '扩展显示器 2（1920×1080）' }) {

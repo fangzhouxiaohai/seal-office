@@ -23,5 +23,6 @@ export async function packAndroid() {
   console.log('仅提交 Android 云打包。iOS、鸿蒙与 Web 不参与本次打包。')
   await runHBuilder(executable, args)
   console.log('请以 HBuilderX 返回的 APK 下载结果为准；本地编辑器构建产物不等于 APK。')
+  console.log('下载后运行 check:apk -- <APK路径> --require-current --archive <归档目录>，校验后按 seal-office-版本-android.apk 原字节归档；不改变云服务返回的文件名。')
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) packAndroid().catch((error) => { console.error(error.message); process.exitCode = 1 })

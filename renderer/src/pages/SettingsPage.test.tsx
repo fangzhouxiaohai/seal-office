@@ -149,23 +149,37 @@ describe('设置页状态与真实能力一致', () => {
   })
 
   it('设置页保存翻译密钥时只写系统安全存储，不写本机明文', async () => {
+    const 用户 = userEvent.setup()
+    // 此用例只替换翻译安全存储；完整提供 AppProvider 需要的空工作区备份清理。
+    // 缺失该桌面接口会在键入期间弹出自动备份错误并抢走输入焦点。
+    const 清理备份 = vi.spyOn(桥接, 'backupClear').mockResolvedValue({ 成功: true })
+    localStorage.removeItem('seal.office.translate')
     const 保存服务 = vi.fn(async () => ({ 成功: true, 数据: { 地址: 'https://a.example.com', 已配置密钥: true } }))
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: { presentationAi: { capabilities: vi.fn(), getService: vi.fn(async () => ({ 成功: true, 数据: null })), saveService: 保存服务, migrateLegacyTranslate: vi.fn() } },
+      value: { presentationAi: { capabilities: vi.fn(), getService: vi.fn(async () => ({ 成功: true, 数据: { 地址: 'https://saved.example.com', 已配置密钥: false } })), saveService: 保存服务, migrateLegacyTranslate: vi.fn() } },
     })
     try {
       render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
-      await userEvent.type(screen.getByRole('textbox', { name: '翻译服务地址' }), 'https://a.example.com')
-      await userEvent.type(screen.getByLabelText('翻译服务密钥'), 'sk-明文密钥')
-      await userEvent.click(screen.getByRole('button', { name: '保存翻译设置' }))
+      // 先确认异步安全配置已回填，再操作同一用户会话中的输入控件。
+      const 地址框 = await screen.findByDisplayValue('https://saved.example.com')
+      const 密钥框 = screen.getByLabelText('翻译服务密钥')
+      await 用户.clear(地址框)
+      await 用户.type(地址框, 'https://a.example.com')
+      await 用户.type(密钥框, 'sk-明文密钥')
+      expect(地址框).toHaveValue('https://a.example.com')
+      expect(密钥框).toHaveValue('sk-明文密钥')
+      expect(screen.queryByRole('dialog', { name: '自动备份失败' })).not.toBeInTheDocument()
+      await 用户.click(screen.getByRole('button', { name: '保存翻译设置' }))
       // 自动关闭的成功提示可能在慢速 jsdom 中提前消失；核对持久状态与真实保存调用。
       expect(await screen.findByText(/密钥已保存在系统安全存储；留空保存不修改/)).toBeInTheDocument()
-      expect(保存服务).toHaveBeenCalledWith('翻译', expect.objectContaining({ 密钥: 'sk-明文密钥' }))
+      expect(保存服务).toHaveBeenCalledWith('翻译', { 地址: 'https://a.example.com', 密钥: 'sk-明文密钥', 目标语言: 'zh' })
       expect(screen.getByLabelText('翻译服务密钥')).toHaveValue('')
       expect(localStorage.getItem('seal.office.translate') ?? '').not.toContain('sk-明文密钥')
     } finally {
       Reflect.deleteProperty(window, 'electronAPI')
+      localStorage.removeItem('seal.office.translate')
+      清理备份.mockRestore()
     }
   })
 

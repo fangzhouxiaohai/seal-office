@@ -1,24 +1,36 @@
 // 首页：新建入口与最近文档区块的组合页。
 import React, { useEffect, useState } from 'react'
-import { App as AntdApp, Dropdown } from 'antd'
+import { App as AntdApp, Drawer, Dropdown, Spin } from 'antd'
 import Icon from '../components/Icon'
 import { useAppStore } from '../store'
 import type { DocType } from '../mock/recentDocs'
 import { filterDocs, sortDocs } from '../mock/recentDocs'
 import RecentDocs from '../components/RecentDocs'
-import TemplateLibrary from '../components/TemplateLibrary'
-import { 生成演示模板文稿, type 模板项 } from '../data/templates'
+import type { 模板项 } from '../data/templates'
+import ErrorBoundary from '../components/ErrorBoundary'
 import { 通过对话框打开文件 } from '../fileOpen'
 import CalendarPage from '../localTools/CalendarPage'
 import DiagramPage from '../localTools/DiagramPage'
 import AppsPage from '../localTools/AppsPage'
+import MultiTablePage from '../localTools/MultiTablePage'
+import NotesPage from '../localTools/NotesPage'
+import DesignPage from '../localTools/DesignPage'
 import DatabasePage from '../localTools/DatabasePage'
 import LocalFilesPage, { type 本机位置 } from '../localTools/LocalFilesPage'
 import { 读取搜索文字, 搜索片段 } from '../search/contentSearch'
 import CloudFilesPage from '../cloud/CloudFilesPage'
 import KnowledgePage from '../cloud/KnowledgePage'
-import PresentationMarketPage from '../cloud/PresentationMarketPage'
 import {useCloud} from '../cloud/CloudProvider'
+import { navigationAvailable } from '../navConfig'
+import SharedPage from '../collaboration/SharedPage'
+import DevicesPage from '../collaboration/DevicesPage'
+import TagsPage from '../collaboration/TagsPage'
+import TeamsPage from '../collaboration/TeamsPage'
+
+// Photos and complete slide templates load when their workspace is opened.
+// Keep the library mounted after its first use so closing it retains filters.
+const TemplateLibrary = React.lazy(() => import('../components/TemplateLibrary'))
+const PresentationMarketPage = React.lazy(() => import('../cloud/PresentationMarketPage'))
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -42,6 +54,8 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
   const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
   const [正文匹配, set正文匹配] = useState<Record<string, string>>({})
   const [搜索中, set搜索中] = useState(false)
+  const [模板库已使用, 设模板库已使用] = useState(模板库打开)
+  useEffect(() => { if (模板库打开) 设模板库已使用(true) }, [模板库打开])
   const {
     navKey,
     setNavKey,
@@ -64,6 +78,8 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
     removeDoc,
     removeDocs,
   } = useAppStore()
+
+  useEffect(() => { if (!navigationAvailable(navKey)) setNavKey('home') }, [navKey, setNavKey])
 
   useEffect(() => {
     const 关键词 = 搜索词.trim()
@@ -109,10 +125,10 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
     onClick: ({ key }: { key: string }) => 设类型筛选(key as 'all' | DocType),
   }
 
-  const 处理模板选择 = (模板: 模板项) => {
+  const 处理模板选择 = async (模板: 模板项) => {
     try {
       const 扩展名 = { word: 'docx', table: 'xlsx', ppt: 'pptx' }[模板.分类]
-      const 初始内容 = 模板.分类 === 'ppt' ? 生成演示模板文稿(模板) : 模板.内容
+      const 初始内容 = 模板.分类 === 'ppt' ? (await import('../data/templates')).生成演示模板文稿(模板) : 模板.内容
       createDoc(模板.分类 as DocType, 初始内容, { 名称: `${模板.名称}.${扩展名}` })
       关闭模板库?.()
     } catch (错误) {
@@ -191,16 +207,23 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
   })
 
   const 本地工具页面 = navKey === 'my-cloud' ? React.createElement(CloudFilesPage)
+    : navKey === 'shared' ? React.createElement(SharedPage)
+    : navKey === 'device' ? React.createElement(DevicesPage)
+    : navKey === 'tag' ? React.createElement(TagsPage)
+    : navKey === 'team' ? React.createElement(TeamsPage)
     : navKey === 'trash' ? React.createElement(CloudFilesPage, {trash:true})
     : navKey === 'knowledge' ? React.createElement(KnowledgePage)
-    : navKey === 'market' ? React.createElement(PresentationMarketPage)
+    : navKey === 'market' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载模板市场…') }, React.createElement(PresentationMarketPage)))
     : navKey === 'calendar' ? React.createElement(CalendarPage)
-    : navKey === 'database' ? React.createElement(DatabasePage, {
+    : navKey === 'database' && navigationAvailable('database') ? React.createElement(DatabasePage, {
         初始新建请求: 新建Access请求 || undefined,
         on初始新建已处理: on新建Access已处理,
       })
     : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })
       : navKey === 'flow' ? React.createElement(DiagramPage, { 类型: '流程图' })
+        : navKey === 'multitable' ? React.createElement(MultiTablePage)
+          : navKey === 'notes' ? React.createElement(NotesPage)
+            : navKey === 'design' ? React.createElement(DesignPage)
         : navKey === 'apps' ? React.createElement(AppsPage)
           : ['desktop', 'document', 'download'].includes(navKey)
             ? React.createElement(LocalFilesPage, { 位置: navKey as 本机位置 }) : null
@@ -210,11 +233,11 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
       React.Fragment,
       null,
       本地工具页面,
-      React.createElement(TemplateLibrary, {
+      (模板库打开 || 模板库已使用) ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement(Drawer, { title: '模板库', open: 模板库打开, width: 'min(800px, 100vw)', onClose: 关闭模板库 }, React.createElement('p', { role: 'status' }, React.createElement(Spin), ' 正在加载模板…')) }, React.createElement(TemplateLibrary, {
         打开: 模板库打开,
         关闭: 关闭模板库,
         onSelect: 处理模板选择,
-      })
+      }))) : null
     )
   }
 
@@ -286,12 +309,13 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
       onEmptyAction: 处理打开文件,
     }),
     // 模板库弹窗
-    React.createElement(TemplateLibrary, {
+    (模板库打开 || 模板库已使用) ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement(Drawer, { title: '模板库', open: 模板库打开, width: 'min(800px, 100vw)', onClose: 关闭模板库 }, React.createElement('p', { role: 'status' }, React.createElement(Spin), ' 正在加载模板…')) }, React.createElement(TemplateLibrary, {
       打开: 模板库打开,
       关闭: 关闭模板库,
       onSelect: 处理模板选择,
-    })
+    }))) : null
   )
 }
 
 export default HomePage
+

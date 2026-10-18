@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import { 创建演示文稿, 创建幻灯片 } from '../deck'
 import 阅读视图 from './ReadingView'
+import {saveShortcutOverrides,resetShortcutOverrides} from '../../shortcuts/shortcuts'
 
 function 文稿() {
   const 结果 = 创建演示文稿()
@@ -56,4 +57,15 @@ it('阅读视图播放不写入撤销历史，也不产生保存标记', () => {
   const 快照 = JSON.stringify(文稿数据)
   render(<阅读视图 文稿={文稿数据} 起始索引={1} 图片地址={{}} on退出={() => {}}/>)
   expect(JSON.stringify(文稿数据)).toBe(快照)
+})
+
+it('阅读视图共用改绑后的翻页与退出，旧键不触发',()=>{
+  try{
+    saveShortcutOverrides({'slideshow:show.next':['N'],'slideshow:show.exit':['Q']})
+    const exit=vi.fn();render(<阅读视图 文稿={文稿()} 起始索引={0} 图片地址={{}} on退出={exit}/>)
+    fireEvent.keyDown(document,{key:'ArrowRight'});expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    fireEvent.keyDown(document,{key:'n'});expect(screen.getByText('2 / 3')).toBeInTheDocument()
+    fireEvent.keyDown(document,{key:'Escape'});expect(exit).not.toHaveBeenCalled()
+    fireEvent.keyDown(document,{key:'q'});expect(exit).toHaveBeenCalledOnce()
+  }finally{resetShortcutOverrides()}
 })

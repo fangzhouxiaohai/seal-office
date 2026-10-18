@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 import time
+from artifact_names import TEMPLATES, artifact_name
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -31,11 +32,12 @@ def validate_manifest(config):
     if not assets or len({a['name'] for a in assets}) != len(assets):
         raise ValueError('Empty or duplicate asset list')
     version = config['tag'][1:]
+    installer_names = {artifact_name(platform, version) for platform in TEMPLATES}
     for asset in assets:
         name = asset['name']
         if not re.fullmatch(r'[A-Za-z0-9_.-]+', name) or name in ('.', '..'):
             raise ValueError('Unsafe asset filename')
-        if name != 'SHA256SUMS.txt' and not name.startswith(f'SealOffice-{version}-'):
+        if name != 'SHA256SUMS.txt' and name not in installer_names and not name.startswith(f'SealOffice-{version}-'):
             raise ValueError('Asset is outside this release')
         if not isinstance(asset['size'], int) or isinstance(asset['size'], bool) or asset['size'] <= 0:
             raise ValueError('Invalid asset size')

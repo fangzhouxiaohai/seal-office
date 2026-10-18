@@ -1,6 +1,6 @@
 export type 文本编码 = 'utf8' | 'utf16le' | 'utf16be' | 'gb18030'
 export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
-export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string }
+export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string; 已取消?: boolean }
 export interface 文件重命名结果 { 成功: boolean; 路径?: string; 名称?: string; 文件指纹?: string; 错误?: string }
 export interface 完整性检查结果 { 成功: boolean; 完整?: boolean; 检查文件数?: number; 异常?: Array<{ 路径: string; 原因: string }>; 错误?: string }
 /** 最近文档的持久化记录（主进程 recent.json） */
@@ -26,6 +26,8 @@ export interface 助手工具请求 { 请求标识: string; 调用标识: string
 export interface 助手工具结果 { 请求标识: string; 调用标识: string; 成功: boolean; 数据?: unknown; 错误?: string }
 export interface 助手对话结果 { 内容: string; 思考?: string; 已停止?: boolean; 计划?: 助手计划项[]; 摘要?: string; 压缩次数?: number }
 export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string }
+/** Cloud service and browser/mobile adapters share this failure envelope. */
+export interface 云端响应<T = unknown> { 成功: boolean; 数据?: T; 错误?: string }
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
@@ -240,7 +242,7 @@ export interface 电子接口 {
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
-  cloud?: { invoke: (action: string, input?: unknown) => Promise<{ 成功: boolean; 数据?: any; 错误?: string }> }
+  cloud?: { invoke: (action: string, input?: unknown) => Promise<{ 成功: boolean; 数据?: any; 错误?: string; 状态码?: number }> }
   ai: {
     getConfig: () => Promise<助手结果<助手配置>>
     saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>

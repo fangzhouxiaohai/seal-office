@@ -31,6 +31,7 @@ export interface ViewState {
   标尺: boolean
   网格线: boolean
   段落标记: boolean
+  行号?: boolean
   视图模式: '页面视图' | '阅读版式' | 'Web 版式' | '大纲视图' | '草稿'
   纸张: string
   纸张方向: '纵向' | '横向'
@@ -102,6 +103,8 @@ export interface CommandContext {
   读取内容: () => string
   /** 保存前记录旧版自适应图片的实际尺寸，并返回同步后的正文快照 */
   准备保存内容?: () => string
+  /** Native DOCX-based PDF used by both preview and export. */
+  生成原生Pdf?: () => Promise<string>
   /** 触发文件下载 */
   下载: (内容: string, 文件名: string, 类型: string) => void
   打开查找: () => void
@@ -424,9 +427,9 @@ const 布局命令: EditorCommand[] = [
     }
     上下文.显示文件错误?.('水印暂不可用', '当前版本不能把文字水印可靠写入 DOCX 文件，已保持原页面设置。')
   }),
-  // 行号依赖分页排版引擎，暂以提示告知进度，避免写入 ViewState 不存在的键
   生成回调命令('layout.lineNumbers', '行号', (上下文) => {
-    上下文.notify('行号功能将在后续版本提供')
+    上下文.setView({ 行号: !上下文.view.行号 })
+    上下文.refresh()
   }),
   生成回调命令('layout.break', '分隔符', (上下文) => 上下文.插入资源('分页符')),
   生成回调命令('layout.dropCap', '首字下沉', (上下文) => {
@@ -713,7 +716,7 @@ function 保存文本文件(上下文: CommandContext, 保存路径: string, 扩
     if (结果.成功) {
       上下文.设置文档路径?.(保存路径, 正文Html, 结果.文件指纹)
       上下文.notify(提示)
-    } else {
+    } else if (!结果.已取消) {
       报告文件错误(上下文, '保存失败', 结果.错误 || '未知错误')
     }
   })
@@ -733,6 +736,11 @@ async function 完成Pdf导出(上下文: CommandContext, 路径: string): Promi
   } catch (错误) {
     报告文件错误(上下文, 'PDF 已导出但无法打开', 错误 instanceof Error ? `${错误.message}。文件位置：${路径}` : `文件位置：${路径}`)
   }
+}
+async function 写出Pdf(上下文: CommandContext, html: string, path: string) {
+  if (!上下文.生成原生Pdf) return 桥接.pdf.exportToPath(html, path)
+  const data = await 上下文.生成原生Pdf()
+  return 桥接.saveToFile(path, data, '二进制')
 }
 
 /** 导出命令 */
@@ -810,7 +818,7 @@ const 导出命令: EditorCommand[] = [
                   if (保存结果.成功) {
                     上下文.设置文档路径?.(保存路径, 内容, 保存结果.文件指纹, 页面设置快照)
                     上下文.notify('文件已保存')
-                  } else {
+                  } else if (!保存结果.已取消) {
                     报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
@@ -822,7 +830,7 @@ const 导出命令: EditorCommand[] = [
             })
           } else if (扩展 === '.pdf') {
             // PDF 必须走真实导出链路；按文本写盘会产出扩展名为 .pdf 的损坏文件
-            桥接.pdf.exportToPath(内容, 保存路径).then((结果: any) => {
+            写出Pdf(上下文, 内容, 保存路径).then((结果: any) => {
               if (结果 && 结果.成功) {
                 return 完成Pdf导出(上下文, 保存路径)
               } else if (结果 && 结果.已取消) {
@@ -888,7 +896,7 @@ const 导出命令: EditorCommand[] = [
                   if (保存结果.成功) {
                     上下文.设置文档路径?.(保存路径, 内容, 保存结果.文件指纹, 页面设置快照)
                     上下文.notify('文件已另存为')
-                  } else {
+                  } else if (!保存结果.已取消) {
                     报告文件错误(上下文, '保存失败', 保存结果.错误 || '未知错误')
                   }
                 })
@@ -900,7 +908,7 @@ const 导出命令: EditorCommand[] = [
             })
           } else if (扩展 === '.pdf') {
             // PDF 必须走真实导出链路；按文本写盘会产出扩展名为 .pdf 的损坏文件
-            桥接.pdf.exportToPath(内容, 保存路径).then((结果: any) => {
+            写出Pdf(上下文, 内容, 保存路径).then((结果: any) => {
               if (结果 && 结果.成功) {
                 return 完成Pdf导出(上下文, 保存路径)
               } else if (结果 && 结果.已取消) {
@@ -925,6 +933,17 @@ const 导出命令: EditorCommand[] = [
   
   // PDF 导出命令
   生成回调命令('file.exportPdf', '导出为PDF', (上下文) => {
+    if (上下文.生成原生Pdf) {
+      void (async () => {
+        const path = await 桥接.showSaveDialog(上下文.当前文档名.replace(/\.[^.]+$/, '') + '.pdf', 'pdf')
+        if (!path) return
+        if (上下文.检查保存路径 && !上下文.检查保存路径(path)) return
+        const result = await 写出Pdf(上下文, '', path)
+        if (!result.成功 && !('已取消' in result && result.已取消)) throw new Error(result.错误 || 'PDF保存失败')
+        if (result.成功) await 完成Pdf导出(上下文, path)
+      })().catch(error => 报告文件错误(上下文, 'PDF 导出失败', error.message))
+      return
+    }
     if (桥接.可用) {
       const 文档名 = 上下文.当前文档名
       const html = 上下文.读取内容()
@@ -986,6 +1005,7 @@ function 从视图提取页面设置(视图: ViewState): 文字页面设置 {
     ...(视图.原始页边距 ? { 原始页边距: 视图.原始页边距 } : {}),
     ...(视图.页眉Html ? { 页眉Html: 视图.页眉Html } : {}),
     ...(视图.页脚Html ? { 页脚Html: 视图.页脚Html } : {}),
+    ...(视图.行号 ? { 行号: true } : {}),
   }
 }
 

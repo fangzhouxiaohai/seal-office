@@ -33,6 +33,9 @@ const JSZip = require('jszip')
 const { 验证段落属性 } = require('./paragraphProperties')
 const { 解码图片数据, 文档最大图片字节 } = require('./imageData')
 const { 修正图片媒体 } = require('./docxImages')
+const { NoteReferenceRun, prepareNotes, splitEndnotes } = require('./docxNotes')
+const { 原生修订, 原生格式修订, 规范修订Xml } = require('./docxRevisions')
+const { 标记来源, 合并源包 } = require('./docxSource')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 页边距 = {
@@ -74,6 +77,7 @@ function 构建页面属性(设置) {
     页面.borders = { pageBorderTop: 边, pageBorderRight: 边, pageBorderBottom: 边, pageBorderLeft: 边 }
   }
   const 属性 = { page: 页面 }
+  if (设置.行号 === true) 属性.lineNumbers = { countBy: 1, start: 1, restart: 'continuous', distance: 240 }
   if (设置.分栏 !== '一栏') {
     const 数量 = 设置.分栏 === '三栏' ? 3 : 2
     if (设置.分栏 === '偏左' || 设置.分栏 === '偏右') {
@@ -168,6 +172,18 @@ function 校验书签名称(名称, 错误消息 = '书签名称无效，无法�
 
 /** 把一个文字片段转为 docx 的段落子节点。 */
 function 建文字(片段, 图片预算) {
+  if (片段.修订 !== undefined) {
+    if (!Array.isArray(片段.修订) || !片段.修订.length || 片段.修订.length > 16) throw new Error('修订层级无效')
+    let child = 建文字({ ...片段, 修订: undefined }, 图片预算)
+    for (const revision of [...片段.修订].reverse()) child = new 原生修订(revision, child)
+    return child
+  }
+  if (片段.注释引用) {
+    const { 类型, 标识 } = 片段.注释引用
+    const nativeId = 图片预算.注释映射?.get(`${类型}:${标识}`)
+    if (!nativeId) throw new Error('注释引用缺少对应正文，无法保存')
+    return new NoteReferenceRun(类型, nativeId)
+  }
   if (片段.书签 !== undefined) {
     const 名称 = 校验书签名称(片段.书签)
     return new Bookmark({ id: 名称, children: [建文字({ ...片段, 书签: undefined }, 图片预算)] })
@@ -196,7 +212,15 @@ function 建文字(片段, 图片预算) {
     return new ImageRun({ data: 信息.字节, transformation: { width: 图片.宽, height: 图片.高, rotation: 图片.旋转 ?? 0, flip: { horizontal: 图片.水平翻转 ?? false, vertical: 图片.垂直翻转 ?? false } },
       altText: { title: 图片.说明, description: 图片.说明, name: 图片.说明 || '图片' } })
   }
-  return new TextRun({ text: 片段.文本 || '', ...文字属性(片段) })
+  const run = new TextRun({ text: 片段.文本 || '', ...文字属性(片段) })
+  if (片段.格式修订) {
+    if (!片段.格式修订.原来格式 || typeof 片段.格式修订.原来格式 !== 'object') throw new Error('格式修订历史缺失')
+    const old = new TextRun({ text: '', ...文字属性(片段.格式修订.原来格式) }).root.find(item => item?.rootKey === 'w:rPr')
+    const current = run.root.find(item => item?.rootKey === 'w:rPr')
+    if (!old || !current) throw new Error('格式修订属性生成失败')
+    current.root.push(new 原生格式修订(片段.格式修订, old))
+  }
+  return run
 }
 
 function 文字属性(片段) {
@@ -271,12 +295,21 @@ function 建段落(段, 原生排版列表, 图片预算) {
   }
 
   if (段.列表 === '项目符号') {
-    配置.bullet = { level: 0 }
+    if (['square', 'circle'].includes(段.列表样式)) 配置.numbering = { reference: '海豹列表-' + 段.列表样式, level: 0 }
+    else 配置.bullet = { level: 0 }
   } else if (段.列表 === '编号') {
-    配置.numbering = { reference: 编号标识, level: 0 }
+    配置.numbering = { reference: ['cjk-ideographic', 'lower-alpha'].includes(段.列表样式) ? '海豹列表-' + 段.列表样式 : 编号标识, level: 0 }
   }
 
-  return new Paragraph(配置)
+  const paragraph = new Paragraph(配置)
+  if (段.段落修订) {
+    const mark = new XmlComponent('w:rPr'); mark.root.push(new 原生修订(段.段落修订))
+    const properties = paragraph.root.find(item => item?.rootKey === 'w:pPr')
+    if (!properties) throw new Error('段落修订属性生成失败')
+    const existing = properties.root.find(item => item?.rootKey === 'w:rPr')
+    if (existing) existing.root.push(new 原生修订(段.段落修订)); else properties.root.push(mark)
+  }
+  return 标记来源(paragraph, 段)
 }
 
 /**
@@ -417,6 +450,12 @@ const 编号配置 = {
     },
   ],
 }
+for (const [样式, format, text] of [
+  ['cjk-ideographic', LevelFormat.CHINESE_COUNTING, '%1、'],
+  ['lower-alpha', LevelFormat.LOWER_LETTER, '%1.'],
+  ['square', LevelFormat.BULLET, '■'], ['circle', LevelFormat.BULLET, '○'],
+]) 编号配置.config.push({ reference: '海豹列表-' + 样式, levels: [{ level: 0, format, text, alignment: AlignmentType.LEFT,
+  style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] })
 
 /**
  * 依据文档模型生成 docx 文件数据。
@@ -428,7 +467,8 @@ exports.生成docx = async (文档模型) => {
 
   const 子元素 = []
   const 原生排版列表 = []
-  const 图片预算 = { 字节数: 0 }
+  const 注释配置 = prepareNotes(文档模型?.注释)
+  const 图片预算 = { 字节数: 0, 注释映射: 注释配置.references }
   const 构建页眉页脚 = (段落) => {
     const 局部排版 = []
     const children = (段落 || []).map((项) => {
@@ -441,7 +481,7 @@ exports.生成docx = async (文档模型) => {
   }
   段落列表.forEach((项, 序号) => {
     if (项.类型 === '表格') {
-      子元素.push(建表格(项, 原生排版列表, 图片预算))
+    子元素.push(标记来源(建表格(项, 原生排版列表, 图片预算), 项))
       // Only consecutive tables need a boundary. Do not append a new visible
       // blank line on every save; the boundary has a distinct roundtrip style.
       if (段落列表[序号 + 1]?.类型 === '表格') {
@@ -466,6 +506,7 @@ exports.生成docx = async (文档模型) => {
   }
 
   const 文档 = new Document({
+    ...(注释配置.entries.length ? { footnotes: Object.fromEntries(注释配置.entries.map(note => [note.nativeId, { children: 构建页眉页脚(note.段落) }])) } : {}),
     styles: { default: 标题默认样式, paragraphStyles: [{ id: 'SealOfficeTableSeparator', name: 'SealOffice table separator',
       paragraph: { spacing: { before: 0, after: 0, line: 1, lineRule: 'exact' } }, run: { size: 2, vanish: true } }] },
     numbering: 编号配置,
@@ -478,5 +519,13 @@ exports.生成docx = async (文档模型) => {
     }],
   })
 
-  return 补充原生排版(await Packer.toBuffer(文档), 原生排版列表, 图片预算.字节数 > 0)
+  const 数据 = await splitEndnotes(await 补充原生排版(await Packer.toBuffer(文档), 原生排版列表, 图片预算.字节数 > 0), 注释配置.endnoteIds)
+  const 包 = await JSZip.loadAsync(数据)
+  let changed = false
+  for (const part of Object.values(包.files)) {
+    if (part.dir || !/^word\/.*\.xml$/.test(part.name)) continue
+    const original = await part.async('string'), normalized = 规范修订Xml(original)
+    if (normalized !== original) { 包.file(part.name, normalized); changed = true }
+  }
+  return 合并源包(changed ? await 包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }) : 数据, 文档模型)
 }

@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "passed": true,
+  "checkedAt": "2026-10-18T15:44:41.056990+00:00",
+  "change": "Template library and presentation market load on demand; complete existing templates and original photos are preserved.",
+  "previousWebArchive": ".upgrade-private/web-deployment/2.0.0-web-20261018-220300/seal-office-2.0.0-web.zip",
+  "entryBefore": {
+    "path": "assets/index-6ccf4c08.js",
+    "bytes": 39192840,
+    "gzipLevel5Bytes": 23670605,
+    "sha256": "dfa14847ce834d7a3dfd306112b2de69deba00fba1f5bb2e58d7a14a694de258"
+  },
+  "entryAfter": {
+    "path": "assets/index-676f7965.js",
+    "bytes": 12108901,
+    "gzipLevel5Bytes": 3853205,
+    "sha256": "da83a77e7f628b043725175f8079a9c69a28e691f849dc396bb2b6dbcf54e9b7"
+  },
+  "compressedEntryReductionPercent": 83.72,
+  "deferredAssets": [
+    {
+      "path": "assets/TemplateLibrary-7f2fc16a.js",
+      "bytes": 6039,
+      "gzipLevel5Bytes": 2425,
+      "sha256": "24518fbe0ee9a8daae6d4af952700cac1624396012aafadd3300d0f078274ef2"
+    },
+    {
+      "path": "assets/PresentationMarketPage-206d766e.js",
+      "bytes": 10303315,
+      "gzipLevel5Bytes": 7490566,
+      "sha256": "165e4cbaf9e62cb590482cb4e46e25024b7b0b8ccb5893e33f567e0a1a94dd21"
+    },
+    {
+      "path": "assets/templates-e3cebef2.js",
+      "bytes": 16777321,
+      "gzipLevel5Bytes": 12319082,
+      "sha256": "216f963d51d9e20fb92bf9cdc4ad2e676a07039fe5992791c7623fd6f187583b"
+    }
+  ],
+  "pdfDeadlines": {
+    "resourcePreparationMs": 180000,
+    "originalLayoutMs": 60000,
+    "deterministicTests": 3,
+    "cases": [
+      "70s preparation then 59s layout completes",
+      "stalled preparation aborts at 180s",
+      "stalled layout retains 60s timeout; scheduled timers clear"
+    ]
+  },
+  "publicColdWorkflows": {
+    "allCompleted": true,
+    "groups": [
+      {
+        "name": "documents",
+        "passed": true,
+        "checks": 7
+      },
+      {
+        "name": "templates",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "projects",
+        "passed": true,
+        "checks": 3
+      }
+    ],
+    "perProcessWatchdogMs": 240000,
+    "mainJsSha256": "da83a77e7f628b043725175f8079a9c69a28e691f849dc396bb2b6dbcf54e9b7"
+  },
+  "regressionLogs": [
+    {
+      "path": ".tmp-v200-fourth-packaging.log",
+      "sha256": "eb9f21b1082c6c70a1398608b31cf9117e32569088d7565e4dabebd72b63dc58"
+    },
+    {
+      "path": ".tmp-v200-fourth-mobile-unit.log",
+      "sha256": "e4dbbd0f764f29dc723f045afbc482b5eccea82b747207d278aa6b5e51d56cac"
+    }
+  ],
+  "limitations": [
+    "Transfer sizes are byte measurements at gzip level 5, not a promised network speed or universal loading time.",
+    "Public browser acceptance does not replace physical Android/Harmony device testing."
+  ]
+}

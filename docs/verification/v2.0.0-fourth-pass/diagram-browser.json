@@ -1,0 +1,220 @@
+{
+  "status": "passed",
+  "passed": true,
+  "version": "2.0.0",
+  "generatedAt": "2026-10-18T13:33:17.573Z",
+  "scope": "Diagram multi-project production browser acceptance",
+  "helper": {
+    "path": "mobile/tests/diagram-browser-actions.cjs",
+    "sha256": "c9d153b67856e0035fa3c4fd7bad9eb8abcadacda9012f0f4ad71798889442da",
+    "frozen": true
+  },
+  "sourceHashes": {
+    "renderer/src/localTools/DiagramPage.tsx": "6eb9e03d150c4406fd30633b7d75654a04ac5297a20407f63eb12aad9b3a350b",
+    "renderer/src/localTools/DiagramLibrary.tsx": "d71c3f5b6a8cddfebb0948d653e4c4784f23d63a5615e6858d1e961b690a1f42",
+    "renderer/src/localTools/DiagramEditor.tsx": "44a1576c769d80f4fecdf33c31e8b4791f83a33587ea1b52830b6c1b0e90dfff",
+    "renderer/src/localTools/diagramProjects.ts": "884562365c43a049310969a0e90e6f6cde678b4ee58af53c7a79054f9ce49bff",
+    "renderer/src/localTools/diagramData.ts": "939088f11cc96afab6ccc5c6beb957d1ad542ce509017810e25a723ab7d8cc9f",
+    "renderer/src/localTools/diagramPresentation.ts": "2bd32bb96a28865aa24bbcf5ed7fc5f9377f0588fbe8af89ec9079f138bbd66c",
+    "renderer/src/localTools/diagramEnhancements.css": "ab5fdfb8ddc7060bdc6da414aab399fad0d447893e68596e5e428a7b9b7bdcfc"
+  },
+  "build": {
+    "startedAt": "2026-10-18T13:30:52.623Z",
+    "log": ".upgrade-private/diagram-projects/build.log",
+    "output": ".upgrade-private/diagram-projects/dist",
+    "sourceUnchanged": true,
+    "officialDistribution": false
+  },
+  "checks": [
+    "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+    "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+    "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+    "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+    "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+    "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+  ],
+  "results": {
+    "http": {
+      "checks": [
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+      ],
+      "errors": [],
+      "blocked": [],
+      "startedAt": "2026-10-18T13:31:18.222Z",
+      "protocol": "http",
+      "actions": {
+        "projectIds": {
+          "mindmap": [
+            "legacy-v1",
+            "6ea19651-322e-4b72-bdb6-bce47b8a8d1e",
+            "1ab59823-dcda-4227-9f72-eaa015a26615"
+          ],
+          "flow": [
+            "legacy-v1",
+            "2e2644d4-5eb1-4079-91b5-fec6ae68b9c7",
+            "b9ea5613-9d24-4ce5-95e7-3b65d7ddb4a4"
+          ]
+        },
+        "reloaded": true,
+        "legacyPreserved": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-10-18T13:31:57.267Z"
+    },
+    "file": {
+      "checks": [
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+      ],
+      "errors": [],
+      "blocked": [],
+      "startedAt": "2026-10-18T13:31:57.512Z",
+      "protocol": "file",
+      "actions": {
+        "projectIds": {
+          "mindmap": [
+            "legacy-v1",
+            "4361a3e1-ac07-4636-a578-2665e914bc3e",
+            "0b99e083-8d3d-449b-b735-4b6509291a14"
+          ],
+          "flow": [
+            "legacy-v1",
+            "ceed96c9-de51-4f79-8002-8ce125f42e99",
+            "c7b6f695-36ee-4e65-801a-ed42359e8cfa"
+          ]
+        },
+        "reloaded": true,
+        "legacyPreserved": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-10-18T13:32:35.145Z"
+    }
+  },
+  "allGroupsCompleted": true,
+  "protocols": [
+    "http",
+    "file"
+  ],
+  "groupsPerProtocol": 8,
+  "implementationUnitEvidence": {
+    "source": ".upgrade-private/diagram-project-final-unit.json",
+    "reportedBy": "implementation agent",
+    "passed": true,
+    "cases": 38,
+    "failures": 0,
+    "testFiles": 6
+  },
+  "observed": {
+    "freshList": true,
+    "perTypeProjectCountBeforeDeletion": 3,
+    "independentAB": true,
+    "renameCopySearch": true,
+    "trashRecovery": true,
+    "historyIsolation": true,
+    "realPageReload": true,
+    "legacyMigrationBackupExact": true,
+    "deletedMigrationDoesNotResurrect": true,
+    "nativeMouse": true,
+    "nativeTwoTouch": true,
+    "viewportWidths": [
+      360,
+      390,
+      820
+    ],
+    "jsonSvgRoundtrip": true,
+    "realSavedPptxRoundtrip": true,
+    "consoleErrors": 0,
+    "externalRequests": 0
+  },
+  "uiContract": {
+    "list": "[data-diagram-projects=\"脑图\"], [data-diagram-projects=\"流程图\"]",
+    "card": "[data-project-id][data-project-title]",
+    "editor": "[data-diagram-editor=\"project-id\"]",
+    "newProject": "新建脑图项目 / 新建流程图项目",
+    "nameInput": "#diagram-project-name (native label 项目名称)",
+    "confirmName": "创建项目 / 保存名称",
+    "open": "打开项目：项目标题",
+    "back": "返回项目列表",
+    "search": "[aria-label=\"搜索项目\"]",
+    "trash": "回收站 / 项目列表",
+    "restore": "恢复项目：项目标题"
+  },
+  "artifacts": {
+    ".upgrade-private/diagram-projects/screenshots-http/diagram.json": {
+      "bytes": 1251,
+      "sha256": "01d425fec5867777ab9dbacf84a1ee9cfe5d428a952b8cab104928058ae691d8"
+    },
+    ".upgrade-private/diagram-projects/screenshots-http/diagram.svg": {
+      "bytes": 3658,
+      "sha256": "f007f76c4e4c64c9455972b9fd2a2cc548496bff98070ddc24556aac8982e703"
+    },
+    ".upgrade-private/diagram-projects/screenshots-http/diagram.pptx": {
+      "bytes": 54143,
+      "sha256": "95d26fc3385b3662b2b31bd5df88d2c9a26e72eb0212982a4250dd99d3d680a6"
+    },
+    ".upgrade-private/diagram-projects/screenshots-http/flow.svg": {
+      "bytes": 1781,
+      "sha256": "ea80cfe628536853ea8e5d88f50a331558a1708f321935d637aa10c23cb42196"
+    },
+    ".upgrade-private/diagram-projects/screenshots-file/diagram.json": {
+      "bytes": 1251,
+      "sha256": "b66246f712ebf95b0abd52df06c41911c4dccca639fd2c88ffa7c14017e4bd42"
+    },
+    ".upgrade-private/diagram-projects/screenshots-file/diagram.svg": {
+      "bytes": 3658,
+      "sha256": "75ee7064a3f8902e5200c2c95184c7b3e1051210005e29a8dd33af26cc07fb3c"
+    },
+    ".upgrade-private/diagram-projects/screenshots-file/diagram.pptx": {
+      "bytes": 54143,
+      "sha256": "c9f7ffd28c82900065f4bb3fd2dbb4838ef84bf69d2af920b041704f63e90a5a"
+    },
+    ".upgrade-private/diagram-projects/screenshots-file/flow.svg": {
+      "bytes": 1781,
+      "sha256": "ea80cfe628536853ea8e5d88f50a331558a1708f321935d637aa10c23cb42196"
+    }
+  },
+  "screenshots": [
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-mindmap-projects-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-mindmap-projects-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-mindmap-projects-820.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-flow-projects-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-flow-projects-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-flow-projects-820.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\http-mobile-diagram.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-mindmap-projects-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-mindmap-projects-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-mindmap-projects-820.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-flow-projects-360.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-flow-projects-390.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-flow-projects-820.png",
+    "C:\\Users\\A\\.codex\\visualizations\\2026\\10\\18\\01a14dce-1e76-78c2-ad73-177c697a7c6e\\diagram-projects\\file-mobile-diagram.png"
+  ],
+  "method": [
+    "Only disposable legacy v1 fixtures are seeded. v2 creation, editing, naming, copy, search, deletion, recovery and permanent deletion all use the actual rendered UI. Storage is read only for exact graph/history assertions.",
+    "Both kinds receive A, B and C copy projects; text/notes/undo histories are checked through switches and a genuine page reload. Original legacy data and migration backups are checked byte for byte.",
+    "The original keyboard, real mouse-coordinate drag, native CDP two-touch pinch, JSON/SVG import/export and actual UI-saved PPTX codec assertions are retained.",
+    "After a hidden Electron RenderViewHost reload, the helper initializes a known viewport with a deterministic 391→390px resize and asks for repaint before capture. No product assertion is suppressed, no screenshot failure is swallowed and no watchdog is extended.",
+    "All source hashes match the final private build and the frozen helper hash. Formal Web/Android production output and deployment acceptance are separate root release stages."
+  ],
+  "boundaries": [
+    "These are local browser-origin projects. No cloud diagram sync or multiplayer diagram editing is claimed.",
+    "Touch evidence is native browser input via CDP in a normal hidden Electron window, not physical Android/Harmony hardware.",
+    "Independent fixtures are tested in private production bundles over HTTP and file; final release packages and the public origin need the root final regression.",
+    "No product source, packaging settings, account data, signing material or formal build output was changed by this helper scope."
+  ]
+}

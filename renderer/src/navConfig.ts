@@ -5,6 +5,11 @@ import type { DocType } from './mock/recentDocs'
 
 export type ModuleKey = 'home' | 'word' | 'table' | 'ppt' | 'pdf' | 'settings' | 'help'
 
+/** The ACE engine is a desktop dependency, not a capability of the WebView build. */
+export function navigationAvailable(key: string): boolean {
+  return key !== 'database' || typeof document === 'undefined' || !document.documentElement.dataset.sealPlatform
+}
+
 export interface NavItem {
   key: string
   label: string
@@ -28,10 +33,13 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'home', label: '首页', icon: 'home', implemented: true },
     { key: 'recent', label: '最近', icon: 'clock', implemented: true },
     { key: 'star', label: '星标', icon: 'star', implemented: true },
-    { key: 'shared', label: '共享', icon: 'share', implemented: false },
+    { key: 'shared', label: '共享', icon: 'share', implemented: true },
   ],
   [
     { key: 'my-cloud', label: '我的云空间', icon: 'folder', implemented: true },
+    { key: 'device', label: '我的设备', icon: 'device', implemented: true },
+    { key: 'tag', label: '标签', icon: 'tag', implemented: true },
+    { key: 'team', label: '团队空间', icon: 'users', implemented: true },
     { key: 'knowledge', label: '知识库', icon: 'knowledge', implemented: true },
     { key: 'market', label: '演示模板市场', icon: 'doc-ppt', implemented: true },
     { key: 'trash', label: '云空间回收站', icon: 'trash', implemented: true },
@@ -39,6 +47,9 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'database', label: 'Access 数据库', icon: 'doc-table', implemented: true },
     { key: 'mindmap', label: '脑图', icon: 'mindmap', implemented: true },
     { key: 'flow', label: '流程图', icon: 'flow', implemented: true },
+    { key: 'multitable', label: '多维表格', icon: 'doc-table', implemented: true },
+    { key: 'design', label: '设计', icon: 'edit', implemented: true },
+    { key: 'notes', label: '笔记', icon: 'doc-word', implemented: true },
     { key: 'calendar', label: '日历', icon: 'calendar', implemented: true },
     { key: 'apps', label: '应用', icon: 'apps', implemented: true },
   ],

@@ -1,0 +1,235 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T17:34:58.177Z",
+  "scope": "Diagram cloud sync and realtime coediting integrated with personal cloud, sharing, teams and mobile; freshly rebuilt English-name 2.0 packages and public Web",
+  "passed": true,
+  "renderer": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 258,
+    "tests": 2508,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-fifth-renderer.json",
+      "bytes": 1020544,
+      "sha256": "0073ca24b940bbc1bdba08f78056143276766eda59e8046da3ec3c63d0bb00e1"
+    }
+  },
+  "main": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 107,
+    "tests": 1032,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-fifth-main.json",
+      "bytes": 442940,
+      "sha256": "474e0c2b69b5a7a68fc698cb22964a462a80a38cf147fa0e0883f9219b70f0bf"
+    }
+  },
+  "units": {
+    "server": {
+      "passed": true,
+      "tests": 33,
+      "log": {
+        "path": ".tmp-v200-fifth-server.log",
+        "bytes": 3777,
+        "sha256": "bb5089e4edee808f37b154e5962c6f897a8d1c50c4fdbe3ecfa26942874f7643"
+      }
+    },
+    "mobile-unit": {
+      "passed": true,
+      "tests": 27,
+      "log": {
+        "path": ".tmp-v200-fifth-mobile-unit.log",
+        "bytes": 3089,
+        "sha256": "e7bd6c1e7f9030283a01c82a3e5176b46285c1476decd90695529f065b4a7e10"
+      }
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 11,
+      "log": {
+        "path": ".tmp-v200-fifth-packaging.log",
+        "bytes": 1274,
+        "sha256": "27ab1414be46dd8f5cc9b12bbe4cea56c9f17d9b5e08d3603443c9745e1e2cc9"
+      }
+    },
+    "oci-packaging": {
+      "passed": true,
+      "tests": 2,
+      "log": {
+        "path": ".tmp-v200-fifth-oci-packaging.log",
+        "bytes": 294,
+        "sha256": "470222bbf92c6c6d9557c7716cac0b2ca3d0e6bb3173137d02215dd489cf8833"
+      }
+    }
+  },
+  "pythonTests": {
+    "deployment": {
+      "passed": true,
+      "tests": 5,
+      "log": {
+        "path": ".tmp-v200-fifth-deploy-unit.log",
+        "bytes": 108,
+        "sha256": "549ec3352f033ceb482b5282903236acd9651c659f82a3b543ddaf9a34eddca8"
+      }
+    },
+    "naming": {
+      "passed": true,
+      "tests": 2,
+      "log": {
+        "path": ".tmp-v200-fifth-naming-python.log",
+        "bytes": 105,
+        "sha256": "4cd49ad0c73a8aa832fab522c6a78b7c7920d0020aa82b81b4234fa118a1a5f0"
+      }
+    },
+    "mirror": {
+      "passed": true,
+      "tests": 6,
+      "log": {
+        "path": ".tmp-v200-fifth-release-mirror.log",
+        "bytes": 109,
+        "sha256": "5a1e4faaa228df8e10e46d723d99db933f68ab9fdfa4fc1104e36d3f26abfbb2"
+      }
+    }
+  },
+  "typecheck": {
+    "passed": true,
+    "rootAndMobile": true
+  },
+  "sourceFreeze": {
+    "capturedAt": "2026-10-18T16:48:08.630Z",
+    "files": 1514,
+    "allFinalSha256Verified": true,
+    "applicationAndVitestInputsUnchanged": true,
+    "standaloneBrowserHarnessAmendments": [],
+    "manifest": {
+      "path": ".upgrade-private/v200-fifth-source.json",
+      "bytes": 272350,
+      "sha256": "3ed62aee9a1c171b863aa2b08164031ed7ab684ad4df454d703869e481531265"
+    }
+  },
+  "diagramCloudCollaboration": "diagram-cloud-collaboration.json",
+  "backend": "backend-deployment.json",
+  "naming": "package-naming.json",
+  "compatibleFormats": {
+    "passed": true,
+    "checks": 37
+  },
+  "packagedCodecs": {
+    "passed": true,
+    "checks": 11
+  },
+  "windowsRuntime": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 135
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 135
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 135
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "desktopIntegrityFilesPerPlatform": 135,
+  "mobile": {
+    "passed": true,
+    "report": "mobile.json",
+    "cloudReady": [
+      {
+        "platform": "android",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/android",
+        "snapshotFiles": 59
+      },
+      {
+        "platform": "harmony",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/harmony",
+        "snapshotFiles": 59
+      }
+    ],
+    "apkOrHapGenerated": false
+  },
+  "web": {
+    "publicUrl": "https://seal.xingmasoft.com/office/",
+    "releaseId": "2.0.0-web-20261019-013108",
+    "status": "published-verified",
+    "browserChecks": 10
+  },
+  "previousAcceptance": {
+    "path": "docs/verification/v2.0.0-fourth-pass/verification.json",
+    "sha256": "e04c34e6dc6ad6d531e2215940c36111ee48d4be76de583b6d90e94ddccbcaac"
+  },
+  "artifacts": [
+    {
+      "name": "seal-office-setup-2.0.0.exe",
+      "path": "release/v2.0.0/seal-office-setup-2.0.0.exe",
+      "bytes": 399078083,
+      "sha256": "7dff73db3ab55d1cd276e0119043031d8614b770304915e8f65e3821f6f0d9f1"
+    },
+    {
+      "name": "seal-office-2.0.0-portable.exe",
+      "path": "release/v2.0.0/seal-office-2.0.0-portable.exe",
+      "bytes": 398852619,
+      "sha256": "77dac7e2f596e1eecc1c18f545d52d6999a95c5c1958dd86c8a9b8e61b168b26"
+    },
+    {
+      "name": "seal-office-2.0.0-amd64.deb",
+      "path": "release/v2.0.0/seal-office-2.0.0-amd64.deb",
+      "bytes": 125927320,
+      "sha256": "444d07edc06abea1d9b391f8fdc3a316e14187c5391920e360305942182c75e5"
+    },
+    {
+      "name": "seal-office-2.0.0-web.zip",
+      "path": "release/web-2.0.0-fifth-pass/seal-office-2.0.0-web.zip",
+      "bytes": 56221460,
+      "sha256": "6f25e930f9603edbb8f2d3e2a0577b393bef45fc93764d28f92bcadbd16ec144"
+    }
+  ],
+  "applicationIntegrityManifestSha256": "0c919fea03cac7cf8c305a5176157a6f4fdfa7aa9759d204db87deb667a89cb8",
+  "limitations": [
+    "No complete WPS feature/format parity is claimed. Existing compatibility boundaries are unchanged and freshly regression-tested.",
+    "Linux cross-build archive checks passed; Linux installation and GUI runtime were not performed.",
+    "Windows unpacked and portable runtime checks passed; EXEs are unsigned and NSIS installation/uninstallation was not performed.",
+    "Android/Harmony cloud snapshots and UTS/browser checks passed; APK/HAP generation, signing and physical-device validation remain for cloud packaging."
+  ]
+}

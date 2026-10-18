@@ -5,6 +5,9 @@ const 表格命名空间 = 'http://schemas.openxmlformats.org/spreadsheetml/2006
 const 关系命名空间 = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 const 包关系命名空间 = 'http://schemas.openxmlformats.org/package/2006/relationships'
 const 声明命名空间 = 'http://www.w3.org/2000/xmlns/'
+const 严格表格命名空间 = 'http://purl.oclc.org/ooxml/spreadsheetml/main'
+const 严格关系命名空间 = 'http://purl.oclc.org/ooxml/officeDocument/relationships'
+const 规范Uri = uri => uri === 严格表格命名空间 ? 表格命名空间 : uri === 严格关系命名空间 ? 关系命名空间 : uri
 
 function 转义Xml(文本) {
   return 文本.replace(/[&<>"'\r\n\t]/g, 字符 => ({
@@ -30,8 +33,10 @@ function 规范表格Xml命名空间(xml, 关系目录) {
     for (const 属性 of Object.values(节点.attributes)) {
       if (属性.uri !== 声明命名空间) continue
       const 前缀 = 属性.name === 'xmlns' ? '' : 属性.local
-      声明.set(前缀, 属性.value)
-      范围[前缀] = 属性.value
+      const uri = 规范Uri(属性.value)
+      if (uri !== 属性.value) 已转换 = true
+      声明.set(前缀, uri)
+      范围[前缀] = uri
     }
     const 绑定 = (前缀, uri) => {
       if ((范围[前缀] ?? '') !== uri) {
@@ -40,11 +45,12 @@ function 规范表格Xml命名空间(xml, 关系目录) {
       }
     }
     const 名称 = (对象, 是属性 = false) => {
+      const uri = 规范Uri(对象.uri)
       let 前缀 = 对象.prefix
-      if (!是属性 && [表格命名空间, 包关系命名空间].includes(对象.uri)) 前缀 = ''
-      else if (是属性 && 对象.uri === 关系命名空间) 前缀 = 'r'
+      if (!是属性 && [表格命名空间, 包关系命名空间].includes(uri)) 前缀 = ''
+      else if (是属性 && uri === 关系命名空间) 前缀 = 'r'
       // 同一节点上保留外部 r: 属性，避免它与规范化后的关系属性冲突。
-      else if (前缀 === 'r' && 对象.uri !== 关系命名空间) {
+      else if (前缀 === 'r' && uri !== 关系命名空间) {
         前缀 = 外部前缀.get(对象.uri)
         if (!前缀) {
           let 序号 = 外部前缀.size + 1
@@ -52,7 +58,7 @@ function 规范表格Xml命名空间(xml, 关系目录) {
           外部前缀.set(对象.uri, 前缀)
         }
       }
-      if (!是属性 || 前缀) 绑定(前缀, 对象.uri)
+      if (!是属性 || 前缀) 绑定(前缀, uri)
       const 结果 = 前缀 ? `${前缀}:${对象.local}` : 对象.local
       if (结果 !== 对象.name) 已转换 = true
       return 结果
@@ -62,6 +68,10 @@ function 规范表格Xml命名空间(xml, 关系目录) {
       .filter(属性 => 属性.uri !== 声明命名空间)
       .map(属性 => {
         let 值 = 属性.value
+        if (节点.uri === 包关系命名空间 && 节点.local === 'Relationship' && 属性.name === 'Type' && 值.startsWith(`${严格关系命名空间}/`)) {
+          值 = `${关系命名空间}${值.slice(严格关系命名空间.length)}`
+          已转换 = true
+        }
         if (关系目录 !== undefined && 节点.uri === 包关系命名空间 && 节点.local === 'Relationship' &&
           属性.name === 'Target' && 节点.attributes.TargetMode?.value !== 'External' &&
           !/^[a-z][a-z\d+.-]*:/i.test(值)) {
@@ -97,7 +107,7 @@ async function 规范Xlsx命名空间(压缩包, 原始数据) {
     if (部件.dir || !/^(?:xl\/.*\.(?:xml|rels)|_rels\/\.rels)$/.test(部件.name)) continue
     const xml = await 部件.async('string')
     // 绘图等部件的前缀由其解析器处理，不参与表格标签转换。
-    if (![表格命名空间, 包关系命名空间].some(uri => xml.includes(uri))) continue
+    if (![表格命名空间, 严格表格命名空间, 包关系命名空间].some(uri => xml.includes(uri))) continue
     const 关系匹配 = 部件.name.match(/^(.*\/)?_rels\/[^/]+\.rels$/)
     const 关系目录 = 部件.name === '_rels/.rels' ? '' : 关系匹配 ? (关系匹配[1] ?? '').replace(/\/$/, '') : undefined
     const 新Xml = 规范表格Xml命名空间(xml, 关系目录)

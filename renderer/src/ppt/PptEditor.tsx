@@ -1,4 +1,8 @@
 import AnimationPanel from './panels/AnimationPanel'
+import { useShortcuts } from '../shortcuts/useShortcuts'
+import { useRealtimePresentation } from '../collaboration/useRealtimePresentation'
+import { copySlideSelection, pasteSlideSelection, deleteSlideSelection, nudgeSlideSelection } from './objectClipboard'
+import { withShortcutLabels } from '../shortcuts/shortcutMenu'
 import FormulaPanel from './panels/FormulaPanel'
 import SymbolPanel from './panels/SymbolPanel'
 import AttachmentPanel from './panels/AttachmentPanel'
@@ -47,6 +51,7 @@ import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档, 读取本地文件内容 } from '../fileOpen'
 import { 构建演示保存模型 } from './saveModel'
+import { 合并文字草稿 } from './textDraft'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
 import { 通用AI指令 } from '../assistant/quickActions'
 import SelectionFloatPanel, { 从元素计算浮窗位置 } from '../components/SelectionFloatPanel'
@@ -118,10 +123,13 @@ const PptEditor = () => {
     if (activeDocumentId === null) set独立文稿(更新)
     else 更新演示文档模型(activeDocumentId, 更新)
   }
+  const 实时接收 = useRef<(内容: 演示文稿) => void>(() => {})
+  const 实时协作 = useRealtimePresentation(activeDocumentId, 文稿, 内容 => 实时接收.current(内容))
   const [选中框标识, set选中框标识] = useState<string | null>(null)
   const [编辑框标识, set编辑框标识] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
   const [当前标签, set当前标签] = useState('start')
+  const 对象剪贴板 = useRef<{ documentId: string; page: import('./deck').幻灯片 } | null>(null)
   const [工具区, set工具区] = useState<工具区>('截屏')
   const [识别状态, set识别状态] = useState<{ 可用: boolean; 原因?: string }>({ 可用: false, 原因: '正在读取识别服务状态' })
   // 讲义母版与批量工具面板；会话引用用于把本地修改同步到同文稿的其他窗口
@@ -144,7 +152,7 @@ const PptEditor = () => {
   const [吸附, set吸附] = useState(true)
   const [手动只读, set只读] = useState(false)
   /** 定稿为可恢复的只读标记：与手动只读一起决定编辑权限，不代表加密保护。 */
-  const 只读 = 手动只读 || Boolean(文稿.定稿)
+  const 只读 = 手动只读 || Boolean(文稿.定稿) || 实时协作.readOnly
   const [显示批注, set显示批注] = useState(true)
   const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对' | '翻译'>('检查')
   /** 智能面板：讲稿与讲解音频、生成与美化、素材库；翻译与校对复用审阅面板视图。 */
@@ -240,10 +248,10 @@ const PptEditor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDocumentId])
 
-  const 记录当前路径 = (路径: string, 文件指纹?: string) => {
+  const 记录当前路径 = (路径: string, 文件指纹?: string, 保存文稿: 演示文稿 = 文稿) => {
     set文档路径(路径)
     const 新名称 = 基准名(路径).replace(/\.(pptx|json)$/i, '')
-    const 已保存文稿 = { ...文稿, name: 新名称 }
+    const 已保存文稿 = { ...保存文稿, name: 新名称 }
     set文稿((当前) => ({ ...当前, name: 新名称 }))
     if (activeDocumentId !== null) {
       设置全局文档路径(activeDocumentId, 路径)
@@ -409,24 +417,7 @@ const PptEditor = () => {
     set放映索引(索引)
     set放映模式(模式)
   }
-  const 放映键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
-  放映键处理引用.current = (事件: KeyboardEvent) => {
-    if ((事件.ctrlKey || 事件.metaKey) && 事件.key.toLowerCase() === 'p') {
-      事件.preventDefault()
-      执行命令('file.print')
-      return
-    }
-    if (事件.key !== 'F5') {
-      return
-    }
-    事件.preventDefault()
-    开始放映(事件.shiftKey ? 文稿.当前索引 : 0)
-  }
-  useEffect(() => {
-    const 监听 = (事件: KeyboardEvent) => 放映键处理引用.current(事件)
-    document.addEventListener('keydown', 监听)
-    return () => document.removeEventListener('keydown', 监听)
-  }, [])
+  useShortcuts('ppt', (标识, 参数) => 执行命令(标识, 参数), 放映模式 === '无')
 
   /** 放映中翻页：直接同步当前页，不写入撤销历史 */
   const 放映翻页 = (目标索引: number) => {
@@ -459,10 +450,31 @@ const PptEditor = () => {
 
   const 当前幻灯片 = 读取当前幻灯片(文稿)
 
+  /** 保存命令不依赖 blur：同步取得包含当前文字草稿的快照，再用于整条写盘链路。 */
+  const 读取草稿快照 = (): 演示文稿 => {
+    if (只读 || 编辑框标识 === null || 当前幻灯片 === null) return 文稿
+    const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
+    if (!框) return 文稿
+    const 新框 = 合并文字草稿(框, 编辑值)
+    if (新框 === 框) return 文稿
+    return 更新幻灯片(文稿, 当前幻灯片.id, {
+      文本框列表: 当前幻灯片.文本框列表.map(项 => 项.id === 框.id ? 新框 : 项),
+    })
+  }
+  // CRDT callbacks bypass the local snapshot undo stack. Undo in a live session
+  // targets local CRDT transactions, so receiving another user's edit is safe.
+  实时接收.current = (内容) => {
+    const 编辑框 = 编辑框标识 && 内容.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)
+    if (编辑框) set编辑值(编辑框.text)
+    else if (编辑框标识) set编辑框标识(null)
+    set文稿(内容)
+  }
+
   /** 应用修改并记录新状态，使撤销与重做都落在真实存在过的快照上 */
   const 更新文稿 = (新文稿: 演示文稿) => {
     // 定稿后只放行「解除定稿」这一项修改，其余编辑一律拒绝，避免绕过只读标记。
     if (只读 && !(文稿.定稿 && !新文稿.定稿)) return
+    if (实时协作.active) void 实时协作.publish(新文稿, 文稿).catch(() => {})
     历史.record(新文稿)
     同步历史资源()
     set文稿(新文稿)
@@ -744,24 +756,30 @@ const PptEditor = () => {
 
   /** 撤销：回到上一份演示文稿快照 */
   const 撤销 = () => {
+    if (实时协作.active) { if (!实时协作.undo()) message.info('没有可撤销的本机操作'); return }
+    const 草稿 = 读取草稿快照()
+    if (草稿 !== 文稿) { 历史.record(草稿); 同步历史资源() }
     const 上一步 = 历史.undo()
     if (上一步 === null) {
       message.info('没有可撤销的操作')
       return
     }
     set文稿(上一步)
+    if (编辑框标识) set编辑值(上一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? '')
     set选中框标识(null)
     message.success('已撤销')
   }
 
   /** 重做：前进到下一份演示文稿快照 */
   const 重做 = () => {
+    if (实时协作.active) { if (!实时协作.redo()) message.info('没有可重做的本机操作'); return }
     const 下一步 = 历史.redo()
     if (下一步 === null) {
       message.info('没有可重做的操作')
       return
     }
     set文稿(下一步)
+    if (编辑框标识) set编辑值(下一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? '')
     set选中框标识(null)
     message.success('已重做')
   }
@@ -848,6 +866,52 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    const 目标对象 = 选中对象.length ? 选中对象 : 选中框标识 ? [选中框标识] : []
+    if (标识 === 'edit.selectAll') {
+      if (!当前幻灯片) return
+      const 成员 = new Set((当前幻灯片.对象列表 ?? []).flatMap(item => item.子对象标识 ?? []))
+      set选中框标识(null); set选中对象([...当前幻灯片.文本框列表, ...当前幻灯片.对象列表 ?? []].filter(item => !成员.has(item.id)).map(item => item.id)); return
+    }
+    if ((标识 === 'clipboard.copy' || 标识 === 'clipboard.cut' || 标识 === 'edit.duplicateContext') && 目标对象.length && 当前幻灯片) {
+      if (标识 !== 'clipboard.copy' && 只读) return
+      const 副本 = copySlideSelection(读取当前幻灯片(读取草稿快照()) ?? 当前幻灯片, 目标对象)
+      if (标识 === 'edit.duplicateContext') {
+        const 结果 = pasteSlideSelection(当前幻灯片, 副本)
+        更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 结果.page)); set选中框标识(null); set选中对象(结果.selected)
+      } else {
+        对象剪贴板.current = { documentId: 文稿.id, page: 副本 }
+        if (标识 === 'clipboard.cut') {
+          try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, deleteSlideSelection(当前幻灯片, 目标对象))); set选中对象([]); set选中框标识(null) }
+          catch (error) { 显示文件错误('无法剪切对象', error instanceof Error ? error.message : '对象已锁定') }
+        }
+      }
+      return
+    }
+    if (标识 === 'edit.duplicateContext') 标识 = 'slide.duplicate'
+    if (标识 === 'clipboard.paste' && 对象剪贴板.current && 当前幻灯片) {
+      if (只读) return
+      if (对象剪贴板.current.documentId !== 文稿.id) { 显示文件错误('无法粘贴对象', '请先在当前文稿复制对象，再粘贴到目标页面。'); return }
+      const 结果 = pasteSlideSelection(当前幻灯片, 对象剪贴板.current.page)
+      更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 结果.page)); set选中框标识(null); set选中对象(结果.selected); return
+    }
+    if (标识.startsWith('object.')) {
+      if (只读 || !当前幻灯片 || !目标对象.length) return
+      if (标识 === 'object.delete') {
+        try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, deleteSlideSelection(当前幻灯片, 目标对象))); set选中对象([]); set选中框标识(null) }
+        catch (error) { 显示文件错误('无法删除对象', error instanceof Error ? error.message : '对象已锁定') }
+        return
+      }
+      const 操作表: Record<string, string> = { 'object.delete':'删除', 'object.group':'组合', 'object.ungroup':'取消组合', 'object.bringForward':'图层:上移', 'object.sendBackward':'图层:下移', 'object.bringToFront':'图层:置顶', 'object.sendToBack':'图层:置底' }
+      if (操作表[标识]) { 对象操作(操作表[标识]); return }
+      const [,动作,方向] = 标识.split('.'), 步长 = 动作 === 'nudgeLarge' ? 10 : 1
+      const 位移: Record<string,[number,number]> = {up:[0,-步长],down:[0,步长],left:[-步长,0],right:[步长,0]}
+      if (位移[方向]) {
+        const [dx,dy]=位移[方向]
+        try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, nudgeSlideSelection(当前幻灯片, 目标对象, dx, dy))) }
+        catch (error) { 显示文件错误('无法移动对象', error instanceof Error ? error.message : '对象已锁定') }
+      }
+      return
+    }
     if (标识 === 'file.print') {
       try {
         const 内容 = 导出为Html预览(文稿, 文稿.name, 图片地址)
@@ -938,6 +1002,8 @@ const PptEditor = () => {
         提示禁止覆盖(保真风险.警告)
         return
       }
+      let 保存文稿 = 读取草稿快照()
+      if (保存文稿 !== 文稿) 更新文稿(保存文稿)
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
       const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.pptx`
       Promise.resolve(文档路径 ?? 桥接.showSaveDialog(默认路径, 'ppt' as const)).then(async (原始文件路径: string | null) => {
@@ -954,10 +1020,14 @@ const PptEditor = () => {
           }
           // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
-          校验当前Pptx写入能力(文稿)
-          const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
+          if (实时协作.active && !实时协作.readOnly) {
+            try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
+            catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
+          }
+          校验当前Pptx写入能力(保存文稿)
+          const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = 构建演示保存模型(文稿, 资源结果.条目)
+          const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
@@ -966,9 +1036,9 @@ const PptEditor = () => {
               const 二进制内容 = 结果.数据
               return 桥接.saveToFile(文件路径, 二进制内容, '二进制', 预期文件指纹).then((保存结果: any) => {
                 if (保存结果.成功) {
-                  记录当前路径(文件路径, 保存结果.文件指纹)
+                  记录当前路径(文件路径, 保存结果.文件指纹, 保存文稿)
                   message.success('文件已保存')
-                } else {
+                } else if (!保存结果.已取消) {
                   显示文件错误('保存失败', 保存结果.错误 || '未知错误')
                 }
               })
@@ -989,6 +1059,8 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
+      let 保存文稿 = 读取草稿快照()
+      if (保存文稿 !== 文稿) 更新文稿(保存文稿)
       const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
       桥接.showSaveDialog(文档路径 && 规范演示保存路径(文档路径) ? 文档路径.replace(/^.*[\\/]/, '') : `${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (原始文件路径: string | null) => {
         if (原始文件路径) {
@@ -1007,10 +1079,14 @@ const PptEditor = () => {
           }
           // 富格式保存：位置、字号、颜色、加粗、斜体、对齐、背景色随文件保存，
           // 重新打开时由 pptxCodec 还原为相同的演示文稿模型
-          校验当前Pptx写入能力(文稿)
-          const 资源结果 = 收集演示资源标识(文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(文稿)) : { 成功: true, 条目: [] }
+          if (实时协作.active && !实时协作.readOnly) {
+            try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
+            catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
+          }
+          校验当前Pptx写入能力(保存文稿)
+          const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = 构建演示保存模型(文稿, 资源结果.条目)
+          const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
@@ -1019,9 +1095,9 @@ const PptEditor = () => {
               const 二进制内容 = 结果.数据
               return 桥接.saveToFile(文件路径, 二进制内容, '二进制', 预期文件指纹).then((保存结果: any) => {
                 if (保存结果.成功) {
-                  记录当前路径(文件路径, 保存结果.文件指纹)
+                  记录当前路径(文件路径, 保存结果.文件指纹, 保存文稿)
                   message.success('文件已另存为')
-                } else {
+                } else if (!保存结果.已取消) {
                   显示文件错误('保存失败', 保存结果.错误 || '未知错误')
                 }
               })
@@ -1051,20 +1127,21 @@ const PptEditor = () => {
       return
     }
     try {
-      命令.run(上下文, 参数)
+      // Formatting from a keyboard shortcut keeps the textarea focused. Supply
+      // its current draft synchronously instead of formatting an older model.
+      const 草稿 = 读取草稿快照()
+      if (实时协作.active) 实时协作.stopCapturing()
+      else if (草稿 !== 文稿 && /^(text|para)\./.test(标识)) { 历史.record(草稿); 同步历史资源() }
+      命令.run({ ...上下文, 文稿: 草稿, 选中框标识: 编辑框标识 ?? 上下文.选中框标识 }, 参数)
+      if (实时协作.active) 实时协作.stopCapturing()
     } catch (错误) {
       显示文件错误('演示操作失败', 错误 instanceof Error ? 错误.message : '请检查所选内容后重试')
     }
   }
 
   const 提交编辑 = () => {
-    if (编辑框标识 !== null && 当前幻灯片 !== null) {
-      更新文稿(
-        更新幻灯片(文稿, 当前幻灯片.id, {
-          文本框列表: 更新文本框(当前幻灯片, 编辑框标识, { text: 编辑值 }).文本框列表,
-        })
-      )
-    }
+    const 快照 = 读取草稿快照()
+    if (快照 !== 文稿) 更新文稿(快照)
     set编辑框标识(null)
     set编辑值('')
   }
@@ -1267,7 +1344,24 @@ const PptEditor = () => {
               set编辑框标识(标识)
               set编辑值(框?.text ?? '')
             },
-            on编辑值变化: set编辑值,
+            on编辑值变化: (值: string) => {
+              set编辑值(值)
+              if (!实时协作.active || 实时协作.isComposing() || 只读) return
+              const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
+              if (!框) return
+              const 新框 = 合并文字草稿(框, 值), 新文稿 = 更新幻灯片(文稿, 当前幻灯片.id, { 文本框列表: 当前幻灯片.文本框列表.map(项 => 项.id === 框.id ? 新框 : 项) })
+              void 实时协作.publish(新文稿, 文稿).catch(() => {})
+              set文稿(新文稿)
+            },
+            on组合开始: () => { if (实时协作.active) 实时协作.beginComposition() },
+            on组合结束: (值: string) => {
+              if (!实时协作.active) return
+              const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
+              if (!框) return
+              const 新框 = 合并文字草稿(框, 值), 新文稿 = 更新幻灯片(文稿, 当前幻灯片.id, { 文本框列表: 当前幻灯片.文本框列表.map(项 => 项.id === 框.id ? 新框 : 项) })
+              set编辑值(值); set文稿(新文稿)
+              void 实时协作.endComposition(新文稿).catch(() => {})
+            },
             on提交编辑: 提交编辑,
             on拖动框: (标识: string, x: number, y: number) => {
               const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 标识)
@@ -1370,7 +1464,7 @@ const PptEditor = () => {
       open: 菜单可见,
       x: 菜单坐标.x,
       y: 菜单坐标.y,
-      items: 构建演示菜单(),
+      items: withShortcutLabels(构建演示菜单(), 'ppt'),
       取锚点: () => 读取可见矩形(画布引用.current?.querySelectorAll('.wps-ppt-box--selected, .wps-ppt-image--selected') ?? []),
       onCommand: (命令标识: string, 参数?: string) => {
         if (命令标识 === '__close__') {

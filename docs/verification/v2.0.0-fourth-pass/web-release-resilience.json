@@ -1,0 +1,240 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-18T15:44:43.767Z",
+  "release": "2.0.0-web-20261018-231336",
+  "scope": "Static hosting preserves previous immutable JS/CSS and compresses bundled Chinese font; application payload unchanged.",
+  "fontHeaders": {
+    "status": 200,
+    "mime": "font/ttf",
+    "encoding": "gzip"
+  },
+  "retainedAssets": [
+    {
+      "path": "assets/index-79df6e3f.css",
+      "bytes": 192539,
+      "sha256": "79df6e3f35cb952d1092b5abe2ce38ba5e171f378a56dcf7be989ac94d34c878",
+      "httpStatus": 200,
+      "mime": "text/css",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-9939537c.js",
+      "bytes": 17412,
+      "sha256": "36fcf7057fc3c00f8793c41720ec20489d315d6dc329713d86efe4ffc7e393c7",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": true
+    },
+    {
+      "path": "assets/index-aee7262c.js",
+      "bytes": 30746007,
+      "sha256": "4dc5aaa66a27520e6c805f4096fc4ce6d8f6202b4a90cca468b44eb5813a8a7d",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/ofd.min-1c42540f.js",
+      "bytes": 996569,
+      "sha256": "0054a19ae70cbb88d67751b325821e13b0743343c6432ca3fc5fb4a49cf73c90",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdf-2e004dbc.js",
+      "bytes": 495925,
+      "sha256": "a6f821b3df7a8109ad6e4d4fa64601205be1e58b849bdbcd0966e5759a76b4f0",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdfmake-d13e7f1a.js",
+      "bytes": 1581460,
+      "sha256": "dd77da3ac0b4b28f463b2c20cd60761f609d00bc6b05bd9f756112c96e75b14f",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pptxgen.es-1fd65f25.js",
+      "bytes": 288185,
+      "sha256": "60a38daabb73ae7264cc95ed15d6a5cf43c027330063adab8d8be64072ccf742",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-4ff96169.js",
+      "bytes": 9441,
+      "sha256": "5f73056808d6f83b5677b2ddd50808d9d2d6d78a056f8ea30999aad61d8b5b90",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": true
+    },
+    {
+      "path": "assets/index-6f5cff94.css",
+      "bytes": 207158,
+      "sha256": "6f5cff9464b84d12cc23ba72828837f3e49f2375c141d11c054259cae85433b3",
+      "httpStatus": 200,
+      "mime": "text/css",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-711b68b5.js",
+      "bytes": 39175640,
+      "sha256": "53e9bc1aa27977b664c9c30c489bbe6fc2d3a9bc2d760eda3ae7101456dd57b1",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-d43051c1.js",
+      "bytes": 17413,
+      "sha256": "ad1da9a895114efc94c89f5701a331de1ef806775cae4fde6af769c9633e2790",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": true
+    },
+    {
+      "path": "assets/ofd.min-344f84d3.js",
+      "bytes": 996571,
+      "sha256": "a71813b866369240e2ff0117c10bb1fdff6db614296027edc1ac97fde52a9a9c",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdf-b0296055.js",
+      "bytes": 495926,
+      "sha256": "7cef565244f7c2e29c85815938f4656832f28e2630fb25c8cee27bbc2fbfb6ca",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdfmake-1833ab5e.js",
+      "bytes": 1581462,
+      "sha256": "30e3c23e528556bd7e1bff8c7cc17b36dfed0b46ae6ad5bbbd2c68d8e7ac50ca",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pptxgen.es-cc5aa654.js",
+      "bytes": 288186,
+      "sha256": "4970cc33f443467a983b7c3c0f14be0c108fc719e291a908b5a15c3040322f7b",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-6324fa16.css",
+      "bytes": 209970,
+      "sha256": "6324fa16146c35b10c89b796f7f5551ed9e3a24acf737a6eb430ca1fd7bc6227",
+      "httpStatus": 200,
+      "mime": "text/css",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-6ccf4c08.js",
+      "bytes": 39192840,
+      "sha256": "dfa14847ce834d7a3dfd306112b2de69deba00fba1f5bb2e58d7a14a694de258",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/index-a8d7bd66.js",
+      "bytes": 9441,
+      "sha256": "97c67559854a90e414766c0a16459f0e622348b9a72de3ed8e2bf24460e00d7f",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": true
+    },
+    {
+      "path": "assets/index-f26e9e3a.js",
+      "bytes": 17413,
+      "sha256": "8866a60fc8888c0938cc60e04eee19391eb688e0bf452013926c996136b80cec",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": true
+    },
+    {
+      "path": "assets/ofd.min-6f8aa755.js",
+      "bytes": 996571,
+      "sha256": "ee592b2246e99f5d79a5db458a2478708d1b1c0e74c8924f97835e1448913c7c",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdf-e021393a.js",
+      "bytes": 495926,
+      "sha256": "e897211eb44ef9a85d141604e94f46d01ea1a5a73f02d3a2bde86e7e3a6354c3",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pdfmake-b1414699.js",
+      "bytes": 1581462,
+      "sha256": "2b1f7f328eaed668b124d7e3e9b60511cc186c68e1cb0235013ebef03d6fc88d",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    },
+    {
+      "path": "assets/pptxgen.es-78ef0535.js",
+      "bytes": 288186,
+      "sha256": "00defde0eadf7988bd8d1341eca98067c2534c43ae90f464a21d5c0dc8ca6dee",
+      "httpStatus": 200,
+      "mime": "application/javascript",
+      "localHistoricalManifestKnown": true,
+      "publicBodyShaVerified": false
+    }
+  ],
+  "allKnownLocalHistoricalHashesMatch": true,
+  "allRetainedServerCopiesShaVerified": true,
+  "serverAtomicCopiesVerified": true,
+  "initialAcceptanceFailure": {
+    "cause": "Chinese PDF font load exceeded the existing 60-second PDF generation timeout when the 17.8 MB TTF was sent as uncompressed application/octet-stream.",
+    "evidence": ".upgrade-private/v200-fourth-pass/first-web-attempt/public-result.json",
+    "automaticRollbackVerifiedByNextPreparation": true,
+    "priorBackendAdminAndConfigPreserved": true
+  },
+  "toolTests": {
+    "retention": 6,
+    "deployer": 5,
+    "retentionLog": {
+      "path": ".tmp-v200-fourth-packaging.log",
+      "sha256": "eb9f21b1082c6c70a1398608b31cf9117e32569088d7565e4dabebd72b63dc58"
+    }
+  },
+  "runtimeSourceChanged": false,
+  "archivePayloadChanged": false,
+  "finalPublicPdfAcceptance": "Recorded separately by complete public-browser acceptance; required before final release aggregation."
+}

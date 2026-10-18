@@ -358,13 +358,18 @@ describe('编辑器容器', () => {
     expect(await screen.findByText(/已插入「分数」公式/)).toBeInTheDocument()
   })
 
-  it('脚注入口不插入假的注释标记', async () => {
+  it('脚注正文与引用一起插入，取消时不修改正文', async () => {
     const { container } = 渲染编辑器()
     const 原文 = container.querySelector('.wps-editor-canvas__content')?.innerHTML
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     await userEvent.click(screen.getByRole('button', { name: '脚注' }))
-    expect((await screen.findAllByText('脚注暂不可用')).length).toBeGreaterThan(0)
+    await userEvent.click(await screen.findByRole('button', { name: '取消' }))
     expect(container.querySelector('.wps-editor-canvas__content')?.innerHTML).toBe(原文)
+    await userEvent.click(screen.getByRole('button', { name: '脚注' }))
+    await userEvent.type(await screen.findByPlaceholderText('脚注内容'), '注释内容与符号 & 甲')
+    await userEvent.click(screen.getByRole('button', { name: /^插入$/ }))
+    await waitFor(() => expect(container.querySelector('[data-seal-notes="footnote"]')?.textContent).toContain('注释内容与符号 & 甲'))
+    expect(container.querySelector('[data-seal-note-kind="footnote"][data-seal-note-ref]')).not.toBeNull()
   })
 
   it('保护文档后编辑区转为只读', async () => {

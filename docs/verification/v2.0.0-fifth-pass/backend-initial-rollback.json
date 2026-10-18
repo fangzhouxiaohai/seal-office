@@ -1,0 +1,26 @@
+{
+  "current": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-realtime-20261018-195452",
+  "adminLink": "current/admin/dist",
+  "adminReal": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-realtime-20261018-195452/admin/dist",
+  "api": {
+    "version": 1,
+    "collaboration": 1,
+    "realtime": 1,
+    "accountConversion": 1,
+    "quota": 300000000,
+    "chunkSize": 1048576,
+    "sms": true,
+    "encryption": "AES-256-GCM",
+    "agreementVersion": "2026-10-08"
+  },
+  "services": [
+    {
+      "name": "seal-cloud.service",
+      "status": "active"
+    },
+    {
+      "name": "seal-office-converter.service",
+      "status": "active"
+    }
+  ]
+}

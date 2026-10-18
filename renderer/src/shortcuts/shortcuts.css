@@ -1,0 +1,14 @@
+.seal-shortcut-settings__filters > .ant-select { min-width: 100px; }
+.seal-shortcut-settings__filters > .ant-input { max-width: 360px; }
+.seal-shortcut-settings__list { max-height: 440px; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.seal-shortcut-settings__binding { display: flex; align-items: center; gap: 6px; flex: 0 1 370px; min-width: 240px; }
+.seal-shortcut-settings__binding > .ant-input { min-width: 0; font-family: var(--font-mono, monospace); cursor: pointer; }
+.seal-shortcut-settings__binding > button { flex-shrink: 0; }
+.seal-shortcut-settings__binding input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.seal-shortcut-settings__notice { padding: 0 var(--space-6) var(--space-3); }
+.seal-shortcut-settings__error { color: var(--danger, #c53b3b); font-size: 12px; line-height: 1.5; }
+.seal-shortcut-settings__footer > .settings-wps-row__desc { margin: 0; }
+@media (max-width: 768px) {
+  .seal-shortcut-settings__binding { flex-basis: 100%; min-width: 0; }
+  .seal-shortcut-settings__filters { flex-wrap: nowrap; }
+}

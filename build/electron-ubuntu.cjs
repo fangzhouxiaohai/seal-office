@@ -26,10 +26,10 @@ module.exports = {
     maintainer: 'Seal Office <24519660@qq.com>',
     mimeTypes: MIME别名,
     target: [{ target: 'deb', arch: ['x64'] }, { target: 'dir', arch: ['x64'] }],
-    desktop: { entry: { Name: '海豹办公', 'Name[en]': 'Seal Office', Comment: '文字、表格、演示和 PDF 办公软件' } },
+    desktop: { entry: { Name: '海豹办公', 'Name[en]': '海豹办公', Comment: '文字、表格、演示和 PDF 办公软件' } },
   },
   deb: {
-    artifactName: '海豹办公Ubuntu${version}-amd64.deb',
+    artifactName: require('./artifact-names.json').ubuntu,
     depends: ['libgtk-3-0', 'libnotify4', 'libnss3', 'libxss1', 'libxtst6', 'xdg-utils', 'libatspi2.0-0', 'libuuid1', 'libsecret-1-0', 'libasound2 | libasound2t64', 'libgbm1', 'libdrm2', 'libxkbcommon0', 'libcups2 | libcups2t64', 'libreoffice-writer', 'libreoffice-calc', 'libreoffice-impress', 'libreoffice-base-core', 'libreoffice-base-drivers', 'fonts-noto-cjk'],
   },
 }

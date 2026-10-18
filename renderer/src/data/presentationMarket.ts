@@ -1,6 +1,7 @@
 import {创建演示文稿,创建幻灯片,创建文本框,type 演示文稿,type 幻灯片} from '../ppt/deck'
 import {创建图形,创建图表,创建表格} from '../ppt/model/elements'
 import {marketIllustration} from './marketIllustrations'
+import { PPT_TEMPLATES, 生成演示模板文稿 } from './templates'
 
 // 原创主题内容与十套视觉方案组成 300 套模板，全部由原生可编辑对象构成。
 const topics = [
@@ -11,7 +12,7 @@ const topics = [
   ['人事行政','职业成长规划','岗位竞聘演讲','人才培养方案','组织文化建设','行政服务优化'],
   ['行业专题','乡村发展项目','健康科普讲座','绿色能源介绍','文旅项目策划','公益活动汇报'],
 ] as const
-export const marketCategories=topics.map(t=>t[0])
+export const marketCategories: string[]=[...topics.map(t=>t[0]),'年度规划','市场营销','科技方案','财务经营','品牌活动','学术答辩']
 export const marketStyles=[
   {name:'海湾蓝',color:'#245BD6',paper:'#F1F5FF',ink:'#13213D'},
   {name:'潮汐青',color:'#007D85',paper:'#EFFAF9',ink:'#143539'},
@@ -24,10 +25,14 @@ export const marketStyles=[
   {name:'极地灰',color:'#465567',paper:'#F1F3F5',ink:'#23303F'},
   {name:'湖光蓝',color:'#16688B',paper:'#EDF9FF',ink:'#143642'},
 ] as const
-export interface MarketTemplate {id:string;name:string;category:string;topic:string;style:number;description:string;pages:number}
+export interface MarketTemplate {id:string;name:string;category:string;topic:string;style:number;description:string;pages:number;sourceId?:string}
 export const marketTemplates:MarketTemplate[]=topics.flatMap(([category,...titles])=>titles.flatMap((topic,ti)=>marketStyles.map((style,index)=>({id:`seal-market-${topics.findIndex(t=>t[0]===category)}-${ti}-${index}`,name:`${topic} · ${style.name}`,category,topic,style:index,description:'9 页原创模板，含目录、指标、对比、流程、进度、数据表与行动计划；示例数据可替换。',pages:9}))))
+const sceneById:Record<string,string>={'ppt-business-001':'工作汇报','ppt-education-001':'教育培训','ppt-product-001':'产品技术','ppt-project-001':'工作汇报','ppt-quarterly-001':'工作汇报','ppt-pitch-001':'商业计划'}
+export const professionalMarketTemplates:MarketTemplate[]=PPT_TEMPLATES.map(template=>({id:template.id,name:template.名称,category:template.场景||sceneById[template.id]||'工作汇报',topic:template.名称,style:0,description:template.描述,pages:9,sourceId:template.id}))
+export const marketCatalog:MarketTemplate[]=[...professionalMarketTemplates,...marketTemplates]
 
 export function createMarketDeck(template:MarketTemplate,coverOnly=false):演示文稿 {
+  if(template.sourceId){const source=PPT_TEMPLATES.find(item=>item.id===template.sourceId);if(!source)throw new Error('原创主题模板不存在');const deck=生成演示模板文稿(source);return coverOnly?{...deck,幻灯片列表:deck.幻灯片列表.slice(0,1)}:deck}
   const style=marketStyles[template.style],deck=创建演示文稿(template.name+'.pptx')
   const text=(x:number,y:number,w:number,h:number,value:string,size=24,color:string=style.ink)=>({...创建文本框(x,y,w,h,value,size),颜色:color})
   const shape=(x:number,y:number,w:number,h:number,fill:string,kind:'矩形'|'圆角矩形'|'椭圆'='圆角矩形')=>({...创建图形(kind),x,y,width:w,height:h,形状:{...创建图形(kind).形状!,填充:fill,线条:fill,线宽:0}})

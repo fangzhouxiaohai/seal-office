@@ -1,0 +1,22 @@
+{
+  "tool": "built-in image_gen__imagegen",
+  "mode": "generate",
+  "date": "2026-10-18",
+  "assets": [
+    {
+      "file": "city.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: original landscape editorial photography for professional Chinese business presentation templates. Primary request: a believable contemporary waterfront business district at early morning, elegant mid-rise office architecture, a few tall glass towers, a clean pedestrian bridge and calm reflective water, subtle activity suggesting a working city. Style/medium: premium architectural editorial photograph, photorealistic, natural details and real material texture, restrained atmosphere, not a 3D illustration. Composition/framing: wide 16:9 landscape photograph, architecture and bridge create a clear diagonal leading line, useful as a right-side half-slide photo or full-bleed section image; keep subjects legible when cropped. Lighting/mood: soft morning daylight, thoughtful and confident, light atmospheric haze. Color palette: silver glass, navy shadows, warm pale sky, natural muted greens. Text: none. Constraints: entirely original fictional location, no recognizable landmark, no logos, no signs, no watermarks, no letters or numbers, no charts, no UI. Do not draw text or presentation layout; produce the photograph only.",
+      "purpose": "商务、季度与路演中的市场环境、增长与愿景"
+    },
+    {
+      "file": "workshop.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: original editorial team-workshop photograph for professional Chinese training, project and startup presentation templates. Primary request: four adult East Asian colleagues in a bright contemporary workshop room, seen in a candid three-quarter view, actively discussing a small physical prototype and unmarked paper cards on a wooden table; one facilitator listens and points naturally to the prototype, others are engaged. Style/medium: premium real-world editorial photography, photorealistic natural skin, believable hands and anatomy, subtle fabric texture, not a posed stock advertisement. Composition/framing: wide 16:9 landscape, medium-wide eye-level view with the people grouped toward the central area, table visible in the foreground, room depth and softly blurred plants in the background, flexible cropping for a half-slide or a wide photo band. Lighting/mood: soft daylight through large windows, calm, attentive and collaborative. Color palette: warm wood, off-white, muted sage, charcoal clothing. Text: none. Constraints: no recognizable people, no logos, no watermark, no legible text anywhere, no computers with visible interfaces, no fake charts, no graphic overlays. This is a photograph only, not a slide design.",
+      "purpose": "培训、项目中的协作、方法与执行"
+    },
+    {
+      "file": "product.png",
+      "prompt": "Use case: product-mockup. Asset type: original premium product editorial photograph for a Chinese product launch and startup pitch presentation. Primary request: an unbranded slim matte-silver laptop partly open, a small elegant rounded modular desk device and a neutral notebook, carefully arranged on a warm stone desk in a contemporary design studio, with soft glass and architectural lines out of focus behind. Style/medium: photorealistic high-end product photography, believable proportions, brushed aluminum, fine ceramic and paper textures, understated luxury. Composition/framing: wide 16:9 landscape, close-medium three-quarter product view, objects occupy central and right regions, flexible as half-slide photograph, generous quiet background, laptop screen is a simple dim reflection with no interface. Lighting/mood: soft sidelight and gentle shadows, confident and thoughtful. Color palette: off-white, graphite, warm silver and a subtle terracotta accent. Text: none. Constraints: no brands, no logos, no writing, no visible interface, no watermark, no illustrated charts, no presentation typography. The scene must be an original plausible product-workspace image, not abstract colored blocks.",
+      "purpose": "产品介绍、创业路演中的产品与用户价值"
+    }
+  ]
+}

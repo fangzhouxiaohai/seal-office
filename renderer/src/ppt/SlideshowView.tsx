@@ -14,6 +14,8 @@ import { 读取页面尺寸 } from './model/themes'
 import { 临时批迹层, 放映浮层层级, 橡皮移除, 规范化批迹, type 批迹, type 演示工具 } from './playback/PresenterTools'
 import { 构造演讲者快照 } from './playback/presenterSnapshot'
 import { 默认放映偏好, type 放映偏好 } from './playback/放映偏好'
+import { dispatchShortcut } from '../shortcuts/shortcuts'
+import { useShortcutLabel } from '../shortcuts/useShortcuts'
 
 interface Props {
   图片地址?: 图片地址表
@@ -35,6 +37,7 @@ const 控件自动隐藏毫秒 = 2000
 type 停靠位置 = '顶部' | '底部'
 
 const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 序列, 偏好 = 默认放映偏好, 请求演讲者 = false, on保留笔迹 }: Props) => {
+  const 键位提示 = useShortcutLabel('slideshow')
   const { modal } = AntdApp.useApp()
   const 放映根 = React.useRef<HTMLDivElement>(null)
   const 退出引用 = React.useRef(on退出)
@@ -269,33 +272,22 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
       // 隔离隐藏编辑器的保存、增删页和标签切换快捷键。
       事件.stopImmediatePropagation()
       if (事件.key === 'Tab' || (事件.target instanceof HTMLButtonElement && ['Enter',' '].includes(事件.key))) return
-      事件.preventDefault()
-      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(事件.key)) {
-        事件.preventDefault()
-        前进()
-      } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(事件.key)) {
-        事件.preventDefault()
-        后退()
-      } else if (事件.key.toLowerCase() === 'p') {
-        控制器.current?.暂停(!控制器.current.快照.暂停)
-      } else if (事件.key === 'Escape') {
-        事件.preventDefault()
-        结束引用.current()
-      } else if (事件.key.toLowerCase() === 'b') {
-        set屏幕(值 => 值 === '黑' ? '无' : '黑')
-      } else if (事件.key.toLowerCase() === 'w') {
-        set屏幕(值 => 值 === '白' ? '无' : '白')
-      } else if (事件.key.toLowerCase() === 'l') {
-        set工具(值 => 值 === '激光笔' ? '无' : '激光笔')
-      } else if (事件.key.toLowerCase() === 'i') {
-        set工具(值 => 值 === '画笔' ? '无' : '画笔')
-      } else if (事件.key === 'Home') {
-        事件.preventDefault()
-        控制器.current?.首尾(false)
-      } else if (事件.key === 'End') {
-        事件.preventDefault()
-        控制器.current?.首尾(true)
-      }
+      if (事件.isComposing || 事件.keyCode === 229) return
+      const handled = dispatchShortcut(事件,'slideshow',command=>{
+        if(command==='show.next')前进()
+        else if(command==='show.previous')后退()
+        else if(command==='show.pause')控制器.current?.暂停(!控制器.current.快照.暂停)
+        else if(command==='show.exit')结束引用.current()
+        else if(command==='show.black')set屏幕(value=>value==='黑'?'无':'黑')
+        else if(command==='show.white')set屏幕(value=>value==='白'?'无':'白')
+        else if(command==='show.laser')set工具(value=>value==='激光笔'?'无':'激光笔')
+        else if(command==='show.ink')set工具(value=>value==='画笔'?'无':'画笔')
+        else if(command==='show.erase')set工具(value=>value==='橡皮'?'无':'橡皮')
+        else if(command==='show.clearInk')set批迹(value=>({...value,笔画:[]}))
+        else if(command==='show.first'||command==='show.last')控制器.current?.首尾(command==='show.last')
+        else return false
+      })
+      if (!handled && !(事件.target instanceof Element && 事件.target.closest('input,textarea,[role="dialog"],[role="menu"]'))) 事件.preventDefault()
     }
     document.addEventListener('keydown', 处理按键, true)
     return () => document.removeEventListener('keydown', 处理按键, true)
@@ -345,12 +337,12 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--bottom', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'bottom', 'aria-hidden': true, onPointerEnter: () => 显示停靠('底部') }),
     React.createElement('div', 停靠属性('顶部', 'wps-slideshow__dock--top'),
       React.createElement('div', { className: 'wps-slideshow__tools', role: 'toolbar', 'aria-label': '演示工具' },
-        按钮('画笔', 工具 === '画笔', () => set工具(值 => 值 === '画笔' ? '无' : '画笔'), '画笔（I）：临时批迹，退出时可选择保留'),
-        按钮('橡皮', 工具 === '橡皮', () => set工具(值 => 值 === '橡皮' ? '无' : '橡皮'), '橡皮：擦除临时批迹'),
-        按钮('清除', false, () => set批迹(当前 => ({ ...当前, 笔画: [] })), '清除全部临时批迹'),
-        按钮('激光笔', 工具 === '激光笔', () => { set激光位置(null); set工具(值 => 值 === '激光笔' ? '无' : '激光笔') }, '激光笔（L）'),
-        按钮('黑屏', 屏幕 === '黑', () => set屏幕(值 => 值 === '黑' ? '无' : '黑'), '黑屏（B）'),
-        按钮('白屏', 屏幕 === '白', () => set屏幕(值 => 值 === '白' ? '无' : '白'), '白屏（W）'))),
+        按钮('画笔', 工具 === '画笔', () => set工具(值 => 值 === '画笔' ? '无' : '画笔'), `画笔${键位提示('show.ink')}：临时批迹，退出时可选择保留`),
+        按钮('橡皮', 工具 === '橡皮', () => set工具(值 => 值 === '橡皮' ? '无' : '橡皮'), `橡皮${键位提示('show.erase')}：擦除临时批迹`),
+        按钮('清除', false, () => set批迹(当前 => ({ ...当前, 笔画: [] })), `清除全部临时批迹${键位提示('show.clearInk')}`),
+        按钮('激光笔', 工具 === '激光笔', () => { set激光位置(null); set工具(值 => 值 === '激光笔' ? '无' : '激光笔') }, `激光笔${键位提示('show.laser')}`),
+        按钮('黑屏', 屏幕 === '黑', () => set屏幕(值 => 值 === '黑' ? '无' : '黑'), `黑屏${键位提示('show.black')}`),
+        按钮('白屏', 屏幕 === '白', () => set屏幕(值 => 值 === '白' ? '无' : '白'), `白屏${键位提示('show.white')}`))),
     React.createElement('div', 停靠属性('底部', 'wps-slideshow__dock--bottom'),
       React.createElement('div', { className: 'wps-slideshow__bottom-tools', role: 'toolbar', 'aria-label': '放映控制' },
         React.createElement('button', { type: 'button', className: 'wps-slideshow__presenter', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); if (演讲者) { void 桥接.presenter.close(演讲者.会话标识); set演讲者(null) } else void 打开演讲者() } }, 演讲者 ? '关闭演讲者视图' : '演讲者视图'),

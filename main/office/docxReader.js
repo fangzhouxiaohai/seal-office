@@ -6,6 +6,9 @@ const path = require('path')
 const { 缩进字段, 间距字段, 扩展字段, 属性有效 } = require('./paragraphProperties')
 const { 读取正文图片 } = require('./docxImages')
 const { 解码Xml实体 } = require('./xmlEntities')
+const { 规范Office命名空间 } = require('./ooxmlNamespaces')
+const { 修订范围, 修订Html } = require('./docxRevisions')
+const { 创建源包上下文, xmlNodes, lockedBlock } = require('./docxSource')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 预设边距 = { 常规: [1440, 1350], 窄: [540, 540], 适中: [1440, 1080], 宽: [1440, 2160] }
@@ -97,6 +100,19 @@ function 解析超链接范围(段落Xml, 样式定义) {
 /** 判断某个子标签是否出现（带 w: 命名空间前缀） */
 const 存在 = (片段, 标签) => new RegExp(`<w:${标签}[\\s/>]`, 'i').test(片段)
 
+const 历史属性修订 = /<w:(rPrChange|pPrChange|sectPrChange|tblPrChange|tblPrExChange|trPrChange|tcPrChange)(?=[\s>])[^>]*>[\s\S]*?<\/w:\1>/gi
+function 收集修订警告(xml) {
+  const 警告 = []
+  if (/<w:(?:moveFrom|moveTo)(?=[\s/>])/i.test(xml)) 警告.push('移动修订未完整导入其关联范围，已保留来源和目的标记；请保留原文件')
+  if (/<w:(?:rPrChange|pPrChange|sectPrChange|tblPrChange|tblPrExChange|trPrChange|tcPrChange)(?=[\s/>])/i.test(xml)) 警告.push('格式修订未完整导入，已采用当前格式；请保留原文件')
+  return 警告
+}
+
+/** Historical properties are distinct from current formatting. */
+function 采用当前修订内容(xml) {
+  return xml.replace(历史属性修订, '')
+}
+
 /** 只恢复编辑器有对应显示和保存能力的页面预设；其余格式明确警告。 */
 function 解析页面设置(documentXml, 警告) {
   const 节 = documentXml.match(/<w:sectPr(?:\s[^>]*)?>([\s\S]*?)<\/w:sectPr>/i)?.[1]
@@ -149,6 +165,7 @@ function 解析页面设置(documentXml, 警告) {
     页边距: 页边距 ?? '自定义', 分栏, 页面边框, 页面颜色, 文字方向, 水印: '无',
     ...(纸张 ? {} : { 原始纸张: { 宽, 高 } }),
     ...(页边距 ? {} : { 原始页边距: { 上, 右, 下, 左 } }),
+    ...(存在(节, 'lnNumType') ? { 行号: true } : {}),
   }
 }
 
@@ -166,6 +183,7 @@ function 读取开关(片段, 标签) {
 /** 解析可叠加的字符属性，保留显式关闭值以覆盖样式继承。 */
 function 提取字符配置(rPr) {
   if (!rPr) return {}
+  rPr = 采用当前修订内容(rPr)
   const 配置 = {}
   const 加粗 = 读取开关(rPr, 'b')
   const 倾斜 = 读取开关(rPr, 'i')
@@ -224,6 +242,7 @@ function 解析字符属性(rPr, 继承配置 = {}) {
 /** 读取 styles.xml 的文档默认值、段落样式和字符样式。 */
 function 解析样式定义(stylesXml) {
   if (typeof stylesXml !== 'string') return { 默认字符: {}, 默认段落属性: '', 默认段落样式: null, 定义: new Map() }
+  stylesXml = 采用当前修订内容(stylesXml)
   const 默认片段 = stylesXml.match(/<w:rPrDefault(?:\s[^>]*)?>([\s\S]*?)<\/w:rPrDefault>/i)?.[1] ?? ''
   const 默认字符 = 提取字符配置(默认片段.match(/<w:rPr(?:\s[^>]*)?>([\s\S]*?)<\/w:rPr>/i)?.[1] ?? '')
   const 默认段落片段 = stylesXml.match(/<w:pPrDefault(?:\s[^>]*)?>([\s\S]*?)<\/w:pPrDefault>/i)?.[1] ?? ''
@@ -411,7 +430,10 @@ function 解析段落属性(pPr, 编号映射) {
   let 有编号 = false
   if (列表 && 编号映射 !== undefined) {
     const 序号 = 取属性(pPr, 'w:numId', 'w:val')
-    有编号 = 编号映射[序号] === 'decimal'
+    const 格式 = 编号映射[序号]
+    有编号 = ['decimal', 'lowerLetter', 'chineseCounting'].includes(格式)
+    const 列表样式 = { decimal: 'decimal', lowerLetter: 'lower-alpha', chineseCounting: 'cjk-ideographic', square: 'square', circle: 'circle' }[格式]
+    if (列表样式) 样式 += `list-style-type:${列表样式};`
   }
   return { 标签: 标题 ?? 'p', 样式, 列表, 有编号, 行距规则,
     来源排版: 有扩展 ? JSON.stringify({ ...格式, 样式 }) : null }
@@ -438,27 +460,38 @@ function 展开简单域(段落Xml) {
     '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
   return 段落Xml
     .replace(/<w:fldSimple(?=[\s>])([^>]*)>([\s\S]*?)<\/w:fldSimple>/gi,
-      (整体, 属性, 内容) => 展开(属性.match(/\sw:instr="([^"]*)"/i)?.[1] ?? '', 内容))
+      (整体, 属性, 内容) => 展开(转义(取属性(`<w:fldSimple${属性}>`, 'w:fldSimple', 'w:instr') ?? ''), 内容))
     // 没有缓存结果的空域写成自闭合标签，同样要保留成可写回的域
     .replace(/<w:fldSimple(?=[\s>])([^>]*)\/>/gi,
-      (整体, 属性) => 展开(属性.match(/\sw:instr="([^"]*)"/i)?.[1] ?? '', ''))
+      (整体, 属性) => 展开(转义(取属性(`<w:fldSimple${属性}>`, 'w:fldSimple', 'w:instr') ?? ''), ''))
 }
 
 /** 判断这段 XML 里是否存在当前无法保留的域代码或制表符 */
-function 存在未保留的域或制表符(内容) {
-  if (/<w:tab(?=[\s/>])/i.test(内容)) return true
-  for (const 匹配 of 内容.matchAll(/<w:fldSimple(?=[\s>])[^>]*\sw:instr="([^"]*)"/gi)) {
-    if (!支持的域.has(域名称(匹配[1]))) return true
+function 存在未保留的域或制表符(内容, 检查制表符 = true) {
+  if (检查制表符 && /<w:tab(?=[\s/>])/i.test(内容)) return true
+  const 栈 = []
+  for (const 匹配 of 展开简单域(内容).matchAll(/<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>/gi)) {
+    if (匹配[1] !== undefined) {
+      if (!栈.length) return true
+      栈.at(-1).指令 += 解码Xml(匹配[1])
+      continue
+    }
+    const 类型 = 取属性(匹配[0], 'w:fldChar', 'w:fldCharType')
+    if (类型 === 'begin') 栈.push({ 指令: '' })
+    else if (类型 === 'end') {
+      const 域 = 栈.pop()
+      if (!域 || !支持的域.has(域名称(域.指令))) return true
+    } else if (类型 !== 'separate' || !栈.length) return true
   }
-  for (const 匹配 of 内容.matchAll(/<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>/gi)) {
-    if (!支持的域.has(域名称(匹配[1]))) return true
-  }
-  return false
+  return 栈.length > 0
 }
 
 /** 解析一个 <w:p> 段落为 HTML；列表项返回 li 内容由外层聚合 */
 function 解析段落(段落Xml, 编号映射, 样式定义) {
+  段落Xml = 采用当前修订内容(段落Xml)
   段落Xml = 展开简单域(段落Xml)
+  const 历史范围 = /<w:(?:ins|del|moveFrom|moveTo)(?=[\s>])/.test(段落Xml) ? 修订范围(段落Xml) : []
+  let 当前Run开始 = 0, 当前Run结束 = 0
   const 超链接范围 = 解析超链接范围(段落Xml, 样式定义)
   const pPr匹配 = 段落Xml.match(/<w:pPr(?:\s[^>]*)?>([\s\S]*?)<\/w:pPr>/i)
   const 段落样式 = pPr匹配 === null ? null : 取属性(pPr匹配[1], 'w:pStyle', 'w:val')
@@ -488,8 +521,9 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
   const 域栈 = []
   let 当前链接 = null
   const 输出片段 = (html, 文本 = html) => {
-    const 带链接Html = 当前链接 === null ? html
+    let 带链接Html = 当前链接 === null ? html
       : `<a href="${转义(当前链接)}" data-seal-link="${转义(当前链接)}" rel="noopener noreferrer">${html}</a>`
+    带链接Html = 修订Html(带链接Html, 当前Run开始, 当前Run结束, 历史范围)
     const 域 = 域栈.at(-1)
     if (!域) 片段列表.push(带链接Html)
     else if (域.阶段 === '结果') { 域.缓存.push(文本); 域.缓存片段.push(带链接Html) }
@@ -506,6 +540,7 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
   const run正则 = /<w:bookmarkStart(?=[\s/>])[^>]*\/?\s*>|<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/gi
   let run匹配
   while ((run匹配 = run正则.exec(段落Xml)) !== null) {
+    当前Run开始 = run匹配.index; 当前Run结束 = run匹配.index + run匹配[0].length
     当前链接 = 超链接范围.find((项) => run匹配.index >= 项.开始 && run匹配.index + run匹配[0].length <= 项.结束)?.目标 ?? null
     if (/^<w:bookmarkStart/i.test(run匹配[0])) {
       const 原名称 = 取属性(run匹配[0], 'w:bookmarkStart', 'w:name')
@@ -519,18 +554,23 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     const rPr = rPr匹配 === null ? null : rPr匹配[1]
     const 字符样式 = rPr === null || 样式定义 === undefined ? {} : 解析继承字符(样式定义, 取属性(rPr, 'w:rStyle', 'w:val'))
     const { 样式 } = 解析字符属性(rPr, { ...继承配置, ...字符样式 })
-    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>|<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr|tab)(?=[\s/>])[^>]*>/gi
+    const 文本正则 = /<w:(?:drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:(?:drawing|pict)>|<w:(?:footnoteReference|endnoteReference)(?=[\s/>])[^>]*>|<w:fldChar(?=[\s/>])[^>]*>|<w:instrText(?:\s[^>]*)?>([\s\S]*?)<\/w:instrText>|<w:(?:t|delText)(?:\s[^>]*)?>([\s\S]*?)<\/w:(?:t|delText)>|<w:(?:br|cr|tab)(?=[\s/>])[^>]*>/gi
     let 文本匹配
     while ((文本匹配 = 文本正则.exec(runXml)) !== null) {
       const 片段Xml = 文本匹配[0]
       const 域 = 域栈.at(-1)
-      if (/^<w:fldChar/i.test(片段Xml)) {
+      if (/^<w:(?:footnoteReference|endnoteReference)/i.test(片段Xml)) {
+        const kind = 片段Xml.includes('footnoteReference') ? 'footnote' : 'endnote'
+        const id = Number(取属性(片段Xml, `w:${kind}Reference`, 'w:id'))
+        if (Number.isSafeInteger(id) && id > 0 && id <= 10000) 输出片段(`<sup data-seal-note-kind="${kind}" data-seal-note-ref="${id}" contenteditable="false">${id}</sup>`)
+        else 样式定义?.警告?.push('注释引用未完整导入')
+      } else if (/^<w:fldChar/i.test(片段Xml)) {
         const 类型 = 取属性(片段Xml, 'w:fldChar', 'w:fldCharType')
         if (类型 === 'begin') 域栈.push({ 指令: '', 阶段: '指令', 缓存: [], 缓存片段: [], 样式 })
         else if (类型 === 'separate' && 域) 域.阶段 = '结果'
         else if (类型 === 'end') 结束域()
       } else if (/^<w:instrText/i.test(片段Xml)) {
-        if (域 && 域.阶段 === '指令' && 文本匹配[1] !== undefined) 域.指令 += 文本匹配[1]
+        if (域 && 域.阶段 === '指令' && 文本匹配[1] !== undefined) 域.指令 += 解码Xml(文本匹配[1])
       } else if (/^<w:(?:drawing|pict)/i.test(片段Xml)) {
         输出片段(样式定义?.图片?.get(片段Xml) || '')
       } else if (/^<w:(?:br|cr)/i.test(片段Xml)) {
@@ -557,6 +597,7 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
  * rowspan，被覆盖的续格不再输出，与 HTML 表格表达合并的方式一致。
  */
 function 解析表格(表Xml, 编号映射, 样式定义) {
+  const revisionAttributes = node => node ? ` class="${node.name === 'w:del' ? 'wps-delete' : 'wps-insert'}" data-seal-revision-type="${node.name.slice(2)}" data-seal-revision-id="${转义(node.attrs['w:id'] ?? '')}" data-seal-revision-author="${转义(node.attrs['w:author'] ?? '')}"${node.attrs['w:date'] ? ` data-seal-revision-date="${转义(node.attrs['w:date'])}"` : ''}${node.name === 'w:del' ? ' contenteditable="false"' : ''}` : ''
   const 表属性 = 表Xml.match(/<w:tblPr(?:\s[^>]*)?>([\s\S]*?)<\/w:tblPr>/i)?.[1] || ''
   const 数值 = (xml, tag, attr = 'w:w') => { const v = Number(取属性(xml, tag, attr)); return Number.isFinite(v) ? v : 0 }
   const 表宽类型 = 取属性(表属性, 'w:tblW', 'w:type')
@@ -601,6 +642,7 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
       const 纵向合并 = !存在(单元属性, 'vMerge') ? null
         : 取属性(单元属性, 'w:vMerge', 'w:val') === 'restart' ? 'restart' : 'continue'
       单元列表.push({
+        修订属性: revisionAttributes(xmlNodes(单元匹配[0]).find(node => ['w:ins', 'w:del'].includes(node.name) && node.parent?.name === 'w:tcPr')),
         列: 列起点,
         跨列: 有效跨列,
         纵向合并,
@@ -609,6 +651,7 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
       })
       列起点 += 有效跨列
     }
+    单元列表.修订属性 = revisionAttributes(xmlNodes(行匹配[0]).find(node => ['w:ins', 'w:del'].includes(node.name) && node.parent?.name === 'w:trPr'))
     if (单元列表.length > 0) 行网格.push(单元列表)
   }
   if (行网格.length === 0) return ''
@@ -627,9 +670,9 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
         }
       }
       const 合并属性 = (单元.跨列 > 1 ? ` colspan="${单元.跨列}"` : '') + (跨行 > 1 ? ` rowspan="${跨行}"` : '')
-      片段.push(`<td${合并属性} style="${单元.样式}">${单元.内容}</td>`)
+      片段.push(`<td${合并属性}${单元.修订属性} style="${单元.样式}">${单元.内容}</td>`)
     }
-    return `<tr>${片段.join('')}</tr>`
+    return `<tr${单元列表.修订属性 || ''}>${片段.join('')}</tr>`
   })
   return `<table style="border-collapse:${间距 > 0 ? 'separate' : 'collapse'};border-spacing:${间距}px;width:${表宽}">${行列表.join('')}</table>`
 }
@@ -637,9 +680,13 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
 /** 渲染单个段落 XML；列表项由外层聚合为 ul/ol */
 function 渲染段落Xml(段落Xml, 选项, 编号映射, 样式定义) {
   const { 段属性, 内容 } = 解析段落(段落Xml, 编号映射, 样式定义)
-  const 属性 = (段属性.样式 ? ` style="${段属性.样式}"` : '') +
+  let 属性 = (段属性.样式 ? ` style="${段属性.样式}"` : '') +
     (段属性.行距规则 ? ` data-seal-line-rule="${段属性.行距规则}"` : '') +
     (段属性.来源排版 ? ` data-seal-paragraph-format="${转义(段属性.来源排版)}"` : '')
+  if (/<w:pPr(?=[\s>])[\s\S]*?<w:rPr(?=[\s>])/.test(段落Xml)) {
+    const mark = xmlNodes(段落Xml).find(node => ['w:ins', 'w:del', 'w:moveFrom', 'w:moveTo'].includes(node.name) && node.parent?.name === 'w:rPr' && node.parent.parent?.name === 'w:pPr')
+    if (mark) { const revision = { 类型: mark.name.slice(2), 标识: mark.attrs['w:id'] ?? '', 作者: mark.attrs['w:author'] ?? '', 时间: mark.attrs['w:date'] }; 属性 += ` data-seal-paragraph-revision="${转义(encodeURIComponent(JSON.stringify(revision)))}" data-seal-paragraph-revision-type="${revision.类型}"` }
+  }
   if (段属性.列表 && (选项 === undefined || 选项.允许标题 !== false)) {
     const 列表标签 = 段属性.有编号 ? 'ol' : 'ul'
     return { 列表项: true, 列表标签, html: `<li${属性}>${内容 === '' ? '<br>' : 内容}</li>` }
@@ -649,6 +696,8 @@ function 渲染段落Xml(段落Xml, 选项, 编号映射, 样式定义) {
 
 /** 把 body XML 顶层的段落与表格按顺序渲染；相邻列表项聚合进同一列表 */
 function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
+  bodyXml = 采用当前修订内容(bodyXml)
+  const blockRevisions = /<w:(?:ins|del|moveFrom|moveTo)(?=[\s>])/.test(bodyXml) ? 修订范围(bodyXml) : []
   const 输出 = []
   const 块正则 = /<w:p(?:\s[^>]*)?\/>|<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>|<w:tbl(?:\s[^>]*)?>([\s\S]*?)<\/w:tbl>/gi
   let 块匹配
@@ -665,7 +714,7 @@ function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
     if (/^<w:tbl/i.test(块Xml)) {
       结束列表()
       const 表格Html = 解析表格(块Xml, 编号映射, 样式定义)
-      if (表格Html !== '') 输出.push(表格Html)
+      if (表格Html !== '') 输出.push(修订Html(表格Html, 块匹配.index, 块匹配.index + 块Xml.length, blockRevisions, 'div'))
       continue
     }
     if (/<w:br(?=[\s/>])[^>]*w:type="page"/i.test(块Xml) && !/<w:(?:t|drawing|pict)(?=[\s/>])/i.test(块Xml)) {
@@ -696,10 +745,10 @@ function 渲染Body(bodyXml, 编号映射 = {}, 样式定义) {
         当前列表 = 渲染.列表标签
         输出.push(`<${当前列表}>`)
       }
-      输出.push(渲染.html)
+      输出.push(修订Html(渲染.html, 块匹配.index, 块匹配.index + 块Xml.length, blockRevisions))
     } else {
       结束列表()
-      输出.push(渲染.html)
+      输出.push(修订Html(渲染.html, 块匹配.index, 块匹配.index + 块Xml.length, blockRevisions, 'div'))
     }
   }
   结束列表()
@@ -731,7 +780,13 @@ function 解析编号映射(numberingXml) {
   while ((抽象匹配 = 抽象正则.exec(numberingXml)) !== null) {
     const 级匹配 = 抽象匹配[2].match(/<w:lvl[^>]*w:ilvl="0"[^>]*>[\s\S]*?<w:numFmt w:val="(\w+)"/i)
     if (级匹配 !== null) {
-      抽象格式[抽象匹配[1]] = 级匹配[1]
+      let 格式 = 级匹配[1]
+      if (格式 === 'bullet') {
+        const 文字 = 取属性(抽象匹配[2], 'w:lvlText', 'w:val')
+        if (文字 === '■') 格式 = 'square'
+        else if (文字 === '○') 格式 = 'circle'
+      }
+      抽象格式[抽象匹配[1]] = 格式
     }
   }
   // numId → abstractNumId → 格式
@@ -757,10 +812,10 @@ function 收集未导入警告(bodyXml, 图片) {
     警告.push('图形未导入')
   }
   if (有标签('a:videoFile') || 有标签('a:audioFile') || 有标签('w:movie')) 警告.push('媒体未导入')
-  if (有标签('w:footnoteReference')) 警告.push('脚注未导入')
-  if (有标签('w:endnoteReference')) 警告.push('尾注未导入')
   if (有标签('w:commentReference')) 警告.push('批注未导入')
   if (有标签('w:ins') || 有标签('w:del')) 警告.push('修订信息未导入')
+  警告.push(...收集修订警告(bodyXml))
+  if (存在未保留的域或制表符(采用当前修订内容(bodyXml), false)) 警告.push('域代码未完整导入，已保留可读取的缓存结果')
   警告.push(...收集段落格式警告(bodyXml))
   if (/<w:br(?=[\s/>])[^>]*w:(?:type="column"|clear=)/i.test(bodyXml) ||
       [...bodyXml.matchAll(/<w:p(?=[\s>])[^>]*>[\s\S]*?<\/w:p>/gi)].some((项) => /<w:(?:t|drawing|pict)(?=[\s/>])/.test(项[0]) && /<w:br(?=[\s/>])[^>]*w:type="page"/.test(项[0]))) {
@@ -824,8 +879,10 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
         页眉正文 = 页眉正文.replace(对象, '')
         警告.push('水印可预览，但当前版本无法将其写回 DOCX；保存时请保留原文件')
       }
-      const html = /<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(页眉正文)
+      let html = /<w:(?:t|drawing|pict|fldChar|instrText|fldSimple|tab|br|tbl)(?=[\s/>])/i.test(页眉正文)
         ? 渲染Body(页眉正文, 编号映射, 局部样式) : ''
+      html = html.replace(/data-seal-revision-type=/g, `data-seal-revision-part="${转义(部件)}" data-seal-revision-type=`)
+      if (lockedBlock(内容) && html) html = `<div data-seal-native-protected="true" contenteditable="false" title="此页眉页脚含原生高级结构；可通过修订历史审阅，正文编辑受保护">${html}</div>`
       if (存在未保留的域或制表符(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
       警告.push(...收集未导入警告(页眉正文, 图片读取.图片).map((项) => `${名称}：${项}`))
       候选.push({ 类型: 取属性(项[0], `w:${种类}Reference`, 'w:type') ?? 'default', html })
@@ -848,6 +905,37 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
  * @param 数据 - docx 文件的 Buffer
  * @returns { html, 警告 }；文件损坏时抛出错误，由上层报告读取失败
  */
+async function 读取注释(压缩包, bodyXml, 编号映射, 样式定义, 警告) {
+  const sections = []
+  for (const [kind, label] of [['footnote', '脚注'], ['endnote', '尾注']]) {
+    const ids = new Set([...bodyXml.matchAll(new RegExp(`<w:${kind}Reference(?=[\\s/>])[^>]*>`, 'g'))].map(match => Number(取属性(match[0], `w:${kind}Reference`, 'w:id'))))
+    if (!ids.size) continue
+    if (ids.size > 1000) { 警告.push(`${label}数量超过导入上限`); continue }
+    const relation = [...样式定义.关系.values()].find(item => item.类型?.endsWith('/' + kind + 's') && !item.外部)
+    const part = relation?.路径 ? path.posix.normalize(relation.路径.startsWith('/') ? relation.路径.slice(1) : path.posix.join('word', relation.路径)) : `word/${kind}s.xml`
+    if (!part.startsWith('word/')) { 警告.push(`${label}未导入`); continue }
+    const file = 压缩包.file(part)
+    if (!file) { 警告.push(`${label}未导入`); continue }
+    const xml = await file.async('string'), definitions = new Map()
+    for (const match of xml.matchAll(new RegExp(`<w:${kind}(?=[\\s>])[^>]*>([\\s\\S]*?)<\\/w:${kind}>`, 'g'))) {
+      const id = Number(取属性(match[0], `w:${kind}`, 'w:id'))
+      if (id > 0 && ids.has(id)) definitions.set(id, match[1])
+    }
+    const entries = []
+    for (const id of ids) {
+      if (!Number.isSafeInteger(id) || id <= 0 || id > 10000 || !definitions.has(id)) { 警告.push(`${label}未导入`); continue }
+      const noteXml = definitions.get(id).replace(/<w:(?:footnoteRef|endnoteRef)(?=[\s/>])[^>]*>/g, '')
+      const images = await 读取正文图片(压缩包, noteXml, 警告, part)
+      const local = { ...样式定义, 图片: images.图片, 关系: await 读取关系映射(压缩包, part) }
+      警告.push(...收集未导入警告(noteXml, images.图片).map(warning => `${label}：${warning}`))
+      const noteHtml = 渲染Body(images.正文, 编号映射, local).replace(/data-seal-revision-type=/g, `data-seal-revision-part="${转义(part)}" data-seal-revision-type=`)
+      entries.push(`<div id="seal-${kind}-${id}" data-seal-note-id="${id}" data-seal-note-baseline="${转义(encodeURIComponent(noteHtml))}"${lockedBlock(noteXml) ? ' contenteditable="false" data-seal-native-protected="true" title="此注释含原生高级结构，正文编辑受保护；可在修订历史中审阅"' : ''}><span data-seal-note-label="true" contenteditable="false">${id}. </span>${noteHtml}</div>`)
+    }
+    if (entries.length) sections.push(`<section data-seal-notes="${kind}"><h4 data-seal-note-label="true" contenteditable="false">${label}</h4>${entries.join('')}</section>`)
+  }
+  return sections.join('')
+}
+
 async function 读取docx(数据) {
   const 警告 = []
   let 压缩包
@@ -856,6 +944,11 @@ async function 读取docx(数据) {
   } catch {
     throw new Error('文字文档压缩包损坏，无法读取')
   }
+  const entries = Object.values(压缩包.files)
+  if (entries.length > 2000) throw new Error('文字文档部件超过2000项，已停止展开')
+  let expanded = 0
+  for (const entry of entries) { const size = entry._data?.uncompressedSize ?? 0; expanded += size; if (size > 20 * 1024 * 1024 || expanded > 100 * 1024 * 1024) throw new Error('文字文档展开体积超过安全上限，已停止读取') }
+  await 规范Office命名空间(压缩包, 'word')
   const 文档文件 = 压缩包.file('word/document.xml')
   if (文档文件 === null) throw new Error('文字文档缺少 word/document.xml')
   let documentXml
@@ -864,10 +957,14 @@ async function 读取docx(数据) {
   } catch {
     throw new Error('文字文档正文损坏，无法读取')
   }
+  警告.push(...收集修订警告(documentXml))
+  documentXml = 采用当前修订内容(documentXml)
   const 编号文件 = 压缩包.file('word/numbering.xml')
   const 编号映射 = 编号文件 !== null && 编号文件 !== undefined ? 解析编号映射(await 编号文件.async('string')) : {}
   const 样式文件 = 压缩包.file('word/styles.xml')
-  const 样式定义 = 解析样式定义(样式文件 !== null && 样式文件 !== undefined ? await 样式文件.async('string') : null)
+  const 样式Xml = 样式文件 !== null && 样式文件 !== undefined ? await 样式文件.async('string') : null
+  if (样式Xml) 警告.push(...收集修订警告(样式Xml))
+  const 样式定义 = 解析样式定义(样式Xml)
   样式定义.警告 = 警告
   样式定义.关系 = await 读取关系映射(压缩包, 'word/document.xml')
   const 图片读取 = await 读取正文图片(压缩包, 取Body(documentXml), 警告)
@@ -877,7 +974,15 @@ async function 读取docx(数据) {
   const 页眉页脚 = await 读取页眉页脚(压缩包, documentXml, 编号映射, 样式定义, 警告)
   if (页面设置) Object.assign(页面设置, 页眉页脚)
   警告.push(...收集未导入警告(bodyXml, 样式定义.图片))
-  const html = 渲染Body(bodyXml, 编号映射, 样式定义)
+  let 源包
+  try { 源包 = await 创建源包上下文(压缩包, xml => 渲染Body(xml, 编号映射, 样式定义), { 页面设置 }, async part => {
+    const file = 压缩包.file(part); if (!file) return ''
+    const images = await 读取正文图片(压缩包, await file.async('string'), 警告, part)
+    return 渲染Body(images.正文, 编号映射, { ...样式定义, 图片: images.图片, 关系: await 读取关系映射(压缩包, part) })
+  }) }
+  catch (error) { 警告.push(`高级源结构无法安全保留：${error.message}；请保留原文件`) }
+  if (源包) for (let index = 警告.length - 1; index >= 0; index--) if (警告[index] === '修订信息未导入' || /^(?:移动修订未完整导入|格式修订未完整导入)/.test(警告[index])) 警告.splice(index, 1)
+  const html = (源包?.html ?? 渲染Body(bodyXml, 编号映射, 样式定义)) + await 读取注释(压缩包, bodyXml, 编号映射, 样式定义, 警告)
   if (html.trim() === '') {
     if (/<w:(?:p|tbl)[\s/>]/i.test(bodyXml)) throw new Error('文字文档正文结构损坏，无法读取')
     警告.push('文档内容为空')

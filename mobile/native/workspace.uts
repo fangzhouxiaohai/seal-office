@@ -2,7 +2,7 @@
 // Image/font/API errors must not tear down a successfully loaded document.
 export function isWorkspaceDocument(url: string): boolean {
   const path = url.split('?')[0].split('#')[0]
-  return (path.startsWith('/') || path.startsWith('file://')) && path.endsWith('/static/office/index.html')
+  return (path.startsWith('/') || path.startsWith('file://') || path.startsWith('resource://rawfile/')) && path.endsWith('/static/office/index.html')
 }
 
 export function onUIThread(task: () => void) {

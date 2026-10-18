@@ -11,7 +11,7 @@ import {
 import { DOC_TYPE_TO_MODULE, NAV_GROUPS, NEW_DOC_NAMES, type ModuleKey } from './navConfig'
 import { 桥接, type 演示资源条目 } from './ipc/bridge'
 import { 基准文件名, 记录最近文档, 读取本地文件内容 } from './fileOpen'
-import { 创建工作表, 检查工作簿更新, type Sheet } from './sheet/model'
+import { 创建工作表, 检查工作簿更新, 重算工作簿, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
 import { 迁移演示文稿, 演示内容快照, 收集演示资源标识, 校验演示备份资源 } from './ppt/model/migrations'
@@ -738,7 +738,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         if (来源列表 === null) throw new Error('表格内容格式无效，文件未打开')
         const 解析列表 = 来源列表.map((项) => 从Html表格构建工作表(项.html, 项.名称, 项.页面设置, 项.元数据))
         if (解析列表.some((项) => 项 === null)) throw new Error('工作表内容解析失败，文件未打开')
-        新表格 = 解析列表 as Sheet[]
+        新表格 = 重算工作簿(解析列表 as Sheet[])
       }
     } else if (目标模块 === 'ppt') {
       if (初始内容 === undefined || 初始内容 === null) {
@@ -931,7 +931,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         弹窗.warning({ title: '表格更新已阻止', content: 错误 })
         return 当前
       }
-      return { ...当前, [标识]: 新值 }
+      return { ...当前, [标识]: 重算工作簿(新值) }
     })
   }
 

@@ -1,6 +1,9 @@
 const fs=require('fs'),path=require('path'),http=require('http'),https=require('https')
 const {randomBytes,randomUUID,createHash}=require('crypto')
 const {seal,unseal,recoveryKey}=require('./crypto')
+const {createCollaboration}=require('./collaboration')
+const {createRealtime}=require('./realtime')
+const documentFormats=require('../documentFormats.json')
 const DEFAULT_URL='https://seal.xingmasoft.com/api'
 const CHUNK=1024*1024
 const digest=data=>createHash('sha256').update(data).digest('hex')
@@ -9,10 +12,10 @@ function normalizeUrl(value){
   if(url.username||url.password||url.search||url.hash||(url.protocol!=='https:'&&!(url.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(url.hostname))))throw new Error('服务器须使用 HTTPS；本机测试可使用 HTTP')
   return url.toString().replace(/\/$/,'')
 }
-function createService({directory,safeStorage,transport}={}){
+function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,mergeUpdates}={}){
   const secureFile=path.join(directory,'cloud.secure'),outbox=path.join(directory,'cloud-outbox')
   fs.mkdirSync(outbox,{recursive:true})
-  let state={url:DEFAULT_URL,token:null,account:null,owner:null,root:null,recoveryPending:null,links:{},statuses:{}}
+  let state={url:normalizeUrl(defaultUrl),token:null,account:null,owner:null,root:null,recoveryPending:null,links:{},statuses:{}}
   const locks=new Map(),saveLocks=new Map(),active=new Set();let epoch=0
   function durableWrite(filename,data){const temp=filename+'.tmp';const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,data);fs.fsyncSync(fd)}finally{fs.closeSync(fd)}fs.renameSync(temp,filename)}
   if(fs.existsSync(secureFile)){
@@ -28,12 +31,12 @@ function createService({directory,safeStorage,transport}={}){
   }
   const root=()=>{if(!state.root)throw new Error('请先输入恢复密钥解锁云空间');return Buffer.from(state.root,'base64')}
   function status(){return {url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
-  async function request(route,{method='GET',data,binary=false,headers={}}={}){
+  async function request(route,{method='GET',data,binary=false,headers={},timeout=30000}={}){
     const url=new URL(state.url+route),payload=Buffer.isBuffer(data)?data:data===undefined?null:Buffer.from(JSON.stringify(data))
     const head={...(state.token?{Authorization:'Bearer '+state.token}:{}),...(payload?{'Content-Type':Buffer.isBuffer(data)?'application/octet-stream':'application/json','Content-Length':payload.length}:{}),...headers}
     if(transport){
       const controller=new AbortController(),req={destroy:()=>controller.abort()};active.add(req)
-      try{return await transport(url.toString(),{method,headers:head,body:payload,binary,signal:controller.signal})}
+      try{return await transport(url.toString(),{method,headers:head,body:payload,binary,signal:controller.signal,timeout})}
       catch(error){if(error.status===401){state.token=null;state.root=null;state.account=null;epoch++;for(const pending of active)pending.destroy();persist()}throw error}
       finally{active.delete(req)}
     }
@@ -44,7 +47,7 @@ function createService({directory,safeStorage,transport}={}){
         res.on('error',reject);res.on('end',()=>{const raw=Buffer.concat(chunks);let result;try{result=JSON.parse(raw.toString())}catch{result=null}
           if(res.statusCode<200||res.statusCode>=300){const error=Object.assign(new Error(result?.error||'云服务请求失败'),{status:res.statusCode});if(res.statusCode===401){state.token=null;state.root=null;state.account=null;epoch++;persist()}reject(error)}else if(binary)resolve(raw);else if(result)resolve(result);else reject(new Error('服务器响应格式不正确'))
         })
-      });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(30000,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
+      });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(timeout,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
     })
   }
   const requireSpace=()=>{if(!state.token||!state.account?.enabled)throw new Error('请先登录并开通云空间');root()}
@@ -122,14 +125,26 @@ function createService({directory,safeStorage,transport}={}){
     fs.unlinkSync(queueFile);fs.unlinkSync(path.join(outbox,q.blob));delete state.statuses[id];persist();return result
   }
   function requireEmptyOutbox(){if(pending().length)throw new Error('还有待同步文件，请先同步、保留冲突副本或导出并清除待同步记录，再退出账号或切换服务器')}
+  const collaboration=createCollaboration({request,requireSpace,root,getState:()=>state,persist,list,keyFor,invalidateSession:()=>{epoch++;for(const req of active)req.destroy();state.token=null;state.root=null;state.account=null;persist()}})
+  const realtime=createRealtime({directory,request,root,getState:()=>state,requireSpace,resolve:collaboration.resolveRealtime,persist,mergeUpdates,list})
+  async function rejectStaleRealtimeBinary(id){
+    const caps=await request('/v1/capabilities',{headers:{Authorization:''}})
+    if(caps.realtime!==1)return
+    const binding=await realtime.realtimeNodeBinding({id})
+    if(binding&&(await realtime.realtimeSnapshot({binding})).initialized)throw new Error('此文件正在实时共同编辑，请先下载最新协作文件并上传为独立副本，再复制或公开发布；原实时内容保持不变')
+  }
   return {
+    ...collaboration,
+    ...realtime,
+    async conversionCapabilities(){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/capabilities')},
+    async convertDocument(input){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');if(!input||input.consent!==true)throw new Error('请确认本次文档正文上传转换授权');const source=documentFormats.find(f=>f.extension===input.inputFormat),target=documentFormats.find(f=>f.extension===input.outputFormat),standard={word:'docx',table:'xlsx',ppt:'pptx'};if(!standard[input.type]||!source||!target||(source.type!==input.type&&source.extension!=='xml')||(target.type!==input.type&&target.extension!=='pdf')||target.readOnlySource||!target.outputFilter&&target.extension!==standard[input.type]&&target.extension!=='pdf'||['xml','mhtml','prn'].includes(target.outputFilter))throw new Error('转换格式不受支持');if(typeof input.data!=='string'||input.data.length>Math.ceil(20*1024*1024/3)*4)throw new Error('文档转换最多支持20 MiB');const raw=Buffer.from(input.data,'base64');if(!raw.length||raw.length>20*1024*1024||raw.toString('base64')!==input.data)throw new Error('转换文件数据无效或超过20 MiB');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/convert',{method:'POST',data:{inputFormat:input.inputFormat,outputFormat:input.outputFormat,type:input.type,data:input.data,consent:true},timeout:110000})},
     status,refresh,list,save,flush,download,request,pending,pendingFile,keepConflict,
     async discardPending(id){requireSpace();if(locks.has(id))throw new Error('请等待当前同步结束');const file=queuePath(id),q=JSON.parse(fs.readFileSync(file,'utf8'));if(q.upload){try{await request(`/v1/uploads/${q.upload}`,{method:'DELETE'})}catch(error){if(error.status!==404)throw error}}fs.unlinkSync(file);fs.unlinkSync(path.join(outbox,q.blob));delete state.statuses[id];persist();return status()},
     async linkFile(id,localPath,data,version){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('云文件不存在');state.links[localPath]={id,meta:node.meta,created:true,version,digest:digest(Buffer.from(data,'base64')),parent:node.parent,kind:node.kind};persist()},
     async replaceTemplate(id,data){const node=(await list()).find(n=>n.id===id&&!n.deleted);if(!node||!node.meta.template)throw new Error('请选择自己的演示模板');const pubs=(await request('/v1/publications')).items;if(pubs.some(p=>p.node_id===id&&['pending','approved'].includes(p.status)))throw new Error('请先撤回此模板的公开申请，再替换版本并重新审核');const linkId='template:'+id;state.links[linkId]={id,meta:node.meta,created:true,version:node.version,digest:null,parent:node.parent,kind:node.kind};persist();return save({linkId,name:node.meta.name,data,template:true})},
     async setServer(url){requireEmptyOutbox();if(state.recoveryPending)throw new Error('请先安全保存并确认恢复密钥');const target=normalizeUrl(url);const old=state.url;state.url=target;try{const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.version!==1)throw new Error('服务器版本不兼容')}catch(e){state.url=old;throw e}epoch++;for(const req of active)req.destroy();state={url:target,token:null,account:null,owner:null,root:null,recoveryPending:null,links:{},statuses:{}};clearOutbox();persist();return status()},
     sendCode:(phone,purpose='login')=>request('/v1/auth/code',{method:'POST',data:{phone,purpose}}),
-    async login(phone,code){const result=await request('/v1/auth/login',{method:'POST',data:{phone,code}});const same=state.owner===result.account.id;if(!same&&pending().length)throw new Error('本机还有原账号的待同步数据，请先登录原账号处理');epoch++;state.token=result.token;state.account=result.account;state.owner=result.account.id;if(!same){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};clearOutbox()}persist();return status()},
+    async login(phone,code){state.deviceId||=randomUUID();const result=await request('/v1/auth/login',{method:'POST',data:{phone,code,deviceId:state.deviceId,deviceName:'海豹办公设备'}});const same=state.owner===result.account.id;if(!same&&pending().length)throw new Error('本机还有原账号的待同步数据，请先登录原账号处理');epoch++;state.token=result.token;state.account=result.account;state.owner=result.account.id;if(!same){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox()}persist();return status()},
     async logout(){requireEmptyOutbox();if(state.recoveryPending)throw new Error('请先安全保存并确认恢复密钥');try{await request('/v1/auth/logout',{method:'POST'})}finally{epoch++;for(const req of active)req.destroy();state.token=null;state.account=null;state.owner=null;state.root=null;state.links={};state.statuses={};clearOutbox();persist()}return status()},
     async enable(consent){if(!state.account)throw new Error('请先登录');if(consent!==true)throw new Error('请先同意云服务协议');if(state.account.enabled)return status();const recovery=randomBytes(32).toString('hex'),key=randomBytes(32);const envelope=seal(recoveryKey(recovery,state.account.id),key,`seal-root:${state.account.id}`).toString('base64');state.account=await request('/v1/space/enable',{method:'POST',data:{consent:true,agreementVersion:'2026-10-08',envelope}});state.root=key.toString('base64');state.recoveryPending=recovery;persist();return {...status(),recovery}},
     ackRecovery(){requireSpace();state.recoveryPending=null;persist();return status()},
@@ -137,13 +152,13 @@ function createService({directory,safeStorage,transport}={}){
     async setAutosave(enabled){if(!state.account?.enabled)throw new Error('请先开通云空间');if(enabled)root();await request('/v1/space/autosave',{method:'POST',data:{enabled}});state.account.autosave=enabled;if(!enabled){epoch++;for(const req of active)req.destroy()}persist();return status()},
     async purge(code){const result=await request('/v1/space/purge',{method:'POST',data:{code,confirm:'清空并停用云空间'}});epoch++;for(const req of active)req.destroy();state.root=null;state.recoveryPending=null;state.account={...state.account,enabled:false,autosave:false,envelope:null,used:0};state.links={};state.statuses={};clearOutbox();persist();return {...result,...status()}},
     folder:(name,parent,kind='folder')=>createNode({name},kind,parent),
-    async update(id,changes){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('文件不存在');const meta={...node.meta,...changes};delete meta.parent;if(changes.name&&node.kind==='file'){const ext=path.extname(node.meta.filename||node.meta.name);meta.filename=path.extname(changes.name)?changes.name:changes.name+ext}const result=await request(`/v1/nodes/${id}`,{method:'PATCH',data:{parent:changes.parent===undefined?node.parent:changes.parent,meta:encodeMeta(id,meta)}});for(const link of Object.values(state.links))if(link.id===id){link.meta=meta;link.parent=result.parent}persist();return result},
+    async update(id,changes){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('文件不存在');const meta={...node.meta,...changes};delete meta.parent;if(changes.name&&node.kind==='file'){const ext=path.extname(node.meta.filename||node.meta.name);meta.filename=/^\.(?:sealmind|sealflow)$/i.test(ext)?changes.name.replace(/\.(?:sealmind|sealflow)$/i,'')+ext:path.extname(changes.name)?changes.name:changes.name+ext}const result=await request(`/v1/nodes/${id}`,{method:'PATCH',data:{parent:changes.parent===undefined?node.parent:changes.parent,meta:encodeMeta(id,meta)}});for(const link of Object.values(state.links))if(link.id===id){link.meta=meta;link.parent=result.parent}persist();return result},
     remove:(id,destroy=false)=>request(`/v1/nodes/${id}${destroy?'/destroy':''}`,{method:'DELETE'}),
     restore:id=>request(`/v1/nodes/${id}/restore`,{method:'POST'}),
     versions:id=>request(`/v1/nodes/${id}/versions`),
     removeVersion:id=>request(`/v1/versions/${id}`,{method:'DELETE'}),
-    async copy(id,parent){const node=(await list()).find(n=>n.id===id);if(!node||['folder','library'].includes(node.kind))throw new Error('请选择文件复制');const file=await download(id),ext=path.extname(file.name),filename=path.basename(file.name,ext)+' 副本'+ext;return save({linkId:randomUUID(),name:node.meta.name+' 副本',filename,data:file.data,kind:node.kind,parent:parent??node.parent,text:node.meta.text,cover:node.meta.cover,template:node.meta.template})},
-    async publish(id,kind,consent,category){if(consent!==true)throw new Error('请确认公开授权');const node=(await list()).find(n=>n.id===id),file=await download(id);return request('/v1/publications',{method:'POST',data:{nodeId:id,kind,consent:true,title:node.meta.name,name:file.name,data:file.data,text:node.meta.text||'',cover:node.meta.cover||'',category:category&&category!=='all'?category:node.meta.category||'',description:[node.meta.description,node.meta.license].filter(Boolean).join(' · ')}})}
+    async copy(id,parent){await rejectStaleRealtimeBinary(id);const node=(await list()).find(n=>n.id===id);if(!node||['folder','library'].includes(node.kind))throw new Error('请选择文件复制');const file=await download(id),ext=path.extname(file.name),filename=path.basename(file.name,ext)+' 副本'+ext;return save({linkId:randomUUID(),name:node.meta.name+' 副本',filename,data:file.data,kind:node.kind,parent:parent??node.parent,text:node.meta.text,cover:node.meta.cover,template:node.meta.template})},
+    async publish(id,kind,consent,category){if(consent!==true)throw new Error('请确认公开授权');await rejectStaleRealtimeBinary(id);const node=(await list()).find(n=>n.id===id),file=await download(id);return request('/v1/publications',{method:'POST',data:{nodeId:id,kind,consent:true,title:node.meta.name,name:file.name,data:file.data,text:node.meta.text||'',cover:node.meta.cover||'',category:category&&category!=='all'?category:node.meta.category||'',description:[node.meta.description,node.meta.license].filter(Boolean).join(' · ')}})}
   }
 }
 module.exports={createService,normalizeUrl,DEFAULT_URL}

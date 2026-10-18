@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "archiveTests": [
+    {
+      "log": ".tmp-v200-portable-archive.log",
+      "passed": true,
+      "files": 19572,
+      "folders": 1624,
+      "uncompressedBytes": 2128193259,
+      "observedWarning": "There are data after the end of archive"
+    },
+    {
+      "log": ".tmp-v200-installer-archive.log",
+      "passed": true,
+      "files": 19572,
+      "folders": 1624,
+      "uncompressedBytes": 2128193259,
+      "observedWarning": "There are data after the end of archive"
+    }
+  ],
+  "installationTestPerformed": false,
+  "limitation": "Archive checks and unpacked/portable runtime tests do not establish the NSIS install/uninstall flow."
+}

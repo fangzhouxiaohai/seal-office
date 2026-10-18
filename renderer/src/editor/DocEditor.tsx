@@ -1,10 +1,22 @@
 // 编辑器容器：装配文档标签栏、Ribbon、标尺、编辑区、查找面板与状态栏。
 // 全部编辑行为通过 commands.ts 的命令注册表派发，此文件只负责上下文实现与区域编排。
 import React, { useEffect, useRef, useState } from 'react'
-import { App as AntdApp } from 'antd'
+import { App as AntdApp, Button, Input } from 'antd'
+import { applyListStyle } from './listStyle'
+import { clipboardTextHtml, copyEditorSelection, readEditorClipboard } from './clipboard'
+import { insertDocumentNote } from './notes'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
-import { 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
+import { htmlToDocxModel, 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
+import { 桥接 } from '../ipc/bridge'
+import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
+import { splitWordModel, joinWordModel, validateWordModel, type CollaborativeWord } from './wordCollaboration'
+import { applyTrackedHtml, installTrackedEditing, nextRevision } from './trackedEditing'
+import { prepareTrackedFormatting } from './trackedFormatting'
+import RevisionPanel, { type RevisionView } from './RevisionPanel'
+import { wordPdfRoute, wordPdfHtml } from './wordPdf'
+import { 接受修订, 拒绝修订, 提取修订 } from './review'
+import './revisions.css'
 import { HistoryStack } from './history'
 import { countWords } from './wordCount'
 import { 下载文本, 导出为Html, 导出为文本, 生成文件名 } from './exportDoc'
@@ -38,6 +50,11 @@ import { use选区浮窗 } from '../components/SelectionFloatPanel'
 import SelectionFloatPanel from '../components/SelectionFloatPanel'
 import { 应用精确字号, 规范化字号标记, 读取字号磅值 } from './fontSize'
 import { 中文字号表 } from './fontOptions'
+import { useShortcuts } from '../shortcuts/useShortcuts'
+import { withShortcutLabels } from '../shortcuts/shortcutMenu'
+import { useMobileReading } from './useMobileReading'
+import MobileReadingToolbar from './MobileReadingToolbar'
+import WordReadingView from './WordReadingView'
 
 const 默认视图: ViewState = {
   缩放: 默认文件缩放,
@@ -64,7 +81,7 @@ const 新文字历史 = (读取页面: () => 文字页面设置 | undefined) => 
 )
 const 修改正文命令 = (标识: string) => /^(font\.|para\.|style\.|insert\.|layout\.|table\.|link\.|comment\.|track\.|merge\.)/.test(标识) || ['clipboard.cut', 'clipboard.paste', 'clipboard.formatPainter', 'edit.undo', 'edit.redo'].includes(标识)
 
-const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距', '页眉Html', '页脚Html'] as const
+const 布局字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向', '原始纸张', '原始页边距', '页眉Html', '页脚Html', '行号'] as const
 
 function 提取页面设置(视图: ViewState): 文字页面设置 {
   return Object.fromEntries(布局字段.map((字段) => [字段, 视图[字段]])) as unknown as 文字页面设置
@@ -118,6 +135,18 @@ const DocEditor = () => {
   const [文献列表, set文献列表] = useState<文献[]>([])
   const [内容版本, set内容版本] = useState(0)
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
+  const [页数, set页数] = useState(1)
+  const 原生Pdf缓存 = useRef<{ key: string; data: string } | null>(null)
+  const [修订面板, set修订面板] = useState(false), [修订作者, set修订作者] = useState('本机用户'), [修订视图, set修订视图] = useState<RevisionView>('markup'), [修订处理中, set修订处理中] = useState(false)
+
+  useEffect(() => {
+    const back = (event: Event) => {
+      const close = 网格打开 ? () => set网格打开(false) : 查找打开 ? () => set查找打开(false) : 导航打开 ? () => set导航打开(false) : null
+      if (close) { event.preventDefault(); close() }
+    }
+    window.addEventListener('seal-before-native-back', back)
+    return () => window.removeEventListener('seal-before-native-back', back)
+  }, [网格打开, 查找打开, 导航打开])
 
   // Ctrl+滚轮缩放页面内容，与状态栏的缩放按钮共用同一个视图状态
   use滚轮缩放(视图.缩放, (值) => set视图((当前) => ({ ...当前, 缩放: 值 })), 文字缩放范围)
@@ -188,6 +217,29 @@ const DocEditor = () => {
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+  const 阅读 = useMobileReading(文档标识, Boolean(当前文档?.来源路径))
+  const [全屏阅读,set全屏阅读] = useState(false)
+  const 全屏阅读状态=useRef(new Map<string,import('./WordReadingView').WordReadingState>())
+  useEffect(()=>{set全屏阅读(false)},[文档标识,阅读.移动端])
+  const 正在输入法 = useRef(false), 编辑基准 = useRef<CollaborativeWord | null>(null), 释放输入基准 = useRef<(() => void) | null>(null)
+  const 远端应用 = (model: CollaborativeWord) => {
+    if (正在输入法.current) return
+    const html = joinWordModel(model)
+    内部写入内容.current.set(文档标识, html)
+    编辑基准.current = model
+    if (编辑区引用.current && 编辑区引用.current.innerHTML !== html) 编辑区引用.current.innerHTML = html
+    updateEditorHtml(文档标识, html)
+    if (model.页面设置) {
+      页面设置引用.current = model.页面设置
+      页面视图引用.current = { ...页面视图引用.current, ...model.页面设置 }
+      set视图(页面视图引用.current); 更新文字页面设置(文档标识, model.页面设置)
+    }
+  }
+  const 协作 = useRealtimeDocument<CollaborativeWord>({ documentId: 当前文档?.id ?? null, type: 'word', model: splitWordModel(当前文档?.html ?? '', 当前文档?.页面设置), onRemote: 远端应用, readOnly: 视图.文档保护 || 阅读.阅读模式, validate: validateWordModel })
+  const 只读 = 视图.文档保护 || 阅读.阅读模式 || 协作.readOnly || 修订视图 === 'original'
+  const 只读引用 = useRef(只读)
+  只读引用.current = 只读
+  const 只读提示 = 协作.readOnly ? '当前共享权限为只读' : 修订视图 === 'original' ? '原始正文视图为只读，请切回全部标记后编辑' : 阅读.阅读模式 ? '当前为阅读模式，请先切换到编辑' : '文档已保护，请先解除保护'
   页面设置引用.current = 当前文档?.页面设置
   const 当前文档标识引用 = useRef(文档标识)
   当前文档标识引用.current = 文档标识
@@ -290,10 +342,28 @@ const DocEditor = () => {
   const 同步内容 = (): void => {
     const 元素 = 编辑区引用.current
     if (元素 !== null && 文档标识.length > 0) {
-      内部写入内容.current.set(文档标识, 元素.innerHTML)
-      updateEditorHtml(文档标识, 元素.innerHTML)
+      const next = splitWordModel(元素.innerHTML, 页面设置引用.current), base = 编辑基准.current ?? splitWordModel(当前文档?.html ?? '', 当前文档?.页面设置)
+      if (协作.active) {
+        void 协作.publish(next, base).catch(error => { 协作.reportError(error); message.error(error.message || '协作修改尚未安全保存') })
+        const merged = 协作.getSnapshot()
+        if (merged && joinWordModel(merged) !== 元素.innerHTML) 元素.innerHTML = joinWordModel(merged)
+        编辑基准.current = merged ?? next
+      } else 编辑基准.current = next
+      内部写入内容.current.set(文档标识, 元素.innerHTML); updateEditorHtml(文档标识, 元素.innerHTML)
     }
   }
+  const 修订输入配置 = useRef({ enabled: false, author: '', sync: () => {}, composition: (_active: boolean) => {} })
+  修订输入配置.current = { enabled: 视图.修订模式, author: 修订作者, sync: () => { 同步内容(); 刷新() }, composition: active => {
+    正在输入法.current = active
+    if (active) { const base = 编辑基准.current ?? splitWordModel(编辑区引用.current?.innerHTML ?? '', 页面设置引用.current); 编辑基准.current = base; 释放输入基准.current?.(); 释放输入基准.current = 协作.active ? 协作.retainBaseline(base) : null }
+    else queueMicrotask(() => { 释放输入基准.current?.(); 释放输入基准.current = null })
+  } }
+  useEffect(() => {
+    const root = 编辑区引用.current; if (!root) return
+    编辑基准.current = splitWordModel(root.innerHTML, 页面设置引用.current)
+    return installTrackedEditing(root, { enabled: () => 修订输入配置.current.enabled, readOnly: () => 只读引用.current, author: () => 修订输入配置.current.author, notice: text => message.warning(text), composition: active => 修订输入配置.current.composition(active), changed: () => { root.dispatchEvent(new Event('input', { bubbles: true })); 修订输入配置.current.sync() } })
+  }, [文档标识])
+  useEffect(() => { if (编辑区引用.current) 编辑区引用.current.dataset.sealRevisionView = 修订视图 }, [修订视图, 文档标识])
 
   useEffect(() => {
     查找位置.current = { 关键词: '', 区分大小写: false, html: '', 序号: -1 }
@@ -359,7 +429,7 @@ const DocEditor = () => {
   }, [文档标识, 内容版本])
 
   const 执行格式化 = (指令: string, 值?: string): void => {
-    if (视图.文档保护 && !['copy', 'selectAll'].includes(指令)) { message.info('文档已保护，请先解除保护'); return }
+    if (只读引用.current && !['copy', 'selectAll'].includes(指令)) { message.info(只读提示); return }
     const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
@@ -370,14 +440,44 @@ const DocEditor = () => {
     if (!恢复选区(元素, 选区快照.current)) {
       元素.focus({ preventScroll: true })
     }
+    if (['copy', 'cut', 'paste'].includes(指令)) {
+      const docId = 文档标识, range = 保存选区(元素), before = 元素.innerHTML
+      选区快照.current = null
+      void (async () => {
+        try {
+          if (指令 !== 'paste') {
+            if (!range || range.collapsed) return
+            await copyEditorSelection(元素)
+            if (指令 === 'copy') return
+          }
+          let html = 指令 === 'cut' ? '' : await readEditorClipboard()
+          if (html === null) {
+            html = await new Promise<string | null>(resolve => {
+              let text = ''
+              modal.confirm({ title: '粘贴内容', content: React.createElement(Input.TextArea, { autoFocus: true, rows: 5, placeholder: '长按输入框，使用系统粘贴', onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => { text = event.target.value } }), okText: '粘贴', cancelText: '取消', onOk: () => resolve(clipboardTextHtml(text)), onCancel: () => resolve(null) })
+            })
+          }
+          if (html === null || 当前文档标识引用.current !== docId || !元素.isConnected) return
+          if (元素.innerHTML !== before) throw new Error('文档内容已改变，请重新选择粘贴位置')
+          if (!恢复选区(元素, range)) throw new Error('原选区已改变，请重新选择粘贴位置')
+          选区快照.current = range
+          插入内容(html)
+        } catch (error) { message.error(error instanceof Error ? error.message : '剪贴板操作失败') }
+      })()
+      return
+    }
     记录历史()
+    if (视图.修订模式 && ['bold', 'italic', 'underline', 'strikeThrough', 'fontName', 'fontSizePt', 'foreColor', 'hiliteColor', 'backColor', 'subscript', 'superscript'].includes(指令)) {
+      const tracked = prepareTrackedFormatting(元素, 修订作者)
+      if (tracked.error) { message.warning(tracked.error); return }
+    }
     格式操作中.current = true
     try { if (指令 === 'fontSizePt') {
       const 磅值 = Number(值)
       if (Number.isFinite(磅值) && 磅值 > 0) 待输入字号.current = 应用精确字号(元素, 磅值) ? null : 磅值
     } else {
       document.execCommand('styleWithCSS', false, 'true')
-      document.execCommand(指令, false, 值)
+      if (!applyListStyle(元素, 指令, 值)) document.execCommand(指令, false, 值)
     } } finally { 格式操作中.current = false }
     // 快照已消费，避免后续命令误用过期选区
     选区快照.current = null
@@ -386,7 +486,7 @@ const DocEditor = () => {
   }
 
   const 插入内容 = (html: string): void => {
-    if (视图.文档保护) { message.info('文档已保护，请先解除保护'); return }
+    if (只读引用.current) { message.info(只读提示); return }
     const 元素 = 取格式编辑区()
     if (元素 === null) {
       return
@@ -394,10 +494,27 @@ const DocEditor = () => {
     记录历史()
     if (!恢复选区(元素, 选区快照.current)) 元素.focus({ preventScroll: true })
     选区快照.current = null
-    // 修订模式下把插入内容标记为修订，便于后续接受或拒绝
-    const 实际内容 = 视图.修订模式 ? `<span class="wps-insert">${html}</span>` : html
+    if (视图.修订模式) {
+      const result = applyTrackedHtml(元素, html, nextRevision(元素, 修订作者))
+      if (result.error) message.warning(result.error)
+      if (result.changed) { 同步格式区域(元素); 记录历史() }
+      return
+    }
+    const 实际内容 = html
     格式操作中.current = true
-    try { document.execCommand('insertHTML', false, 实际内容) } finally { 格式操作中.current = false }
+    try {
+      if (!document.execCommand('insertHTML', false, 实际内容)) {
+        const range = 保存选区(元素) ?? document.createRange()
+        if (!元素.contains(range.startContainer)) { range.selectNodeContents(元素); range.collapse(false) }
+        range.deleteContents()
+        const fragment = range.createContextualFragment(实际内容), last = fragment.lastChild
+        range.insertNode(fragment)
+        if (last) range.setStartAfter(last)
+        range.collapse(true)
+        const selection = window.getSelection()
+        selection?.removeAllRanges(); selection?.addRange(range)
+      }
+    } finally { 格式操作中.current = false }
     同步格式区域(元素)
     记录历史()
   }
@@ -526,11 +643,22 @@ const DocEditor = () => {
         提示不可用插入项('书签')
         break
       case '脚注':
-        提示不可用插入项('脚注')
+      case '尾注': {
+        const root = 编辑区引用.current, docId = 文档标识
+        if (!root) break
+        const range = 选区快照.current ?? 保存选区(root), before = root.innerHTML
+        let text = ''
+        modal.confirm({ title: `插入${类型}`, content: React.createElement(Input.TextArea, { autoFocus: true, rows: 4, placeholder: `${类型}内容`, onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => { text = event.target.value } }), okText: '插入', cancelText: '取消', onOk: () => {
+          if (!text.trim()) { message.warning('请输入注释内容'); return Promise.reject(new Error('请输入注释内容')) }
+          if (当前文档标识引用.current !== docId || !root.isConnected || root.innerHTML !== before) { message.error('文档已改变，请重新插入注释'); return }
+          记录历史()
+          try { insertDocumentNote(root, 类型 === '脚注' ? 'footnote' : 'endnote', text, range) }
+          catch (error) { message.error(error instanceof Error ? error.message : '注释插入失败'); return Promise.reject(error) }
+          选区快照.current = null
+          同步内容(); 记录历史()
+        } })
         break
-      case '尾注':
-        提示不可用插入项('尾注')
-        break
+      }
       default:
         提示不可用插入项(类型)
         break
@@ -743,6 +871,7 @@ const DocEditor = () => {
       同步内容()
       return 内容
     },
+    生成原生Pdf: () => 生成原生Pdf(),
     下载: (内容: string, 文件名: string, 类型: string) => 下载文本(内容, 文件名, 类型),
     打开查找: () => set查找打开(true),
     导出,
@@ -811,14 +940,64 @@ const DocEditor = () => {
     文献列表,
   }
 
+  const 处理修订 = async (action: 'accept' | 'reject', id?: string, part?: string) => {
+    if (只读引用.current || 修订处理中) return
+    const root = 编辑区引用.current; if (!root) return
+    const entries = 提取修订(root.innerHTML), selected = entries.filter(entry => (!id || entry.标识 === id) && (!part || entry.部件 === part)), groups = new Set(selected.filter(entry => entry.组).map(entry => `${entry.部件}:${entry.组}`))
+    const targets = entries.filter(entry => selected.includes(entry) || entry.组 && groups.has(`${entry.部件}:${entry.组}`))
+    if (!targets.length) { message.info('没有需要处理的修订'); return }
+    const before = root.innerHTML, docId = 文档标识; 记录历史(); set修订处理中(true)
+    try {
+      let html: string, page = 页面设置引用.current
+      if (root.querySelector('[data-seal-docx-package],[data-seal-format-change],[data-seal-paragraph-revision],[data-seal-revision-type]')) {
+        const model = htmlToDocxModel(before, page)
+        model.修订动作 = targets.map(entry => ({ 标识: entry.标识, 操作: action, 部件: entry.部件 }))
+        const written = await 桥接.office.writeDocx(model)
+        if (!written.成功 || !written.数据) throw new Error(written.错误 || '修订处理失败，原文保留')
+        const read = await 桥接.office.readDocx(written.数据)
+        if (!read.成功 || typeof read.html !== 'string') throw new Error(read.错误 || '审阅后文档无法重开，原文保留')
+        html = read.html; page = read.页面设置 ?? page
+      } else html = (action === 'accept' ? 接受修订 : 拒绝修订)(before, id).文本
+      if (当前文档标识引用.current !== docId || root.innerHTML !== before) throw new Error('处理期间正文已变化，请重新审阅；原文保留')
+      root.innerHTML = html
+      if (page) { 页面设置引用.current = page; 更新文字页面设置(docId, page); set视图(value => ({ ...value, ...page })) }
+      同步内容(); 记录历史(); 刷新()
+    } catch (error) { message.error(error instanceof Error ? error.message : '修订处理失败，原文保留') }
+    finally { set修订处理中(false) }
+  }
+  const 生成原生Pdf = async () => {
+    const root = 编辑区引用.current; if (!root) throw new Error('正文尚未就绪')
+    const docId = 文档标识
+      同步内容()
+      if (协作.active && 协作.connected) await 协作.flush()
+      else if (协作.active) message.info('当前离线；预览使用本机草稿，协作修改仍待同步')
+      const html = 准备图片保存内容(root), model = htmlToDocxModel(html, 页面设置引用.current), route = wordPdfRoute(html, model), key = JSON.stringify({ model, html, route })
+      if (原生Pdf缓存.current?.key === key) return 原生Pdf缓存.current.data
+      const result = route === 'native'
+        ? await 桥接.office.writeCompatible('word', 'pdf', model)
+        : await 桥接.printPreview(wordPdfHtml(html, model, 当前文档?.name ?? '未命名文档'), 'html')
+      if (!result.成功 || !result.数据) throw new Error(result.错误 || '完整文档 PDF 预览生成失败')
+      if (当前文档标识引用.current !== docId) throw new Error('文档已切换，请重新生成预览')
+      原生Pdf缓存.current = { key, data: result.数据 }
+      return result.数据 as string
+  }
+  const 原生打印 = async () => {
+    const close = message.loading('正在按完整文档生成 PDF 预览…', 0)
+    try {
+      const data = await 生成原生Pdf()
+      set打印预览({ 内容: data, 标题: 当前文档?.name ?? '未命名文档' })
+    } catch (error) { message.error(error instanceof Error ? error.message : '打印预览生成失败') }
+    finally { close() }
+  }
   const 执行命令 = (命令标识: string, 参数?: string): void => {
-    if (视图.文档保护 && 修改正文命令(命令标识)) { message.info('文档已保护，请先解除保护'); return }
+    if (只读引用.current && 修改正文命令(命令标识)) { message.info(只读提示); return }
     if (输入计时器.current !== null) 记录历史()
+    if (协作.active && ['edit.undo', 'edit.redo'].includes(命令标识)) { if (!(命令标识 === 'edit.undo' ? 协作.undo() : 协作.redo())) message.info('没有可撤销的本机协作操作'); return }
+    if (命令标识 === 'track.accept' || 命令标识 === 'track.reject') { void 处理修订(命令标识 === 'track.accept' ? 'accept' : 'reject'); return }
     if (命令标识 === 'file.print') {
       const 正文 = 编辑区引用.current?.innerHTML
       if (!正文) { message.warning('文档为空，无法打印'); return }
-      const 名称 = 当前文档?.name ?? '未命名文档'
-      set打印预览({ 内容: 导出为Html(名称, 正文, 视图.页眉Html, 视图.页脚Html, 视图.水印), 标题: 名称 })
+      void 原生打印()
       return
     }
     const 命令 = 命令表[命令标识]
@@ -827,116 +1006,52 @@ const DocEditor = () => {
       return
     }
     if (!['edit.undo', 'edit.redo'].includes(命令标识)) 记录历史()
-    if (命令标识 === 'file.save' || 命令标识 === 'file.saveAs') 同步内容()
+    if (命令标识 === 'file.save' || 命令标识 === 'file.saveAs') {
+      同步内容()
+      if (协作.active) {
+        void (async () => { if (协作.connected) await 协作.flush(); else message.info('已保留本机修改；离线保存副本不会表示云端已同步'); 命令.run(上下文, 参数) })().catch(error => message.error(error.message))
+        return
+      }
+    }
     命令.run(上下文, 参数)
     if (!['edit.undo', 'edit.redo'].includes(命令标识)) { 记录历史(); 同步内容() }
   }
 
-  // 键盘快捷键层：补齐文字编辑快捷键（右键菜单与帮助手册中均已标注）。
-  // 处理器经引用间接调用，确保监听器只挂载一次的同时始终使用最新闭包状态。
-  const 快捷键处理引用 = useRef<(事件: KeyboardEvent) => void>(() => {})
-  快捷键处理引用.current = (事件: KeyboardEvent) => {
-    if (事件.key === 'F3') {
-      事件.preventDefault(); set查找打开(true)
+  // 自定义键位与默认键位都走同一命令链路，继续遵守文档保护与撤销历史。
+  useShortcuts('word', (标识, 参数) => {
+    if (标识 === 'view.reading') {
+      if (!阅读.移动端) return false
+      切换阅读模式(!阅读.阅读模式)
+      return
+    }
+    if (标识 === 'edit.findNext' || 标识 === 'edit.findPrevious') {
+      set查找打开(true)
       const 查询 = 查找位置.current
-      if (查询.关键词) 执行查找(查询.关键词, 查询.区分大小写, 事件.shiftKey ? -1 : 1)
+      if (查询.关键词) 执行查找(查询.关键词, 查询.区分大小写, 标识 === 'edit.findPrevious' ? -1 : 1)
       return
     }
-    if (!(事件.ctrlKey || 事件.metaKey)) {
+    if (标识 === 'view.documentStart' || 标识 === 'view.documentEnd') {
+      const 元素 = 编辑区引用.current
+      if (!元素) return false
+      const candidates = Array.from(元素.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6,li,td,th')).filter(node => !node.closest('[hidden],[aria-hidden="true"],[data-seal-docx-package]'))
+      const 目标 = 标识 === 'view.documentStart' ? candidates[0] : candidates[candidates.length - 1]
+      const 范围 = document.createRange()
+      范围.selectNodeContents(目标 ?? 元素)
+      范围.collapse(标识 === 'view.documentStart')
+      const 选区 = window.getSelection()
+      选区?.removeAllRanges()
+      选区?.addRange(范围)
+      ;(目标 ?? 元素).scrollIntoView({ block: 标识 === 'view.documentStart' ? 'start' : 'end' })
       return
     }
-    const 目标 = 事件.target as HTMLElement | null
-    const 在输入框 = 目标 !== null && (目标.tagName === 'INPUT' || 目标.tagName === 'TEXTAREA')
-    const 小写键 = 事件.key.toLowerCase()
-    // 查找面板等输入框内只放行保存，格式类快捷键不作用于输入文字
-    if (在输入框 && 小写键 !== 's' && 小写键 !== 'p') {
-      return
-    }
-    switch (小写键) {
-      case 'p':
-        事件.preventDefault()
-        执行命令('file.print')
-        break
-      case 'b':
-        事件.preventDefault()
-        执行命令('font.bold')
-        break
-      case 'i':
-        事件.preventDefault()
-        执行命令('font.italic')
-        break
-      case 'u':
-        事件.preventDefault()
-        执行命令('font.underline')
-        break
-      case 'z':
-        事件.preventDefault()
-        执行命令('edit.undo')
-        break
-      case 'y':
-        事件.preventDefault()
-        执行命令('edit.redo')
-        break
-      case 'a':
-        事件.preventDefault()
-        执行命令('edit.selectAll')
-        break
-      case 'f':
-      case 'h':
-        事件.preventDefault()
-        set查找打开(true)
-        break
-      case 'e':
-        事件.preventDefault()
-        执行命令('para.alignCenter')
-        break
-      case 'l':
-        事件.preventDefault()
-        执行命令('para.alignLeft')
-        break
-      case 'r':
-        事件.preventDefault()
-        执行命令('para.alignRight')
-        break
-      case 'j':
-        事件.preventDefault()
-        执行命令('para.alignJustify')
-        break
-      case 's':
-        事件.preventDefault()
-        执行命令('file.save')
-        break
-      default:
-        if (事件.key === 'Enter' && !在输入框) {
-          // Ctrl+Enter 插入分页符
-          事件.preventDefault()
-          执行命令('layout.break')
-        } else if (事件.key === 'Home' && !在输入框) {
-          事件.preventDefault()
-          编辑区引用.current?.scrollIntoView({ block: 'start' })
-        } else if (事件.key === 'End' && !在输入框) {
-          事件.preventDefault()
-          const 元素 = 编辑区引用.current
-          if (元素 !== null) {
-            const 末段 = 元素.lastElementChild
-            if (末段 !== null) 末段.scrollIntoView({ block: 'end' })
-            else 元素.scrollIntoView({ block: 'end' })
-          }
-        }
-    }
-  }
-  useEffect(() => {
-    const 监听 = (事件: KeyboardEvent) => 快捷键处理引用.current(事件)
-    document.addEventListener('keydown', 监听)
-    return () => document.removeEventListener('keydown', 监听)
-  }, [])
+    执行命令(标识, 参数)
+  })
 
   const 文本内容 = (() => {
     void 内容版本
     return 编辑区引用.current?.textContent ?? ''
   })()
   const 统计 = countWords(文本内容)
-  const 页数 = Math.max(1, Math.ceil(统计.词数 / 500))
 
   // 选区浮窗：选中正文后浮出格式与 AI 快捷动作，不抢焦点、滚动即收起
   const 取选区文本 = (): string => {
@@ -965,27 +1080,51 @@ const DocEditor = () => {
         下划线: 安全查询格式('underline'),
         删除线: 安全查询格式('strikeThrough'),
       }),
-    }).map(项 => ({ ...项, 禁用: 视图.文档保护 && 修改正文命令(项.id) })),
+    }).map(项 => ({ ...项, 禁用: 只读 && 修改正文命令(项.id) })),
   })
+
+  const 切换阅读模式 = (开启: boolean) => {
+    if (!阅读.移动端) return
+    if (输入计时器.current !== null) 记录历史()
+    // 收起软键盘和修改浮层，保留正文节点、选区、页面布局及撤销栈。
+    if (开启 && document.activeElement instanceof HTMLElement && 编辑区引用.current?.closest('.wps-editor-canvas__paper')?.contains(document.activeElement)) document.activeElement.blur()
+    set菜单可见(false)
+    set网格打开(false)
+    选区浮窗.关闭()
+    阅读.设置阅读(开启)
+  }
 
   return React.createElement(
     React.Fragment,
     null,
-    React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
-    React.createElement(RibbonPanel, {
+    阅读.移动端 && 文档标识 ? React.createElement(MobileReadingToolbar, {
+      阅读: 阅读.阅读模式,
+      字号: 阅读.字号,
+      设置阅读: 切换阅读模式,
+      设置字号: 阅读.设置字号,
+      全屏: () => set全屏阅读(true),
+      查找: () => set查找打开(当前 => !当前),
+      目录: () => set导航打开(当前 => !当前),
+    }) : null,
+    !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
+    React.createElement(Button, { className: 'seal-revision-toggle', onClick: () => set修订面板(value => !value), 'aria-expanded': 修订面板 }, 修订面板 ? '收起修订历史' : '查看修订历史'),
+    修订面板 && React.createElement(RevisionPanel, { html: 当前文档?.html ?? '', author: 修订作者, setAuthor: set修订作者, view: 修订视图, setView: set修订视图, busy: 修订处理中, readOnly: 只读, resolve: (action, id, part) => void 处理修订(action, id, part) }),
+    !阅读.阅读模式 && React.createElement(RibbonPanel, {
       activeKey: 当前标签,
       缩放: 视图.缩放,
       onCommand: 执行命令,
-      获取禁用态: (标识: string) => 视图.文档保护 && 修改正文命令(标识),
-      获取禁用原因: (标识: string) => 视图.文档保护 && 修改正文命令(标识) ? '文档已保护，请先解除保护' : undefined,
+      获取禁用态: (标识: string) => 只读 && 修改正文命令(标识),
+      获取禁用原因: (标识: string) => 只读 && 修改正文命令(标识) ? 只读提示 : undefined,
       获取当前值: (标识: string) => 标识 === 'font.name' ? 选区显示格式.字体 : 标识 === 'font.size' ? 选区显示格式.字号 : undefined,
       // 浮层打开瞬间抓取选区，此时尚未被浮层折叠
-      onDropdownOpen: () => {
+      onDropdownOpen: (beforeFocus?: boolean) => {
         选区浮窗.关闭()
         const 元素 = 取格式编辑区()
-        选区快照.current = 元素 === null ? null : 保存选区(元素)
+        const current = 元素 === null ? null : 保存选区(元素)
+        if (current && (beforeFocus || !current.collapsed || !选区快照.current)) 选区快照.current = current
       },
       获取激活态: (命令标识: string) => {
+        if (命令标识 === 'layout.lineNumbers') return !!视图.行号
         if (命令标识 === 'font.bold') return 选区显示格式.加粗
         if (命令标识 === 'font.italic') return 选区显示格式.斜体
         if (命令标识 === 'font.underline') return 选区显示格式.下划线
@@ -1017,6 +1156,7 @@ const DocEditor = () => {
     查找打开
       ? React.createElement(FindReplacePanel, {
           open: 查找打开,
+          readOnly: 阅读.阅读模式,
           onClose: () => set查找打开(false),
           onQueryChange: () => { 查找位置.current.序号 = -1; 清除搜索高亮() },
           getRoot: () => 编辑区引用.current,
@@ -1030,7 +1170,7 @@ const DocEditor = () => {
             if (元素 === null) {
               return 0
             }
-            if (视图.文档保护) { message.info('文档已保护，不能替换'); return 0 }
+            if (只读引用.current) { message.info(只读提示); return 0 }
             const 命中 = 查找文字(元素, 关键词, 区分大小写)
             const 旧 = 查找位置.current
             const 序号 = 旧.关键词 === 关键词 && 旧.区分大小写 === 区分大小写 && 旧.html === 元素.innerHTML && 旧.序号 >= 0 ? 旧.序号 : 0
@@ -1050,7 +1190,7 @@ const DocEditor = () => {
             if (元素 === null) {
               return 0
             }
-            if (视图.文档保护) { message.info('文档已保护，不能替换'); return 0 }
+            if (只读引用.current) { message.info(只读提示); return 0 }
             const 命中 = 查找文字(元素, 关键词, 区分大小写)
             const 计数 = 命中.length
             if (计数 > 0) {
@@ -1107,6 +1247,7 @@ const DocEditor = () => {
         message.info(`共比对 ${差异.length} 段，其中新增 ${统计.新增} 处、删除 ${统计.删除} 处`)
       },
       onMerge: (另一版本: string) => {
+        if (只读引用.current) { message.info(只读提示); return }
         const 元素 = 编辑区引用.current
         if (元素 === null) {
           return
@@ -1134,10 +1275,10 @@ const DocEditor = () => {
       onClose: () => set邮件合并面板打开(false),
       onGenerate: (html: string) => createDoc('word', html, { 名称: '邮件合并结果.docx' }),
     }),
-    视图.标尺 ? React.createElement(Ruler, null) : null,
+    视图.标尺 && !阅读.阅读模式 ? React.createElement(Ruler, null) : null,
     React.createElement(
       'div',
-      { className: 'wps-editor-workspace' },
+      { className: `wps-editor-workspace${阅读.阅读模式 ? ' wps-editor-workspace--reading' : ''}`, style: 阅读.阅读模式 ? { '--seal-reading-font-size': `${阅读.字号 / 16}rem` } as React.CSSProperties : undefined },
       导航打开
         ? React.createElement(NavigationPane, {
             标题: 提取大纲(当前文档?.html ?? ''),
@@ -1154,9 +1295,11 @@ const DocEditor = () => {
         { className: 'wps-editor-stage' },
         React.createElement(EditorCanvas, {
         html: 当前文档?.html ?? '<p><br></p>',
-        editable: !视图.文档保护,
+        onPagination: set页数,
+        editable: !只读,
         showParagraphMark: 视图.段落标记,
         gridlines: 视图.网格线,
+        lineNumbers: 视图.行号,
         vertical: 视图.文字方向 === '竖排',
         showComments: 视图.显示批注,
         scale: 视图.缩放,
@@ -1172,6 +1315,7 @@ const DocEditor = () => {
         headerHtml: 视图.页眉Html,
         footerHtml: 视图.页脚Html,
         onHeaderChange: (html: string) => {
+          if (只读引用.current) return
           if (格式操作中.current) return
           记录历史()
           const 下一个 = { ...视图, 页眉Html: html || undefined }
@@ -1179,9 +1323,11 @@ const DocEditor = () => {
           页面设置引用.current = 提取页面设置(下一个)
           set视图(下一个)
           if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+          同步内容()
           记录历史()
         },
         onFooterChange: (html: string) => {
+          if (只读引用.current) return
           if (格式操作中.current) return
           记录历史()
           const 下一个 = { ...视图, 页脚Html: html || undefined }
@@ -1189,6 +1335,7 @@ const DocEditor = () => {
           页面设置引用.current = 提取页面设置(下一个)
           set视图(下一个)
           if (文档标识) 更新文字页面设置(文档标识, 提取页面设置(下一个))
+          同步内容()
           记录历史()
         },
         onReady: (元素: HTMLDivElement) => {
@@ -1197,6 +1344,9 @@ const DocEditor = () => {
           if (文档标识) 内部写入内容.current.set(文档标识, 元素.innerHTML)
         },
         onChange: (html: string) => {
+          if (只读引用.current || 正在输入法.current) return
+          同步内容()
+          html = 编辑区引用.current?.innerHTML ?? html
           if (文档标识.length > 0) {
             内部写入内容.current.set(文档标识, html)
             updateEditorHtml(文档标识, html)
@@ -1212,9 +1362,11 @@ const DocEditor = () => {
           set内容版本((值) => 值 + 1)
         },
         onBeforeChange: (元素: HTMLDivElement) => {
+          if (只读引用.current) return
           if (待输入字号.current !== null) 规范化字号标记(元素, 待输入字号.current)
         },
         onContextMenu: (x: number, y: number) => {
+          if (阅读.阅读模式) return
           // 记录选区与选中文本：菜单点击会改变焦点，命令需要据此恢复选区
           const 元素 = 编辑区引用.current
           选区快照.current = 元素 ? 保存选区(元素) : null
@@ -1225,10 +1377,11 @@ const DocEditor = () => {
         })
       )
     ),
+    全屏阅读 ? React.createElement(WordReadingView, { key: 文档标识, html: 编辑区引用.current?.innerHTML ?? 当前文档?.html ?? '', title: 当前文档?.name ?? '文档阅读', fontSize: 阅读.字号, revisionView:修订视图, initialState:全屏阅读状态.current.get(文档标识), onStateChange: state=>{全屏阅读状态.current.set(文档标识,state)}, onClose: () => set全屏阅读(false) }) : null,
     React.createElement(ImageTools, {
       编辑区: 编辑区引用,
       文档标识,
-      只读: 视图.文档保护,
+      只读,
       开始修改: () => {
         if (输入计时器.current !== null) { window.clearTimeout(输入计时器.current); 输入计时器.current = null }
         记录历史()
@@ -1239,7 +1392,7 @@ const DocEditor = () => {
       open: 菜单可见,
       x: 菜单坐标.x,
       y: 菜单坐标.y,
-      items: 构建文字菜单(),
+      items: withShortcutLabels(构建文字菜单(), 'word'),
       onCommand: (命令标识: string, 参数?: string) => {
         if (命令标识 === '__close__') {
           关闭菜单()
@@ -1255,7 +1408,7 @@ const DocEditor = () => {
       },
     }),
     React.createElement(SelectionFloatPanel, {
-      打开: !菜单可见 && 选区浮窗.打开,
+      打开: !阅读.阅读模式 && !菜单可见 && 选区浮窗.打开,
       位置: 选区浮窗.位置,
       按钮: 选区浮窗.按钮,
       on关闭: 选区浮窗.关闭,
@@ -1269,7 +1422,7 @@ const DocEditor = () => {
       视图模式: 视图.视图模式,
       on缩放变化: (值: number) => set视图((当前) => ({ ...当前, 缩放: 值 })),
     }),
-    打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'html', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
+    打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'pdf', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
   )
 }
 

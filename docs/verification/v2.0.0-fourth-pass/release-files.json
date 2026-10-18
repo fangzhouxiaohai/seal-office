@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T15:44:54.274Z",
+  "artifacts": [
+    {
+      "name": "seal-office-setup-2.0.0.exe",
+      "path": "release/v2.0.0/seal-office-setup-2.0.0.exe",
+      "bytes": 399084965,
+      "sha256": "b2a2f81fcb01ce05e3c7a97d3e93945e590259d349efd2afdcc6790b1c19b589"
+    },
+    {
+      "name": "seal-office-2.0.0-portable.exe",
+      "path": "release/v2.0.0/seal-office-2.0.0-portable.exe",
+      "bytes": 398859502,
+      "sha256": "8244175376468e6912b216917155bd2434e6ec5980f2a165b4ed27c963e707ac"
+    },
+    {
+      "name": "seal-office-2.0.0-amd64.deb",
+      "path": "release/v2.0.0/seal-office-2.0.0-amd64.deb",
+      "bytes": 125920840,
+      "sha256": "c941bde772f619bc25e4048478160dea208ec804f4d2bfbad968c42eaeb4844f"
+    },
+    {
+      "name": "seal-office-2.0.0-web.zip",
+      "path": "release/web-2.0.0-fourth-pass/seal-office-2.0.0-web.zip",
+      "bytes": 56211984,
+      "sha256": "e6f08324e2d554c3375e530a78362e876733768b888ded8f5181e95b586614e6"
+    }
+  ]
+}

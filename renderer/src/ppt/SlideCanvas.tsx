@@ -17,6 +17,7 @@ interface Props {
   on图片输入?: (文件: File[]) => void; on适应缩放?: (比例: number) => void
   on选中框: (标识: string | null) => void; on双击框: (标识: string) => void
   on编辑值变化: (值: string) => void; on提交编辑: () => void
+  on组合开始?: () => void; on组合结束?: (值: string) => void
   on拖动框: (标识: string, x: number, y: number) => void
   on文本选择: (标识: string, 起始: number, 结束: number) => void
   onContextMenu?: (x: number, y: number) => void
@@ -133,7 +134,7 @@ export default function SlideCanvas(属性: Props) {
       <div className={`wps-ppt-canvas${属性.显示网格线 ? ' wps-ppt-canvas--gridlines' : ''}`} style={{ width: 尺寸.宽, height: 尺寸.高, ...背景样式(属性.背景, 图片地址, 页.背景色), transform: `scale(${缩放})`, transformOrigin: 'top left' }} onClick={() => { 属性.on选中框(null); 属性.on选中对象?.([]) }} onContextMenu={事件 => { 事件.preventDefault(); 属性.onContextMenu?.(事件.clientX, 事件.clientY) }}>{/* 页脚图层与正文共用同一渲染规则 */}
         <页脚图层 页脚={属性.页脚} 页序号={属性.页序号} 尺寸={尺寸} />
         {页.文本框列表.map(框 => <div key={框.id} data-框标识={框.id} className={`wps-ppt-box${框.id === 属性.选中框标识 ? ' wps-ppt-box--selected' : ''}`} style={{ ...文本样式(框), ...预览[框.id] }} onClick={事件 => 事件.stopPropagation()} onMouseDown={事件 => 开始(事件, { ...框, 类型: '图形' })} onTouchStart={事件 => 开始触摸(事件, { ...框, 类型: '图形' })} onDoubleClick={事件 => { 事件.stopPropagation(); if (!只读) 属性.on双击框(框.id) }}>
-          {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onTouchStart={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
+          {框.id === 属性.编辑框标识 && !只读 ? <textarea className="wps-ppt-box__editor" data-seal-shortcut-editor="ppt" value={属性.编辑值} autoFocus style={{ textAlign: 框.对齐 }} onMouseDown={事件 => 事件.stopPropagation()} onTouchStart={事件 => 事件.stopPropagation()} onSelect={事件 => 属性.on文本选择(框.id, 事件.currentTarget.selectionStart, 事件.currentTarget.selectionEnd)} onChange={事件 => 属性.on编辑值变化(事件.target.value)} onCompositionStart={() => 属性.on组合开始?.()} onCompositionEnd={事件 => 属性.on组合结束?.(事件.currentTarget.value)} onBlur={属性.on提交编辑} /> : <文本内容 框={框} />}
         </div>)}
         {绘制列表.map(对象 => {
           if (!['图片','组合','图形','表格','图表'].includes(对象.类型)) return null

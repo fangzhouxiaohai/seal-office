@@ -1,0 +1,337 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T12:52:13.713Z",
+  "scope": "third-pass frozen implementation, complete regressions, rebuilt artifacts and synchronized public Web",
+  "fullWpsParityAchieved": false,
+  "renderer": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 253,
+    "tests": 2477,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-third-renderer.json",
+      "bytes": 1005552,
+      "sha256": "6938fa7e8912d82b8ac4f06070bd088f16987b72717f98886882d7f52715f3ae"
+    }
+  },
+  "main": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 107,
+    "tests": 1032,
+    "skipped": 0,
+    "source": {
+      "path": ".upgrade-private/v200-third-main.json",
+      "bytes": 442974,
+      "sha256": "01a31474fac7e598236f35de5cc4b827358b53983fd61e10180b83afa06ca7da"
+    }
+  },
+  "units": {
+    "server": {
+      "passed": true,
+      "tests": 30,
+      "log": {
+        "path": ".tmp-v200-third-server.log",
+        "bytes": 3400,
+        "sha256": "b3a808da7c7ed0401e58ab5ad22cf4df9c0e4f9b21e5951baa97cc76f637828e"
+      }
+    },
+    "mobile": {
+      "passed": true,
+      "tests": 21,
+      "log": {
+        "path": ".tmp-v200-third-mobile-unit.log",
+        "bytes": 2473,
+        "sha256": "f7c8eaad0a2003920b7642c42b2ce26c5b78fc09ebb8073fc39e4ec8585f9a0c"
+      }
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 2,
+      "log": {
+        "path": ".tmp-v200-third-packaging.log",
+        "bytes": 354,
+        "sha256": "d41c8937c7c2e084a7a7f69147b2014fb55eba412dd5eb13680dcd8caf794d2e"
+      }
+    }
+  },
+  "typecheck": {
+    "passed": true,
+    "rootAndMobile": true
+  },
+  "deploymentScriptTests": {
+    "passed": true,
+    "tests": 3
+  },
+  "sourceFreeze": {
+    "capturedAt": "2026-10-18T11:50:53.219Z",
+    "files": 1395,
+    "allSha256Verified": true,
+    "qaHarnessAmendments": [
+      {
+        "path": "mobile/tests/browser-smoke.cjs",
+        "previousSha256": "6ccf7fe2070813ac37fca889bd9dfe233c0093e9d524b639a59428c9ad15fbaf",
+        "sha256": "4c33ef377a45bbcc4ef9f6fa8a59b4522f57127ec696b32034b8cd7d0f535c9e",
+        "recordedAt": "2026-10-18T12:15:43.393Z",
+        "reason": "Hidden standard Electron window can lose capture surface after reload. Focus and retry actual nonempty screenshots; trigger one-pixel height invalidation before restoring exact viewport. Native-touch assertions, product source and watchdog unchanged.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false
+      },
+      {
+        "path": "mobile/tests/browser-smoke.cjs",
+        "previousSha256": "4c33ef377a45bbcc4ef9f6fa8a59b4522f57127ec696b32034b8cd7d0f535c9e",
+        "sha256": "445df286a9046097e9929ede6bb8382250e2efc5f81a3eb9bbeac34236c7fbf4",
+        "recordedAt": "2026-10-18T12:19:43.880Z",
+        "reason": "The added Word/PDF reading helper ends on PDF. The next image helper requires editable Word. Explicitly create a Word document using the actual mobile UI and assert contenteditable before image actions. Product code, watchdog and all existing assertions unchanged.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false
+      },
+      {
+        "path": "mobile/tests/browser-smoke.cjs",
+        "previousSha256": "445df286a9046097e9929ede6bb8382250e2efc5f81a3eb9bbeac34236c7fbf4",
+        "sha256": "f559f10dfa491cdd48c028f0d3aa1659dbdd722325ed9c45ac97084ce2329f72",
+        "recordedAt": "2026-10-18T12:23:28.562Z",
+        "reason": "Partition the enlarged real-production browser suite into fresh core/reading/editor/workspace/diagram processes. All feature helpers and assertions are executed sequentially against one SHA-verified bundle; every process retains the original 120000ms watchdog. This changes only test orchestration and host profiles.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false,
+        "perProcessWatchdogMs": 120000,
+        "perProcessWatchdogChanged": false,
+        "groups": [
+          "core",
+          "reading",
+          "editor",
+          "workspace",
+          "diagram"
+        ],
+        "previousSingleProcessBudgetMs": 120000,
+        "maximumCombinedProcessBudgetsMs": 600000,
+        "overallSuiteBudgetExpanded": true,
+        "note": "All operations are retained, in five independent fixture processes. Total maximum suite duration increases with the five groups; no individual process receives a longer watchdog."
+      },
+      {
+        "path": "mobile/scripts/browser-check.mjs",
+        "previousSha256": "ecffaed3a731e83b7c45a69e9efc11fb91c7b3fd9725f5c32487171fb8931e2b",
+        "sha256": "aa369bef4eb1f202d9150e8fcb354372043fe4949ce611123fb0dc29a0aa806a",
+        "recordedAt": "2026-10-18T12:23:28.562Z",
+        "reason": "Partition the enlarged real-production browser suite into fresh core/reading/editor/workspace/diagram processes. All feature helpers and assertions are executed sequentially against one SHA-verified bundle; every process retains the original 120000ms watchdog. This changes only test orchestration and host profiles.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": true,
+        "perProcessWatchdogMs": 120000,
+        "perProcessWatchdogChanged": false,
+        "groups": [
+          "core",
+          "reading",
+          "editor",
+          "workspace",
+          "diagram"
+        ],
+        "previousSingleProcessBudgetMs": 120000,
+        "maximumCombinedProcessBudgetsMs": 600000,
+        "overallSuiteBudgetExpanded": true,
+        "note": "All operations are retained, in five independent fixture processes. Total maximum suite duration increases with the five groups; no individual process receives a longer watchdog."
+      },
+      {
+        "path": "mobile/tests/spill-browser-actions.cjs",
+        "previousSha256": "38841fc72d849ae122903a3ef341fa4e414a5f59834af8bd99c51b09f2b73c4e",
+        "sha256": "13e0876137b5134cecf2552ab0965394f7ce11d0b02694dc711a29ec8dd43183",
+        "recordedAt": "2026-10-18T12:23:28.562Z",
+        "reason": "Match the current precise anchor/source warning, including prohibition on editing a derived cell. Underlying readOnly, Delete, save and roundtrip assertions remain.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false
+      },
+      {
+        "path": "mobile/tests/extended-browser.cjs",
+        "previousSha256": null,
+        "sha256": "c4fdb09a26a5d653ab4338a96a4bb3463f0dff65ac23081cc8e6685231c23d4e",
+        "recordedAt": "2026-10-18T12:23:28.563Z",
+        "reason": "Partition the enlarged real-production browser suite into fresh core/reading/editor/workspace/diagram processes. All feature helpers and assertions are executed sequentially against one SHA-verified bundle; every process retains the original 120000ms watchdog. This changes only test orchestration and host profiles.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false,
+        "perProcessWatchdogMs": 120000,
+        "perProcessWatchdogChanged": false,
+        "groups": [
+          "core",
+          "reading",
+          "editor",
+          "workspace",
+          "diagram"
+        ],
+        "previousSingleProcessBudgetMs": 120000,
+        "maximumCombinedProcessBudgetsMs": 600000,
+        "overallSuiteBudgetExpanded": true,
+        "note": "All operations are retained, in five independent fixture processes. Total maximum suite duration increases with the five groups; no individual process receives a longer watchdog."
+      },
+      {
+        "path": "mobile/tests/ppt-edit-save-actions.cjs",
+        "previousSha256": "39715c955a23dbef2488090cafee553a342e2f31e56f28515c8bf0a6cc3a381d",
+        "sha256": "b412ea65dd6df79ebb79152d13383f789c4e0f951ff3226efbf5f6e8eb7ed9e2",
+        "recordedAt": "2026-10-18T12:24:39.635Z",
+        "reason": "Remove the test-owned blur listener before deleting its global probe. The subsequent real navigation must not invoke a dangling QA listener; unblurred-save, actual reopen and all app assertions remain intact.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false
+      },
+      {
+        "path": "mobile/tests/spill-browser-actions.cjs",
+        "previousSha256": "13e0876137b5134cecf2552ab0965394f7ce11d0b02694dc711a29ec8dd43183",
+        "sha256": "242b9b88229e8a7b44174cd9412c4e833ee9848ccbfcf22283506a717c07d254",
+        "recordedAt": "2026-10-18T12:24:39.637Z",
+        "reason": "Remove the test-owned blur listener before deleting its global probe. The subsequent real navigation must not invoke a dangling QA listener; unblurred-save, actual reopen and all app assertions remain intact.",
+        "runtimeChanged": false,
+        "assertionsRemoved": false,
+        "timeoutChanged": false
+      }
+    ],
+    "manifest": {
+      "path": ".upgrade-private/v200-third-source.json",
+      "bytes": 259065,
+      "sha256": "cffa2a060fa80d407f7a94c2663bd7037e748074816facbbec734586fde33b34"
+    }
+  },
+  "compatibleFormats": {
+    "passed": true,
+    "checks": 37
+  },
+  "packagedCodecs": {
+    "passed": true,
+    "checks": 11
+  },
+  "nativePdf": {
+    "passed": true,
+    "scenarios": 5,
+    "complexDocuments": 2,
+    "complexPhysicalPages": 10
+  },
+  "windowsRuntime": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 131
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 131
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "desktopIntegrityFilesPerPlatform": 131,
+  "web": {
+    "publicUrl": "https://seal.xingmasoft.com/office/",
+    "releaseId": "2.0.0-web-20261018-202346",
+    "status": "published-verified",
+    "browserChecks": 8
+  },
+  "mobile": {
+    "passed": true,
+    "report": "mobile.json",
+    "cloudReady": [
+      {
+        "platform": "android",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/android",
+        "snapshotFiles": 58
+      },
+      {
+        "platform": "harmony",
+        "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/harmony",
+        "snapshotFiles": 58
+      }
+    ],
+    "apkOrHapGenerated": false
+  },
+  "backend": {
+    "passed": true,
+    "report": "backend-deployment.json"
+  },
+  "spreadsheetEvidence": "spill.json",
+  "wordEvidence": "../../v2.0.0-Word修订与复杂结构验收.md",
+  "readingEvidence": "mobile-reading.json",
+  "templateEvidence": {
+    "report": "template-expansion.json",
+    "fullTemplates": 12,
+    "pages": 108
+  },
+  "workspaceToolsEvidence": [
+    "workspace-tools.json",
+    "diagrams.json"
+  ],
+  "artifacts": [
+    {
+      "name": "海豹办公安装程序2.0.0.exe",
+      "path": "release/v2.0.0/海豹办公安装程序2.0.0.exe",
+      "bytes": 399318493,
+      "sha256": "2a36f8a1f874edf3d6c76af7d5e0532161b708826f89b95f1379bbd6f92ef717"
+    },
+    {
+      "name": "海豹办公2.0.0.exe",
+      "path": "release/v2.0.0/海豹办公2.0.0.exe",
+      "bytes": 399093023,
+      "sha256": "8058a2a377944991e32c4309964f1e548bef5f55445f821c8d87102d1d4c201e"
+    },
+    {
+      "name": "海豹办公Ubuntu2.0.0-amd64.deb",
+      "path": "release/v2.0.0/海豹办公Ubuntu2.0.0-amd64.deb",
+      "bytes": 125934500,
+      "sha256": "0bc578d306947df2246cdc655d9d00597e8264eeba9cc5616adeab9e6c28d5b2"
+    },
+    {
+      "name": "海豹办公-2.0.0-Web.zip",
+      "path": "release/web-2.0.0-third-pass/海豹办公-2.0.0-Web.zip",
+      "bytes": 56210373,
+      "sha256": "5c18ae09596dc27b36a673a0d2a899829383b304d8a871510ea789484c76386a"
+    }
+  ],
+  "applicationIntegrityManifestSha256": "978f243c164727055241cc5a9b54a0d3c10ed59b669a4efeea1134e2affc220b",
+  "limitations": [
+    "Not every WPS formula parameter, native revision combination, layout property or drawing object is directly editable; unsupported content remains protected with explicit warnings.",
+    "Rich realtime collaboration provides online members, but complete remote character caret positioning and transparent public publishing of realtime rooms are not implemented.",
+    "No original third-party WPS cloud-export failure file was available. Independent synthetic WPS/LibreOffice comparisons and actual OOXML roundtrips define the verified scope.",
+    "Linux was cross-built and statically inspected, without Linux installation or desktop runtime/UI validation.",
+    "Windows unpacked and portable flows were tested. NSIS installation/uninstallation was not exercised and EXEs are unsigned.",
+    "Android/HarmonyOS snapshots and UTS/browser checks passed; cloud APK/HAP generation, signing and physical-device installation/upgrade validation remain for the user."
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "startedAt": "2026-10-18T11:03:44.123Z",
+  "engine": "bundled LibreOffice, isolated profile per job",
+  "checks": [
+    {
+      "type": "word",
+      "extension": "docx",
+      "pages": 2,
+      "pdfBytes": 24284,
+      "milliseconds": 19087,
+      "orientation": "portrait"
+    },
+    {
+      "type": "table",
+      "extension": "xlsx",
+      "pages": 1,
+      "pdfBytes": 26190,
+      "milliseconds": 18531,
+      "orientation": "landscape"
+    },
+    {
+      "type": "ppt",
+      "extension": "pptx",
+      "pages": 2,
+      "pdfBytes": 14554,
+      "milliseconds": 18452,
+      "orientation": "landscape"
+    },
+    {
+      "type": "word-complex-sections",
+      "pages": 5,
+      "sizes": [
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        },
+        {
+          "width": 841.889763779528,
+          "height": 595.303937007874
+        },
+        {
+          "width": 841.889763779528,
+          "height": 595.303937007874
+        },
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        },
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        }
+      ],
+      "pdfBytes": 96482,
+      "retainsOddSectionBlankPage": true
+    },
+    {
+      "type": "word-complex-sections-saved",
+      "pages": 5,
+      "sizes": [
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        },
+        {
+          "width": 841.889763779528,
+          "height": 595.303937007874
+        },
+        {
+          "width": 841.889763779528,
+          "height": 595.303937007874
+        },
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        },
+        {
+          "width": 595.303937007874,
+          "height": 841.889763779528
+        }
+      ],
+      "pdfBytes": 96628,
+      "retainsOddSectionBlankPage": true
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-10-18T11:05:18.611Z",
+  "status": "passed"
+}

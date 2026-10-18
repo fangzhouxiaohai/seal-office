@@ -1,0 +1,42 @@
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path')
+
+// 使用实际 WebView 构建验证输入保护及重排；字号设置不能写入导入的 HTML。
+module.exports = async function readingActions({ win, evaluate, output, checks }) {
+  const wait = () => new Promise(resolve => setTimeout(resolve, 150))
+  const filename = await evaluate(`(async()=>{const api=window.electronAPI;const doc=await api.office.writeDocx({段落:[{类型:'段落',级别:1,对齐:'左',列表:'无',文字:[{文本:'手机阅读验收'}]},{类型:'段落',级别:0,对齐:'左',列表:'无',文字:[{文本:'只读模式保留原始正文和字号，横竖屏均可浏览。',字号:12}]}],未覆盖:[]});if(!doc.成功)throw new Error(doc.错误);const file=await api.showSaveDialog('手机阅读验收.docx','word');const saved=await api.saveToFile(file,doc.数据,'二进制');if(!saved.成功)throw new Error(saved.错误);return file})()`)
+  await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};document.querySelector('.seal-mobile-nav [aria-label="打开文件"]').click()`)
+  for (let i = 0; i < 100; i++) { if (await evaluate(`document.querySelector('.wps-editor-canvas__content')?.textContent.includes('只读模式保留')`)) break; await wait() }
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content')?.contentEditable`), 'false', '手机导入文档默认阅读')
+  const original = await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`)
+  assert.equal(await evaluate(`!!document.querySelector('.wps-ribbon-tabs')`), false, '阅读隐藏编辑工具栏')
+  assert.match(await evaluate(`getComputedStyle(document.querySelector('.wps-editor-status__left'),'::before').content`), /手机阅读视图/, '状态栏应明确显示阅读模式')
+  const sizes = await evaluate(`Array.from(document.querySelector('[aria-label="阅读字号"]').options).map(option=>Number(option.value))`)
+  assert.deepEqual(sizes, [16, 18, 20, 22, 24, 28, 32])
+  await evaluate(`(()=>{const size=document.querySelector('[aria-label="阅读字号"]');size.value='28';size.dispatchEvent(new Event('change',{bubbles:true}));const editor=document.querySelector('.wps-editor-canvas__content'),range=document.createRange();range.selectNodeContents(editor);window.getSelection().removeAllRanges();window.getSelection().addRange(range);document.execCommand('insertText',false,'不应写入的内容');editor.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}));})()`)
+  await wait()
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`), original, '阅读和格式快捷键不能改动正文')
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.wps-editor-canvas__content p')).fontSize`), '28px', '阅读字号必须实际作用于带原始字号的段落')
+  for (const width of [360, 390, 820]) {
+    win.setContentSize(width, 844); await wait()
+    const layout = await evaluate(`(()=>{const paper=document.querySelector('.wps-editor-canvas__paper').getBoundingClientRect();return {left:paper.left,right:paper.right,viewport:innerWidth,scroll:document.documentElement.scrollWidth}})()`)
+    assert.ok(layout.left >= 0 && layout.right <= layout.viewport + 1 && layout.scroll <= layout.viewport + 1, '阅读正文必须在窄屏内重排：' + JSON.stringify(layout))
+  }
+  win.setContentSize(390, 844); await wait()
+  await evaluate(`Array.from(document.querySelectorAll('.seal-reading-toolbar button')).find(button=>button.textContent==='查找').click()`); await wait()
+  assert.equal(await evaluate(`!!document.querySelector('[placeholder="替换为"]')`), false, '阅读查找不显示替换入口')
+  await evaluate(`(()=>{const input=document.querySelector('[placeholder="查找内容"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'只读模式');input.dispatchEvent(new Event('input',{bubbles:true}))})()`); await wait()
+  await evaluate(`document.querySelector('[aria-label="查找下一个"]').click()`); await wait()
+  assert.equal(await evaluate(`window.getSelection().toString()`), '只读模式')
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`), original)
+  await new Promise(resolve => setTimeout(resolve, 2000))
+  await win.capturePage().then(image => fs.writeFileSync(path.join(output, 'mobile-word-reading.png'), image.toPNG()))
+  await evaluate(`document.querySelector('[aria-label="关闭查找替换"]').click();Array.from(document.querySelectorAll('.seal-reading-toolbar button')).find(button=>button.textContent==='编辑').click()`); await wait()
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').contentEditable`), 'true')
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`), original, '恢复编辑必须保留全部原始 HTML')
+  await evaluate(`document.querySelector('.wps-editor-canvas__content').dispatchEvent(new KeyboardEvent('keydown',{key:'r',ctrlKey:true,altKey:true,bubbles:true}))`); await wait()
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').contentEditable`), 'false', '外接键盘快捷键进入阅读')
+  await evaluate(`document.querySelector('.wps-editor-canvas__content').dispatchEvent(new KeyboardEvent('keydown',{key:'r',ctrlKey:true,altKey:true,bubbles:true}))`); await wait()
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').contentEditable`), 'true', '外接键盘快捷键恢复编辑')
+  assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`), original)
+  checks.push('手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML')
+}

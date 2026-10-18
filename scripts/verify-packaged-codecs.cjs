@@ -21,6 +21,15 @@ app.whenReady().then(async()=>{
     assert.deepEqual(doc.警告,[]);assert.match(doc.html,/data:image\/png;base64/)
     assert.match(doc.页面设置.页眉Html,/海豹办公页眉/);assert.match(doc.页面设置.页脚Html,/页脚联系信息/)
     checks.push('DOCX：正文图片、页眉与页脚保存重开')
+    const revisionTypes=['ins','del','moveFrom','moveTo']
+    const revisionBytes=await load('main/office/docxWriter.js').生成docx({段落:[{类型:'段落',文字:revisionTypes.map((类型,index)=>({文本:'历史'+类型,修订:[{类型,标识:String(index+1),作者:'成品审阅人',时间:'2026-10-18T09:30:00Z'}]}))}]})
+    const revisionRead=await load('main/office/docxReader.js').读取docx(revisionBytes)
+    for(const type of revisionTypes)assert.match(revisionRead.html,new RegExp('data-seal-revision-type="'+type+'"'))
+    assert.match(revisionRead.html,/data-seal-docx-package=/)
+    assert.match(revisionRead.html,/data-seal-revision-author="成品审阅人"/)
+    assert.match(revisionRead.html,/data-seal-revision-date="2026-10-18T09:30:00Z"/)
+    fs.writeFileSync(path.join(output,'revision-history.docx'),revisionBytes)
+    checks.push('DOCX：包内真实插入/删除/移动修订、作者时间与源包历史重开')
     const ExcelJS=load('node_modules/exceljs'),book=new ExcelJS.Workbook()
     const sheet=book.addWorksheet('销售');sheet.addRow(['产品','金额']);sheet.addRow(['海豹',300]);sheet.addRow(['合计',{formula:'SUM(B2:B2)',result:300}])
     sheet.addImage(book.addImage({base64:png,extension:'png'}),{tl:{col:3,row:0},ext:{width:32,height:32}})
@@ -29,7 +38,43 @@ app.whenReady().then(async()=>{
     const table=await load('main/office/xlsxCodec.js').读取xlsx(xlsx)
     assert.equal(table.工作表列表.length,2);assert.equal(table.工作表列表[0].元数据.图片.length,1);assert.deepEqual(table.警告,[])
     checks.push('XLSX：多表、公式及图片导入')
+    const formulaBook = new ExcelJS.Workbook(), formulaSheet = formulaBook.addWorksheet('云表公式')
+    formulaSheet.getCell('A1').value = 5
+    formulaSheet.getCell('B1').value = { formula: 'SUM($A$1,10)', result: 15 }
+    formulaSheet.getCell('B2').value = { formula: '_xlfn.XLOOKUP(A1,A1:A2,C1:C2)', result: false }
+    formulaSheet.getCell('B3').value = { formula: 'IF(A1>0,"", "否")', result: '' }
+    const formulaZip = await load('node_modules/jszip').loadAsync(await formulaBook.xlsx.writeBuffer())
+    const formulaPath = 'xl/worksheets/sheet1.xml'
+    formulaZip.file(formulaPath, (await formulaZip.file(formulaPath).async('string'))
+      .replace(/<f>IF\(A1&gt;0,[\s\S]*?<\/f>/, '<f>IF(A1&gt;0,&quot;&quot;,&quot;否&quot;)</f>'))
+    const importedFormulas = await load('main/office/xlsxCodec.js').读取xlsx(await formulaZip.generateAsync({type:'nodebuffer'}))
+    const sourceFormulas = importedFormulas.工作表列表[0].元数据.公式来源
+    assert.equal(sourceFormulas.B1.原始值, '=SUM($A$1,10)')
+    assert.equal(sourceFormulas.B1.结果, 15)
+    assert.equal(sourceFormulas.B2.结果, false)
+    assert.equal(sourceFormulas.B3.结果, '')
+    checks.push('XLSX：绝对引用及未知函数公式原文、false与空字符串来源缓存保留')
     const xlsxCodec=load('main/office/xlsxCodec.js')
+    const enhancedBytes=await xlsxCodec.写入xlsx({日期系统1904:true,行:[[
+      {公式:'UNIQUE(C1:C2)',结果:0,数组范围:'A1:A2',动态数组:true},
+      {公式:'NORM.DIST(0,0,1,TRUE)',结果:0.5},
+      {文字:[{文本:'0'}],格式:{数字格式代码:'yyyy-mm-dd'}},
+      {文字:[{文本:'1234'}],格式:{数字格式代码:'000000'}}
+    ]]})
+    const enhancedZip=await load('node_modules/jszip').loadAsync(enhancedBytes)
+    assert.match(await enhancedZip.file('xl/metadata.xml').async('string'),/uri="\{bdbb8cdc-fa1e-496e-a857-3c3f30c029c3\}"/)
+    enhancedZip.file('xl/workbook.xml',(await enhancedZip.file('xl/workbook.xml').async('string')).replace('date1904="1"','date1904="true"'))
+    const enhanced=await xlsxCodec.读取xlsx(await enhancedZip.generateAsync({type:'nodebuffer'})),enhancedMeta=enhanced.工作表列表[0].元数据
+    assert.equal(enhancedMeta.日期系统1904,true)
+    assert.deepEqual(enhancedMeta.公式来源.A1,{原始值:'=_xlfn.UNIQUE(C1:C2)',结果:0,数组范围:'A1:A2',动态数组:true})
+    assert.equal(enhancedMeta.公式来源.B1.原始值,'=_xlfn.NORM.DIST(0,0,1,TRUE)')
+    assert.equal(enhancedMeta.公式来源.B1.结果,0.5)
+    assert.equal(enhancedMeta.单元格格式.C1.数字格式代码,'yyyy-mm-dd')
+    assert.equal(enhancedMeta.单元格格式.D1.数字格式代码,'000000')
+    assert.match(enhanced.工作表列表[0].html,/>0<\/td>/)
+    assert.deepEqual(enhanced.警告,[])
+    fs.writeFileSync(path.join(output,'enhanced-date-array.xlsx'),enhancedBytes)
+    checks.push('XLSX：动态数组元数据、未来函数存储名、1904合法布尔及日期/前导零原始数字格式')
     const format={字体:'Arial',字号:15,加粗:true,斜体:true,下划线:true,字体颜色:'#C00000',填充颜色:'#FFFF00',水平对齐:'center',垂直对齐:'middle',自动换行:true,边框:{上:true,下:true,左:true,右:true},边框颜色:{上:'#336699',下:'#336699',左:'#336699',右:'#336699'}}
     let workbookModel={工作表:[{名称:'格式回归',数据:[[{文字:[{文本:'标题'}],格式:format},{文字:[{文本:'金额'}]}],[{文字:[{文本:'项目'}]},{公式:'SUM(100,200)',结果:300,格式:{数字格式:'数值',小数位:2}}]],列宽:[196,140],行高:[40,32],冻结:{行:1,列:1},图片:[{数据:png,格式:'png',列:3,行:0,宽:32,高:32}],页面设置:{方向:'横向',纸张大小:'A4',页边距:'常规'}}]}
     for(let cycle=1;cycle<=3;cycle++){

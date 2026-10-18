@@ -1,6 +1,10 @@
 # 海豹办公 uni-app x
 
-基于仓库当前桌面版 **1.9.12** 创建。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。
+当前移动源码版本为 **2.0.0 / 20000**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤和更新说明见 [2.0.0 发行准备](releases/2.0.0.md)。
+
+应用界面继续显示“海豹办公”，发行文件统一使用英文名：Android 为 `seal-office-2.0.0-android.apk`；本次鸿蒙成品是正式签名 App Pack，发行封装为 `seal-office-2.0.0-harmony.app.zip`。2026-10-19 用户已提供两个真实成品，Android SDK 与华为 SDK 验签和资源对照详见 [移动成品验收](../docs/v2.0.0-发布与移动成品.md)，尚未执行真机安装验收。鸿蒙 APP 内的 HAP 没有独立签名，不将其冒充可直接安装包。
+
+后续如果取得独立签名 HAP，可使用 `seal-office-2.0.0-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 
@@ -32,9 +36,9 @@ npm run pack
 
 `static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
 
-如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中只选择 Android。打包完成后提供 APK 文件或下载链接，再核对版本、签名和包内资源并更新发布页。不要把 `static/office/` 当作 APK。
+如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。本次同时准备鸿蒙新版，切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.0.0 发行准备](releases/2.0.0.md)。打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`。补充云包版本为 `1.9.12 / 10912`，已核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)。包内编辑器与修复后源码逐字节一致，签名与上一包相同；Android 14 模拟器升级后验证轻点打开、保存不弹分享、强制停止后正文仍在。其他品牌、iOS 和鸿蒙仍待真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+当前 AppID 为用户配置的 `__UNI__B52B65B`。本次准备的源码版本为 `2.0.0 / 20000`，正式 Android / 鸿蒙包由用户云打包后再核验。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
 发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
 
@@ -83,7 +87,7 @@ npm --prefix mobile run test:browser -- --web
 
 本轮结果与待验项在 [verification.json](verification.json)，详细平台和品牌矩阵在 [compatibility.md](compatibility.md)。1.9.11 主进程 921 项、移动单元 11 项通过，网页和本地 WebView 宿主模拟两种加载方式各 18 组通过。办公格式验收覆盖 37 组兼容读取、25 组保存重开及服务配置操作，使用实际本地转换服务。渲染层全量运行 1,848 项，OFD 的一项问题修复后在最终受影响的 82 项回归和真实 OFD/PDF 流程中通过；详细原始结果与复测说明见[本版验收](../docs/v1.9.11-修复与验收.md)。1.9.10 的完整基线另行归档，不作为新 APK 或各品牌真机均通过的证明。
 
-检查覆盖中文 DOCX/XLSX/PPTX 往返、保存重开、来源指纹冲突、密钥重新加载、中文 PDF 生成/旋转/阅读、手机新建文字和全部功能入口。Word 图片回归实际操作八个手柄、旋转、翻转、布局、裁剪、移动、删除和撤销重做，并检查裁剪像素、PDF 中的旋转翻转像素及工作区恢复。旧 APK 已验证 DOCX 导入、中文编辑、保存、后台和杀进程后恢复，并发现系统分享与 MIME 文件选择差异；对应源码修复须通过新 APK 再验收。按用户要求，当前只打包 Android，不打包 iOS、鸿蒙。
+检查覆盖中文 DOCX/XLSX/PPTX 往返、保存重开、来源指纹冲突、密钥重新加载、中文 PDF 生成/旋转/阅读、手机新建文字和全部功能入口。Word 图片回归实际操作八个手柄、旋转、翻转、布局、裁剪、移动、删除和撤销重做，并检查裁剪像素、PDF 中的旋转翻转像素及工作区恢复。旧 APK 已验证 DOCX 导入、中文编辑、保存、后台和杀进程后恢复，并发现系统分享与 MIME 文件选择差异；对应源码修复须通过新 APK 再验收。2.0.0 按本次要求准备 Android 与鸿蒙的版本和内置资源，由用户分别提交云打包。
 
 Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 ARM。系统 WebView 也必须具备所需能力，当前构建基线 Chromium 100+ / Safari 15.4+，旧组件有明确的升级提示。国产 ROM、iOS 27 与 HarmonyOS 真机状态及验收要求见 [compatibility.md](compatibility.md)。只有当前安卓模拟器实测，不能将代码配置或浏览器模拟作为各品牌均通过的证明。
 
@@ -102,3 +106,8 @@ Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 AR
 1.9.11 已接入用户确认的 PC / 移动两套界面图标。PC 使用细线条和彩色点缀，移动文件及功能入口使用彩色图形；窄屏与触屏平板按移动样式适配，PC Web 与桌面界面使用扁平皮肤。
 
 本版手机与 PC 共用全部 50 种办公扩展名清单，同步 CSV/TSV 原格式保存、中文编码、OOXML 模板与宏正文导入、MHTML 和 OFD 阅读。旧表格使用离线兼容处理，旧文字、演示和部分开放格式使用用户确认的[自建文档转换服务](../server/converter/README.md)。手机设置中心可保存服务地址、加密访问令牌、测试连接；每次上传正文前确认，取消或失败保留来源。服务需实际部署后才能使用联网格式，完整范围见[文档格式支持](../docs/文档格式支持.md)。
+
+## 2.0 脑图与流程图云协作
+
+图形工作区保留本机多项目列表，新增“云端与协作”。可从本机项目同步到个人云或团队、指定账号共享、实时共同编辑，断网操作加密保留并在重连后合并。查看者、编辑者之间实时切换，权限撤销后停止写入；手机保留拖动、双指缩放及导入导出。详细流程见 [脑图云协作](../docs/脑图云协作.md)，本轮验收见 [第五轮报告](../docs/verification/v2.0.0-fifth-pass/README.md)。
+

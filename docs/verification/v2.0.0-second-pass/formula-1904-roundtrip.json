@@ -1,0 +1,240 @@
+{
+  "pipeline": "actual LO output imported and edited in renderer models, saved with real renderer/main pipeline, independently recalculated by LO again",
+  "date1904": true,
+  "cases": 33,
+  "passed": 33,
+  "failed": [],
+  "rows": [
+    {
+      "formula": "=YEAR(0)",
+      "address": "B2",
+      "expected": 1904,
+      "oracle": 1904,
+      "matches": true
+    },
+    {
+      "formula": "=MONTH(0)",
+      "address": "B3",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=DAY(0)",
+      "address": "B4",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(1904,1,1)",
+      "address": "B5",
+      "expected": 0,
+      "oracle": 0,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(1904,2,29)",
+      "address": "B6",
+      "expected": 59,
+      "oracle": 59,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(2024,1,1)",
+      "address": "B7",
+      "expected": 43830,
+      "oracle": 43830,
+      "matches": true
+    },
+    {
+      "formula": "=DATEVALUE(\"2024-01-01\")",
+      "address": "B8",
+      "expected": 43830,
+      "oracle": 43830,
+      "matches": true
+    },
+    {
+      "formula": "=YEAR(Data!A3)",
+      "address": "B9",
+      "expected": 2025,
+      "oracle": 2025,
+      "matches": true
+    },
+    {
+      "formula": "=DAYS(1,0)",
+      "address": "B10",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=DAYS(\"2024-01-02\",Data!A3)",
+      "address": "B11",
+      "expected": -365,
+      "oracle": -365,
+      "matches": true
+    },
+    {
+      "formula": "=EDATE(0,1)",
+      "address": "B12",
+      "expected": 31,
+      "oracle": 31,
+      "matches": true
+    },
+    {
+      "formula": "=EOMONTH(0,0)",
+      "address": "B13",
+      "expected": 30,
+      "oracle": 30,
+      "matches": true
+    },
+    {
+      "formula": "=WEEKDAY(0)",
+      "address": "B14",
+      "expected": 6,
+      "oracle": 6,
+      "matches": true
+    },
+    {
+      "formula": "=WEEKNUM(0)",
+      "address": "B15",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=ISOWEEKNUM(0)",
+      "address": "B16",
+      "expected": 53,
+      "oracle": 53,
+      "matches": true
+    },
+    {
+      "formula": "=TIME(13,30,0)",
+      "address": "B17",
+      "expected": 0.5625,
+      "oracle": 0.5625,
+      "matches": true
+    },
+    {
+      "formula": "=TIMEVALUE(\"13:30\")",
+      "address": "B18",
+      "expected": 0.5625,
+      "oracle": 0.5625,
+      "matches": true
+    },
+    {
+      "formula": "=HOUR(0.5)",
+      "address": "B19",
+      "expected": 12,
+      "oracle": 12,
+      "matches": true
+    },
+    {
+      "formula": "=MINUTE(0.5625)",
+      "address": "B20",
+      "expected": 30,
+      "oracle": 30,
+      "matches": true
+    },
+    {
+      "formula": "=SECOND(TIME(1,2,3))",
+      "address": "B21",
+      "expected": 3,
+      "oracle": 3,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6)",
+      "address": "B22",
+      "expected": 5,
+      "oracle": 5,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY(0,1)",
+      "address": "B23",
+      "expected": 3,
+      "oracle": 3,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6,Data!H1:H1)",
+      "address": "B24",
+      "expected": 4,
+      "oracle": 4,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY(0,1,Data!H2:H2)",
+      "address": "B25",
+      "expected": 4,
+      "oracle": 4,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS.INTL(0,6,11)",
+      "address": "B26",
+      "expected": 6,
+      "oracle": 6,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS.INTL(0,6,11,Data!H1:H1)",
+      "address": "B27",
+      "expected": 5,
+      "oracle": 5,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY.INTL(0,1,11)",
+      "address": "B28",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=WORKDAY.INTL(0,1,11,Data!H3:H3)",
+      "address": "B29",
+      "expected": 3,
+      "oracle": 3,
+      "matches": true
+    },
+    {
+      "formula": "=IF(TRUE,YEAR(0),1900)",
+      "address": "B30",
+      "expected": 1904,
+      "oracle": 1904,
+      "matches": true
+    },
+    {
+      "formula": "=IFERROR(1/0,DATE(1904,1,1))",
+      "address": "B31",
+      "expected": 0,
+      "oracle": 0,
+      "matches": true
+    },
+    {
+      "formula": "=IFNA(NA(),DAY(0))",
+      "address": "B32",
+      "expected": 1,
+      "oracle": 1,
+      "matches": true
+    },
+    {
+      "formula": "=DATE(9999,12,31)",
+      "address": "B33",
+      "expected": 2957003,
+      "oracle": 2957003,
+      "matches": true
+    },
+    {
+      "formula": "=NETWORKDAYS(0,6,Data!H4:H4)",
+      "address": "B34",
+      "expected": 5,
+      "oracle": 5,
+      "matches": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "checks": [
+    {
+      "platform": "android",
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "checkedFiles": 48,
+      "passed": true
+    },
+    {
+      "platform": "harmony",
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "checkedFiles": 48,
+      "passed": true
+    }
+  ]
+}

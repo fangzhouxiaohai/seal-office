@@ -1,0 +1,2042 @@
+{
+  "schema": 1,
+  "version": "2.0.0",
+  "scope": "Shared desktop/mobile spreadsheet dynamic arrays, live source-model collaboration, WPS calculation compatibility and unblurred draft saving",
+  "recordedAt": "2026-10-18T11:01:34.160Z",
+  "runtimeFrozen": true,
+  "functions": {
+    "registered": 263,
+    "newArrayNames": [
+      "ANCHORARRAY",
+      "SEQUENCE",
+      "FILTER",
+      "SORT",
+      "SORTBY",
+      "UNIQUE",
+      "TRANSPOSE",
+      "TAKE",
+      "DROP",
+      "CHOOSECOLS",
+      "CHOOSEROWS",
+      "HSTACK",
+      "VSTACK",
+      "TOCOL",
+      "TOROW",
+      "EXPAND",
+      "WRAPROWS",
+      "WRAPCOLS"
+    ],
+    "safeParser": true,
+    "noEval": true
+  },
+  "checks": {
+    "sheetDirectory": {
+      "files": 32,
+      "passed": 739,
+      "note": "Whole sheet directory before final targeted additions; no failures",
+      "log": ".tmp-spill-sheet-all.log"
+    },
+    "finalTargeted": {
+      "files": 9,
+      "passed": 371,
+      "failed": 0,
+      "log": ".tmp-spill-final-role-broadcast.log"
+    },
+    "finalInputBounds": {
+      "files": 3,
+      "passed": 38,
+      "failed": 0,
+      "log": ".tmp-spill-final-bounds.log",
+      "coverage": [
+        "A1:XFD1048576 ref does not allocate giant grid",
+        "A1:XFD1 respects minimum viewport geometry",
+        "A1:A20000 scan does not create empty rows",
+        "style-only missing caches remain pending without fake0"
+      ]
+    },
+    "nativeXlsx": {
+      "files": 5,
+      "passed": 77,
+      "failed": 0,
+      "log": ".tmp-spill-final-main.log"
+    },
+    "typecheck": {
+      "passed": true,
+      "log": ".tmp-spill-typecheck.log"
+    },
+    "realEditorCollaboration": {
+      "passed": 4,
+      "transport": "local real HTTP fixture; actual two SheetEditors and actual useRealtimeDocument/client",
+      "coverage": [
+        "different-cell concurrent edits",
+        "derived spill recomputation without transmitting caches",
+        "real native XLSX export equality",
+        "undo preserves remote operations",
+        "same-cell Chinese IME with remote insertion",
+        "formula-bar IME and merged text",
+        "offline durable queue and reconnect",
+        "permission downgrade read-only"
+      ]
+    },
+    "draftSave": {
+      "passed": 4,
+      "coverage": [
+        "CtrlS and SaveAs without blur with Unicode text",
+        "formula-bar uncommitted SEQUENCE saved with typed results",
+        "invalid validation draft blocks saving"
+      ]
+    },
+    "privateProductionBrowser": {
+      "fileAndHttp": true,
+      "errors": [],
+      "blockedRequests": [],
+      "widths": [
+        390,
+        1280
+      ],
+      "coverage": [
+        "actual insertText and focused CtrlS",
+        "SEQUENCE FILTER SORT TRANSPOSE # values",
+        "readonly spill children",
+        "SPILL blocker does not overwrite source",
+        "formula toolbar width"
+      ],
+      "note": "Private isolated production build; final distributed Web/Android resources must rerun mobile/tests/spill-browser-actions.cjs after unified build"
+    }
+  },
+  "independentOracles": {
+    "libreOffice": {
+      "version": "26.8.1",
+      "cases": 33,
+      "passed": 32,
+      "deliberatelyWrongCache": 9999,
+      "failed": [
+        {
+          "formula": "=TRANSPOSE(sequence!A1#)",
+          "expected": [
+            [
+              1,
+              3,
+              5
+            ],
+            [
+              2,
+              4,
+              6
+            ]
+          ],
+          "actual": [
+            [
+              "#NAME?",
+              "#NAME?",
+              "#NAME?"
+            ],
+            [
+              "#NAME?",
+              "#NAME?",
+              "#NAME?"
+            ]
+          ],
+          "reason": "Independent Calc does not implement OOXML ANCHORARRAY; failure retained"
+        }
+      ],
+      "date1904": {
+        "cases": 15,
+        "passed": 15,
+        "discoveredAndFixed": {
+          "originalCases": 9,
+          "originalPassed": 8,
+          "issue": "WORKDAY array date-role argument was explicitly unsupported; four working-day functions now broadcast only date/day/weekend roles and retain holidays as a complete range"
+        },
+        "rows": [
+          {
+            "formula": "=SEQUENCE(3,1,DATE(1904,1,1))",
+            "actual": [
+              [
+                0
+              ],
+              [
+                1
+              ],
+              [
+                2
+              ]
+            ],
+            "engine": {
+              "值": 0,
+              "错误": false,
+              "数组": [
+                [
+                  0
+                ],
+                [
+                  1
+                ],
+                [
+                  2
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=YEAR(SEQUENCE(3,1,0))",
+            "actual": [
+              [
+                1904
+              ],
+              [
+                1904
+              ],
+              [
+                1904
+              ]
+            ],
+            "engine": {
+              "值": 1904,
+              "错误": false,
+              "数组": [
+                [
+                  1904
+                ],
+                [
+                  1904
+                ],
+                [
+                  1904
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=MONTH(SEQUENCE(3,1,30))",
+            "actual": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                2
+              ]
+            ],
+            "engine": {
+              "值": 1,
+              "错误": false,
+              "数组": [
+                [
+                  1
+                ],
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=DAY(SEQUENCE(3,1,58))",
+            "actual": [
+              [
+                28
+              ],
+              [
+                29
+              ],
+              [
+                1
+              ]
+            ],
+            "engine": {
+              "值": 28,
+              "错误": false,
+              "数组": [
+                [
+                  28
+                ],
+                [
+                  29
+                ],
+                [
+                  1
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=EDATE(SEQUENCE(2,1,0),1)",
+            "actual": [
+              [
+                31
+              ],
+              [
+                32
+              ]
+            ],
+            "engine": {
+              "值": 31,
+              "错误": false,
+              "数组": [
+                [
+                  31
+                ],
+                [
+                  32
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=EOMONTH(SEQUENCE(2,1,0),1)",
+            "actual": [
+              [
+                59
+              ],
+              [
+                59
+              ]
+            ],
+            "engine": {
+              "值": 59,
+              "错误": false,
+              "数组": [
+                [
+                  59
+                ],
+                [
+                  59
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=WORKDAY(SEQUENCE(2,1,0),1)",
+            "actual": [
+              [
+                3
+              ],
+              [
+                3
+              ]
+            ],
+            "engine": {
+              "值": 3,
+              "错误": false,
+              "数组": [
+                [
+                  3
+                ],
+                [
+                  3
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=WEEKDAY(SEQUENCE(3,1,0),2)",
+            "actual": [
+              [
+                5
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ]
+            ],
+            "engine": {
+              "值": 5,
+              "错误": false,
+              "数组": [
+                [
+                  5
+                ],
+                [
+                  6
+                ],
+                [
+                  7
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=IF({TRUE;FALSE},DATE(1904,1,1),DATE(1904,2,29))",
+            "actual": [
+              [
+                0
+              ],
+              [
+                59
+              ]
+            ],
+            "engine": {
+              "值": 0,
+              "错误": false,
+              "数组": [
+                [
+                  0
+                ],
+                [
+                  59
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=WORKDAY(SEQUENCE(2,1,0),1,{3;4})",
+            "actual": [
+              [
+                5
+              ],
+              [
+                5
+              ]
+            ],
+            "engine": {
+              "值": 5,
+              "错误": false,
+              "数组": [
+                [
+                  5
+                ],
+                [
+                  5
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=WORKDAY.INTL(SEQUENCE(2,1,0),{1;2},11,{3;4})",
+            "actual": [
+              [
+                1
+              ],
+              [
+                6
+              ]
+            ],
+            "engine": {
+              "值": 1,
+              "错误": false,
+              "数组": [
+                [
+                  1
+                ],
+                [
+                  6
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=NETWORKDAYS({0;1},{3;4})",
+            "actual": [
+              [
+                2
+              ],
+              [
+                2
+              ]
+            ],
+            "engine": {
+              "值": 2,
+              "错误": false,
+              "数组": [
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=NETWORKDAYS({0;1},{3;4},{3;4})",
+            "actual": [
+              [
+                1
+              ],
+              [
+                0
+              ]
+            ],
+            "engine": {
+              "值": 1,
+              "错误": false,
+              "数组": [
+                [
+                  1
+                ],
+                [
+                  0
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=NETWORKDAYS.INTL({0;1},{3;4},7)",
+            "actual": [
+              [
+                2
+              ],
+              [
+                3
+              ]
+            ],
+            "engine": {
+              "值": 2,
+              "错误": false,
+              "数组": [
+                [
+                  2
+                ],
+                [
+                  3
+                ]
+              ]
+            },
+            "matches": true
+          },
+          {
+            "formula": "=NETWORKDAYS.INTL({0;1},{3;4},7,{3;4})",
+            "actual": [
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "engine": {
+              "值": 1,
+              "错误": false,
+              "数组": [
+                [
+                  1
+                ],
+                [
+                  1
+                ]
+              ]
+            },
+            "matches": true
+          }
+        ]
+      }
+    },
+    "wps": {
+      "source": "Installed WPS ET COM Formula2 / CalculateFull; synthetic documents only",
+      "notReaRuntimeEvidence": true,
+      "originalDefaultMode": {
+        "cases": 33,
+        "passed": 31,
+        "differences": [
+          {
+            "formula": "=LEN({\"😀\",\"𠀀\",\"中文\"})",
+            "defaultExpected": [
+              [
+                1,
+                1,
+                2
+              ]
+            ],
+            "wps": [
+              [
+                2,
+                2,
+                2
+              ]
+            ]
+          },
+          {
+            "formula": "=Data!A1:B2",
+            "defaultExpected": [
+              [
+                1,
+                0
+              ],
+              [
+                2,
+                3
+              ]
+            ],
+            "wps": [
+              [
+                1,
+                ""
+              ],
+              [
+                2,
+                3
+              ]
+            ]
+          }
+        ]
+      },
+      "nativeRoundtrip": {
+        "cases": 33,
+        "passed": 33,
+        "cacheFallbackUsed": false,
+        "mode": "WPS",
+        "inputSHA256": "95d11847c18bc0d1496ee1ff9b2071ec6aca85e75f3a7bb7dfc719245a51ad87",
+        "rows": [
+          {
+            "name": "sequence",
+            "formula": "=SEQUENCE(3,2)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "sequence_defaults",
+            "formula": "=SEQUENCE(2,,10,2)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                10
+              ],
+              [
+                12
+              ]
+            ],
+            "actual": [
+              [
+                10
+              ],
+              [
+                12
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "constant",
+            "formula": "={1,2;3,4}",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "broadcast",
+            "formula": "=SEQUENCE(2,1)*{10,20,30}",
+            "mode": "WPS",
+            "oracle": [
+              [
+                10,
+                20,
+                30
+              ],
+              [
+                20,
+                40,
+                60
+              ]
+            ],
+            "actual": [
+              [
+                10,
+                20,
+                30
+              ],
+              [
+                20,
+                40,
+                60
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "filter",
+            "formula": "=FILTER({1,10;2,20;3,30},{1;0;1})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                10
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                10
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "filter_columns",
+            "formula": "=FILTER({1,2,3;4,5,6},{1,0,1})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                3
+              ],
+              [
+                4,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                3
+              ],
+              [
+                4,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "filter_fallback",
+            "formula": "=FILTER({1;2},{0;0},\"无\")",
+            "mode": "WPS",
+            "oracle": [
+              [
+                "无"
+              ]
+            ],
+            "actual": [
+              [
+                "无"
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "sort",
+            "formula": "=SORT({3,30;1,10;2,20})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "sort_desc",
+            "formula": "=SORT({3,30;1,10;2,20},2,-1)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3,
+                30
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                1,
+                10
+              ]
+            ],
+            "actual": [
+              [
+                3,
+                30
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                1,
+                10
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "sortby",
+            "formula": "=SORTBY({3,30;1,10;2,20},{30;10;20})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                20
+              ],
+              [
+                3,
+                30
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "unique",
+            "formula": "=UNIQUE({1,2;1,2;3,4})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "unique_once",
+            "formula": "=UNIQUE({1;1;3;4},,TRUE)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3
+              ],
+              [
+                4
+              ]
+            ],
+            "actual": [
+              [
+                3
+              ],
+              [
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "transpose",
+            "formula": "=TRANSPOSE({1,2,3;4,5,6})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                5
+              ],
+              [
+                3,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                5
+              ],
+              [
+                3,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "take",
+            "formula": "=TAKE({1,2;3,4;5,6},-2)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "drop",
+            "formula": "=DROP({1,2;3,4;5,6},1)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                3,
+                4
+              ],
+              [
+                5,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "choosecols",
+            "formula": "=CHOOSECOLS({1,2,3;4,5,6},3,1)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3,
+                1
+              ],
+              [
+                6,
+                4
+              ]
+            ],
+            "actual": [
+              [
+                3,
+                1
+              ],
+              [
+                6,
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "chooserows",
+            "formula": "=CHOOSEROWS({1,2;3,4;5,6},3,1)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                5,
+                6
+              ],
+              [
+                1,
+                2
+              ]
+            ],
+            "actual": [
+              [
+                5,
+                6
+              ],
+              [
+                1,
+                2
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "hstack",
+            "formula": "=HSTACK({1;2},{3,4})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                3,
+                4
+              ],
+              [
+                2,
+                "#N/A",
+                "#N/A"
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                3,
+                4
+              ],
+              [
+                2,
+                "#N/A",
+                "#N/A"
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "vstack",
+            "formula": "=VSTACK({1,2},{3;4})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                "#N/A"
+              ],
+              [
+                4,
+                "#N/A"
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                "#N/A"
+              ],
+              [
+                4,
+                "#N/A"
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "tocol",
+            "formula": "=TOCOL({1,2;3,4})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                3
+              ],
+              [
+                4
+              ]
+            ],
+            "actual": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                3
+              ],
+              [
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "torow",
+            "formula": "=TOROW({1,2;3,4},0,TRUE)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                3,
+                2,
+                4
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                3,
+                2,
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "expand",
+            "formula": "=EXPAND({1,2},2,3,0)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "wraprows",
+            "formula": "=WRAPROWS({1,2,3,4,5},3,0)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                0
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                0
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "wrapcols",
+            "formula": "=WRAPCOLS({1,2,3,4,5},3,0)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                5
+              ],
+              [
+                3,
+                0
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                5
+              ],
+              [
+                3,
+                0
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "index_row",
+            "formula": "=INDEX({1,2;3,4},2,0)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                3,
+                4
+              ]
+            ],
+            "actual": [
+              [
+                3,
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "index_column",
+            "formula": "=INDEX({1,2;3,4},0,2)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                2
+              ],
+              [
+                4
+              ]
+            ],
+            "actual": [
+              [
+                2
+              ],
+              [
+                4
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "xlookup_row",
+            "formula": "=XLOOKUP(2,{1;2;3},{10,11;20,21;30,31})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                20,
+                21
+              ]
+            ],
+            "actual": [
+              [
+                20,
+                21
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "xlookup_column",
+            "formula": "=XLOOKUP(2,{1,2,3},{10,20,30;11,21,31})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                20
+              ],
+              [
+                21
+              ]
+            ],
+            "actual": [
+              [
+                20
+              ],
+              [
+                21
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "partial_error",
+            "formula": "=IFERROR({1,2}/{1,0},7)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                7
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                7
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "lazy_array",
+            "formula": "=IF({TRUE,FALSE},SEQUENCE(1,2),{10,20})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                20
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                20
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "unicode_text",
+            "formula": "=LEN({\"😀\",\"𠀀\",\"中文\"})",
+            "mode": "WPS",
+            "oracle": [
+              [
+                2,
+                2,
+                2
+              ]
+            ],
+            "actual": [
+              [
+                2,
+                2,
+                2
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "reference_blanks",
+            "formula": "=Data!A1:B2",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                ""
+              ],
+              [
+                2,
+                3
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                ""
+              ],
+              [
+                2,
+                3
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          },
+          {
+            "name": "spill_reference",
+            "formula": "=TRANSPOSE(sequence!A1#)",
+            "mode": "WPS",
+            "oracle": [
+              [
+                1,
+                3,
+                5
+              ],
+              [
+                2,
+                4,
+                6
+              ]
+            ],
+            "actual": [
+              [
+                1,
+                3,
+                5
+              ],
+              [
+                2,
+                4,
+                6
+              ]
+            ],
+            "matches": true,
+            "cacheUsed": false
+          }
+        ],
+        "editedAndReopened": {
+          "actual": [
+            [
+              10,
+              12,
+              14
+            ],
+            [
+              11,
+              13,
+              15
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              12,
+              14
+            ],
+            [
+              11,
+              13,
+              15
+            ]
+          ],
+          "mode": "WPS",
+          "matches": true
+        }
+      },
+      "nativeResize": {
+        "passed": true,
+        "sourceUnchanged": true,
+        "actual": [
+          [
+            20,
+            22,
+            24,
+            26
+          ],
+          [
+            21,
+            23,
+            25,
+            27
+          ]
+        ],
+        "importedAndRecomputed": {
+          "actual": [
+            [
+              20,
+              22,
+              24,
+              26
+            ],
+            [
+              21,
+              23,
+              25,
+              27
+            ]
+          ],
+          "expected": [
+            [
+              20,
+              22,
+              24,
+              26
+            ],
+            [
+              21,
+              23,
+              25,
+              27
+            ]
+          ],
+          "matches": true
+        }
+      },
+      "date1904": {
+        "nativeCases": 15,
+        "nativePassed": 15,
+        "importedAndRecomputed": {
+          "total": 15,
+          "passed": 15,
+          "rows": [
+            {
+              "name": "sequence",
+              "formula": "=SEQUENCE(3,1,DATE(1904,1,1))",
+              "expected": [
+                [
+                  0
+                ],
+                [
+                  1
+                ],
+                [
+                  2
+                ]
+              ],
+              "actual": [
+                [
+                  0
+                ],
+                [
+                  1
+                ],
+                [
+                  2
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "year",
+              "formula": "=YEAR(SEQUENCE(3,1,0))",
+              "expected": [
+                [
+                  1904
+                ],
+                [
+                  1904
+                ],
+                [
+                  1904
+                ]
+              ],
+              "actual": [
+                [
+                  1904
+                ],
+                [
+                  1904
+                ],
+                [
+                  1904
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "month",
+              "formula": "=MONTH(SEQUENCE(3,1,30))",
+              "expected": [
+                [
+                  1
+                ],
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ],
+              "actual": [
+                [
+                  1
+                ],
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "day",
+              "formula": "=DAY(SEQUENCE(3,1,58))",
+              "expected": [
+                [
+                  28
+                ],
+                [
+                  29
+                ],
+                [
+                  1
+                ]
+              ],
+              "actual": [
+                [
+                  28
+                ],
+                [
+                  29
+                ],
+                [
+                  1
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "edate",
+              "formula": "=EDATE(SEQUENCE(2,1,0),1)",
+              "expected": [
+                [
+                  31
+                ],
+                [
+                  32
+                ]
+              ],
+              "actual": [
+                [
+                  31
+                ],
+                [
+                  32
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "eomonth",
+              "formula": "=EOMONTH(SEQUENCE(2,1,0),1)",
+              "expected": [
+                [
+                  59
+                ],
+                [
+                  59
+                ]
+              ],
+              "actual": [
+                [
+                  59
+                ],
+                [
+                  59
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "workday",
+              "formula": "=WORKDAY(SEQUENCE(2,1,0),1)",
+              "expected": [
+                [
+                  3
+                ],
+                [
+                  3
+                ]
+              ],
+              "actual": [
+                [
+                  3
+                ],
+                [
+                  3
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "weekday",
+              "formula": "=WEEKDAY(SEQUENCE(3,1,0),2)",
+              "expected": [
+                [
+                  5
+                ],
+                [
+                  6
+                ],
+                [
+                  7
+                ]
+              ],
+              "actual": [
+                [
+                  5
+                ],
+                [
+                  6
+                ],
+                [
+                  7
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "lazy",
+              "formula": "=IF({TRUE;FALSE},DATE(1904,1,1),DATE(1904,2,29))",
+              "expected": [
+                [
+                  0
+                ],
+                [
+                  59
+                ]
+              ],
+              "actual": [
+                [
+                  0
+                ],
+                [
+                  59
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "workday_holidays",
+              "formula": "=WORKDAY(SEQUENCE(2,1,0),1,{3;4})",
+              "expected": [
+                [
+                  5
+                ],
+                [
+                  5
+                ]
+              ],
+              "actual": [
+                [
+                  5
+                ],
+                [
+                  5
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "workday_intl",
+              "formula": "=WORKDAY.INTL(SEQUENCE(2,1,0),{1;2},11,{3;4})",
+              "expected": [
+                [
+                  1
+                ],
+                [
+                  6
+                ]
+              ],
+              "actual": [
+                [
+                  1
+                ],
+                [
+                  6
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "networkdays",
+              "formula": "=NETWORKDAYS({0;1},{3;4})",
+              "expected": [
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ],
+              "actual": [
+                [
+                  2
+                ],
+                [
+                  2
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "network_holidays",
+              "formula": "=NETWORKDAYS({0;1},{3;4},{3;4})",
+              "expected": [
+                [
+                  1
+                ],
+                [
+                  0
+                ]
+              ],
+              "actual": [
+                [
+                  1
+                ],
+                [
+                  0
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "network_intl",
+              "formula": "=NETWORKDAYS.INTL({0;1},{3;4},7)",
+              "expected": [
+                [
+                  2
+                ],
+                [
+                  3
+                ]
+              ],
+              "actual": [
+                [
+                  2
+                ],
+                [
+                  3
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            },
+            {
+              "name": "network_intl_holidays",
+              "formula": "=NETWORKDAYS.INTL({0;1},{3;4},7,{3;4})",
+              "expected": [
+                [
+                  1
+                ],
+                [
+                  1
+                ]
+              ],
+              "actual": [
+                [
+                  1
+                ],
+                [
+                  1
+                ]
+              ],
+              "date1904": true,
+              "matches": true
+            }
+          ]
+        }
+      },
+      "metadataCaseControlledExperiments": {
+        "conclusion": "Only lowercase dynamic-array extension GUID preserves native WPS metadata. calcFeatures/calcId/relation ID do not repair uppercase GUID.",
+        "variants": [
+          {
+            "group": "output-wps-variants",
+            "variant": "features",
+            "metadata": false,
+            "cellMetadataAnchors": 0,
+            "sha256": "0310d56e7febbf7024a69f24403718e574cc3dd3bc41a78bef8582b9c15e2a48"
+          },
+          {
+            "group": "output-wps-variants",
+            "variant": "calcid",
+            "metadata": false,
+            "cellMetadataAnchors": 0,
+            "sha256": "726da88012f47879e345c3c1e13ddebf8cd9207bad336247b28a91a43483fcae"
+          },
+          {
+            "group": "output-wps-variants",
+            "variant": "both",
+            "metadata": false,
+            "cellMetadataAnchors": 0,
+            "sha256": "60f49551467b5738e7104abddbb8a60a789e1088f54cac31b12bb4f8d60c5d2c"
+          },
+          {
+            "group": "output-wps-metadata-variants",
+            "variant": "relation-id",
+            "metadata": false,
+            "cellMetadataAnchors": 0,
+            "sha256": "41788937c059e843acb4e8c27320a7c1d58f485f9231068167739b5419a09292"
+          },
+          {
+            "group": "output-wps-metadata-variants",
+            "variant": "lower-guid",
+            "metadata": true,
+            "cellMetadataAnchors": 33,
+            "sha256": "6c27ace73fefa7b6b5c46ada8a894e93cbf7082d4f39a7efcea1ef76a45fd337"
+          },
+          {
+            "group": "output-wps-metadata-variants",
+            "variant": "both",
+            "metadata": true,
+            "cellMetadataAnchors": 33,
+            "sha256": "b5a50eab1a0f6cbeb3cb7fb2fb8c31ac346f755515bafd923ea1444f9dce8272"
+          }
+        ],
+        "final": {
+          "metadata": true,
+          "cellMetadataAnchors": 33,
+          "sha256": "95d11847c18bc0d1496ee1ff9b2071ec6aca85e75f3a7bb7dfc719245a51ad87"
+        }
+      }
+    }
+  },
+  "compatibility": {
+    "default": "Excel Unicode code points and referenced-empty spill zero",
+    "wpsSourceDetection": "KSOProductBuildVer 12.x plus CalculationRule=0; app.xml Application is unreliable (actual native WPS writes Microsoft Excel)",
+    "explicitOverride": "Formula-bar Excel/WPS selector; saved as SealFormulaCompatibility custom property, explicit Excel override wins over producer hints",
+    "wpsUtf16Evidence": "LEN LEFT RIGHT MID REPLACE FIND SEARCH tested against native COM UTF-16 code-unit arrays; isolated surrogate results omit illegal XML caches while preserving formulas and mode"
+  },
+  "limits": {
+    "maximumArrayCells": 100000,
+    "maximumExpandedVisibleSheetCells": 100000,
+    "workbookEvaluationAndCandidateScanBudget": 1000000,
+    "maximumNativeCachedCellsPerArray": 100000,
+    "maximumNativeCachedCellsPerWorkbook": 1000000,
+    "remaining": [
+      "XLOOKUP wildcard and binary search modes and array lookup_value are explicitly unsupported",
+      "LET LAMBDA named ranges structured references and other unregistered array functions retain honest source-cache/pending behavior",
+      "Legacy CSE arrays remain source cached instead of guessing dynamic ownership",
+      "WPS UTF16 mode represents the tested 12.1 CalculationRule=0 version, not every product release",
+      "Final distributable builds and full regression are coordinated by the root task after source freeze"
+    ]
+  },
+  "evidence": {
+    "rea": "Existing docs/verification/v2.0.0-second-pass/wps-native.json proves dynamic metadata writer entry points, not the internal spill evaluator",
+    "privateDirectory": ".upgrade-private/spill-verification",
+    "foreignFixture": {
+      "path": "renderer/src/sheet/fixtures/wps-native-spill.xlsx",
+      "sha256": "27a97f996f2133a050f1c63dfec9676c705507ac5346d9cd8986cf749559cc3e",
+      "sanitized": "Synthetic native WPS package with author replaced and machine ICV removed; worksheet and formula metadata preserved"
+    },
+    "supportDocument": "renderer/src/sheet/formulaSupport.md",
+    "productionRegressionHelper": "mobile/tests/spill-browser-actions.cjs"
+  }
+}

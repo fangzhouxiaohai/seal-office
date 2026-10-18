@@ -1,0 +1,29 @@
+{
+  "stage": "pending-unicode-fix-superseded",
+  "version": "2.0.0",
+  "versionCode": "20000",
+  "productionQAExecuted": false,
+  "nativePackagesGenerated": false,
+  "completedBuilds": [
+    "harmony",
+    "android"
+  ],
+  "nativeCompilation": {
+    "harmony": {
+      "passed": true,
+      "output": "mobile/unpackage/native-check-pre-unicode-fix/harmony"
+    },
+    "android": {
+      "performed": false
+    }
+  },
+  "cloudReady": [
+    {
+      "platform": "harmony",
+      "path": "mobile/unpackage/cloud-ready/2.0.0-pre-unicode-fix/harmony",
+      "files": 48,
+      "officeJsSha256": "3a745737f07bdffbb24f77d993b79994bf7bce8596d634c23a36090900147756"
+    }
+  ],
+  "reason": "PPT草稿快照使用split拆分Unicode代理对，候选资源不作为最终资源；等待码点与同样式片段合并修复后重建。"
+}

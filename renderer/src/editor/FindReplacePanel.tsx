@@ -8,6 +8,7 @@ export type 查找结果 = number | { 总数: number; 当前位置: number }
 
 interface Props {
   open: boolean
+  readOnly?: boolean
   onClose: () => void
   onFind: (关键词: string, 区分大小写: boolean) => 查找结果
   onPrevious?: (关键词: string, 区分大小写: boolean) => 查找结果
@@ -18,7 +19,7 @@ interface Props {
   onReplaceAll: (关键词: string, 替换为: string, 区分大小写: boolean) => number
 }
 
-const FindReplacePanel = ({ open, onClose, onFind, onPrevious, onQueryChange, getRoot, documentId, onReplace, onReplaceAll }: Props) => {
+const FindReplacePanel = ({ open, readOnly = false, onClose, onFind, onPrevious, onQueryChange, getRoot, documentId, onReplace, onReplaceAll }: Props) => {
   const [关键词, set关键词] = useState('')
   const [替换词, set替换词] = useState('')
   const [区分大小写, set区分大小写] = useState(false)
@@ -91,7 +92,7 @@ const FindReplacePanel = ({ open, onClose, onFind, onPrevious, onQueryChange, ge
         '查找下一个'
       )
     ),
-    React.createElement(
+    !readOnly && React.createElement(
       'div',
       { className: 'wps-find__row' },
       React.createElement(Input, {

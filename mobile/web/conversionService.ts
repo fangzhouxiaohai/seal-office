@@ -13,7 +13,12 @@ export function conversionUrl(value: string) {
 const confirm = (title: string, content: string, okText: string) => new Promise<boolean>(resolve => {
   Modal.confirm({ title, content, okText, cancelText: '取消', maskClosable: false, onOk: () => { resolve(true) }, onCancel: () => { resolve(false) } })
 })
-export function installConversionService(core: any) {
+interface AccountConverter {
+  status: () => { account: { enabled: boolean } | null; unlocked: boolean }
+  conversionCapabilities: () => Promise<{ protocol: string; inputs: string[]; outputs: string[]; maximumBytes?: number }>
+  convertDocument: (input: { inputFormat: string; outputFormat: string; type: string; data: string; consent: true }) => Promise<{ outputFormat: string; data: string }>
+}
+export function installConversionService(core: any, cloud?: AccountConverter) {
   const { storage, vault } = core
   const read = (): Configuration | null => {
     if (!storage.existsSync(configurationPath)) return null
@@ -54,15 +59,21 @@ export function installConversionService(core: any) {
     confirmLocal: (extension: string) => confirm('保存兼容表格', extension.toUpperCase() + ' 的手机离线输出主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。请核对后保存副本；需要完整格式时使用 XLSX。', '继续保存'),
     remote: async (bytes: Uint8Array, inputFormat: string, outputFormat: string, type: string) => {
       const configuration = read()
-      if (!configuration) throw new Error('此格式需要文档转换服务，请在设置中心填写自建服务地址和访问令牌；常用 DOCX、XLSX、PPTX 等可离线使用')
+      if (!configuration && !cloud?.status().account?.enabled) throw new Error('此格式需要联网转换，请先登录并开通云空间，或在设置中心配置自建转换服务；来源文件保持不变')
       if (bytes.length > maximumBytes) throw new Error('联网兼容转换最多支持 20 MiB；来源文件保持不变，可在电脑版处理大文件')
-      if (!await confirm('使用文档转换服务', `将此文档发送至 ${configuration.url}，从 ${inputFormat.toUpperCase()} 转换为 ${outputFormat.toUpperCase()}。服务需要读取文档正文；请确认这是你信任的自建服务。转换完成后服务删除临时文件。`, '同意并转换')) throw new Error('已取消文档转换，原文件未修改')
-      const capabilities = await test(configuration)
+      const destination = configuration ? configuration.url : '当前账号的海豹办公云服务'
+      if (!await confirm('使用文档转换服务', `将此文档发送至 ${destination}，从 ${inputFormat.toUpperCase()} 转换为 ${outputFormat.toUpperCase()}。转换服务需要读取文档正文。转换完成后服务删除临时文件；来源文件保留。`, '同意并转换')) throw new Error('已取消文档转换，原文件未修改')
+      const capabilities = configuration ? await test(configuration) : await cloud!.conversionCapabilities()
       if (!capabilities.inputs.includes(inputFormat) || !capabilities.outputs.includes(outputFormat)) throw new Error('此转换服务未支持所需格式，请更新自建服务')
-      const result = await request(configuration, '/v1/convert', { inputFormat, outputFormat, type, data: Buffer.from(bytes).toString('base64') })
+      const input = { inputFormat, outputFormat, type, data: Buffer.from(bytes).toString('base64'), consent: true as const }
+      const result = configuration ? await request(configuration, '/v1/convert', input) : await cloud!.convertDocument(input)
       if (result.outputFormat !== outputFormat || typeof result.data !== 'string' || result.data.length > Math.ceil(maximumBytes / 3) * 4) throw new Error('转换服务返回的文档格式无效')
       const output = Buffer.from(result.data, 'base64')
       if (!output.length || output.length > maximumBytes || output.toString('base64') !== result.data) throw new Error('转换结果数据无效或超过处理上限')
+      if (outputFormat === 'pdf') {
+        const { PDFDocument } = await import('pdf-lib')
+        if (output.subarray(0, 5).toString() !== '%PDF-' || !/%%EOF\s*$/.test(output.subarray(-2048).toString('latin1')) || !(await PDFDocument.load(output, { updateMetadata: false, throwOnInvalidObject: true })).getPageCount()) throw new Error('转换服务没有返回有效 PDF')
+      }
       return output
     },
   })

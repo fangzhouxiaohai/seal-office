@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "results": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 131
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true,
+          "integrityFiles": 131
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true,
+          "integrityFiles": 131
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "limitations": [
+    "NSIS installation/uninstallation was not performed. System integration tests used an isolated registry scope."
+  ]
+}

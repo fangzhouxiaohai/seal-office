@@ -1,10 +1,18 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp } from 'antd'
 import HomePage from './HomePage'
 import { AppProvider, useAppStore } from '../store'
 import { RECENT_DOCS } from '../mock/recentDocs'
+
+afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
+
+// Await the actual lazy module rather than racing its cold transform against
+// Testing Library's default element-query deadline. Keep all content assertions.
+const 等待模板库加载 = async () => {
+  await act(async () => { await import('../components/TemplateLibrary') })
+}
 
 const 渲染首页 = () =>
   render(
@@ -23,25 +31,32 @@ describe('首页（WPS 版式）', () => {
       return <output data-testid="模板文字">{文档?.html ?? ''}</output>
     }
     render(<AntdApp><AppProvider><HomePage 模板库打开 /><状态 /></AppProvider></AntdApp>)
-    await userEvent.click(screen.getAllByRole('button', { name: '使用模板' })[0])
+    await 等待模板库加载()
+    await userEvent.click((await screen.findAllByRole('button', { name: '使用模板' }))[0])
     expect(screen.getByTestId('模板文字')).toHaveTextContent('个人简历')
     expect(screen.getByTestId('模板文字')).toHaveTextContent('教育背景')
   })
   it('使用演示模板时创建可编辑的演示文稿', async () => {
+    const 恢复资源 = vi.fn(async () => ({ 成功: true }))
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { presentationResources: { restore: 恢复资源 } } })
     const 状态 = () => {
       const { module, activeDocumentId, 演示文档模型, documents } = useAppStore()
       const 文稿 = activeDocumentId ? 演示文档模型[activeDocumentId] : null
       const 文档 = documents.find((项) => 项.id === activeDocumentId)
-      return <output data-testid="模板文稿">{JSON.stringify({ module, 名称: 文档?.name, 标题: 文稿?.幻灯片列表[0]?.文本框列表[0]?.text })}</output>
+      return <output data-testid="模板文稿">{JSON.stringify({ module, 名称: 文档?.name, 标题: 文稿?.幻灯片列表[0]?.文本框列表[0]?.text, 页数: 文稿?.幻灯片列表.length, 图片资源数: Object.keys(文稿?.资源索引 ?? {}).length })}</output>
     }
     render(<AntdApp><AppProvider><HomePage 模板库打开 /><状态 /></AppProvider></AntdApp>)
+    await 等待模板库加载()
     const 用户 = userEvent.setup()
-    await 用户.click(screen.getByRole('button', { name: /^演\s*示$/ }))
+    await 用户.click(await screen.findByRole('button', { name: /^演\s*示$/ }))
     await 用户.click(screen.getByRole('button', { name: '预览商务演示' }))
     await 用户.click(screen.getByRole('button', { name: '使用此模板' }))
-    expect(screen.getByTestId('模板文稿')).toHaveTextContent('"module":"ppt"')
+    await waitFor(() => expect(screen.getByTestId('模板文稿')).toHaveTextContent('"module":"ppt"'))
     expect(screen.getByTestId('模板文稿')).toHaveTextContent('"名称":"商务演示.pptx"')
     expect(screen.getByTestId('模板文稿')).toHaveTextContent('"标题":"商务演示"')
+    expect(screen.getByTestId('模板文稿')).toHaveTextContent('"页数":9')
+    expect(screen.getByTestId('模板文稿')).toHaveTextContent('"图片资源数":2')
+    expect(恢复资源).toHaveBeenCalledOnce()
   })
 
   it('使用表格模板时保留可编辑单元格', async () => {
@@ -52,8 +67,9 @@ describe('首页（WPS 版式）', () => {
       return <output data-testid="模板表格">{JSON.stringify({ module, 名称: 文档?.name, 首格: 工作表?.单元格.A1?.原始值 })}</output>
     }
     render(<AntdApp><AppProvider><HomePage 模板库打开 /><状态 /></AppProvider></AntdApp>)
+    await 等待模板库加载()
     const 用户 = userEvent.setup()
-    await 用户.click(screen.getByRole('button', { name: /^表\s*格$/ }))
+    await 用户.click(await screen.findByRole('button', { name: /^表\s*格$/ }))
     await 用户.click(screen.getByRole('button', { name: '预览财务报表' }))
     await 用户.click(screen.getByRole('button', { name: '使用此模板' }))
     expect(screen.getByTestId('模板表格')).toHaveTextContent('"module":"table"')

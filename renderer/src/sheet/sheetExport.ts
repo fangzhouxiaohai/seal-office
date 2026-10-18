@@ -2,7 +2,7 @@
 // 导出内容取自单元格的显示值，因此公式导出的是计算结果而非公式原文。
 
 import { 生成地址, 解析地址 } from './address'
-import { 读取单元格, 重算工作表, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
+import { 读取单元格, 重算工作簿, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
 
 /** 计算实际有内容的范围，避免导出整张空表 */
 function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number } {
@@ -90,9 +90,11 @@ export function 生成表格文件名(工作表名: string, 扩展名: string): 
  * 公式携带表达式与计算结果；普通单元格保留原始输入。
  * 全部工作表均无内容时返回 null。
  */
-type Xlsx单元格 = string | { 公式: string; 结果: string | number; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 文字: Array<{ 文本: string }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证; 超链接?: string }
+type Xlsx单元格 = string | { 值: string | number | boolean | { error: string }; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 公式: string; 结果?: string | number | boolean | { error: string }; 数组范围?: string; 动态数组?: boolean; 保留公式拼写?: boolean; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 文字: Array<{ 文本: string }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证; 超链接?: string }
 type Xlsx工作表 = {
   名称: string
+  日期系统1904?: boolean
+  公式兼容模式?: 'Excel' | 'WPS'
   数据: Xlsx单元格[][]
   页面设置: 页面设置
   合并区域: string[]
@@ -104,15 +106,32 @@ type Xlsx工作表 = {
   图片?: SheetImage[]
 }
 
-export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Xlsx工作表[] } | null {
+/** XML cannot represent isolated UTF-16 surrogates returned by legacy WPS text
+ * indexing. Omit such a cache and retain its formula for recalculation rather
+ * than silently replacing the calculated character with U+FFFD. */
+function 可写公式缓存(value: unknown): boolean {
+  if (typeof value !== 'string') return true
+  for (let index=0;index<value.length;index++) {
+    const code=value.charCodeAt(index)
+    if (code>=0xd800&&code<=0xdbff) { const next=value.charCodeAt(++index);if (!(next>=0xdc00&&next<=0xdfff)) return false }
+    else if (code>=0xdc00&&code<=0xdfff) return false
+  }
+  return true
+}
+
+export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表: Xlsx工作表[]; 日期系统1904?: boolean; 公式兼容模式?: 'Excel' | 'WPS' } | null {
   const 列表 = Array.isArray(工作表或列表) ? 工作表或列表 : [工作表或列表]
-  const 表定义列表 = 列表
-    .map((工作表) => 构建单表模型(重算工作表(工作表)))
+  const 日期系统1904 = 列表[0]?.日期系统1904 === true
+  if (列表.some(表 => (表.日期系统1904 === true) !== 日期系统1904)) throw new Error('工作表日期基准不一致，已阻止混合保存')
+  const 公式兼容模式 = 列表[0]?.公式兼容模式
+  if (列表.some(表 => (表.公式兼容模式 ?? 'Excel') !== (公式兼容模式 ?? 'Excel'))) throw new Error('工作表公式兼容模式不一致')
+  const 表定义列表 = 重算工作簿(列表)
+    .map((工作表) => 构建单表模型(工作表))
     .filter((表): 表 is Xlsx工作表 => 表 !== null)
   if (表定义列表.length === 0) {
     return null
   }
-  return { 工作表: 表定义列表 }
+  return { 工作表: 表定义列表, ...(日期系统1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? {公式兼容模式} : {}) }
 }
 
 /** 构建单张工作表的写入模型；空表返回 null */
@@ -131,9 +150,20 @@ function 构建单表模型(工作表: Sheet): Xlsx工作表 | null {
       const 格式 = Object.keys(单元.格式).length > 0 ? { 格式: 单元.格式 } : {}
       const 验证 = 单元.数据验证 ? { 数据验证: 单元.数据验证 } : {}
       const 链接 = 单元.超链接 ? { 超链接: 单元.超链接 } : {}
-      if (单元.值类型 !== '文本' && 单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
-        const 结果 = 单元.计算值 ?? 单元.显示值
-        单元格列表.push({ 公式: 单元.原始值.slice(1), 结果, ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证, ...链接 })
+      if (单元.溢出锚点) {
+        if (单元.公式状态 === '待计算') { 单元格列表.push({ 文字: [{ 文本: '' }], ...格式, ...验证 }); continue }
+        const value = 单元.布尔结果 ?? 单元.计算值 ?? 单元.显示值
+        if (!可写公式缓存(value)) { 单元格列表.push({文字:[{文本:''}],...格式,...验证}); continue }
+        单元格列表.push({ 值: 单元.计算错误 && /^#(?:N\/A|SPILL!|CALC!|REF!|VALUE!|DIV\/0!|NUM!|NAME\?|NULL!)$/.test(String(value)) ? { error: String(value) } : value, ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证, ...链接 })
+      } else if (单元.值类型 !== '文本' && 单元.原始值.startsWith('=') && 单元.原始值.length > 1) {
+        const 来源 = 单元.公式来源?.原始值 === 单元.原始值 ? 单元.公式来源 : undefined
+        let 结果 = 单元.公式状态 === '待计算' ? undefined : 单元.公式状态 === '来源缓存' && 来源 ? 来源.结果 : 单元.计算值 ?? 单元.显示值
+        if (typeof 来源?.结果 === 'boolean' && ['TRUE', 'FALSE'].includes(String(结果))) 结果 = 结果 === 'TRUE'
+        if (单元.布尔结果 !== undefined) 结果 = 单元.布尔结果
+        if (!可写公式缓存(结果)) 结果 = undefined
+        if (单元.计算错误 && /^#(?:N\/A|SPILL!|CALC!|REF!|VALUE!|DIV\/0!|NUM!|NAME\?|NULL!)$/.test(String(结果))) 结果 = { error: String(结果) }
+        const 数组范围 = 单元.动态数组 ? 单元.溢出范围 ?? `${生成地址(行, 列)}:${生成地址(行, 列)}` : 来源?.数组范围
+        单元格列表.push({ 公式: 单元.原始值.slice(1), ...(来源 ? { 保留公式拼写: true } : {}), ...(结果 !== undefined ? { 结果 } : {}), ...(数组范围 ? { 数组范围 } : {}), ...(单元.动态数组 || 来源?.动态数组 ? { 动态数组: true } : {}), ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证, ...链接 })
       } else if (单元.批注 || Object.keys(格式).length > 0 || 单元.值类型 || 单元.数据验证 || 单元.超链接) {
         单元格列表.push({ 文字: [{ 文本: 单元.原始值 }], ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...(单元.值类型 ? { 类型: 单元.值类型 } : {}), ...格式, ...验证, ...链接 })
       } else {
@@ -143,7 +173,7 @@ function 构建单表模型(工作表: Sheet): Xlsx工作表 | null {
     数据.push(单元格列表)
   }
   return {
-    名称: 工作表.name, 数据, 页面设置: { ...默认页面设置, ...工作表.页面设置 },
+    名称: 工作表.name, 数据, ...(工作表.日期系统1904 ? { 日期系统1904: true } : {}), ...(工作表.公式兼容模式 ? {公式兼容模式:工作表.公式兼容模式} : {}), 页面设置: { ...默认页面设置, ...工作表.页面设置 },
     合并区域: [...工作表.合并区域], 列宽: [...工作表.列宽], 行高: [...工作表.行高],
     图片: [...(工作表.图片 ?? [])],
     ...(工作表.冻结 ? { 冻结: 工作表.冻结 } : {}),

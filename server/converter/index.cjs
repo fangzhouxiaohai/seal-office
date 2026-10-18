@@ -1,8 +1,9 @@
 // Independent, authenticated document conversion service. Never accepts file paths or URLs.
 const http = require('node:http')
 const crypto = require('node:crypto')
-const formats = require('../../main/documentFormats.json')
+const formats = require('../formats.cjs')
 const { convertWithOffice } = require('./office.cjs')
+const { validatePdf } = require('./pdf.cjs')
 const maximumBytes = 20 * 1024 * 1024
 const bodyLimit = Math.ceil(maximumBytes / 3) * 4 + 4096
 const standard = { word: 'docx', table: 'xlsx', ppt: 'pptx' }
@@ -11,8 +12,8 @@ function validateConversion(input) {
   if (!input || typeof input !== 'object') throw new Error('转换请求无效')
   const source = formats.find(f => f.extension === input.inputFormat)
   const target = formats.find(f => f.extension === input.outputFormat)
-  if (!source || !target || !standard[input.type] || (source.type !== input.type && source.extension !== 'xml') || target.type !== input.type || target.readOnlySource) throw new Error('转换格式不受支持')
-  if (!target.outputFilter && target.extension !== standard[input.type]) throw new Error('此格式由应用本地保存')
+  if (!source || !target || !standard[input.type] || (source.type !== input.type && source.extension !== 'xml') || (target.type !== input.type && target.extension !== 'pdf') || target.readOnlySource) throw new Error('转换格式不受支持')
+  if (!target.outputFilter && target.extension !== standard[input.type] && target.extension !== 'pdf') throw new Error('此格式由应用本地保存')
   if (['xml', 'mhtml', 'prn'].includes(target.outputFilter)) throw new Error('此格式由应用本地保存')
   if (typeof input.data !== 'string' || input.data.length > bodyLimit || input.data.length % 4 !== 0) throw new Error('文件数据无效或超过 20 MiB')
   const bytes = Buffer.from(input.data, 'base64')
@@ -41,7 +42,7 @@ function createConverterServer({ token, executable, origins = ['*'], convert = c
     if (authorize ? !authorize(req.headers.authorization || '') : supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) { reply(401, { error: '转换服务令牌无效' }); return }
     if (!configuration().enabled) { reply(503, { error: '文档转换服务尚未启用，请联系管理员' }); return }
     if (req.url === '/v1/capabilities' && req.method === 'GET') {
-      reply(200, { protocol: 'seal-office-converter/1', maximumBytes, inputs: formats.filter(f => standard[f.type]).map(f => f.extension), outputs: formats.filter(f => standard[f.type] && !f.readOnlySource && (f.outputFilter || f.extension === standard[f.type]) && !['xml','mhtml','prn'].includes(f.outputFilter)).map(f => f.extension) }); return
+      reply(200, { protocol: 'seal-office-converter/1', maximumBytes, inputs: formats.filter(f => standard[f.type]).map(f => f.extension), outputs: [...formats.filter(f => standard[f.type] && !f.readOnlySource && (f.outputFilter || f.extension === standard[f.type]) && !['xml','mhtml','prn'].includes(f.outputFilter)).map(f => f.extension), 'pdf'] }); return
     }
     if (req.url !== '/v1/convert' || req.method !== 'POST') { reply(404, { error: '接口不存在' }); return }
     const client = clientIp(req), now = Date.now()
@@ -52,13 +53,18 @@ function createConverterServer({ token, executable, origins = ['*'], convert = c
     if (Number(req.headers['content-length']) > bodyLimit) { reply(413, { error: '文件超过 20 MiB' }); req.resume(); return }
     active++
     let job
+    const controller=new AbortController(),cancel=()=>controller.abort()
+    req.once('aborted',cancel);const closed=()=>{if(!res.writableEnded)cancel()};res.once('close',closed)
     try {
       const chunks = []; let size = 0
       for await (const chunk of req) { size += chunk.length; if (size > bodyLimit) { reply(413, { error: '文件超过 20 MiB' }); return }; chunks.push(chunk) }
       const input = validateConversion(JSON.parse(Buffer.concat(chunks).toString('utf8')))
       job = { id: crypto.randomUUID(), startedAt: Date.now(), inputFormat: input.inputFormat, outputFormat: input.outputFormat, type: input.type, inputBytes: input.bytes.length }
-      const output = await convert(input.bytes, input.inputFormat, input.outputFormat, input.type, { executable })
+      if(controller.signal.aborted)throw new Error('文档转换已取消')
+      const output = await convert(input.bytes, input.inputFormat, input.outputFormat, input.type, { executable,signal:controller.signal })
+      if(controller.signal.aborted)throw new Error('文档转换已取消')
       if (!output?.length || output.length > maximumBytes) throw new Error('转换结果为空或超过 20 MiB')
+      if (input.outputFormat === 'pdf') await validatePdf(output)
       snapshot.succeeded++; snapshot.inputBytes += input.bytes.length; snapshot.outputBytes += output.length
       record({ ...job, status: 'succeeded', outputBytes: output.length, finishedAt: Date.now(), milliseconds: Date.now() - job.startedAt })
       if (!res.destroyed) reply(200, { data: Buffer.from(output).toString('base64'), outputFormat: input.outputFormat })
@@ -66,7 +72,7 @@ function createConverterServer({ token, executable, origins = ['*'], convert = c
       snapshot.failed++
       if (job) record({ ...job, status: 'failed', finishedAt: Date.now(), milliseconds: Date.now() - job.startedAt, error: String(error.message || '文档转换失败').slice(0, 200) })
       if (!res.headersSent && !res.destroyed) reply(400, { error: error instanceof SyntaxError ? '请求数据无效' : error.message || '文档转换失败' })
-    } finally { active-- }
+    } finally { req.off('aborted',cancel);res.off('close',closed);active-- }
   })
   server.requestTimeout = 120000; server.headersTimeout = 15000; server.keepAliveTimeout = 5000
   server.snapshot = () => ({ ...snapshot, recent: snapshot.recent.map(job => ({ ...job })), active })
@@ -77,4 +83,4 @@ if (require.main === module) {
   const port = Number(process.env.PORT || 8298), host = process.env.HOST || '127.0.0.1'
   server.listen(port, host, () => process.stdout.write(`海豹办公文档转换服务：${host}:${port}\n`))
 }
-module.exports = { createConverterServer, validateConversion, maximumBytes }
+module.exports = { createConverterServer, validateConversion, maximumBytes,bodyLimit }

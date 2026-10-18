@@ -52,7 +52,7 @@ async function 读取兼容文档(扩展, 字节) {
   return { ...结果, 类型, 警告 }
 }
 async function 写入兼容文档(类型, 扩展, 模型) {
-  const 格式 = 格式列表.find(项 => 项.extension === 扩展 && 项.type === 类型 && !项.readOnlySource)
+  const 格式 = 格式列表.find(项 => 项.extension === 扩展 && (项.type === 类型 || 项.extension === 'pdf') && !项.readOnlySource)
   if (!格式 || !写入器[类型]) throw new Error('该文档格式不能写入，请选择受支持的普通文档格式')
   if (['dbf', 'prn', 'dif', 'slk'].includes(扩展) && 模型.工作表?.length !== 1) throw new Error('这种数据格式只能保存一张工作表，请另存为 XLSX')
   if (扩展 === 'prn') {

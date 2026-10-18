@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.0",
+  "scope": "fourth-pass-distribution-naming",
+  "checkedAt": "2026-10-18T13:27:06.085849+00:00",
+  "passed": true,
+  "artifactNames": {
+    "windowsSetup": "seal-office-setup-2.0.0.exe",
+    "windowsPortable": "seal-office-2.0.0-portable.exe",
+    "ubuntu": "seal-office-2.0.0-amd64.deb",
+    "web": "seal-office-2.0.0-web.zip",
+    "android": "seal-office-2.0.0-android.apk",
+    "harmony": "seal-office-2.0.0-harmony.hap"
+  },
+  "preserved": {
+    "uiName": "海豹办公",
+    "productName": "海豹办公",
+    "windowsExecutable": "海豹办公.exe",
+    "desktopShortcut": "海豹办公",
+    "linuxCommand": "sealoffice",
+    "desktopAppId": "com.sealoffice.desktop",
+    "mobileBundleId": "com.sealoffice.mobile",
+    "msixDisplayName": "seal-office",
+    "versionUnchanged": true,
+    "signingConfigurationUnchanged": true,
+    "historicalArchivesReportsAndFinalizersUnchanged": true
+  },
+  "checks": [
+    {
+      "command": "npm run test:packaging",
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": ".tmp-v200-fourth-naming-packaging.log"
+    },
+    {
+      "command": "npm --prefix mobile test",
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": ".tmp-v200-fourth-naming-mobile.log"
+    },
+    {
+      "command": "python scripts/test_artifact_names.py",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "exitCode": 0
+    },
+    {
+      "command": "python scripts/deploy-web.test.py",
+      "tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "exitCode": 0
+    },
+    {
+      "command": "python scripts/test_sync_release_mirror.py",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "exitCode": 0
+    },
+    {
+      "command": "node --test scripts/publish-packages.test.cjs",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "command": "npm --prefix mobile run check",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "command": "Node syntax checks and Python py_compile for modified executable helpers",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "addedTests": 10,
+  "mobileArchiveEvidence": {
+    "binaryCopyAndOriginalPreserved": true,
+    "differentExistingContentRejected": true,
+    "pathVersionAndPlatformMismatchRejected": true,
+    "hapZipFixtureActuallyDecoded": true,
+    "actualCloudArtifactProvided": false,
+    "actualApkSignatureReverifiedThisPass": false,
+    "actualHapSignatureVerified": false,
+    "actualMobileDeviceVerified": false,
+    "cloudServiceDefaultFilenameControlled": false
+  },
+  "webArchiveLocation": ".upgrade-private/web-deployment/<release-id>/seal-office-2.0.0-web.zip",
+  "formalPackageBuildPerformed": false,
+  "deploymentPerformed": false,
+  "boundaries": [
+    "This verifies configuration, scripts and fixture behavior; final rebuilt installer identity, installation and browser checks belong to parent fourth-pass release acceptance.",
+    "Cloud APK/HAP are supplied separately by the user. Archive commands preserve their bytes; repository scripts do not change cloud service default output names.",
+    "HAP checker validates entry structure, app/version, ZIP CRC and current Harmony editor snapshot. Signature and device tests remain explicit separate checks.",
+    "Existing fixed-version package-release.json/release-mirror.json and historical finalizers remain historical; they were not rewritten."
+  ],
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "83fa78dc7e5b1e18354c29d553a3fddc24e406405d00dc608e0407b23cc169c7"
+    },
+    {
+      "path": "build/artifact-names.json",
+      "sha256": "7c75de15448a862c4fd0942f7b3d8193ec11423caa8f13ab53045af55b53856f"
+    },
+    {
+      "path": "build/electron-ubuntu.cjs",
+      "sha256": "d3e627ce12dc17dac47005c979fbbb72b987dd5e130dc0d5d7b96c48459cef88"
+    },
+    {
+      "path": "package.json",
+      "sha256": "3466611d40d774dcc1a91daeff02012439aa47d4a0b093134a7bc1b65625eb7d"
+    },
+    {
+      "path": ".github/workflows/ubuntu.yml",
+      "sha256": "64a94841e36f3a7ecb359fbcc022c6723b6c579ce3440ee61cb91a8b6b1fba85"
+    },
+    {
+      "path": "scripts/artifact-names.cjs",
+      "sha256": "80fd844a19f6caa2261b2b608a363043d6aea581954e608b147d6c4ba3402763"
+    },
+    {
+      "path": "scripts/artifact_names.py",
+      "sha256": "688da3ed5b564c180ef06e52b1e984d99ce487b8167bbbb6b1ff32934cbef35f"
+    },
+    {
+      "path": "scripts/artifact-names.test.cjs",
+      "sha256": "d28edd12b4a66070f9765f921b66d1ad30fdb3f1c6747df0ee9715910895eda6"
+    },
+    {
+      "path": "scripts/test_artifact_names.py",
+      "sha256": "107986d05c2bf505a06fecc4656970311e90e95b9a8bc29c2029dcd517233833"
+    },
+    {
+      "path": "scripts/package-deb-on-windows.cjs",
+      "sha256": "2828f25ebea605026958a852746dcb457262ca19bf90a8747931e37e564e942e"
+    },
+    {
+      "path": "scripts/verify-ubuntu-release.cjs",
+      "sha256": "b8e2fad050afcf100224e094bfa7a0047c45ac8eed417ddd977e8208064ca842"
+    },
+    {
+      "path": "scripts/verify-windows-release.ps1",
+      "sha256": "eacb596f5da7100c7b9bcf6344f711b14303e830ed5fe7bb400730272068b300"
+    },
+    {
+      "path": "scripts/build-msix.ps1",
+      "sha256": "cb958e2c1e3bbc5ff94c1ba04387c53b907c5b399e44028255ec8f6ef4cec668"
+    },
+    {
+      "path": "scripts/fetch-ubuntu-candidate.py",
+      "sha256": "9cdaf6c31e1d2ed85d94c6d7ff58a7ba7bf4ce6c960aba3a5fd02a253120df9b"
+    },
+    {
+      "path": "scripts/verify-deb-artifact.py",
+      "sha256": "d2ef30f1ace3686d124503bb2ede8bbcd05b49d3c3b9970e807eaaa34d59a93f"
+    },
+    {
+      "path": "scripts/verify-release-candidate.py",
+      "sha256": "dc1a328b79eb255c9d0d854256e5c314b69ff12c43fae10ff41bd91d70a6c95e"
+    },
+    {
+      "path": "scripts/publish-release.py",
+      "sha256": "ea2e7369964ff20c75ef90c994adc5ea009322a0184122e20b2d84363aa575a6"
+    },
+    {
+      "path": "scripts/deploy-web.py",
+      "sha256": "8e40f62c5b25ff8acd77b8f2e4ac926c5d0140e567182a963e88a630884fba4a"
+    },
+    {
+      "path": "scripts/deploy-web.test.py",
+      "sha256": "4d2d222bc63130d56bf09928046ef7ce18670b1c00075950a34cbbfd90f37fda"
+    },
+    {
+      "path": "scripts/sync-release-mirror.py",
+      "sha256": "617cda0fcd823da308d5d254f18186b4c2b58137f13bd6248b042f8357f207c0"
+    },
+    {
+      "path": "scripts/test_sync_release_mirror.py",
+      "sha256": "246843b01103218111f9b46c25bc073ed3462a3c156d929d4299c0001808920f"
+    },
+    {
+      "path": "mobile/package.json",
+      "sha256": "74ec21cecf04d9e80a4c93dc16cc465e4a08e76eb638bc79a20704e4ba7eb00d"
+    },
+    {
+      "path": "mobile/scripts/apk-check.mjs",
+      "sha256": "9122fde781c3a912eba1901015d9d81d3844e90aa959108e33a50cd6c7654c79"
+    },
+    {
+      "path": "mobile/scripts/archive-artifact.mjs",
+      "sha256": "3c07c05a8c232c5be201569cc23a185b3444690ddfe0f4de898556fea5c08995"
+    },
+    {
+      "path": "mobile/scripts/hap-check.mjs",
+      "sha256": "c316788513c3c96ab5bd8d7e71f409249ce245879e0d6da83290471d1654a3b8"
+    },
+    {
+      "path": "mobile/scripts/pack.mjs",
+      "sha256": "ce9514b7ae39be92451214bf0414927a0cbce1a4a2ee2db778f4a247a19c1a10"
+    },
+    {
+      "path": "mobile/scripts/snapshot.mjs",
+      "sha256": "2fca4d96cea486bf6123077b8135d9d4d62cec58c78a236ff81f6fb5f2c89a57"
+    },
+    {
+      "path": "mobile/tests/package-artifact.test.mjs",
+      "sha256": "5d95699435d1db0068ddeeabc7a659d3cbf61d3711d8f8521f1fe2b141d81583"
+    },
+    {
+      "path": "mobile/README.md",
+      "sha256": "1d3fe44b7e287f5acba62d3b16c2d0060b90f3e35c81abe0cdd4ccad4e22f4b5"
+    },
+    {
+      "path": "mobile/releases/2.0.0.md",
+      "sha256": "07923c8fb48292342f0987e3d6cef9f572836521de0046a6898d2b1dbcb8899c"
+    },
+    {
+      "path": "docs/v2.0.0-发行包命名.md",
+      "sha256": "5907186c998b787e2c305dae1a1904ca9099c1001af5cf8475c3e375c8aa6f23"
+    }
+  ],
+  "documentationAmendments": [
+    {
+      "path": "mobile/releases/2.0.0.md",
+      "at": "2026-10-18T14:12:38.658Z",
+      "oldSha256": "053eec3a20e1b812af0e7581447027af514216804241e0401e96d2b25275feeb",
+      "newSha256": "24d6dd355ddd288df3242fa9199aa881cc44eadddabec004faf0b7ddc08a26c7",
+      "reason": "Update current mobile release notes with fourth-pass diagram projects and current verification links; artifact-name text and executable inputs unchanged."
+    }
+  ],
+  "releaseToolAmendments": [
+    {
+      "path": "scripts/deploy-web.py",
+      "at": "2026-10-18T14:22:54.408Z",
+      "reason": "Static Web staging gains immutable previous chunk retention; English archive naming unchanged."
+    }
+  ],
+  "preFinalRefresh": {
+    "at": "2026-10-18T14:47:28.751Z",
+    "reason": "Final lazy template/PDF preparation rebuild; English artifact naming remains unchanged and will be rerun in full packaging suite."
+  },
+  "encodingToolAudit": {
+    "updatedAt": "2026-10-18T15:43:14.364Z",
+    "reason": "Only deployment text decoding and its regression changed; English naming behavior and application identities remain unchanged.",
+    "files": [
+      {
+        "path": "scripts/deploy-web.py",
+        "previousSha256": "56ed15ffa2895f2a5b98cbbfc8f9fedcb6eb9406ed61287abb8683011bdcd02e",
+        "sha256": "8e40f62c5b25ff8acd77b8f2e4ac926c5d0140e567182a963e88a630884fba4a"
+      },
+      {
+        "path": "scripts/deploy-web.test.py",
+        "previousSha256": "183b9bef09796e38ed6ddd32236ac808bcc38529220691881e3b8dee94ab2a49",
+        "sha256": "4d2d222bc63130d56bf09928046ef7ce18670b1c00075950a34cbbfd90f37fda"
+      }
+    ],
+    "pythonNamingTestsPassed": 2,
+    "deploymentTestsPassed": 5
+  }
+}

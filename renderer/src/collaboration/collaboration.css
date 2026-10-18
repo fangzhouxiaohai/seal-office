@@ -1,0 +1,18 @@
+.seal-collaboration-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.seal-collaboration-header h1{margin:0;font-size:20px;line-height:28px;font-weight:600}
+.seal-collaboration-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seal-collaboration-list{list-style:none;margin:0;padding:0;border:1px solid var(--border);border-radius:var(--radius-card,8px);overflow:hidden}
+.seal-collaboration-row{display:flex;align-items:center;gap:16px;padding:16px;min-width:0;background:var(--bg-card)}
+.seal-collaboration-row+.seal-collaboration-row{border-top:1px solid var(--border)}
+.seal-collaboration-row__text{flex:1;min-width:0;overflow-wrap:anywhere}
+.seal-collaboration-row__text strong{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+.seal-collaboration-row__text p{margin:4px 0;color:var(--text-2);font-size:12px;line-height:1.6}
+.seal-collaboration-row__actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seal-collaboration-form{display:grid;gap:16px}.seal-collaboration-field{display:grid;gap:6px}.seal-collaboration-field label{font-weight:500}
+.seal-collaboration-field .ant-select{width:100%}.seal-collaboration-description{margin:0;color:var(--text-2);font-size:13px;line-height:1.7}
+.seal-collaboration-tags{display:flex;flex-wrap:wrap;gap:8px}.seal-collaboration-tags .ant-btn{height:auto;min-height:36px;white-space:normal;text-align:left}
+.seal-collaboration-save{min-width:0}.seal-collaboration-save .ant-alert{margin:0 12px 8px}
+.seal-collaboration-team-files{display:flex;flex-direction:column;gap:16px;min-width:0}
+.seal-collaboration-team-selector{min-width:220px;max-width:100%;flex:1}
+.seal-collaboration-form input:focus-visible,.seal-collaboration-form textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media(max-width:600px){.seal-collaboration-row{align-items:flex-start;flex-wrap:wrap;padding:14px}.seal-collaboration-row__text{flex-basis:calc(100% - 48px)}.seal-collaboration-row__actions{width:100%}.seal-collaboration-row__actions .ant-btn,.seal-collaboration-toolbar .ant-btn{min-height:44px}.seal-collaboration-toolbar{width:100%}.seal-collaboration-toolbar>.ant-select{width:100%}.seal-collaboration-list{border-radius:6px}}

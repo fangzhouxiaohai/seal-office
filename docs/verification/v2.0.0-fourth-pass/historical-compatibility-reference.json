@@ -1,0 +1,46 @@
+{
+  "scope": "Historical third-pass native-oracle, full template visual and backend deployment evidence; explicitly not claimed rerun in this correction. Current whole renderer/main/server tests and production browser checks are fresh.",
+  "previousVerification": {
+    "path": "docs/verification/v2.0.0-third-pass/verification.json",
+    "bytes": 13532,
+    "sha256": "27ee0e06394a1e6ac92eaf1bcf88a90bcac6bd8e8cb64b9bb9c4f69cf780f4c7"
+  },
+  "unchangedCompatibilitySourceFiles": 912,
+  "reports": [
+    {
+      "path": "docs/verification/v2.0.0-third-pass/spill.json",
+      "bytes": 45998,
+      "sha256": "226dd80bd21c91049d96c42f5ec5e11ef41984e43635c3833062eedc90edbd88"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/mobile-reading.json",
+      "bytes": 12239,
+      "sha256": "8e27fb6b20e31acd68aa31253dc03b50fcdf903761bb419e274df53a658e8b48"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/template-expansion.json",
+      "bytes": 714456,
+      "sha256": "bb5a595d411680879949cdfede74ed02cceab420ee228c3fc8de9043b0f5f363"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/workspace-tools.json",
+      "bytes": 2729,
+      "sha256": "9359d0ba8f61c53e7be165bf3f33f3f8abd2b17b4acc94a26d63811bec6f0044"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/office-pdf.json",
+      "bytes": 1986,
+      "sha256": "bb08f3c82c110e6766adb5cad4bd821fbf93cb4249e0a70904fb8ff509971246"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/office-pdf-visual.json",
+      "bytes": 13747,
+      "sha256": "d136445b9b969b623f08886ebb4f1256b60c21846b9e2e5072467c32b67c072a"
+    },
+    {
+      "path": "docs/verification/v2.0.0-third-pass/backend-deployment.json",
+      "bytes": 4585,
+      "sha256": "6b001beb98ad904125ba53f25b50128bd32431357668e4ee94ebc4f18a63fdfb"
+    }
+  ]
+}

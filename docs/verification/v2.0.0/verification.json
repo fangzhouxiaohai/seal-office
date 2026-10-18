@@ -1,0 +1,7 @@
+{
+  "version": "2.0.0",
+  "audit": "second-pass",
+  "currentReport": "../v2.0.0-second-pass/verification.json",
+  "firstPass": "../v2.0.0-first-pass/verification.json",
+  "fullWpsParityAchieved": false
+}

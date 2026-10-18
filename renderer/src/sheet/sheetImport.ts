@@ -1,12 +1,15 @@
 // 表格导入：把主进程 xlsx 读取产出的 HTML 表格标记解析为工作表模型。
 // 缺少 <table> 标记时返回 null；合法空工作表仍可打开。
-import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
-import { 生成地址, 解析地址 } from './address'
+import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetCell, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
+import { 展开区域, 生成地址, 解析地址 } from './address'
 
 export interface Xlsx工作表元数据 {
+  日期系统1904?: boolean
+  公式兼容模式?: 'Excel' | 'WPS'
   单元格格式?: Record<string, CellFormat>
   单元格验证?: Record<string, 单元格数据验证>
   超链接?: Record<string, string>
+  公式来源?: Record<string, NonNullable<SheetCell['公式来源']>>
   合并区域?: string[]
   列宽?: Record<number, number>
   行高?: Record<number, number>
@@ -37,6 +40,14 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     ...Object.keys(元数据?.单元格格式 ?? {}),
     ...Object.keys(元数据?.单元格验证 ?? {}),
     ...Object.keys(元数据?.超链接 ?? {}),
+    ...Object.values(元数据?.公式来源 ?? {}).flatMap(source => {
+      const addresses=source.数组范围?.split(':') ?? [],points=addresses.map(解析地址)
+      if (!points.length || points.length>2 || points.some(point=>!point)) return []
+      const first=points[0]!,last=points[1]??first
+      // A tiny file may describe an enormous future/cached array. Keep its
+      // source metadata, but never allocate a grid from an unbounded ref.
+      return first.行<=last.行 && first.列<=last.列 && Math.max(last.行+1,10)*Math.max(last.列+1,6)<=100000 ? addresses : []
+    }),
     ...(元数据?.合并区域 ?? []).flatMap((区域) => 区域.split(':')),
   ].map(解析地址).filter((位置): 位置 is { 行: number; 列: number } => 位置 !== null)
   const 元数据最大行 = Math.max(-1, ...元数据地址.map((位置) => 位置.行), ...Object.keys(元数据?.行高 ?? {}).map(Number))
@@ -47,6 +58,8 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   const 行数 = Math.max(行值列表.length + 5, 元数据最大行 + 1, 图片最大行 + 1, 10)
   const 列数 = Math.max(最大列数 + 3, 元数据最大列 + 1, 图片最大列 + 1, 6)
   const 工作表: Sheet = { ...创建工作表(名称, 行数, 列数), 页面设置: { ...默认页面设置, ...页面 } }
+  if (元数据?.日期系统1904 === true) 工作表.日期系统1904 = true
+  if (元数据?.公式兼容模式) 工作表.公式兼容模式 = 元数据.公式兼容模式
   const CSV标记 = 表格.getAttribute('data-seal-csv')
   if (CSV标记) {
     const 来源 = JSON.parse(decodeURIComponent(CSV标记)) as Sheet['CSV来源']
@@ -83,6 +96,25 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     const 位置 = 解析地址(地址)
     if (!位置 || 位置.行 >= 行数 || 位置.列 >= 列数 || typeof 超链接 !== 'string') return
     工作表.单元格[地址] = { ...读取单元格(工作表, 地址), 超链接 }
+  })
+  Object.entries(元数据?.公式来源 ?? {}).forEach(([地址, 来源]) => {
+    const 单元 = 工作表.单元格[地址]
+    if (!单元 || !来源 || typeof 来源.原始值 !== 'string' || 来源.原始值 !== 单元.原始值) return
+    工作表.单元格[地址] = { ...单元, 公式来源: 来源 }
+  })
+  Object.entries(元数据?.公式来源 ?? {}).forEach(([anchor, source]) => {
+    if (!source.动态数组 || !source.数组范围) return
+    const endpoints = source.数组范围.split(':').map(解析地址)
+    if (endpoints.some(point => !point) || endpoints.length > 2) return
+    const first = endpoints[0]!, last = endpoints[1] ?? first
+    if ((Math.abs(last.行 - first.行) + 1) * (Math.abs(last.列 - first.列) + 1) > 100000 || 生成地址(first.行, first.列) !== anchor) return
+    for (const point of 展开区域(source.数组范围.includes(':') ? source.数组范围 : `${anchor}:${anchor}`)) {
+      const address = 生成地址(point.行, point.列), cell = 工作表.单元格[address]
+      if (address !== anchor && cell && !cell.原始值.startsWith('=')) {
+        const cached = source.数组缓存?.[address]
+        工作表.单元格[address] = { ...cell, 溢出锚点: anchor, ...(typeof cached === 'boolean' ? { 布尔结果: cached } : cached && typeof cached === 'object' ? { 计算值: cached.error, 计算错误: true } : {}) }
+      }
+    }
   })
   Object.entries(元数据?.列宽 ?? {}).forEach(([列, 宽]) => {
     if (Number.isInteger(Number(列)) && Number(列) >= 0 && Number(列) < 列数 && Number.isFinite(宽)) 工作表.列宽[Number(列)] = 宽

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "mode": "static-deb-inspection",
+  "package": "海豹办公Ubuntu2.0.0-amd64.deb",
+  "checks": [
+    "Debian ar structure and version",
+    "2.0.0 amd64 control metadata and conversion dependencies",
+    "Archived ELF, Chinese desktop name, and app.asar SHA-256 match the inspected unpacked build"
+  ],
+  "limitations": [
+    "No Linux installation or runtime/UI test was performed on this Windows host."
+  ],
+  "appAsarSha256": "e48a7709b47b4d214ce4a36fc02cb299091525f6508f5b11ee71f21e0e0198df",
+  "executable": "opt/海豹办公/sealoffice",
+  "desktopName": "海豹办公",
+  "sha256": "0bc578d306947df2246cdc655d9d00597e8264eeba9cc5616adeab9e6c28d5b2",
+  "bytes": 125934500,
+  "passed": true
+}

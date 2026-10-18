@@ -1,0 +1,53 @@
+{
+  "checks": [
+    "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局"
+  ],
+  "errors": [],
+  "blocked": [],
+  "startedAt": "2026-10-18T11:50:44.195Z",
+  "status": "passed",
+  "finishedAt": "2026-10-18T11:50:52.563Z",
+  "newPanelServices": [
+    "多维表格",
+    "思维导图",
+    "流程图",
+    "设计",
+    "知识库",
+    "笔记"
+  ],
+  "notesEmbeddedImageActuallyDecoded": true,
+  "nativeXlsxAndPptxActuallyReopened": true,
+  "phonePptStageBoundsVerified": [
+    360,
+    390,
+    820
+  ],
+  "regressionBeforeFix": ".upgrade-private/workspace-tools-final/before-ppt-layout-fix.json",
+  "sourceHashes": {
+    "renderer/src/localTools/workspaceTools.ts": "58ef7ac8466edf1796f369a51ca9d3caa053edad33daa481e2492eb63482d2c2",
+    "renderer/src/localTools/useToolDocument.ts": "477eceb485181e72d869d855c9bae9263379b5820b0d9e038e14d211f4dc99c0",
+    "renderer/src/localTools/ToolRecovery.tsx": "ae918104029d752496ffc7fa8d8886196cc5e0e288b8710cc1d3992016e22ab9",
+    "renderer/src/localTools/MultiTablePage.tsx": "cea07521cafafa8bba48b75a78a083bcfeba4a76903dc3dffc69a398ff161159",
+    "renderer/src/localTools/NotesPage.tsx": "3619c8703449931b8cde903f8a9babd4368ccbda930f0b2293218b70d35c6e76",
+    "renderer/src/localTools/designTemplates.ts": "c33fcdff3e170ebf6731e66e4130fa2626832150dff422d8f667c2aa00acb8ab",
+    "renderer/src/localTools/DesignPage.tsx": "9f9416751db56ad3e82c20c20c697110bc8144c21ea3d3154623ee120b37459b",
+    "renderer/src/localTools/workspaceTools.css": "3e6c7a53e9fa30a2cf50b0adbabf7968ba7c3c704f5b4c023117f8cde37a9d83",
+    "renderer/src/styles.css": "400a8868bf4c8de09d568225a6c88ff3dca7e23c3d350e98cae2bc15c2440e85",
+    "mobile/tests/workspace-tools-actions.cjs": "8f97ce82ea0bd163939b54f0666b7d963033aa0ae96f708fe6f3bafc8741e6c9",
+    "renderer/src/components/HomeSidebar.tsx": "87583ce5be7ef1c35c6739193cb3fc712756f06bc93d3de125013c1a09dbfe24",
+    "renderer/src/localTools/WorkspaceTools.test.tsx": "d7cb2c03a6bc201721165edc6edf6eeed82e7e51f88ae4e441d8dfd77aee8e82",
+    "renderer/src/localTools/workspaceTools.test.ts": "870164d4d234e4071d048abd9e3e8ad1463f47d8c63503cdcdb4be85e0b1224d",
+    "renderer/src/localTools/designTemplates.test.ts": "15b0db77adf8fde6b34b0e0fb24514bb1285a92ff70cd10228f75f4b0971f6d3"
+  },
+  "targetedTests": {
+    "files": 3,
+    "passed": 11,
+    "failed": 0,
+    "log": ".tmp-v200-third-tools-tests-final.log"
+  },
+  "statusFieldDeletionFilterRegression": {
+    "before": ".tmp-v200-third-tools-status-before.log",
+    "fixed": true,
+    "sourceRecordsPreserved": true
+  }
+}

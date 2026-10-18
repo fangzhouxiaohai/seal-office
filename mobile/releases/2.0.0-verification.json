@@ -1,0 +1,522 @@
+{
+  "scope": "mobile",
+  "stage": "final-fifth-pass",
+  "version": "2.0.0",
+  "versionCode": "20000",
+  "verifiedAt": "2026-10-18T17:02:47.034Z",
+  "applicationName": "海豹办公",
+  "nativePackagesGenerated": false,
+  "cloudBuildSubmitted": false,
+  "deviceValidation": false,
+  "currentResources": {
+    "platform": "android",
+    "desktopVersion": "2.0.0",
+    "builtAt": "2026-10-18T16:53:31.112Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "applicationIdentitySigningPermissionsUnchanged": true,
+  "finalAndroidStaticEqualsSnapshot": true,
+  "standaloneWebOutputUnchanged": true,
+  "frozenRuntimeSourceUnchanged": true,
+  "reproducibility": "Final Android rebuild reproduced every payload byte. Canonical build-info.json restored from the verified Android snapshot; all current static bytes equal that snapshot.",
+  "diagramCollaboration": {
+    "passed": true,
+    "realEncryptedHttpFixture": true,
+    "productionAccountOperations": 0,
+    "checks": 36,
+    "reports": {
+      "web-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:52:40.441Z",
+        "bundleSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "web",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": false,
+        "productionRequests": 0,
+        "requests": 102,
+        "completedAt": "2026-10-18T16:52:50.473Z"
+      },
+      "web-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:52:50.770Z",
+        "bundleSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "web",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": false,
+        "productionRequests": 0,
+        "requests": 137,
+        "completedAt": "2026-10-18T16:53:04.637Z"
+      },
+      "native-file-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:59:58.184Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-file",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 112,
+        "completedAt": "2026-10-18T17:00:12.141Z"
+      },
+      "native-file-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:12.460Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-file",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 141,
+        "completedAt": "2026-10-18T17:00:28.678Z"
+      },
+      "native-http-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:29.179Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-http",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 119,
+        "completedAt": "2026-10-18T17:00:45.507Z"
+      },
+      "native-http-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:45.844Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-http",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 147,
+        "completedAt": "2026-10-18T17:01:03.248Z"
+      }
+    }
+  },
+  "nativeCompilation": {
+    "android": {
+      "passed": true,
+      "output": "mobile/unpackage/native-check/android",
+      "staticFilesSha256Verified": 29
+    },
+    "harmony": {
+      "passed": true,
+      "output": "mobile/unpackage/native-check/harmony",
+      "staticFilesSha256Verified": 29
+    }
+  },
+  "productionBrowser": {
+    "resourceOfficeJsSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+    "testedPlatform": "android",
+    "nativeTouchHost": "Electron hidden standard BrowserWindow, CDP native touchscreen",
+    "schemes": {
+      "file": {
+        "passed": true,
+        "version": "2.0.0",
+        "checks": [
+          "生产构建可在无 Electron preload 的浏览器环境启动",
+          "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+          "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+          "原生保存只写本地文档空间；显式导出才调用系统分享",
+          "中文 PDF 生成与页面旋转",
+          "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+          "页面重载后恢复本地文件与加密模型配置",
+          "无效工作区备份被阻止且允许保留后继续",
+          "手机菜单新建文字文档并进入真实编辑器",
+          "390px 文字正文重排、输入事件与编辑区域可见",
+          "真实工作区备份恢复未保存正文与文字编辑页面",
+          "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+          "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+          "390px 手机布局、底部触控导航、知识库与全部功能入口",
+          "移动端 22 个可用功能入口逐一点击、导航状态及视口检查；共享/设备/标签/团队检查真实账号门槛，Access 按能力隐藏",
+          "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+          "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+          "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+          "360/390/820/1280px 窄屏、平板与 PC 布局",
+          "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+          "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+          "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+          "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+          "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+          "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+          "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+          "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局",
+          "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+          "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+          "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+          "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+          "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+          "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+          "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+          "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+        ],
+        "pptxAliasShape": {
+          "passed": true,
+          "strict": true,
+          "namespacePrefixes": [
+            "slides",
+            "draw",
+            "relation"
+          ],
+          "nativeShapesPreserved": 1,
+          "preservedText": "引号、Tab、换行、中文及 &<>"
+        },
+        "pptEditingSave": {
+          "passed": true,
+          "shortcut": "Ctrl+S",
+          "textareaFocusedBeforeShortcut": true,
+          "blurredBeforeShortcut": false,
+          "actualSavedFileReopened": true,
+          "latestDraftPreserved": true,
+          "unicodePreserved": true,
+          "charactersVerified": "😀𠀀👩🏽‍💻é"
+        },
+        "errors": [],
+        "scheme": "file",
+        "groups": [
+          {
+            "name": "core",
+            "passed": true,
+            "checks": 19
+          },
+          {
+            "name": "reading",
+            "passed": true,
+            "checks": 2
+          },
+          {
+            "name": "editor",
+            "passed": true,
+            "checks": 5
+          },
+          {
+            "name": "workspace",
+            "passed": true,
+            "checks": 1
+          },
+          {
+            "name": "diagram",
+            "passed": true,
+            "checks": 8
+          }
+        ],
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "processWatchdogMs": 120000,
+        "allGroupsCompleted": true
+      },
+      "http": {
+        "passed": true,
+        "version": "2.0.0",
+        "checks": [
+          "生产构建可在无 Electron preload 的浏览器环境启动",
+          "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+          "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+          "原生保存只写本地文档空间；显式导出才调用系统分享",
+          "中文 PDF 生成与页面旋转",
+          "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+          "页面重载后恢复本地文件与加密模型配置",
+          "无效工作区备份被阻止且允许保留后继续",
+          "手机菜单新建文字文档并进入真实编辑器",
+          "390px 文字正文重排、输入事件与编辑区域可见",
+          "真实工作区备份恢复未保存正文与文字编辑页面",
+          "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+          "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+          "390px 手机布局、底部触控导航、知识库与全部功能入口",
+          "移动端 22 个可用功能入口逐一点击、导航状态及视口检查；共享/设备/标签/团队检查真实账号门槛，Access 按能力隐藏",
+          "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+          "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+          "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+          "360/390/820/1280px 窄屏、平板与 PC 布局",
+          "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+          "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+          "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+          "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+          "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+          "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+          "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+          "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局",
+          "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+          "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+          "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+          "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+          "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+          "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+          "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+          "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+        ],
+        "pptxAliasShape": {
+          "passed": true,
+          "strict": true,
+          "namespacePrefixes": [
+            "slides",
+            "draw",
+            "relation"
+          ],
+          "nativeShapesPreserved": 1,
+          "preservedText": "引号、Tab、换行、中文及 &<>"
+        },
+        "pptEditingSave": {
+          "passed": true,
+          "shortcut": "Ctrl+S",
+          "textareaFocusedBeforeShortcut": true,
+          "blurredBeforeShortcut": false,
+          "actualSavedFileReopened": true,
+          "latestDraftPreserved": true,
+          "unicodePreserved": true,
+          "charactersVerified": "😀𠀀👩🏽‍💻é"
+        },
+        "errors": [],
+        "scheme": "http",
+        "groups": [
+          {
+            "name": "core",
+            "passed": true,
+            "checks": 19
+          },
+          {
+            "name": "reading",
+            "passed": true,
+            "checks": 2
+          },
+          {
+            "name": "editor",
+            "passed": true,
+            "checks": 5
+          },
+          {
+            "name": "workspace",
+            "passed": true,
+            "checks": 1
+          },
+          {
+            "name": "diagram",
+            "passed": true,
+            "checks": 8
+          }
+        ],
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "processWatchdogMs": 120000,
+        "allGroupsCompleted": true
+      }
+    }
+  },
+  "directedProductionRegressions": {
+    "loginResourceTemplatesSplash": {
+      "passed": true,
+      "checks": [
+        "file:// 登录 Logo 实际解码、固定正方形尺寸与离线资源路径",
+        "生产桥接真实恢复、读取、导出和释放演示图片资源",
+        "手机市场逐一打开八个模板、九页预览、实际配图与使用编辑副本",
+        "启动图三种密度均为专用留白资源，Logo 约 96dp 且无底部品牌图"
+      ],
+      "failures": [],
+      "scheme": "file",
+      "width": 390
+    },
+    "harmonyHostTransport": {
+      "passed": true,
+      "checks": [
+        "登录、云空间入口保持工作台；返回先关登录/功能面板，再回上级",
+        "触摸打开字体菜单保留选区；包内黑体/宋体实际加载并呈现不同字形",
+        "复制再粘贴实际插入文字，不依赖网页获得系统剪贴板读取权限",
+        "中文编号、真实行号、脚注尾注随 DOCX 保存读回；另存为等待宿主确认，取消无假成功",
+        "中文打印预览完成渲染；确认后发送系统 print 而不是另存为 save",
+        "真实“导出为 PDF”按钮生成 .pdf 后缀文件并自动打开，不把 PDF 字节存成 .docx",
+        "鸿蒙原生选择器分块导入 PDF，扩展名校验及实际文字渲染通过",
+        "从已打开 PDF 进入设置后，返回恢复原 PDF 编辑标签",
+        "表格按真实两列数据生成图表图片；XLSX 保存含真实 PNG，不宣称原生可编辑图表",
+        "仅首页一级页面确认工作区备份后请求返回桌面"
+      ],
+      "deviceValidation": false,
+      "scope": "Electron file:// production IIFE + simulated Harmony transport; native UTS separately compiled"
+    }
+  },
+  "cloudReady": [
+    {
+      "platform": "android",
+      "verifiedAt": "2026-10-18T17:01:15.142Z",
+      "build": {
+        "platform": "android",
+        "desktopVersion": "2.0.0",
+        "builtAt": "2026-10-18T16:53:31.112Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "applicationName": "海豹办公",
+      "applicationIdentitySigningPermissionsUnchanged": true,
+      "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/android",
+      "snapshotFiles": 59,
+      "recordedPayloadFiles": 57,
+      "allSha256Verified": true,
+      "nativeStaticFilesVerified": 29,
+      "forbiddenDirectoriesFound": [],
+      "officeJsSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+      "nativePackageGenerated": false,
+      "inventoryEntries": 59
+    },
+    {
+      "platform": "harmony",
+      "verifiedAt": "2026-10-18T17:02:08.066Z",
+      "build": {
+        "platform": "harmony",
+        "desktopVersion": "2.0.0",
+        "builtAt": "2026-10-18T17:01:41.877Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "applicationName": "海豹办公",
+      "applicationIdentitySigningPermissionsUnchanged": true,
+      "snapshotPath": "mobile/unpackage/cloud-ready/2.0.0/harmony",
+      "snapshotFiles": 59,
+      "recordedPayloadFiles": 57,
+      "allSha256Verified": true,
+      "nativeStaticFilesVerified": 29,
+      "forbiddenDirectoriesFound": [],
+      "officeJsSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+      "nativePackageGenerated": false,
+      "inventoryEntries": 59
+    }
+  ],
+  "sourceFreeze": {
+    "manifestSha256": "7bf881d9ca74384745054446f994e85628dd78872b1ca7c7de4a9a7b95743ad4",
+    "runtimeFilesVerified": 950
+  },
+  "evidenceDirectories": {
+    "file": ".upgrade-private/mobile-fifth-pass-20261019/android-file",
+    "http": ".upgrade-private/mobile-fifth-pass-20261019/android-http",
+    "harmony": ".upgrade-private/mobile-fifth-pass-20261019/harmony-host",
+    "directed": ".upgrade-private/mobile-fifth-pass-20261019/android-directed"
+  },
+  "logs": [
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-browser-file.log",
+      "sha256": "227d5516a400275938a8e89e8199b7ecaf064f1309ec3e160274e121dd0ed117"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-browser-http.log",
+      "sha256": "353b7cf810efca1d19020176edaa4260281342f9d1dae0cd7be7ddddb004f10f"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-build.log",
+      "sha256": "3f818bb6fd6c75728c99102830b842b60c02819afd6c9973198d45f5310484cd"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-directed-regressions.log",
+      "sha256": "0a1e870f02664b7031045e978912db91f87d3749291fa4814f01b236029b11f8"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-native-restored.log",
+      "sha256": "181f4497e54c2e7338e4f2d4b337ab2b10ca2cfa08a9121b438d270aa03212cd"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-native.log",
+      "sha256": "181f4497e54c2e7338e4f2d4b337ab2b10ca2cfa08a9121b438d270aa03212cd"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/android-restore-build.log",
+      "sha256": "5816c9c0125b39cda95367ca9e13e98b8539125a0a3d51f0fce66ea1aca50be6"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/harmony-browser-host.log",
+      "sha256": "a7d51a64432e0370b217f801472428e5be231668c42b24efbfb1a784c46aa3c6"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/harmony-build.log",
+      "sha256": "32f6706079b1062a2d4b07d01e9ce3b4d1543371139b058ddd7a1951e3dc5920"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/harmony-native.log",
+      "sha256": "57d436dd267225f96b8171946c62919e280dbbaa487a554eedab9632f869816a"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/web-browser.log",
+      "sha256": "6fa9b971bd1c39a52b643e3a2b305ca6fe4634e2da696558480888fc23e1948a"
+    },
+    {
+      "path": ".upgrade-private/mobile-fifth-pass-20261019/web-local-csp.log",
+      "sha256": "3ab8b9dc2b590f56b421c3aa96e604f913ffde098b3a024b44c9ca40051fb2ce"
+    }
+  ],
+  "buildWarnings": [
+    "Original offline photos and bundled fonts produce a large JavaScript payload; no CDN is required for those assets.",
+    "Existing OFD dependency warns about comparison/operator expressions."
+  ],
+  "limitations": [
+    "No APK/HAP signing, cloud submission or physical-device installation/upgrade validation was performed.",
+    "Word screen reading pages are explicitly reflowed viewport pages; PDF pages are physical document pages.",
+    "Native fullscreen may be denied by a WebView; the supported viewport fallback is verified. Physical Android/Harmony window behavior remains for cloud-package device testing.",
+    "Multi-table and notes remain local. Diagram cloud rooms are separately verified through the real encrypted HTTP fixture and production Web/native host builds.",
+    "General formula/layout/revision/object compatibility remains bounded by the detailed support reports."
+  ]
+}

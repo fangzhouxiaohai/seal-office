@@ -2,7 +2,8 @@
   用 makeappx 手工打 MSIX/APPX 包（不依赖 electron-builder 的 appx 目标联网下载示例资源）。
 
   命名规则：只有微软商店 MSIX 清单使用已保留名 seal-office。
-  NSIS、便携版、Android、Ubuntu 及程序界面默认使用“海豹办公”，不得跟随此参数改名。
+  NSIS、便携版、Android、Ubuntu 和 Web 的发行文件名使用 build/artifact-names.json 的英文规则；
+  程序界面、内部主程序及快捷方式继续使用“海豹办公”，不得跟随此参数改名。
 
   为什么手工打包：electron-builder 的 AppxTarget 会从 GitHub 拉取示例磁贴资源，本机到该主机不通，
   构建中途 ECONNRESET 失败；而 makeappx 本身完全离线，磁贴资源我们用 build/appx 里自己生成的。

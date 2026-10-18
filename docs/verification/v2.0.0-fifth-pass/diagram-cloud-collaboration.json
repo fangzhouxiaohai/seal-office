@@ -1,0 +1,235 @@
+{
+  "version": "2.0.0",
+  "passed": true,
+  "verifiedAt": "2026-10-18T17:34:57.655Z",
+  "capability": "diagramRealtime: 1",
+  "features": [
+    "Multiple local and cloud mindmap/flowchart projects; original UI, local data and undo history retained",
+    "Explicit local-to-personal/team cloud copy; existing local project preserved",
+    "Personal cloud ownership, shared editor/viewer, team roles and direct Shared/Teams file-card routing",
+    "Encrypted incremental graph merge: text, notes, coordinates, shapes, palettes, connectors; atomic enum/color fields",
+    "Offline encrypted queue, IndexedDB and disk restart recovery, reconnect merge, retry after local durability failure",
+    "Chinese composition/drag baselines and encrypted recovery for concurrently deleted nodes",
+    "Own-operation undo/redo, online members, read-only downgrade and server-enforced revocation",
+    "Latest encrypted-room materialization on download; graph filename extensions survive dotted renames",
+    "Personal cloud trash/restore retains latest realtime logs; permanent deletion purges room",
+    "360/390/820/1280 px and real CDP two-finger zoom; same native host transport protocol"
+  ],
+  "regressionFiles": [
+    {
+      "file": "renderer/src/collaboration/materializeRealtime.test.ts",
+      "passed": true,
+      "tests": 7,
+      "names": [
+        " 共享与个人云重新下载会真实生成最新DOCX，新设备所有者可从根密钥解密同一实时房间",
+        " 团队最新XLSX下载重算合并后公式，未初始化的只读快照不创建协作房间",
+        " 团队PPTX最新文字和原有图片都从真实文件往返保留，CRDT尚未重发的初始资源也完整",
+        " 写出失败或撤权不会静默退回旧文件，旧整文件上传不能绕过实时内容",
+        " 同账号两个窗口的安全全状态缓存合并保存，不因后写入窗口覆盖另一窗口未发操作",
+        " 脑图最新下载真实物化加密日志，包含远端修改且输出路径不越界，初始来源包保持历史语义",
+        " 流程图最新下载真实物化加密日志，包含远端修改且输出路径不越界，初始来源包保持历史语义"
+      ]
+    },
+    {
+      "file": "renderer/src/localTools/diagramCloudModel.test.ts",
+      "passed": true,
+      "tests": 4,
+      "names": [
+        " 云图形文件带明确格式与类型，Unicode、备注、坐标和原JSON导入往返完整",
+        " 并发配色和形状使用完整原子值收敛，不把枚举或色值拼接成损坏图形",
+        " 只投影掉并发删除后的悬空连线，仍拒绝重复标识、非法颜色及超限内容",
+        " 无关节点编辑保留并发删除产生的隐藏连线，明确删除可见端点才移除它"
+      ]
+    },
+    {
+      "file": "renderer/src/localTools/DiagramCloudUI.test.tsx",
+      "passed": true,
+      "tests": 5,
+      "names": [
+        " 真实UI把本机图同步到个人云，输入写入加密实时队列，断网重开恢复，重新联网同步",
+        " 共享页打开图形进入同一个云编辑器，只读不能修改，仍可另存独立本机项目",
+        " 云列表显示团队流程图，只读实时接收远端修改，成员移除后停止编辑",
+        " 中文合成输入期间保留编辑基线，合并同字段远端插入和位置修改；删除中的输入加密保留",
+        " 所有者尚未初始化房间时，共享只读源仍可打开，断网后真正重开不丢内容且不会创建远端房间"
+      ]
+    },
+    {
+      "file": "renderer/src/localTools/diagramRealtime.test.ts",
+      "passed": true,
+      "tests": 6,
+      "names": [
+        " 脑图三账号真实HTTP并发合并节点坐标、中文文字、备注和连线字段，撤销只撤自己的操作",
+        " 流程图三账号真实HTTP并发合并节点坐标、中文文字、备注和连线字段，撤销只撤自己的操作",
+        " 并发删除节点和新增关联连线时不复活节点、不停止房间；撤销删除后恢复仍有效的远端连线",
+        " 图形离线修改加密落盘后重启，合并在线新增节点且无重复；保留原节点和备注",
+        " 个人云两设备与共享接收者共同编辑同一图形，撤销最后共享后所有者仍能同步",
+        " 图形安全队列落盘失败明确报错，存储恢复后重试同步补写原操作而不丢图"
+      ]
+    }
+  ],
+  "productionBrowser": {
+    "passed": true,
+    "realEncryptedHttpFixture": true,
+    "productionAccountOperations": 0,
+    "checks": 36,
+    "reports": {
+      "web-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:52:40.441Z",
+        "bundleSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "web",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": false,
+        "productionRequests": 0,
+        "requests": 102,
+        "completedAt": "2026-10-18T16:52:50.473Z"
+      },
+      "web-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:52:50.770Z",
+        "bundleSha256": "25c9ead48d30b4eb19cb6e419404e5a2194061145c66ae09e13623b89a9cf79d",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "web",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": false,
+        "productionRequests": 0,
+        "requests": 137,
+        "completedAt": "2026-10-18T16:53:04.637Z"
+      },
+      "native-file-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T16:59:58.184Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-file",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 112,
+        "completedAt": "2026-10-18T17:00:12.141Z"
+      },
+      "native-file-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:12.460Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-file",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 141,
+        "completedAt": "2026-10-18T17:00:28.678Z"
+      },
+      "native-http-personal": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:29.179Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-http",
+        "group": "personal",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 119,
+        "completedAt": "2026-10-18T17:00:45.507Z"
+      },
+      "native-http-team": {
+        "passed": true,
+        "version": "2.0.0",
+        "startedAt": "2026-10-18T17:00:45.844Z",
+        "bundleSha256": "e5d5ef5d5e6b8ffb71280127dc37a05851f0e42a6ff3d75a6453f2b2cede091f",
+        "harnessSha256": "cbf50eae7dfbfb7f749548a58bdd70c6f57c5630d66c1ed036eaf484780daa39",
+        "mode": "native-http",
+        "group": "team",
+        "checks": [
+          "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+          "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+          "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+          "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+          "360 px 原生触摸双指缩放",
+          "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+        ],
+        "errors": [],
+        "nativeHostSimulated": true,
+        "productionRequests": 0,
+        "requests": 147,
+        "completedAt": "2026-10-18T17:01:03.248Z"
+      }
+    }
+  },
+  "generalWorkspaceRegression": {
+    "passed": true,
+    "checks": [
+      "同域账号登录+解锁、hash邀请确认与清理、团队查看者禁写、私有下载在文档目录可本机保存且未自动云覆盖",
+      "1280px 四个真实导航、服务数据与页面无横向溢出",
+      "390px 四个真实导航、服务数据与页面无横向溢出",
+      "360px 四个真实导航、服务数据与页面无横向溢出"
+    ],
+    "errors": []
+  },
+  "storage": {
+    "cloudGraphPlaintextOnServer": false,
+    "localCloudRecoveryEncrypted": true,
+    "explicitLocalCopiesAreIndependent": true
+  },
+  "limits": {
+    "nodes": 100,
+    "connectors": 300,
+    "diagramBytes": 2097152
+  },
+  "limitations": [
+    "Realtime tests use isolated local HTTP accounts; no public SMS, production account creation or user invitations were performed.",
+    "Native host transport and Chromium touch were exercised; physical Android/Harmony installations were not performed.",
+    "This scoped change does not establish complete WPS feature or format parity."
+  ]
+}

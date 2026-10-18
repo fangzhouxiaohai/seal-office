@@ -66,10 +66,28 @@ html[data-seal-platform="app"] { --seal-bottom-inset: 0px; }
   .wps-editor-canvas__content { min-height: 400px; column-count: 1 !important; }
   .wps-editor-canvas__content img { max-width: 100%; height: auto; }
   .wps-editor-canvas__header, .wps-editor-canvas__footer { left: 18px !important; right: 18px !important; }
+  .seal-reading-toolbar { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; min-height: 48px; padding: 4px 8px; border-bottom: 1px solid var(--border); background: var(--bg-card); color: var(--text-1); flex-wrap: wrap; }
+  .seal-reading-toolbar button, .seal-reading-toolbar select { min-height: 40px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: inherit; font: inherit; font-size: 1rem; cursor: pointer; }
+  .seal-reading-toolbar button:focus-visible, .seal-reading-toolbar select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .seal-reading-toolbar__modes { display: flex; gap: 2px; }
+  .seal-reading-toolbar button[aria-pressed="true"] { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+  .seal-reading-toolbar__size { display: flex; align-items: center; gap: 4px; font-size: .875rem; }
+  .seal-reading-toolbar__size select { padding-inline: 5px; }
+  .seal-reading-toolbar__hint { margin-inline-start: auto; color: var(--text-2); font-size: .75rem; white-space: nowrap; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content { font-size: var(--seal-reading-font-size, 1.125rem); line-height: 1.8; overflow-wrap: anywhere; writing-mode: horizontal-tb; user-select: text; -webkit-user-select: text; cursor: text; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content :is(p, li, div, td, th) { line-height: 1.8 !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content :is(p, li, div, span, font, td, th, a, em, strong, b, i, u, s, code) { font-size: inherit !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content h1 { font-size: 1.8em !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content h2 { font-size: 1.5em !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content h3 { font-size: 1.3em !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content :is(h4, h5, h6) { font-size: 1.1em !important; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content table { display: block; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+  .wps-editor-workspace--reading .wps-editor-canvas__content pre { white-space: pre-wrap; }
   .wps-ruler { display: none; }
   .wps-editor-status { min-height: 32px; padding: 4px 12px; overflow-x: auto; }
   .wps-app[data-module="word"] .wps-editor-status__left > :nth-child(-n + 4), .wps-app[data-module="word"] .wps-editor-status__right { display: none; }
   .wps-app[data-module="word"] .wps-editor-status__left::before { content: '手机编辑视图'; color: var(--text-2); margin-right: 12px; }
+  .seal-reading-toolbar[data-reading="true"] ~ .wps-editor-status .wps-editor-status__left::before { content: '手机阅读视图'; }
   .assistant-launcher { display: none; }
   .wps-ppt-thumbs { max-width: 100%; }
   .wps-ppt-body { min-width: 0; }

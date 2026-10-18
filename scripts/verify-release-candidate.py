@@ -6,14 +6,15 @@ import shutil
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
+from artifact_names import artifact_name
 
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
 RELEASE = ROOT / 'release' / f'v{VERSION}'
-NAMES = [f'海豹办公安装程序{VERSION}.exe', f'海豹办公{VERSION}.exe',
-         f'SealOffice{VERSION}.msix', f'海豹办公Android{VERSION}.apk',
-         f'海豹办公Ubuntu{VERSION}-amd64.deb']
+NAMES = [artifact_name('windowsSetup', VERSION), artifact_name('windowsPortable', VERSION),
+         f'SealOffice{VERSION}.msix', artifact_name('android', VERSION),
+         artifact_name('ubuntu', VERSION)]
 
 
 def sha256(path):

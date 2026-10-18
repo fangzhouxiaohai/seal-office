@@ -2,6 +2,8 @@
 // 采用非受控写法，仅在外来内容与当前 DOM 不一致时同步，避免 React 重渲染打断输入。
 import React, { useEffect, useRef } from 'react'
 import { 净化富文本 } from './sanitizeHtml'
+import LineNumbers from './LineNumbers'
+import { usePagination } from './usePagination'
 
 /** 纸张尺寸映射（96dpi 像素，宽×高），未知值回落 A4 */
 const 纸张尺寸: Record<string, [number, number]> = {
@@ -47,6 +49,7 @@ interface Props {
   editable?: boolean
   showParagraphMark?: boolean
   gridlines?: boolean
+  lineNumbers?: boolean
   /** 竖排文字，用于文字方向切换 */
   vertical?: boolean
   /** 是否显示批注标记 */
@@ -69,6 +72,8 @@ interface Props {
   onChange?: (html: string) => void
   onBeforeChange?: (元素: HTMLDivElement) => void
   onReady?: (元素: HTMLDivElement) => void
+  /** Browser-measured page flow, independent of word counts and saved document HTML. */
+  onPagination?: (pages: number) => void
   /** 右键点击回调，返回坐标 */
   onContextMenu?: (x: number, y: number) => void
 }
@@ -78,6 +83,7 @@ const EditorCanvas = ({
   editable = true,
   showParagraphMark = false,
   gridlines = false,
+  lineNumbers = false,
   vertical = false,
   showComments = true,
   scale = 1,
@@ -97,6 +103,7 @@ const EditorCanvas = ({
   onChange,
   onBeforeChange,
   onReady,
+  onPagination,
   onContextMenu,
 }: Props) => {
   const 引用 = useRef<HTMLDivElement>(null)
@@ -158,6 +165,12 @@ const EditorCanvas = ({
     ? `${customMargin.上 / 15}px ${customMargin.右 / 15}px ${customMargin.下 / 15}px ${customMargin.左 / 15}px`
     : `${边距上下}px ${边距左右}px`
   const 栏数 = 分栏映射[columns] ?? 1
+  usePagination(引用, {
+    height: 页面高,
+    marginTop: margin === '自定义' && customMargin ? customMargin.上 / 15 : 边距上下,
+    marginBottom: margin === '自定义' && customMargin ? customMargin.下 / 15 : 边距上下,
+    columns: 栏数,
+  }, scale, html, onPagination)
   const 页眉页脚样式: React.CSSProperties = {
     left: margin === '自定义' && customMargin ? customMargin.左 / 15 : 边距左右,
     right: margin === '自定义' && customMargin ? customMargin.右 / 15 : 边距左右,
@@ -194,6 +207,7 @@ const EditorCanvas = ({
     React.createElement(
       'div',
       { className: 'wps-editor-canvas__paper', style: 纸张样式 },
+      lineNumbers ? React.createElement(LineNumbers, { root: 引用, html, scale }) : null,
       水印图片
         ? React.createElement('img', { className: 'wps-editor-canvas__watermark wps-editor-canvas__watermark--image', src: 水印图片, alt: '', 'aria-hidden': true })
         : 水印文本 !== undefined
@@ -225,6 +239,10 @@ const EditorCanvas = ({
         style: 栏数 > 1 ? { columnCount: 栏数, columnGap: '24px' } : undefined,
         onInput: 处理输入,
         onContextMenu: 处理右键,
+        onClick: (event: React.MouseEvent) => {
+          const ref = (event.target as Element).closest?.<HTMLElement>('[data-seal-note-ref]')
+          if (ref) document.getElementById(`seal-${ref.dataset.sealNoteKind}-${ref.dataset.sealNoteRef}`)?.scrollIntoView({ block: 'nearest' })
+        },
       }),
       footerHtml !== undefined || onFooterChange
         ? React.createElement('div', {

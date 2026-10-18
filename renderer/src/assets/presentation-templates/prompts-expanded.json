@@ -1,0 +1,19 @@
+{
+  "tool": "built-in image_gen__imagegen",
+  "mode": "generate",
+  "date": "2026-10-18",
+  "assets": [
+    {
+      "file": "research.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: original professional presentation template photography. Primary request: wide editorial photograph of an unbranded modern materials research laboratory, foreground a precise small optical prototype and notebooks with blank pages on a clean workbench, background softly blurred glass instruments and sunlight. Style: believable premium institutional photography, real tactile materials, restrained slate blue and cool cyan palette, calm intelligent mood. Wide 16:9 landscape composition, crisp central subject with crop-friendly edges for both panoramic and vertical slide crops. No readable writing, no text, no charts, no logos, no watermark, no recognizable people, no specific institution, do not copy any existing photograph. Only photograph, no slide layout."
+    },
+    {
+      "file": "finance.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: original professional presentation template photography. Primary request: wide editorial photograph of an elegant quiet finance planning workspace, close foreground of a dark green notebook with blank pages, polished metal pen, tactile paper sheets with no markings and an unbranded calculator, softly blurred modern office windows in warm morning light behind. Style: premium realistic corporate photography, forest green, cream and warm brass tones, clear physical detail. Wide 16:9 landscape, considered asymmetrical composition with crop-friendly central objects for vertical and panoramic crops. No readable characters, no digits, no printed charts, no logos, no watermark, no people, no specific brand. No slide layout, only photograph."
+    },
+    {
+      "file": "event.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: original professional presentation template photography. Primary request: wide editorial photograph inside an unbranded contemporary creative exhibition event venue, sculptural coral orange and lavender fabric installations, small display plinths and layered translucent panels, tasteful spotlights, very subtle distant out-of-focus anonymous visitors for scale, professionally curated calm atmosphere. Style: premium realistic event photography with material depth, elegant soft light, coral and muted violet palette. Wide 16:9 landscape composition, focal installation centrally crop-friendly for both panoramic and vertical slide crops. No lettering, no readable signs, no logos, no brand, no watermark, no named place, no slide layout. Original invented scene."
+    }
+  ]
+}

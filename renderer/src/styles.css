@@ -3457,6 +3457,11 @@ button {
   .wps-ppt-body { flex-wrap: wrap; }
   .wps-ppt-design { flex: 1 1 100%; border-left: 0; border-top: 1px solid var(--border); }
 }
+/* Phone layout is a vertical stack. Wrapping that column creates a second
+   off-screen column whenever a zoomed slide is taller than the viewport. */
+@media (max-width: 480px) {
+  .wps-ppt-body { flex-wrap: nowrap; }
+}
 /* 媒体封面、媒体元素与放映工具：沿用现有令牌，不引入新的装饰色。 */
 .wps-media-poster { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--bg-app); color: var(--text-2); font-size: 12px; }
 .wps-media-poster__mark { font-size: 16px; font-weight: 600; color: var(--text-1); }

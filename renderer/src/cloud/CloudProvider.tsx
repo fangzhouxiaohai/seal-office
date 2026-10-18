@@ -8,7 +8,8 @@ export async function cloudCall<T=any>(action:string,input?:unknown):Promise<T>{
   const api=window.electronAPI?.cloud
   if(!api){if(action==='status')return initial as T;throw new Error('云端功能需要桌面版海豹办公')}
   const result=await api.invoke(action,input)
-  if(!result.成功)throw new Error(result.错误||'云端操作失败')
+  if(!result.成功)throw Object.assign(new Error(result.错误||'云端操作失败'),{status:result.状态码})
+  if(action==='shareCreate')window.dispatchEvent(new Event('seal-collaboration-binding'))
   return result.数据 as T
 }
 interface CloudContextValue {state:CloudState;refresh:()=>Promise<void>;configure:()=>void;call:typeof cloudCall}

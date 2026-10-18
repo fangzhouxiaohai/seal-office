@@ -326,3 +326,7 @@
   color: var(--text-3);
   font-size: 12px;
 }
+
+.wps-sheet-toolbar__compatibility { height: 22px; max-width: 110px; flex: 0 1 110px; padding: 0 3px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); color: var(--text-2); font: inherit; font-size: 12px; }
+.wps-sheet-toolbar__formula { min-width: 0; }
+@media (max-width: 480px) { .wps-sheet-toolbar__name { width: 66px; min-width: 44px; } .wps-sheet-toolbar__compatibility { max-width: 92px; } }

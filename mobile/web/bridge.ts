@@ -1,7 +1,8 @@
 import { Buffer } from 'buffer'
+import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard } from './native'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
 import formats from '../../main/documentFormats.json'
@@ -14,14 +15,14 @@ const binaryExtensions = new Set([...formats.filter(format => !('text' in format
 const allDocuments = formats.map(format => '.' + format.extension).join(',')
 const bytes = (data: string | Uint8Array, format?: string) => typeof data === 'string' ? Buffer.from(data, format === '二进制' ? 'base64' : 'utf8') : Buffer.from(data)
 const wrapped = (callback: (...args: any[]) => any) => async (_event: unknown, ...args: any[]) => {
-  try { return await callback(...args) } catch (error) { return { 成功: false, 错误: error instanceof Error ? error.message : String(error) } }
+  try { return await callback(...args) } catch (error) { return error instanceof Error && error.name === 'AbortError' ? { 成功: false, 已取消: true } : { 成功: false, 错误: error instanceof Error ? error.message : String(error) } }
 }
 const handle = (channel: string, callback: (...args: any[]) => any) => ipcMain.handle(channel, wrapped(callback))
 const success = () => ({ 成功: true })
 let unsaved = 0
 
 async function pickFiles(accept = allDocuments, multiple = false): Promise<string[]> {
-  const files = await new Promise<File[]>((resolve) => {
+  const files = window.sealNative?.platform === 'harmony' ? await pickNativeFiles(multiple) : await new Promise<File[]>((resolve) => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = window.sealNative?.platform === 'android' ? '*/*' : accept; input.multiple = multiple; input.hidden = true
     let finished = false, timer: ReturnType<typeof setTimeout> | undefined
     const finish = (value: File[]) => { if (finished) return; finished = true; clearTimeout(timer); input.remove(); window.removeEventListener('focus', focus); resolve(value) }
@@ -52,7 +53,8 @@ async function save(filename: string, data: string | Uint8Array, format?: string
   const expected = previous ? hash(previous) : null
   // 保存到手机文档空间即可；只有显式导出/分享才唤起系统分享面板。
   // 网页版仍通过下载给用户一份设备上的副本。
-  if (!window.sealNative) await downloadFile(path.basename(filename), content)
+  const explicitSaveAs = platform.consumeSaveDialog(filename)
+  if (!window.sealNative || explicitSaveAs) await downloadFile(path.basename(filename), content)
   if (storage.existsSync(filename) ? hash(storage.readFileSync(filename)) !== expected : expected !== null) throw new Error('导出期间文件发生变化，已导出副本但未覆盖本机来源，请重新打开')
   storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, content)
   try { await storage.flushStorage() }
@@ -72,7 +74,7 @@ function registerFiles() {
   handle('file.showSaveDialog', async (name) => (await platform.dialog.showSaveDialog({ defaultPath: name })).filePath)
   handle('file.readFile', (filename: string) => {
     const content = storage.readFileSync(filename), ext = path.extname(filename).slice(1).toLowerCase(), binary = binaryExtensions.has(ext)
-    return { 成功: true, ...(binary ? { 内容: content.toString('base64') } : core.textCodec.解码文本(content)), 二进制: binary, 扩展名: ext, 文件指纹: hash(content) }
+    return { 成功: true, ...(binary ? { 内容: content.toString('base64') } : core.textCodec.解码文本(content)), 二进制: binary, 扩展名: ext ? '.' + ext : '', 文件指纹: hash(content) }
   })
   handle('file.saveToFile', save)
   handle('file.rename', async (filename, name, fingerprint) => {
@@ -85,7 +87,7 @@ function registerFiles() {
   })
   handle('file.listKnownFolder', (kind: string) => {
     if (['desktop', 'download'].includes(kind)) throw new Error('请使用“文件”导入设备文档，或在“文档”中查看已导入文件')
-    return { 成功: true, 路径: '应用文档空间', 文件: storage.listFiles().map((filename: string) => ({ 名称: path.basename(filename), 路径: filename, 扩展名: path.extname(filename).slice(1), 大小: storage.statSync(filename).size, 修改时间: storage.statSync(filename).mtimeMs })) }
+    return { 成功: true, 路径: '应用文档空间', 文件: storage.listFiles().map((filename: string) => ({ 名称: path.basename(filename), 路径: filename, 扩展名: path.extname(filename).toLowerCase(), 大小: storage.statSync(filename).size, 修改时间: storage.statSync(filename).mtimeMs })) }
   })
   handle('file.recent.list', () => ({ 成功: true, 数据: readRecents() }))
   handle('file.recent.add', (item) => writeRecents([item, ...readRecents().filter((old: any) => old.路径 !== item.路径)].slice(0, 500)))
@@ -115,6 +117,7 @@ function registerFiles() {
 
 async function initialize() {
   await waitForNative()
+  if (window.sealNative) window.sealClipboard = { writeText: writeNativeClipboard }
   if (navigator.locks) await new Promise<void>((resolve, reject) => {
     void navigator.locks.request('seal-office-workspace', { ifAvailable: true }, async (lock) => {
       if (!lock) { reject(new Error('海豹办公已在另一个页面打开，请先关闭那个页面再重试')); return }
@@ -125,15 +128,15 @@ async function initialize() {
   })
   await storage.initializeStorage(); await vault.initializeVault()
   for (const folder of ['/seal/private', '/seal/documents', '/seal/tmp', '/seal/private/cloud-outbox']) storage.mkdirSync(folder, { recursive: true })
-  installConversionService(core)
   window.fetch = platformFetch as typeof fetch
   platform.configureDialogs(() => pickFiles(undefined, true), (filename: string, data: Uint8Array) => downloadFile(path.basename(filename), data))
   const assistant = core.assistant.创建助手服务({ 配置路径: '/seal/private/assistant-config.secure', 安全存储: vault.safeStorage })
   const services = core.services.创建服务配置存储({ 配置路径: '/seal/private/presentation-services.secure', 安全存储: vault.safeStorage })
-  const cloud = core.cloudService.createService({ directory: '/seal/private', safeStorage: vault.safeStorage,
+  const cloud = core.cloudService.createService({ directory: '/seal/private', safeStorage: vault.safeStorage, mergeUpdates,
+    defaultUrl: !window.sealNative && /^https?:$/.test(window.location.protocol) ? new URL('/api', window.location.origin).href : undefined,
     transport: async (url: string, options: any) => {
       const headers = { ...options.headers }; delete headers['Content-Length']
-      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 30000)
+      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), options.timeout ?? 30000)
       const abort = () => controller.abort()
       options.signal?.addEventListener('abort', abort, { once: true })
       try {
@@ -143,6 +146,7 @@ async function initialize() {
         return options.binary ? Buffer.from(await response.arrayBuffer()) : await response.json()
       } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', abort) }
     } })
+  installConversionService(core, cloud)
   core.office.注册Office通道(ipcMain); core.ai.注册智能助手通道(ipcMain, { 助手服务: assistant })
   core.presentationAi.注册演示智能通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private' })
   core.generation.注册演示生成通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private' })
@@ -158,11 +162,24 @@ async function initialize() {
   registerFiles(); await installExportAdapters(core, save, handle)
   // 不提供仅属于 Windows 或独立桌面窗口的能力探测。
   const api = window.electronAPI as any
-  for (const key of ['setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity']) delete api[key]
+  for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity']) delete api[key]
   const originalCloud = api.cloud.invoke
   api.cloud.invoke = async (action: string, input: any = {}) => {
     if (['ocrImage', 'imagePresentation'].includes(action)) await platform.prepareImage(Buffer.from(input.data, 'base64'))
     const result = await originalCloud(action, input)
+    // The native service queues CRDT edits before acknowledging them. Commit the
+    // browser filesystem transaction too, so an offline refresh cannot drop edits.
+    if (result.成功 && ['realtimeSource', 'realtimeRecovery', 'realtimeCatalog', 'realtimeStage', 'realtimeBindFile', 'realtimeQueue', 'realtimeState', 'realtimeOpen', 'realtimePush'].includes(action)) await storage.flushStorage()
+    // 协作文件在应用文档空间打开，后续 Ctrl+S / 保存可以沿用安全写盘与指纹校验。
+    // 明确选择“下载”时，界面的 revealInFolder 再交给系统导出，不在打开时弹分享面板。
+    if (result.成功 && result.数据?.path && ['shareDownload', 'teamDownload', 'realtimeDownload'].includes(action)) {
+      const source = result.数据.path
+      const filename = '/seal/documents/collaboration/' + cryptoCore.randomUUID() + '/' + path.basename(result.数据.name || source)
+      storage.mkdirSync(path.dirname(filename), { recursive: true })
+      storage.writeFileSync(filename, storage.readFileSync(source))
+      await storage.flushStorage()
+      result.数据 = { ...result.数据, path: filename }
+    }
     if (result.成功 && result.数据?.path && ['download', 'exportPending'].includes(action)) await platform.exportStoredFile(result.数据.path)
     return result
   }

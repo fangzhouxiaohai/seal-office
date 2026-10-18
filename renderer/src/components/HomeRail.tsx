@@ -68,10 +68,10 @@ const HomeRail = ({ onNotify, onNavigate, activeKey = 'home' }: Props) =>
         'button',
         {
           type: 'button',
-          className: 'wps-homerail__item wps-homerail__item--365',
-          onClick: () => onNotify('「团队空间」功能即将开放'),
+          className: `wps-homerail__item wps-homerail__item--365${activeKey === 'team' ? ' wps-homerail__item--active' : ''}`,
+          onClick: () => onNavigate('team'),
         },
-        React.createElement(Icon, { name: 'wps365', size: 20 }),
+        React.createElement(Icon, { name: 'users', size: 20 }),
         React.createElement('span', { className: 'wps-homerail__label' }, '团队空间')
       )
     )

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "海豹办公2.0.0.exe",
+    "bytes": 392633545,
+    "productName": "海豹办公",
+    "productVersion": "2.0.0",
+    "fileVersion": "2.0.0",
+    "signatureStatus": "NotSigned",
+    "sha256": "e151d097d2b64f8ceddd4ee3e73c07fe6d2b78a86f9c673d263b49aa6b55c753"
+  },
+  {
+    "name": "海豹办公安装程序2.0.0.exe",
+    "bytes": 392859008,
+    "productName": "海豹办公",
+    "productVersion": "2.0.0",
+    "fileVersion": "2.0.0",
+    "signatureStatus": "NotSigned",
+    "sha256": "6e57beedb739d9a081907846a3a944d99d13be1182823032111b28955e78ee97"
+  }
+]

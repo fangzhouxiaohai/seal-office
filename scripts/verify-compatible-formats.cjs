@@ -2,7 +2,10 @@ const { app } = require('electron')
 const fs = require('fs'), path = require('path'), assert = require('assert/strict')
 const formats = require('../main/documentFormats.json')
 const { 写入兼容文档, 读取兼容文档 } = require('../main/office/compatibleFormats')
-const root = path.resolve(__dirname, '..'), output = path.join(root, '.upgrade-private/format-samples')
+const root = path.resolve(__dirname, '..')
+const outputArgument = process.argv.find(arg => arg.startsWith('--output='))?.slice(9)
+const output = outputArgument ? path.resolve(root, outputArgument) : path.join(root, '.upgrade-private/format-samples')
+assert(output.startsWith(root + path.sep), 'Verification output must stay inside the workspace')
 fs.mkdirSync(output, { recursive: true })
 const models = {
   word: { 段落: [{ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字: [{ 文本: '中文格式验收 0012', 加粗: true }] }], 未覆盖: [] },

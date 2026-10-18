@@ -46,7 +46,7 @@ const models = {
   ppt: { 页面尺寸: { 宽: 960, 高: 540 }, 幻灯片: [{ id: 'p1', 背景色: '#FFFFFF', 文本框: [{ id: 't1', x: 40, y: 50, width: 700, height: 90, text: '中文格式验收 0012', 字号: 24, 颜色: '#222222' }] }] },
 }
 async function verify() {
-  const packageFile = path.join(root, 'release/ubuntu', `海豹办公Ubuntu${version}-amd64.deb`)
+  const packageFile = path.join(root, 'release/ubuntu', require('./artifact-names.cjs').artifactName('ubuntu', version))
   report.packageFile = path.basename(packageFile)
   report.packageBytes = fs.statSync(packageFile).size
   report.packageSha256 = createHash('sha256').update(fs.readFileSync(packageFile)).digest('hex')

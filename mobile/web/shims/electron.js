@@ -7,6 +7,7 @@ import { createHash, randomUUID } from './crypto.js'
 export { safeStorage }
 export const handlers = new Map(), listeners = new Map()
 let gate = Promise.resolve(), downloadHandler = async () => {}, openHandler = async () => []
+const saveDialogDirectories = new Set()
 export const setGate = (promise) => { gate = promise }
 export const configureDialogs = (open, download) => { openHandler = open; downloadHandler = download }
 export const ipcMain = { handle(channel, callback) { handlers.set(channel, callback) } }
@@ -31,9 +32,10 @@ export const ipcRenderer = {
 export const contextBridge = { exposeInMainWorld(name, value) { window[name] = value } }
 export const app = { getPath: () => '/seal/private' }
 export const dialog = {
-  async showSaveDialog(options) { const filename = '/seal/documents/' + randomUUID() + '/' + path.basename(options.defaultPath || '文档'); makeSaveDirectory(filename); return { canceled: false, filePath: filename } },
+  async showSaveDialog(options) { const filename = '/seal/documents/' + randomUUID() + '/' + path.basename(options.defaultPath || '文档'); makeSaveDirectory(filename); saveDialogDirectories.add(path.dirname(filename)); return { canceled: false, filePath: filename } },
   async showOpenDialog() { const paths = await openHandler(); return { canceled: paths.length === 0, filePaths: paths } }
 }
+export function consumeSaveDialog(filename) { return saveDialogDirectories.delete(path.dirname(filename)) }
 export async function exportStoredFile(filename) { await flushStorage(); await downloadHandler(filename, readFileSync(filename)) }
 
 const images = new Map()

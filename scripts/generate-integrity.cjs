@@ -9,6 +9,7 @@ function 是构建文件(相对路径) {
   const 路径段 = 主进程路径.split('/')
   return !路径段.includes('node_modules') &&
     !路径段.includes('.vitest') &&
+    !路径段.includes('__fixtures__') &&
     主进程路径 !== 'main-test.js' &&
     !/\.(test|spec)\.js$/.test(主进程路径)
 }

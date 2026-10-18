@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T09:27:53.276Z",
+  "artifacts": [
+    {
+      "name": "海豹办公安装程序2.0.0.exe",
+      "path": "release/v2.0.0/海豹办公安装程序2.0.0.exe",
+      "bytes": 392859008,
+      "sha256": "6e57beedb739d9a081907846a3a944d99d13be1182823032111b28955e78ee97"
+    },
+    {
+      "name": "海豹办公2.0.0.exe",
+      "path": "release/v2.0.0/海豹办公2.0.0.exe",
+      "bytes": 392633545,
+      "sha256": "e151d097d2b64f8ceddd4ee3e73c07fe6d2b78a86f9c673d263b49aa6b55c753"
+    },
+    {
+      "name": "海豹办公Ubuntu2.0.0-amd64.deb",
+      "path": "release/v2.0.0/海豹办公Ubuntu2.0.0-amd64.deb",
+      "bytes": 119222832,
+      "sha256": "5f9e802f85a765dd86de8f840e93261b098f7a0206dd1d0b594e17d4c6696cbd"
+    },
+    {
+      "name": "海豹办公-2.0.0-Web.zip",
+      "path": "release/web-2.0.0-second-pass/海豹办公-2.0.0-Web.zip",
+      "bytes": 50219765,
+      "sha256": "65e5877b121f064cc7514aed57041310671ed135b0a685390b9c9787f5b6db98"
+    }
+  ]
+}

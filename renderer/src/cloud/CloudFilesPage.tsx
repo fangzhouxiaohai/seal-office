@@ -8,10 +8,14 @@ import {useAppStore} from '../store'
 import Icon from '../components/Icon'
 import CloudFileBrowser,{isFolder,type CloudNode as Node} from './CloudFileBrowser'
 import {useSettings} from '../store/settingsStore'
+import {useCollaborationFiles, type SharedFileBinding} from '../collaboration/fileAccess'
+import {materializeRealtime} from '../collaboration/materializeRealtime'
+import {diagramFileType} from '../localTools/diagramCloud'
 import './drive.css'
 export default function CloudFilesPage({trash=false}:{trash?:boolean}){
   const cloud=useCloud(),store=useAppStore(),{modal,message}=App.useApp(),[nodes,setNodes]=useState<Node[]>([]),[parent,setParent]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[versions,setVersions]=useState<{node:Node;items:any[]}|null>(null),[pending,setPending]=useState<any[]>([])
   const {语言}=useSettings(),en=语言==='en-US',t=(zh:string,english:string)=>en?english:zh
+  const collaborationFiles=useCollaborationFiles(cloud.state.account?.id||'')
   const [selected,setSelected]=useState<string[]>([]),[sort,setSort]=useState('updated')
   const context=useRef('');context.current=JSON.stringify([cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
   const load=async()=>{const key=context.current;try{const items=await cloudCall('list'),queue=await cloudCall('pending');if(key!==context.current)return;setNodes(items);setPending(queue);setError('');await cloud.refresh()}catch(e){if(key===context.current)setError(e instanceof Error?e.message:'读取失败')}}
@@ -35,7 +39,18 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
         finally{submitting=false;setBusy(false);dialog.update({okButtonProps:{loading:false},cancelButtonProps:{disabled:false}})}})()
     }})
   }
-  const download=(node:Node,open=false,version?:string)=>run(async()=>{const r=await cloudCall('download',{id:node.id,version});if(open&&r.path){const opened=await 通过路径打开文件(r.path,message,modal,(type,content,path,warnings,page,fingerprint)=>store.createDoc(type,content,{路径:path,警告:warnings,页面设置:page,文件指纹:fingerprint}));if(opened)store.refreshRecents()}else if(!r.cancelled)message.success('文件已下载')})
+  const download=(node:Node,open=false,version?:string)=>run(async()=>{
+    const binding=version?null:await cloudCall<SharedFileBinding|null>('realtimeNodeBinding',{id:node.id})
+    if(binding){const get=()=>cloudCall('realtimeDownload',{id:node.id});if(open)await collaborationFiles.open(get,binding);else{await collaborationFiles.download(get,binding);message.success('最新协作文件已下载')}return}
+    if(open&&diagramFileType(node.meta.filename||node.meta.name)){await collaborationFiles.open(()=>cloudCall('rawDownload',{id:node.id,version}));return}
+    const r=await cloudCall('download',{id:node.id,version});if(open&&r.path){const opened=await 通过路径打开文件(r.path,message,modal,(type,content,path,warnings,page,fingerprint)=>store.createDoc(type,content,{路径:path,警告:warnings,页面设置:page,文件指纹:fingerprint}));if(opened)store.refreshRecents()}else if(!r.cancelled)message.success('文件已下载')
+  })
+  const copy=(node:Node)=>run(async()=>{
+    const binding=await cloudCall<SharedFileBinding|null>('realtimeNodeBinding',{id:node.id})
+    if(!binding)return cloudCall('copy',{id:node.id})
+    const file=await materializeRealtime(await cloudCall('realtimeDownload',{id:node.id}),binding),filename=file.name.replace(/(\.[^.]+)?$/, ' 副本$1')
+    return cloudCall('save',{linkId:crypto.randomUUID(),name:filename,filename,data:file.data,kind:node.kind,parent:node.parent,text:node.meta.text,cover:node.meta.cover,template:node.meta.template})
+  })
   if(!cloud.state.account?.enabled||!cloud.state.unlocked)return <section className="seal-drive seal-drive-welcome"><div className="seal-drive-welcome-icon"><Icon name="cloud" variant="mobile" size={64}/></div><h1>{trash?t('云空间回收站','Cloud recycle bin'):t('我的云空间','My cloud space')}</h1><p>{t('文件随身，安全同步','Your files, securely synced')}</p><span>{t('登录并开通加密云空间，管理文件和文件夹','Sign in to manage your encrypted files and folders')}</span><Button type="primary" onClick={cloud.configure}>{cloud.state.account?.enabled?t('解锁云空间','Unlock cloud space'):t('登录并开通云空间','Sign in and enable cloud space')}</Button></section>
   const shown=nodes.filter(n=>Boolean(n.deleted)===trash&&(trash||search?n.meta.name?.toLowerCase().includes(search.toLowerCase()):n.parent===parent)).sort((a,b)=>Number(isFolder(b))-Number(isFolder(a))||(sort==='name'?a.meta.name.localeCompare(b.meta.name,en?'en':'zh'):sort==='oldest'?a.updated-b.updated:b.updated-a.updated))
   const ancestors:Node[]=[],seen=new Set<string>();let cursor=parent
@@ -51,7 +66,7 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     ...(!isFolder(node)?[
       {key:'download',label:t('下载','Download'),onClick:()=>void download(node)},
       {key:'versions',label:t('历史版本','Version history'),onClick:()=>void run(async()=>setVersions({node,items:(await cloudCall('versions',{id:node.id})).items}))},
-      {key:'copy',label:t('复制','Copy'),onClick:()=>void run(()=>cloudCall('copy',{id:node.id}))}
+      {key:'copy',label:t('复制','Copy'),onClick:()=>void copy(node)}
     ]:[]),
     {type:'divider'},
     {key:'rename',label:t('重命名','Rename'),onClick:()=>nameDialog(t('重命名','Rename'),node.meta.name,name=>cloudCall('update',{id:node.id,changes:{name}}))},

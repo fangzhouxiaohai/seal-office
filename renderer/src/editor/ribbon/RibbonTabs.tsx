@@ -21,6 +21,7 @@ const RibbonTabs = ({ activeKey, onChange, tabs = RIBBON_TABS }: Props) =>
           type: 'button',
           role: 'tab',
           'aria-selected': 标签.key === activeKey,
+          'data-seal-command-menus': 标签.groups.flatMap(group => group.items.filter(item => item.options?.length).map(item => item.commandId)).join(' '),
           className: `wps-ribbon-tab${标签.key === activeKey ? ' wps-ribbon-tab--active' : ''}`,
           onClick: () => onChange(标签.key),
         },

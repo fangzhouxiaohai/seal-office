@@ -1,0 +1,23 @@
+[
+  {
+    "recordedAt": "2026-10-18T14:01:19.282Z",
+    "classification": "public browser harness only; no product, runtime, unit-test or build inputs changed",
+    "path": "mobile/tests/public-web.cjs",
+    "oldSha256": "959ceff86d5c8c461ecca9794b93f13a3077118e38dff374682f1e5224ff9740",
+    "newSha256": "d732d2a241a96cce96ed16a3c9a1f1da25ba5fc0b4514b876e50704c54ec1272",
+    "reason": "Visual inspection caught a screenshot taken during Drawer closing animation. Add explicit settled/open/closed and hit-target assertions so project actions cannot click through overlays; rerun strict CSP and public-origin acceptance.",
+    "requiredReruns": [
+      "local strict-CSP production browser",
+      "public-origin production browser during publish"
+    ],
+    "originalUnitFreezeRetained": true
+  },
+  {
+    "recordedAt": "2026-10-18T14:32:23.447Z",
+    "classification": "diagnostic logging only, watchdog and assertions unchanged",
+    "path": "mobile/tests/public-web.cjs",
+    "oldSha256": "d732d2a241a96cce96ed16a3c9a1f1da25ba5fc0b4514b876e50704c54ec1272",
+    "newSha256": "2241fd6cda3c7a81e6cfe22a0a1ff7943dfc513fc082a8e127e7ee1c5b137b7c",
+    "reason": "Record every wait, passed scenario and static-resource completion to diagnose public-only stalls; no test scope removed."
+  }
+]

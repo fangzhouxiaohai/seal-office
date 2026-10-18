@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "method": "full-run-plus-complete-corrected-test-file-rechecks",
+  "oneWholeRunAllGreen": false,
+  "files": 225,
+  "tests": 2259,
+  "skipped": 0,
+  "originalWholeRun": {
+    "passed": false,
+    "passedTests": 2257,
+    "failedTests": 2,
+    "source": {
+      "path": ".upgrade-private/v200-second-pass-renderer.json",
+      "bytes": 926875,
+      "sha256": "63d88f155ba3aba5a075c3f735158e1f636fcabc2cddff296866319ae26a98ed"
+    },
+    "failures": [
+      {
+        "file": "renderer/src/App.test.tsx",
+        "tests": [
+          " 应用外壳（WPS 版式首页） 共享能力未接入时明确提示且不切换最近文档"
+        ]
+      },
+      {
+        "file": "renderer/src/pages/SettingsPage.test.tsx",
+        "tests": [
+          " 设置页状态与真实能力一致 设置页保存翻译密钥时只写系统安全存储，不写本机明文"
+        ]
+      }
+    ]
+  },
+  "unchangedPassingFiles": 223,
+  "correctedFileRechecks": [
+    {
+      "file": "renderer/src/App.test.tsx",
+      "tests": 41,
+      "passed": true,
+      "source": {
+        "path": ".tmp-app-full-after.log",
+        "bytes": 24933,
+        "sha256": "6e8e636bd23382835fc04d587346bb37f5bab7bc0508c23af1031f3ace967117"
+      },
+      "currentTestFileSha256": "4515745540f2902300384c2bfc0b12014ca217ca540f33555f8a354139028625",
+      "reason": "Replace the obsolete coming-soon assertion with real sharing navigation, login gate, return action and unchanged recent-file ordering."
+    },
+    {
+      "file": "renderer/src/pages/SettingsPage.test.tsx",
+      "tests": 17,
+      "passed": true,
+      "source": {
+        "path": ".upgrade-private/v200-second-settings-fixed.json",
+        "bytes": 8021,
+        "sha256": "a5928fafad7a8ab777ffca70f8401191b81aa74cfb20596dc2b25bdd052d2d6b"
+      },
+      "currentTestFileSha256": "9a0acb97acd898115d4c01ed52d4b32c3487ad9c93a6edec3dccea8df850c199",
+      "reason": "Provide the backupClear dependency missing from the partial desktop mock. Its error dialog stole keyboard focus. Keep full-value/security assertions, add hydrated-input and exact-save assertions."
+    }
+  ],
+  "runtimeCodeChangedForTheseCorrections": false,
+  "source": {
+    "path": ".upgrade-private/v200-second-pass-renderer.json",
+    "bytes": 926875,
+    "sha256": "63d88f155ba3aba5a075c3f735158e1f636fcabc2cddff296866319ae26a98ed"
+  },
+  "audit": "renderer-audit.json"
+}

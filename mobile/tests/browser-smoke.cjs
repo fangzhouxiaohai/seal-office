@@ -2,6 +2,7 @@ const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict')
 const project = path.resolve(__dirname, '../..'), output = path.join(project, '.upgrade-private/mobile-verification')
 const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
+const version = require('../../package.json').version
 app.setPath('userData', path.join(output, 'browser-profile-' + (localFile ? 'file' : 'web') + '-' + process.pid)); app.disableHardwareAcceleration()
 const contentTypes = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
@@ -13,8 +14,27 @@ app.whenReady().then(async () => {
     catch { response.writeHead(404); response.end() }
   })
   await new Promise((resolve) => server.listen(5191, '127.0.0.1', resolve))
-  const win = new BrowserWindow({ show: false, width: 1280, height: 900, webPreferences: { offscreen: true, contextIsolation: true, sandbox: true, nodeIntegration: false } })
+  const win = new BrowserWindow({ show: false, width: 1280, height: 900, webPreferences: { offscreen: false, backgroundThrottling: false, contextIsolation: true, sandbox: true, nodeIntegration: false } })
+  // A hidden standard window supports native CDP touch. After a reload Windows
+  // can briefly discard its capture surface; retain actual screenshots and wait
+  // for a painted surface instead of treating that host race as an app failure.
+  const nativeCapture = win.capturePage.bind(win)
+  win.capturePage = async (...args) => {
+    win.webContents.focus()
+    let last
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try { const snapshot = await nativeCapture(...args); assert.ok(!snapshot.isEmpty(), '截图必须包含真实绘制的页面'); return snapshot }
+      catch (error) {
+        if (!/Current display surface not available/.test(error.message)) throw error
+        last = error
+        if (attempt === 0) { const [width, height] = win.getContentSize(); win.setContentSize(width, height + 1); win.setContentSize(width, height) }
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+    throw last
+  }
   const errors = [], checks = []
+  let pptxAliasShape = null, pptEditingSave = null
   win.webContents.on('console-message', (_, level, message) => { if (level >= 3) errors.push(message) })
   // 模拟 App/WebView 被系统重新创建；允许重载带有未保存正文的测试窗口。
   win.webContents.on('will-prevent-unload', event => event.preventDefault())
@@ -46,7 +66,7 @@ app.whenReady().then(async () => {
       const changed=await api.saveToFile(filename,word.数据,'二进制','incorrect-fingerprint');
       const ppt=await api.office.writePptx({页面尺寸:{宽:960,高:540},幻灯片:[{id:'slide1',背景色:'#FFFFFF',文本框:[{id:'text1',x:40,y:40,width:600,height:80,text:'移动演示验收',字号:32,颜色:'#222222',加粗:true}]}]});
       const deck=ppt.成功?await api.office.readPptx(ppt.数据):ppt;
-      const table=await api.office.writeXlsx({工作表:[{名称:'验收表',数据:[['项目','金额'],['安卓与网页',123]]}]});
+      const table=await api.office.writeXlsx({工作表:[{名称:'验收表',数据:[['项目','金额'],['安卓与网页',123],['离线公式',{公式:'B2*2',结果:246}],['兼容公式',{公式:'_xlfn.SEAL_CUSTOM(B2)',结果:321}]]}]});
       const sheet=table.成功?await api.office.readXlsx(table.数据):table;
       const config=await api.ai.saveConfig({名称:'离线验收',服务商:'custom',地址:'https://example.com/v1',模型:'test-model',密钥:'test-secret-not-real'});
       const backup=await api.backupSave(JSON.stringify({test:'persisted'}));
@@ -56,6 +76,12 @@ app.whenReady().then(async () => {
     assert.ok(roundtrip.file.成功); assert.equal(roundtrip.blocked.成功, false)
     assert.ok(roundtrip.ppt.成功, JSON.stringify(roundtrip.ppt)); assert.match(JSON.stringify(roundtrip.ppt),/移动演示验收/); assert.ok(roundtrip.sheet.成功, JSON.stringify(roundtrip.sheet)); assert.match(JSON.stringify(roundtrip.sheet),/安卓与网页/); assert.ok(roundtrip.config.成功); assert.ok(roundtrip.backup.成功)
     checks.push('DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置')
+    pptxAliasShape = await require('./pptx-prefix-actions.cjs')({ evaluate })
+    const formulaSource = roundtrip.sheet.工作表列表[0].元数据.公式来源
+    assert.equal(formulaSource.B3.原始值, '=B2*2'); assert.equal(formulaSource.B3.结果, 246)
+    assert.equal(formulaSource.B4.原始值, '=_xlfn.SEAL_CUSTOM(B2)'); assert.equal(formulaSource.B4.结果, 321)
+    assert.match(roundtrip.sheet.html, /data-formula="=B2\*2"/)
+    checks.push('生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空')
     const nativeSave = await evaluate(`(async()=>{const api=window.electronAPI;const filename='/seal/documents/'+crypto.randomUUID()+'/save-scope.txt';const oldNative=window.sealNative,oldUni=window.uni,actions=[];try{window.sealNative={token:'synthetic-save',platform:'android'};window.uni={webView:{postMessage:({data})=>{actions.push(data.action);window.sealReceiveNative({id:data.id,type:'saved'})}}};const saved=await api.saveToFile(filename,'手机本地保存验收','文本');const after=await api.readFile(filename);const exported=await api.revealInFolder(filename);return {saved,after,actions,exported}}finally{window.sealNative=oldNative;window.uni=oldUni}})()`)
     assert.equal(nativeSave.saved.成功,true); assert.equal(nativeSave.after.内容,'手机本地保存验收'); assert.equal(nativeSave.exported.成功,true); assert.deepEqual(nativeSave.actions,['save']); checks.push('原生保存只写本地文档空间；显式导出才调用系统分享')
     const data = await evaluate(`(async()=>{const api=window.electronAPI;const result=await api.printPreview('<h1>中文打印验收</h1><p>海豹办公移动与网页</p>','html');if(!result.成功)throw new Error(result.错误);const rotated=await api.pdf.rotate(result.数据,[1],90);const filename=await api.showSaveDialog('PDF阅读验收.pdf');await api.saveToFile(filename,result.数据,'二进制');const canvas=document.createElement('canvas');canvas.width=200;canvas.height=100;const ctx=canvas.getContext('2d');ctx.fillStyle='#ff0000';ctx.fillRect(0,0,100,100);ctx.fillStyle='#0000ff';ctx.fillRect(100,0,100,100);const imagePdf=await api.printPreview('<p>旋转翻转图片导出验收</p><img src="'+canvas.toDataURL('image/png')+'" width="240" height="120" style="width:240px;height:120px;transform:rotate(90deg) scale(-1, 1)">','html');if(!imagePdf.成功)throw new Error(imagePdf.错误);return {result,rotated,filename,imagePdf}})()`)
@@ -112,7 +138,9 @@ app.whenReady().then(async () => {
     checks.push('手机菜单新建文字文档并进入真实编辑器')
     checks.push('390px 文字正文重排、输入事件与编辑区域可见')
     checks.push('真实工作区备份恢复未保存正文与文字编辑页面')
-    await require('./image-actions.cjs')({ win, evaluate, output, checks })
+    await require('./reading-actions.cjs')({ win, evaluate, output, checks })
+    win.setContentSize(390, 844); await new Promise(resolve => setTimeout(resolve, 150))
+    assert.equal(await evaluate('innerWidth'), 390, '新增宽屏数组验收后必须恢复手机视口再检查PDF和22个导航入口')
     await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(data.filename)};document.querySelector('.seal-mobile-nav [aria-label="打开文件"]').click()`)
     for(let attempt=0;attempt<150;attempt++){if(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`))break;await new Promise(resolve=>setTimeout(resolve,100))}
     assert.ok(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`), '本地 PDF 必须在阅读器中绘制并提取中文：'+await evaluate(`document.querySelector('.pdf-viewer')?.textContent`))
@@ -122,7 +150,10 @@ app.whenReady().then(async () => {
     await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
     const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
-    assert.equal(navigation.length, 16, '移动端已实现功能入口数量')
+    const expectedNavigation = ['home','recent','star','shared','my-cloud','device','tag','team','knowledge','market','trash','pdf','mindmap','flow','multitable','design','notes','calendar','apps','document','settings','help']
+    assert.equal(navigation.length, 22, '移动端已实现功能入口数量')
+    assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '全部22个入口必须完整出现且顺序与可用导航一致')
+    assert.equal(navigation.some(item=>item.key==='database'), false, '移动端不提供依赖桌面数据库引擎的 Access 入口')
     for (const item of navigation) {
       await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').click()`)
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -130,6 +161,12 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`!!document.querySelector('.wps-error')`), false, item.label + '页面不得崩溃')
       const target = { settings: '.wps-main--settings', help: '.wps-main--help', pdf: '.wps-main--pdf' }[item.key]
       if (target) assert.ok(await evaluate(`!!document.querySelector(${JSON.stringify(target)})`), item.label + '必须加载目标页面')
+      const collaborationTitle = {shared:'共享文档',device:'我的设备',tag:'标签',team:'团队空间'}[item.key]
+      if (collaborationTitle) {
+        assert.equal(await evaluate(`document.querySelector('.seal-drive-welcome h1')?.textContent`), collaborationTitle, item.label + '必须加载真实协作账号入口')
+        assert.ok(await evaluate(`document.querySelector('.seal-drive-welcome')?.textContent.includes('登录并解锁加密云空间后使用此功能')`), item.label + '应明确需要登录解锁，不能停在旧占位页')
+        assert.ok(await evaluate(`[...document.querySelectorAll('.seal-drive-welcome button')].some(button=>!button.disabled&&button.textContent==='登录并开通云空间')`), item.label + '应提供可操作的登录入口')
+      }
       const layout = await evaluate(`({width:innerWidth,scroll:document.documentElement.scrollWidth})`)
       assert.ok(layout.scroll <= layout.width + 1, item.label + '不应撑开手机视口：' + JSON.stringify(layout))
       await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
@@ -137,7 +174,7 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').getAttribute('aria-current')`), 'page', item.label + '必须真的切换到目标')
     }
     await evaluate(`document.querySelector('.ant-drawer-close').click()`)
-    checks.push('移动端 16 个功能入口逐一点击、导航状态及视口检查')
+    checks.push('移动端 22 个可用功能入口逐一点击、导航状态及视口检查；共享/设备/标签/团队检查真实账号门槛，Access 按能力隐藏')
     for (const item of [{key:'table',selector:'.wps-sheet-toolbar'}, {key:'ppt',selector:'.wps-ppt-canvas'}, {key:'pdf',selector:'.wps-main--pdf'}]) {
       await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
       await new Promise(resolve => setTimeout(resolve, 350))
@@ -158,6 +195,7 @@ app.whenReady().then(async () => {
         const after = await evaluate(`(()=>{const rect=document.querySelector('.wps-ppt-box').getBoundingClientRect();return {x:rect.x,y:rect.y}})()`)
         assert.ok(Math.abs(after.x-before.x-20)<2 && Math.abs(after.y-before.y-10)<2, '触摸拖动应按屏幕距离移动：'+JSON.stringify({before,after}))
         await win.capturePage().then(image=>fs.writeFileSync(path.join(output,'mobile-ppt.png'),image.toPNG()))
+        pptEditingSave = await require('./ppt-edit-save-actions.cjs')({ evaluate })
       }
       const tabs = await evaluate(`Array.from(document.querySelectorAll('.wps-ribbon-tabs button')).map(button=>button.textContent)`)
       for(const label of tabs) {
@@ -173,8 +211,8 @@ app.whenReady().then(async () => {
     }
     checks.push('360/390/820/1280px 窄屏、平板与 PC 布局')
     assert.equal(errors.filter(message => !/ERR_ABORTED|favicon/.test(message)).length, 0, errors.join('\n'))
-    fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: true, checks, errors, scheme:localFile?'file':'http' }, null, 2))
-    console.log(JSON.stringify({ passed: true, checks, output }, null, 2)); app.exit(0)
-  } catch (error) { console.error(error); fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: false, checks, errors, error: error.stack }, null, 2)); app.exit(1) }
+    fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: true, version, checks, pptxAliasShape, pptEditingSave, errors, scheme:localFile?'file':'http' }, null, 2))
+    console.log(JSON.stringify({ passed: true, version, checks, pptxAliasShape, pptEditingSave, output }, null, 2)); app.exit(0)
+  } catch (error) { console.error(error); fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: false, version, checks, pptxAliasShape, pptEditingSave, errors, error: error.stack }, null, 2)); app.exit(1) }
   finally { server.close(); win.destroy() }
 })

@@ -1,5 +1,7 @@
 // 应用外壳：按当前模块装配首页视图或编辑器视图，并统一挂载顶栏、侧栏与状态栏。
 import React, { useEffect, useState } from 'react'
+import CollaborationSaveBanner from './collaboration/CollaborationSaveBanner'
+import CollaborationLinkEntry from './collaboration/CollaborationLinkEntry'
 import { App as AntdApp, ConfigProvider, Modal, theme as antdTheme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import enUS from 'antd/locale/en_US'
@@ -328,6 +330,8 @@ const 外壳 = () => {
       on切换语言: 设置语言,
     }),
     React.createElement(CloudAutosave),
+    React.createElement(CollaborationLinkEntry),
+    React.createElement(CollaborationSaveBanner),
     是首页
       ? React.createElement(
           'div',

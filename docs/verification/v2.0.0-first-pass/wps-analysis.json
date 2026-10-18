@@ -1,0 +1,202 @@
+{
+  "version": "2.0.0",
+  "investigatedAt": "2026-10-18",
+  "wpsVersion": "12.1.0.26895",
+  "method": "REA 6.5.0 static PE resource identity and packaged command resource inventory; metadata parsed by scripts/analyze-wps-resources.py",
+  "nativeProviders": [
+    {
+      "id": "ghidra",
+      "status": "unavailable",
+      "reason": "Set GHIDRA_INSTALL_DIR to an extracted Ghidra 12.1.x release directory."
+    },
+    {
+      "id": "hopper",
+      "status": "unavailable",
+      "reason": "Hopper integration is not supported on win32."
+    },
+    {
+      "id": "ida",
+      "status": "unavailable",
+      "reason": "Set REA_IDA_MCP_CONFIG to an upstream IDA MCP JSON registration; see docs/ida-provider.md."
+    }
+  ],
+  "executables": [
+    {
+      "evidence_id": "ev_d5e8aded2d71d14ef7072ac6fde57d85905b6a5cc4b10bef4320f937e903dbd3",
+      "artifact": {
+        "path": "C:\\Users\\A\\AppData\\Local\\Kingsoft\\WPS Office\\12.1.0.26895\\office6\\wps.exe",
+        "sha256": "a79c853937fd557f701bf596cd118a856ade9f008b1ab40a51a86ca0841e6935",
+        "bytes": 1234936
+      },
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 32,
+        "resources": 14
+      },
+      "limitations": [
+        "Static PE32/PE32+ type/name/language resource inventory; payloads other than RT_GROUP_ICON remain opaque.",
+        "Icon candidates are resource-table relationships. Language fallback, image decoding and actual shell/window loading are not observed.",
+        "Exact shared byte ranges are retained; non-identical overlapping resource structures or payloads are rejected."
+      ]
+    },
+    {
+      "evidence_id": "ev_3d045056c5060920ee9e1717b888eb574d1b0d56a1f659c818b389e75539cb03",
+      "artifact": {
+        "path": "C:\\Users\\A\\AppData\\Local\\Kingsoft\\WPS Office\\12.1.0.26895\\office6\\et.exe",
+        "sha256": "133c295830bc1cc4838ee74ed4a62112b76a543ca7f6d782730c78d6eb6e2f47",
+        "bytes": 1141752
+      },
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 26,
+        "resources": 11
+      },
+      "limitations": [
+        "Static PE32/PE32+ type/name/language resource inventory; payloads other than RT_GROUP_ICON remain opaque.",
+        "Icon candidates are resource-table relationships. Language fallback, image decoding and actual shell/window loading are not observed.",
+        "Exact shared byte ranges are retained; non-identical overlapping resource structures or payloads are rejected."
+      ]
+    },
+    {
+      "evidence_id": "ev_eb2215811f45ff8f8ff13d12f3bc3942eab9540c9eaa87873f860ed56e905352",
+      "artifact": {
+        "path": "C:\\Users\\A\\AppData\\Local\\Kingsoft\\WPS Office\\12.1.0.26895\\office6\\wpp.exe",
+        "sha256": "d64bfaa6aa03d79e43f4a15ce25eae1aa1ffeb23771d0abe74a148392b515ba6",
+        "bytes": 1138680
+      },
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 26,
+        "resources": 11
+      },
+      "limitations": [
+        "Static PE32/PE32+ type/name/language resource inventory; payloads other than RT_GROUP_ICON remain opaque.",
+        "Icon candidates are resource-table relationships. Language fallback, image decoding and actual shell/window loading are not observed.",
+        "Exact shared byte ranges are retained; non-identical overlapping resource structures or payloads are rejected."
+      ]
+    }
+  ],
+  "commandResourceEvidence": {
+    "evidence_id": "ev_05659e3ed51cad714615eaecaa06c6a7fd23d585780cb615b50a4c602d0381b9",
+    "subject": {
+      "name": "command-resources.zip",
+      "digest": {
+        "sha256": "8ee11159eb14d0215eb97dc538f956b11f88590de6bea2b842b87684f8d15137"
+      },
+      "local_path": "E:\\seal-office\\.upgrade-private\\wps-analysis-v1.9.16\\command-resources.zip",
+      "format": "zip",
+      "architecture": null
+    },
+    "provider": {
+      "id": "rea-analysis-view",
+      "name": "REA analysis view projection",
+      "version": "1"
+    },
+    "analysis_profile": null,
+    "predicate_type": "rea.analysis-view",
+    "operation": "inspect_analysis_view",
+    "parameters": {
+      "parent_evidence_id": "ev_be757f12b9ff1b36c341c8c8d5614dbc1915997e93fdd8cf1d0cc66373509c59",
+      "view": {
+        "kind": "summary"
+      }
+    },
+    "raw_result": null,
+    "normalized_result": {
+      "kind": "summary",
+      "view": {
+        "kind": "summary"
+      },
+      "parent_evidence_id": "ev_be757f12b9ff1b36c341c8c8d5614dbc1915997e93fdd8cf1d0cc66373509c59",
+      "parent_operation": "inspect_artifact",
+      "parent_digest": "be757f12b9ff1b36c341c8c8d5614dbc1915997e93fdd8cf1d0cc66373509c59",
+      "view_digest": "7cf44e85eaa7183e672dd7bdf798e8a4e66061a93cb13956481d61221230ef77",
+      "artifact": {
+        "path": "E:\\seal-office\\.upgrade-private\\wps-analysis-v1.9.16\\command-resources.zip",
+        "sha256": "8ee11159eb14d0215eb97dc538f956b11f88590de6bea2b842b87684f8d15137"
+      },
+      "coverage": {
+        "status": "complete-within-view",
+        "examined": 605,
+        "total": 605,
+        "next_offset": null,
+        "exhausted": true
+      },
+      "limitations": [
+        "Inspection derives bounded static hypotheses and next probes; it does not execute the artifact or claim format-specific semantics.",
+        "ZIP inventory lists central-directory entries only. Non-entry bytes, including an APK Signing Block before the central directory or a ZIP comment after it, are not occurrences."
+      ],
+      "unknowns": [
+        "Inventory does not establish application runtime behavior or complete format-specific analysis."
+      ],
+      "summary": {
+        "manifest": {
+          "manifest_id": "agm_0fda7b8cae33c05e698bffa8ad4612302694f6024a4012dafabdf6e9ce7ff135",
+          "root_artifact_id": "art_c9a0a4c70fb314121cc3a2597b26a10156f39380952f79ec2f735c623f4614a0",
+          "root_sha256": "8ee11159eb14d0215eb97dc538f956b11f88590de6bea2b842b87684f8d15137",
+          "root_format": "zip",
+          "graph_sha256": "d4f41ec2048052b3f15245e6e6d6e971eb725f35e735bae378083cf5571a1e24",
+          "node_count": 202,
+          "occurrence_count": 202,
+          "edge_count": 201
+        },
+        "available_counts": {
+          "nodes": 202,
+          "occurrences": 202,
+          "edges": 201,
+          "integrity_contradictions": 0
+        },
+        "observed_entry_kind_counts": {
+          "file": 202,
+          "directory": 0,
+          "symlink": 0,
+          "slice": 0
+        },
+        "source_complete": true,
+        "inventory_evidence_ids": [
+          "ev_9f2032e337f8405297779b55825c0f1156a21b46ac65abea2f38b70611f627bc"
+        ],
+        "inspection": {
+          "coverage": {
+            "status": "complete-within-substeps",
+            "substeps_completed": 1,
+            "observations_retained": 1,
+            "observations_omitted": 0,
+            "hypotheses_retained": 0,
+            "hypotheses_omitted": 0,
+            "unexplored_branches_retained": 0,
+            "unexplored_branches_omitted": 0,
+            "next_probes_retained": 0,
+            "next_probes_omitted": 0
+          },
+          "unexplored_branches": []
+        },
+        "limitation_count": 2
+      }
+    },
+    "confidence": "derived",
+    "authority": "shipped-artifact",
+    "environment": null,
+    "limitations": [
+      "Inspection derives bounded static hypotheses and next probes; it does not execute the artifact or claim format-specific semantics.",
+      "ZIP inventory lists central-directory entries only. Non-entry bytes, including an APK Signing Block before the central directory or a ZIP comment after it, are not occurrences."
+    ],
+    "relationship_coverage": null,
+    "locations": [
+      {
+        "kind": "artifact-path",
+        "path": "E:\\seal-office\\.upgrade-private\\wps-analysis-v1.9.16\\command-resources.zip"
+      }
+    ],
+    "evidence_links": [
+      "ev_be757f12b9ff1b36c341c8c8d5614dbc1915997e93fdd8cf1d0cc66373509c59"
+    ]
+  },
+  "limitations": [
+    "No native-engine decompilation: Ghidra/IDA are not configured and Hopper is not available on Windows.",
+    "Command declarations and shortcut hints do not establish runtime availability or behavior.",
+    "No original failing WPS cloud workbook is available; formula regressions use constructed standard OOXML files.",
+    "No WPS proprietary code, graphics, cloud APIs or binary libraries are included in Seal Office."
+  ],
+  "privateEvidenceDirectory": ".upgrade-private/wps-analysis-v1.9.16"
+}

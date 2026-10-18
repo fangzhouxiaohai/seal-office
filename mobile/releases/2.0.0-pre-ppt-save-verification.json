@@ -1,0 +1,185 @@
+{
+  "scope": "mobile",
+  "stage": "pending-ppt-save-fix-superseded",
+  "version": "2.0.0",
+  "versionCode": "20000",
+  "date": "2026-10-18",
+  "applicationName": "海豹办公",
+  "nativePackagesGenerated": false,
+  "cloudBuildSubmitted": false,
+  "deviceValidation": false,
+  "currentResources": {
+    "platform": "android",
+    "desktopVersion": "2.0.0",
+    "builtAt": "2026-10-18T07:17:26.142Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "nativeCompilation": {
+    "android": {
+      "passed": true,
+      "output": "mobile/unpackage/native-check-pre-ppt-save/android"
+    },
+    "harmony": {
+      "passed": true,
+      "output": "mobile/unpackage/native-check-pre-ppt-save/harmony"
+    }
+  },
+  "baselineRegressions": {
+    "sourceReport": "mobile/releases/2.0.0-pre-final-verification.json",
+    "rendererRegression": {
+      "passed": true,
+      "files": [
+        "renderer/src/editor/DocEditor.test.tsx",
+        "renderer/src/editor/DocEditorFloat.test.tsx",
+        "renderer/src/editor/DocEditorReading.test.tsx"
+      ],
+      "tests": 40
+    },
+    "mobileUnitRegression": {
+      "passed": true,
+      "command": "npm --prefix mobile test",
+      "tests": 18
+    },
+    "repeatedAfterFinalFix": false
+  },
+  "finalDirectedProductionRegression": {
+    "test": "mobile/tests/pptx-prefix-actions.cjs",
+    "file": {
+      "passed": true,
+      "strict": true,
+      "namespacePrefixes": [
+        "slides",
+        "draw",
+        "relation"
+      ],
+      "nativeShapesPreserved": 1,
+      "preservedText": "引号、Tab、换行、中文及 &<>"
+    },
+    "http": {
+      "passed": true,
+      "strict": true,
+      "namespacePrefixes": [
+        "slides",
+        "draw",
+        "relation"
+      ],
+      "nativeShapesPreserved": 1,
+      "preservedText": "引号、Tab、换行、中文及 &<>"
+    }
+  },
+  "productionBrowser": {
+    "file": {
+      "passed": true,
+      "version": "2.0.0",
+      "checks": [
+        "生产构建可在无 Electron preload 的浏览器环境启动",
+        "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+        "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+        "原生保存只写本地文档空间；显式导出才调用系统分享",
+        "中文 PDF 生成与页面旋转",
+        "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+        "页面重载后恢复本地文件与加密模型配置",
+        "无效工作区备份被阻止且允许保留后继续",
+        "手机菜单新建文字文档并进入真实编辑器",
+        "390px 文字正文重排、输入事件与编辑区域可见",
+        "真实工作区备份恢复未保存正文与文字编辑页面",
+        "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+        "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+        "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+        "390px 手机布局、底部触控导航、知识库与全部功能入口",
+        "移动端 15 个可用功能入口逐一点击、导航状态及视口检查；Access 按能力隐藏",
+        "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+        "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+        "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+        "360/390/820/1280px 窄屏、平板与 PC 布局"
+      ],
+      "pptxAliasShape": {
+        "passed": true,
+        "strict": true,
+        "namespacePrefixes": [
+          "slides",
+          "draw",
+          "relation"
+        ],
+        "nativeShapesPreserved": 1,
+        "preservedText": "引号、Tab、换行、中文及 &<>"
+      },
+      "errors": [],
+      "scheme": "file"
+    },
+    "http": {
+      "passed": true,
+      "version": "2.0.0",
+      "checks": [
+        "生产构建可在无 Electron preload 的浏览器环境启动",
+        "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+        "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+        "原生保存只写本地文档空间；显式导出才调用系统分享",
+        "中文 PDF 生成与页面旋转",
+        "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+        "页面重载后恢复本地文件与加密模型配置",
+        "无效工作区备份被阻止且允许保留后继续",
+        "手机菜单新建文字文档并进入真实编辑器",
+        "390px 文字正文重排、输入事件与编辑区域可见",
+        "真实工作区备份恢复未保存正文与文字编辑页面",
+        "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+        "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+        "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+        "390px 手机布局、底部触控导航、知识库与全部功能入口",
+        "移动端 15 个可用功能入口逐一点击、导航状态及视口检查；Access 按能力隐藏",
+        "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+        "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+        "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+        "360/390/820/1280px 窄屏、平板与 PC 布局"
+      ],
+      "pptxAliasShape": {
+        "passed": true,
+        "strict": true,
+        "namespacePrefixes": [
+          "slides",
+          "draw",
+          "relation"
+        ],
+        "nativeShapesPreserved": 1,
+        "preservedText": "引号、Tab、换行、中文及 &<>"
+      },
+      "errors": [],
+      "scheme": "http"
+    }
+  },
+  "cloudReady": [
+    {
+      "platform": "android",
+      "path": "mobile/unpackage/cloud-ready/2.0.0-pre-ppt-save/android",
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "files": 48,
+      "sha256Verified": true,
+      "nativeStaticFilesVerified": 31,
+      "officeJsSha256": "c2757dc7c58348f4690767ef5aea2a1216e32b6a929442fa2e7fe92827eee7ef"
+    },
+    {
+      "platform": "harmony",
+      "path": "mobile/unpackage/cloud-ready/2.0.0-pre-ppt-save/harmony",
+      "version": "2.0.0",
+      "versionCode": "20000",
+      "files": 48,
+      "sha256Verified": true,
+      "nativeStaticFilesVerified": 31,
+      "officeJsSha256": "c2757dc7c58348f4690767ef5aea2a1216e32b6a929442fa2e7fe92827eee7ef"
+    }
+  ],
+  "preFinalArchive": {
+    "report": "mobile/releases/2.0.0-pre-final-verification.json",
+    "cloudReady": "mobile/unpackage/cloud-ready/2.0.0-pre-final",
+    "nativeCompilation": "mobile/unpackage/native-check-pre-final",
+    "browserReports": ".upgrade-private/mobile-verification/2.0.0-pre-final"
+  },
+  "limitations": [
+    "APK / HAP 由用户在 HBuilderX 提交云打包后单独核验。",
+    "浏览器和宿主模拟不能替代 Android / HarmonyOS 安装包与真机验证。",
+    "格式兼容以明确支持范围、导入警告与另存副本保护为准，不宣称所有 WPS 功能均已实现。"
+  ],
+  "supersededReason": "真实PPT文本框未失焦时Ctrl+S可能写入旧模型；修复后将再次构建与验证最终资源。"
+}

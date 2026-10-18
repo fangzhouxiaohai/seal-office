@@ -11,7 +11,7 @@ import {
   创建工作表,
   读取单元格,
   写入单元格,
-  重算工作表,
+  重算工作簿,
   设置列宽,
   设置批注,
   设置数据验证,
@@ -46,6 +46,12 @@ import { useAppStore } from '../store'
 import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
 import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
+import SheetChartDialog from './SheetChartDialog'
+import { dispatchShortcut } from '../shortcuts/shortcuts'
+import { executeSheetNavigation } from '../shortcuts/sheetNavigation'
+import { withShortcutLabels } from '../shortcuts/shortcutMenu'
+import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
+import { 提取协作工作簿, 校验协作工作簿 } from './sheetRealtimeSource'
 import './sheetFeatures.css'
 
 /** 取路径中的文件名，供最近文档记录使用 */
@@ -76,9 +82,23 @@ const SheetEditor = () => {
   const [独立工作表列表, set独立工作表列表] = useState<Sheet[]>(() => [创建工作表('Sheet1')])
   const 工作表列表 = activeDocumentId === null ? 独立工作表列表 : 表格文档模型[activeDocumentId]
   if (!工作表列表 || 工作表列表.length === 0) throw new Error('表格编辑状态缺失，已阻止覆盖文件')
+  const 最新工作簿 = useRef(工作表列表)
+  最新工作簿.current = 工作表列表
+  const 应用工作簿 = (更新: Sheet[]) => {
+    const 下一个 = 重算工作簿(更新)
+    最新工作簿.current = 下一个
+    if (activeDocumentId === null) set独立工作表列表(下一个)
+    else 更新表格文档模型(activeDocumentId, 下一个)
+  }
+  const 远端接收 = useRef<(value: Sheet[]) => void>(() => {})
+  const 实时协作 = useRealtimeDocument({ documentId: activeDocumentId, type: 'table', model: 提取协作工作簿(工作表列表), onRemote: value => 远端接收.current(value), validate: 校验协作工作簿 })
   const set工作表列表: React.Dispatch<React.SetStateAction<Sheet[]>> = (更新) => {
-    if (activeDocumentId === null) set独立工作表列表(更新)
-    else 更新表格文档模型(activeDocumentId, 更新)
+    if (实时协作.readOnly) { message.warning('当前共享文档为只读，可另存本机副本'); return }
+    const 当前 = 最新工作簿.current, 基线 = typeof 更新 === 'function' ? 当前 : 工作表列表, 下一个 = typeof 更新 === 'function' ? 更新(当前) : 更新
+    if (实时协作.active) {
+      void 实时协作.publish(提取协作工作簿(下一个), 提取协作工作簿(基线)).catch(实时协作.reportError)
+      应用工作簿(实时协作.getSnapshot())
+    } else 应用工作簿(下一个)
   }
   const [当前索引, set当前索引] = useState(0)
   const 有效当前索引 = Math.min(Math.max(当前索引, 0), 工作表列表.length - 1)
@@ -88,7 +108,27 @@ const SheetEditor = () => {
   })
   const [编辑地址, set编辑地址] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
+  const 草稿 = useRef<{ address: string; sheetId: string; base: Sheet[]; value: string; composing: boolean; release: () => void } | null>(null)
+  const 公式草稿 = useRef<{ address: string; value: string; composing: boolean } | null>(null)
+  const 结束草稿 = () => { 草稿.current?.release(); 草稿.current = null; 公式草稿.current = null }
+  useEffect(() => () => { 草稿.current?.release() }, [activeDocumentId])
+  远端接收.current = value => {
+    应用工作簿(value)
+    const draft = 草稿.current
+    if (draft && !draft.composing) {
+      const merged = value.find(sheet => sheet.id === draft.sheetId)?.单元格[draft.address]?.原始值 ?? ''
+      // Published drafts already belong to the CRDT. Preserve a validation-failing
+      // local draft, otherwise show merged text instead of erasing remote input.
+      if (draft.value === draft.base.find(sheet => sheet.id === draft.sheetId)?.单元格[draft.address]?.原始值) {
+        draft.release(); draft.base = 提取协作工作簿(value); draft.release = 实时协作.retainBaseline(draft.base); draft.value = merged
+        if (公式草稿.current) 公式草稿.current.value = merged
+        else set编辑值(merged)
+      }
+    }
+  }
   const [当前标签, set当前标签] = useState('start')
+  const [图表打开, set图表打开] = useState(false)
+  useEffect(() => set图表打开(false), [activeDocumentId, 当前索引])
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   const [缩放, set缩放] = useState(默认文件缩放)
   useEffect(() => { set缩放(默认文件缩放) }, [activeDocumentId])
@@ -106,12 +146,12 @@ const SheetEditor = () => {
     set文档路径(已知文档路径[activeDocumentId ?? ''] ?? null)
   }, [activeDocumentId, 已知文档路径])
 
-  const 记录当前路径 = (路径: string, 文件指纹?: string) => {
+  const 记录当前路径 = (路径: string, 文件指纹?: string, 保存快照 = 工作表列表) => {
     set文档路径(路径)
     if (activeDocumentId !== null) {
       设置全局文档路径(activeDocumentId, 路径)
       if (文件指纹) 更新文件指纹(activeDocumentId, 文件指纹)
-      markDocumentSaved(activeDocumentId, '', JSON.stringify(工作表列表))
+      markDocumentSaved(activeDocumentId, '', JSON.stringify(保存快照))
     }
   }
   const 风险内容 = (警告: string[], 说明: string) => React.createElement('div', null,
@@ -246,6 +286,7 @@ const SheetEditor = () => {
     set选区({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
     set编辑地址(null)
     set编辑值('')
+    结束草稿()
     set查找可见(false)
     // 新建历史栈或切换文档时记录该文档的初始状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -253,10 +294,40 @@ const SheetEditor = () => {
 
   // 状态层可由智能助手等外部入口更新，补入撤销栈；编辑器内部已记录的引用不会重复入栈。
   useEffect(() => {
-    if (历史.current() !== 工作表列表) 历史.record(工作表列表)
-  }, [历史, 工作表列表])
+    if (!实时协作.active && 历史.current() !== 工作表列表) 历史.record(工作表列表)
+  }, [历史, 工作表列表, 实时协作.active])
 
   const 工作表 = 工作表列表[有效当前索引]
+  const 开始草稿 = (address: string) => {
+    const old = 草稿.current
+    if (old?.address === address && old.sheetId === 工作表.id) return old
+    结束草稿()
+    const base = 提取协作工作簿(最新工作簿.current), value = 读取单元格(工作表, address).原始值
+    return 草稿.current = { address, sheetId: 工作表.id, base, value, composing: false, release: 实时协作.retainBaseline(base) }
+  }
+  const 同步草稿 = (address: string, value: string, composing = false) => {
+    const draft = 开始草稿(address); draft.value = value; draft.composing = composing
+    if (!实时协作.active || 实时协作.readOnly || composing) return { 值: value, 已发布: false }
+    const base = 重算工作簿(draft.base), index = base.findIndex(sheet => sheet.id === draft.sheetId)
+    if (index < 0) return { 值: value, 已发布: false }
+    try {
+      const nextSheet = 写入单元格(base[index], address, value)
+      if (检查工作表更新(base[index], nextSheet)) return { 值: value, 已发布: false }
+      const next = 提取协作工作簿(base.map((sheet, i) => i === index ? nextSheet : sheet))
+      void 实时协作.publish(next, draft.base).catch(实时协作.reportError)
+      const merged = 实时协作.getSnapshot(), mergedValue = merged.find(sheet => sheet.id === draft.sheetId)?.单元格[address]?.原始值 ?? ''
+      draft.release(); draft.base = 提取协作工作簿(merged); draft.release = 实时协作.retainBaseline(draft.base); draft.value = mergedValue
+      应用工作簿(merged)
+      return { 值: mergedValue, 已发布: true }
+    } catch (error) { 实时协作.reportError(error); return { 值: value, 已发布: false } }
+  }
+  useEffect(() => { if (实时协作.active) 实时协作.setCursor({ sheetId: 工作表.id, address: 生成地址(选区.起点.行, 选区.起点.列) }) }, [实时协作.active, 工作表.id, 选区])
+  const 提示数组子格 = (地址: string): boolean => {
+    const 锚点 = 读取单元格(工作表, 地址).溢出锚点
+    if (!锚点) return false
+    message.info(`${地址} 是动态数组结果，请编辑锚点 ${锚点}`)
+    return true
+  }
   const 图片目标引用 = useRef({ 文档标识: activeDocumentId, 工作表, 工作表列表 })
   图片目标引用.current = { 文档标识: activeDocumentId, 工作表, 工作表列表 }
 
@@ -349,6 +420,7 @@ const SheetEditor = () => {
   /** 应用修改前统一检查验证规则与保护状态。 */
   let 最近更新被拒绝 = false
   const 更新工作表 = (新表: Sheet, 允许解除保护 = false): boolean => {
+    if (实时协作.readOnly) { message.warning('当前共享文档为只读，可另存本机副本'); return false }
     const 错误 = 检查工作表更新(工作表, 新表, 允许解除保护)
     if (错误) {
       最近更新被拒绝 = true
@@ -356,7 +428,7 @@ const SheetEditor = () => {
       return false
     }
     最近更新被拒绝 = false
-    const 下一个 = 工作表列表.map((项, 下标) => (下标 === 有效当前索引 ? 新表 : 项))
+    const 下一个 = 重算工作簿(工作表列表.map((项, 下标) => (下标 === 有效当前索引 ? 新表 : 项)))
     历史.record(下一个)
     set工作表列表(下一个)
     return true
@@ -364,6 +436,7 @@ const SheetEditor = () => {
 
   /** 撤销：回到上一份工作表列表快照 */
   const 撤销 = () => {
+    if (实时协作.active) { if (!实时协作.undo()) message.info('没有可撤销的本机操作'); return }
     const 上一步 = 历史.undo()
     if (上一步 === null) {
       message.info('没有可撤销的操作')
@@ -376,6 +449,7 @@ const SheetEditor = () => {
 
   /** 重做：前进到下一份工作表列表快照 */
   const 重做 = () => {
+    if (实时协作.active) { if (!实时协作.redo()) message.info('没有可重做的本机操作'); return }
     const 下一步 = 历史.redo()
     if (下一步 === null) {
       message.info('没有可重做的操作')
@@ -397,6 +471,10 @@ const SheetEditor = () => {
     撤销,
     重做,
     更新选区: set选区,
+    插入图表: () => {
+      if (工作表.保护) { message.warning('请先解除工作表保护'); return }
+      set图表打开(true)
+    },
     选择图片: () => {
       if (工作表.保护) {
         modal.warning({ title: '工作表已保护', content: '请先解除保护，再插入图片。' })
@@ -411,6 +489,8 @@ const SheetEditor = () => {
     打开查找: () => set查找可见(true),
     开始编辑公式: (模板) => {
       const 地址 = 生成地址(选区.起点.行, 选区.起点.列)
+      if (实时协作.readOnly || 提示数组子格(地址)) return
+      开始草稿(地址)
       set编辑地址(地址)
       set编辑值(模板)
     },
@@ -597,14 +677,20 @@ const SheetEditor = () => {
     },
   }
 
-  const 执行命令 = (标识: string, 参数?: string) => {
+  const 执行命令 = (标识: string, 参数?: string, 保存快照?: Sheet[]) => {
+    if (!保存快照 && ['file.save','file.saveAs','file.print'].includes(标识)) {
+      const 快照 = 读取草稿快照()
+      if (!快照) return
+      保存快照 = 快照
+    }
     if (标识 === 'view.zoomReset') { set缩放(1); return }
     if (标识 === 'view.zoomIn' || 标识 === 'view.zoomOut') {
       set缩放(当前 => (标识 === 'view.zoomIn' ? 放大一档(当前) : 缩小一档(当前)) ?? 当前)
       return
     }
     if (标识 === 'file.print') {
-      const 内容 = 导出为Html表格(工作表, 工作表.name)
+      const 打印表 = (保存快照 ?? 最新工作簿.current).find(sheet => sheet.id === 工作表.id) ?? 工作表
+      const 内容 = 导出为Html表格(打印表, 打印表.name)
       if (!内容) { message.warning('当前工作表为空，无法打印'); return }
       set打印预览({ 内容, 标题: 工作表.name })
       return
@@ -625,10 +711,10 @@ const SheetEditor = () => {
       return
     }
     if (标识 === 'formula.calculate') {
-      set工作表列表((当前) =>
-        当前.map((项, 下标) => (下标 === 有效当前索引 ? 重算工作表(项) : 项))
-      )
-      message.info('已重新计算工作表')
+      const 已计算 = 重算工作簿(工作表列表)
+      set工作表列表(已计算)
+      const 待重算 = 已计算.some(表 => Object.values(表.单元格).some(单元 => 单元.公式状态))
+      message.info(待重算 ? '已计算支持的公式；部分公式保留来源缓存或等待兼容软件计算' : '已重新计算工作簿')
       return
     }
     if (标识 === 'file.exportCsv' || 标识 === 'file.exportHtml') {
@@ -678,7 +764,7 @@ const SheetEditor = () => {
             return 桥接.saveToFile(保存路径, 结果.数据, '二进制').then((保存结果) => {
               if (保存结果.成功) {
                 message.success('已导出为表格文件')
-              } else {
+              } else if (!保存结果.已取消) {
                 提示文件错误('导出表格失败', 保存结果.错误 || '文件写入失败')
               }
             })
@@ -716,7 +802,7 @@ const SheetEditor = () => {
       const 选择路径 = 可直接保存 ? 文档路径 : 桥接.showSaveDialog(默认名称, 'table' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
-          return 保存表格文件(文件路径, '文件已保存')
+          return 保存表格文件(文件路径, '文件已保存', 保存快照)
         }
       }).catch((error: unknown) => {
         提示文件错误('保存表格失败', (error as Error).message || '未知错误')
@@ -736,7 +822,7 @@ const SheetEditor = () => {
             return
           }
           if (保真风险 && !await 确认保存副本(保真风险.警告)) return
-          return 保存表格文件(文件路径, '文件已另存为')
+          return 保存表格文件(文件路径, '文件已另存为', 保存快照)
         }
       }).catch((error: unknown) => {
         提示文件错误('保存表格失败', (error as Error).message || '未知错误')
@@ -756,7 +842,8 @@ const SheetEditor = () => {
   }
 
   /** 保存表格文档：根据扩展名写出真实格式，并保留来源文件指纹。 */
-  const 保存表格文件 = async (原始路径: string, 成功提示: string) => {
+  const 保存表格文件 = async (原始路径: string, 成功提示: string, 快照 = 最新工作簿.current) => {
+    const 保存工作表 = 快照.find(sheet => sheet.id === 工作表.id) ?? 快照[0]
     const 文件路径 = 规范表格路径(原始路径)
     const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
       ? 当前文档.文件指纹 : undefined
@@ -770,7 +857,7 @@ const SheetEditor = () => {
       return
     }
     const 格式名 = 文件路径.match(/\.([^\\/]+)$/)?.[1]?.toUpperCase() ?? 'CSV'
-    const 文本 = 表格文本输出(文件路径, 工作表列表)
+    const 文本 = 表格文本输出(文件路径, 快照)
     if (文本) {
       if (文本.损失.length && !await new Promise<boolean>((完成) => modal.confirm({
         title: `${格式名} 格式不能保留全部内容`,
@@ -780,10 +867,10 @@ const SheetEditor = () => {
       if (路径被其他标签占用(文件路径)) return
       await 桥接.saveToFile(文件路径, 文本.内容, '文本', 预期文件指纹, 文本.编码).then((结果) => {
         if (结果.成功) {
-          记录当前路径(文件路径, 结果.文件指纹)
+          记录当前路径(文件路径, 结果.文件指纹, 快照)
           记录最近文档(文件路径, 基准名(文件路径), 'table')
           message.success(成功提示)
-        } else {
+        } else if (!结果.已取消) {
           提示文件错误('保存表格失败', 结果.错误 || '文件写入失败')
         }
       }).catch((error: unknown) => {
@@ -791,14 +878,14 @@ const SheetEditor = () => {
       })
       return
     }
-    const 数据输出 = 单表数据输出(文件路径, 工作表列表)
+    const 数据输出 = 单表数据输出(文件路径, 快照)
     if (数据输出?.损失.length && !await new Promise<boolean>((完成) => modal.confirm({
       title: `${数据输出.格式} 保存需要转换内容`, content: `以下内容将转换或不被该格式保留：${数据输出.损失.join('、')}。请保留原工作簿并核对导出结果。`,
       okText: `仍保存 ${数据输出.格式}`, cancelText: '取消', onOk: () => 完成(true), onCancel: () => 完成(false),
     }))) return
     // 空工作簿也允许保存，导出模型为空时回落为空表定义
-    const 模型 = 数据输出?.模型 ?? 导出为Xlsx(工作表列表.length > 1 ? 工作表列表 : 工作表) ?? {
-      工作表: [{ 名称: 工作表.name, 数据: [], 页面设置: 工作表.页面设置 }],
+    const 模型 = 数据输出?.模型 ?? 导出为Xlsx(快照.length > 1 ? 快照 : 保存工作表) ?? {
+      工作表: [{ 名称: 保存工作表.name, 数据: [], 页面设置: 保存工作表.页面设置 }],
     }
     await 写出办公文档('table', 文件路径, 模型, () => message.loading('正在转换并保存表格，请稍等…', 0)).then((结果: any) => {
       if (!(结果 && 结果.成功 && 结果.数据)) {
@@ -808,10 +895,10 @@ const SheetEditor = () => {
       if (路径被其他标签占用(文件路径)) return
       return 桥接.saveToFile(文件路径, 结果.数据, '二进制', 预期文件指纹).then((保存结果) => {
         if (保存结果.成功) {
-          记录当前路径(文件路径, 保存结果.文件指纹)
+          记录当前路径(文件路径, 保存结果.文件指纹, 快照)
           记录最近文档(文件路径, 基准名(文件路径), 'table')
           message.success(成功提示)
-        } else {
+        } else if (!保存结果.已取消) {
           提示文件错误('保存表格失败', 保存结果.错误 || '文件写入失败')
         }
       })
@@ -841,10 +928,29 @@ const SheetEditor = () => {
     message.info('没有找到匹配的单元格')
   }
 
+  const 读取草稿快照 = (): Sheet[] | null => {
+    const 当前草稿 = 公式草稿.current ?? (编辑地址 ? { address: 编辑地址, value: 草稿.current?.value ?? 编辑值, composing: 草稿.current?.composing ?? false } : null)
+    if (!当前草稿) return 最新工作簿.current
+    if (当前草稿.composing) { message.info('请先完成输入法候选字，再保存'); return null }
+    if (提示数组子格(当前草稿.address)) return null
+    if (实时协作.readOnly) return 最新工作簿.current
+    try {
+      if (实时协作.active) 同步草稿(当前草稿.address, 当前草稿.value)
+      const 当前 = 最新工作簿.current, 原表 = 当前.find(sheet => sheet.id === (草稿.current?.sheetId ?? 工作表.id))
+      if (!原表) { message.warning('草稿所在工作表已删除，已保留本机输入，请复制后重新选择单元格'); return null }
+      const 值 = 实时协作.active ? 草稿.current?.value ?? 当前草稿.value : 当前草稿.value
+      if (读取单元格(原表, 当前草稿.address).原始值 === 值) return 当前
+      const 新表 = 写入单元格(原表, 当前草稿.address, 值), 错误 = 检查工作表更新(原表, 新表)
+      if (错误) { modal.error({ title: 错误.includes('数据验证') ? '输入不符合数据验证' : '无法修改单元格', content: 错误 }); return null }
+      const 快照 = 重算工作簿(当前.map(sheet => sheet.id === 原表.id ? 新表 : sheet))
+      if (!实时协作.active) 历史.record(快照)
+      set工作表列表(快照)
+      return 最新工作簿.current
+    } catch (error) { message.warning(error instanceof Error ? error.message : '无法修改单元格'); return null }
+  }
   const 提交编辑 = () => {
-    if (编辑地址 !== null) {
-      更新工作表(写入单元格(工作表, 编辑地址, 编辑值))
-    }
+    if (!读取草稿快照()) return
+    结束草稿()
     set编辑地址(null)
     set编辑值('')
   }
@@ -864,202 +970,43 @@ const SheetEditor = () => {
 
   /** 键盘操作：方向键移动选区、回车或 F2 编辑、Delete 清空、可见字符直接输入、快捷键 */
   const 处理按键 = (事件: React.KeyboardEvent) => {
-    if (编辑地址 !== null) {
-      // 编辑态由单元格内的输入框自行处理按键
-      return
-    }
+    if (事件.defaultPrevented || 事件.nativeEvent.isComposing || 事件.nativeEvent.keyCode === 229) return
     const { 起点, 终点 } = 选区
-    const 移动 = (行偏移: number, 列偏移: number) => {
-      const 目标 = {
-        行: Math.max(0, Math.min(起点.行 + 行偏移, 工作表.行数 - 1)),
-        列: Math.max(0, Math.min(起点.列 + 列偏移, 工作表.列数 - 1)),
-      }
-      set选区({ 起点: 目标, 终点: 目标 })
-    }
-    /** Shift+方向键：锚定起点，仅移动终点扩展选区 */
-    const 扩展 = (行偏移: number, 列偏移: number) => {
-      const 新终点 = {
-        行: Math.max(0, Math.min(终点.行 + 行偏移, 工作表.行数 - 1)),
-        列: Math.max(0, Math.min(终点.列 + 列偏移, 工作表.列数 - 1)),
-      }
-      set选区({ 起点, 终点: 新终点 })
-    }
-    /** Ctrl+方向键：沿方向跳到连续数据区边缘或下一个非空格 */
-    const 跳边缘 = (行步进: number, 列步进: number) => {
-      const 在界内 = (行: number, 列: number) =>
-        行 >= 0 && 行 < 工作表.行数 && 列 >= 0 && 列 < 工作表.列数
-      const 有值 = (行: number, 列: number) =>
-        在界内(行, 列) && 读取单元格(工作表, 生成地址(行, 列)).原始值 !== ''
-      let 行 = 起点.行
-      let 列 = 起点.列
-      const 邻格有值 = 有值(行 + 行步进, 列 + 列步进)
-      if (有值(行, 列) && 邻格有值) {
-        // 当前处于数据区内部：滑到最后一个连续非空格
-        while (有值(行 + 行步进, 列 + 列步进)) {
-          行 += 行步进
-          列 += 列步进
-        }
-      } else {
-        // 跳到方向上第一个非空格；没有则滑到工作表边缘
-        while (在界内(行 + 行步进, 列 + 列步进)) {
-          行 += 行步进
-          列 += 列步进
-          if (有值(行, 列)) {
-            break
-          }
-        }
-      }
-      set选区({ 起点: { 行, 列 }, 终点: { 行, 列 } })
-    }
     const 进入编辑 = (初始值: string) => {
-      if (工作表.保护) {
-        modal.warning({ title: '工作表已保护', content: '请先解除保护，再编辑单元格。' })
-        return
-      }
-      set编辑地址(生成地址(起点.行, 起点.列))
-      set编辑值(初始值)
+      if (实时协作.readOnly) { message.info('当前共享文档为只读'); return }
+      if (提示数组子格(生成地址(起点.行, 起点.列))) return
+      if (工作表.保护) { modal.warning({ title: '工作表已保护', content: '请先解除保护，再编辑单元格。' }); return }
+      const address = 生成地址(起点.行, 起点.列)
+      开始草稿(address).value = 初始值
+      set编辑地址(address); set编辑值(初始值)
     }
-
-    switch (事件.key) {
-      // ---- 撤销 / 重做 ----
-      case 'z':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          撤销()
-          return
-        }
-        break
-      case 'y':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          重做()
-          return
-        }
-        break
-      // ---- 全选 ----
-      case 'a':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          set选区({
-            起点: { 行: 0, 列: 0 },
-            终点: { 行: 工作表.行数 - 1, 列: 工作表.列数 - 1 },
-          })
-          return
-        }
-        break
-      // ---- 复制 ----
-      case 'c':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          执行命令('clipboard.copy')
-          return
-        }
-        break
-      // ---- 粘贴 ----
-      case 'v':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          执行命令('clipboard.paste')
-          return
-        }
-        break
-      // ---- 剪切 ----
-      case 'x':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          执行命令('clipboard.cut')
-          return
-        }
-        break
-      // ---- 保存 / 查找 ----
-      case 'p':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          执行命令('file.print')
-          return
-        }
-        break
-      case 's':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          执行命令('file.save')
-          return
-        }
-        break
-      case 'f':
-        if (事件.ctrlKey || 事件.metaKey) {
-          事件.preventDefault()
-          set查找可见(true)
-          return
-        }
-        break
-      // ---- 回到 A1 ----
-      case 'Home':
-        事件.preventDefault()
-        set选区({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
-        return
-      // ---- 自动求和 ----
-      case '=':
-        if (事件.altKey) {
-          事件.preventDefault()
-          执行命令('edit.sum')
-          return
-        }
-        break
-      // ---- 方向键 / Tab / 编辑 / 删除（原有逻辑）----
-      case 'ArrowUp':
-        事件.preventDefault()
-        if (事件.ctrlKey || 事件.metaKey) 跳边缘(-1, 0)
-        else if (事件.shiftKey) 扩展(-1, 0)
-        else 移动(-1, 0)
-        return
-      case 'ArrowDown':
-        事件.preventDefault()
-        if (事件.ctrlKey || 事件.metaKey) 跳边缘(1, 0)
-        else if (事件.shiftKey) 扩展(1, 0)
-        else 移动(1, 0)
-        return
-      case 'ArrowLeft':
-        事件.preventDefault()
-        if (事件.ctrlKey || 事件.metaKey) 跳边缘(0, -1)
-        else if (事件.shiftKey) 扩展(0, -1)
-        else 移动(0, -1)
-        return
-      case 'ArrowRight':
-        事件.preventDefault()
-        if (事件.ctrlKey || 事件.metaKey) 跳边缘(0, 1)
-        else if (事件.shiftKey) 扩展(0, 1)
-        else 移动(0, 1)
-        return
-      case 'Tab':
-        事件.preventDefault()
-        移动(0, 事件.shiftKey ? -1 : 1)
-        return
-      case 'Enter':
-      case 'F2':
-        事件.preventDefault()
-        进入编辑(读取单元格(工作表, 生成地址(起点.行, 起点.列)).原始值)
-        return
-      case 'Delete':
-      case 'Backspace': {
-        事件.preventDefault()
-        if (工作表.保护) {
-          modal.warning({ title: '工作表已保护', content: '请先解除保护，再清除单元格。' })
-          return
-        }
-        const 地址列表 = 展开区域(生成区域地址(起点, 终点)).map((位置) =>
-          生成地址(位置.行, 位置.列)
-        )
-        if (更新工作表(清空单元格(工作表, 地址列表))) message.success(`已清除 ${地址列表.length} 个单元格`)
-        return
+    const 清除选区 = () => {
+      if (工作表.保护) { modal.warning({ title: '工作表已保护', content: '请先解除保护，再清除单元格。' }); return }
+      const addresses = 展开区域(生成区域地址(起点, 终点)).map(point => 生成地址(point.行, point.列))
+      try { if (更新工作表(清空单元格(工作表, addresses))) message.success('已清除 ' + addresses.length + ' 个单元格') }
+      catch (error) { message.info(error instanceof Error ? error.message : '无法清除动态数组的一部分') }
+    }
+    if (dispatchShortcut(事件, 'sheet', (标识, 参数) => {
+      if (编辑地址 !== null || 公式草稿.current) {
+        if (!['file.save','file.saveAs','file.print'].includes(标识)) return false
+        执行命令(标识, 参数)
+        return true
       }
-      default: {
-        // 可见字符直接进入编辑并预填，符合表格软件的输入习惯
-        if (事件.key.length === 1 && !事件.ctrlKey && !事件.metaKey && !事件.altKey) {
-          事件.preventDefault()
-          进入编辑(事件.key)
-        }
-      }
+      if (executeSheetNavigation(标识, { sheet: 工作表, selection: 选区, select: set选区, edit: 进入编辑, clear: 清除选区, pageRows: Math.max(1, Math.floor((编辑区引用.current?.clientHeight || 480) / (24 * 缩放))) })) return true
+      if (标识 === 'edit.undo') 撤销()
+      else if (标识 === 'edit.redo') 重做()
+      else if (标识 === 'edit.find') set查找可见(true)
+      else if (标识 === 'edit.selectAll') set选区({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 工作表.行数 - 1, 列: 工作表.列数 - 1 } })
+      else 执行命令(标识, 参数)
+      return true
+    })) return
+    if (编辑地址 !== null || (事件.target instanceof Element && 事件.target.closest('input,textarea,select'))) return
+    // All configurable navigation keys are handled above. Tab keeps its native spreadsheet movement.
+    if (事件.key === 'Tab') {
+      事件.preventDefault()
+      executeSheetNavigation('navigation.move.' + (事件.shiftKey ? 'left' : 'right'), { sheet: 工作表, selection: 选区, select: set选区, edit: 进入编辑, clear: 清除选区 })
+    } else if (事件.key.length === 1 && !事件.ctrlKey && !事件.metaKey && !事件.altKey) {
+      事件.preventDefault(); 进入编辑(事件.key)
     }
   }
 
@@ -1110,9 +1057,31 @@ const SheetEditor = () => {
       style: { display: 'none' },
       onChange: 处理图片选择,
     }),
+    图表打开 ? React.createElement(SheetChartDialog, { sheet: 工作表, selection: 选区, onClose: () => set图表打开(false), onInsert: image => {
+      const latest = 图片目标引用.current
+      if (latest.文档标识 !== activeDocumentId || latest.工作表.id !== 工作表.id) throw new Error('工作表已切换，请重新插入图表')
+      const next = 添加图片(latest.工作表, { ...image, id: `sheet-chart-${Date.now()}`, 行: Math.min(工作表.行数 - 1, Math.max(选区.起点.行, 选区.终点.行) + 2), 列: Math.min(选区.起点.列, 选区.终点.列) })
+      if (!更新工作表(next)) throw new Error('当前工作表无法插入图表')
+      message.success('图表图片已插入')
+    } }) : null,
     React.createElement(SheetToolbar, {
+      兼容模式: 工作表.公式兼容模式 ?? 'Excel',
+      on兼容模式: (模式: 'Excel' | 'WPS') => {
+        if (实时协作.readOnly) return
+        结束草稿();set编辑地址(null);set编辑值('')
+        set工作表列表(当前 => 当前.map(sheet => ({...sheet,公式兼容模式:模式})))
+        message.info(`已切换为 ${模式} 公式兼容模式`)
+      },
       地址文本: 生成区域地址(选区.起点, 选区.终点),
-      公式值: 读取单元格(工作表, 取首格地址()).原始值,
+      公式值: 读取单元格(工作表, 读取单元格(工作表, 取首格地址()).溢出锚点 ?? 取首格地址()).原始值,
+      只读提示: 实时协作.readOnly ? '当前共享文档为只读' : 读取单元格(工作表, 取首格地址()).溢出锚点 ? `动态数组结果，请编辑锚点 ${读取单元格(工作表, 取首格地址()).溢出锚点}` : undefined,
+      on文件按键: 处理按键,
+      on草稿变化: (value: string, composing: boolean) => {
+        const address = 取首格地址()
+        const result = 同步草稿(address, value, composing)
+        公式草稿.current = { address, value: result.值, composing }
+        return result
+      },
       on地址提交: (文本: string) => {
         const 位置 = 解析地址(文本)
         if (位置 === null) {
@@ -1123,12 +1092,16 @@ const SheetEditor = () => {
       },
       on公式提交: (值: string) => {
         const 目标地址 = 取首格地址()
-        if (!更新工作表(写入单元格(工作表, 目标地址, 值))) return
+        if (提示数组子格(目标地址)) return
+        公式草稿.current = { address: 目标地址, value: 值, composing: false }
+        if (!读取草稿快照()) return false
+        结束草稿()
         const 目标位置 = 解析地址(目标地址)
         if (目标位置 !== null && 目标位置.行 + 1 < 工作表.行数) {
           set选区({ 起点: { 行: 目标位置.行 + 1, 列: 目标位置.列 }, 终点: { 行: 目标位置.行 + 1, 列: 目标位置.列 } })
         }
         message.success(`已写入 ${目标地址}`)
+        return true
       },
     }),
     查找可见
@@ -1143,6 +1116,7 @@ const SheetEditor = () => {
             'aria-label': '查找内容',
             onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set查找词(事件.target.value),
             onKeyDown: (事件: React.KeyboardEvent) => {
+              if (事件.nativeEvent.isComposing || 事件.nativeEvent.keyCode === 229) return
               if (事件.key === 'Enter') {
                 事件.preventDefault()
                 查找下一个()
@@ -1181,6 +1155,11 @@ const SheetEditor = () => {
       工作表.保护 ? React.createElement('div', { className: 'wps-sheet-protectionbar' },
         工作表.保护 === '外部' ? '原文件受保护，当前只读' : '工作表已保护，当前只读'
       ) : null,
+      Object.values(工作表.单元格).some(单元 => 单元.公式状态) ? React.createElement('div', { className: 'wps-sheet-filterbar', role: 'status' },
+        '部分公式使用来源缓存或等待计算；缓存可能已过期，修改数据后需在支持该公式的表格软件中重新计算。公式原文将保留。'
+      ) : null,
+      读取单元格(工作表, 取首格地址()).溢出锚点 ? React.createElement('div', { className: 'wps-sheet-filterbar', role: 'status' }, `动态数组结果来自 ${读取单元格(工作表, 取首格地址()).溢出锚点}，请在锚点编辑公式；结果区域不能单独修改。`) : null,
+      读取单元格(工作表, 取首格地址()).溢出错误 ? React.createElement('div', { className: 'wps-sheet-filterbar', role: 'status' }, `#SPILL! ${读取单元格(工作表, 取首格地址()).溢出错误}`) : null,
       当前视图 === '页面布局'
         ? React.createElement(SheetPagePreview, { 工作表 })
         : Array.from({ length: 已拆分 ? 2 : 1 }, (_, 窗格) => React.createElement(GridView, {
@@ -1189,6 +1168,7 @@ const SheetEditor = () => {
         选区,
         编辑地址: 窗格 === 活动窗格 ? 编辑地址 : null,
         编辑值,
+        只读: 实时协作.readOnly,
         scale: 缩放,
         冻结,
         隐藏行,
@@ -1201,17 +1181,26 @@ const SheetEditor = () => {
           }
         },
         on双击: (地址: string) => {
+          if (实时协作.readOnly) { message.info('当前共享文档为只读'); return }
+          if (提示数组子格(地址)) return
           if (工作表.保护) {
             modal.warning({ title: '工作表已保护', content: '请先解除保护，再编辑单元格。' })
             return
           }
           set活动窗格(窗格)
+          开始草稿(地址)
           set编辑地址(地址)
           set编辑值(读取单元格(工作表, 地址).原始值)
         },
-        on编辑值变化: set编辑值,
+        on编辑值变化: (值: string) => {
+          if (!编辑地址) return
+          set编辑值(同步草稿(编辑地址, 值, 草稿.current?.composing).值)
+        },
+        on组合开始: () => { if (编辑地址) 开始草稿(编辑地址).composing = true },
+        on组合结束: (值: string) => { if (编辑地址) set编辑值(同步草稿(编辑地址, 值, false).值) },
         on提交编辑: 提交编辑,
         on取消编辑: () => {
+          结束草稿()
           set编辑地址(null)
           set编辑值('')
         },
@@ -1254,7 +1243,7 @@ const SheetEditor = () => {
       open: 菜单可见,
       x: 菜单坐标.x,
       y: 菜单坐标.y,
-      items: 构建表格菜单(),
+      items: withShortcutLabels(构建表格菜单(), 'sheet'),
       取锚点: () => 读取可见矩形(编辑区引用.current?.querySelectorAll('.wps-sheet__cell--selected') ?? []),
       onCommand: (命令标识: string, 参数?: string) => {
         if (命令标识 === '__close__') {
@@ -1288,7 +1277,7 @@ const SheetEditor = () => {
         }
       },
       on新建: () => {
-        const 新表 = 创建工作表(`Sheet${工作表列表.length + 1}`)
+        const 新表 = { ...创建工作表(`Sheet${工作表列表.length + 1}`), ...(工作表列表[0]?.日期系统1904 ? { 日期系统1904: true } : {}), ...(工作表列表[0]?.公式兼容模式 ? {公式兼容模式:工作表列表[0].公式兼容模式} : {}) }
         set工作表列表((当前) => [...当前, 新表])
         set当前索引(工作表列表.length)
         message.success(`已新建工作表 ${新表.name}`)

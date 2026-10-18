@@ -12,10 +12,14 @@ export type 对齐方式 = '左' | '中' | '右' | '两端'
 
 /** 列表类型 */
 export type 列表类型 = '无' | '项目符号' | '编号'
+export interface 原生修订记录 { 类型: 'ins' | 'del' | 'moveFrom' | 'moveTo'; 标识: string; 作者: string; 时间?: string }
 
 /** 一段格式相同的连续文字 */
 export interface 文字片段 {
+  格式修订?: { 标识: string; 作者: string; 时间?: string; 原来格式: Partial<文字片段> }
   文本: string
+  修订?: 原生修订记录[]
+  注释引用?: { 类型: 'footnote' | 'endnote'; 标识: number }
   加粗: boolean
   倾斜: boolean
   下划线: boolean
@@ -42,11 +46,13 @@ export interface 文字片段 {
 
 /** 文本段落，含标题与列表项 */
 export interface 文本段落 extends 段落排版 {
+  段落修订?: 原生修订记录
   类型: '段落'
   /** 0 表示正文，1 至 6 表示对应级别的标题 */
   级别: number
   对齐: 对齐方式
   列表: 列表类型
+  列表样式?: 'decimal' | 'cjk-ideographic' | 'lower-alpha' | 'disc' | 'square' | 'circle'
   文字: 文字片段[]
   /** Paragraph-mark formatting also controls empty lines and relative indentation. */
   标记?: 文字片段
@@ -81,7 +87,7 @@ export interface 表格段落 {
 export interface 分页符段落 { 类型: '分页符' }
 export interface 水平线段落 { 类型: '水平线' }
 
-export type 段落模型 = 文本段落 | 表格段落 | 分页符段落 | 水平线段落
+export type 段落模型 = (文本段落 | 表格段落 | 分页符段落 | 水平线段落) & { 原始块?: { 标识: string; 未修改: boolean } }
 
 /** 整篇文字文档可由当前编辑器完整显示并写回的页面设置。 */
 export interface 文字页面设置 {
@@ -93,6 +99,7 @@ export interface 文字页面设置 {
   页面边框: string
   页面颜色: string
   文字方向: '横排' | '竖排'
+  行号?: boolean
   /** 来源文档的原始 OOXML 尺寸，单位为缇，预设之外用于精确往返。 */
   原始纸张?: { 宽: number; 高: number }
   原始页边距?: { 上: number; 右: number; 下: number; 左: number }
@@ -106,6 +113,7 @@ export function 页面设置相同(左?: 文字页面设置, 右?: 文字页面�
   if (!左 || !右) return false
   const 字段 = ['纸张', '纸张方向', '页边距', '分栏', '水印', '页面边框', '页面颜色', '文字方向'] as const
   if (!字段.every((字段名) => 左[字段名] === 右[字段名])) return false
+  if (!!左.行号 !== !!右.行号) return false
   const 纸张相同 = 左.原始纸张 === 右.原始纸张 || !!左.原始纸张 && !!右.原始纸张 &&
     左.原始纸张.宽 === 右.原始纸张.宽 && 左.原始纸张.高 === 右.原始纸张.高
   const 边距相同 = 左.原始页边距 === 右.原始页边距 || !!左.原始页边距 && !!右.原始页边距 &&
@@ -116,6 +124,10 @@ export function 页面设置相同(左?: 文字页面设置, 右?: 文字页面�
 /** 文档模型 */
 export interface 文档模型 {
   段落: 段落模型[]
+  源包?: string
+  源包基准?: { 页面设置?: 文字页面设置 }
+  修订动作?: Array<{ 标识: string; 操作: 'accept' | 'reject'; 部件?: string }>
+  注释?: Array<{ 类型: 'footnote' | 'endnote'; 标识: number; 段落: 段落模型[]; 未修改?: boolean }>
   页面设置?: 文字页面设置
   页眉?: 段落模型[]
   页脚?: 段落模型[]
@@ -125,6 +137,7 @@ export interface 文档模型 {
 
 /** 继承自祖先元素的格式状态 */
 interface 格式状态 {
+  格式修订?: 文字片段['格式修订']
   加粗: boolean
   倾斜: boolean
   下划线: boolean
@@ -137,6 +150,7 @@ interface 格式状态 {
   字间距?: number
   基线?: '上标' | '下标' | '正常'
   链接?: string
+  修订?: 原生修订记录[]
 }
 
 const 初始格式: 格式状态 = {
@@ -365,8 +379,21 @@ function 叠加格式(元素: HTMLElement, 父格式: 格式状态): 格式状�
       : 样式.verticalAlign === 'super' || 标签 === 'SUP' ? '上标'
         : 样式.verticalAlign === 'sub' || 标签 === 'SUB' ? '下标' : 父格式.基线,
     链接: 标签 === 'A' ? 读取链接目标(元素) : 父格式.链接,
+    修订: 父格式.修订,
+    格式修订: 父格式.格式修订,
   }
+  if (元素.dataset.sealFormatChange) { try { const record = JSON.parse(decodeURIComponent(元素.dataset.sealFormatChange)); if (!/^\d{1,10}$/.test(record.标识) || typeof record.作者 !== 'string' || !record.原来格式 || typeof record.原来格式 !== 'object') throw new Error(); 新格式.格式修订 = { ...record, 原来格式: { ...record.原来格式, 颜色: 颜色转十六进制(record.原来格式.颜色), 底纹: 颜色转十六进制(record.原来格式.底纹) } } } catch { /* Parsed below as an unsupported revision, never silently flatten. */ } }
+  const 历史 = 读取修订(元素)
+  if (历史) 新格式.修订 = [...(父格式.修订 ?? []), 历史]
   return 新格式
+}
+
+function 读取修订(元素: HTMLElement): 原生修订记录 | undefined {
+  const 类型 = 元素.dataset.sealRevisionType
+  if (!['ins', 'del', 'moveFrom', 'moveTo'].includes(类型 ?? '')) return undefined
+  const 标识 = 元素.dataset.sealRevisionId ?? '', 作者 = 元素.dataset.sealRevisionAuthor ?? '', 时间 = 元素.dataset.sealRevisionDate
+  if (!/^\d{1,10}$/.test(标识) || Number(标识) > 2147483647 || 作者.length > 512 || 时间 !== undefined && !Number.isFinite(Date.parse(时间))) return undefined
+  return { 类型: 类型 as 原生修订记录['类型'], 标识, 作者, ...(时间 ? { 时间 } : {}) }
 }
 
 function 读取字体尺寸(值: string, 父字号 = 10.5): number | undefined {
@@ -378,6 +405,8 @@ function 读取字体尺寸(值: string, 父字号 = 10.5): number | undefined {
 function 建片段(文本: string, 格式: 格式状态): 文字片段 {
   return {
     文本,
+    ...(格式.修订?.length ? { 修订: 格式.修订 } : {}),
+    ...(格式.格式修订 ? { 格式修订: 格式.格式修订 } : {}),
     加粗: 格式.加粗,
     倾斜: 格式.倾斜,
     下划线: 格式.下划线,
@@ -591,6 +620,24 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
   }
 
   const 标签 = 节点.tagName
+  if (节点.hasAttribute('data-seal-docx-package')) return
+  if (节点.hasAttribute('data-seal-ooxml-block')) {
+    结算段落(上下文)
+    const start = 上下文.段落.length
+    节点.childNodes.forEach(child => 遍历节点(child, 叠加格式(节点, 格式), 上下文))
+    if (节点.dataset.sealOoxmlEmpty === 'true' && 上下文.段落.length === start) 上下文.段落.push({ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字: [] })
+    for (const block of 上下文.段落.slice(start)) block.原始块 = { 标识: 节点.dataset.sealOoxmlBlock!, 未修改: 节点.dataset.sealOoxmlUnchanged === 'true' }
+    结算段落(上下文)
+    return
+  }
+
+  if (节点.hasAttribute('data-seal-note-ref')) {
+    const kind = 节点.dataset.sealNoteKind, id = Number(节点.dataset.sealNoteRef)
+    if ((kind === 'footnote' || kind === 'endnote') && Number.isSafeInteger(id) && id > 0 && id <= 10000) {
+      取当前段落(上下文, 0, '左', '无').文字.push({ ...建片段('', 格式), 注释引用: { 类型: kind, 标识: id } })
+    } else 上下文.未覆盖.add('无效注释引用')
+    return
+  }
 
   if (标签 === 'HR') {
     结算段落(上下文)
@@ -692,9 +739,16 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
     const 对齐 = 读对齐(节点) ?? '左'
     const 列表 = 标签 === 'LI' ? 读列表(节点) : '无'
     const 段 = 取当前段落(上下文, 级别, 对齐, 列表)
+    if (列表 !== '无') {
+      const style = 节点.style.listStyleType || (节点.closest('ol,ul') as HTMLElement | null)?.style.listStyleType
+      if (style && ['decimal', 'cjk-ideographic', 'lower-alpha', 'disc', 'square', 'circle'].includes(style)) 段.列表样式 = style as 文本段落['列表样式']
+    }
     const 子格式 = 叠加格式(节点, 格式)
     Object.assign(段, 读取段落排版(节点, 子格式.字号, 上下文.未覆盖))
     段.标记 = 建片段('', 子格式)
+    if (节点.dataset.sealParagraphRevision) {
+      try { const revision = JSON.parse(decodeURIComponent(节点.dataset.sealParagraphRevision)); const probe = document.createElement('span'); probe.dataset.sealRevisionType = revision.类型; probe.dataset.sealRevisionId = revision.标识; probe.dataset.sealRevisionAuthor = revision.作者; if (revision.时间) probe.dataset.sealRevisionDate = revision.时间; const valid = 读取修订(probe); if (!valid) throw new Error(); 段.段落修订 = valid } catch { 上下文.未覆盖.add('段落修订标记无效') }
+    }
 
     节点.childNodes.forEach((子) => {
       // 块级元素内若再嵌套块级元素，由递归自行结算
@@ -722,14 +776,50 @@ function 遍历节点(节点: Node, 格式: 格式状态, 上下文: 解析上�
 export function 解析文档(正文Html: string, 部分: '正文' | '页眉' | '页脚' = '正文', 设置?: 文字页面设置): 文档模型 {
   const 容器 = document.createElement('div')
   容器.innerHTML = 正文Html
+  const source = 容器.querySelector<HTMLElement>('[data-seal-docx-package]'), 源包 = source?.dataset.sealDocxPackage
+  if (源包 && (源包.length > 28_000_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(源包))) throw new Error('DOCX原始包无效或过大')
+  let 修订动作: 文档模型['修订动作']
+  let 源包基准: 文档模型['源包基准']
+  if (source?.dataset.sealDocxBaseline) { try { 源包基准 = JSON.parse(decodeURIComponent(source.dataset.sealDocxBaseline)) } catch { throw new Error('DOCX原始包基准损坏') } }
+  if (source?.dataset.sealRevisionActions) { try { 修订动作 = JSON.parse(decodeURIComponent(source.dataset.sealRevisionActions)) } catch { throw new Error('修订操作记录损坏') } }
+  source?.remove()
+  const canonicalHtml = (html: string) => { const box = document.createElement('div'); box.innerHTML = html; for (const element of Array.from(box.querySelectorAll<HTMLElement>('*'))) { const attributes = Array.from(element.attributes).map(attribute => [attribute.name, attribute.value] as const); if (element.hasAttribute('style')) { const styles = Array.from(element.style).sort().map(key => `${key}:${element.style.getPropertyValue(key).trim()}${element.style.getPropertyPriority(key) ? '!important' : ''}`).join(';'); const style = attributes.findIndex(attribute => attribute[0] === 'style'); attributes[style] = ['style', styles] } attributes.sort((a, b) => a[0].localeCompare(b[0])); Array.from(element.attributes).forEach(attribute => element.removeAttribute(attribute.name)); attributes.forEach(([key, value]) => element.setAttribute(key, value)) } return box.innerHTML }
+  const sourceIds = new Set<string>()
+  for (const node of 容器.querySelectorAll<HTMLElement>('[data-seal-ooxml-block]')) {
+    if (!/^b\d{1,5}$/.test(node.dataset.sealOoxmlBlock ?? '') || sourceIds.has(node.dataset.sealOoxmlBlock!)) throw new Error('DOCX原始块标识无效或重复')
+    sourceIds.add(node.dataset.sealOoxmlBlock!)
+    let baseline = ''
+    try { baseline = decodeURIComponent(node.dataset.sealOoxmlBaseline ?? '') } catch { throw new Error('DOCX原始块基准损坏') }
+    node.dataset.sealOoxmlUnchanged = String(canonicalHtml(node.innerHTML) === canonicalHtml(baseline))
+  }
+  const 注释: NonNullable<文档模型['注释']> = [], 注释警告 = new Set<string>()
+  for (const section of [...容器.querySelectorAll<HTMLElement>('[data-seal-notes]')]) {
+    const kind = section.dataset.sealNotes
+    for (const definition of [...section.querySelectorAll<HTMLElement>('[data-seal-note-id]')]) {
+      const id = Number(definition.dataset.sealNoteId)
+      if (!['footnote', 'endnote'].includes(kind || '') || !Number.isSafeInteger(id) || id <= 0 || id > 10000 || 注释.some(note => note.类型 === kind && note.标识 === id) || 注释.length >= 1000) { 注释警告.add('无效注释定义'); continue }
+      definition.querySelectorAll('[data-seal-note-label]').forEach(label => label.remove())
+      const parsed = 解析文档(definition.innerHTML, 部分, 设置)
+      parsed.未覆盖.forEach(warning => 注释警告.add(`注释：${warning}`))
+      let baseline = ''
+      try { baseline = decodeURIComponent(definition.dataset.sealNoteBaseline ?? '') } catch { throw new Error('注释原始基准损坏') }
+      注释.push({ 类型: kind as 'footnote' | 'endnote', 标识: id, 段落: parsed.段落, 未修改: !!baseline && canonicalHtml(definition.innerHTML) === canonicalHtml(baseline) })
+    }
+    section.remove()
+  }
   固定文档显示格式(容器, 部分, 设置)
 
   const 上下文: 解析上下文 = { 段落: [], 未覆盖: new Set<string>(), 当前: null }
+  for (const node of 容器.querySelectorAll<HTMLElement>('[data-seal-format-change]')) { try { const record = JSON.parse(decodeURIComponent(node.dataset.sealFormatChange!)); if (!/^\d{1,10}$/.test(record.标识) || typeof record.作者 !== 'string' || !record.原来格式 || typeof record.原来格式 !== 'object') throw new Error() } catch { 上下文.未覆盖.add('格式修订标记无效') } }
   if (容器.querySelector('.wps-chart')) 上下文.未覆盖.add('图表')
   if (容器.querySelector('.wps-smartart')) 上下文.未覆盖.add('智能图形')
   if (容器.querySelector('.wps-toc')) 上下文.未覆盖.add('自动目录')
   if (容器.querySelector('.wps-drop-cap')) 上下文.未覆盖.add('首字下沉')
-  if (容器.querySelector('.wps-insert, .wps-delete')) 上下文.未覆盖.add('修订标记')
+  let 新修订号 = Math.max(0, ...Array.from(容器.querySelectorAll<HTMLElement>('[data-seal-revision-id]')).map(node => Number(node.dataset.sealRevisionId) || 0)) + 1
+  for (const node of 容器.querySelectorAll<HTMLElement>('.wps-insert,.wps-delete,ins,del,[data-seal-revision-type]')) {
+    if (!node.dataset.sealRevisionType) { node.dataset.sealRevisionType = node.classList.contains('wps-delete') || node.tagName === 'DEL' ? 'del' : 'ins'; node.dataset.sealRevisionId = String(新修订号++); node.dataset.sealRevisionAuthor = '本机用户' }
+    if (!读取修订(node)) 上下文.未覆盖.add('修订标记无效')
+  }
   for (const 链接 of 容器.querySelectorAll<HTMLElement>('a')) {
     const 有目标 = 链接.hasAttribute('data-seal-link') || 链接.hasAttribute('href')
     if (有目标 && 读取链接目标(链接) === undefined) 上下文.未覆盖.add('超链接目标')
@@ -755,5 +845,5 @@ export function 解析文档(正文Html: string, 部分: '正文' | '页眉' | '
     上下文.段落.push({ 类型: '段落', 级别: 0, 对齐: '左', 列表: '无', 文字: [] })
   }
 
-  return { 段落: 上下文.段落, 未覆盖: Array.from(上下文.未覆盖) }
+  return { 段落: 上下文.段落, ...(源包 ? { 源包, 源包基准 } : {}), ...(修订动作?.length ? { 修订动作 } : {}), ...(注释.length ? { 注释 } : {}), 未覆盖: [...上下文.未覆盖, ...注释警告] }
 }

@@ -307,7 +307,7 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(验证簿.worksheets[0].getCell('A1').value).toBe('00123')
   })
 
-  it('主题颜色按文件实际主题导入，自定义数字格式仍给出具体警告', async () => {
+  it('主题颜色按文件实际主题导入，自定义前导零格式保留原始代码', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('高级格式')
     表.getCell('A1').value = 1234
@@ -316,7 +316,12 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     const 结果 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
     expect(结果.工作表列表[0].元数据.单元格格式.A1.字体颜色).toBe('#EEECE1')
     expect(结果.警告).not.toContain('部分主题色或透明颜色未导入')
-    expect(结果.警告).toContain('部分数字格式未导入')
+    expect(结果.工作表列表[0].元数据.单元格格式.A1.数字格式代码).toBe('000000')
+    expect(结果.警告).not.toContain('部分数字格式未导入')
+    const 重存 = await 写入xlsx({ 行: [[{ 文字: [{ 文本: '1234' }], 格式: 结果.工作表列表[0].元数据.单元格格式.A1 }]] })
+    const 重开 = new ExcelJS.Workbook(); await 重开.xlsx.load(重存)
+    expect(重开.worksheets[0].getCell('A1').value).toBe(1234)
+    expect(重开.worksheets[0].getCell('A1').numFmt).toBe('000000')
   })
 
   it('自定义主题色从文件解析并可保存为相同的显式颜色', async () => {

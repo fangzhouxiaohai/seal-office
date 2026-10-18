@@ -1,0 +1,135 @@
+{
+  "version": "2.0.0",
+  "recordedAt": "2026-10-18T07:56:24.810Z",
+  "scope": "implemented compatibility enhancements and local release artifacts",
+  "fullWpsParityAchieved": false,
+  "renderer": {
+    "passed": true,
+    "files": 218,
+    "tests": 1932,
+    "configuration": "unchanged repository default: one isolated worker"
+  },
+  "main": {
+    "passed": true,
+    "files": 99,
+    "tests": 991
+  },
+  "packagingTests": {
+    "passed": true,
+    "tests": 2
+  },
+  "typecheck": {
+    "passed": true
+  },
+  "mobileUnitTests": {
+    "passed": true,
+    "tests": 18
+  },
+  "mobileProduction": {
+    "file": 20,
+    "http": 20,
+    "passed": true
+  },
+  "compatibleFormats": {
+    "passed": true,
+    "checks": 37
+  },
+  "packagedCodecs": {
+    "passed": true,
+    "checks": 9
+  },
+  "windowsRuntime": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "desktopIntegrityFilesPerPlatform": 116,
+  "debStaticCheck": true,
+  "artifacts": [
+    {
+      "name": "海豹办公安装程序2.0.0.exe",
+      "bytes": 392135898,
+      "sha256": "c768a07751901c0e9081cbcf54277d79f3061d5c38f82df2de308bbb3d481c4a"
+    },
+    {
+      "name": "海豹办公2.0.0.exe",
+      "bytes": 391910433,
+      "sha256": "86b2eedbe001d48f185614fc98bd67401ebd27d92281aaa0717118177db8e8d5"
+    },
+    {
+      "name": "海豹办公Ubuntu2.0.0-amd64.deb",
+      "bytes": 121988764,
+      "sha256": "6f438c050f89d047f439cca2f9a392a033471b3b1f8fc008cdb796aa4698e17a"
+    }
+  ],
+  "applicationIntegrityManifestSha256": "bdc9e91374a04eacebb32159da7a03b060c8b95ec92fbf0c634df9338c40af5d",
+  "priorParallelAudit": "renderer-parallel-audit.json",
+  "limitations": [
+    "WPS native engine decompilation and complete generic-feature/shortcut parity were not achieved.",
+    "The reported WPS cloud-export workbook was unavailable; formula regressions use constructed standard workbooks.",
+    "Linux received cross-build and static archive checks; installation and UI execution were not tested.",
+    "Windows unpacked and portable flows were tested; NSIS installation/uninstallation was not exercised and EXEs are unsigned.",
+    "Mobile cloud projects and UTS compilation were verified; no APK/HAP was submitted or generated and no physical-device validation was performed."
+  ],
+  "testLogs": [
+    {
+      "path": ".tmp-v200-renderer-default-release.log",
+      "sha256": "39faafda4c072a2a21c28b56695bba82354063c2089370f2dabd9ac3d2bee248"
+    },
+    {
+      "path": ".tmp-v200-main-release.log",
+      "sha256": "e0517726ecd07bb9f4abd6498ccf830a010c4888356ec27cc80f5c3579236c9f"
+    },
+    {
+      "path": ".tmp-v200-packaging-release.log",
+      "sha256": "89bbeffc5424e33db15190ae829e18d021028bfb52c1ad53efc5ffc57c8ea5e5"
+    },
+    {
+      "path": ".tmp-v200-typecheck-release.log",
+      "sha256": "8a9003496130f53ffcd2fbb613584fc6e54290aef762f42e3ad424e5c6d5c508"
+    },
+    {
+      "path": ".tmp-v200-mobile-unit-final.log",
+      "sha256": "54a18cc62282164b2c4c76a07dd58dcc94abee05833db4d9bfda6375f7f77966"
+    }
+  ]
+}

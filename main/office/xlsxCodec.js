@@ -1,8 +1,13 @@
 const ExcelJS = require('exceljs')
 const JSZip = require('jszip')
+const SSF = require('ssf')
 const path = require('path')
 const { 规范Xlsx命名空间 } = require('./xlsxNamespaces')
 const { 解码Xml实体 } = require('./xmlEntities')
+const { 读取原始公式, 展开共享公式Xml } = require('./xlsxFormulas')
+const { 读取工作簿元数据, 读取工作簿日期基准, 写入动态元数据 } = require('./xlsxMetadata')
+const { 规范公式函数名 } = require('./xlsxFunctionNames')
+const { 读取公式兼容模式, 写入公式兼容模式 } = require('./xlsxCompatibility')
 
 const 单张图片字节上限 = 5 * 1024 * 1024
 const 工作簿图片字节上限 = 20 * 1024 * 1024
@@ -203,7 +208,10 @@ function 写入基础格式(单元格, 格式) {
   if (格式.垂直对齐) 对齐.vertical = 格式.垂直对齐
   if (格式.自动换行 !== undefined) 对齐.wrapText = 格式.自动换行
   if (Object.keys(对齐).length > 0) 单元格.alignment = 对齐
-  if (格式.数字格式) {
+  if (格式.数字格式代码 !== undefined) {
+    if (typeof 格式.数字格式代码 !== 'string' || !格式.数字格式代码 || 格式.数字格式代码.length > 4096) throw new Error('数字格式代码无效')
+    单元格.numFmt = 格式.数字格式代码
+  } else if (格式.数字格式) {
     if (格式.数字格式 === '数值' || 格式.数字格式 === '百分比') {
       const 位数 = 格式.小数位 ?? 2
       if (!Number.isInteger(位数) || 位数 < 0 || 位数 > 10) throw new Error('数字格式小数位无效')
@@ -263,7 +271,14 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
     else if (/^0(?:\.[0]{1,10})?$/.test(原格式.numFmt)) {
       格式.数字格式 = '数值'
       格式.小数位 = 原格式.numFmt.includes('.') ? 原格式.numFmt.length - 2 : 0
-    } else 警告.add('部分数字格式未导入')
+    } else {
+      格式.数字格式代码 = 原格式.numFmt
+      try {
+        if (原格式.numFmt.length > 4096) throw new Error('格式过长')
+        for (const 值 of [1234.5, -1234.5, 0, '文本']) SSF.format(原格式.numFmt, 值)
+      } catch { 警告.add('部分数字格式不能准确预览，保存时保留原始格式代码') }
+      if (/\[(?:black|blue|cyan|green|magenta|red|white|yellow|color\d+)\]|\[\$[^\]]*-[\da-f]+\]/i.test(原格式.numFmt)) 警告.add('数字格式中的颜色或区域语言仅保留代码，预览可能不同')
+    }
   }
   if (原格式.border) {
     const 边框 = {}
@@ -535,7 +550,7 @@ function 写入页面设置(工作表, 页面) {
 }
 
 /** 仅对实际存在、但当前表格模型不会写回的内容发出保真提示。 */
-async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态) {
+async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 公式来源列表) {
   const 警告 = new Set()
   const 文件名 = Object.keys(压缩包.files).filter((名称) => !压缩包.files[名称].dir)
   const 存在部件 = (表达式) => 文件名.some((名称) => 表达式.test(名称))
@@ -569,6 +584,7 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
   if (工作簿.definedNames?.model?.length > 0) 警告.add('命名区域未导入')
 
   for (const [索引, 工作表] of 工作簿.worksheets.entries()) {
+    const 已保留布尔格 = new Set(Object.values(公式来源列表?.[索引] ?? {}).flatMap(来源 => Object.entries(来源.数组缓存 ?? {}).filter(([,值]) => typeof 值 === 'boolean').map(([地址]) => 地址)))
     const 模型 = 工作表.model
     const 筛选 = 筛选列表[索引]
     const 隐藏行异常 = 模型.rows?.some((行) => 行 && (行.outlineLevel || 行.collapsed ||
@@ -585,7 +601,7 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
         if (单元格.note && 读取批注文本(单元格.note) === null) 警告.add('批注未导入')
         else if (单元格.note && typeof 单元格.note !== 'string') 警告.add('批注格式未导入')
         const 值 = 单元格.value
-        if (值 instanceof Date || typeof 值 === 'boolean' || (值 && typeof 值 === 'object' && 值.richText)) {
+        if ((值 instanceof Date && 原始数字列表?.[索引]?.[单元格.address] === undefined) || typeof 值 === 'boolean' && !已保留布尔格.has(单元格.address) || (值 && typeof 值 === 'object' && 值.richText)) {
           警告.add('日期、布尔值或富文本单元格类型未保留')
         }
       })
@@ -595,37 +611,102 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
 }
 
 /** 把一张工作表渲染为 HTML 表格标记（供文字模块展示与表格模块导入解析） */
-function 工作表转Html(工作表) {
+function 工作表转Html(工作表, 公式来源, 原始数字) {
   const 行 = []
   工作表.eachRow({ includeEmpty: true }, (行数据) => {
     const 单元格 = []
     行数据.eachCell({ includeEmpty: true }, (单元) => {
       const 从属合并格 = 单元.isMerged && 单元.master?.address !== 单元.address
-      const 公式 = !从属合并格 && typeof 单元.formula === 'string' && 单元.formula.length > 0
-        ? ` data-formula="${转义(`=${单元.formula}`)}"`
+      const 公式原文 = 公式来源?.[单元.address]?.原始值 ?? (typeof 单元.formula === 'string' && 单元.formula ? `=${单元.formula}` : '')
+      const 公式 = !从属合并格 && 公式原文
+        ? ` data-formula="${转义(公式原文)}"`
         : ''
       const 值类型 = !从属合并格 && typeof 单元.value === 'string' ? ' data-value-type="text"' : ''
       const 批注文本 = 从属合并格 ? null : 读取批注文本(单元.note)
       const 批注 = 批注文本 !== null && 批注文本 !== '' ? ` data-comment="${转义(批注文本)}"` : ''
-      单元格.push(`<td${公式}${值类型}${批注}>${转义(从属合并格 ? '' : String(单元.text || ''))}</td>`)
+      // ExcelJS 会把带日期格式的数字（含虚构的 serial 60）变为 Date，原始 XML 数字才是计算/保存依据。
+      const 日期序列 = 单元.value instanceof Date ? 原始数字?.[单元.address] : undefined
+      单元格.push(`<td${公式}${值类型}${批注}>${转义(从属合并格 ? '' : 日期序列 !== undefined ? String(日期序列) : String(单元.text || ''))}</td>`)
     })
     行.push(`<tr>${单元格.join('')}</tr>`)
   })
   return `<table><tbody>${行.join('')}</tbody></table>`
 }
 
+function 读取公式来源(工作表, 日期基准1904) {
+  const 公式来源 = {}
+  工作表.eachRow(行 => 行.eachCell(单元 => {
+    if (单元.isMerged && 单元.master?.address !== 单元.address || typeof 单元.formula !== 'string' || !单元.formula) return
+    // ExcelJS 的 value getter 会遗漏 0/false/空字符串，必须从 result getter 读取。
+    let 结果 = 单元.result
+    if (结果 instanceof Date) 结果 = 25569 + 结果.getTime() / 86400000 - (日期基准1904 ? 1462 : 0)
+    const 可保存结果 = typeof 结果 === 'string' || typeof 结果 === 'boolean' || typeof 结果 === 'number' && Number.isFinite(结果) ||
+      结果 && typeof 结果 === 'object' && typeof 结果.error === 'string'
+    const 数组范围 = 单元.model.shareType === 'array' && typeof 单元.model.ref === 'string' ? 单元.model.ref : undefined
+    公式来源[单元.address] = { 原始值: `=${单元.formula}`, ...(可保存结果 ? { 结果 } : {}), ...(数组范围 ? { 数组范围 } : {}) }
+  }))
+  return 公式来源
+}
+
+/** Typed dynamic child caches cannot be recovered from HTML text alone. */
+function 补充动态类型缓存(工作表, 来源, 原始数字, 警告, 预算) {
+  for (const [锚点, 公式] of Object.entries(来源)) {
+    if (!公式.动态数组 || typeof 公式.数组范围 !== 'string') continue
+    const 范围 = /^([A-Z]{1,3})([1-9]\d{0,6})(?::([A-Z]{1,3})([1-9]\d{0,6}))?$/.exec(公式.数组范围)
+    if (!范围) continue
+    const 列号 = 字母 => [...字母].reduce((数, 字符) => 数 * 26 + 字符.charCodeAt(0) - 64, 0)
+    const 首行 = Number(范围[2]), 尾行 = Number(范围[4] ?? 范围[2]), 首列 = 列号(范围[1]), 尾列 = 列号(范围[3] ?? 范围[1])
+    const 数量 = (尾行 - 首行 + 1) * (尾列 - 首列 + 1)
+    if (尾行 < 首行 || 尾列 < 首列 || 尾行 > 1048576 || 尾列 > 16384 || 数量 > 100000 || 数量 > 预算.剩余) { 警告.add('部分动态数组区域超过安全上限，未完整导入其缓存'); continue }
+    预算.剩余 -= 数量
+    const 类型缓存 = {}
+    for (let 行 = 首行; 行 <= 尾行; 行++) for (let 列 = 首列; 列 <= 尾列; 列++) {
+      // Reading a missing cache must not materialize empty cells/rows. getCell
+      // would expand HTML/grid dimensions merely by inspecting an array ref.
+      const 单元 = 工作表.findRow(行)?.findCell(列)
+      if (!单元) continue
+      const 值 = 单元.value instanceof Date ? 原始数字?.[单元.address] : 单元.value
+      if (单元.address !== 锚点 && (typeof 值 === 'number' && Number.isFinite(值) || typeof 值 === 'string' || typeof 值 === 'boolean' || 值 && typeof 值 === 'object' && typeof 值.error === 'string')) 类型缓存[单元.address] = 值
+    }
+    if (Object.keys(类型缓存).length) 公式.数组缓存 = 类型缓存
+  }
+  return 来源
+}
+
 async function 读取xlsx(数据) {
   const 原始数据 = Buffer.from(数据)
   const 压缩包 = await JSZip.loadAsync(原始数据)
-  const 兼容数据 = await 规范Xlsx命名空间(压缩包, 原始数据)
+  let 兼容数据 = await 规范Xlsx命名空间(压缩包, 原始数据)
+  const 公式来源列表 = []
+  const 原始数字列表 = []
+  const 公式警告 = new Set()
+  const 单元元数据 = await 读取工作簿元数据(压缩包, 公式警告)
+  let 已展开共享公式 = false
+  for (const 路径 of await 工作表Xml路径列表(压缩包)) {
+    const 部件 = 路径 ? 压缩包.file(路径) : null
+    if (!部件) { 公式来源列表.push({}); 原始数字列表.push({}); continue }
+    const xml = await 部件.async('string')
+    const 原始数字 = {}
+    const 来源 = 读取原始公式(xml, 公式警告, 单元元数据, 原始数字)
+    原始数字列表.push(原始数字)
+    公式来源列表.push(来源)
+    const 新Xml = 展开共享公式Xml(xml, 来源)
+    if (新Xml !== xml) { 压缩包.file(路径, 新Xml); 已展开共享公式 = true }
+  }
+  if (已展开共享公式) 兼容数据 = await 压缩包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
   const 工作簿 = new ExcelJS.Workbook()
   await 工作簿.xlsx.load(兼容数据)
+  工作簿.properties.date1904 = await 读取工作簿日期基准(压缩包)
+  const 公式兼容模式 = await 读取公式兼容模式(压缩包)
   const 主题颜色 = await 读取主题颜色(压缩包)
   const 筛选列表 = await 读取筛选列表(压缩包, 工作簿.worksheets.length)
   const 保护列表 = await 读取保护列表(压缩包, 工作簿.worksheets.length)
   const 图片状态 = { 总字节: 0, 已导入图片数: 0, 已导入媒体: new Set(), 无名媒体: [], 警告: new Set() }
   const 图片列表 = 工作簿.worksheets.map((工作表) => 读取工作表图片(工作表, 工作簿, 图片状态))
-  const 警告 = await 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态)
+  const 数组预算 = { 剩余: 1000000 }
+  const 完整公式来源 = 工作簿.worksheets.map((工作表, 索引) => 补充动态类型缓存(工作表, { ...读取公式来源(工作表, 工作簿.properties.date1904), ...公式来源列表[索引] }, 原始数字列表[索引], 公式警告, 数组预算))
+  const 警告 = await 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 完整公式来源)
+  警告.push(...公式警告)
   const 页面警告 = new Set(警告)
   if (!工作簿.worksheets || 工作簿.worksheets.length === 0) {
     return { html: '<p><br></p>', 警告 }
@@ -633,9 +714,9 @@ async function 读取xlsx(数据) {
   // 返回全部工作表：html 为首个工作表（兼容旧消费方），工作表列表供表格模块逐表导入
   const 工作表列表 = 工作簿.worksheets.map((工作表, 索引) => ({
     名称: 工作表.name || 'Sheet1',
-    html: 工作表转Html(工作表),
+    html: 工作表转Html(工作表, 公式来源列表[索引], 原始数字列表[索引]),
     页面设置: 读取页面设置(工作表, 页面警告),
-    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引], 主题颜色), 图片: 图片列表[索引] },
+    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引], 主题颜色), ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
   }))
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }
 }
@@ -653,7 +734,10 @@ function 转单元格值(值) {
 
 async function 写入xlsx(模型) {
   const 工作簿 = new ExcelJS.Workbook()
+  // 让 Excel/WPS 对未由本机计算的函数及数组公式重新计算，缓存仅作为打开时的预览。
+  工作簿.calcProperties.fullCalcOnLoad = true
   const 图片状态 = { 总字节: 0 }
+  const 动态数组地址列表 = []
   // 归一化输入为 [{ 名称, 数据: 二维数组 }]：
   // 渲染层契约为 { 工作表: [{ 名称, 数据 }] }，旧契约为 { 行: 二维数组 }（单表）。
   let 表定义列表 = []
@@ -662,7 +746,7 @@ async function 写入xlsx(模型) {
       .map((表, 序号) => {
         if (!表 || !Array.isArray(表.数据)) return null
         const 名称 = typeof 表.名称 === 'string' && 表.名称.trim() !== '' ? 表.名称 : `工作表${序号 + 1}`
-        return { 名称, 数据: 表.数据, 页面设置: 表.页面设置,
+        return { 名称, 数据: 表.数据, 页面设置: 表.页面设置, 日期系统1904: 表.日期系统1904 ?? 表.元数据?.日期系统1904, 公式兼容模式: 表.公式兼容模式 ?? 表.元数据?.公式兼容模式,
           图片: 表.图片 !== undefined ? 表.图片 : 表.元数据?.图片,
           合并区域: 表.合并区域, 列宽: 表.列宽, 行高: 表.行高, 冻结: 表.冻结, 筛选: 表.筛选, 保护: 表.保护 }
       })
@@ -673,10 +757,20 @@ async function 写入xlsx(模型) {
   if (表定义列表.length === 0) {
     表定义列表 = [{ 名称: '工作表', 数据: [] }]
   }
+  if (模型?.日期系统1904 !== undefined && typeof 模型.日期系统1904 !== 'boolean') throw new Error('工作簿日期基准无效')
+  if (表定义列表.some(表 => 表.日期系统1904 !== undefined && typeof 表.日期系统1904 !== 'boolean')) throw new Error('工作表日期基准无效')
+  const 日期系统1904 = 模型?.日期系统1904 ?? (表定义列表[0].日期系统1904 === true)
+  if (表定义列表.some(表 => 表.日期系统1904 !== undefined ? 表.日期系统1904 !== 日期系统1904 : 模型?.日期系统1904 === undefined && 日期系统1904)) throw new Error('工作表日期基准不一致，已阻止混合保存')
+  工作簿.properties.date1904 = 日期系统1904
+  const 公式兼容模式 = 模型?.公式兼容模式 ?? 表定义列表[0].公式兼容模式
+  if (公式兼容模式 !== undefined && !['Excel','WPS'].includes(公式兼容模式)) throw new Error('公式兼容模式无效')
+  if (表定义列表.some(表 => 表.公式兼容模式 !== undefined && 表.公式兼容模式 !== 公式兼容模式)) throw new Error('工作表公式兼容模式不一致')
   表定义列表.forEach((表定义) => {
     // 工作表名禁止 : \ / ? * [ ]，先清洗再截断到 Excel 的 31 字符上限
     const 安全名称 = 表定义.名称.replace(/[\\/?*[\]:]/g, '_').slice(0, 31) || '工作表'
     const 工作表 = 工作簿.addWorksheet(安全名称)
+    const 动态数组地址 = new Set()
+    动态数组地址列表.push(动态数组地址)
     if (表定义.保护 === true) 工作表.sheetProtection = { sheet: true }
     写入页面设置(工作表, 表定义.页面设置)
     if (Array.isArray(表定义.列宽)) 表定义.列宽.forEach((宽, 索引) => {
@@ -695,7 +789,32 @@ async function 写入xlsx(模型) {
         if (单元 && typeof 单元 === 'object' && typeof 单元.公式 === 'string') {
           if (单元.公式.trim() === '') throw new Error('单元格公式不能为空')
           if (单元.超链接 !== undefined) throw new Error('公式单元格暂不能同时保存超链接')
-          目标单元.value = { formula: 单元.公式, result: 单元.结果 }
+          if (单元.数组范围 !== undefined && (typeof 单元.数组范围 !== 'string' || !/^[A-Z]{1,3}[1-9]\d{0,6}(?::[A-Z]{1,3}[1-9]\d{0,6})?$/.test(单元.数组范围))) throw new Error('数组公式范围无效')
+          if (单元.动态数组 !== undefined && typeof 单元.动态数组 !== 'boolean') throw new Error('动态数组标记无效')
+          if (单元.保留公式拼写 !== undefined && typeof 单元.保留公式拼写 !== 'boolean') throw new Error('公式拼写保留标记无效')
+          if (单元.动态数组 === true) 动态数组地址.add(目标单元.address)
+          目标单元.value = { formula: 单元.保留公式拼写 ? 单元.公式 : 规范公式函数名(单元.公式), result: 单元.结果,
+            ...(单元.数组范围 ? { shareType: 'array', ref: 单元.数组范围 } : {}) }
+          if (单元.数组缓存 !== undefined) {
+            if (!单元.动态数组 || !单元.数组范围 || !单元.数组缓存 || typeof 单元.数组缓存 !== 'object' || Array.isArray(单元.数组缓存) || Object.keys(单元.数组缓存).length > 100000) throw new Error('动态数组缓存无效')
+            const [首, 尾 = 首] = 单元.数组范围.split(':').map(地址 => 工作表.getCell(地址))
+            for (const [地址, 值] of Object.entries(单元.数组缓存)) {
+              if (!/^[A-Z]{1,3}[1-9]\d{0,6}$/.test(地址)) throw new Error('动态数组缓存地址无效')
+              const 缓存单元 = 工作表.getCell(地址)
+              if (缓存单元.row < 首.row || 缓存单元.row > 尾.row || 缓存单元.col < 首.col || 缓存单元.col > 尾.col || 地址 === 目标单元.address) throw new Error('动态数组缓存超出数组区域')
+              if (!(typeof 值 === 'string' || typeof 值 === 'boolean' || typeof 值 === 'number' && Number.isFinite(值) || 值 && typeof 值 === 'object' && /^#(?:N\/A|SPILL!|CALC!|REF!|VALUE!|DIV\/0!|NUM!|NAME\?|NULL!)$/.test(值.error))) throw new Error('动态数组缓存类型无效')
+              缓存单元.value = 值
+            }
+          }
+          if (typeof 单元.批注 === 'string' && 单元.批注.trim()) 目标单元.note = 单元.批注
+          写入基础格式(目标单元, 单元.格式)
+          写入数据验证(目标单元, 单元.数据验证)
+          return
+        }
+        if (单元 && typeof 单元 === 'object' && Object.prototype.hasOwnProperty.call(单元, '值')) {
+          const 值 = 单元.值
+          if (!(typeof 值 === 'string' || typeof 值 === 'boolean' || typeof 值 === 'number' && Number.isFinite(值) || 值 && typeof 值 === 'object' && /^#(?:N\/A|SPILL!|CALC!|REF!|VALUE!|DIV\/0!|NUM!|NAME\?|NULL!)$/.test(值.error))) throw new Error('类型化单元格值无效')
+          目标单元.value = 值
           if (typeof 单元.批注 === 'string' && 单元.批注.trim()) 目标单元.note = 单元.批注
           写入基础格式(目标单元, 单元.格式)
           写入数据验证(目标单元, 单元.数据验证)
@@ -741,7 +860,7 @@ async function 写入xlsx(模型) {
     }
   })
   const 原数据 = await 工作簿.xlsx.writeBuffer()
-  return 写入筛选Xml(原数据, 表定义列表.map((表) => 表.筛选))
+  return 写入公式兼容模式(await 写入动态元数据(await 写入筛选Xml(原数据, 表定义列表.map((表) => 表.筛选)), 动态数组地址列表), 公式兼容模式)
 }
 
 function 转义(文本) {

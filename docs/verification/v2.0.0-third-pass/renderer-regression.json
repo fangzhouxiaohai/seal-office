@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "oneWholeRunAllGreen": true,
+  "files": 253,
+  "tests": 2477,
+  "skipped": 0,
+  "source": {
+    "path": ".upgrade-private/v200-third-renderer.json",
+    "bytes": 1005552,
+    "sha256": "6938fa7e8912d82b8ac4f06070bd088f16987b72717f98886882d7f52715f3ae"
+  }
+}

@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify'
 export function 净化富文本(html: string): string {
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
+    ADD_ATTR: ['contenteditable'],
     FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select', 'option', 'iframe', 'object', 'embed', 'base'],
   })
 }

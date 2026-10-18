@@ -1,0 +1,157 @@
+{
+  "version": "2.0.0",
+  "status": "passed",
+  "verifiedAt": "2026-10-18T15:44:53.745Z",
+  "scope": [
+    "脑图与流程图默认项目列表",
+    "多项目独立身份、正文和撤销历史",
+    "旧 v1 原图备份迁移且不回写旧键",
+    "新建/打开/返回/重命名/复制/搜索/排序/回收站/恢复/永久删除",
+    "未保存草稿、配额失败、损坏存储与跨窗口版本冲突",
+    "保留节点编辑、布局、快捷键、拖拽与双指缩放、JSON/SVG及原生PPTX往返"
+  ],
+  "productionBrowser": {
+    "web": {
+      "passed": true,
+      "bundleSha256": "da83a77e7f628b043725175f8079a9c69a28e691f849dc396bb2b6dbcf54e9b7",
+      "checks": [
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+      ]
+    },
+    "file": {
+      "passed": true,
+      "bundleSha256": "8949c4456f031b85d461357f81b6da40596268a7e9bcb342440d17afe20f026d",
+      "checks": [
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+      ]
+    },
+    "http": {
+      "passed": true,
+      "bundleSha256": "8949c4456f031b85d461357f81b6da40596268a7e9bcb342440d17afe20f026d",
+      "checks": [
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+      ]
+    }
+  },
+  "publicOrigin": [
+    {
+      "type": "脑图",
+      "width": 1280,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    },
+    {
+      "type": "流程图",
+      "width": 390,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    }
+  ],
+  "localCsp": [
+    {
+      "type": "脑图",
+      "width": 1280,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    },
+    {
+      "type": "流程图",
+      "width": 390,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "mobile/tests/diagram-browser-actions.cjs",
+      "bytes": 24153,
+      "sha256": "c9d153b67856e0035fa3c4fd7bad9eb8abcadacda9012f0f4ad71798889442da"
+    },
+    {
+      "path": "mobile/tests/public-web.cjs",
+      "bytes": 22135,
+      "sha256": "f24626022ca5c8844374228b7b18883457edc42309ace7cbb3008bb8e4c48389"
+    },
+    {
+      "path": "renderer/src/localTools/DiagramEditor.tsx",
+      "bytes": 22031,
+      "sha256": "44a1576c769d80f4fecdf33c31e8b4791f83a33587ea1b52830b6c1b0e90dfff"
+    },
+    {
+      "path": "renderer/src/localTools/DiagramLibrary.tsx",
+      "bytes": 11832,
+      "sha256": "d71c3f5b6a8cddfebb0948d653e4c4784f23d63a5615e6858d1e961b690a1f42"
+    },
+    {
+      "path": "renderer/src/localTools/DiagramPage.test.tsx",
+      "bytes": 7797,
+      "sha256": "b901908a2a93455235e62a07282b66523c7576ca89b88f7f39d61e60b237136f"
+    },
+    {
+      "path": "renderer/src/localTools/DiagramPage.tsx",
+      "bytes": 44,
+      "sha256": "6eb9e03d150c4406fd30633b7d75654a04ac5297a20407f63eb12aad9b3a350b"
+    },
+    {
+      "path": "renderer/src/localTools/DiagramProjectsUI.test.tsx",
+      "bytes": 7473,
+      "sha256": "35d93bbf211662d608979b433e797db5174d735dd6bd7197e05f1d5351447768"
+    },
+    {
+      "path": "renderer/src/localTools/diagramEnhancements.css",
+      "bytes": 4970,
+      "sha256": "ab5fdfb8ddc7060bdc6da414aab399fad0d447893e68596e5e428a7b9b7bdcfc"
+    },
+    {
+      "path": "renderer/src/localTools/diagramProjects.test.ts",
+      "bytes": 10181,
+      "sha256": "22e352f47a5fa62b4122bf9e7b3f3ad522cefbf5a2912d4f736cc197901a7339"
+    },
+    {
+      "path": "renderer/src/localTools/diagramProjects.ts",
+      "bytes": 12252,
+      "sha256": "884562365c43a049310969a0e90e6f6cde678b4ee58af53c7a79054f9ce49bff"
+    }
+  ],
+  "limitations": [
+    "图形项目仍存放于当前设备/浏览器的本机存储；没有将其声明为云同步或实时协作房间。",
+    "撤销历史和单图节点/文件上限沿用已验证的明确边界，存储空间不足时保留草稿并提示。"
+  ]
+}

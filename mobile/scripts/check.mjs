@@ -28,6 +28,12 @@ for (const permission of ['CAMERA', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCAT
   assert.match(androidManifest, new RegExp(`android\\.permission\\.${permission}" tools:node="remove"`), `必须移除未使用权限 ${permission}`)
 }
 const pkg = JSON.parse(await fs.readFile(path.join(directory, 'package.json'), 'utf8'))
+const desktop = JSON.parse(await fs.readFile(path.join(directory, '../package.json'), 'utf8'))
+const [major, minor, patch] = desktop.version.split('.').map(Number)
+assert.equal(pkg.version, desktop.version, '移动 package 版本必须与桌面一致')
+assert.equal(manifest.versionName, desktop.version, '云打包版本名称必须与当前源码一致')
+assert.equal(manifest.versionCode, String(major * 10000 + minor * 100 + patch), '云打包构建号必须与当前版本一致')
+assert.equal(manifest.name, '海豹办公', '移动应用继续使用中文名')
 assert.ok(pkg.scripts.build.endsWith(' android')); assert.equal(pkg.scripts.pack, pkg.scripts['pack:android'])
 console.log('uni-app x 结构、页面、各端 Logo、Android 9–16/双 ABI、返回保护与默认安卓流程检查通过。')
 try { console.log('HBuilderX CLI：' + findHBuilder()) } catch (error) { console.log(error.message) }

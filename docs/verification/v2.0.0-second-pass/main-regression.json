@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "files": 105,
+  "tests": 1025,
+  "skipped": 0,
+  "source": {
+    "path": ".upgrade-private/v200-second-pass-main-release.json",
+    "bytes": 439336,
+    "sha256": "ff7259464e9dedd748143cde3ba4a0037b5faa5a1027d884416666f484cf4d56"
+  }
+}

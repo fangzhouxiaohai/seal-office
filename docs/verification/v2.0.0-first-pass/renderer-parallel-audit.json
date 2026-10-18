@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "configuration": "two isolated Vitest workers; repository default uses one",
+  "fullRun": {
+    "files": 218,
+    "passedFiles": 217,
+    "tests": 1932,
+    "passedTests": 1931,
+    "failedTests": 1,
+    "durationSeconds": 615.84
+  },
+  "failure": {
+    "file": "renderer/src/pages/SettingsPage.test.tsx",
+    "test": "设置页保存翻译密钥时只写系统安全存储，不写本机明文",
+    "observation": "The simulated save call received a shorter dummy input than the string supplied by userEvent.type.",
+    "cause": "Not established. The failure did not recur in the original single-worker isolated test or complete SettingsPage test file; no application code or assertion was changed."
+  },
+  "originalConfigurationRechecks": {
+    "isolated": {
+      "passed": 1,
+      "skipped": 16
+    },
+    "entireFile": {
+      "passed": 17,
+      "skipped": 0
+    }
+  },
+  "logs": [
+    {
+      "path": ".tmp-v200-renderer-final.log",
+      "sha256": "3e88772d1a5aeb54a5218dba674b75034db1908773ac58ac19f2b5923b3fa0e3"
+    },
+    {
+      "path": ".tmp-v200-settings-security-repeat.log",
+      "sha256": "19fe425095fa1507a460cb79e4b62873f2af34a925a6e1b3290f91ed15e2e9a2"
+    },
+    {
+      "path": ".tmp-v200-settings-file-repeat.log",
+      "sha256": "39767970de96fab9a0380a0c699994e12cfcdf013716ec57937030bf5e02d0ce"
+    }
+  ]
+}

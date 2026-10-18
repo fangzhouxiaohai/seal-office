@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "package": "seal-office-2.0.0-microsoft-store-x64.msix",
+  "bytes": 738176111,
+  "sha256": "c9b88f7eefede19aba247c4ed5f4f2a92e7df5d377d692d44813f70344f53ccb",
+  "identity": {
+    "Name": "45C56666.seal-office",
+    "Publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
+    "Version": "2.0.0.0",
+    "ProcessorArchitecture": "x64"
+  },
+  "displayNames": "seal-office",
+  "crcPassed": true,
+  "blockMapFilesVerified": 19577,
+  "blockMapSha256Passed": true,
+  "appAsarSha256": "539a9ee12bba8dec53b3673924c7897a7ddb0a8dc9106b9941a9dc52958a0fc0",
+  "asarMatchesFreshWindowsBuild": true,
+  "signed": false,
+  "installationTest": "Not installed; this is an unsigned Store-upload package",
+  "allSourcePayloadFilesCompared": 19570,
+  "allSourcePayloadBytesCompared": 2121549600,
+  "allSourcePayloadSha256Passed": true,
+  "previousStoreIdentityRetained": true,
+  "physicalInstallTested": false,
+  "submittedToPartnerCenter": false,
+  "intendedUse": "Microsoft Store Partner Center upload; Store signing and review are separate"
+}

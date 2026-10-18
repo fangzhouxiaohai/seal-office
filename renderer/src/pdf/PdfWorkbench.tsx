@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import PrintPreview from '../components/PrintPreview'
 import PdfViewer from './PdfViewer'
 import { 解析页码, PDF命令表, type PDF命令 } from './pdfCommands'
+import { useShortcuts } from '../shortcuts/useShortcuts'
 import './pdf.css'
 
 interface 本地PDF文件 {
@@ -139,7 +140,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       if (路径列表.length === 0) return
       const 结果 = await Promise.allSettled(路径列表.map(async (路径) => {
         const 读取结果 = await 桥接.readFile(路径)
-        if (!读取结果.成功 || !读取结果.二进制 || !读取结果.内容 || 读取结果.扩展名?.toLowerCase() !== '.pdf') {
+        if (!读取结果.成功 || !读取结果.二进制 || !读取结果.内容 || 读取结果.扩展名?.replace(/^\./, '').toLowerCase() !== 'pdf') {
           throw new Error(`无法读取「${路径}」：${读取结果.错误 || '不是有效的 PDF 文件'}`)
         }
         return { 路径, 名称: 路径.split(/[\\/]/).pop() || 'PDF 文件', 数据: 读取结果.内容 }
@@ -163,6 +164,16 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     if (!文件) { 显示错误('无法打印', '请先添加并选择 PDF 文件。'); return }
     set打印预览({ 内容: 文件.数据, 标题: 文件.名称 })
   }
+  useShortcuts('pdf', (标识) => {
+    if (标识.startsWith('tools.')) {
+      const 操作 = 标识.slice(6)
+      if (!['extract','merge','delete','rotate','insertBlank','insertPages'].includes(操作)) return false
+      展开操作(操作 as PDF命令)
+      return
+    }
+    if (标识 !== 'file.print') return false
+    void 打印当前文件()
+  }, 当前文件 !== null)
 
   const 移除文件 = (标识: string) => {
     const 剩余 = 文件列表.filter((文件) => 文件.标识 !== 标识)
@@ -188,7 +199,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     }
     const 路径 = 扩展 === undefined ? `${原始路径}.pdf` : 原始路径
     const 保存 = await 桥接.saveToFile(路径, Uint8Array.from(atob(数据), (字符) => 字符.charCodeAt(0)), '二进制')
-    if (!保存.成功) { 显示错误('PDF 保存失败', 保存.错误 ?? '请检查目标目录的写入权限后重试。'); return }
+    if (!保存.成功) { if (!保存.已取消) 显示错误('PDF 保存失败', 保存.错误 ?? '请检查目标目录的写入权限后重试。'); return }
     try { onSaved?.(路径, 数据) }
     catch (错误) { 显示错误('PDF 标签打开失败', `文件已保存到「${路径}」，但无法在标签中打开：${错误 instanceof Error ? 错误.message : '未知错误'}`); return }
     message.success('PDF 已保存')

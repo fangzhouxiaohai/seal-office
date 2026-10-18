@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "results": [
+    {
+      "mode": "unpacked",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true
+        }
+      ],
+      "allProcessesExitedNormally": true
+    },
+    {
+      "mode": "portable",
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "integrity": true
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "integrity": true
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "integrity": true
+        }
+      ],
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "limitations": [
+    "NSIS install/uninstall was not run. Default-program registration was exercised in an isolated test registry; protected user defaults were not changed."
+  ]
+}

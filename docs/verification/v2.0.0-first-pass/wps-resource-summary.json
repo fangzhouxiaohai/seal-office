@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "wpsVersion": "12.1.0.26895",
+  "observedAt": "2026-10-18T07:05:29.144631+00:00",
+  "summary": {
+    "resourceFiles": 201,
+    "commandDeclarations": 17093,
+    "uniqueCommandIds": 12738,
+    "uniqueShortcutDeclarations": 731,
+    "commandsByComponent": {
+      "pdf": 2372,
+      "wpp": 2930,
+      "et": 3368,
+      "wps": 4068
+    },
+    "parseErrors": 0,
+    "recoveredResourceFiles": 1
+  },
+  "parseErrors": [],
+  "parseRecoveries": [
+    {
+      "path": "res/wpscommon.kuip",
+      "attributeLiteralRepairs": 1
+    }
+  ],
+  "limitations": [
+    "Declarations may be conditional, duplicated, disabled, paid, or unloaded; runtime availability is not established.",
+    "hotKey/rbHotKey are menu access keys and are not treated as keyboard shortcuts.",
+    "Shortcut hints do not establish complete bindings, conflict precedence, or native command behavior.",
+    "Native import/export engines, cloud services and mobile WPS are not covered by this resource inventory.",
+    "Non-XML attribute literals are repaired only in analysis memory; repair counts are retained separately."
+  ]
+}

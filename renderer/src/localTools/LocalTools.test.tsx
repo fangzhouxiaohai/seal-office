@@ -8,6 +8,7 @@ import HomePage from '../pages/HomePage'
 import LocalFilesPage from './LocalFilesPage'
 import CalendarPage from './CalendarPage'
 import DiagramPage from './DiagramPage'
+import { DiagramProjectStore } from './diagramProjects'
 import AppsPage from './AppsPage'
 import { 桥接 } from '../ipc/bridge'
 
@@ -62,9 +63,11 @@ describe('本地工作台', () => {
   it('脑图新增节点后保存可编辑图形数据', async () => {
     const 用户 = userEvent.setup()
     渲染(<DiagramPage 类型="脑图" />)
+    await 用户.click(await screen.findByRole('button', { name: '新建脑图项目' }))
+    await 用户.click(screen.getByRole('button', { name: '创建项目' }))
     await 用户.click(await screen.findByRole('button', { name: '添加节点' }))
-    await waitFor(() => expect(JSON.parse(localStorage.getItem('seal-local-mindmap-v1') || '{}').节点).toHaveLength(2))
-    expect(JSON.parse(localStorage.getItem('seal-local-mindmap-v1') || '{}').连线).toHaveLength(1)
+    await waitFor(() => expect(new DiagramProjectStore('脑图').load().items[0].project.graph.节点).toHaveLength(2))
+    expect(new DiagramProjectStore('脑图').load().items[0].project.graph.连线).toHaveLength(1)
   })
 
   it('本机数据损坏时保留原文并提供备份入口', async () => {

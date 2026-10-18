@@ -9,6 +9,7 @@ import {收集演示资源标识,演示内容快照} from '../ppt/model/migratio
 import {桥接} from '../ipc/bridge'
 import {registerCloudFlush} from './autosaveLifecycle'
 import {文字文本输出} from '../editor/exportDoc'
+import {getFileBinding} from '../collaboration/fileAccess'
 const binaryText=(text:string)=>{const data=new TextEncoder().encode(text);let result='';for(let i=0;i<data.length;i+=16384)result+=String.fromCharCode(...data.subarray(i,i+16384));return btoa(result)}
 export default function CloudAutosave(){
   const store=useAppStore(),{state,refresh,configure}=useCloud(),[dismissed,setDismissed]=useState<string|null>(null),[status,setStatus]=useState<Record<string,string>>({}),latest=useRef(store),seen=useRef(new Map<string,string>()),timers=useRef(new Map<string,ReturnType<typeof setTimeout>>())
@@ -24,6 +25,7 @@ export default function CloudAutosave(){
     if(!state.account?.enabled||!state.account.autosave||!state.unlocked){for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();return}
     const write=async(id:string,snapshot:string,active:typeof store)=>{
       const doc=active.documents.find(d=>d.id===id),pdf=active.pdfDocuments.find(d=>d.id===id);if(!doc&&!pdf)return
+      if(getFileBinding(active.文档路径[id]||doc?.来源路径||''))return
       const accountId=state.account?.id
       try{
         let result:any,name=doc?.name||pdf?.name||'文档.pdf'
@@ -73,7 +75,7 @@ export default function CloudAutosave(){
     }
   }),[state.account?.enabled,state.account?.autosave,state.unlocked])
   useEffect(()=>()=>{for(const timer of timers.current.values())clearTimeout(timer)},[])
-  if(!editing)return null
+  if(!editing||getFileBinding(store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))return null
   if(state.account?.autosave)return <div className="seal-cloud-banner" role="status"><span>{state.statuses[cloudIds.current.get(current)||'']||status[current]||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void cloudCall('flush').then(refresh).catch(e=>setStatus(previous=>({...previous,[current]:e.message})))}}>立即同步</Button></div>
   if(!dirty||dismissed===current||dismissedIds.current.has(current))return null
   return <div className="seal-cloud-banner"><span>开启云文档自动保存，在不同设备继续编辑；文件加密上传，由你决定是否开启。</span><Button size="small" onClick={configure}>开启云端能力</Button><Button size="small" type="text" aria-label="关闭云端提示" onClick={()=>{dismissedIds.current.add(current);setDismissed(current)}}>关闭</Button></div>

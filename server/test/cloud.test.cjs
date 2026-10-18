@@ -3,10 +3,11 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{ran
 const {createCloud}=require('../index.cjs')
 const {createService}=require('../../main/cloud/service')
 const {seal,unseal}=require('../../main/cloud/crypto')
+const {listenLoopback}=require('./collaborationFixture.cjs')
 async function fixture(t,quota){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'seal-cloud-')),codes=new Map();let time=Date.now()
   const cloud=await createCloud({directory:dir,quota,clock:()=>time,sms:{configured:true,send:async(phone,code)=>codes.set(phone,code)},env:{SEAL_ADMIN_PASSWORD_HASH:scryptSync('admin-secret','seal-admin-v1',32).toString('hex')}})
-  await new Promise(r=>cloud.server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${cloud.server.address().port}`
+  await listenLoopback(cloud.server);const url=`http://127.0.0.1:${cloud.server.address().port}`
   t.after(async()=>{await cloud.close();fs.rmSync(dir,{recursive:true,force:true})})
   const request=async(route,data,token,method=data?'POST':'GET')=>{const r=await fetch(url+route,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});return {status:r.status,body:await r.json()}}
   const login=async(phone)=>{assert.equal((await request('/v1/auth/code',{phone})).status,200);return (await request('/v1/auth/login',{phone,code:codes.get(phone)})).body}

@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
 
-type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string }
+type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number }
 type Bridge = { token: string; platform: string }
 declare global {
   interface Window {
@@ -68,19 +68,59 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
   })
 }
 const browserFetch = window.fetch.bind(window)
+export function writeNativeClipboard(text: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('复制超时，请重试')) }, 15000)
+    pending.set(id, event => { clearTimeout(timer); pending.delete(id); event.type === 'written' ? resolve() : reject(new Error(event.error || '复制失败')) })
+    try { send({ id, action: 'clipboard-write', text }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
+  })
+}
+/** Native file-picker bytes avoid ArkWeb trying to fetch a foreign file URI. */
+export function pickNativeFiles(multiple: boolean): Promise<File[]> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID(), files: File[] = []
+    let name = '', chunks: Uint8Array[] = [], total = 0, aggregate = 0, reading = false
+    const cleanup = () => { clearTimeout(timer); pending.delete(id) }
+    const timer = setTimeout(() => { cleanup(); reject(new Error('文件选择超时，请重新选择')) }, 180000)
+    pending.set(id, event => {
+      try {
+        if (event.type === 'file-start') {
+          if (reading || files.length >= 20) throw new Error('文件读取顺序无效或数量超过上限')
+          name = event.name || '文档'; chunks = []; total = 0; reading = true
+        }
+        else if (event.type === 'chunk') {
+          if (!reading) throw new Error('文件读取尚未开始')
+          const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64'))
+          total += chunk.length; aggregate += chunk.length
+          if (aggregate > 100 * 1024 * 1024) throw new Error('一次导入的文件总大小不能超过 100 MiB')
+          chunks.push(chunk)
+        } else if (event.type === 'file-end') {
+          if (!reading) throw new Error('文件读取尚未开始')
+          files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name)); chunks = []; reading = false
+        } else if (event.type === 'end' || event.type === 'cancel') {
+          if (event.type === 'end' && reading) throw new Error('文件读取未完成，请重新选择')
+          cleanup(); resolve(event.type === 'cancel' ? [] : files)
+        }
+        else if (event.type === 'error') throw new Error(event.error || '文件读取失败')
+      } catch (error) { cleanup(); reject(error) }
+    })
+    try { send({ id, action: 'pick-files', multiple }) } catch (error) { cleanup(); reject(error) }
+  })
+}
 export async function platformFetch(input: string | URL | Request, options: RequestInit = {}): Promise<Response> {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
   if (window.sealNative && /^https?:\/\//i.test(url)) return nativeFetch(url, options)
   const mapped = url.startsWith('https://seal.xingmasoft.com/api/') && /^https?:$/.test(location.protocol) ? location.origin + '/api/' + url.slice('https://seal.xingmasoft.com/api/'.length) : url
   return browserFetch(mapped, options)
 }
-export async function downloadFile(name: string, bytes: Uint8Array, mime = exportMime(name)) {
+export async function downloadFile(name: string, bytes: Uint8Array, mime = exportMime(name), action: 'save' | 'print' = 'save') {
   if (window.sealNative) {
     await new Promise<void>((resolve, reject) => {
       const id = crypto.randomUUID()
-      const timer = setTimeout(() => { pending.delete(id); reject(new Error('导出超时，请重试')) }, 60000)
-      pending.set(id, (event) => { clearTimeout(timer); pending.delete(id); if (event.type === 'saved') resolve(); else reject(new Error(event.error || '导出失败')) })
-      try { send({ id, action: 'save', name, data: Buffer.from(bytes).toString('base64'), mime }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
+      const timer = setTimeout(() => { pending.delete(id); reject(new Error(action === 'print' ? '打开打印界面超时，请重试' : '导出超时，请重试')) }, 180000)
+      pending.set(id, (event) => { clearTimeout(timer); pending.delete(id); if (event.type === (action === 'print' ? 'printed' : 'saved')) resolve(); else if (event.type === 'cancel') reject(new DOMException('已取消保存', 'AbortError')); else reject(new Error(event.error || '导出失败')) })
+      try { send({ id, action, name, data: Buffer.from(bytes).toString('base64'), mime }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
     })
     return
   }
@@ -90,11 +130,33 @@ export async function downloadFile(name: string, bytes: Uint8Array, mime = expor
 }
 
 /** 静态资源在原生包内通过宿主读取，避免 file:// 的 fetch 限制。 */
-export async function readBundledFont(): Promise<Uint8Array> {
+export async function readBundledFont(family: 'sans' | 'serif' = 'sans'): Promise<Uint8Array> {
+  const filename = family === 'serif' ? 'NotoSerifCJKsc-Regular.otf' : 'NotoSansSC.ttf'
+  // ArkWeb allows access to bundled resources but fetch(file://) does not work
+  // consistently. XHR reads the same local resource without hundreds of evalJS
+  // callbacks containing a 24 MB Base64 font. Retain the native reader fallback.
+  if (location.protocol === 'file:' || location.protocol === 'resource:') {
+    try {
+      return await new Promise<Uint8Array>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('GET', new URL('./fonts/' + filename, document.baseURI).href)
+        xhr.responseType = 'arraybuffer'
+        xhr.timeout = 10000
+        xhr.onload = () => xhr.response instanceof ArrayBuffer && xhr.response.byteLength > 0 && (xhr.status === 0 || xhr.status === 200)
+          ? resolve(new Uint8Array(xhr.response)) : reject(new Error('包内中文字体读取失败'))
+        xhr.onerror = xhr.ontimeout = () => reject(new Error('包内中文字体读取失败'))
+        xhr.send()
+      })
+    } catch (error) { if (!window.sealNative) throw error }
+  }
   if (!window.sealNative) {
-    const response = await browserFetch('./fonts/NotoSansSC.ttf')
-    if (!response.ok) throw new Error('中文字体加载失败，请重新构建应用资源')
-    return new Uint8Array(await response.arrayBuffer())
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 180000)
+    try {
+      const response = await browserFetch('./fonts/' + filename, { signal: controller.signal })
+      if (!response.ok) throw new Error('中文字体加载失败，请重新构建应用资源')
+      return new Uint8Array(await response.arrayBuffer())
+    } catch (error) { if (controller.signal.aborted) throw new Error('中文字体下载超时，请检查网络后重试'); throw error }
+    finally { clearTimeout(timer) }
   }
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID(), parts: Uint8Array[] = []
@@ -105,6 +167,6 @@ export async function readBundledFont(): Promise<Uint8Array> {
       else if (event.type === 'end') { cleanup(); resolve(new Uint8Array(Buffer.concat(parts))) }
       else if (event.type === 'error') { cleanup(); reject(new Error(event.error || '中文字体加载失败')) }
     })
-    try { send({ id, action: 'font' }) } catch (error) { cleanup(); reject(error) }
+    try { send({ id, action: 'font', family }) } catch (error) { cleanup(); reject(error) }
   })
 }

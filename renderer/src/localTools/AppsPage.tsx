@@ -2,6 +2,7 @@ import { App as AntdApp } from 'antd'
 import Icon from '../components/Icon'
 import { 桥接 } from '../ipc/bridge'
 import { useAppStore } from '../store'
+import { navigationAvailable } from '../navConfig'
 import './localTools.css'
 
 interface 应用入口 {
@@ -31,6 +32,10 @@ export default function AppsPage() {
     { 名称: '本机日历', 说明: '安排日程并导出日历文件', 图标: 'calendar', 分类: '本地工具', 打开: () => setNavKey('calendar') },
     { 名称: '脑图', 说明: '梳理主题与分支', 图标: 'mindmap', 分类: '本地工具', 打开: () => setNavKey('mindmap') },
     { 名称: '流程图', 说明: '绘制步骤和连接关系', 图标: 'flow', 分类: '本地工具', 打开: () => setNavKey('flow') },
+    { 名称: '多维表格', 说明: '数据表、看板与表单共用记录', 图标: 'doc-table', 分类: '本地工具', 打开: () => setNavKey('multitable') },
+    { 名称: '设计', 说明: '海报、方图、横幅和信息长图', 图标: 'edit', 分类: '本地工具', 打开: () => setNavKey('design') },
+    { 名称: '笔记', 说明: 'Markdown、笔记本、标签与回收站', 图标: 'doc-word', 分类: '本地工具', 打开: () => setNavKey('notes') },
+    { 名称: '知识库', 说明: '整理资料与检索个人知识', 图标: 'knowledge', 分类: '本地工具', 打开: () => setNavKey('knowledge') },
     { 名称: '智能助手', 说明: '对话修改当前打开的文件', 图标: 'ai', 分类: '本地工具', 打开: 打开助手 },
     { 名称: '设置', 说明: '调整应用与模型服务配置', 图标: 'settings', 分类: '应用设置', 打开: showSettings },
   ]
@@ -40,7 +45,7 @@ export default function AppsPage() {
     {(['编辑文件', '本地工具', '应用设置'] as const).map((分类) => <section className="apps-section" key={分类}>
       <h2>{分类}</h2>
       <div className="apps-grid">
-        {入口.filter((项) => 项.分类 === 分类).map((项) => <button className="apps-entry" type="button" key={项.名称} onClick={项.打开}>
+        {入口.filter((项) => 项.分类 === 分类 && (项.名称 !== 'Access 数据库' || navigationAvailable('database'))).map((项) => <button className="apps-entry" type="button" key={项.名称} onClick={项.打开}>
           <Icon name={项.图标} size={24} />
           <span><strong>{项.名称}</strong><small>{项.说明}</small></span>
         </button>)}

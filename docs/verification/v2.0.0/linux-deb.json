@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "mode": "static-deb-inspection",
+  "package": "seal-office-2.0.0-amd64.deb",
+  "checks": [
+    "Debian ar structure and version",
+    "2.0.0 amd64 control metadata and conversion dependencies",
+    "Archived ELF, Chinese desktop name, and app.asar SHA-256 match the inspected unpacked build"
+  ],
+  "limitations": [
+    "No Linux installation or runtime/UI test was performed on this Windows host."
+  ],
+  "appAsarSha256": "6c5676845255e9ea58aac1d2a9228977f55299d9800da6ca913824c3e820866d",
+  "executable": "opt/海豹办公/sealoffice",
+  "desktopName": "海豹办公",
+  "sha256": "444d07edc06abea1d9b391f8fdc3a316e14187c5391920e360305942182c75e5",
+  "bytes": 125927320,
+  "passed": true
+}

@@ -458,11 +458,31 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(container.querySelectorAll('.wps-doc-card__star--on')).toHaveLength(5)
   })
 
-  it('共享能力未接入时明确提示且不切换最近文档', async () => {
+  it('共享导航显示未登录入口并在返回最近时保留全部文档', async () => {
     const { container } = render(<App 初始最近文档={RECENT_DOCS} />)
-    await userEvent.click(screen.getByText('共享'))
-    expect(await screen.findByText('「共享」功能即将开放')).toBeInTheDocument()
     expect(container.querySelectorAll('.wps-doc-card')).toHaveLength(RECENT_DOCS.length)
+    const 最近文档名称 = Array.from(container.querySelectorAll('.wps-doc-card__name'), 名称 => 名称.textContent)
+    expect([...最近文档名称].sort()).toEqual(RECENT_DOCS.map(文档 => 文档.name).sort())
+
+    const 共享导航 = screen.getByRole('button', { name: '共享' })
+    await userEvent.click(共享导航)
+    expect(await screen.findByRole('heading', { name: '共享文档' })).toBeInTheDocument()
+    expect(共享导航).toHaveClass('wps-homenav__item--active')
+    expect(screen.getByText('登录并解锁加密云空间后使用此功能')).toBeInTheDocument()
+    expect(container.querySelectorAll('.wps-doc-card')).toHaveLength(0)
+    await userEvent.click(screen.getByRole('button', { name: '登录并开通云空间' }))
+    const 登录弹窗 = await screen.findByRole('dialog', { name: '账号登录' })
+    expect(within(登录弹窗).getByRole('textbox', { name: '手机号' })).toHaveValue('')
+    expect(within(登录弹窗).getByRole('textbox', { name: '验证码' })).toHaveValue('')
+    expect(within(登录弹窗).getByRole('button', { name: '获取验证码' })).toBeDisabled()
+    expect(within(登录弹窗).getByRole('button', { name: '登录' })).toBeDisabled()
+    await userEvent.click(within(登录弹窗).getByRole('button', { name: /close|关闭/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '账号登录' })).not.toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: '最近' }))
+    expect(screen.getByRole('heading', { name: '最近' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '共享文档' })).not.toBeInTheDocument()
+    expect(Array.from(container.querySelectorAll('.wps-doc-card__name'), 名称 => 名称.textContent)).toEqual(最近文档名称)
   })
 
   it('单击文档卡片后进入选中态', async () => {

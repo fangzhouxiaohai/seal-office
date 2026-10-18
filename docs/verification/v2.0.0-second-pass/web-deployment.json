@@ -1,0 +1,205 @@
+{
+  "version": "2.0.0",
+  "status": "published-verified",
+  "publicUrl": "https://seal.xingmasoft.com/office/",
+  "credentialsIncluded": false,
+  "published": true,
+  "preflight": {
+    "sshHostKeyPolicy": "Pinned known-hosts with RejectPolicy and explicit SHA-256 verification",
+    "nginxActiveConfigUnchanged": true,
+    "backendPointerUnchanged": true,
+    "adminUnchanged": true,
+    "capabilities": {
+      "collaboration": 1,
+      "accountConversion": 1
+    },
+    "anonymousConversionStatus": 401,
+    "isolatedNginxCandidateSyntax": "passed",
+    "backupDirectoryPermissions": "0700",
+    "deploymentScriptUnitChecks": {
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "reusableScripts": [
+    "scripts/deploy-web.py",
+    "scripts/deploy-web.test.py",
+    "mobile/tests/public-web.cjs"
+  ],
+  "localProductionCspPreflight": {
+    "passed": true,
+    "newDocument": "Actual UI entry, Chinese/Unicode input, Ctrl+S and DOCX disk readback",
+    "spreadsheet": "Actual UI ROUND(1.235,2) evaluates to 1.24 under CSP; XLSX formula text and cached value roundtrip retained",
+    "templates": {
+      "pages": 9,
+      "decodedInlinePhotos": 6,
+      "editableCanvasPhotosRestored": true
+    },
+    "pdfWorker": "Chinese PDF generation, local Worker rendering and text extraction under the deployment CSP",
+    "viewports": [
+      1280,
+      390,
+      360
+    ],
+    "collaborationEntryPoints": [
+      "shared",
+      "device",
+      "tag",
+      "team"
+    ],
+    "loginPromptOnly": true,
+    "externalRequests": 0,
+    "browserErrors": 0,
+    "productionAccountOperations": 0,
+    "finalBuildMustBeRetested": false
+  },
+  "deploymentPlan": {
+    "webReleaseDirectory": "/www/wwwroot/seal.xingmasoft.com/web-releases/<version-id>",
+    "webPointer": "/www/wwwroot/seal.xingmasoft.com/webcurrent",
+    "backendReleasePointer": "preserved and checked; never written by the Web deployer",
+    "nginxChange": "Only managed /office/ static locations and /api/v1/conversion/ with 120-second timeouts and 30m request size",
+    "rollback": "Automatic restoration of previous Web pointer and original NGINX file on configuration, HTTP/hash health or final public-browser acceptance failure; rollback refuses to overwrite a newer deployment",
+    "artifactGuard": "Frozen main JS SHA-256 plus a successful local browser report newer than the build; all uploaded public assets verified by SHA-256"
+  },
+  "readOnlyReview": {
+    "templates": "No demonstrable defect found in native-object template construction or embedded-photo restore-before-open paths; browser acceptance checks real image decoding and PDF worker under final CSP",
+    "structureReferences": {
+      "additionalLexicalProbesPassed": 8,
+      "demonstrableDefectsFound": 0,
+      "limits": [
+        "External workbook references, 3D references and structured references intentionally remain unchanged",
+        "Probe coverage does not claim complete Excel formula semantics"
+      ]
+    }
+  },
+  "remaining": [],
+  "productionAccountOperations": 0,
+  "sourceFrozen": true,
+  "completedAt": "2026-10-18T08:59:59.622145+00:00",
+  "releaseId": "2.0.0-web-20261018-165357",
+  "frozenBuild": {
+    "platform": "web",
+    "desktopVersion": "2.0.0",
+    "builtAt": "2026-10-18T08:54:37.471Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android",
+    "mainAsset": "assets/index-aee7262c.js",
+    "mainJsSha256": "4dc5aaa66a27520e6c805f4096fc4ce6d8f6202b4a90cca468b44eb5813a8a7d",
+    "localFilesUnchangedAfterDeployment": true
+  },
+  "artifacts": {
+    "zip": "release/web-2.0.0-second-pass/海豹办公-2.0.0-Web.zip",
+    "zipBytes": 50219765,
+    "zipSha256": "65e5877b121f064cc7514aed57041310671ed135b0a685390b9c9787f5b6db98",
+    "tarGzipSha256": "1e112f4f330b77fe8234c3ceb6de8dd59e4b2dabc8186407befc1c93da463ba6",
+    "manifest": "release/web-2.0.0-second-pass/web-manifest.json",
+    "manifestSha256": "d2b0e2f609a58e29edc56e6fd8459aca48cc60719c9a095ac3df2a11e7b35201",
+    "staticFiles": 30,
+    "screenshots": "release/web-2.0.0-second-pass/verification"
+  },
+  "publishedHealth": {
+    "passed": true,
+    "publicAssetsSha256Verified": 30,
+    "backendCurrent": "/www/wwwroot/seal.xingmasoft.com/releases/2.0.0-backend-workerfix-20261018-163947",
+    "backendPointerUnchanged": true,
+    "adminUnchanged": true,
+    "nginxBeforeSha256": "153aa2c49b036331ff5d492ff8f8c77da95674fc62d6b78383443cc583cf8c6a",
+    "nginxAfterSha256": "a6c92e66c436704041e9bba71e36fe50d5dfa579432e33f44e04ae983adb34ab",
+    "webCurrent": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.0.0-web-20261018-165357",
+    "capabilities": {
+      "collaboration": 1,
+      "accountConversion": 1
+    },
+    "anonymousConversionStatus": 401,
+    "http": {
+      "status": 200,
+      "headers": {
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'",
+        "Cache-Control": "no-cache",
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer"
+      }
+    },
+    "rollbackAvailable": true,
+    "rollbackWasNeeded": false
+  },
+  "publicBrowserAcceptance": {
+    "passed": true,
+    "version": "2.0.0",
+    "origin": "https://seal.xingmasoft.com/office/",
+    "checks": [
+      "公开同域API能力正确；共享/设备/标签/团队/转换匿名请求均401；未操作生产账号",
+      "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+      "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+      "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+      "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+      "1280px真实四协作入口、登录提示和无横向溢出",
+      "390px真实四协作入口、登录提示和无横向溢出",
+      "360px真实四协作入口、登录提示和无横向溢出"
+    ],
+    "template": {
+      "pages": 9,
+      "images": [
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        }
+      ]
+    },
+    "errors": [],
+    "requestCount": 16,
+    "externalRequests": 0,
+    "productionAccountOperations": 0,
+    "pdfWorker": true
+  },
+  "localCollaborationAcceptance": {
+    "passed": true,
+    "checks": [
+      "同域账号登录+解锁、hash邀请确认与清理、团队查看者禁写、私有下载在文档目录可本机保存且未自动云覆盖",
+      "1280px 四个真实导航、服务数据与页面无横向溢出",
+      "390px 四个真实导航、服务数据与页面无横向溢出",
+      "360px 四个真实导航、服务数据与页面无横向溢出"
+    ],
+    "errors": []
+  },
+  "accountConversionClient": {
+    "passed": 1,
+    "failed": 0,
+    "file": "mobile/tests/account-conversion.test.mjs",
+    "externalIO": "Actual HTTP gateway and injected deterministic converter engine for client protocol/consent/manual-token checks; actual LibreOffice fidelity verified separately by backend release task"
+  },
+  "mobileChecks": {
+    "unitTestsPassed": 19,
+    "unitTestsFailed": 0,
+    "structuralCheck": "passed",
+    "navigationExpectedCount": 19,
+    "finalMobileNativeBuilds": "separate parent/mobile release task"
+  },
+  "limitations": [
+    "Version collaboration uses explicit local save followed by synchronize and optimistic conflicts; realtime co-editing/automatic merge is not implemented.",
+    "Production account login, SMS and invitation sending were intentionally not exercised; real multi-account collaboration was verified against an isolated local HTTP fixture.",
+    "Public release checks cover the listed scenarios and do not claim complete WPS/Office compatibility or physical Android/HarmonyOS certification."
+  ]
+}

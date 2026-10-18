@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { createRequire } from 'node:module'
+import { archiveArtifact } from './archive-artifact.mjs'
 
 const run = promisify(execFile), require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
@@ -27,7 +28,9 @@ function elfLoads(bytes) {
 
 async function main() {
   const args = process.argv.slice(2), filename = args[0]
-  if (!filename || filename.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:apk -- <APK路径> [--device <ADB序列号>] [--require-current]')
+  if (!filename || filename.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:apk -- <APK路径> [--device <ADB序列号>] [--require-current] [--archive <归档目录>]')
+  const archiveIndex = args.indexOf('--archive')
+  const requireCurrent = args.includes('--require-current') || archiveIndex >= 0
   const apkPath = path.resolve(filename), data = await fs.readFile(apkPath), zip = await JSZip.loadAsync(data)
   const roots = Object.keys(zip.files).filter(name => /^assets\/apps\/__UNI__[A-Za-z0-9]+\/www\/manifest\.json$/.test(name))
   if (roots.length !== 1) throw new Error('APK 内未找到唯一的 uni-app x 应用清单')
@@ -86,8 +89,12 @@ async function main() {
   await fs.writeFile(output, JSON.stringify(report, null, 2) + '\n')
   console.log(JSON.stringify(report, null, 2))
   console.log('验包记录：' + output)
-  if (args.includes('--require-current') && !report.embeddedEditor.matchesCurrentSourceBuild) throw new Error('APK 不包含当前构建的修复，请重新云打包')
-  if (args.includes('--require-current') && report.sdkMetadata) {
+  if (requireCurrent) {
+    const current = JSON.parse(await fs.readFile(path.join(project, 'mobile/manifest.json'), 'utf8'))
+    if (manifest.id !== current.appid || manifest.version?.name !== current.versionName || String(manifest.version?.code) !== current.versionCode || build.desktopVersion !== current.versionName) throw new Error('APK 的应用身份或版本与当前项目不一致')
+    if (!report.embeddedEditor.matchesCurrentSourceBuild) throw new Error('APK 不包含当前构建的修复，请重新云打包')
+  }
+  if (requireCurrent && report.sdkMetadata) {
     if (Number(report.sdkMetadata.minSdk) !== 28 || Number(report.sdkMetadata.targetSdk) !== 36 || !report.sdkMetadata.abi?.includes('armeabi-v7a') || !report.sdkMetadata.abi?.includes('arm64-v8a')) throw new Error('APK 的 Android 9–16 或双 ABI 配置未生效')
     if (report.sdkMetadata.debuggable || !report.sdkMetadata.zipAligned) throw new Error('APK 必须关闭调试并通过 16 KiB ZIP 对齐校验')
     if (!report.signature?.verified || (!report.signature.v2 && !report.signature.v3) || /Android Debug/i.test(report.signature.certificateDn || '')) throw new Error('APK 未使用可上架的 v2/v3 发布签名')
@@ -95,6 +102,15 @@ async function main() {
     const declaredForbiddenPermissions = report.sdkMetadata.permissions.filter(permission => forbiddenPermissions.includes(permission))
     if (declaredForbiddenPermissions.length) throw new Error('APK 仍声明未使用权限：' + declaredForbiddenPermissions.join('、'))
     if (report.nativeLibraries16KiB.some(item => !item.compatible)) throw new Error('APK 存在未满足 16 KiB ELF 加载对齐的原生库')
+  }
+  if (archiveIndex >= 0) {
+    const directory = args[archiveIndex + 1]
+    if (!directory || directory.startsWith('--')) throw new Error('--archive 需要归档目录')
+    if (!report.sdkMetadata || !report.signature?.verified) throw new Error('APK 归档前必须安装 Android SDK 并完成签名校验')
+    if (report.sdkMetadata.packageName !== 'com.sealoffice.mobile' || report.sdkMetadata.versionName !== manifest.version.name || report.sdkMetadata.versionCode !== String(manifest.version.code)) throw new Error('原生 APK 身份或版本与应用清单不一致')
+    report.archive = await archiveArtifact({ platform: 'android', version: manifest.version.name, source: apkPath, directory, data })
+    await fs.writeFile(output, JSON.stringify(report, null, 2) + '\n')
+    console.log('归档文件：' + report.archive.path)
   }
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1 })

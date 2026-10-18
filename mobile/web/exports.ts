@@ -3,23 +3,50 @@ import { PDFDocument, StandardFonts } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { downloadFile, readBundledFont } from './native'
 import { preparePdfImages } from './exportImages'
+import { runPdfPhases } from './pdfPhases'
 
-let fontPromise: Promise<Uint8Array> | undefined
-async function chineseFont(): Promise<Uint8Array> {
-  if (!fontPromise) fontPromise = readBundledFont().catch((error) => { fontPromise = undefined; throw error })
-  return fontPromise
+const fontPromises = new Map<string, Promise<Uint8Array>>()
+async function chineseFont(family: 'sans' | 'serif' = 'sans'): Promise<Uint8Array> {
+  if (!fontPromises.has(family)) fontPromises.set(family, readBundledFont(family).catch((error) => { fontPromises.delete(family); throw error }))
+  return fontPromises.get(family)!
 }
 async function pdfFromHtml(html: string): Promise<Uint8Array> {
-  if (/data-ofd-width=/.test(html)) return ofdPdf(html)
+  return runPdfPhases(async () => /data-ofd-width=/.test(html) ? () => ofdPdf(html) : preparePdfFromHtml(html))
+}
+async function preparePdfFromHtml(html: string): Promise<() => Promise<Uint8Array>> {
   const [{ default: pdfMake }, { default: converter }] = await Promise.all([import('pdfmake/build/pdfmake'), import('html-to-pdfmake')])
-  const font = await chineseFont(), writer = pdfMake as any
-  writer.vfs = { 'SealChinese.ttf': Buffer.from(font).toString('base64') }
-  writer.fonts = { SealChinese: { normal: 'SealChinese.ttf', bold: 'SealChinese.ttf', italics: 'SealChinese.ttf', bolditalics: 'SealChinese.ttf' } }
   const body = new DOMParser().parseFromString(html, 'text/html').body
+  // html-to-pdfmake copies arbitrary CSS font names into its PDF definition.
+  // A font absent from vfs rejects asynchronously inside getBuffer, leaving the
+  // callback (and preview spinner) pending. Map to real bundled, embedded fonts.
+  let serif = false
+  for (const node of [body, ...body.querySelectorAll<HTMLElement>('*')]) {
+    if (node.style.fontFamily) {
+      const useSerif = /宋体|SimSun|Times|(?:^|[,\s])serif(?:$|[,\s])/i.test(node.style.fontFamily)
+      serif ||= useSerif; node.style.fontFamily = useSerif ? 'Sealserif' : 'Sealsans'
+    }
+    if (node.hasAttribute('face')) node.setAttribute('face', 'Sealsans')
+    if (node.style.color.includes('var(')) node.style.color = '#20242b'
+    if (node.style.backgroundColor.includes('var(')) node.style.backgroundColor = '#ffffff'
+  }
+  const font = await chineseFont(), writer = pdfMake as any
+  const vfs: Record<string, string> = { 'SealChinese.ttf': Buffer.from(font).toString('base64') }
+  const face = (file: string) => ({ normal: file, bold: file, italics: file, bolditalics: file })
+  const fonts: Record<string, ReturnType<typeof face>> = { Sealsans: face('SealChinese.ttf') }
+  if (serif) { vfs['SealSerif.otf'] = Buffer.from(await chineseFont('serif')).toString('base64'); fonts.Sealserif = face('SealSerif.otf') }
   await preparePdfImages(body)
   const content = (converter as any)(body.innerHTML, { window, removeExtraBlanks: false })
-  return new Promise((resolve, reject) => {
-    try { writer.createPdf({ content, defaultStyle: { font: 'SealChinese', fontSize: 11 }, pageSize: 'A4', pageMargins: [40, 48, 40, 48] }).getBuffer((result: Uint8Array) => resolve(new Uint8Array(result))) }
+  return () => new Promise((resolve, reject) => {
+    try {
+      // getStream is synchronous for embedded fonts: layout exceptions are
+      // caught here, stream errors reject, and no hidden callback stays pending.
+      const doc = writer.createPdf({ content, defaultStyle: { font: 'Sealsans', fontSize: 11 }, pageSize: 'A4', pageMargins: [40, 48, 40, 48] }, undefined, fonts, vfs).getStream({})
+      const parts: Uint8Array[] = []
+      doc.on('data', (chunk: Uint8Array) => parts.push(chunk))
+      doc.on('error', reject)
+      doc.on('end', () => resolve(new Uint8Array(Buffer.concat(parts))))
+      doc.end()
+    }
     catch (error) { reject(error) }
   })
 }
@@ -131,12 +158,15 @@ export async function installExportAdapters(core: any, save: any, handle: any) {
   })
   handle('pdf.exportToPath', async (html: string, filename: string) => save(filename, await pdfFromHtml(html)))
   handle('pdf.export', async (html: string, name: string) => {
-    const selected = await core.platform.dialog.showSaveDialog({ defaultPath: name }); return save(selected.filePath, await pdfFromHtml(html))
+    const base = String(name || '文档').split(/[\\/]/).pop()!.replace(/\.[^.]+$/, '') || '文档'
+    const selected = await core.platform.dialog.showSaveDialog({ defaultPath: base + '.pdf' })
+    if (selected.canceled || !selected.filePath) return { 成功: false, 已取消: true }
+    return save(selected.filePath, await pdfFromHtml(html))
   })
   handle('document.printPreview', async (html: string, format: string) => ({ 成功: true, 数据: format === 'pdf' ? html : Buffer.from(await pdfFromHtml(html)).toString('base64') }))
   handle('document.print', async (html: string, format: string) => {
     const data = format === 'pdf' ? Buffer.from(html, 'base64') : await pdfFromHtml(html)
-    await downloadFile('打印文档.pdf', data, 'application/pdf'); return { 成功: true }
+    await downloadFile('打印文档.pdf', data, 'application/pdf', 'print'); return { 成功: true }
   })
 
   ;(globalThis as any).sealBrowserPresentationExport = async (request: any) => {
