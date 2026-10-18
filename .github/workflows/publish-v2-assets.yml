@@ -1,0 +1,112 @@
+name: Publish verified 2.0 release assets
+on:
+  push:
+    branches: [codex/publish-v2-assets-20261019]
+permissions:
+  contents: write
+concurrency:
+  group: seal-office-verified-2-0-assets
+  cancel-in-progress: false
+jobs:
+  synchronize:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Verify public mirror bytes and upload identical draft assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures
+          import hashlib
+          import http.client
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import tempfile
+          import urllib.parse
+          import urllib.request
+          
+          TOKEN = os.environ['GH_TOKEN']
+          API = 'https://api.github.com/repos/fangzhouxiaohai/seal-office'
+          RELEASE_ID = 416608108
+          PLAN = json.loads('{"version": "2.0.0", "tag": "v2.0.0", "commit": "c8139faf019416349800dd527299b9e9a0b15472", "assets": [{"name": "seal-office-setup-2.0.0.exe", "bytes": 399078083, "sha256": "7dff73db3ab55d1cd276e0119043031d8614b770304915e8f65e3821f6f0d9f1"}, {"name": "seal-office-2.0.0-portable.exe", "bytes": 398852619, "sha256": "77dac7e2f596e1eecc1c18f545d52d6999a95c5c1958dd86c8a9b8e61b168b26"}, {"name": "seal-office-2.0.0-microsoft-store-x64.msix", "bytes": 738176111, "sha256": "c9b88f7eefede19aba247c4ed5f4f2a92e7df5d377d692d44813f70344f53ccb"}, {"name": "seal-office-2.0.0-amd64.deb", "bytes": 125927320, "sha256": "444d07edc06abea1d9b391f8fdc3a316e14187c5391920e360305942182c75e5"}, {"name": "seal-office-2.0.0-android.apk", "bytes": 89475827, "sha256": "abf0fd36e58d106166ad47cbf308092af0319b920c2e6e5cb3e2a96007005e2f"}, {"name": "seal-office-2.0.0-harmony.app.zip", "bytes": 60821030, "sha256": "7fd1ec3fec854501cf86698bfa619374dd0720ee83cd1297d10b5f96f0d794e6"}, {"name": "seal-office-2.0.0-web.zip", "bytes": 56221460, "sha256": "6f25e930f9603edbb8f2d3e2a0577b393bef45fc93764d28f92bcadbd16ec144"}, {"name": "seal-office-2.0.0-source.zip", "bytes": 249625975, "sha256": "1a48eba3cb42f40260cc785fad875446371086045359a922df2cb886b9728a3b"}, {"name": "seal-office-2.0.0-verification.json", "bytes": 29955, "sha256": "df08b57265554213b4a2e7f14dbd64ce98ba05b74d4c0a7db1ffb63baca37e55"}, {"name": "seal-office-2.0.0-release-notes.md", "bytes": 3514, "sha256": "07a711210cd5d966de62836f1c02157e1f2a763e9d3ec54d1892b0a3867882a0"}, {"name": "SHA256SUMS.txt", "bytes": 990, "sha256": "0e820804d5173ff9148ad156658a850583d42bab4e1ee03f0f96fe8ebddf74ff"}]}')
+          
+          def emit(**row):
+              print(json.dumps(row), flush=True)
+          
+          def api(endpoint):
+              request = urllib.request.Request(API + endpoint, headers={'Authorization': 'Bearer ' + TOKEN,
+                  'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'SealOffice-verified-release'})
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+          
+          def checked(remote, local):
+              assert remote['name'] == local['name'] and remote['size'] == local['bytes']
+              assert remote.get('digest') == 'sha256:' + local['sha256'] and remote['state'] == 'uploaded'
+          
+          assert api('/git/ref/tags/v2.0.0')['object']['sha'] == PLAN['commit']
+          assert api('/git/ref/heads/main')['object']['sha'] == PLAN['commit']
+          release = api('/releases/' + str(RELEASE_ID))
+          assert release['draft'] and release['tag_name'] == PLAN['tag']
+          upload = urllib.parse.urlsplit(release['upload_url'].split('{', 1)[0])
+          assert upload.scheme == 'https' and upload.hostname == 'uploads.github.com'
+          current = {a['name']: a for a in api('/releases/' + str(RELEASE_ID) + '/assets?per_page=100')}
+          expected = {a['name']: a for a in PLAN['assets']}
+          assert set(current) <= set(expected)
+          for name, row in current.items():
+              checked(row, expected[name])
+          
+          def publish(row, directory):
+              name = row['name']
+              assert re.fullmatch(r'[A-Za-z0-9._-]+', name)
+              if name in current:
+                  emit(phase='already-verified', name=name)
+                  return
+              source = 'https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.0.0/attach_files/' + name + '/download'
+              file = directory / name
+              digest, size = hashlib.sha256(), 0
+              try:
+                  request = urllib.request.Request(source, headers={'User-Agent': 'SealOffice-verified-release'})
+                  with urllib.request.urlopen(request, timeout=120) as response, file.open('xb') as output:
+                      while chunk := response.read(1024 * 1024):
+                          output.write(chunk)
+                          digest.update(chunk)
+                          size += len(chunk)
+              except Exception as error:
+                  raise RuntimeError('Public mirror download failed for ' + name + ': ' + type(error).__name__) from None
+              assert size == row['bytes'] and digest.hexdigest() == row['sha256'], 'Mirror bytes differ: ' + name
+              emit(phase='download-verified', name=name, bytes=size, sha256=digest.hexdigest())
+              connection = http.client.HTTPSConnection(upload.hostname, timeout=300)
+              try:
+                  path = upload.path + '?' + urllib.parse.urlencode({'name': name})
+                  connection.putrequest('POST', path)
+                  for key, value in {'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json',
+                                     'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'SealOffice-verified-release',
+                                     'Content-Type': 'application/octet-stream', 'Content-Length': str(size)}.items():
+                      connection.putheader(key, value)
+                  connection.endheaders()
+                  with file.open('rb') as stream:
+                      while chunk := stream.read(1024 * 1024):
+                          connection.send(chunk)
+                  response = connection.getresponse()
+                  assert response.status == 201, 'GitHub upload HTTP ' + str(response.status) + ': ' + name
+                  remote = json.loads(response.read())
+                  checked(remote, row)
+              finally:
+                  connection.close()
+              file.unlink()
+              emit(phase='upload-verified', name=name, bytes=size, sha256=row['sha256'])
+          
+          with tempfile.TemporaryDirectory(prefix='seal-office-release-') as temporary:
+              directory = Path(temporary)
+              with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+                  list(pool.map(lambda row: publish(row, directory), sorted(PLAN['assets'], key=lambda r: -r['bytes'])))
+          assets = api('/releases/' + str(RELEASE_ID) + '/assets?per_page=100')
+          assert {a['name'] for a in assets} == set(expected)
+          for row in assets:
+              checked(row, expected[row['name']])
+          emit(phase='all-assets-verified', assets=len(assets), draftRemainsPrivate=True, commit=PLAN['commit'])
+          PY
