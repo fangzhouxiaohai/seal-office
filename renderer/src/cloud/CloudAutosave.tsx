@@ -32,7 +32,10 @@ export default function CloudAutosave(){
         if(pdf){result={成功:true,数据:pdf.data}}
         else if(!doc)return
         else
-        if(doc.type==='table'){result=await 桥接.office.writeXlsx(导出为Xlsx(active.表格文档模型[id]??[]));if(!/\.xlsx$/i.test(name))name=name.replace(/\.[^.]+$/,'')+'.xlsx'}
+        if(doc.type==='word'&&/\.sealdoc$/i.test(name)){result=await 桥接.office.writeSeal('word',{html:doc.html,页面设置:doc.页面设置,警告:doc.警告??[]})}
+        else if(doc.type==='table'&&/\.sealsheet$/i.test(name)){result=await 桥接.office.writeSeal('table',{工作表列表:active.表格文档模型[id]??[],警告:doc.警告??[]})}
+        else if(doc.type==='ppt'&&/\.sealshow$/i.test(name)){const deck=active.演示文档模型[id];if(!deck)return;const resources=await 桥接.presentationResources.export(收集演示资源标识(deck));if(!resources.成功)throw new Error(resources.错误);result=await 桥接.office.writeSeal('ppt',{演示文稿:deck,资源条目:resources.条目??[],警告:doc.警告??[]})}
+        else if(doc.type==='table'){result=await 桥接.office.writeXlsx(导出为Xlsx(active.表格文档模型[id]??[]));if(!/\.xlsx$/i.test(name))name=name.replace(/\.[^.]+$/,'')+'.xlsx'}
         else if(doc.type==='ppt'){const deck=active.演示文档模型[id];if(!deck)return;const ids=收集演示资源标识(deck),resources=await 桥接.presentationResources.export(ids);if(!resources.成功)throw new Error(resources.错误);result=await 桥接.office.writePptx(构建演示保存模型(deck,resources.条目??[]))}
         else if(/\.(txt|md|html?|json)$/i.test(name)){result={成功:true,数据:binaryText(文字文本输出(name,doc.html,doc.页面设置?.页眉Html,doc.页面设置?.页脚Html))}}
         else{const model=htmlToDocxModel(doc.html,doc.页面设置);if(model.未覆盖.length)throw new Error('文档含无法完整写回的内容，请先另存副本');result=await 桥接.office.writeDocx(model);if(!/\.docx$/i.test(name))name=name.replace(/\.[^.]+$/,'')+'.docx'}

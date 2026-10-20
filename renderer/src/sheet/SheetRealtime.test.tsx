@@ -20,13 +20,17 @@ vi.mock('../cloud/CloudProvider',async()=>{
 const require=createRequire(import.meta.url),Module=require('node:module'),load=Module._load,codec=require('../../../main/office/xlsxCodec.js')
 let fixtureFactory:any
 try {Module._load=function(id:string,...args:any[]){const result=load.call(this,id,...args);return id==='node:worker_threads'?{...result,isMainThread:true}:result};fixtureFactory=require('../../../server/test/collaborationFixture.cjs').createLocalCollaborationFixture}finally{Module._load=load}
-let fixture:any,originalCrypto:PropertyDescriptor|undefined,views:Array<ReturnType<typeof render>>=[]
+let fixture:any,originalCrypto:PropertyDescriptor|undefined,views:Array<ReturnType<typeof render>>=[],sessions:Array<()=>ReturnType<typeof getRealtimeClient>>=[]
 beforeEach(async()=>{
   originalCrypto=Object.getOwnPropertyDescriptor(globalThis,'crypto');Object.defineProperty(globalThis,'crypto',{configurable:true,value:webcrypto})
   Object.defineProperty(window,'electronAPI',{configurable:true,value:{backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),backupClear:async()=>({成功:true})}})
   fixture=await fixtureFactory();fixture.cloud.server.prependListener('request',(_request:unknown,response:any)=>response.setHeader('Connection','close'))
 },60000)
 afterEach(async()=>{
+  // A React unmount deliberately starts asynchronous session shutdown. Wait for
+  // HTTP synchronization and leave before closing this in-process test server,
+  // so requests from one test cannot time out inside the following test.
+  await Promise.all(sessions.map(async read=>{const client=read();if(client){await client.sync().catch(()=>{});await client.close()}}));sessions=[]
   for(const view of views)view.unmount();views=[]
   await fixture?.cleanup();if(originalCrypto)Object.defineProperty(globalThis,'crypto',originalCrypto);Reflect.deleteProperty(window,'electronAPI')
 })
@@ -41,7 +45,8 @@ async function openPair(){
     const cloud={state:{account,unlocked:true},call:(action:string,input:unknown)=>state.offline&&!['realtimeRestore','realtimeQueue','realtimeStage','realtimeState'].includes(action)?Promise.reject(new Error('模拟真实网络断开')):Promise.resolve().then(()=>service[action](input))}
     function Host(){state.store=useAppStore();return <><button onClick={()=>state.store!.createDoc('table',[initial],{路径:path})}>打开{name}</button>{state.store.module==='table'?<SheetEditor/>:null}</>}
     const view=render(<TestCloud.Provider value={cloud}><AntdApp><AppProvider><Host/></AppProvider></AntdApp></TestCloud.Provider>);views.push(view);fireEvent.click(within(view.container).getByText('打开'+name))
-    return {...view,state,client:()=>getRealtimeClient(state.store!.activeDocumentId!)!,model:()=>state.store!.表格文档模型[state.store!.activeDocumentId!]}
+    const client=()=>getRealtimeClient(state.store!.activeDocumentId!)!;sessions.push(client)
+    return {...view,state,client,model:()=>state.store!.表格文档模型[state.store!.activeDocumentId!]}
   }
   const a=open(fixture.a,'甲'),b=open(fixture.b,'乙')
   await act(async()=>{await Promise.all([a.client().ready,b.client().ready])})

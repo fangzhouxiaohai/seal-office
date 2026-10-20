@@ -13,6 +13,8 @@ function 注册云端通道(ipcMain,{cloudService,助手服务}={}){
     conversionCapabilities:()=>service().conversionCapabilities(),convertDocument:i=>service().convertDocument(i),
     status:()=>service().status(),refresh:()=>service().refresh(),
     code:i=>service().sendCode(i.phone,i.purpose),login:i=>service().login(i.phone,i.code),logout:()=>service().logout(),
+    loginPassword:i=>service().loginPassword(i.phone,i.password),setPassword:i=>service().setPassword(i),
+    deleteAccount:i=>service().deleteAccount(i),deletionStatus:()=>service().deletionStatus(),
     enable:i=>service().enable(i.consent),ackRecovery:()=>service().ackRecovery(),unlock:i=>service().unlock(i.recovery),autosave:i=>service().setAutosave(i.enabled),purge:i=>service().purge(i.code),
     list:()=>service().list(),folder:i=>service().folder(i.name,i.parent,i.kind),save:i=>service().save(i),flush:()=>service().flush(),
     pending:()=>service().pending(),keepConflict:i=>service().keepConflict(i.id),discardPending:i=>service().discardPending(i.id),counts:()=>service().request('/v1/space/counts'),

@@ -998,7 +998,7 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      if (保真风险 && 文档路径 && 是同一路径(文档路径, 保真风险.来源路径)) {
+      if (保真风险 && 文档路径 && 是同一路径(文档路径, 保真风险.来源路径) && !/\.sealshow$/i.test(文档路径)) {
         提示禁止覆盖(保真风险.警告)
         return
       }
@@ -1014,7 +1014,7 @@ const PptEditor = () => {
             return
           }
           if (路径被其他标签占用(文件路径)) return
-          if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径)) {
+          if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径) && !/\.sealshow$/i.test(文件路径)) {
             提示禁止覆盖(保真风险.警告)
             return
           }
@@ -1024,13 +1024,13 @@ const PptEditor = () => {
             try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
             catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
           }
-          校验当前Pptx写入能力(保存文稿)
+          if(!/\.sealshow$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
           const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
           const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
@@ -1070,7 +1070,7 @@ const PptEditor = () => {
             return
           }
           if (路径被其他标签占用(文件路径)) return
-          if (保真风险) {
+          if (保真风险 && !/\.sealshow$/i.test(文件路径)) {
             if (是同一路径(文件路径, 保真风险.来源路径)) {
               提示禁止覆盖(保真风险.警告)
               return
@@ -1083,13 +1083,13 @@ const PptEditor = () => {
             try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
             catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
           }
-          校验当前Pptx写入能力(保存文稿)
+          if(!/\.sealshow$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
           const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
           const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          写出办公文档('ppt', 文件路径, 模型).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据

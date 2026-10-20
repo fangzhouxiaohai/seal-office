@@ -1,0 +1,1214 @@
+{
+  "version": "2.1.0",
+  "recordedAt": "2026-10-20T17:41:28.919611+00:00",
+  "passed": true,
+  "scope": "Native document formats, password login and permanent account erasure, mobile functional tabs, retained compatibility/collaboration, current packages and bilingual-name policy, replacement PC/Android introduction videos and production Web/backend.",
+  "renderer": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 260,
+    "tests": 2513,
+    "failed": 0,
+    "skipped": 0,
+    "evidence": {
+      "path": ".upgrade-private/v210-renderer-passed.json",
+      "bytes": 1022939,
+      "sha256": "01564e1ea940d3b5fa56e1a44fe9b961f4e669e772eb6bf1ac14af55182e52a5"
+    },
+    "workers": 2,
+    "assertionsAndTimeoutsUnchanged": true
+  },
+  "main": {
+    "passed": true,
+    "oneWholeRunAllGreen": true,
+    "files": 108,
+    "tests": 1037,
+    "failed": 0,
+    "skipped": 0,
+    "evidence": {
+      "path": ".upgrade-private/v210-main-final.json",
+      "bytes": 445129,
+      "sha256": "074026c8ce985550ff5e20582da6501663d4735d238a3caf153281a9bdc0ba61"
+    }
+  },
+  "units": {
+    "server": {
+      "passed": true,
+      "tests": 41,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210-server-confirmed.log",
+        "bytes": 4743,
+        "sha256": "60458344c57d159025e6f0421e82e1927ef4a8949f59fbcb6852a2231677f57d"
+      }
+    },
+    "mobile": {
+      "passed": true,
+      "tests": 27,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210-mobile-final.log",
+        "bytes": 3099,
+        "sha256": "a4c463e4a492b7db68491573df94aa5d1aafc51fb473f6a625ea9e7cda7e5bb7"
+      }
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 11,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210-packaging-final2.log",
+        "bytes": 1288,
+        "sha256": "12dc179e893dad2d0661b5c73b967e5465529c8db6114d69faececfc058b0dd3"
+      }
+    }
+  },
+  "typecheck": {
+    "desktop": true,
+    "mobile": true,
+    "evidence": [
+      {
+        "path": ".upgrade-private/v210-typecheck-current.log",
+        "bytes": 51,
+        "sha256": "f109da2bd47d8dc8a0309dbe7cb97a0d7ecabf7d989710c8d7623a0ae4c937fd"
+      },
+      {
+        "path": ".upgrade-private/v210-mobile-typecheck-current.log",
+        "bytes": 113,
+        "sha256": "f48a565b664f63cb60008e63fae22f7da290ea01a97f00993a32e19b81bd03e6"
+      }
+    ]
+  },
+  "windowsRuntime": {
+    "unpacked": {
+      "passed": true,
+      "isolatedProfileAndTestRegistry": true,
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "evidence": {
+            "path": "release/v2.1.0/核验-unpacked-first.json",
+            "bytes": 1494,
+            "sha256": "cb8a8ff5f67b8add70e9570aa9489a641b7db200e886851eb7eaf186ec1b4b3c"
+          }
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "evidence": {
+            "path": "release/v2.1.0/核验-unpacked-repeat.json",
+            "bytes": 980,
+            "sha256": "e2abda77f292ea52f9c9afce2e96762e02bb99e386a7007b1a1ba7e02353a4cd"
+          }
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "evidence": {
+            "path": "release/v2.1.0/核验-unpacked-confirm.json",
+            "bytes": 2081,
+            "sha256": "4138d85332975c8636eaef03d774d73b9b4059b0976e2e9f6eae164efd70f1d0"
+          }
+        }
+      ],
+      "checks": 63
+    },
+    "portable": {
+      "passed": true,
+      "isolatedProfileAndTestRegistry": true,
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 20,
+          "evidence": {
+            "path": "release/v2.1.0/核验-portable-first.json",
+            "bytes": 1494,
+            "sha256": "cb8a8ff5f67b8add70e9570aa9489a641b7db200e886851eb7eaf186ec1b4b3c"
+          }
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "evidence": {
+            "path": "release/v2.1.0/核验-portable-repeat.json",
+            "bytes": 980,
+            "sha256": "e2abda77f292ea52f9c9afce2e96762e02bb99e386a7007b1a1ba7e02353a4cd"
+          }
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "evidence": {
+            "path": "release/v2.1.0/核验-portable-confirm.json",
+            "bytes": 2081,
+            "sha256": "4138d85332975c8636eaef03d774d73b9b4059b0976e2e9f6eae164efd70f1d0"
+          }
+        }
+      ],
+      "checks": 63
+    }
+  },
+  "windowsNsis": {
+    "version": "2.1.0",
+    "passed": true,
+    "package": "seal-office-setup-2.1.0.exe",
+    "bytes": 399089202,
+    "sha256": "60cf0d3adf42e01a99d7cd9e62a7c570acde638b4b5c68f8d0161d64c0f07b1a",
+    "extractedAsarSha256": "be66e2988780a6bde61233694f7e6f8a0cd9856b2c55414d4fe532fec7de1b21",
+    "asarMatchesRuntimeTestedUnpackedBuild": true,
+    "installerExecuted": false,
+    "note": "NSIS payload extracted without installing or changing user file associations; unpacked and portable applications are runtime tested separately."
+  },
+  "msix": {
+    "passed": true,
+    "package": "seal-office-2.1.0-microsoft-store-x64.msix",
+    "bytes": 738184128,
+    "sha256": "1697363363431338577ae1d4a24fe824ded83cac6804f7dc695f22e81d664c6a",
+    "identity": {
+      "Name": "45C56666.seal-office",
+      "Publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
+      "Version": "2.1.0.0",
+      "ProcessorArchitecture": "x64"
+    },
+    "displayNames": "seal-office",
+    "crcPassed": true,
+    "blockMapFilesVerified": 19577,
+    "blockMapSha256Passed": true,
+    "appAsarSha256": "be66e2988780a6bde61233694f7e6f8a0cd9856b2c55414d4fe532fec7de1b21",
+    "asarMatchesFreshWindowsBuild": true,
+    "signed": false,
+    "installationTest": "Not installed; this is an unsigned Store-upload package",
+    "allSourcePayloadFilesCompared": 19570,
+    "allSourcePayloadBytesCompared": 2121575016,
+    "allSourcePayloadSha256Passed": true,
+    "previousStoreIdentityRetained": true,
+    "physicalInstallTested": false,
+    "submittedToPartnerCenter": false,
+    "intendedUse": "Microsoft Store Partner Center upload; Store signing and review are separate"
+  },
+  "desktopArtifacts": {
+    "version": "2.1.0",
+    "mode": "static-package-inspection",
+    "packages": [
+      {
+        "platform": "windows",
+        "archive": "release\\v2.1.0\\win-unpacked\\resources\\app.asar",
+        "appAsarSha256": "be66e2988780a6bde61233694f7e6f8a0cd9856b2c55414d4fe532fec7de1b21",
+        "checkedIntegrityFiles": 136,
+        "matchesFinalWorkspaceBuild": true,
+        "fileCount": 26340,
+        "passed": true
+      },
+      {
+        "platform": "linux",
+        "archive": "release\\v2.1.0\\linux-unpacked\\resources\\app.asar",
+        "appAsarSha256": "7707c3ef8ff5225ba6cf625982c3d93334c4af1d5b6e658f297170c292b963c9",
+        "checkedIntegrityFiles": 136,
+        "matchesFinalWorkspaceBuild": true,
+        "fileCount": 26336,
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Linux installation and UI execution are not established by static checks."
+    ]
+  },
+  "linuxDeb": {
+    "version": "2.1.0",
+    "mode": "static-deb-inspection",
+    "package": "seal-office-2.1.0-amd64.deb",
+    "checks": [
+      "Debian ar structure and version",
+      "2.1.0 amd64 control metadata and conversion dependencies",
+      "Archived ELF, Chinese desktop name, and app.asar SHA-256 match the inspected unpacked build"
+    ],
+    "limitations": [
+      "No Linux installation or runtime/UI test was performed on this Windows host."
+    ],
+    "appAsarSha256": "7707c3ef8ff5225ba6cf625982c3d93334c4af1d5b6e658f297170c292b963c9",
+    "executable": "opt/海豹办公/sealoffice",
+    "desktopName": "海豹办公",
+    "sha256": "411c4fb9286387de0b37bf9100d5d725d294bb661f378dc9b9723a1c75661b4d",
+    "bytes": 125953452,
+    "passed": true
+  },
+  "packagedCodecs": {
+    "version": "2.1.0",
+    "passed": true,
+    "checks": [
+      "完整性清单：136 个文件",
+      "DOCX：正文图片、页眉与页脚保存重开",
+      "DOCX：包内真实插入/删除/移动修订、作者时间与源包历史重开",
+      "XLSX：多表、公式及图片导入",
+      "XLSX：绝对引用及未知函数公式原文、false与空字符串来源缓存保留",
+      "XLSX：动态数组元数据、未来函数存储名、1904合法布尔及日期/前导零原始数字格式",
+      "XLSX：字号、字体、颜色、填充、边框、对齐、行列尺寸、冻结、公式及图片连续三次保存重开",
+      "PPTX：三页文字与图片导入",
+      "PPTX：三页文字字号、字体格式、颜色、对齐、图片及备注连续三次保存重开",
+      "PDF：文字编辑、旋转、插入及删除页面保存重开",
+      "打印预览：成品模块生成真实 PDF"
+    ]
+  },
+  "newFeatures": {
+    "passed": true,
+    "version": "2.1.0",
+    "checks": [
+      "390px真实短信登录与密码设置、1280px密码登录及恢复密钥解锁；原加密原生文件字节不变",
+      "五个完整底部页面与服务检索；导入为页面动作，首页无空工作区标签行",
+      "word：真实 Office 导入→服务页导出专属格式→下载字节校验→应用文档空间重新打开，Unicode/公式/图片保留",
+      "table：真实 Office 导入→服务页导出专属格式→下载字节校验→应用文档空间重新打开，Unicode/公式/图片保留",
+      "ppt：真实 Office 导入→服务页导出专属格式→下载字节校验→应用文档空间重新打开，Unicode/公式/图片保留",
+      "真实注销表单的后果确认、专用验证码和完整确认文字；完成后云文件/会话删除，本机原生文档保留"
+    ],
+    "errors": []
+  },
+  "androidBrowser": {
+    "passed": true,
+    "version": "2.1.0",
+    "checks": [
+      "生产构建可在无 Electron preload 的浏览器环境启动",
+      "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+      "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+      "原生保存只写本地文档空间；显式导出才调用系统分享",
+      "中文 PDF 生成与页面旋转",
+      "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+      "页面重载后恢复本地文件与加密模型配置",
+      "无效工作区备份被阻止且允许保留后继续",
+      "手机菜单新建文字文档并进入真实编辑器",
+      "390px 文字正文重排、输入事件与编辑区域可见",
+      "真实工作区备份恢复未保存正文与文字编辑页面",
+      "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+      "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+      "390px 手机布局、底部触控导航、知识库与服务入口",
+      "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+      "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+      "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+      "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+      "360/390/820/1280px 窄屏、平板与 PC 布局",
+      "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+      "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+      "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+      "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+      "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+      "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+      "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+      "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局",
+      "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+      "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+      "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+      "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+      "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+      "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+    ],
+    "pptxAliasShape": {
+      "passed": true,
+      "strict": true,
+      "namespacePrefixes": [
+        "slides",
+        "draw",
+        "relation"
+      ],
+      "nativeShapesPreserved": 1,
+      "preservedText": "引号、Tab、换行、中文及 &<>"
+    },
+    "pptEditingSave": {
+      "passed": true,
+      "shortcut": "Ctrl+S",
+      "textareaFocusedBeforeShortcut": true,
+      "blurredBeforeShortcut": false,
+      "actualSavedFileReopened": true,
+      "latestDraftPreserved": true,
+      "unicodePreserved": true,
+      "charactersVerified": "😀𠀀👩🏽‍💻é"
+    },
+    "errors": [],
+    "scheme": "file",
+    "groups": [
+      {
+        "name": "core",
+        "passed": true,
+        "checks": 19
+      },
+      {
+        "name": "reading",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "editor",
+        "passed": true,
+        "checks": 5
+      },
+      {
+        "name": "workspace",
+        "passed": true,
+        "checks": 1
+      },
+      {
+        "name": "diagram",
+        "passed": true,
+        "checks": 8
+      }
+    ],
+    "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+    "processWatchdogMs": 120000,
+    "allGroupsCompleted": true
+  },
+  "harmonyBrowser": {
+    "passed": true,
+    "version": "2.1.0",
+    "checks": [
+      "生产构建可在无 Electron preload 的浏览器环境启动",
+      "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+      "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+      "原生保存只写本地文档空间；显式导出才调用系统分享",
+      "中文 PDF 生成与页面旋转",
+      "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+      "页面重载后恢复本地文件与加密模型配置",
+      "无效工作区备份被阻止且允许保留后继续",
+      "手机菜单新建文字文档并进入真实编辑器",
+      "390px 文字正文重排、输入事件与编辑区域可见",
+      "真实工作区备份恢复未保存正文与文字编辑页面",
+      "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+      "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+      "390px 手机布局、底部触控导航、知识库与服务入口",
+      "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+      "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+      "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+      "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+      "360/390/820/1280px 窄屏、平板与 PC 布局",
+      "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+      "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+      "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+      "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+      "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+      "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+      "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+      "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局",
+      "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+      "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+      "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+      "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+      "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+      "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+    ],
+    "pptxAliasShape": {
+      "passed": true,
+      "strict": true,
+      "namespacePrefixes": [
+        "slides",
+        "draw",
+        "relation"
+      ],
+      "nativeShapesPreserved": 1,
+      "preservedText": "引号、Tab、换行、中文及 &<>"
+    },
+    "pptEditingSave": {
+      "passed": true,
+      "shortcut": "Ctrl+S",
+      "textareaFocusedBeforeShortcut": true,
+      "blurredBeforeShortcut": false,
+      "actualSavedFileReopened": true,
+      "latestDraftPreserved": true,
+      "unicodePreserved": true,
+      "charactersVerified": "😀𠀀👩🏽‍💻é"
+    },
+    "errors": [],
+    "scheme": "file",
+    "groups": [
+      {
+        "name": "core",
+        "passed": true,
+        "checks": 19
+      },
+      {
+        "name": "reading",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "editor",
+        "passed": true,
+        "checks": 5
+      },
+      {
+        "name": "workspace",
+        "passed": true,
+        "checks": 1
+      },
+      {
+        "name": "diagram",
+        "passed": true,
+        "checks": 8
+      }
+    ],
+    "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+    "processWatchdogMs": 120000,
+    "allGroupsCompleted": true
+  },
+  "webBrowser": {
+    "passed": true,
+    "version": "2.1.0",
+    "checks": [
+      "生产构建可在无 Electron preload 的浏览器环境启动",
+      "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+      "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+      "原生保存只写本地文档空间；显式导出才调用系统分享",
+      "中文 PDF 生成与页面旋转",
+      "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+      "页面重载后恢复本地文件与加密模型配置",
+      "无效工作区备份被阻止且允许保留后继续",
+      "手机菜单新建文字文档并进入真实编辑器",
+      "390px 文字正文重排、输入事件与编辑区域可见",
+      "真实工作区备份恢复未保存正文与文字编辑页面",
+      "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+      "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+      "390px 手机布局、底部触控导航、知识库与服务入口",
+      "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+      "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+      "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+      "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+      "360/390/820/1280px 窄屏、平板与 PC 布局",
+      "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+      "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+      "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+      "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+      "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+      "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+      "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+      "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局",
+      "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+      "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+      "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+      "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+      "图转演示后实际UI保存PPTX并读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+      "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+      "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+    ],
+    "pptxAliasShape": {
+      "passed": true,
+      "strict": true,
+      "namespacePrefixes": [
+        "slides",
+        "draw",
+        "relation"
+      ],
+      "nativeShapesPreserved": 1,
+      "preservedText": "引号、Tab、换行、中文及 &<>"
+    },
+    "pptEditingSave": {
+      "passed": true,
+      "shortcut": "Ctrl+S",
+      "textareaFocusedBeforeShortcut": true,
+      "blurredBeforeShortcut": false,
+      "actualSavedFileReopened": true,
+      "latestDraftPreserved": true,
+      "unicodePreserved": true,
+      "charactersVerified": "😀𠀀👩🏽‍💻é"
+    },
+    "errors": [],
+    "scheme": "http",
+    "groups": [
+      {
+        "name": "core",
+        "passed": true,
+        "checks": 19
+      },
+      {
+        "name": "reading",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "editor",
+        "passed": true,
+        "checks": 5
+      },
+      {
+        "name": "workspace",
+        "passed": true,
+        "checks": 1
+      },
+      {
+        "name": "diagram",
+        "passed": true,
+        "checks": 8
+      }
+    ],
+    "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+    "processWatchdogMs": 120000,
+    "allGroupsCompleted": true
+  },
+  "diagrams": [
+    {
+      "mode": "web",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": false,
+      "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/web-personal/result.json",
+        "bytes": 929,
+        "sha256": "b7fe940a9615067b1a22df7ac562eee1cc1c4a00491bf445aba257c048455924"
+      }
+    },
+    {
+      "mode": "web",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": false,
+      "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/web-team/result.json",
+        "bytes": 936,
+        "sha256": "48a2bd7dda68cee78abf222c30d1dcd13c9dcfabee31feed39d8d5bd495bef70"
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-file-personal/result.json",
+        "bytes": 936,
+        "sha256": "152acd8a817549232d017d38230cb4a715bae68ea3a9a27f4eae7dec173ed4c6"
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-file-team/result.json",
+        "bytes": 943,
+        "sha256": "f1d3570b10a1c4e49897a9e0d73377732a66e1d89d8212e16e80b76cec8e131d"
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-http-personal/result.json",
+        "bytes": 936,
+        "sha256": "d7f96ac1a2f5b372dd2791ef9521426626aa156f8faf197a06874f1d5e9e5f8d"
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-http-team/result.json",
+        "bytes": 943,
+        "sha256": "f9c990ec532bcbfd319f43368635f16c1ad048353ae2607f867c540561c739f7"
+      }
+    }
+  ],
+  "resolvedRegressionFailure": {
+    "priorRun": {
+      "path": ".upgrade-private/v210-renderer-timeout-before-teardown.json",
+      "bytes": 1023147,
+      "sha256": "8e40e265a52dda69b7ccc4f406efe7a3f75fc723a857dbe8f8cb2318f6d6122b"
+    },
+    "file": "renderer/src/sheet/SheetRealtime.test.tsx",
+    "reason": "Asynchronous collaboration shutdown was not awaited before the fixture server was destroyed. The harness now drains synchronization and closes sessions before server teardown; assertions and production timeouts were retained.",
+    "targetedRerunTests": 4
+  },
+  "erasureWorkerProbe": {
+    "passed": true,
+    "isolatedOnly": true,
+    "productionAccountOperations": 0,
+    "apiCannotReadRootBackups": true,
+    "rootWorkerRestrictedWrites": true,
+    "rootWorkerCompletesTarAndDatabaseErasure": true,
+    "otherAccountPreserved": true,
+    "journalOwnershipPreserved": true
+  },
+  "backendDeployment": {
+    "passed": true,
+    "health": {
+      "caps": {
+        "version": 1,
+        "collaboration": 1,
+        "realtime": 1,
+        "diagramRealtime": 1,
+        "accountConversion": 1,
+        "passwordAuth": 1,
+        "accountDeletion": 1,
+        "quota": 300000000,
+        "chunkSize": 1048576,
+        "sms": true,
+        "encryption": "AES-256-GCM",
+        "agreementVersion": "2026-10-08"
+      },
+      "anonymous": {
+        "shares": 401,
+        "devices": 401,
+        "tags": 401,
+        "teams": 401,
+        "conversion/capabilities": 401,
+        "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401
+      }
+    },
+    "allExistingTablesPreserved": true,
+    "converterRestarted": false,
+    "adminPreserved": true,
+    "webPreserved": true,
+    "nginxPreserved": true,
+    "environmentOnlyErasureKeysAdded": true,
+    "erasurePathEnabled": true,
+    "productionAccountOperations": 0,
+    "completedAt": "2026-10-20T17:39:02.630Z"
+  },
+  "publicWeb": {
+    "passed": true,
+    "version": "2.1.0",
+    "group": "all",
+    "origin": "https://seal.xingmasoft.com/office/",
+    "checks": [
+      "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+      "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+      "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+      "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+      "1280px真实四协作入口、登录提示和无横向溢出",
+      "390px真实四协作入口、登录提示和无横向溢出",
+      "360px真实四协作入口、登录提示和无横向溢出",
+      "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+      "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+      "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出"
+    ],
+    "apiCapabilities": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "passwordAuth": 1,
+      "accountDeletion": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymousStatuses": {
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "devices": 401,
+      "tags": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+    },
+    "template": {
+      "pages": 9,
+      "images": [
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        }
+      ]
+    },
+    "projectLists": [
+      {
+        "type": "脑图",
+        "width": 1280,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      },
+      {
+        "type": "流程图",
+        "width": 390,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      }
+    ],
+    "errors": [],
+    "requestCount": 60,
+    "externalRequests": 0,
+    "productionAccountOperations": 0,
+    "pdfWorker": true,
+    "allGroupsCompleted": true,
+    "processWatchdogMs": 240000,
+    "mainJsSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+    "groups": [
+      {
+        "name": "documents",
+        "passed": true,
+        "checks": 7
+      },
+      {
+        "name": "templates",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "projects",
+        "passed": true,
+        "checks": 3
+      }
+    ]
+  },
+  "promo": {
+    "passed": true,
+    "version": "2.1.0",
+    "videos": [
+      {
+        "platform": "pc",
+        "file": "seal-office-2.1.0-pc-intro-1080p.mp4",
+        "bytes": 4164760,
+        "sha256": "5d2da679bc7fcbfc943732db5e36a8a63418ab2ef79c69a0022e56c68be29d93",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "durationSeconds": 109.16666666666667,
+        "videoAndAudioFullyDecoded": true,
+        "narration": "Microsoft Huihui Desktop",
+        "integratedLufs": -16.59,
+        "truePeakDb": -1.37,
+        "qrUrl": "https://seal.xingmasoft.com/office/",
+        "subtitles": 8,
+        "scenes": 8
+      },
+      {
+        "platform": "android",
+        "file": "seal-office-2.1.0-android-intro-1080p.mp4",
+        "bytes": 4349512,
+        "sha256": "33ddd4391c5ff89da530f8d34decc1c8452e448cea663491494c0bb0700bcec6",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "durationSeconds": 108.56666666666666,
+        "videoAndAudioFullyDecoded": true,
+        "narration": "Microsoft Huihui Desktop",
+        "integratedLufs": -16.58,
+        "truePeakDb": -1.39,
+        "qrUrl": "https://seal.xingmasoft.com/office/",
+        "subtitles": 8,
+        "scenes": 8
+      }
+    ],
+    "source": {
+      "version": "2.1.0",
+      "capturedAt": "2026-10-20T17:05:48.566Z",
+      "productionAccountOperations": 0,
+      "realDeviceOrApkCapture": false,
+      "captures": [
+        {
+          "platform": "pc",
+          "id": "home",
+          "path": "release/promo/work-2.1.0/pc-home.png",
+          "sha256": "1f0fcb2f7039885a2a1ce743f0d9aa803210fbefe591ef2ae22fd20f34f87f69",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "word",
+          "path": "release/promo/work-2.1.0/pc-word.png",
+          "sha256": "9ecf7916a35536bbb7206ce0340aa8ea4629d0dd864fa120d535f5fb33a01e03",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "sheet",
+          "path": "release/promo/work-2.1.0/pc-sheet.png",
+          "sha256": "d03063f1feae8ec3489d9180c79267ef7429c5a2be961e377294c5231a8e8f03",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "templates",
+          "path": "release/promo/work-2.1.0/pc-templates.png",
+          "sha256": "1556e759713bf5dd0d020f849be471bbca43baa5c3cdcda4ce12e0e0c1f28b70",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "diagram",
+          "path": "release/promo/work-2.1.0/pc-diagram.png",
+          "sha256": "17d07132e6c9d383a45572a74fb1c2e67323aaa964f1364ec072438b5f7d287d",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "services",
+          "path": "release/promo/work-2.1.0/pc-services.png",
+          "sha256": "3cb213bae9dfe519a9fa57fe73e653018a46d499381181820a01dbf9a442d803",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "account",
+          "path": "release/promo/work-2.1.0/pc-account.png",
+          "sha256": "ed8084aa94cf545cccc455b5ab43a8f89cffde3c966a70dc68d77f8fb387aff3",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "pc",
+          "id": "outro",
+          "path": "release/promo/work-2.1.0/pc-outro.png",
+          "sha256": "44030a92773689c9d609343c37beca988c45b24ec2d62af3e60daae9e8e59f24",
+          "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+          "build": {
+            "platform": "web",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:03:16.991Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production responsive PC Web build in Electron browser"
+        },
+        {
+          "platform": "android",
+          "id": "home",
+          "path": "release/promo/work-2.1.0/android-home.png",
+          "sha256": "3c992baa322c8d09a98d22f7860ac7a233ef2693c5b2bd3e5e6f0798a132adbd",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "word",
+          "path": "release/promo/work-2.1.0/android-word.png",
+          "sha256": "e6b59585321a2b2619ba7d2c8644dc09ee4b71b06653b27c497f6d8c545149be",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "reading",
+          "path": "release/promo/work-2.1.0/android-reading.png",
+          "sha256": "1b0eca9a4c965e197e0e90dba590d6c04b51e8fdaa2de9484bcef2e1a79e3baa",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "sheet",
+          "path": "release/promo/work-2.1.0/android-sheet.png",
+          "sha256": "25900a7deac35624fb2bb7ab256b583fdaf73804800e8a88adc5abb838d72fb7",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "templates",
+          "path": "release/promo/work-2.1.0/android-templates.png",
+          "sha256": "b1f92dfa799612ca2eabe8bff2518835b661c3d546c1ee0f3c7578a892acc44e",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "diagram",
+          "path": "release/promo/work-2.1.0/android-diagram.png",
+          "sha256": "ab9f6d867d8689c61f4a6130f836b10ccd473c472f04cbff013912109b49464c",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "services",
+          "path": "release/promo/work-2.1.0/android-services.png",
+          "sha256": "3dae20fa0e7954336cb331f117a7dc0d9765f48bb9b4bd6835eb852263d19134",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "account",
+          "path": "release/promo/work-2.1.0/android-account.png",
+          "sha256": "6466f34d112546f9e0665aaa4b0493e63ab2b81003f119b830fa0672a092c9f0",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        },
+        {
+          "platform": "android",
+          "id": "outro",
+          "path": "release/promo/work-2.1.0/android-outro.png",
+          "sha256": "9b5f4c14bb21f1b94ac3cf492bf8ade815c2ff7ba2186fad4d1aa0228ae18017",
+          "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "build": {
+            "platform": "android",
+            "desktopVersion": "2.1.0",
+            "builtAt": "2026-10-20T17:02:12.293Z",
+            "architecture": "uni-app-x-local-webview",
+            "defaultPackagePlatform": "android"
+          },
+          "source": "production Android IIFE layout in Electron browser; native host not installed"
+        }
+      ]
+    },
+    "sourceDisclosure": "PC responsive Web build and frozen Android IIFE layout captured in isolated Electron profiles; edited introduction with still UI frames and Mandarin narration; not an APK physical-device recording.",
+    "visualReview": {
+      "passed": true,
+      "independentReview": true,
+      "templateNoticeRemoved": true,
+      "pcSha256": "5d2da679bc7fcbfc943732db5e36a8a63418ab2ef79c69a0022e56c68be29d93",
+      "androidSha256": "33ddd4391c5ff89da530f8d34decc1c8452e448cea663491494c0bb0700bcec6"
+    }
+  },
+  "cloudSourceArchives": {
+    "passed": true,
+    "snapshots": {
+      "android": {
+        "directory": "mobile/unpackage/cloud-ready/2.1.0/android",
+        "files": 59,
+        "versionCode": "20100",
+        "generatedNativePackage": false,
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500"
+      },
+      "harmony": {
+        "directory": "mobile/unpackage/cloud-ready/2.1.0/harmony",
+        "files": 59,
+        "versionCode": "20100",
+        "generatedNativePackage": false,
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500"
+      }
+    },
+    "archives": [
+      {
+        "name": "seal-office-2.1.0-android-cloud-source.zip",
+        "bytes": 56572965,
+        "sha256": "40fb3df27cea3bb2b8d4edc556ca49b028a6e6a277b1c8430359d1094121f852"
+      },
+      {
+        "name": "seal-office-2.1.0-harmony-cloud-source.zip",
+        "bytes": 56572976,
+        "sha256": "2054aa3bf1073c541f7dd0800be6c878319103f83584b1dc6a00127d9e74c62c"
+      }
+    ]
+  },
+  "sourceInputs": {
+    "files": 1540,
+    "capturedAt": "2026-10-20T17:29:33.486Z",
+    "evidence": {
+      "path": "docs/verification/v2.1.0/source-inputs.json",
+      "bytes": 284350,
+      "sha256": "6cb5bc0265a09be042a72208dc8353118320333019bd0b7e3a60c6b6dc14dba9"
+    }
+  },
+  "webEntry": "https://seal.xingmasoft.com/office/",
+  "limitations": [
+    "WPS Android APK, actual emulator screens, selected Java routes and selected ARM64 format dispatcher were analyzed; this is not a reconstruction of the complete proprietary rendering engine.",
+    "Android/Harmony deliverables are frozen cloud-build source ZIPs, not newly generated APK/HAP packages. Native bridge workflows use browser host simulation; current own native APK was not installed on a device/emulator.",
+    "ADB port-forward plus browser launch was rejected by automatic approval with reason blocked by policy; that action was not retried or counted as a passed emulator test.",
+    "PC and Android videos use actual final Web/IIFE interface still frames with transitions and Mandarin narration; Android is identified as a mobile layout demonstration, not a physical-device recording.",
+    "MSIX is an unsigned Microsoft Store upload package; it was not installed or submitted to Partner Center.",
+    "Linux DEB metadata, payload, CRC and source integrity were checked on Windows; Linux installed GUI verification is a separate Ubuntu CI check.",
+    "Known unsupported document content retains compatibility warnings; no claim covers every unknown Office/WPS feature."
+  ]
+}

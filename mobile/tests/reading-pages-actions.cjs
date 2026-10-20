@@ -26,7 +26,7 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     await command('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await wait(350)
   }
   const shot=async name=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,name),(await win.capturePage()).toPNG())}
-  const open=async filename=>{await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};document.querySelector('.seal-mobile-nav [aria-label="打开文件"]').click()`)}
+  const open=async filename=>{await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})()`)}
   try{
     // Offscreen Electron cannot present an OS fullscreen surface. Exercise the
     // supported WebView/denied-permission viewport fallback deterministically.

@@ -40,7 +40,7 @@ def inspect():
         for package in ['libreoffice-writer', 'libreoffice-calc', 'libreoffice-impress', 'fonts-noto-cjk']:
             assert package in fields['Depends']
     report['checks'].append(f'{VERSION} amd64 control metadata and conversion dependencies')
-    expected = digest(ROOT / 'release/ubuntu/linux-unpacked/resources/app.asar')
+    expected = digest(ROOT / 'release' / f'v{VERSION}' / 'linux-unpacked/resources/app.asar')
     found = {}
     with tarfile.open(fileobj=io.BytesIO(entries['data.tar.xz']), mode='r|xz') as archive:
         for item in archive:

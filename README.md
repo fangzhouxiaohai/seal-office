@@ -8,11 +8,33 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面与移动源码统一为 **2.0.0**，共用编辑器与服务，配置 Android、iOS、鸿蒙，并提供移动 H5 / PC Web。原生端采用 UTS 外壳加载安装包内的本地编辑器。2.0.0 移动版本号为 **20000**；用户提供的 Android APK 已通过 v3 发布签名、双 ABI、16 KiB 对齐及全部内置编辑器资源校验，鸿蒙 App Pack 已通过华为 SDK 验签并匹配既有 AppGallery Release Profile。实际验收范围和鸿蒙构建信息差异见 [2.0.0 发行说明](docs/v2.0.0-发布与移动成品.md)。两个移动包均未执行真机安装验收，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 打包使用 `pack:windows` / `dist:windows`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.0**，移动构建号 **20100**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.0 提供 Android/Harmony 云打包源码快照，由使用者沿用既有身份与签名生成新安装包；未把源码 ZIP 当作 APK/HAP。历史 2.0.0 移动成品的验签范围见 [2.0.0 发行说明](docs/v2.0.0-发布与移动成品.md)。iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
-## 2.0.0 本次升级
+## 2.1.0 本次升级
+
+下载：[GitHub 2.1.0](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.0) · [GitCode 2.1.0](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.0) · [在线使用](https://seal.xingmasoft.com/office/)。
+
+| 平台 | 2.1.0 文件 |
+| --- | --- |
+| Windows x64 安装版 | [seal-office-setup-2.1.0.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-setup-2.1.0.exe) |
+| Windows x64 便携版 | [seal-office-2.1.0-portable.exe](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-portable.exe) |
+| Microsoft Store 上传包 | [seal-office-2.1.0-microsoft-store-x64.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-microsoft-store-x64.msix)，商店身份不变、版本 2.1.0.0 |
+| Ubuntu amd64 | [seal-office-2.1.0-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-amd64.deb) |
+| Web 静态包 | [seal-office-2.1.0-web.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-web.zip) |
+| Android 云打包源码 | [seal-office-2.1.0-android-cloud-source.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-cloud-source.zip) |
+| Harmony 云打包源码 | [seal-office-2.1.0-harmony-cloud-source.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-harmony-cloud-source.zip) |
+
+- 新增海豹专属文字 `.sealdoc`、表格 `.sealsheet` 和演示 `.sealshow`，保存完整的当前编辑模型、资源和导入警告；使用版本化清单与内容校验。仍可导出常用 Office 格式，复杂来源内容的既有保真限制不隐瞒，见[格式说明](docs/SEAL_FORMAT.md)。
+- 支持设置、修改登录密码与密码登录，短信登录保留；登录密码与云空间恢复密钥独立，改密撤销其他会话。新增永久注销，专用验证码与明确确认后删除账号及对应活动云数据，备份清理成功后才报告完成；本机文件保留。
+- 移动底部改为首页、云盘、服务、模板、我的五个完整页面；导入是页面内动作，服务页可搜索工具并导出海豹格式。原阅读翻页、双指缩放、图形多项目及协作能力保留。
+- Word 常驻的“查看修订历史”按钮已移除，历史入口保留在审阅功能区。
+- 本机 `release/` 只保留 `promo/` 和当前版本目录，英文安装包集中放入版本目录，每版重制 PC 横版和 Android 竖版介绍视频。
+
+WPS Android 参考分析使用用户提供的 26.10.0 APK，包含实际安装界面、JADX 类与方法，以及 ARM64 文件识别库分析；未复制专有代码或素材，也不宣称拥有 WPS 全量排版引擎。证据范围见[Android 参考分析](docs/WPS_ANDROID_REFERENCE_2.1.0.md)。本版验收见[2.1.0 记录](docs/verification/v2.1.0/README.md)。Windows 安装包未做发行证书签名，MSIX 用于 Partner Center 上传；Linux GUI、Android/Harmony 新原生包和商店审核另行验收。
+
+## 2.0.0 历史升级
 
 正式下载：[GitHub 2.0.0](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.0.0) · [GitCode 2.0.0](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.0.0) · [在线使用](https://seal.xingmasoft.com/office/)。发行文件统一英文命名，界面名称仍为“海豹办公”。
 
@@ -94,9 +116,9 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 当前 [1.9.15 GitHub 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)集中提供 Windows、Ubuntu、Android 和 HarmonyOS 正式成品，[1.9.15 GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.15)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
 
-### 安卓版界面原型操作教程
+### 最新版介绍视频
 
-[横屏 1080p 普通话女声完整教程](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.10/SealOffice1.9.10-AndroidTutorialLandscape1080p.mp4)覆盖 21 个章节，包含实际界面操作、区域放大、字幕与可跳转章节。录制来源是 1.9.10 移动生产构建，与安卓包共用编辑器；系统文件选择、权限和原生键盘以新版云 APK 为准。讲解稿与制作流程见 [教程源码](docs/promo/mobile/README.md)。
+[PC 横版介绍 · 1920×1080](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-pc-intro-1080p.mp4) · [Android 竖版介绍 · 1080×1920](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-intro-1080p.mp4)。采用 2.1.0 生产界面素材、普通话配音与中文字幕，PC 为响应式网页版画面，Android 为生产 IIFE 移动布局演示；不是 APK 真机录像。当前讲解稿见[最新分镜](docs/promo/current-storyboard.json)，制作入口为 `npm run promo:build`。旧版介绍视频已移出当前交付。
 
 ### 右键新建与默认程序
 

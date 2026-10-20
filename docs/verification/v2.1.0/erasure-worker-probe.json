@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "isolatedOnly": true,
+  "productionAccountOperations": 0,
+  "apiCannotReadRootBackups": true,
+  "rootWorkerRestrictedWrites": true,
+  "rootWorkerCompletesTarAndDatabaseErasure": true,
+  "otherAccountPreserved": true,
+  "journalOwnershipPreserved": true
+}

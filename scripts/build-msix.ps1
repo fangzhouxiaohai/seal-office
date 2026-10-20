@@ -1,4 +1,4 @@
-<#
+﻿<#
   用 makeappx 手工打 MSIX/APPX 包（不依赖 electron-builder 的 appx 目标联网下载示例资源）。
 
   命名规则：只有微软商店 MSIX 清单使用已保留名 seal-office。
@@ -14,8 +14,8 @@
   自测时可先用占位值，安装时需要自签名证书。
 #>
 param(
-  [string]$IdentityName = 'Placeholder.SealOffice',
-  [string]$Publisher = 'CN=00000000-0000-0000-0000-000000000000',
+  [string]$IdentityName = '',
+  [string]$Publisher = '',
   [string]$PublisherDisplayName = '星马软件',
   [string]$DisplayName = 'seal-office',
   [string]$Description = '海豹办公 Seal Office — 本地办公套件',
@@ -32,10 +32,17 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $根 = Split-Path -Parent $PSScriptRoot
-$应用版本 = (Get-Content -LiteralPath (Join-Path $根 'package.json') -Raw | ConvertFrom-Json).version
+$项目配置 = Get-Content -LiteralPath (Join-Path $根 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$应用版本 = $项目配置.version
+if (-not $IdentityName) { $IdentityName = $项目配置.build.appx.identityName }
+if (-not $Publisher) { $Publisher = $项目配置.build.appx.publisher }
+if (-not $IdentityName -or $IdentityName -eq 'Placeholder.SealOffice' -or -not $Publisher -or $Publisher -eq 'CN=00000000-0000-0000-0000-000000000000') { throw '请配置实际已保留的 Microsoft Store 身份与发布者' }
 if (-not $Version) { $Version = "$应用版本.0" }
 if (-not $Source) { $Source = Join-Path $根 "release\v$应用版本\win-unpacked" }
-if (-not $Output) { $Output = Join-Path $根 "release\v$应用版本\SealOffice$应用版本.msix" }
+if (-not $Output) {
+  $发行命名 = Get-Content -LiteralPath (Join-Path $根 'build/artifact-names.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $Output = Join-Path $根 ("release\v$应用版本\" + $发行命名.windowsStore.Replace('${version}', $应用版本))
+}
 if (-not $Assets) { $Assets = Join-Path $根 'build\appx' }
 
 if (-not $MakeAppx) {
@@ -68,10 +75,14 @@ if (-not $MakeAppx -or -not (Test-Path -LiteralPath $MakeAppx)) {
   throw '找不到 makeappx.exe。请安装 Windows 10/11 SDK，或通过 -MakeAppx 传入完整路径。'
 }
 if (-not (Test-Path -LiteralPath (Join-Path $Source '海豹办公.exe'))) { throw "应用目录里没有 海豹办公.exe：$Source" }
+$源包清单 = Join-Path $Source 'resources/app.asar'
+& node (Join-Path $PSScriptRoot 'verify-msix-source.cjs') $源包清单 $应用版本
+if ($LASTEXITCODE -ne 0) { throw 'MSIX 来源版本与当前项目不一致，已停止打包' }
 
-$布局 = [IO.Path]::GetFullPath($(if ($Layout) { $Layout } else { Join-Path $根 "release\msix-layout-$应用版本" }))
-$发布目录 = [IO.Path]::GetFullPath((Join-Path $根 'release')) + [IO.Path]::DirectorySeparatorChar
+$布局 = [IO.Path]::GetFullPath($(if ($Layout) { $Layout } else { Join-Path $根 "release\v$应用版本\msix-layout" }))
+$发布目录 = [IO.Path]::GetFullPath((Join-Path $根 "release\v$应用版本")) + [IO.Path]::DirectorySeparatorChar
 if (-not $布局.StartsWith($发布目录, [StringComparison]::OrdinalIgnoreCase)) { throw 'MSIX 临时目录必须位于项目发布目录内' }
+if (-not ([IO.Path]::GetFullPath($Output)).StartsWith($发布目录, [StringComparison]::OrdinalIgnoreCase)) { throw 'MSIX 安装包必须位于当前版本目录内' }
 if (Test-Path -LiteralPath $布局) { Remove-Item -LiteralPath $布局 -Recurse -Force }
 New-Item -ItemType Directory -Path $布局 -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $布局 'Assets') -Force | Out-Null
@@ -147,10 +158,14 @@ Write-Host '=== 4) 用 makeappx 打包 ==='
 if (Test-Path -LiteralPath $Output) { Remove-Item -LiteralPath $Output -Force }
 $输出 = & $MakeAppx pack /o /d $布局 /p $Output 2>&1
 $输出 | Select-Object -Last 5 | ForEach-Object { "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'makeappx 打包失败' }
 if (-not (Test-Path -LiteralPath $Output)) { throw 'makeappx 未产出包文件' }
 $包 = Get-Item -LiteralPath $Output
 Write-Host ("  已生成：{0}（{1:N0} 字节，{2:N1} MB）" -f $包.Name, $包.Length, ($包.Length / 1MB))
-Write-Host ("  SHA-256：{0}" -f (Get-FileHash -LiteralPath $Output -Algorithm SHA256).Hash)
+$包流 = [IO.File]::OpenRead($Output)
+$哈希器 = [Security.Cryptography.SHA256]::Create()
+try { $包哈希 = [BitConverter]::ToString($哈希器.ComputeHash($包流)).Replace('-', '').ToLowerInvariant() } finally { $包流.Dispose(); $哈希器.Dispose() }
+Write-Host ("  SHA-256：{0}" -f $包哈希)
 
 if ($Sign) {
   Write-Host '=== 5) 自签名（仅供本机试用；提交商店不需要，商店会代签）==='

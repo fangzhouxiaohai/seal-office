@@ -12,7 +12,7 @@ describe('文档格式能力一致性', () => {
   it('关联每种格式都有读取策略，不能把含宏格式和加载项列为可写', () => {
     const 普通格式 = ['docx', 'xlsx', 'pptx', 'pdf', 'ofd', 'csv', 'txt', 'md', 'html', 'htm', 'json']
     for (const 项 of 格式) {
-      expect(Boolean(普通格式.includes(项.extension) || 项.conversion || 项.text)).toBe(true)
+      expect(Boolean(普通格式.includes(项.extension) || 项.conversion || 项.text || 项.native)).toBe(true)
       if (项.macro) expect(项.readOnlySource).toBe(true)
       if (项.conversion && !项.readOnlySource) expect(项.outputFilter).toBeTruthy()
     }

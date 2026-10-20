@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch Seal Office account erasure requests
+
+[Path]
+PathChanged=/www/wwwroot/seal.xingmasoft.com/account-erasure/trigger
+Unit=seal-cloud-erasure.service
+
+[Install]
+WantedBy=multi-user.target

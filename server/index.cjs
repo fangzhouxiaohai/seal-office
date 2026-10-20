@@ -9,6 +9,8 @@ const { createConverterAdmin } = require('./converterAdmin.cjs')
 const { createCollaboration } = require('./collaboration.cjs')
 const { createAccountConversion } = require('./accountConversion.cjs')
 const { createRealtime } = require('./realtime.cjs')
+const { createPasswords } = require('./passwords.cjs')
+const { createAccountErasure } = require('./accountErasure.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -42,7 +44,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const realtimeUsage=user=>Number(db.one("SELECT COALESCE(SUM(LENGTH(seed)+LENGTH(COALESCE(checkpoint,''))),0) n FROM realtime_rooms WHERE owner_id=?",[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(u.cipher)),0) n FROM realtime_updates u JOIN realtime_rooms r ON r.id=u.room_id WHERE r.owner_id=?',[user]).n)+Number(db.one('SELECT COUNT(*)*160 n FROM realtime_receipts p JOIN realtime_rooms r ON r.id=p.room_id WHERE r.owner_id=?',[user]).n)
   const usage = user => realtimeUsage(user) + collaborationUsage(user) + Number(db.one('SELECT COALESCE(SUM(bytes),0) AS n FROM versions WHERE user_id=?', [user]).n) + Number(db.one(`SELECT COALESCE(SUM(bytes+${publicationMeta}),0) AS n FROM publications WHERE user_id=?`, [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) AS n FROM nodes WHERE user_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(v.bytes),0) n FROM team_versions v JOIN teams t ON t.id=v.team_id WHERE t.owner_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(n.meta AS BLOB))),0) n FROM team_nodes n JOIN teams t ON t.id=n.team_id WHERE t.owner_id=?', [user]).n)
   const reservation = user => Number(db.one('SELECT COALESCE(SUM(total),0) AS n FROM uploads WHERE user_id=?', [user]).n)
-  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
+  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), hasPassword: Boolean(db.one('SELECT user_id FROM passwords WHERE user_id=?', [user.id])), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
   const nodeFor = (id, user, allowDeleted = false) => {
     const node = db.one('SELECT * FROM nodes WHERE id=? AND user_id=?', [id, user])
     if (!node || (!allowDeleted && node.deleted)) fail(404, '云文件不存在或已删除')
@@ -100,6 +102,19 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   }
   const collaboration = createCollaboration({ db, clock, objects, teamObjects, usage, reservation, quota, ensureDisk, nodeFor, streamObject, audit })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
+  const issueSession = (row, input, action = 'login') => {
+    const token = randomBytes(32).toString('base64url')
+    db.transaction(() => {
+      const deviceId = uuid(input.deviceId) ? input.deviceId : randomUUID()
+      const deviceName = typeof input.deviceName === 'string' && input.deviceName.trim() ? input.deviceName.trim().slice(0, 80) : '当前设备'
+      db.run('INSERT INTO sessions VALUES(?,?,?)', [hash(token), row.id, clock() + 30 * 86400000])
+      db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)', [hash(token), row.id, deviceId, deviceName, clock(), clock()])
+      audit(row.id, action)
+    })
+    return { token, account: account(row) }
+  }
+  const passwords = createPasswords({ db, clock, secret, verifyCode, issueSession, account, audit })
+  const erasure = await createAccountErasure({ db, directory: root, env, clock, verifyCode })
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Content-Security-Policy', "default-src 'none'")
@@ -132,14 +147,14 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
-      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
+      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
       const user = session && db.one('SELECT * FROM users WHERE id=?', [session.user_id])
       if (route === '/v1/auth/code' && method === 'POST') {
-        const input = await json(), purpose = input.purpose || 'login', phone = purpose === 'purge' ? user?.phone : input.phone
-        if (!['login', 'purge'].includes(purpose) || !/^1[3-9]\d{9}$/.test(phone || '')) fail(400, '手机号或验证码用途无效')
-        if (purpose === 'purge' && !user) fail(401, '请先登录')
+        const input = await json(), purpose = input.purpose || 'login', phone = purpose !== 'login' ? user?.phone : input.phone
+        if (!['login', 'purge', 'password', 'delete-account'].includes(purpose) || !/^1[3-9]\d{9}$/.test(phone || '')) fail(400, '手机号或验证码用途无效')
+        if (purpose !== 'login' && (!user || !db.one('SELECT hash FROM sessions WHERE hash=? AND expires>?', [session.hash, clock()]))) fail(401, '请先登录')
         const ip = clientIp(req)
         if (db.one('SELECT COUNT(*) n FROM sends WHERE phone=? AND time>?', [phone, clock()-60000]).n || db.one('SELECT COUNT(*) n FROM sends WHERE phone=? AND time>?', [phone, clock()-86400000]).n >= 20 || db.one('SELECT COUNT(*) n FROM sends WHERE ip=? AND time>?', [ip, clock()-3600000]).n >= 50) fail(429, '发送过于频繁，请稍后再试')
         const code = String(randomInt(100000, 1000000))
@@ -150,15 +165,15 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       if (route === '/v1/auth/login' && method === 'POST') {
         const input = await json(); if (!/^1[3-9]\d{9}$/.test(input.phone || '')) fail(400,'手机号无效')
         verifyCode(input.phone, 'login', input.code)
-        const token = randomBytes(32).toString('base64url')
         const u = db.transaction(() => {
           let row = db.one('SELECT * FROM users WHERE phone=?', [input.phone])
           if (!row) { db.run('INSERT INTO users(id,phone,created) VALUES(?,?,?)',[randomUUID(),input.phone,clock()]); row=db.one('SELECT * FROM users WHERE phone=?',[input.phone]) }
-          const deviceId=uuid(input.deviceId)?input.deviceId:randomUUID(),deviceName=typeof input.deviceName==='string'&&input.deviceName.trim()?input.deviceName.trim().slice(0,80):'当前设备'
-          db.run('INSERT INTO sessions VALUES(?,?,?)',[hash(token),row.id,clock()+30*86400000]);db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)',[hash(token),row.id,deviceId,deviceName,clock(),clock()]); audit(row.id,'login'); return row
+          return row
         })
-        return reply({ token, account: account(u) })
+        return reply(issueSession(u, input))
       }
+      if (await passwords.handle({ route, method, json, reply, user, session, ip: clientIp(req) })) return
+      if (await erasure.handle({ route, method, json, reply, user, session })) return
       if (route.startsWith('/v1/public/') && method === 'GET') {
         const id = route.split('/')[3]
         if (!id) {const query=new URL(req.url,'http://localhost').searchParams.get('q')||'';if(query.length>120)fail(400,'搜索关键词过长');const term='%'+query.replace(/[\\%_]/g,'\\$&')+'%';return reply({ items: db.query("SELECT id,kind,title,description,cover,category,created FROM publications WHERE status='approved' AND (title LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\' OR category LIKE ? ESCAPE '\\') ORDER BY created DESC LIMIT 500",[term,term,term]) })}
@@ -274,7 +289,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试'}))}else res.destroy() }
   })
   server.requestTimeout=30000;server.headersTimeout=15000
-  return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));db.close()} }
+  return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }
 }
 
 function clientIp(req){const remote=req.socket.remoteAddress;if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote)&&require('node:net').isIP(req.headers['x-real-ip']||''))return req.headers['x-real-ip'];return remote}

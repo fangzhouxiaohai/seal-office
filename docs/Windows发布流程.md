@@ -5,15 +5,16 @@
 ## 版本与文件名
 
 - 同步修改 `package.json` 与 `package-lock.json` 中的版本。
-- 安装版：`海豹办公安装程序<版本>.exe`；便携版：`海豹办公<版本>.exe`。
-- 微软商店包：`SealOffice<版本>.msix`；所有安装包文件名不含空格。
-- 产物目录：`release/v<版本>/`。保留历史版本，不覆盖旧发布包。
+- 安装版：`seal-office-setup-<版本>.exe`；便携版：`seal-office-<版本>-portable.exe`。
+- 微软商店包：`seal-office-<版本>-microsoft-store-x64.msix`；统一读取 `build/artifact-names.json`，应用内部显示名继续使用中文，商店清单显示名使用 `seal-office`。
+- 产物目录：`release/v<版本>/`。每次先执行 `npm run release:prepare`，本机 `release/` 顶层只保留当前版本目录和 `promo/`，安装包不放顶层。远端历史版本保留。完整规则见[打包规范](打包规范.md)。
+- 每次发布同步重制横版 PC 与竖版 Android 介绍视频，清理旧成片及过期素材；生成命令为 `npm run promo:build`，交付画面、音轨、字幕与来源核验。
 
 ## 验证与构建
 
 1. 针对实际缺陷先复现，再运行相关回归、主进程回归、`npm run typecheck` 和 `npm run test:packaging`。
-2. 运行 `npm run dist:windows -- --config.directories.output=release/v<版本>`，生成安装版、便携版和 `win-unpacked`。默认 `pack` / `dist` 按跨端项目约定只提交 Android 打包。
-3. 用 `scripts/build-msix.ps1` 生成对应版本 MSIX。商店身份必须与既有产品一致，不能使用脚本的占位身份。
+2. 运行 `npm run dist:windows:all`，在当前版本目录生成安装版、便携版、`win-unpacked` 及 MSIX。默认 `pack` / `dist` 按跨端项目约定只提交 Android 打包。
+3. 单独重做 MSIX 时使用 `scripts/build-msix.ps1`，脚本校验来源成品版本。商店身份必须与既有产品一致，不允许占位身份。
 4. 验证实际成品模块与界面。解压安装版和便携版，比较内嵌 `app.asar` 与已验收成品；验证 MSIX 清单、版本和所有有效负载。报告分别写入产物目录的 `release-integrity.json` 与 `SealOffice<版本>.msix.verification.json`。
 5. 生成 `SHA256SUMS.txt`，覆盖三个包。记录实际测试结果、限制与校验信息至 `docs/v<版本>-修复与验收.md`。
 

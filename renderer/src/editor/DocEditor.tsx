@@ -1,7 +1,7 @@
 // 编辑器容器：装配文档标签栏、Ribbon、标尺、编辑区、查找面板与状态栏。
 // 全部编辑行为通过 commands.ts 的命令注册表派发，此文件只负责上下文实现与区域编排。
 import React, { useEffect, useRef, useState } from 'react'
-import { App as AntdApp, Button, Input } from 'antd'
+import { App as AntdApp, Input } from 'antd'
 import { applyListStyle } from './listStyle'
 import { clipboardTextHtml, copyEditorSelection, readEditorClipboard } from './clipboard'
 import { insertDocumentNote } from './notes'
@@ -874,6 +874,7 @@ const DocEditor = () => {
     生成原生Pdf: () => 生成原生Pdf(),
     下载: (内容: string, 文件名: string, 类型: string) => 下载文本(内容, 文件名, 类型),
     打开查找: () => set查找打开(true),
+      打开修订历史: () => set修订面板(value => !value),
     导出,
     检查拼写,
     切换全选,
@@ -993,6 +994,7 @@ const DocEditor = () => {
     if (只读引用.current && 修改正文命令(命令标识)) { message.info(只读提示); return }
     if (输入计时器.current !== null) 记录历史()
     if (协作.active && ['edit.undo', 'edit.redo'].includes(命令标识)) { if (!(命令标识 === 'edit.undo' ? 协作.undo() : 协作.redo())) message.info('没有可撤销的本机协作操作'); return }
+    if (命令标识 === 'track.history') { set修订面板(value => !value); return }
     if (命令标识 === 'track.accept' || 命令标识 === 'track.reject') { void 处理修订(命令标识 === 'track.accept' ? 'accept' : 'reject'); return }
     if (命令标识 === 'file.print') {
       const 正文 = 编辑区引用.current?.innerHTML
@@ -1107,7 +1109,6 @@ const DocEditor = () => {
       目录: () => set导航打开(当前 => !当前),
     }) : null,
     !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
-    React.createElement(Button, { className: 'seal-revision-toggle', onClick: () => set修订面板(value => !value), 'aria-expanded': 修订面板 }, 修订面板 ? '收起修订历史' : '查看修订历史'),
     修订面板 && React.createElement(RevisionPanel, { html: 当前文档?.html ?? '', author: 修订作者, setAuthor: set修订作者, view: 修订视图, setView: set修订视图, busy: 修订处理中, readOnly: 只读, resolve: (action, id, part) => void 处理修订(action, id, part) }),
     !阅读.阅读模式 && React.createElement(RibbonPanel, {
       activeKey: 当前标签,

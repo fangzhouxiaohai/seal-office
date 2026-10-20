@@ -405,5 +405,26 @@
     "label": "OFD 版式文档",
     "icon": "pdf",
     "readOnlySource": true
+  },
+  {
+    "extension": "sealdoc",
+    "type": "word",
+    "label": "海豹文档",
+    "icon": "word",
+    "native": true
+  },
+  {
+    "extension": "sealsheet",
+    "type": "table",
+    "label": "海豹表格",
+    "icon": "table",
+    "native": true
+  },
+  {
+    "extension": "sealshow",
+    "type": "ppt",
+    "label": "海豹演示",
+    "icon": "presentation",
+    "native": true
   }
 ]

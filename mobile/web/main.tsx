@@ -9,6 +9,7 @@ import '../../renderer/src/styles/flatDesktop.css'
 import '../../main/ui/dialog.css'
 import './mobile.css'
 import MobileNavigation from './navigation'
+import MobileHome from './home'
 import { IconPlatformProvider } from '../../renderer/src/components/IconPlatform'
 import { installViewport } from './viewport'
 
@@ -18,7 +19,7 @@ ready.then(async () => {
   document.documentElement.dataset.sealPlatform = new URLSearchParams(location.search).has('native') ? 'app' : 'web'
   installViewport()
   // 构建共享桌面 App，移动导航通过同一个 Store 执行真实操作。
-  createRoot(container).render(<React.StrictMode><IconPlatformProvider responsive><App 跨端导航={MobileNavigation} /></IconPlatformProvider></React.StrictMode>)
+  createRoot(container).render(<React.StrictMode><IconPlatformProvider responsive><App 跨端导航={MobileNavigation} 跨端首页={MobileHome} /></IconPlatformProvider></React.StrictMode>)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') window.dispatchEvent(new Event('seal-persist-workspace')) })
 }).catch((error) => {
   if (document.documentElement.dataset.sealUnsupported === '1') return

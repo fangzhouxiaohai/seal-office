@@ -1,0 +1,23 @@
+[Unit]
+Description=Seal Office account backup erasure
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/bin/node /www/wwwroot/seal.xingmasoft.com/current/deploy/erase-worker.cjs /www/wwwroot/seal.xingmasoft.com/account-erasure /www/backup/seal-cloud /www/wwwroot/seal.xingmasoft.com/data
+TimeoutStartSec=15min
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ReadWritePaths=/www/backup/seal-cloud /www/wwwroot/seal.xingmasoft.com/account-erasure
+MemoryMax=512M

@@ -26,7 +26,8 @@ it('实际编辑器记录输入作者时间、逐条接受并能撤销，视图�
   Object.defineProperty(window, 'electronAPI', { configurable: true, value: { office } })
   const { container } = renderEditor(); await userEvent.click(screen.getByText('打开修订测试'))
   await userEvent.click(screen.getByRole('tab', { name: '审阅' })); await userEvent.click(screen.getByRole('button', { name: /^修订$/ }))
-  await userEvent.click(screen.getByRole('button', { name: '查看修订历史' })); await userEvent.clear(screen.getByLabelText('审阅作者')); await userEvent.type(screen.getByLabelText('审阅作者'), '作者甲')
+  expect(screen.queryByRole('button', { name: '查看修订历史' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /^修订历史$/ })); await userEvent.clear(screen.getByLabelText('审阅作者')); await userEvent.type(screen.getByLabelText('审阅作者'), '作者甲')
   const root = container.querySelector<HTMLElement>('.wps-editor-canvas__content')!
   caret(root.querySelector('p')!.firstChild!, 2)
   act(() => { root.dispatchEvent(new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: '新增' })) })

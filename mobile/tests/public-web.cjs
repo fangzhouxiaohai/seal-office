@@ -39,7 +39,7 @@ app.whenReady().then(async () => {
     const evaluate = async script => { const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await(${script})}}catch(error){return{error:error.stack||String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value }
     const wait = async (script, label, attempts = 200) => { console.log(JSON.stringify({at:new Date().toISOString(),waiting:label})); for (let i = 0; i < attempts; i++) { if (await evaluate(script)) return; await new Promise(resolve => setTimeout(resolve, 100)) } throw new Error('等待失败：' + label) }
     const click = async text => evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&item.textContent.replace(/\s/g,'')===${JSON.stringify(text.replace(/\s/g, ''))});if(!button)throw new Error('缺少按钮');button.click();return true})()`)
-    const home = async () => { await evaluate(`document.querySelector('.wps-global-tabs__home').click()`); await wait('!!document.querySelector(".wps-homebody")', '首页') }
+    const home = async () => { await evaluate(`(document.querySelector('.seal-mobile-nav [aria-label="返回首页"]')||document.querySelector('.wps-global-tabs__home')).click()`); await wait('!!document.querySelector(".wps-homebody")', '首页') }
     console.log(JSON.stringify({at:new Date().toISOString(),loading:target})); await win.loadURL(target); await wait('!!window.electronAPI&&!!document.querySelector(".wps-app")', '应用启动', 900)
     const unauth = await evaluate(`(async()=>{const caps=await(await fetch('/api/v1/capabilities')).json();const status={};for(const name of ['conversion/capabilities','shares','devices','tags','teams','realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1','realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1','realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1'])status[name]=(await fetch('/api/v1/'+name)).status;return {caps,status}})()`)
     assert.equal(unauth.caps.version, 1); assert.equal(unauth.caps.collaboration, 1); assert.equal(unauth.caps.accountConversion, 1); assert.equal(unauth.caps.realtime, 1); assert.equal(unauth.caps.diagramRealtime, 1); assert.ok(Object.values(unauth.status).every(value => value === 401))
@@ -85,13 +85,12 @@ app.whenReady().then(async () => {
     if (includes('projects')) {
     const clickAria = async label => evaluate(`(async()=>{const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&item.getAttribute('aria-label')===${JSON.stringify(label)});if(!button)throw new Error('缺少项目操作：'+${JSON.stringify(label)});button.scrollIntoView({block:'center',inline:'nearest'});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);if(!hit||!button.contains(hit))throw new Error('项目操作被遮挡：'+${JSON.stringify(label)});button.click();return true})()`)
     const navigationClosed = async () => {
-      await wait(`document.querySelector('[aria-label="全部功能"]')?.getAttribute('aria-expanded')!=='true'&&[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const r=panel.getBoundingClientRect();return !r.height||r.top>=innerHeight||r.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '移动导航完全关闭')
+      await wait(`[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const r=panel.getBoundingClientRect();return !r.height||r.top>=innerHeight||r.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '页面未被弹层遮挡')
       await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`)
     }
     const mobileNavigate = async key => {
-      await clickAria('全部功能')
+      await clickAria('服务')
       await wait(`!!document.querySelector('[data-nav-key="${key}"]')`, '移动项目导航')
-      await wait(`[...document.querySelectorAll('.ant-drawer-open .ant-drawer-content-wrapper')].some(panel=>{const r=panel.getBoundingClientRect();return r.top>=0&&r.top<innerHeight&&r.bottom<=innerHeight+1})`, '移动导航展开动画完成')
       await evaluate(`(async()=>{const button=document.querySelector('[data-nav-key="${key}"]');button.scrollIntoView({block:'center'});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const r=button.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!hit||!button.contains(hit))throw new Error('移动导航入口被遮挡');button.click()})()`)
       await navigationClosed()
     }
@@ -130,7 +129,7 @@ app.whenReady().then(async () => {
     for (const width of [1280, 390, 360]) {
       win.setContentSize(width, 900); await home()
       for (const [key, label] of [['shared','共享'],['device','我的设备'],['tag','标签'],['team','团队空间']]) {
-        if (width < 900) { await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`); await wait(`!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(`document.querySelector('[data-nav-key="${key}"]').click()`) } else await click(label)
+        if (width < 900) { await evaluate(`document.querySelector('.seal-mobile-nav [aria-label="服务"]').click()`); await wait(`!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(`document.querySelector('[data-nav-key="${key}"]').click()`) } else await click(label)
         await wait(`document.body.textContent.includes('登录并解锁加密云空间后使用此功能')`, label + '账号提示')
         await wait(`[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const r=panel.getBoundingClientRect();return !r.height||r.top>=innerHeight||r.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '关闭导航')
         const layout = await evaluate('({width:innerWidth,scroll:document.documentElement.scrollWidth})'); assert.ok(layout.scroll <= layout.width + 1, JSON.stringify({ key, ...layout }))
@@ -147,7 +146,7 @@ app.whenReady().then(async () => {
     assert.ok(completed.every(entry => entry.status < 400 || entry.status === 401), '资源缺失或服务器错误：' + JSON.stringify(completed.filter(entry => entry.status >= 400 && entry.status !== 401)))
     assert.ok(!completed.some(entry => /\/code(?:\?|$)|\/login(?:\?|$)/.test(entry.path)), '禁止发送短信或登录生产账号')
     assert.equal(errors.length, 0, errors.join('\n')); assert.equal(failures.length, 0, JSON.stringify(failures))
-    const report = { passed: true, version: '2.0.0', group, origin: local ? 'local-production-CSP' : target, checks, apiCapabilities: unauth.caps, anonymousStatuses: unauth.status, template, projectLists, errors, requestCount: completed.length, externalRequests: 0, productionAccountOperations: 0, pdfWorker: includes('documents') }
+    const report = { passed: true, version: require('../../package.json').version, group, origin: local ? 'local-production-CSP' : target, checks, apiCapabilities: unauth.caps, anonymousStatuses: unauth.status, template, projectLists, errors, requestCount: completed.length, externalRequests: 0, productionAccountOperations: 0, pdfWorker: includes('documents') }
     fs.writeFileSync(path.join(output, reportFile), JSON.stringify(report,null,2)); console.log(JSON.stringify(report,null,2)); code = 0
   } catch (error) { const report={passed:false,group,checks,errors,failures,resourceCompletions:completed,error:error.stack};fs.writeFileSync(path.join(output,reportFile),JSON.stringify(report,null,2));console.error(error) }
   finally { win?.destroy();server?.closeAllConnections?.();server?.close();await fixture?.cleanup();app.exit(code) }

@@ -1,0 +1,133 @@
+{
+  "passed": true,
+  "version": "2.1.0",
+  "cases": [
+    {
+      "mode": "web",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": false,
+      "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/web-personal/result.json",
+        "bytes": 929,
+        "sha256": "b7fe940a9615067b1a22df7ac562eee1cc1c4a00491bf445aba257c048455924"
+      }
+    },
+    {
+      "mode": "web",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": false,
+      "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/web-team/result.json",
+        "bytes": 936,
+        "sha256": "48a2bd7dda68cee78abf222c30d1dcd13c9dcfabee31feed39d8d5bd495bef70"
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-file-personal/result.json",
+        "bytes": 936,
+        "sha256": "152acd8a817549232d017d38230cb4a715bae68ea3a9a27f4eae7dec173ed4c6"
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-file-team/result.json",
+        "bytes": 943,
+        "sha256": "f1d3570b10a1c4e49897a9e0d73377732a66e1d89d8212e16e80b76cec8e131d"
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "personal",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-http-personal/result.json",
+        "bytes": 936,
+        "sha256": "d7f96ac1a2f5b372dd2791ef9521426626aa156f8faf197a06874f1d5e9e5f8d"
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "team",
+      "passed": true,
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "nativeHostSimulated": true,
+      "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+      "productionRequests": 0,
+      "evidence": {
+        "path": ".upgrade-private/v210/diagram-browser/native-http-team/result.json",
+        "bytes": 943,
+        "sha256": "f9c990ec532bcbfd319f43368635f16c1ad048353ae2607f867c540561c739f7"
+      }
+    }
+  ],
+  "nativeHostSimulated": true
+}

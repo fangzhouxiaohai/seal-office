@@ -336,6 +336,7 @@ const 审阅标签: RibbonTabSpec = {
       name: '修订',
       items: [
         大('track.enable', '修订', 'track'),
+        大('track.history', '修订历史', 'track'),
         大('track.accept', '接受修订', 'track'),
         大('track.reject', '拒绝修订', 'track'),
       ],

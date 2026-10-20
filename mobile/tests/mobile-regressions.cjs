@@ -46,7 +46,7 @@ app.whenReady().then(async () => {
       assert.equal(result.exported.条目.length,1)
     })
     await check('手机市场逐一打开八个模板、九页预览、实际配图与使用编辑副本', async () => {
-      await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
+      await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
       await until("!!document.querySelector('[data-nav-key=\"market\"]')")
       await evaluate(`document.querySelector('[data-nav-key="market"]').click()`)
       await until("document.querySelectorAll('.seal-market-cover').length===8")

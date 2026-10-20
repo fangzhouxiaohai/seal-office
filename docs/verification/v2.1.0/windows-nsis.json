@@ -1,0 +1,11 @@
+{
+  "version": "2.1.0",
+  "passed": true,
+  "package": "seal-office-setup-2.1.0.exe",
+  "bytes": 399089202,
+  "sha256": "60cf0d3adf42e01a99d7cd9e62a7c570acde638b4b5c68f8d0161d64c0f07b1a",
+  "extractedAsarSha256": "be66e2988780a6bde61233694f7e6f8a0cd9856b2c55414d4fe532fec7de1b21",
+  "asarMatchesRuntimeTestedUnpackedBuild": true,
+  "installerExecuted": false,
+  "note": "NSIS payload extracted without installing or changing user file associations; unpacked and portable applications are runtime tested separately."
+}

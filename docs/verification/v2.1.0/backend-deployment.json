@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "health": {
+    "caps": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "passwordAuth": 1,
+      "accountDeletion": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymous": {
+      "shares": 401,
+      "devices": 401,
+      "tags": 401,
+      "teams": 401,
+      "conversion/capabilities": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401
+    }
+  },
+  "allExistingTablesPreserved": true,
+  "converterRestarted": false,
+  "adminPreserved": true,
+  "webPreserved": true,
+  "nginxPreserved": true,
+  "environmentOnlyErasureKeysAdded": true,
+  "erasurePathEnabled": true,
+  "productionAccountOperations": 0,
+  "completedAt": "2026-10-20T17:39:02.630Z"
+}

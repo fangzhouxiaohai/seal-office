@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve current release directory
+        run: node -e "const fs=require('fs'),v=require('./package.json').version;if(!/^\d+\.\d+\.\d+$/.test(v))throw Error('Invalid version');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+v+'\n')"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -37,7 +39,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ubuntu-deb
-          path: release/ubuntu/*.deb
+          path: ${{ env.RELEASE_DIR }}/*.deb
           compression-level: 0
           if-no-files-found: error
   verify:
@@ -50,17 +52,19 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve current release directory
+        run: node -e "const fs=require('fs'),v=require('./package.json').version;if(!/^\d+\.\d+\.\d+$/.test(v))throw Error('Invalid version');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+v+'\n')"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
           name: ubuntu-deb
-          path: release/ubuntu
+          path: ${{ env.RELEASE_DIR }}
       - name: Install package and offline conversion dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ./release/ubuntu/*.deb xvfb desktop-file-utils libglib2.0-bin
+          sudo apt-get install -y "./$RELEASE_DIR"/*.deb xvfb desktop-file-utils libglib2.0-bin
           desktop-file-validate /usr/share/applications/sealoffice.desktop
           dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' seal-office libreoffice-writer libreoffice-calc libreoffice-impress
       - name: Verify installed application, files and rendering
@@ -70,7 +74,7 @@ jobs:
         if: always()
         with:
           name: verification-${{ matrix.os }}
-          path: release/ubuntu/verification/*
+          path: ${{ env.RELEASE_DIR }}/verification/*
           if-no-files-found: error
   publish:
     # A normal push only builds and verifies; release assets are published together across platforms.
@@ -81,17 +85,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve current release directory
+        run: node -e "const fs=require('fs'),v=require('./package.json').version;if(!/^\d+\.\d+\.\d+$/.test(v))throw Error('Invalid version');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+v+'\n')"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
           name: ubuntu-deb
-          path: release/ubuntu
+          path: ${{ env.RELEASE_DIR }}
       - uses: actions/download-artifact@v4
         with:
           pattern: verification-ubuntu-*
-          path: release/ubuntu/reports
+          path: ${{ env.RELEASE_DIR }}/reports
       - name: Verify exact package checksums before publishing
         run: |
           node - <<'NODE'
@@ -99,19 +105,19 @@ jobs:
           const version = require('./package.json').version;
           assert(/^\d+\.\d+\.\d+$/.test(version));
           const filename = require('./scripts/artifact-names.cjs').artifactName('ubuntu', version);
-          const bytes = fs.readFileSync(path.join('release/ubuntu', filename));
+          const bytes = fs.readFileSync(path.join(process.env.RELEASE_DIR, filename));
           const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
           for (const os of ['ubuntu-22.04', 'ubuntu-24.04']) {
-            const report = JSON.parse(fs.readFileSync(`release/ubuntu/reports/verification-${os}/ubuntu-verification.json`, 'utf8'));
+            const report = JSON.parse(fs.readFileSync(`${process.env.RELEASE_DIR}/reports/verification-${os}/ubuntu-verification.json`, 'utf8'));
             assert(report.passed && report.version === version && report.packageSha256 === sha256 && report.packageBytes === bytes.length && report.sandboxBypassed === false);
           }
-          fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_TAG=v${version}\nRELEASE_REPORT=SealOffice${version}-UbuntuVerification.zip\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_TAG=v${version}\nRELEASE_REPORT=seal-office-${version}-ubuntu-verification.zip\n`);
           console.log(`${filename} SHA-256 ${sha256}: both installed-package checks passed`);
           NODE
       - name: Publish verified Ubuntu package and reports
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          (cd release/ubuntu/reports && zip -r "../$RELEASE_REPORT" .)
+          (cd "$RELEASE_DIR/reports" && zip -r "../$RELEASE_REPORT" .)
           # Only these two Ubuntu assets are refreshed, after both systems pass.
-          gh release upload "$RELEASE_TAG" release/ubuntu/*.deb "release/ubuntu/$RELEASE_REPORT" --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$RELEASE_TAG" "$RELEASE_DIR"/*.deb "$RELEASE_DIR/$RELEASE_REPORT" --repo "$GITHUB_REPOSITORY" --clobber

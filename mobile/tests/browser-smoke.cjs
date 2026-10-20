@@ -3,7 +3,7 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
 const project = path.resolve(__dirname, '../..'), output = path.join(project, '.upgrade-private/mobile-verification')
 const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
 const version = require('../../package.json').version
-app.setPath('userData', path.join(output, 'browser-profile-' + (localFile ? 'file' : 'web') + '-' + process.pid)); app.disableHardwareAcceleration()
+app.setPath('userData', path.join(output, 'browser-profile-' + (localFile ? 'file' : 'web') + '-' + require('node:crypto').randomUUID())); app.disableHardwareAcceleration()
 const contentTypes = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
   fs.mkdirSync(output, { recursive: true })
@@ -13,7 +13,8 @@ app.whenReady().then(async () => {
     try { response.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Content-Type': contentTypes[path.extname(filename)] || 'application/octet-stream' }); fs.createReadStream(filename).on('error', () => response.destroy()).pipe(response) }
     catch { response.writeHead(404); response.end() }
   })
-  await new Promise((resolve) => server.listen(5191, '127.0.0.1', resolve))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const origin = 'http://127.0.0.1:' + server.address().port
   const win = new BrowserWindow({ show: false, width: 1280, height: 900, webPreferences: { offscreen: false, backgroundThrottling: false, contextIsolation: true, sandbox: true, nodeIntegration: false } })
   // A hidden standard window supports native CDP touch. After a reload Windows
   // can briefly discard its capture surface; retain actual screenshots and wait
@@ -47,13 +48,13 @@ app.whenReady().then(async () => {
   }
   try {
     if (localFile) await win.loadFile(path.join(webRoot, 'index.html'))
-    else await win.loadURL('http://127.0.0.1:5191/')
+    else await win.loadURL(origin + '/')
     for (let attempt = 0; attempt < 120; attempt++) { if (await evaluate(`!!document.querySelector('.wps-app')`)) break; await new Promise(resolve => setTimeout(resolve, 250)) }
     assert.ok(await evaluate(`!!document.querySelector('.wps-app')`), '应用必须实际挂载')
     checks.push('生产构建可在无 Electron preload 的浏览器环境启动')
     if (localFile) {
       // 字体与导出使用确定性的宿主模拟；页面和编辑器本身从 file:// 加载。
-      await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET','http://127.0.0.1:5191/fonts/NotoSansSC.ttf');xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+      await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin + '/fonts/NotoSansSC.ttf')});xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     }
     const roundtrip = await evaluate(`(async () => {
       const api=window.electronAPI;
@@ -119,7 +120,7 @@ app.whenReady().then(async () => {
     win.setContentSize(390, 844); await new Promise(resolve => setTimeout(resolve, 500))
     const layout = await evaluate(`({width:innerWidth,scroll:document.documentElement.scrollWidth,nav:getComputedStyle(document.querySelector('.seal-mobile-nav')).display,ready:!!document.querySelector('.wps-app')})`)
     assert.ok(layout.ready); assert.equal(layout.nav, 'grid'); assert.ok(layout.scroll <= layout.width + 1, JSON.stringify(layout))
-    await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`); await new Promise(resolve => setTimeout(resolve, 400))
+    await evaluate(`document.querySelector('[aria-label="服务"]').click()`); await new Promise(resolve => setTimeout(resolve, 400))
     assert.ok(await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).some(button=>button.textContent.includes('知识库'))`))
     await win.capturePage().then(image => fs.writeFileSync(path.join(output, 'mobile-web.png'), image.toPNG()))
     await evaluate(`document.querySelector('.seal-mobile-create [data-document-type="word"]').click()`); await new Promise(resolve => setTimeout(resolve, 500))
@@ -141,23 +142,23 @@ app.whenReady().then(async () => {
     await require('./reading-actions.cjs')({ win, evaluate, output, checks })
     win.setContentSize(390, 844); await new Promise(resolve => setTimeout(resolve, 150))
     assert.equal(await evaluate('innerWidth'), 390, '新增宽屏数组验收后必须恢复手机视口再检查PDF和22个导航入口')
-    await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(data.filename)};document.querySelector('.seal-mobile-nav [aria-label="打开文件"]').click()`)
+    await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(data.filename)};(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})()`)
     for(let attempt=0;attempt<150;attempt++){if(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`))break;await new Promise(resolve=>setTimeout(resolve,100))}
     assert.ok(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`), '本地 PDF 必须在阅读器中绘制并提取中文：'+await evaluate(`document.querySelector('.pdf-viewer')?.textContent`))
     checks.push('手机文件入口打开 PDF 并通过本地 Worker 绘制页面')
-    checks.push('390px 手机布局、底部触控导航、知识库与全部功能入口')
+    checks.push('390px 手机布局、底部触控导航、知识库与服务入口')
     // 逐一操作移动菜单，检查实际导航状态，而非只检查按钮存在。
-    await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
+    await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
     const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
-    const expectedNavigation = ['home','recent','star','shared','my-cloud','device','tag','team','knowledge','market','trash','pdf','mindmap','flow','multitable','design','notes','calendar','apps','document','settings','help']
-    assert.equal(navigation.length, 22, '移动端已实现功能入口数量')
-    assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '全部22个入口必须完整出现且顺序与可用导航一致')
+    const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','shared','my-cloud','device','tag','team','knowledge','market','trash','document','settings','help']
+    assert.equal(navigation.length, 18, '服务页面可操作入口数量；首页筛选由文档页面提供')
+    assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '服务页须完整呈现全部工具、协作和设置入口')
     assert.equal(navigation.some(item=>item.key==='database'), false, '移动端不提供依赖桌面数据库引擎的 Access 入口')
     for (const item of navigation) {
       await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').click()`)
       await new Promise(resolve => setTimeout(resolve, 500))
-      assert.equal(await evaluate(`document.querySelector('[aria-label="全部功能"]').getAttribute('aria-expanded')`), 'false', item.label + '应关闭菜单')
+      assert.equal(await evaluate(`!!document.querySelector('.seal-mobile-functions.ant-drawer-open')`), false, item.label + '应导航到实际页面')
       assert.equal(await evaluate(`!!document.querySelector('.wps-error')`), false, item.label + '页面不得崩溃')
       const target = { settings: '.wps-main--settings', help: '.wps-main--help', pdf: '.wps-main--pdf' }[item.key]
       if (target) assert.ok(await evaluate(`!!document.querySelector(${JSON.stringify(target)})`), item.label + '必须加载目标页面')
@@ -169,14 +170,19 @@ app.whenReady().then(async () => {
       }
       const layout = await evaluate(`({width:innerWidth,scroll:document.documentElement.scrollWidth})`)
       assert.ok(layout.scroll <= layout.width + 1, item.label + '不应撑开手机视口：' + JSON.stringify(layout))
-      await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
+      await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
       await new Promise(resolve => setTimeout(resolve, 350))
-      assert.equal(await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').getAttribute('aria-current')`), 'page', item.label + '必须真的切换到目标')
+      assert.equal(await evaluate(`document.querySelector('.seal-mobile-nav [aria-label="服务"]').getAttribute('aria-current')`), 'page', '服务入口必须是当前页面')
     }
-    await evaluate(`document.querySelector('.ant-drawer-close').click()`)
-    checks.push('移动端 22 个可用功能入口逐一点击、导航状态及视口检查；共享/设备/标签/团队检查真实账号门槛，Access 按能力隐藏')
+    for(const label of ['返回首页','云盘','模板','我的','服务']){
+      await evaluate(`document.querySelector('.seal-mobile-nav [aria-label=${JSON.stringify(label)}]').click()`)
+      await new Promise(resolve=>setTimeout(resolve,400))
+      assert.equal(await evaluate(`document.querySelector('.seal-mobile-nav [aria-label=${JSON.stringify(label)}]').getAttribute('aria-current')`),'page',label+'必须切换完整页面')
+      if(label==='我的')assert.ok(await evaluate(`!!document.querySelector('[aria-label="我的账号与应用"]')`))
+    }
+    checks.push('五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏')
     for (const item of [{key:'table',selector:'.wps-sheet-toolbar'}, {key:'ppt',selector:'.wps-ppt-canvas'}, {key:'pdf',selector:'.wps-main--pdf'}]) {
-      await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`)
+      await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
       await new Promise(resolve => setTimeout(resolve, 350))
       await evaluate(`document.querySelector('[data-document-type=${JSON.stringify(item.key)}]').click()`)
       for (let attempt=0;attempt<100;attempt++) { if(await evaluate(`!!document.querySelector(${JSON.stringify(item.selector)})`))break;await new Promise(resolve=>setTimeout(resolve,50)) }

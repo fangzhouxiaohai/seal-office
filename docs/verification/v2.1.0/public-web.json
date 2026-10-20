@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "version": "2.1.0",
+  "group": "all",
+  "origin": "https://seal.xingmasoft.com/office/",
+  "checks": [
+    "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+    "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并真实DOCX读回",
+    "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+    "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+    "1280px真实四协作入口、登录提示和无横向溢出",
+    "390px真实四协作入口、登录提示和无横向溢出",
+    "360px真实四协作入口、登录提示和无横向溢出",
+    "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+    "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+    "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出"
+  ],
+  "apiCapabilities": {
+    "version": 1,
+    "collaboration": 1,
+    "realtime": 1,
+    "diagramRealtime": 1,
+    "accountConversion": 1,
+    "passwordAuth": 1,
+    "accountDeletion": 1,
+    "quota": 300000000,
+    "chunkSize": 1048576,
+    "sms": true,
+    "encryption": "AES-256-GCM",
+    "agreementVersion": "2026-10-08"
+  },
+  "anonymousStatuses": {
+    "conversion/capabilities": 401,
+    "shares": 401,
+    "devices": 401,
+    "tags": 401,
+    "teams": 401,
+    "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+    "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+    "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+  },
+  "template": {
+    "pages": 9,
+    "images": [
+      {
+        "valid": true,
+        "inline": true
+      },
+      {
+        "valid": true,
+        "inline": true
+      },
+      {
+        "valid": true,
+        "inline": true
+      },
+      {
+        "valid": true,
+        "inline": true
+      },
+      {
+        "valid": true,
+        "inline": true
+      },
+      {
+        "valid": true,
+        "inline": true
+      }
+    ]
+  },
+  "projectLists": [
+    {
+      "type": "脑图",
+      "width": 1280,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    },
+    {
+      "type": "流程图",
+      "width": 390,
+      "projects": 2,
+      "independentIds": true,
+      "reloaded": true,
+      "renamed": true,
+      "previewImagesDecoded": true,
+      "unobscuredNavigation": true
+    }
+  ],
+  "errors": [],
+  "requestCount": 60,
+  "externalRequests": 0,
+  "productionAccountOperations": 0,
+  "pdfWorker": true,
+  "allGroupsCompleted": true,
+  "processWatchdogMs": 240000,
+  "mainJsSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+  "groups": [
+    {
+      "name": "documents",
+      "passed": true,
+      "checks": 7
+    },
+    {
+      "name": "templates",
+      "passed": true,
+      "checks": 2
+    },
+    {
+      "name": "projects",
+      "passed": true,
+      "checks": 3
+    }
+  ]
+}

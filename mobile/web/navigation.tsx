@@ -1,14 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { App, Button, Drawer } from 'antd'
+import { useEffect, useRef } from 'react'
+import { App } from 'antd'
 import { useAppStore } from '../../renderer/src/store'
-import { useCloud } from '../../renderer/src/cloud/CloudProvider'
-import { useSettings } from '../../renderer/src/store/settingsStore'
 import Icon from '../../renderer/src/components/Icon'
-import { NAV_GROUPS, navigationAvailable } from '../../renderer/src/navConfig'
-import { 通过对话框打开文件 } from '../../renderer/src/fileOpen'
+import { mobileSection } from './home'
 
 export default function MobileNavigation() {
-  const [open, setOpen] = useState(false), store = useAppStore(), cloud = useCloud(), settings = useSettings(), { message, modal } = App.useApp()
+  const store = useAppStore(), { message } = App.useApp()
   const route = { module: store.module, navKey: store.navKey, tab: store.activeWorkspaceTabId }
   const routes = useRef([route]), restoring = useRef(false)
   useEffect(() => {
@@ -19,11 +16,7 @@ export default function MobileNavigation() {
   }, [route.module, route.navKey, route.tab])
   const navigate = (key: string) => {
     store.goHome()
-    store.handleNav(key, (text) => message.info(text))
-    if (key === 'settings') store.showSettings()
-    else if (key === 'help') store.showHelp()
-    else if (key === 'pdf') store.setModule('pdf')
-    setOpen(false)
+    store.setNavKey(key)
   }
   useEffect(() => {
     const send = (action: string) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token } })
@@ -31,7 +24,6 @@ export default function MobileNavigation() {
     const back = (event: Event) => {
       if (event.defaultPrevented) return
       event.preventDefault()
-      if (open) { setOpen(false); return }
       const overlays = [...document.querySelectorAll('.ant-modal-wrap,.ant-drawer-open')].filter(visible)
       const top = overlays[overlays.length - 1]
       if (top) {
@@ -59,7 +51,7 @@ export default function MobileNavigation() {
     let lastState = ''
     const report = () => {
       if (!window.sealNative) return
-      const state = { action: 'state', token: window.sealNative.token, atHome: store.module === 'home' && store.navKey === 'home' && !open && !document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open'), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
+      const state = { action: 'state', token: window.sealNative.token, atHome: store.module === 'home' && store.navKey === 'home' && !document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open'), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
       const value = JSON.stringify(state)
       if (value !== lastState) { lastState = value; window.uni?.webView?.postMessage({ data: state }) }
     }
@@ -67,20 +59,10 @@ export default function MobileNavigation() {
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] })
     report()
     return () => { observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist); window.removeEventListener('seal-native-probe', healthy) }
-  }, [store, open, message])
+  }, [store, message])
   return <>
     <nav className="seal-mobile-nav" aria-label="移动工作台导航">
-      <button aria-label="返回首页" aria-current={store.module === 'home' && !open ? 'page' : undefined} onClick={() => store.goHome()}><Icon name="home" size={23} variant="outline"/><span>首页</span></button>
-      <button aria-label="打开文件" onClick={() => { void 通过对话框打开文件(message, modal, (类型, 内容, 路径, 警告, 页面设置, 文件指纹) => store.createDoc(类型, 内容, { 路径, 警告, 页面设置, 文件指纹 })) }}><Icon name="folder" size={23} variant="outline"/><span>文件</span></button>
-      <button aria-label="打开智能助手" onClick={() => window.dispatchEvent(new Event('seal-open-assistant'))}><Icon name="ai" size={23} variant="outline"/><span>助手</span></button>
-      <button aria-label="全部功能" aria-current={open ? 'page' : undefined} aria-expanded={open} onClick={() => setOpen(true)}><Icon name="grid" size={23} variant="outline"/><span>功能</span></button>
+      {[{key:'home',section:'home',label:'首页',icon:'home'},{key:'my-cloud',section:'cloud',label:'云盘',icon:'folder'},{key:'apps',section:'services',label:'服务',icon:'grid'},{key:'market',section:'templates',label:'模板',icon:'doc-ppt'},{key:'mobile-profile',section:'mine',label:'我的',icon:'users'}].map(item=><button key={item.key} aria-label={item.label==='首页'?'返回首页':item.label} aria-current={store.module==='home'&&mobileSection(store.navKey)===item.section?'page':undefined} onClick={()=>navigate(item.key)}><Icon name={item.icon} size={23} variant="outline"/><span>{item.label}</span></button>)}
     </nav>
-    <Drawer title="海豹办公" placement="bottom" height="80%" open={open} onClose={() => setOpen(false)} className="seal-mobile-functions">
-      <div className="seal-mobile-create">
-        {([{ key: 'word', label: '文字', icon: 'doc-word' }, { key: 'table', label: '表格', icon: 'doc-table' }, { key: 'ppt', label: '演示', icon: 'doc-ppt' }, { key: 'pdf', label: 'PDF', icon: 'doc-pdf' }] as const).map((item) => <Button key={item.key} data-document-type={item.key} onClick={() => { store.createDoc(item.key); setOpen(false) }}><Icon name={item.icon} size={36}/>{item.label}</Button>)}
-      </div>
-      <div className="seal-mobile-function-grid">{NAV_GROUPS.flat().filter((item) => item.implemented && navigationAvailable(item.key) && !['desktop', 'download'].includes(item.key)).map((item) => <button key={item.key} data-nav-key={item.key} aria-current={store.navKey === item.key ? 'page' : undefined} onClick={() => navigate(item.key)}><Icon name={item.icon} size={32}/><span>{item.key === 'document' ? '应用文档空间' : item.label}</span></button>)}</div>
-      <div className="seal-mobile-account"><Button onClick={() => { cloud.configure(); setOpen(false) }}>账号与云空间</Button><Button onClick={settings.切换主题}>切换{settings.主题 === '深色' ? '浅' : '深'}色</Button></div>
-    </Drawer>
   </>
 }

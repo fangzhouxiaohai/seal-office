@@ -4,7 +4,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 module.exports = async function readingActions({ win, evaluate, output, checks }) {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150))
   const filename = await evaluate(`(async()=>{const api=window.electronAPI;const doc=await api.office.writeDocx({段落:[{类型:'段落',级别:1,对齐:'左',列表:'无',文字:[{文本:'手机阅读验收'}]},{类型:'段落',级别:0,对齐:'左',列表:'无',文字:[{文本:'只读模式保留原始正文和字号，横竖屏均可浏览。',字号:12}]}],未覆盖:[]});if(!doc.成功)throw new Error(doc.错误);const file=await api.showSaveDialog('手机阅读验收.docx','word');const saved=await api.saveToFile(file,doc.数据,'二进制');if(!saved.成功)throw new Error(saved.错误);return file})()`)
-  await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};document.querySelector('.seal-mobile-nav [aria-label="打开文件"]').click()`)
+  await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})()`)
   for (let i = 0; i < 100; i++) { if (await evaluate(`document.querySelector('.wps-editor-canvas__content')?.textContent.includes('只读模式保留')`)) break; await wait() }
   assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content')?.contentEditable`), 'false', '手机导入文档默认阅读')
   const original = await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`)

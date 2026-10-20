@@ -30,7 +30,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     durableWrite(secureFile,safeStorage.encryptString(JSON.stringify(state)))
   }
   const root=()=>{if(!state.root)throw new Error('请先输入恢复密钥解锁云空间');return Buffer.from(state.root,'base64')}
-  function status(){return {url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
+  function status(){return {url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,deletionPending:Boolean(state.deletionReceipt),...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
   async function request(route,{method='GET',data,binary=false,headers={},timeout=30000}={}){
     const url=new URL(state.url+route),payload=Buffer.isBuffer(data)?data:data===undefined?null:Buffer.from(JSON.stringify(data))
     const head={...(state.token?{Authorization:'Bearer '+state.token}:{}),...(payload?{'Content-Type':Buffer.isBuffer(data)?'application/octet-stream':'application/json','Content-Length':payload.length}:{}),...headers}
@@ -50,7 +50,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
       });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(timeout,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
     })
   }
-  const requireSpace=()=>{if(!state.token||!state.account?.enabled)throw new Error('请先登录并开通云空间');root()}
+  const requireSpace=()=>{if(state.deletionReceipt)throw new Error('账号正在确认注销，请先查看注销进度');if(!state.token||!state.account?.enabled)throw new Error('请先登录并开通云空间');root()}
   const encodeMeta=(id,meta)=>seal(root(),Buffer.from(JSON.stringify(meta)),`seal-meta:${id}`).toString('base64')
   const decodeMeta=n=>({...n,meta:JSON.parse(unseal(root(),Buffer.from(n.meta,'base64'),`seal-meta:${n.id}`).toString())})
   async function refresh(){if(state.token){const account=await request('/v1/me');if(state.account?.autosave&&!account.autosave){epoch++;for(const req of active)req.destroy()}state.account=account;if(!account.enabled){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};clearOutbox()}persist()}return status()}
@@ -124,9 +124,22 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     if(q.upload){try{await request(`/v1/uploads/${q.upload}`,{method:'DELETE'})}catch{}}
     fs.unlinkSync(queueFile);fs.unlinkSync(path.join(outbox,q.blob));delete state.statuses[id];persist();return result
   }
-  function requireEmptyOutbox(){if(pending().length)throw new Error('还有待同步文件，请先同步、保留冲突副本或导出并清除待同步记录，再退出账号或切换服务器')}
+  function requireEmptyOutbox(){if(state.deletionReceipt)throw new Error('请先查看并完成注销进度');if(pending().length)throw new Error('还有待同步文件，请先同步、保留冲突副本或导出并清除待同步记录，再退出账号或切换服务器')}
   const collaboration=createCollaboration({request,requireSpace,root,getState:()=>state,persist,list,keyFor,invalidateSession:()=>{epoch++;for(const req of active)req.destroy();state.token=null;state.root=null;state.account=null;persist()}})
   const realtime=createRealtime({directory,request,root,getState:()=>state,requireSpace,resolve:collaboration.resolveRealtime,persist,mergeUpdates,list})
+  async function authenticate(route, credentials){
+    state.deviceId||=randomUUID()
+    const result=await request(route,{method:'POST',data:{...credentials,deviceId:state.deviceId,deviceName:'海豹办公设备'}})
+    const same=state.owner===result.account.id
+    if(!same&&pending().length){try{await request('/v1/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+result.token}})}catch{}throw new Error('本机还有原账号的待同步数据，请先登录原账号处理')}
+    epoch++;state.token=result.token;state.account=result.account;state.owner=result.account.id
+    if(!same){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox()}
+    persist();return status()
+  }
+  function finishAccountDeletion(){
+    if(state.owner&&state.owner!==state.deletionOwner||state.account&&state.account.id!==state.deletionOwner)return
+    epoch++;for(const req of active)req.destroy();state.token=null;state.account=null;state.owner=null;state.root=null;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox();persist()
+  }
   async function rejectStaleRealtimeBinary(id){
     const caps=await request('/v1/capabilities',{headers:{Authorization:''}})
     if(caps.realtime!==1)return
@@ -144,7 +157,23 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     async replaceTemplate(id,data){const node=(await list()).find(n=>n.id===id&&!n.deleted);if(!node||!node.meta.template)throw new Error('请选择自己的演示模板');const pubs=(await request('/v1/publications')).items;if(pubs.some(p=>p.node_id===id&&['pending','approved'].includes(p.status)))throw new Error('请先撤回此模板的公开申请，再替换版本并重新审核');const linkId='template:'+id;state.links[linkId]={id,meta:node.meta,created:true,version:node.version,digest:null,parent:node.parent,kind:node.kind};persist();return save({linkId,name:node.meta.name,data,template:true})},
     async setServer(url){requireEmptyOutbox();if(state.recoveryPending)throw new Error('请先安全保存并确认恢复密钥');const target=normalizeUrl(url);const old=state.url;state.url=target;try{const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.version!==1)throw new Error('服务器版本不兼容')}catch(e){state.url=old;throw e}epoch++;for(const req of active)req.destroy();state={url:target,token:null,account:null,owner:null,root:null,recoveryPending:null,links:{},statuses:{}};clearOutbox();persist();return status()},
     sendCode:(phone,purpose='login')=>request('/v1/auth/code',{method:'POST',data:{phone,purpose}}),
-    async login(phone,code){state.deviceId||=randomUUID();const result=await request('/v1/auth/login',{method:'POST',data:{phone,code,deviceId:state.deviceId,deviceName:'海豹办公设备'}});const same=state.owner===result.account.id;if(!same&&pending().length)throw new Error('本机还有原账号的待同步数据，请先登录原账号处理');epoch++;state.token=result.token;state.account=result.account;state.owner=result.account.id;if(!same){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox()}persist();return status()},
+    login:(phone,code)=>authenticate('/v1/auth/login',{phone,code}),
+    loginPassword:(phone,password)=>authenticate('/v1/auth/password-login',{phone,password}),
+    async setPassword(input){const result=await request('/v1/auth/password',{method:'POST',data:input});state.account=result.account;persist();return status()},
+    async deleteAccount(input){
+      if(state.deletionReceipt)throw new Error('还有未完成的注销清理，请先查看注销进度')
+      requireEmptyOutbox();if(saveLocks.size||locks.size)throw new Error('请等待当前文件同步结束，再注销账号')
+      const receipt=randomUUID()+'.'+randomBytes(32).toString('base64url')
+      state.deletionReceipt=receipt;state.deletionOwner=state.account?.id;persist()
+      try{await request('/v1/auth/delete-account',{method:'POST',data:{code:input.code,confirm:input.confirm,receipt}})}
+      catch(error){if(error.status&&error.status>=400&&error.status<500){state.deletionReceipt=null;state.deletionOwner=null;persist()}throw error}
+      finishAccountDeletion();return status()
+    },
+    async deletionStatus(){
+      if(!state.deletionReceipt)return {deleted:true,pending:false}
+      let result;try{result=await request('/v1/auth/deletion-status',{method:'POST',data:{receipt:state.deletionReceipt},headers:{Authorization:''}})}catch(error){if(error.status===404){state.deletionReceipt=null;state.deletionOwner=null;persist();throw new Error('注销请求尚未被服务器接受，请重新验证并提交')}throw error}
+      finishAccountDeletion();if(result.deleted){state.deletionReceipt=null;state.deletionOwner=null;persist()}return result
+    },
     async logout(){requireEmptyOutbox();if(state.recoveryPending)throw new Error('请先安全保存并确认恢复密钥');try{await request('/v1/auth/logout',{method:'POST'})}finally{epoch++;for(const req of active)req.destroy();state.token=null;state.account=null;state.owner=null;state.root=null;state.links={};state.statuses={};clearOutbox();persist()}return status()},
     async enable(consent){if(!state.account)throw new Error('请先登录');if(consent!==true)throw new Error('请先同意云服务协议');if(state.account.enabled)return status();const recovery=randomBytes(32).toString('hex'),key=randomBytes(32);const envelope=seal(recoveryKey(recovery,state.account.id),key,`seal-root:${state.account.id}`).toString('base64');state.account=await request('/v1/space/enable',{method:'POST',data:{consent:true,agreementVersion:'2026-10-08',envelope}});state.root=key.toString('base64');state.recoveryPending=recovery;persist();return {...status(),recovery}},
     ackRecovery(){requireSpace();state.recoveryPending=null;persist();return status()},

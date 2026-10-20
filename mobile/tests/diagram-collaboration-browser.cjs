@@ -8,7 +8,7 @@ const option = key => process.argv.find(value => value.startsWith('--' + key + '
 const mode = option('mode') || 'web', group = option('group') || 'personal'
 assert.ok(['web', 'native-file', 'native-http'].includes(mode)); assert.ok(['personal', 'team'].includes(group))
 const root = path.resolve(__dirname, mode === 'web' ? '../unpackage/web' : '../static/office')
-const output = path.resolve(__dirname, '../../.upgrade-private/v200-fifth-pass/diagram-browser', mode + '-' + group)
+const output = path.resolve(__dirname, '../../.upgrade-private/v' + require('../../package.json').version.replaceAll('.','') + '/diagram-browser', mode + '-' + group)
 const startedAt = new Date().toISOString(), hash = file => require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 const bundleFile = path.join(root, mode === 'web' ? fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1] : 'office.js'), bundleSha256 = hash(bundleFile)
 app.setPath('userData', path.join(output, 'profile-' + process.pid)); app.disableHardwareAcceleration()
@@ -25,7 +25,7 @@ async function api(win, action, value = {}) { const result = await evaluate(win,
 async function ready(win) { await wait(win, '!!window.electronAPI&&!!document.querySelector(".wps-app")', '生产页面初始化') }
 async function reload(win) { await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.webContents.reload() }); await ready(win) }
 async function navigate(win, key, text) {
-  if (await evaluate(win, 'innerWidth<900')) { await click(win, '全部功能'); await wait(win, `!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(win, `document.querySelector('[data-nav-key="${key}"]').click()`) }
+  if (await evaluate(win, 'innerWidth<900')) { await click(win, '服务'); await wait(win, `!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(win, `document.querySelector('[data-nav-key="${key}"]').click()`) }
   else await click(win, text)
   await wait(win, `[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const rect=panel.getBoundingClientRect();return !rect.height||rect.top>=innerHeight||rect.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '移动导航收起')
 }
@@ -100,7 +100,7 @@ app.whenReady().then(async () => {
     else { await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'viewer' }); await connected(b, true); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); await input(a, '文字', '降权后仍可查看远端更新'); await flush(a); await has(b, '降权后仍可查看远端更新'); await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'editor' }); await connected(b); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), false); await input(b, '节点备注', '重新授权后继续协作'); await flush(b); assert.equal((await latest(fixture.a, binding)).graph.节点.find(node=>node.文本==='降权后仍可查看远端更新').备注, '重新授权后继续协作'); await fixture.a.teamRemoveMember({ id: team.id, userId: fixture.b.status().account.id }); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('访问权限已撤销')`, '团队移除') }
     assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); checks.push(group === 'team' ? '团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写' : '共享撤销由服务端执行、禁写且所有者仍能继续同步')
     assert.ok(requests.some(item => item.route.includes('/realtime/'))); if (mode !== 'web') assert.ok(requests.some(item => item.native)); assert.deepEqual(errors, []); assert.equal(hash(bundleFile), bundleSha256, 'Production bundle changed during acceptance')
-    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: true, version: '2.0.0', startedAt, bundleSha256, harnessSha256: hash(__filename), mode, group, checks, errors, nativeHostSimulated: mode !== 'web', productionRequests: 0, requests: requests.length, completedAt: new Date().toISOString() }, null, 2)); console.log(JSON.stringify({ passed: true, mode, group, checks }, null, 2))
+    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: true, version: require('../../package.json').version, startedAt, bundleSha256, harnessSha256: hash(__filename), mode, group, checks, errors, nativeHostSimulated: mode !== 'web', productionRequests: 0, requests: requests.length, completedAt: new Date().toISOString() }, null, 2)); console.log(JSON.stringify({ passed: true, mode, group, checks }, null, 2))
   } catch (error) { const states = await Promise.all(windows.map(win => evaluate(win, '({body:document.body.innerText.slice(-3000),url:location.href})').catch(() => null))); fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, mode, group, checks, errors, states, error: error.stack }, null, 2)); console.error(error); process.exitCode = 1 }
   finally { finished = true; clearTimeout(watchdog); for (const controller of controllers.values()) controller.abort(); windows.forEach(win => win.destroy()); server?.closeAllConnections?.(); server?.close(); await fixture?.cleanup(); app.exit(process.exitCode || 0) }
 })

@@ -23,6 +23,9 @@
 .seal-login__brand img{display:block;width:64px;height:64px;aspect-ratio:1;object-fit:contain;margin:0 auto 16px}
 .seal-login__brand h2{margin:0 0 8px;font-size:23px;line-height:1.4;font-weight:600;letter-spacing:.02em;color:var(--text-1)}
 .seal-login__brand p{margin:0;font-size:13px;line-height:1.6;color:var(--text-2)}
+.seal-login__modes{display:flex;gap:10px;margin-bottom:20px}.seal-login__modes .ant-btn{flex:1;min-height:42px}
+.seal-account-security{border-block:1px solid var(--border);padding-block:12px;margin-block:16px}.seal-account-security label{display:block;margin-bottom:6px}.seal-account-security p{line-height:1.7}.seal-account-security form{padding-top:16px}.seal-account-security .ant-btn{min-height:40px}.seal-account-security [role="alert"]{color:#d92d20}
+@media(max-width:768px){.seal-account-security :is(.ant-btn,.ant-input,.ant-input-affix-wrapper){min-height:44px}.seal-account-security .ant-input-affix-wrapper>.ant-input{min-height:32px}.seal-account-security .ant-checkbox-wrapper{min-height:44px;align-items:center}}
 .seal-login__field{margin-bottom:20px}
 .seal-login__field>label{display:block;margin-bottom:8px;font-size:13px;font-weight:500;color:var(--text-1)}
 .seal-login__field :is(.ant-input,.ant-input-affix-wrapper){min-height:46px;border-radius:6px;font-size:14px;background:var(--bg-card);color:var(--text-1);border-color:var(--border)}

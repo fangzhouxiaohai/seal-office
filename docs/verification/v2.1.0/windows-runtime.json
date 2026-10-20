@@ -1,0 +1,70 @@
+{
+  "unpacked": {
+    "passed": true,
+    "isolatedProfileAndTestRegistry": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 20,
+        "evidence": {
+          "path": "release/v2.1.0/核验-unpacked-first.json",
+          "bytes": 1494,
+          "sha256": "cb8a8ff5f67b8add70e9570aa9489a641b7db200e886851eb7eaf186ec1b4b3c"
+        }
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "evidence": {
+          "path": "release/v2.1.0/核验-unpacked-repeat.json",
+          "bytes": 980,
+          "sha256": "e2abda77f292ea52f9c9afce2e96762e02bb99e386a7007b1a1ba7e02353a4cd"
+        }
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "evidence": {
+          "path": "release/v2.1.0/核验-unpacked-confirm.json",
+          "bytes": 2081,
+          "sha256": "4138d85332975c8636eaef03d774d73b9b4059b0976e2e9f6eae164efd70f1d0"
+        }
+      }
+    ],
+    "checks": 63
+  },
+  "portable": {
+    "passed": true,
+    "isolatedProfileAndTestRegistry": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 20,
+        "evidence": {
+          "path": "release/v2.1.0/核验-portable-first.json",
+          "bytes": 1494,
+          "sha256": "cb8a8ff5f67b8add70e9570aa9489a641b7db200e886851eb7eaf186ec1b4b3c"
+        }
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "evidence": {
+          "path": "release/v2.1.0/核验-portable-repeat.json",
+          "bytes": 980,
+          "sha256": "e2abda77f292ea52f9c9afce2e96762e02bb99e386a7007b1a1ba7e02353a4cd"
+        }
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "evidence": {
+          "path": "release/v2.1.0/核验-portable-confirm.json",
+          "bytes": 2081,
+          "sha256": "4138d85332975c8636eaef03d774d73b9b4059b0976e2e9f6eae164efd70f1d0"
+        }
+      }
+    ],
+    "checks": 63
+  }
+}

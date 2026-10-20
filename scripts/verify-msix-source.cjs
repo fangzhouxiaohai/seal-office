@@ -1,0 +1,6 @@
+const fs=require('node:fs'),path=require('node:path'),asar=require('@electron/asar')
+const [filename,version]=process.argv.slice(2)
+if(!filename||!version||!fs.statSync(filename).isFile())throw new Error('Missing MSIX app.asar source')
+const source=JSON.parse(asar.extractFile(path.resolve(filename),'package.json').toString('utf8'))
+if(source.name!=='seal-office'||source.version!==version)throw new Error('MSIX payload name/version does not match the release')
+console.log('MSIX source payload verified: seal-office '+version)

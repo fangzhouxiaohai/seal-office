@@ -312,6 +312,7 @@ const 英文界面: Record<string, string> = {
   '删除批注': 'Delete Comment',
   '显示批注': 'Show Comments',
   '修订': 'Track Changes',
+  '修订历史': 'Revision History',
   '接受修订': 'Accept Change',
   '拒绝修订': 'Reject Change',
   '更改': 'Changes',

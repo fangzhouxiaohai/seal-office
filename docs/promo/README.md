@@ -1,4 +1,14 @@
-# 海豹办公宣传视频
+# 海豹办公当前介绍视频
+
+当前入口为 `npm run promo:build`，版本读取根目录 `package.json`，分镜读取 [current-storyboard.json](current-storyboard.json)。每版制作 1920×1080 PC 横版与 1080×1920 Android 竖版，使用英文 `seal-office-<版本>-pc-intro-1080p.mp4` / `seal-office-<版本>-android-intro-1080p.mp4`，输出到 `release/promo/`，并清理旧成片及过期素材。完整规则见[打包规范](../打包规范.md)。
+
+2.1.0 两条片长均约 109 秒，附普通话配音、中文字幕、封面、联系表与 SHA-256 核验。画面来自最终 Web 构建与冻结的 Android IIFE，采用真实界面静帧剪辑；PC 为响应式网页版实录，Android 明确标注“移动布局演示”，不是 APK 真机录像。`current-capture.cjs` 等待摄影配图和瞬时提示完成后取帧；`current-video.py` 执行整片响度校正、完整解码、画幅、时长、音轨及二维码核验。制作环境使用 Windows 本机普通话语音，依赖见 `scripts/promo/requirements.txt`。
+
+当前下载：[PC 横版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-pc-intro-1080p.mp4) · [Android 竖版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-intro-1080p.mp4)。
+
+## 1.9.8 历史制作记录（旧视频已移出当前交付）
+
+以下固定版本的脚本、链接和参数仅供查阅历史，不作为当前版本制作入口。
 
 基于 Windows 版 **1.9.8** 重新录制，替换旧版交付成片。包含文件工作区、文字排版与保存、表格公式、演示放映、原创演示模板市场、PDF 页面工具、新版助手、知识库、云空间入口和本地工具。
 

@@ -189,6 +189,15 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     throw new Error('文档转换后未得到有效内容')
   }
   if (结果.二进制) {
+    if(['sealdoc','sealsheet','sealshow'].includes(扩展)){
+      const 数据:any=await 桥接.office.readSeal(扩展,结果.内容)
+      if(!数据?.成功)throw new Error(数据?.错误||'海豹文档读取失败')
+      const 提示=Array.isArray(数据.警告)?{警告:数据.警告}:{}
+      if(数据.类型==='word'&&typeof 数据.html==='string')return 带文件指纹({类型:'word',内容:净化富文本(数据.html),...提示,...(数据.页面设置?{页面设置:{...数据.页面设置,页眉Html:净化富文本(数据.页面设置.页眉Html||''),页脚Html:净化富文本(数据.页面设置.页脚Html||'')}}:{})})
+      if(数据.类型==='table'&&Array.isArray(数据.工作表列表)&&数据.工作表列表.length&&数据.工作表列表.every(是旧版工作表))return 带文件指纹({类型:'table',工作表列表:数据.工作表列表,...提示})
+      if(数据.类型==='ppt'&&数据.演示文稿)return 带文件指纹({类型:'ppt',演示文稿:await 恢复导入图片(数据),...提示})
+      throw new Error('海豹文档内容结构不正确，文件未打开')
+    }
     if (扩展 === 'docx') {
       const 数据: any = await 桥接.office.readDocx(结果.内容)
       if (数据 && 数据.成功 && typeof 数据.html === 'string') {

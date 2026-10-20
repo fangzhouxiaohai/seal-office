@@ -7,10 +7,11 @@ const pkg = require('../package.json')
 const ubuntu = require('../build/electron-ubuntu.cjs')
 const mobile = require('../mobile/manifest.json')
 
-test('all six distribution names use the requested English convention, including future versions', () => {
+test('all distribution names use the requested English convention, including Store packages and future versions', () => {
   assert.deepEqual(Object.fromEntries(Object.keys(templates).map(key => [key, artifactName(key, '2.0.0')])), {
     windowsSetup: 'seal-office-setup-2.0.0.exe',
     windowsPortable: 'seal-office-2.0.0-portable.exe',
+    windowsStore: 'seal-office-2.0.0-microsoft-store-x64.msix',
     ubuntu: 'seal-office-2.0.0-amd64.deb',
     web: 'seal-office-2.0.0-web.zip',
     android: 'seal-office-2.0.0-android.apk',

@@ -214,6 +214,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   office: {
+    readSeal:(扩展,数据)=>ipcRenderer.invoke('office.readSeal',扩展,数据),
+    writeSeal:(类型,数据)=>ipcRenderer.invoke('office.writeSeal',类型,数据),
     readCompatible: (扩展, 数据) => ipcRenderer.invoke('office.readCompatible', 扩展, 数据),
     writeCompatible: (类型, 扩展, 模型) => ipcRenderer.invoke('office.writeCompatible', 类型, 扩展, 模型),
     writeDocx: (模型) => ipcRenderer.invoke('office.writeDocx', 模型),

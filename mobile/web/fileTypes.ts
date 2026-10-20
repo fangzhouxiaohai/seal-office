@@ -21,6 +21,9 @@ const mimeTypes: Record<string, string> = {
   pptm: 'application/vnd.ms-powerpoint.presentation.macroEnabled.12', potm: 'application/vnd.ms-powerpoint.template.macroEnabled.12', ppsm: 'application/vnd.ms-powerpoint.slideshow.macroEnabled.12',
   odp: 'application/vnd.oasis.opendocument.presentation', otp: 'application/vnd.oasis.opendocument.presentation-template', fodp: 'application/vnd.oasis.opendocument.presentation-flat-xml',
   ofd: 'application/ofd',
+  sealdoc: 'application/vnd.seal-office.word',
+  sealsheet: 'application/vnd.seal-office.sheet',
+  sealshow: 'application/vnd.seal-office.presentation',
 }
 export const extensionOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? ''
 export const exportMime = (name: string) => mimeTypes[extensionOf(name)] ?? 'application/octet-stream'

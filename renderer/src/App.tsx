@@ -53,7 +53,7 @@ const 主题配置 = ({ 深色, 移动 }: { 深色: boolean; 移动: boolean }) 
   },
 })
 
-const 外壳 = () => {
+const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children:React.ReactNode}> }) => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message, modal } = AntdApp.useApp()
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
@@ -360,7 +360,7 @@ const 外壳 = () => {
             onOpenHelp: () => set帮助弹窗打开(true),
             onNotify: (文本: string) => message.info(文本),
           }),
-          React.createElement('main', { className: 'wps-home-main' }, 主内容),
+          React.createElement('main', { className: 'wps-home-main' }, 跨端首页 ? React.createElement(跨端首页, {children:主内容}) : 主内容),
           React.createElement(RecommendPanel, {
             onOpenFile: () => {
               打开本地文件()
@@ -466,7 +466,7 @@ export const 动态主题容器 = ({ children }: { children: React.ReactNode }) 
   }, children)
 }
 
-const App = ({ 初始最近文档, 跨端导航 }: { 初始最近文档?: DocItem[]; 跨端导航?: React.ComponentType } = {}) =>
+const App = ({ 初始最近文档, 跨端导航, 跨端首页 }: { 初始最近文档?: DocItem[]; 跨端导航?: React.ComponentType; 跨端首页?: React.ComponentType<{children:React.ReactNode}> } = {}) =>
   React.createElement(
     SettingsProvider,
     null,
@@ -481,7 +481,7 @@ const App = ({ 初始最近文档, 跨端导航 }: { 初始最近文档?: DocIte
         React.createElement(
           ErrorBoundary,
           null,
-          React.createElement(CloudProvider, { children: React.createElement(AppProvider, { 初始最近文档, children: React.createElement(React.Fragment, null, React.createElement(外壳, null), 跨端导航 ? React.createElement(跨端导航) : null) }) })
+          React.createElement(CloudProvider, { children: React.createElement(AppProvider, { 初始最近文档, children: React.createElement(React.Fragment, null, React.createElement(外壳, {跨端首页}), 跨端导航 ? React.createElement(跨端导航) : null) }) })
         )
       )
     )

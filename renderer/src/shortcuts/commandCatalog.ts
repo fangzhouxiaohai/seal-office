@@ -374,6 +374,10 @@ export const commandCatalog = {
       "修订"
     ],
     [
+      "track.history",
+      "修订历史"
+    ],
+    [
       "track.reject",
       "拒绝修订"
     ],

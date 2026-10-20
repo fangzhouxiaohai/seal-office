@@ -261,7 +261,7 @@ export interface 电子接口 {
   }
   presentationAi?: 演示智能接口
   presentationGeneration?: 演示生成接口
-  office: { readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
+  office: { readSeal:(扩展:string,数据:string)=>Promise<any>;writeSeal:(类型:string,数据:unknown)=>Promise<any>;readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; insertBlank: (数据: string, 位置: number) => Promise<any>; insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => Promise<any>; editPage: (数据: string, 操作: unknown) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
 declare global { interface Window { electronAPI?: 电子接口 } }
@@ -463,6 +463,8 @@ export const 桥接 = {
     },
   },
   office: {
+    readSeal:(扩展:string,数据:string)=>取后端()?.office.readSeal(扩展,数据)??失败('当前环境不支持海豹文档读取'),
+    writeSeal:(类型:string,数据:unknown)=>取后端()?.office.writeSeal(类型,数据)??失败('当前环境不支持海豹文档保存'),
     readCompatible: (扩展: string, 数据: string) => 取后端()?.office.readCompatible?.(扩展, 数据) ?? 失败('当前环境缺少文档兼容引擎'),
     writeCompatible: (类型: string, 扩展: string, 模型: unknown) => 取后端()?.office.writeCompatible?.(类型, 扩展, 模型) ?? 失败('当前环境缺少文档兼容引擎'),
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),

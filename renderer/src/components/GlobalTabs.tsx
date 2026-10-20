@@ -4,6 +4,7 @@ import Icon from './Icon'
 import { useAppStore, type WorkspaceTab } from '../store'
 import './bottomTabs.css'
 import {flushCloudBeforeClose} from '../cloud/autosaveLifecycle'
+import { useIconPlatform } from './IconPlatform'
 
 const 类型图标: Record<WorkspaceTab['type'], string> = {
   word: 'doc-word',
@@ -15,6 +16,8 @@ const 类型图标: Record<WorkspaceTab['type'], string> = {
 const GlobalTabs = () => {
   const { modal } = AntdApp.useApp()
   const { workspaceTabs, activeWorkspaceTabId, selectWorkspaceTab, closeWorkspaceTab, createDoc } = useAppStore()
+  const mobile=useIconPlatform()==='mobile'
+  if(mobile&&workspaceTabs.length===0)return null
 
   const 处理标签按键 = (事件: KeyboardEvent<HTMLButtonElement>) => {
     const 标签按钮 = Array.from(事件.currentTarget.closest('.wps-global-tabs')?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])

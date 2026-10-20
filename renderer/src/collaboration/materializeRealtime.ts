@@ -39,32 +39,37 @@ export async function materializeRealtime(file: CollaborationDownload, binding: 
       return { ...file, path, name, data }
     }
     let content: any, page: CollaborativeWord['页面设置'] | undefined, result: any
+    const nativeExtension=({word:'sealdoc',table:'sealsheet',ppt:'sealshow'} as Record<string,string>)[type]
+    const native=file.name.toLowerCase().endsWith('.'+nativeExtension)
+    let nativeSource:any
+    if(native){const original=await 桥接.readFile(file.path);if(!original.成功||typeof original.内容!=='string')throw new Error(original.错误||'海豹来源文件不可用');nativeSource=await 桥接.office.readSeal(nativeExtension,original.内容);if(!nativeSource.成功)throw new Error(nativeSource.错误||'海豹来源文件解析失败')}
+    const nativeWarnings=nativeSource?.警告??[]
     if (type === 'word') {
       const invalid = validateWordModel(model); if (invalid) throw new Error(invalid)
       content = joinWordModel(model); page = model.页面设置
       const intermediate = htmlToDocxModel(content, page)
-      if (intermediate.未覆盖.length) throw new Error('实时文档含尚不能完整导出的结构，请在原编辑器中保留副本')
-      result = await 桥接.office.writeDocx(intermediate)
+      if (intermediate.未覆盖.length&&!native) throw new Error('实时文档含尚不能完整导出的结构，请在原编辑器中保留副本')
+      result = native?await 桥接.office.writeSeal('word',{html:content,页面设置:page,警告:nativeWarnings}):await 桥接.office.writeDocx(intermediate)
     } else if (type === 'table') {
       const invalid = 校验协作工作簿(model); if (invalid) throw new Error(invalid)
-      content = 重算工作簿(model as Sheet[]); result = await 桥接.office.writeXlsx(导出为Xlsx(content))
+      content = 重算工作簿(model as Sheet[]); result = native?await 桥接.office.writeSeal('table',{工作表列表:content,警告:nativeWarnings}):await 桥接.office.writeXlsx(导出为Xlsx(content))
     } else if (type === 'ppt') {
       if (!model?.deck?.幻灯片列表) throw new Error('实时演示结构无效')
       // The seed can precede the first image edit. Its original file still owns
       // those asset bytes; combine them with later encrypted CRDT resources.
       const original = await 桥接.readFile(file.path)
       if (!original.成功 || typeof original.内容 !== 'string') throw new Error(original.错误 || '演示源文件读取失败')
-      const imported = await 桥接.office.readPptx(original.内容)
+      const imported = native?nativeSource:await 桥接.office.readPptx(original.内容)
       if (!imported.成功) throw new Error(imported.错误 || '演示源资源读取失败')
       const resources: 演示资源条目[] = Object.values({ ...Object.fromEntries((imported.资源条目 || []).map((item: 演示资源条目) => [item.标识, item])), ...(model.resources || {}) }), restored = resources.length ? await 桥接.presentationResources.restore(resources) : { 成功: true }
       if (!restored.成功) throw new Error(restored.错误 || '实时演示资源恢复失败')
       content = { ...model.deck, 当前索引: 0 }
       const ids = 收集演示资源标识(content), available = new Map(resources.map(item => [item.标识, item]))
       if (ids.some(id => !available.has(id))) throw new Error('实时演示含缺失资源，下载已停止；原始文件仍保留')
-      result = await 桥接.office.writePptx(构建演示保存模型(content, ids.map(id => available.get(id)!)))
+      result = native?await 桥接.office.writeSeal('ppt',{演示文稿:content,资源条目:ids.map(id=>available.get(id)!),警告:nativeWarnings}):await 桥接.office.writePptx(构建演示保存模型(content, ids.map(id => available.get(id)!)))
     } else throw new Error('实时文档类型不受支持')
     if (!result?.成功 || !result.数据) throw new Error(result?.错误 || '实时文档导出失败')
-    const extension = { word: 'docx', table: 'xlsx', ppt: 'pptx' }[type], name = file.name.replace(/\.[^.\\/]+$/, '') + '.' + extension, path = file.path.replace(/[^\\/]+$/, name)
+    const extension = native?nativeExtension:{ word: 'docx', table: 'xlsx', ppt: 'pptx' }[type], name = file.name.replace(/\.[^.\\/]+$/, '') + '.' + extension, path = file.path.replace(/[^\\/]+$/, name)
     const previous = path === file.path ? await 桥接.readFile(path) : null
     const written = await 桥接.saveToFile(path, result.数据, '二进制', previous?.成功 ? previous.文件指纹 : undefined)
     if (!written.成功) throw new Error(written.错误 || '最新实时文档写入本机失败')

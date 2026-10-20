@@ -1,0 +1,311 @@
+{
+  "passed": true,
+  "version": "2.1.0",
+  "videos": [
+    {
+      "platform": "pc",
+      "file": "seal-office-2.1.0-pc-intro-1080p.mp4",
+      "bytes": 4164760,
+      "sha256": "5d2da679bc7fcbfc943732db5e36a8a63418ab2ef79c69a0022e56c68be29d93",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 109.16666666666667,
+      "videoAndAudioFullyDecoded": true,
+      "narration": "Microsoft Huihui Desktop",
+      "integratedLufs": -16.59,
+      "truePeakDb": -1.37,
+      "qrUrl": "https://seal.xingmasoft.com/office/",
+      "subtitles": 8,
+      "scenes": 8
+    },
+    {
+      "platform": "android",
+      "file": "seal-office-2.1.0-android-intro-1080p.mp4",
+      "bytes": 4349512,
+      "sha256": "33ddd4391c5ff89da530f8d34decc1c8452e448cea663491494c0bb0700bcec6",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 108.56666666666666,
+      "videoAndAudioFullyDecoded": true,
+      "narration": "Microsoft Huihui Desktop",
+      "integratedLufs": -16.58,
+      "truePeakDb": -1.39,
+      "qrUrl": "https://seal.xingmasoft.com/office/",
+      "subtitles": 8,
+      "scenes": 8
+    }
+  ],
+  "source": {
+    "version": "2.1.0",
+    "capturedAt": "2026-10-20T17:05:48.566Z",
+    "productionAccountOperations": 0,
+    "realDeviceOrApkCapture": false,
+    "captures": [
+      {
+        "platform": "pc",
+        "id": "home",
+        "path": "release/promo/work-2.1.0/pc-home.png",
+        "sha256": "1f0fcb2f7039885a2a1ce743f0d9aa803210fbefe591ef2ae22fd20f34f87f69",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "word",
+        "path": "release/promo/work-2.1.0/pc-word.png",
+        "sha256": "9ecf7916a35536bbb7206ce0340aa8ea4629d0dd864fa120d535f5fb33a01e03",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "sheet",
+        "path": "release/promo/work-2.1.0/pc-sheet.png",
+        "sha256": "d03063f1feae8ec3489d9180c79267ef7429c5a2be961e377294c5231a8e8f03",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "templates",
+        "path": "release/promo/work-2.1.0/pc-templates.png",
+        "sha256": "1556e759713bf5dd0d020f849be471bbca43baa5c3cdcda4ce12e0e0c1f28b70",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "diagram",
+        "path": "release/promo/work-2.1.0/pc-diagram.png",
+        "sha256": "17d07132e6c9d383a45572a74fb1c2e67323aaa964f1364ec072438b5f7d287d",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "services",
+        "path": "release/promo/work-2.1.0/pc-services.png",
+        "sha256": "3cb213bae9dfe519a9fa57fe73e653018a46d499381181820a01dbf9a442d803",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "account",
+        "path": "release/promo/work-2.1.0/pc-account.png",
+        "sha256": "ed8084aa94cf545cccc455b5ab43a8f89cffde3c966a70dc68d77f8fb387aff3",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "pc",
+        "id": "outro",
+        "path": "release/promo/work-2.1.0/pc-outro.png",
+        "sha256": "44030a92773689c9d609343c37beca988c45b24ec2d62af3e60daae9e8e59f24",
+        "bundleSha256": "befefa0e22f4c5a79424f59b78ac5458c4471a2754023e0c6d98aa73542802b5",
+        "build": {
+          "platform": "web",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:03:16.991Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production responsive PC Web build in Electron browser"
+      },
+      {
+        "platform": "android",
+        "id": "home",
+        "path": "release/promo/work-2.1.0/android-home.png",
+        "sha256": "3c992baa322c8d09a98d22f7860ac7a233ef2693c5b2bd3e5e6f0798a132adbd",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "word",
+        "path": "release/promo/work-2.1.0/android-word.png",
+        "sha256": "e6b59585321a2b2619ba7d2c8644dc09ee4b71b06653b27c497f6d8c545149be",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "reading",
+        "path": "release/promo/work-2.1.0/android-reading.png",
+        "sha256": "1b0eca9a4c965e197e0e90dba590d6c04b51e8fdaa2de9484bcef2e1a79e3baa",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "sheet",
+        "path": "release/promo/work-2.1.0/android-sheet.png",
+        "sha256": "25900a7deac35624fb2bb7ab256b583fdaf73804800e8a88adc5abb838d72fb7",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "templates",
+        "path": "release/promo/work-2.1.0/android-templates.png",
+        "sha256": "b1f92dfa799612ca2eabe8bff2518835b661c3d546c1ee0f3c7578a892acc44e",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "diagram",
+        "path": "release/promo/work-2.1.0/android-diagram.png",
+        "sha256": "ab9f6d867d8689c61f4a6130f836b10ccd473c472f04cbff013912109b49464c",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "services",
+        "path": "release/promo/work-2.1.0/android-services.png",
+        "sha256": "3dae20fa0e7954336cb331f117a7dc0d9765f48bb9b4bd6835eb852263d19134",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "account",
+        "path": "release/promo/work-2.1.0/android-account.png",
+        "sha256": "6466f34d112546f9e0665aaa4b0493e63ab2b81003f119b830fa0672a092c9f0",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      },
+      {
+        "platform": "android",
+        "id": "outro",
+        "path": "release/promo/work-2.1.0/android-outro.png",
+        "sha256": "9b5f4c14bb21f1b94ac3cf492bf8ade815c2ff7ba2186fad4d1aa0228ae18017",
+        "bundleSha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "build": {
+          "platform": "android",
+          "desktopVersion": "2.1.0",
+          "builtAt": "2026-10-20T17:02:12.293Z",
+          "architecture": "uni-app-x-local-webview",
+          "defaultPackagePlatform": "android"
+        },
+        "source": "production Android IIFE layout in Electron browser; native host not installed"
+      }
+    ]
+  },
+  "sourceDisclosure": "PC responsive Web build and frozen Android IIFE layout captured in isolated Electron profiles; edited introduction with still UI frames and Mandarin narration; not an APK physical-device recording.",
+  "visualReview": {
+    "passed": true,
+    "independentReview": true,
+    "templateNoticeRemoved": true,
+    "pcSha256": "5d2da679bc7fcbfc943732db5e36a8a63418ab2ef79c69a0022e56c68be29d93",
+    "androidSha256": "33ddd4391c5ff89da530f8d34decc1c8452e448cea663491494c0bb0700bcec6"
+  }
+}

@@ -40,7 +40,7 @@ app.whenReady().then(async () => {
     const wait = async (code, label) => { for (let i = 0; i < 160; i++) { if (await evaluate(code)) return; await new Promise(resolve => setTimeout(resolve, 100)) } throw new Error('等待失败：' + label) }
     const click = async text => evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&item.textContent.replace(/\\s/g,'')===${JSON.stringify(text.replace(/\s/g, ''))});if(!button)throw new Error('缺少按钮');button.click();return true})()`)
     const navigate = async (key, text) => {
-      if (await evaluate('innerWidth<900')) { await evaluate(`document.querySelector('[aria-label="全部功能"]').click()`); await wait(`!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(`document.querySelector('[data-nav-key="${key}"]').click()`) }
+      if (await evaluate('innerWidth<900')) { await evaluate(`document.querySelector('[aria-label="服务"]').click()`); await wait(`!!document.querySelector('[data-nav-key="${key}"]')`, key); await evaluate(`document.querySelector('[data-nav-key="${key}"]').click()`) }
       else await click(text)
       await wait(`document.querySelector('.seal-collaboration-header h1')?.textContent===${JSON.stringify(key === 'shared' ? '共享文档' : text)}`, key)
       await wait(`[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const rect=panel.getBoundingClientRect();return !rect.height||rect.top>=innerHeight||rect.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '移动导航关闭动画')

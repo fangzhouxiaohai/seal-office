@@ -10,6 +10,8 @@ async function openStore(directory) {
   let db = fs.existsSync(filename) ? new SQL.Database(fs.readFileSync(filename)) : new SQL.Database()
   db.run(`
     PRAGMA foreign_keys=ON;
+    CREATE TABLE IF NOT EXISTS passwords(user_id TEXT PRIMARY KEY,salt TEXT NOT NULL,digest TEXT NOT NULL,updated INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS password_attempts(key TEXT NOT NULL,window INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(key,window));
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,phone TEXT UNIQUE NOT NULL,enabled INTEGER DEFAULT 0,autosave INTEGER DEFAULT 0,envelope TEXT,consent TEXT,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS codes(phone TEXT NOT NULL,purpose TEXT NOT NULL,hash TEXT NOT NULL,expires INTEGER NOT NULL,attempts INTEGER DEFAULT 0,PRIMARY KEY(phone,purpose));
@@ -57,6 +59,6 @@ async function openStore(directory) {
     catch (error) { db.close(); db = new SQL.Database(before); db.run('PRAGMA foreign_keys=ON'); throw error }
   }
   write()
-  return { query, one: (sql, p) => query(sql, p)[0], run: (sql, p = []) => db.run(sql, p), transaction, close: () => db.close() }
+  return { query, one: (sql, p) => query(sql, p)[0], run: (sql, p = []) => db.run(sql, p), transaction, compact: () => { db.run('VACUUM'); write() }, close: () => db.close() }
 }
 module.exports = { openStore }

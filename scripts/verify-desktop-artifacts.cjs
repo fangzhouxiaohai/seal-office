@@ -11,7 +11,7 @@ const expectedManifest = JSON.parse(fs.readFileSync(path.join(root, 'main/integr
 const report = { version, mode: 'static-package-inspection', packages: [], limitations: ['Linux installation and UI execution are not established by static checks.'] }
 for (const [platform, archive] of [
   ['windows', path.join(root, 'release', `v${version}`, 'win-unpacked/resources/app.asar')],
-  ['linux', path.join(root, 'release/ubuntu/linux-unpacked/resources/app.asar')],
+  ['linux', path.join(root, 'release', `v${version}`, 'linux-unpacked/resources/app.asar')],
 ]) {
   const names = asar.listPackage(archive).map(name => name.replaceAll('\\', '/').replace(/^\//, ''))
   const read = name => asar.extractFile(archive, path.normalize(name))

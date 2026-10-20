@@ -1,6 +1,7 @@
 {
   "windowsSetup": "seal-office-setup-${version}.exe",
   "windowsPortable": "seal-office-${version}-portable.exe",
+  "windowsStore": "seal-office-${version}-microsoft-store-x64.msix",
   "ubuntu": "seal-office-${version}-amd64.deb",
   "web": "seal-office-${version}-web.zip",
   "android": "seal-office-${version}-android.apk",

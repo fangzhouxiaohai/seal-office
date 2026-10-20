@@ -1,5 +1,6 @@
 const 格式 = require('../documentFormats.json')
 const 映射 = {
+  sealdoc:'application/vnd.seal-office.word',sealsheet:'application/vnd.seal-office.sheet',sealshow:'application/vnd.seal-office.presentation',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   dotx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
   doc: 'application/msword', dot: 'application/msword-template',

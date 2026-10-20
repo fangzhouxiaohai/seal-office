@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), os = require('os'), assert = r
 const { spawn, execFileSync } = require('child_process')
 const { once } = require('events')
 const { createHash } = require('crypto')
-const root = path.resolve(__dirname, '..'), output = path.join(root, 'release/ubuntu/verification')
+const root = path.resolve(__dirname, '..'), releaseDirectory = path.join(root, 'release', 'v' + require('../package.json').version), output = path.join(releaseDirectory, 'verification')
 fs.mkdirSync(output, { recursive: true })
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-ubuntu-verify-'))
 const version = require('../package.json').version
@@ -46,7 +46,7 @@ const models = {
   ppt: { 页面尺寸: { 宽: 960, 高: 540 }, 幻灯片: [{ id: 'p1', 背景色: '#FFFFFF', 文本框: [{ id: 't1', x: 40, y: 50, width: 700, height: 90, text: '中文格式验收 0012', 字号: 24, 颜色: '#222222' }] }] },
 }
 async function verify() {
-  const packageFile = path.join(root, 'release/ubuntu', require('./artifact-names.cjs').artifactName('ubuntu', version))
+  const packageFile = path.join(releaseDirectory, require('./artifact-names.cjs').artifactName('ubuntu', version))
   report.packageFile = path.basename(packageFile)
   report.packageBytes = fs.statSync(packageFile).size
   report.packageSha256 = createHash('sha256').update(fs.readFileSync(packageFile)).digest('hex')

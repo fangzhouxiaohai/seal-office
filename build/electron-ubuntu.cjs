@@ -1,16 +1,16 @@
 // Keep Windows runtime/resources separate. Run on Linux with npm run dist:ubuntu.
-const { build } = require('../package.json')
+const { build, version } = require('../package.json')
 const { 文件关联, MIME别名 } = require('../main/linux/mimeTypes')
 module.exports = {
   extends: null,
   appId: build.appId,
   productName: build.productName,
-  directories: { output: 'release/ubuntu', buildResources: 'build' },
+  directories: { output: `release/v${version}`, buildResources: 'build' },
   // Reuse the verified Linux Electron runtime checked into the private upgrade
   // workspace. On Windows, electron-builder's temporary cache can disappear
   // between download and stat, which makes an otherwise valid Ubuntu build
   // fail nondeterministically.
-  electronDist: '.upgrade-private/electron-linux-25.9.8',
+  electronDist: process.platform === 'linux' ? 'node_modules/electron/dist' : '.upgrade-private/electron-linux-25.9.8',
   files: [...build.files, '!node_modules/@napi-rs/canvas-win32-*/**'],
   extraMetadata: { desktopName: 'sealoffice.desktop' },
   extraResources: [

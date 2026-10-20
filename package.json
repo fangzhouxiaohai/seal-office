@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "海豹办公 Seal Office",
   "homepage": "https://github.com/fangzhouxiaohai/seal-office",
   "main": "main/main.js",
@@ -21,16 +21,19 @@
     "pack": "npm --prefix mobile run pack:android",
     "dist": "npm --prefix mobile run pack:android",
     "prepare:office-runtime": "python scripts/prepare-office-runtime.py",
-    "pack:windows": "npm run prepare:office-runtime && npm run build && electron-builder --win --dir",
-    "dist:windows": "npm run prepare:office-runtime && npm run build && electron-builder --win",
+    "release:prepare": "node scripts/release-layout.cjs --prune",
+    "promo:build": "node scripts/promo/build-current.cjs",
+    "pack:windows": "npm run release:prepare && npm run prepare:office-runtime && npm run build && electron-builder --win --dir",
+    "dist:windows": "npm run release:prepare && npm run prepare:office-runtime && npm run build && electron-builder --win",
+    "dist:windows:all": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
     "mobile:dev": "npm --prefix mobile run dev",
     "mobile:build": "npm --prefix mobile run build:android",
     "mobile:pack": "npm --prefix mobile run pack:android",
     "web:dev": "npm --prefix mobile run dev",
     "web:build": "npm --prefix mobile run build:web",
     "mobile:check": "npm --prefix mobile run check",
-    "pack:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir --publish never",
-    "dist:ubuntu": "npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64 --publish never",
+    "pack:ubuntu": "npm run release:prepare && npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir --publish never",
+    "dist:ubuntu": "npm run release:prepare && npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64 --publish never",
     "package:ubuntu:windows": "node scripts/package-deb-on-windows.cjs"
   },
   "dependencies": {
@@ -79,7 +82,7 @@
     "appId": "com.sealoffice.desktop",
     "productName": "海豹办公",
     "directories": {
-      "output": "release",
+      "output": "release/v${version}",
       "buildResources": "build"
     },
     "files": [
@@ -154,8 +157,8 @@
     ],
     "appx": {
       "applicationId": "SealOffice",
-      "identityName": "Placeholder.SealOffice",
-      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "identityName": "45C56666.seal-office",
+      "publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
       "publisherDisplayName": "星马软件",
       "displayName": "seal-office",
       "backgroundColor": "#2b6cf6",
