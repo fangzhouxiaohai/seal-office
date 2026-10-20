@@ -33,7 +33,7 @@
     "web:build": "npm --prefix mobile run build:web",
     "mobile:check": "npm --prefix mobile run check",
     "pack:ubuntu": "npm run release:prepare && npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir --publish never",
-    "dist:ubuntu": "npm run release:prepare && npm run build && electron-builder --config build/electron-ubuntu.cjs --linux deb --x64 --publish never",
+    "dist:ubuntu": "npm run release:prepare && npm run build && electron-builder --config build/electron-ubuntu.cjs --linux --dir --x64 --publish never && node scripts/package-deb-on-windows.cjs",
     "package:ubuntu:windows": "node scripts/package-deb-on-windows.cjs"
   },
   "dependencies": {

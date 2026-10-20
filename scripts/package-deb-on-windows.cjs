@@ -1,6 +1,5 @@
-// Package an electron-builder linux-unpacked directory as a Debian archive on Windows.
-// electron-builder intentionally expects a system fpm binary on Windows; this small
-// packager keeps the cross-build reproducible without installing Ruby/fpm globally.
+// Package the same linux-unpacked tree on Windows or Linux, with one MIME and
+// sandbox installation policy. No system Ruby/fpm dependency is required.
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -78,11 +77,11 @@ else
     ln -sf '/opt/海豹办公/sealoffice' '/usr/bin/sealoffice'
 fi
 
-if ! { [[ -L /proc/self/ns/user ]] && unshare --user true; }; then
-    chmod 4755 '/opt/海豹办公/chrome-sandbox' || true
-else
-    chmod 0755 '/opt/海豹办公/chrome-sandbox' || true
-fi
+# The installer runs as root. A successful root user-namespace probe says
+# nothing about an unprivileged desktop process on Ubuntu 24.04/AppArmor.
+# Keep Chromium's standard root-owned SUID helper available as its fallback.
+chown root:root '/opt/海豹办公/chrome-sandbox'
+chmod 4755 '/opt/海豹办公/chrome-sandbox'
 
 if hash update-mime-database 2>/dev/null; then
     update-mime-database /usr/share/mime || true
@@ -234,13 +233,13 @@ function createTar(directory, destination, executableFiles = new Set()) {
 }
 
 function findXz() {
-  const gitExecPath = spawnSync('git.exe', ['--exec-path'], { encoding: 'utf8' })
+  const gitExecPath = spawnSync(process.platform === 'win32' ? 'git.exe' : 'git', ['--exec-path'], { encoding: 'utf8' })
   const gitXz = gitExecPath.status === 0
     ? path.resolve(gitExecPath.stdout.trim(), '..', '..', 'bin', 'xz.exe')
     : null
-  const candidates = [process.env.XZ_PATH, gitXz, 'C:\\Program Files\\Git\\mingw64\\bin\\xz.exe', 'xz.exe'].filter(Boolean)
+  const candidates = [process.env.XZ_PATH, gitXz, 'C:\\Program Files\\Git\\mingw64\\bin\\xz.exe', process.platform === 'win32' ? 'xz.exe' : 'xz'].filter(Boolean)
   for (const candidate of candidates) {
-    if (candidate === 'xz.exe' || fs.existsSync(candidate)) return candidate
+    if (candidate === 'xz.exe' || candidate === 'xz' || fs.existsSync(candidate)) return candidate
   }
   fail('xz.exe was not found. Install Git for Windows or set XZ_PATH.')
 }

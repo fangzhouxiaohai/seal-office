@@ -84,9 +84,11 @@ async function verify() {
   check(await page.evaluate("(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='立即设为默认');if(!button||button.disabled)return false;button.click();return true})()"), 'Default-app confirmation button is clickable')
   await wait("!document.body.innerText.includes('是否把海豹办公设为默认程序？')")
   const associations = await page.evaluate('window.electronAPI.checkDefaultAppOnStartup()')
+  report.defaultApps = associations; checkpoint()
+  console.log('MIME_ASSOCIATIONS ' + JSON.stringify(associations))
   check(associations.成功 && associations.已全部默认, 'Explicit default-app action applies and verifies Linux MIME defaults')
   const { 文件关联 } = require('../main/linux/mimeTypes')
-  check(文件关联.length === 50, 'All 50 supported document extensions registered')
+  check(文件关联.length === require('../main/documentFormats.json').length, 'Every supported document extension is registered')
   for (const [type, suffix] of [['word', 'Docx'], ['table', 'Xlsx'], ['ppt', 'Pptx']]) {
     const result = await page.evaluate(`(async()=>{const api=window.electronAPI.office;const written=await api.write${suffix}(${JSON.stringify(models[type])});if(!written.成功)throw new Error(written.错误);const read=await api.read${suffix}(written.数据);return {written:written.成功,read}})()`)
     check(result.written && result.read.成功 && JSON.stringify(result.read).includes('0012'), suffix.toLowerCase() + ' packaged IPC write and reopen')

@@ -39,7 +39,13 @@ def inspect():
         assert '海豹办公' in fields['Description']
         for package in ['libreoffice-writer', 'libreoffice-calc', 'libreoffice-impress', 'fonts-noto-cjk']:
             assert package in fields['Depends']
+        postinst = archive.extractfile(next(item for item in archive if item.name.lstrip('./') == 'postinst')).read().decode('utf-8')
+        assert "chown root:root '/opt/海豹办公/chrome-sandbox'" in postinst
+        assert "chmod 4755 '/opt/海豹办公/chrome-sandbox'" in postinst
+        assert "chmod 0755 '/opt/海豹办公/chrome-sandbox'" not in postinst
+        assert 'update-mime-database /usr/share/mime' in postinst and 'update-desktop-database /usr/share/applications' in postinst
     report['checks'].append(f'{VERSION} amd64 control metadata and conversion dependencies')
+    report['checks'].append('Root-owned Chromium SUID sandbox fallback and MIME cache updates are installed without disabling renderer sandboxing')
     expected = digest(ROOT / 'release' / f'v{VERSION}' / 'linux-unpacked/resources/app.asar')
     found = {}
     with tarfile.open(fileobj=io.BytesIO(entries['data.tar.xz']), mode='r|xz') as archive:
