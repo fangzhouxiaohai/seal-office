@@ -50,7 +50,9 @@ jobs:
           assert api('/git/ref/tags/v2.1.0')['object']['sha'] == PLAN['commit']
           assert api('/git/ref/heads/main')['object']['sha'] == PLAN['commit']
           release = api('/releases/' + str(RELEASE_ID))
-          assert release['draft'] and release['tag_name'] == PLAN['tag']
+          assert release['draft'] and release['tag_name'] == PLAN['tag'], 'Draft tag mismatch: ' + release['tag_name']
+          assert release['target_commitish'] == PLAN['commit'], 'Draft target differs from verified release'
+          emit(phase='draft-identity-verified', releaseId=RELEASE_ID, tag=release['tag_name'], commit=PLAN['commit'])
           upload = urllib.parse.urlsplit(release['upload_url'].split('{', 1)[0])
           assert upload.scheme == 'https' and upload.hostname == 'uploads.github.com'
           current = {a['name']: a for a in api('/releases/' + str(RELEASE_ID) + '/assets?per_page=100')}
