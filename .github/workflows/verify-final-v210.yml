@@ -1,0 +1,53 @@
+name: Verify exact final 2.1 Linux package
+on:
+  push:
+    branches: [codex/verify-v210-deb-final-20261021]
+permissions:
+  contents: read
+jobs:
+  verify_release_deb:
+    name: Exact release DEB on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b9b2fd823e8244e71ed565b2e8e5b9db76462365
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download and verify exact release package from public mirror
+        shell: bash
+        run: |
+          mkdir -p release/v2.1.0
+          python3 - <<'PY'
+          import hashlib, pathlib, urllib.request
+          target=pathlib.Path('release/v2.1.0/seal-office-2.1.0-amd64.deb')
+          url='https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.1.0/attach_files/'+target.name+'/download'
+          digest=hashlib.sha256();size=0
+          with urllib.request.urlopen(url,timeout=120) as source,target.open('xb') as output:
+              while chunk:=source.read(1024*1024):
+                  output.write(chunk);digest.update(chunk);size+=len(chunk)
+          assert size==125926036 and digest.hexdigest()=='26ae30e5467f4d5d5cc4f500b105858224ba9ae60d23b4ab27ac537f76a51b73'
+          print('Verified exact release DEB',size,digest.hexdigest())
+          PY
+      - name: Install exact release and offline converters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ./release/v2.1.0/seal-office-2.1.0-amd64.deb xvfb desktop-file-utils libglib2.0-bin
+          desktop-file-validate /usr/share/applications/sealoffice.desktop
+      - name: Verify installed application and actual document conversions
+        timeout-minutes: 6
+        run: xvfb-run -a --server-args='-screen 0 1920x1080x24' node scripts/verify-ubuntu-release.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-2.1.0-verification-${{ matrix.os }}
+          path: release/v2.1.0/verification/*
+          if-no-files-found: error
