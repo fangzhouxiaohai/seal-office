@@ -1,0 +1,36 @@
+{
+  "version": "2.1.0",
+  "recordedAt": "2026-10-20T18:10:23.129008+00:00",
+  "passed": true,
+  "changesAfterCompleteRendererAndMainRegressions": [
+    {
+      "path": "package.json",
+      "before": "88e58689ba4d661c9b527116c226652ea987c8f9c300f7c1bc5df1baf0da2da4",
+      "after": "a45053571b89cdf50b5b5bf4dcba3d837381f2807e4807c9088184e9e46a8248"
+    },
+    {
+      "path": "scripts/package-deb-on-windows.cjs",
+      "before": "70befa35f39c9b4340f551f7aa305f8903dd740c13f77c8b1b7d93784f151c40",
+      "after": "cd01047ed83dbae8ab66913d8e62839fce1c2791fe5f6f8a1f9288d311b74b24"
+    },
+    {
+      "path": "scripts/verify-deb-artifact.py",
+      "before": "c6e86dc951c6045f04d349e0c13acdb30b86e282a26c9d4ba22698829ee66853",
+      "after": "c85c67dc535dc77fb7ee73885e1f09440c4bd2697e5754addbc570c469e16e7c"
+    },
+    {
+      "path": "scripts/verify-ubuntu-release.cjs",
+      "before": "c80719bdba6577557877891e67f00b61fa0ca3f0591d9fdde8a832d57ddb34b1",
+      "after": "1b41a3af0272e0a2cf0dc3b28148e0f272aa23d112226c65b57f60155e6edd81"
+    }
+  ],
+  "runtimeMainRendererMobileAndServerFilesUnchanged": true,
+  "packageRuntimeMetadataDependenciesVersionAndIdentityUnchanged": true,
+  "scope": "Build/install and verification corrections only: canonical DEB generation on both hosts, root-owned 4755 Chromium sandbox helper, full MIME diagnostics and dynamic registry count. Full application regression assertions and browser payloads are unchanged. Corrected DEB is separately installed on both Ubuntu systems.",
+  "packagingTests": {
+    "passed": true,
+    "tests": 11,
+    "failed": 0
+  },
+  "originalRegressionSourceFingerprintSha256": "01098ac3190debd42c6ec746aa5a69dd311944a322a1231111eda44e93e7adfd"
+}

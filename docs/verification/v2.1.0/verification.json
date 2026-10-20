@@ -1,6 +1,6 @@
 {
   "version": "2.1.0",
-  "recordedAt": "2026-10-20T17:41:28.919611+00:00",
+  "recordedAt": "2026-10-20T18:15:11.712180+00:00",
   "passed": true,
   "scope": "Native document formats, password login and permanent account erasure, mobile functional tabs, retained compatibility/collaboration, current packages and bilingual-name policy, replacement PC/Android introduction videos and production Web/backend.",
   "renderer": {
@@ -224,6 +224,7 @@
     "checks": [
       "Debian ar structure and version",
       "2.1.0 amd64 control metadata and conversion dependencies",
+      "Root-owned Chromium SUID sandbox fallback and MIME cache updates are installed without disabling renderer sandboxing",
       "Archived ELF, Chinese desktop name, and app.asar SHA-256 match the inspected unpacked build"
     ],
     "limitations": [
@@ -232,8 +233,8 @@
     "appAsarSha256": "7707c3ef8ff5225ba6cf625982c3d93334c4af1d5b6e658f297170c292b963c9",
     "executable": "opt/海豹办公/sealoffice",
     "desktopName": "海豹办公",
-    "sha256": "411c4fb9286387de0b37bf9100d5d725d294bb661f378dc9b9723a1c75661b4d",
-    "bytes": 125953452,
+    "sha256": "26ae30e5467f4d5d5cc4f500b105858224ba9ae60d23b4ab27ac537f76a51b73",
+    "bytes": 125926036,
     "passed": true
   },
   "packagedCodecs": {
@@ -1192,23 +1193,1229 @@
       }
     ]
   },
+  "nativePackages": {
+    "version": "2.1.0",
+    "passed": true,
+    "android": {
+      "sha256": "bdea125a7ab15af89aee23d4de0d798ea001f3610025307b9bdf5022306e4c9f",
+      "bytes": 89484019,
+      "appId": "__UNI__B52B65B",
+      "version": {
+        "name": "2.1.0",
+        "code": "20100"
+      },
+      "build": {
+        "platform": "harmony",
+        "desktopVersion": "2.1.0",
+        "builtAt": "2026-10-20T17:07:36.613Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "embeddedEditor": {
+        "present": true,
+        "sha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+        "matchesCurrentSourceBuild": true
+      },
+      "sdkMetadata": {
+        "packageName": "com.sealoffice.mobile",
+        "versionCode": "20100",
+        "versionName": "2.1.0",
+        "minSdk": "28",
+        "targetSdk": "36",
+        "abi": "'arm64-v8a' 'armeabi-v7a'",
+        "debuggable": false,
+        "permissions": [
+          "android.permission.INTERNET",
+          "android.permission.READ_MEDIA_IMAGES",
+          "android.permission.READ_MEDIA_VIDEO",
+          "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+          "android.permission.READ_PHONE_STATE",
+          "android.permission.ACCESS_NETWORK_STATE",
+          "com.sealoffice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        ],
+        "zipAligned": true
+      },
+      "nativeLibraries16KiB": [
+        {
+          "name": "lib/arm64-v8a/libbreakpad-core.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libcronet.141.0.7340.3.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libgifimage.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libimagepipeline.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libnative-filters.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libnative-imagetranscoder.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libpl_droidsonroids_gif.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libstatic-webp.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libuniappx.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        },
+        {
+          "name": "lib/arm64-v8a/libuts-runtime.so",
+          "loadAlignments": [
+            16384,
+            16384,
+            16384
+          ],
+          "compatible": true
+        }
+      ],
+      "signature": {
+        "verified": true,
+        "v1": false,
+        "v2": false,
+        "v3": true,
+        "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+      },
+      "passed": true,
+      "zipCrcPassed": true,
+      "originalSignedBytesPreserved": true,
+      "signingCertificateUnchanged": true,
+      "physicalDeviceTested": false,
+      "emulatorTested": false,
+      "resources": [
+        {
+          "path": "assets/index-d1fe12c7.css",
+          "bytes": 210196,
+          "sha256": "d1fe12c75ad8b22baaeddb568a118561c7927f8ba4f6a17ab746d39be65ec5b7",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "assets/logo-da820085.png",
+          "bytes": 16518,
+          "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "assets/TemplateLibrary-d5e988b9.css",
+          "bytes": 3623,
+          "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "build-info.json",
+          "bytes": 182,
+          "sha256": "6a17bac7f5e505991a25690d95102e693b08fa812816b16c88e80106940ea29d",
+          "matchesAndroidSnapshot": false
+        },
+        {
+          "path": "compatibility.js",
+          "bytes": 2436,
+          "sha256": "3fc635712b782820f7f93bd4b1a366247df743bd57144b76d38561b75e95e6d7",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "fonts/NotoSansSC.ttf",
+          "bytes": 17772300,
+          "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "fonts/NotoSerif-LICENSE.txt",
+          "bytes": 4301,
+          "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "fonts/NotoSerifCJKsc-Regular.otf",
+          "bytes": 24543080,
+          "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "fonts/OFL.txt",
+          "bytes": 4387,
+          "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "icons/icon180.png",
+          "bytes": 9295,
+          "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "icons/icon192.png",
+          "bytes": 11868,
+          "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "icons/icon32.png",
+          "bytes": 1592,
+          "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "icons/icon512.png",
+          "bytes": 26134,
+          "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "index.html",
+          "bytes": 1189,
+          "sha256": "e8c8061876bde87fb611a32b181e6d4fe0b84a58f95abed46e7284cedcb93c4c",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/bessel-LICENSE.txt",
+          "bytes": 589,
+          "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/formulajs-LICENSE.txt",
+          "bytes": 3320,
+          "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/frac-LICENSE.txt",
+          "bytes": 589,
+          "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/iconv-lite-0.6.3.txt",
+          "bytes": 1063,
+          "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/isomorphic.js-LICENSE.txt",
+          "bytes": 1108,
+          "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/jstat-LICENSE.txt",
+          "bytes": 1049,
+          "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/lib0-LICENSE.txt",
+          "bytes": 1108,
+          "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/OFD-1.0.6.txt",
+          "bytes": 10678,
+          "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/SheetJS-0.20.3.txt",
+          "bytes": 11355,
+          "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/ssf-LICENSE.txt",
+          "bytes": 11355,
+          "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "licenses/yjs-LICENSE.txt",
+          "bytes": 1211,
+          "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "manifest.webmanifest",
+          "bytes": 377,
+          "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "office.js",
+          "bytes": 42688426,
+          "sha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500",
+          "matchesAndroidSnapshot": true
+        },
+        {
+          "path": "uni.webview.js",
+          "bytes": 6641,
+          "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8",
+          "matchesAndroidSnapshot": true
+        }
+      ],
+      "strictPlatformLabelCheckPassed": false,
+      "buildMetadataException": {
+        "path": "static/office/build-info.json",
+        "actualPlatformLabel": "harmony",
+        "expectedPlatformLabel": "android",
+        "onlyMetadataDiffers": true,
+        "allExecutableHtmlCssFontsAndResourcesMatchAndroidSnapshot": true,
+        "runtimePlatformSource": "APP-ANDROID native bridge injection in mobile/pages/workspace/workspace.uvue; build-info.json is descriptive and not loaded by runtime code",
+        "strictCheckerNotReportedAsPassing": true,
+        "signatureIdentityPermissionsAnd16KiBChecksRetained": true
+      },
+      "emulatorInstalledPackageVerified": true,
+      "emulator": {
+        "serial": "emulator-5554",
+        "androidVersion": "14",
+        "installedApkMatches": true
+      },
+      "emulatorHomeUiObserved": true,
+      "emulatorTestScope": "Read-only installed APK SHA-256, Android 14 package metadata and observed home screen with five functional bottom tabs. The existing app and user documents were retained; no installation, clearing or document edits were performed. Full reading/editor/diagram tests are covered by the separate production IIFE browser regressions."
+    },
+    "harmony": {
+      "version": "2.1.0",
+      "inspectedAt": "2026-10-20T17:52:13.914121+00:00",
+      "passed": true,
+      "bundleName": "com.sealoffice.mobile",
+      "packageVersion": {
+        "code": 20100,
+        "name": "2.1.0"
+      },
+      "originalFilename": "app-harmony-release-signed.app",
+      "originalBytes": 60853311,
+      "originalSha256": "9b505f596e79b43b20ceacebd525cd58a9bc92ad48f5363bfcc9537aa6ed0703",
+      "archiveFilename": "seal-office-2.1.0-harmony.app.zip",
+      "archiveBytes": 60831354,
+      "archiveSha256": "b27a50a8c3d9598169186454f389e7e6d0fbfe563732d965bbd6274757d35b55",
+      "appPackSignatureVerified": true,
+      "packageDigestVerified": true,
+      "releaseProfileMatchesPreviouslyVerifiedProfile": true,
+      "profileSha256": "c6d5e8dc4284b26e02bdb943d724537874bb3e486f9629dffee8d616ca213fda",
+      "originalSignedBytesPreserved": true,
+      "debuggable": false,
+      "embeddedHapIndependentlySigned": false,
+      "standaloneHapPublished": false,
+      "embeddedHapSha256": "5864f63f300acd8151538544d9cb3fd93eea0e2a412884b3d16e176b5db9d38a",
+      "embeddedRuntimeFilesMatchFrozenHarmonySnapshot": true,
+      "build": {
+        "platform": "harmony",
+        "desktopVersion": "2.1.0",
+        "builtAt": "2026-10-20T17:07:36.613Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "resources": [
+        {
+          "path": "assets/index-d1fe12c7.css",
+          "bytes": 210196,
+          "sha256": "d1fe12c75ad8b22baaeddb568a118561c7927f8ba4f6a17ab746d39be65ec5b7"
+        },
+        {
+          "path": "assets/logo-da820085.png",
+          "bytes": 16518,
+          "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+        },
+        {
+          "path": "assets/TemplateLibrary-d5e988b9.css",
+          "bytes": 3623,
+          "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
+        },
+        {
+          "path": "build-info.json",
+          "bytes": 182,
+          "sha256": "6a17bac7f5e505991a25690d95102e693b08fa812816b16c88e80106940ea29d"
+        },
+        {
+          "path": "compatibility.js",
+          "bytes": 2436,
+          "sha256": "3fc635712b782820f7f93bd4b1a366247df743bd57144b76d38561b75e95e6d7"
+        },
+        {
+          "path": "fonts/NotoSansSC.ttf",
+          "bytes": 17772300,
+          "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+        },
+        {
+          "path": "fonts/NotoSerif-LICENSE.txt",
+          "bytes": 4301,
+          "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+        },
+        {
+          "path": "fonts/NotoSerifCJKsc-Regular.otf",
+          "bytes": 24543080,
+          "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+        },
+        {
+          "path": "fonts/OFL.txt",
+          "bytes": 4387,
+          "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+        },
+        {
+          "path": "icons/icon180.png",
+          "bytes": 9295,
+          "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed"
+        },
+        {
+          "path": "icons/icon192.png",
+          "bytes": 11868,
+          "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78"
+        },
+        {
+          "path": "icons/icon32.png",
+          "bytes": 1592,
+          "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9"
+        },
+        {
+          "path": "icons/icon512.png",
+          "bytes": 26134,
+          "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8"
+        },
+        {
+          "path": "index.html",
+          "bytes": 1189,
+          "sha256": "e8c8061876bde87fb611a32b181e6d4fe0b84a58f95abed46e7284cedcb93c4c"
+        },
+        {
+          "path": "licenses/bessel-LICENSE.txt",
+          "bytes": 589,
+          "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e"
+        },
+        {
+          "path": "licenses/formulajs-LICENSE.txt",
+          "bytes": 3320,
+          "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b"
+        },
+        {
+          "path": "licenses/frac-LICENSE.txt",
+          "bytes": 589,
+          "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193"
+        },
+        {
+          "path": "licenses/iconv-lite-0.6.3.txt",
+          "bytes": 1063,
+          "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c"
+        },
+        {
+          "path": "licenses/isomorphic.js-LICENSE.txt",
+          "bytes": 1108,
+          "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057"
+        },
+        {
+          "path": "licenses/jstat-LICENSE.txt",
+          "bytes": 1049,
+          "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800"
+        },
+        {
+          "path": "licenses/lib0-LICENSE.txt",
+          "bytes": 1108,
+          "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73"
+        },
+        {
+          "path": "licenses/OFD-1.0.6.txt",
+          "bytes": 10678,
+          "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17"
+        },
+        {
+          "path": "licenses/SheetJS-0.20.3.txt",
+          "bytes": 11355,
+          "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+        },
+        {
+          "path": "licenses/ssf-LICENSE.txt",
+          "bytes": 11355,
+          "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26"
+        },
+        {
+          "path": "licenses/yjs-LICENSE.txt",
+          "bytes": 1211,
+          "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff"
+        },
+        {
+          "path": "manifest.webmanifest",
+          "bytes": 377,
+          "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8"
+        },
+        {
+          "path": "office.js",
+          "bytes": 42688426,
+          "sha256": "4a35bd6abf18ac38aec462ece5cc7efb6c645a6be551e6d055264eac50408500"
+        },
+        {
+          "path": "uni.webview.js",
+          "bytes": 6641,
+          "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8"
+        }
+      ],
+      "physicalDeviceTested": false,
+      "installationScope": "Signed AppGallery release App Pack; an unsigned inner HAP must not be presented as an independently installable signed release."
+    },
+    "nativeSourceCommit": "73736dcb5369f903958ef1de54b1adff8ef6119f",
+    "runtimeFilesUnchangedSinceNativeCompilation": true,
+    "earlyReleases": {
+      "android": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.0-android",
+      "harmony": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.0-harmony"
+    },
+    "limits": [
+      "No physical-device installation was performed.",
+      "Android device checks were read-only on the already installed identical APK; no full native editing regression is claimed.",
+      "Android descriptive build-info platform label differs; all runtime resources and native identity match the Android release.",
+      "Harmony unsigned inner HAP is not separately published as an installable signed package."
+    ]
+  },
+  "buildOnlyCorrections": {
+    "version": "2.1.0",
+    "recordedAt": "2026-10-20T18:10:23.129008+00:00",
+    "passed": true,
+    "changesAfterCompleteRendererAndMainRegressions": [
+      {
+        "path": "package.json",
+        "before": "88e58689ba4d661c9b527116c226652ea987c8f9c300f7c1bc5df1baf0da2da4",
+        "after": "a45053571b89cdf50b5b5bf4dcba3d837381f2807e4807c9088184e9e46a8248"
+      },
+      {
+        "path": "scripts/package-deb-on-windows.cjs",
+        "before": "70befa35f39c9b4340f551f7aa305f8903dd740c13f77c8b1b7d93784f151c40",
+        "after": "cd01047ed83dbae8ab66913d8e62839fce1c2791fe5f6f8a1f9288d311b74b24"
+      },
+      {
+        "path": "scripts/verify-deb-artifact.py",
+        "before": "c6e86dc951c6045f04d349e0c13acdb30b86e282a26c9d4ba22698829ee66853",
+        "after": "c85c67dc535dc77fb7ee73885e1f09440c4bd2697e5754addbc570c469e16e7c"
+      },
+      {
+        "path": "scripts/verify-ubuntu-release.cjs",
+        "before": "c80719bdba6577557877891e67f00b61fa0ca3f0591d9fdde8a832d57ddb34b1",
+        "after": "1b41a3af0272e0a2cf0dc3b28148e0f272aa23d112226c65b57f60155e6edd81"
+      }
+    ],
+    "runtimeMainRendererMobileAndServerFilesUnchanged": true,
+    "packageRuntimeMetadataDependenciesVersionAndIdentityUnchanged": true,
+    "scope": "Build/install and verification corrections only: canonical DEB generation on both hosts, root-owned 4755 Chromium sandbox helper, full MIME diagnostics and dynamic registry count. Full application regression assertions and browser payloads are unchanged. Corrected DEB is separately installed on both Ubuntu systems.",
+    "packagingTests": {
+      "passed": true,
+      "tests": 11,
+      "failed": 0
+    },
+    "originalRegressionSourceFingerprintSha256": "01098ac3190debd42c6ec746aa5a69dd311944a322a1231111eda44e93e7adfd"
+  },
+  "linuxInstalledVerification": {
+    "version": "2.1.0",
+    "passed": true,
+    "recordedAt": "2026-10-20T18:15:11.599118+00:00",
+    "workflow": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/39472118010",
+    "workflowCommit": "64be759085d27b5dd5d2e666897bbd592ff005bb",
+    "canonicalBuildWorkflow": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/39471635923",
+    "packageFile": "seal-office-2.1.0-amd64.deb",
+    "packageBytes": 125926036,
+    "packageSha256": "26ae30e5467f4d5d5cc4f500b105858224ba9ae60d23b4ab27ac537f76a51b73",
+    "exactReleasePackageInstalled": true,
+    "sandboxBypassed": false,
+    "reports": [
+      {
+        "system": "Ubuntu 22.04",
+        "checksPassed": 71,
+        "report": {
+          "version": "2.1.0",
+          "os": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.5 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=jammy\n",
+          "arch": "x64",
+          "sandboxBypassed": false,
+          "checks": [
+            "Deb package version and architecture",
+            "Desktop launcher and CSV MIME registration",
+            "Linux package excludes Windows compatibility binaries",
+            "Cold launch opens Unicode CSV argument without an error",
+            "Installed renderer preload and IPC version",
+            "Packaged application integrity manifest",
+            "Renderer sandbox and context isolation remain enabled",
+            "CSV IPC read preserves Unicode and leading zeros",
+            "CSV native save retains original extension",
+            "Stale file fingerprint prevents overwriting newer content",
+            "Default-app confirmation button is clickable",
+            "Explicit default-app action applies and verifies Linux MIME defaults",
+            "Every supported document extension is registered",
+            "docx packaged IPC write and reopen",
+            "xlsx packaged IPC write and reopen",
+            "pptx packaged IPC write and reopen",
+            "doc native offline save and reopen, including leading zeros",
+            "doc actual file MIME default: application/msword",
+            "dot native offline save and reopen, including leading zeros",
+            "dot actual file MIME default: application/msword-template",
+            "dotx native offline save and reopen, including leading zeros",
+            "dotx actual file MIME default: application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+            "rtf native offline save and reopen, including leading zeros",
+            "rtf actual file MIME default: application/rtf",
+            "odt native offline save and reopen, including leading zeros",
+            "odt actual file MIME default: application/vnd.oasis.opendocument.text",
+            "ott native offline save and reopen, including leading zeros",
+            "ott actual file MIME default: application/vnd.oasis.opendocument.text-template",
+            "fodt native offline save and reopen, including leading zeros",
+            "fodt actual file MIME default: application/vnd.oasis.opendocument.text-flat-xml",
+            "xls native offline save and reopen, including leading zeros",
+            "xls actual file MIME default: application/vnd.ms-excel",
+            "xlt native offline save and reopen, including leading zeros",
+            "xlt actual file MIME default: application/vnd.ms-excel",
+            "xltx native offline save and reopen, including leading zeros",
+            "xltx actual file MIME default: application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+            "ods native offline save and reopen, including leading zeros",
+            "ods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet",
+            "ots native offline save and reopen, including leading zeros",
+            "ots actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-template",
+            "fods native offline save and reopen, including leading zeros",
+            "fods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-flat-xml",
+            "dbf native offline save and reopen, including leading zeros",
+            "dbf actual file MIME default: application/x-dbf",
+            "prn native offline save and reopen, including leading zeros",
+            "prn actual file MIME default: application/x-sealoffice-prn",
+            "dif native offline save and reopen, including leading zeros",
+            "dif actual file MIME default: application/x-dif",
+            "slk native offline save and reopen, including leading zeros",
+            "slk actual file MIME default: text/spreadsheet",
+            "ppt native offline save and reopen, including leading zeros",
+            "ppt actual file MIME default: application/vnd.ms-powerpoint",
+            "pot native offline save and reopen, including leading zeros",
+            "pot actual file MIME default: application/vnd.ms-powerpoint",
+            "potx native offline save and reopen, including leading zeros",
+            "potx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.template",
+            "pps native offline save and reopen, including leading zeros",
+            "pps actual file MIME default: application/vnd.ms-powerpoint",
+            "ppsx native offline save and reopen, including leading zeros",
+            "ppsx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+            "odp native offline save and reopen, including leading zeros",
+            "odp actual file MIME default: application/vnd.oasis.opendocument.presentation",
+            "otp native offline save and reopen, including leading zeros",
+            "otp actual file MIME default: application/vnd.oasis.opendocument.presentation-template",
+            "fodp native offline save and reopen, including leading zeros",
+            "fodp actual file MIME default: application/vnd.oasis.opendocument.presentation-flat-xml",
+            "xlsb fixture imports body and protects source",
+            "xla fixture imports body and protects source",
+            "PDF Chinese text embeds bundled font: passed",
+            "Installed application screenshot captured",
+            "Installed application exits normally"
+          ],
+          "failures": [],
+          "packageFile": "seal-office-2.1.0-amd64.deb",
+          "packageBytes": 125926036,
+          "packageSha256": "26ae30e5467f4d5d5cc4f500b105858224ba9ae60d23b4ab27ac537f76a51b73",
+          "package": "2.1.0 amd64",
+          "defaultApps": {
+            "成功": true,
+            "已全部默认": true,
+            "格式": [
+              {
+                "扩展名": "docx",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pptx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pdf",
+                "已默认": true
+              },
+              {
+                "扩展名": "csv",
+                "已默认": true
+              },
+              {
+                "扩展名": "txt",
+                "已默认": true
+              },
+              {
+                "扩展名": "md",
+                "已默认": true
+              },
+              {
+                "扩展名": "html",
+                "已默认": true
+              },
+              {
+                "扩展名": "htm",
+                "已默认": true
+              },
+              {
+                "扩展名": "json",
+                "已默认": true
+              },
+              {
+                "扩展名": "doc",
+                "已默认": true
+              },
+              {
+                "扩展名": "dot",
+                "已默认": true
+              },
+              {
+                "扩展名": "dotx",
+                "已默认": true
+              },
+              {
+                "扩展名": "docm",
+                "已默认": true
+              },
+              {
+                "扩展名": "dotm",
+                "已默认": true
+              },
+              {
+                "扩展名": "rtf",
+                "已默认": true
+              },
+              {
+                "扩展名": "odt",
+                "已默认": true
+              },
+              {
+                "扩展名": "ott",
+                "已默认": true
+              },
+              {
+                "扩展名": "fodt",
+                "已默认": true
+              },
+              {
+                "扩展名": "mht",
+                "已默认": true
+              },
+              {
+                "扩展名": "mhtml",
+                "已默认": true
+              },
+              {
+                "扩展名": "xml",
+                "已默认": true
+              },
+              {
+                "扩展名": "xls",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlt",
+                "已默认": true
+              },
+              {
+                "扩展名": "xltx",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsm",
+                "已默认": true
+              },
+              {
+                "扩展名": "xltm",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsb",
+                "已默认": true
+              },
+              {
+                "扩展名": "xla",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlam",
+                "已默认": true
+              },
+              {
+                "扩展名": "ods",
+                "已默认": true
+              },
+              {
+                "扩展名": "ots",
+                "已默认": true
+              },
+              {
+                "扩展名": "fods",
+                "已默认": true
+              },
+              {
+                "扩展名": "dbf",
+                "已默认": true
+              },
+              {
+                "扩展名": "prn",
+                "已默认": true
+              },
+              {
+                "扩展名": "dif",
+                "已默认": true
+              },
+              {
+                "扩展名": "tsv",
+                "已默认": true
+              },
+              {
+                "扩展名": "slk",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppt",
+                "已默认": true
+              },
+              {
+                "扩展名": "pot",
+                "已默认": true
+              },
+              {
+                "扩展名": "potx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pptm",
+                "已默认": true
+              },
+              {
+                "扩展名": "potm",
+                "已默认": true
+              },
+              {
+                "扩展名": "pps",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppsx",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppsm",
+                "已默认": true
+              },
+              {
+                "扩展名": "odp",
+                "已默认": true
+              },
+              {
+                "扩展名": "otp",
+                "已默认": true
+              },
+              {
+                "扩展名": "fodp",
+                "已默认": true
+              },
+              {
+                "扩展名": "ofd",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealdoc",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealsheet",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealshow",
+                "已默认": true
+              }
+            ],
+            "未生效": [],
+            "清除用户选择的格式": [],
+            "已处理": false
+          },
+          "phase": "Document conversion: fodp",
+          "passed": true,
+          "finishedAt": "2026-10-20T18:11:06.362Z"
+        }
+      },
+      {
+        "system": "Ubuntu 24.04",
+        "checksPassed": 71,
+        "report": {
+          "version": "2.1.0",
+          "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+          "arch": "x64",
+          "sandboxBypassed": false,
+          "checks": [
+            "Deb package version and architecture",
+            "Desktop launcher and CSV MIME registration",
+            "Linux package excludes Windows compatibility binaries",
+            "Cold launch opens Unicode CSV argument without an error",
+            "Installed renderer preload and IPC version",
+            "Packaged application integrity manifest",
+            "Renderer sandbox and context isolation remain enabled",
+            "CSV IPC read preserves Unicode and leading zeros",
+            "CSV native save retains original extension",
+            "Stale file fingerprint prevents overwriting newer content",
+            "Default-app confirmation button is clickable",
+            "Explicit default-app action applies and verifies Linux MIME defaults",
+            "Every supported document extension is registered",
+            "docx packaged IPC write and reopen",
+            "xlsx packaged IPC write and reopen",
+            "pptx packaged IPC write and reopen",
+            "doc native offline save and reopen, including leading zeros",
+            "doc actual file MIME default: application/msword",
+            "dot native offline save and reopen, including leading zeros",
+            "dot actual file MIME default: application/msword-template",
+            "dotx native offline save and reopen, including leading zeros",
+            "dotx actual file MIME default: application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+            "rtf native offline save and reopen, including leading zeros",
+            "rtf actual file MIME default: application/rtf",
+            "odt native offline save and reopen, including leading zeros",
+            "odt actual file MIME default: application/vnd.oasis.opendocument.text",
+            "ott native offline save and reopen, including leading zeros",
+            "ott actual file MIME default: application/vnd.oasis.opendocument.text-template",
+            "fodt native offline save and reopen, including leading zeros",
+            "fodt actual file MIME default: application/vnd.oasis.opendocument.text-flat-xml",
+            "xls native offline save and reopen, including leading zeros",
+            "xls actual file MIME default: application/vnd.ms-excel",
+            "xlt native offline save and reopen, including leading zeros",
+            "xlt actual file MIME default: application/vnd.ms-excel",
+            "xltx native offline save and reopen, including leading zeros",
+            "xltx actual file MIME default: application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+            "ods native offline save and reopen, including leading zeros",
+            "ods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet",
+            "ots native offline save and reopen, including leading zeros",
+            "ots actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-template",
+            "fods native offline save and reopen, including leading zeros",
+            "fods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-flat-xml",
+            "dbf native offline save and reopen, including leading zeros",
+            "dbf actual file MIME default: application/vnd.dbf",
+            "prn native offline save and reopen, including leading zeros",
+            "prn actual file MIME default: application/x-sealoffice-prn",
+            "dif native offline save and reopen, including leading zeros",
+            "dif actual file MIME default: application/x-dif",
+            "slk native offline save and reopen, including leading zeros",
+            "slk actual file MIME default: text/spreadsheet",
+            "ppt native offline save and reopen, including leading zeros",
+            "ppt actual file MIME default: application/vnd.ms-powerpoint",
+            "pot native offline save and reopen, including leading zeros",
+            "pot actual file MIME default: application/vnd.ms-powerpoint",
+            "potx native offline save and reopen, including leading zeros",
+            "potx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.template",
+            "pps native offline save and reopen, including leading zeros",
+            "pps actual file MIME default: application/vnd.ms-powerpoint",
+            "ppsx native offline save and reopen, including leading zeros",
+            "ppsx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+            "odp native offline save and reopen, including leading zeros",
+            "odp actual file MIME default: application/vnd.oasis.opendocument.presentation",
+            "otp native offline save and reopen, including leading zeros",
+            "otp actual file MIME default: application/vnd.oasis.opendocument.presentation-template",
+            "fodp native offline save and reopen, including leading zeros",
+            "fodp actual file MIME default: application/vnd.oasis.opendocument.presentation-flat-xml",
+            "xlsb fixture imports body and protects source",
+            "xla fixture imports body and protects source",
+            "PDF Chinese text embeds bundled font: passed",
+            "Installed application screenshot captured",
+            "Installed application exits normally"
+          ],
+          "failures": [],
+          "packageFile": "seal-office-2.1.0-amd64.deb",
+          "packageBytes": 125926036,
+          "packageSha256": "26ae30e5467f4d5d5cc4f500b105858224ba9ae60d23b4ab27ac537f76a51b73",
+          "package": "2.1.0 amd64",
+          "defaultApps": {
+            "成功": true,
+            "已全部默认": true,
+            "格式": [
+              {
+                "扩展名": "docx",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pptx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pdf",
+                "已默认": true
+              },
+              {
+                "扩展名": "csv",
+                "已默认": true
+              },
+              {
+                "扩展名": "txt",
+                "已默认": true
+              },
+              {
+                "扩展名": "md",
+                "已默认": true
+              },
+              {
+                "扩展名": "html",
+                "已默认": true
+              },
+              {
+                "扩展名": "htm",
+                "已默认": true
+              },
+              {
+                "扩展名": "json",
+                "已默认": true
+              },
+              {
+                "扩展名": "doc",
+                "已默认": true
+              },
+              {
+                "扩展名": "dot",
+                "已默认": true
+              },
+              {
+                "扩展名": "dotx",
+                "已默认": true
+              },
+              {
+                "扩展名": "docm",
+                "已默认": true
+              },
+              {
+                "扩展名": "dotm",
+                "已默认": true
+              },
+              {
+                "扩展名": "rtf",
+                "已默认": true
+              },
+              {
+                "扩展名": "odt",
+                "已默认": true
+              },
+              {
+                "扩展名": "ott",
+                "已默认": true
+              },
+              {
+                "扩展名": "fodt",
+                "已默认": true
+              },
+              {
+                "扩展名": "mht",
+                "已默认": true
+              },
+              {
+                "扩展名": "mhtml",
+                "已默认": true
+              },
+              {
+                "扩展名": "xml",
+                "已默认": true
+              },
+              {
+                "扩展名": "xls",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlt",
+                "已默认": true
+              },
+              {
+                "扩展名": "xltx",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsm",
+                "已默认": true
+              },
+              {
+                "扩展名": "xltm",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlsb",
+                "已默认": true
+              },
+              {
+                "扩展名": "xla",
+                "已默认": true
+              },
+              {
+                "扩展名": "xlam",
+                "已默认": true
+              },
+              {
+                "扩展名": "ods",
+                "已默认": true
+              },
+              {
+                "扩展名": "ots",
+                "已默认": true
+              },
+              {
+                "扩展名": "fods",
+                "已默认": true
+              },
+              {
+                "扩展名": "dbf",
+                "已默认": true
+              },
+              {
+                "扩展名": "prn",
+                "已默认": true
+              },
+              {
+                "扩展名": "dif",
+                "已默认": true
+              },
+              {
+                "扩展名": "tsv",
+                "已默认": true
+              },
+              {
+                "扩展名": "slk",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppt",
+                "已默认": true
+              },
+              {
+                "扩展名": "pot",
+                "已默认": true
+              },
+              {
+                "扩展名": "potx",
+                "已默认": true
+              },
+              {
+                "扩展名": "pptm",
+                "已默认": true
+              },
+              {
+                "扩展名": "potm",
+                "已默认": true
+              },
+              {
+                "扩展名": "pps",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppsx",
+                "已默认": true
+              },
+              {
+                "扩展名": "ppsm",
+                "已默认": true
+              },
+              {
+                "扩展名": "odp",
+                "已默认": true
+              },
+              {
+                "扩展名": "otp",
+                "已默认": true
+              },
+              {
+                "扩展名": "fodp",
+                "已默认": true
+              },
+              {
+                "扩展名": "ofd",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealdoc",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealsheet",
+                "已默认": true
+              },
+              {
+                "扩展名": "sealshow",
+                "已默认": true
+              }
+            ],
+            "未生效": [],
+            "清除用户选择的格式": [],
+            "已处理": false
+          },
+          "phase": "Document conversion: fodp",
+          "passed": true,
+          "finishedAt": "2026-10-20T18:09:53.811Z"
+        }
+      }
+    ],
+    "limits": [
+      "GUI verification runs under Xvfb; physical printers, GPU drivers and all display environments are not covered."
+    ]
+  },
   "sourceInputs": {
     "files": 1540,
-    "capturedAt": "2026-10-20T17:29:33.486Z",
+    "capturedAt": "2026-10-20T18:10:23.169Z",
     "evidence": {
       "path": "docs/verification/v2.1.0/source-inputs.json",
       "bytes": 284350,
-      "sha256": "6cb5bc0265a09be042a72208dc8353118320333019bd0b7e3a60c6b6dc14dba9"
+      "sha256": "aaf34038b7e6f3e3d7f812a0863421e2dc991e0d727fe153f4708e4754b92dd4"
     }
   },
   "webEntry": "https://seal.xingmasoft.com/office/",
   "limitations": [
     "WPS Android APK, actual emulator screens, selected Java routes and selected ARM64 format dispatcher were analyzed; this is not a reconstruction of the complete proprietary rendering engine.",
-    "Android/Harmony deliverables are frozen cloud-build source ZIPs, not newly generated APK/HAP packages. Native bridge workflows use browser host simulation; current own native APK was not installed on a device/emulator.",
+    "Native APK/App Pack were supplied by the user and validated without changing signed bytes. Android installed APK SHA-256 and home UI were observed read-only; full native editing and physical-device testing are not claimed. Harmony inner HAP is unsigned.",
+    "Android descriptive build-info platform label is Harmony; every other runtime file matches the Android snapshot, and native APP-ANDROID injection selects the actual platform. The strict platform-label checker is not reported as passing.",
     "ADB port-forward plus browser launch was rejected by automatic approval with reason blocked by policy; that action was not retried or counted as a passed emulator test.",
     "PC and Android videos use actual final Web/IIFE interface still frames with transitions and Mandarin narration; Android is identified as a mobile layout demonstration, not a physical-device recording.",
     "MSIX is an unsigned Microsoft Store upload package; it was not installed or submitted to Partner Center.",
-    "Linux DEB metadata, payload, CRC and source integrity were checked on Windows; Linux installed GUI verification is a separate Ubuntu CI check.",
+    "Linux installed application checks run under Xvfb on Ubuntu 22.04/24.04; physical printers and all display/driver environments are outside this verification.",
     "Known unsupported document content retains compatibility warnings; no claim covers every unknown Office/WPS feature."
   ]
 }

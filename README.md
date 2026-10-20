@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.0**，移动构建号 **20100**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.0 提供 Android/Harmony 云打包源码快照，由使用者沿用既有身份与签名生成新安装包；未把源码 ZIP 当作 APK/HAP。历史 2.0.0 移动成品的验签范围见 [2.0.0 发行说明](docs/v2.0.0-发布与移动成品.md)。iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.0**，移动构建号 **20100**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.0 已附用户云打包后验签的 Android APK 与 Harmony App Pack，并保留独立云打包源码快照；源码 ZIP 与原生安装成品明确区分。历史 2.0.0 移动成品的验签范围见 [2.0.0 发行说明](docs/v2.0.0-发布与移动成品.md)。iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -23,6 +23,8 @@
 | Microsoft Store 上传包 | [seal-office-2.1.0-microsoft-store-x64.msix](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-microsoft-store-x64.msix)，商店身份不变、版本 2.1.0.0 |
 | Ubuntu amd64 | [seal-office-2.1.0-amd64.deb](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-amd64.deb) |
 | Web 静态包 | [seal-office-2.1.0-web.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-web.zip) |
+| Android 发布 APK | [seal-office-2.1.0-android.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android.apk) |
+| Harmony 已签名 App Pack | [seal-office-2.1.0-harmony.app.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-harmony.app.zip)，供 AppGallery 上架，内层 HAP 未独立签名 |
 | Android 云打包源码 | [seal-office-2.1.0-android-cloud-source.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-cloud-source.zip) |
 | Harmony 云打包源码 | [seal-office-2.1.0-harmony-cloud-source.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-harmony-cloud-source.zip) |
 

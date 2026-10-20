@@ -1,6 +1,6 @@
 {
   "version": "2.1.0",
-  "capturedAt": "2026-10-20T17:29:33.486Z",
+  "capturedAt": "2026-10-20T18:10:23.169Z",
   "files": [
     {
       "path": ".github/workflows/ubuntu.yml",
@@ -1699,8 +1699,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 5984,
-      "sha256": "88e58689ba4d661c9b527116c226652ea987c8f9c300f7c1bc5df1baf0da2da4"
+      "bytes": 6029,
+      "sha256": "a45053571b89cdf50b5b5bf4dcba3d837381f2807e4807c9088184e9e46a8248"
     },
     {
       "path": "renderer/public/licenses/bessel-LICENSE.txt",
@@ -5074,8 +5074,8 @@
     },
     {
       "path": "scripts/package-deb-on-windows.cjs",
-      "bytes": 14142,
-      "sha256": "70befa35f39c9b4340f551f7aa305f8903dd740c13f77c8b1b7d93784f151c40"
+      "bytes": 14268,
+      "sha256": "cd01047ed83dbae8ab66913d8e62839fce1c2791fe5f6f8a1f9288d311b74b24"
     },
     {
       "path": "scripts/package-release.json",
@@ -5339,8 +5339,8 @@
     },
     {
       "path": "scripts/verify-deb-artifact.py",
-      "bytes": 3843,
-      "sha256": "c6e86dc951c6045f04d349e0c13acdb30b86e282a26c9d4ba22698829ee66853"
+      "bytes": 4491,
+      "sha256": "c85c67dc535dc77fb7ee73885e1f09440c4bd2697e5754addbc570c469e16e7c"
     },
     {
       "path": "scripts/verify-desktop-artifacts.cjs",
@@ -5434,8 +5434,8 @@
     },
     {
       "path": "scripts/verify-ubuntu-release.cjs",
-      "bytes": 13533,
-      "sha256": "c80719bdba6577557877891e67f00b61fa0ca3f0591d9fdde8a832d57ddb34b1"
+      "bytes": 13695,
+      "sha256": "1b41a3af0272e0a2cf0dc3b28148e0f272aa23d112226c65b57f60155e6edd81"
     },
     {
       "path": "scripts/verify-ui-experience.cjs",
