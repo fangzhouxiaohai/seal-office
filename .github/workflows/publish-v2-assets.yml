@@ -1,0 +1,159 @@
+name: Publish verified 2.1 release assets
+on:
+  push:
+    branches: [codex/publish-v210-assets-20261021]
+permissions:
+  contents: write
+concurrency:
+  group: seal-office-verified-2-1-assets
+  cancel-in-progress: false
+jobs:
+  synchronize:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Verify public mirror bytes and upload identical draft assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures
+          import hashlib
+          import http.client
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import tempfile
+          import urllib.parse
+          import urllib.request
+          
+          TOKEN = os.environ['GH_TOKEN']
+          API = 'https://api.github.com/repos/fangzhouxiaohai/seal-office'
+          RELEASE_ID = 418688628
+          PLAN = json.loads('{"version": "2.1.0", "tag": "v2.1.0", "commit": "73736dcb5369f903958ef1de54b1adff8ef6119f", "assets": [{"name": "seal-office-setup-2.1.0.exe", "bytes": 399089202, "sha256": "60cf0d3adf42e01a99d7cd9e62a7c570acde638b4b5c68f8d0161d64c0f07b1a"}, {"name": "seal-office-2.1.0-portable.exe", "bytes": 398863687, "sha256": "0a81d605ca6138ffa1a8c88262f9218057d67651fd9b5da1edaee9fe78185f09"}, {"name": "seal-office-2.1.0-microsoft-store-x64.msix", "bytes": 738184128, "sha256": "1697363363431338577ae1d4a24fe824ded83cac6804f7dc695f22e81d664c6a"}, {"name": "seal-office-2.1.0-amd64.deb", "bytes": 125953452, "sha256": "411c4fb9286387de0b37bf9100d5d725d294bb661f378dc9b9723a1c75661b4d"}, {"name": "seal-office-2.1.0-web.zip", "bytes": 56228994, "sha256": "db3e6897d28c18b3e06c49530e8f2bbbb258c4bb51a564489f75f3043305ccea"}, {"name": "seal-office-2.1.0-source.zip", "bytes": 250524368, "sha256": "730dd99937e5d3c2892e2838ba847ee9df6e6ee185aee6673854ad29ffd126c4"}, {"name": "seal-office-2.1.0-android-cloud-source.zip", "bytes": 56572965, "sha256": "40fb3df27cea3bb2b8d4edc556ca49b028a6e6a277b1c8430359d1094121f852"}, {"name": "seal-office-2.1.0-harmony-cloud-source.zip", "bytes": 56572976, "sha256": "2054aa3bf1073c541f7dd0800be6c878319103f83584b1dc6a00127d9e74c62c"}, {"name": "seal-office-2.1.0-pc-intro-1080p.mp4", "bytes": 4164760, "sha256": "5d2da679bc7fcbfc943732db5e36a8a63418ab2ef79c69a0022e56c68be29d93"}, {"name": "seal-office-2.1.0-pc-intro-1080p.srt", "bytes": 1459, "sha256": "5fa84383120403eb8fd72191a749c74ce31c3c7faeff960ae3774e11577a9702"}, {"name": "seal-office-2.1.0-pc-intro-1080p-cover.jpg", "bytes": 207493, "sha256": "60c654453cd7fe32b7e6dccb6ae4eb2dd14837113856fd30d3503e235deb4148"}, {"name": "seal-office-2.1.0-android-intro-1080p.mp4", "bytes": 4349512, "sha256": "33ddd4391c5ff89da530f8d34decc1c8452e448cea663491494c0bb0700bcec6"}, {"name": "seal-office-2.1.0-android-intro-1080p.srt", "bytes": 1445, "sha256": "0605565a94f090953fda942fcde03ef5619811bc35d343560e5dccac3a4bfb0f"}, {"name": "seal-office-2.1.0-android-intro-1080p-cover.jpg", "bytes": 206163, "sha256": "a6b9194d4bae07c5c8dd6b3e2a9f164a026a1edf4772184e0e92421a651605f9"}, {"name": "seal-office-2.1.0-verification.json", "bytes": 58393, "sha256": "c9ac1ab6b19b3792a5ca0e784e3a082a8e50f4500a2583273668e63ff284906f"}, {"name": "seal-office-2.1.0-release-notes.md", "bytes": 3078, "sha256": "b7cb5906f25326fa376860f49a6d0125f3898dca05cafa2fa291be2505d91c28"}, {"name": "SHA256SUMS.txt", "bytes": 1663, "sha256": "f37a10aa37559143503044e2abd4efcd9258e356f3e659fcff27cf55358f2e17"}]}')
+          
+          def emit(**row):
+              print(json.dumps(row), flush=True)
+          
+          def api(endpoint):
+              request = urllib.request.Request(API + endpoint, headers={'Authorization': 'Bearer ' + TOKEN,
+                  'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'SealOffice-verified-release'})
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+          
+          def checked(remote, local):
+              assert remote['name'] == local['name'] and remote['size'] == local['bytes']
+              assert remote.get('digest') == 'sha256:' + local['sha256'] and remote['state'] == 'uploaded'
+          
+          assert api('/git/ref/tags/v2.1.0')['object']['sha'] == PLAN['commit']
+          assert api('/git/ref/heads/main')['object']['sha'] == PLAN['commit']
+          release = api('/releases/' + str(RELEASE_ID))
+          assert release['draft'] and release['tag_name'] == PLAN['tag']
+          upload = urllib.parse.urlsplit(release['upload_url'].split('{', 1)[0])
+          assert upload.scheme == 'https' and upload.hostname == 'uploads.github.com'
+          current = {a['name']: a for a in api('/releases/' + str(RELEASE_ID) + '/assets?per_page=100')}
+          expected = {a['name']: a for a in PLAN['assets']}
+          assert set(current) <= set(expected)
+          for name, row in current.items():
+              checked(row, expected[name])
+          
+          def publish(row, directory):
+              name = row['name']
+              assert re.fullmatch(r'[A-Za-z0-9._-]+', name)
+              if name in current:
+                  emit(phase='already-verified', name=name)
+                  return
+              source = 'https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.1.0/attach_files/' + name + '/download'
+              file = directory / name
+              digest, size = hashlib.sha256(), 0
+              try:
+                  request = urllib.request.Request(source, headers={'User-Agent': 'SealOffice-verified-release'})
+                  with urllib.request.urlopen(request, timeout=120) as response, file.open('xb') as output:
+                      while chunk := response.read(1024 * 1024):
+                          output.write(chunk)
+                          digest.update(chunk)
+                          size += len(chunk)
+              except Exception as error:
+                  raise RuntimeError('Public mirror download failed for ' + name + ': ' + type(error).__name__) from None
+              assert size == row['bytes'] and digest.hexdigest() == row['sha256'], 'Mirror bytes differ: ' + name
+              emit(phase='download-verified', name=name, bytes=size, sha256=digest.hexdigest())
+              connection = http.client.HTTPSConnection(upload.hostname, timeout=300)
+              try:
+                  path = upload.path + '?' + urllib.parse.urlencode({'name': name})
+                  connection.putrequest('POST', path)
+                  for key, value in {'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json',
+                                     'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'SealOffice-verified-release',
+                                     'Content-Type': 'application/octet-stream', 'Content-Length': str(size)}.items():
+                      connection.putheader(key, value)
+                  connection.endheaders()
+                  with file.open('rb') as stream:
+                      while chunk := stream.read(1024 * 1024):
+                          connection.send(chunk)
+                  response = connection.getresponse()
+                  assert response.status == 201, 'GitHub upload HTTP ' + str(response.status) + ': ' + name
+                  remote = json.loads(response.read())
+                  checked(remote, row)
+              finally:
+                  connection.close()
+              file.unlink()
+              emit(phase='upload-verified', name=name, bytes=size, sha256=row['sha256'])
+          
+          with tempfile.TemporaryDirectory(prefix='seal-office-release-') as temporary:
+              directory = Path(temporary)
+              with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+                  list(pool.map(lambda row: publish(row, directory), sorted(PLAN['assets'], key=lambda r: -r['bytes'])))
+          assets = api('/releases/' + str(RELEASE_ID) + '/assets?per_page=100')
+          assert {a['name'] for a in assets} == set(expected)
+          for row in assets:
+              checked(row, expected[row['name']])
+          emit(phase='all-assets-verified', assets=len(assets), draftRemainsPrivate=True, commit=PLAN['commit'])
+          PY
+
+  verify_release_deb:
+    name: Exact release DEB on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 73736dcb5369f903958ef1de54b1adff8ef6119f
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download and verify exact release package from public mirror
+        shell: bash
+        run: |
+          mkdir -p release/v2.1.0
+          python3 - <<'PY'
+          import hashlib, pathlib, urllib.request
+          target=pathlib.Path('release/v2.1.0/seal-office-2.1.0-amd64.deb')
+          url='https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.1.0/attach_files/'+target.name+'/download'
+          digest=hashlib.sha256();size=0
+          with urllib.request.urlopen(url,timeout=120) as source,target.open('xb') as output:
+              while chunk:=source.read(1024*1024):
+                  output.write(chunk);digest.update(chunk);size+=len(chunk)
+          assert size==125953452 and digest.hexdigest()=='411c4fb9286387de0b37bf9100d5d725d294bb661f378dc9b9723a1c75661b4d'
+          print('Verified exact release DEB',size,digest.hexdigest())
+          PY
+      - name: Install exact release and offline converters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ./release/v2.1.0/seal-office-2.1.0-amd64.deb xvfb desktop-file-utils libglib2.0-bin
+          desktop-file-validate /usr/share/applications/sealoffice.desktop
+      - name: Verify installed application and actual document conversions
+        timeout-minutes: 6
+        run: xvfb-run -a --server-args='-screen 0 1920x1080x24' node scripts/verify-ubuntu-release.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-2.1.0-verification-${{ matrix.os }}
+          path: release/v2.1.0/verification/*
+          if-no-files-found: error
