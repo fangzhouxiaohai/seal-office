@@ -42,7 +42,7 @@ jobs:
           
           def checked(remote, local):
               assert remote['name'] == local['name'] and remote['size'] == local['bytes']
-              assert remote.get('digest') == 'sha256:' + local['sha256'] and remote['state'] == 'uploaded'
+              assert remote.get('digest') == 'sha256:' + local['sha256'] and remote['state'] == 'uploaded', 'Existing draft asset is incomplete or has a different digest: ' + local['name']
           
           assert api('/git/ref/tags/v2.1.0-android')['object']['sha'] == PLAN['commit']
           # The immutable Android tag identifies the compiled native release source.
