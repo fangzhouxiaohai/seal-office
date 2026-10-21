@@ -1,0 +1,182 @@
+[
+  {
+    "source": "renderer/src/assets/market/business.png",
+    "sourceSha256": "07bef56c319252f50b826b026dff45af77102c5e1f0c675cffe4d1266d8d85b4",
+    "output": "market/business.png",
+    "sha256": "e501cf9643ab875f8bb88ed365ab388e358e387e333f72f9605c011efb1b47e1",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 143318
+  },
+  {
+    "source": "renderer/src/assets/market/education.png",
+    "sourceSha256": "a194b88e78a88850c37fcd0ffeb7121673babe46395d23ddccf39c73016c1320",
+    "output": "market/education.png",
+    "sha256": "b78104a4218e0f27725095639bb8617fbca663b2f51fe2750bf31c7decf9e590",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 149976
+  },
+  {
+    "source": "renderer/src/assets/market/industry.png",
+    "sourceSha256": "97b360b2f185d3bddf4959560ece7ea031ea13c1304606175fc875345ed5cba5",
+    "output": "market/industry.png",
+    "sha256": "5bbab49d24d24cd8ed824eae206a8a7f5a275aa9f5cc27eb6fdec84ba8770977",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 192886
+  },
+  {
+    "source": "renderer/src/assets/market/people.png",
+    "sourceSha256": "f3f8351faedafd2c00cb00ba28148955ca8338d65d77385f681cc533932aa0c0",
+    "output": "market/people.png",
+    "sha256": "df9ff406cbe9c62a309f972ad7d6153035e191030f301e08636f053e2b9eb888",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 165287
+  },
+  {
+    "source": "renderer/src/assets/market/technology.png",
+    "sourceSha256": "70ce3799e4c9f663ddf727e7250a432c9b23aece54aeb6baa8be3fe4c76af988",
+    "output": "market/technology.png",
+    "sha256": "c5b57d59c1b89e9714ff606f9d865a50efdea9949c63848ced914778b1a0e430",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 149356
+  },
+  {
+    "source": "renderer/src/assets/market/work.png",
+    "sourceSha256": "8fb6b589698aaf07d288d414a1714bc497cc4dd725627d405ea67ba07dbb180b",
+    "output": "market/work.png",
+    "sha256": "ea34c85d2ce6cfbadff54defd1c5da7b2561b4c993f79d7a1b1dbdd8b60a15d9",
+    "originalSize": [
+      1254,
+      1254
+    ],
+    "size": [
+      1254,
+      1254
+    ],
+    "bytes": 166462
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/city.png",
+    "sourceSha256": "bd29813be8e8828a0f9ed3825db7c7e449c7feafe84fc9350da340f854f3c364",
+    "output": "presentation-templates/city.jpg",
+    "sha256": "d17721bbb16103490302e7a363ef9b13293f37fd995896c7bec957cad121f1c6",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 209779
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/event.png",
+    "sourceSha256": "4af69b4a6a8862e5602868d839f5aa4517fcd2ad05b7e786275aae28e0d34801",
+    "output": "presentation-templates/event.jpg",
+    "sha256": "4b1422c826a9d4346dccf05d3d0ce7ef10ce0d2a261df18794ab9066521de872",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 144357
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/finance.png",
+    "sourceSha256": "0dad3789101b0afd55e4365845ddcb49b315eca619317dd71e2e771beb7214f8",
+    "output": "presentation-templates/finance.jpg",
+    "sha256": "a8a86a513e3b214722c2aa4e2a22852acedb4f4a6dd4077d0577990fd2397662",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 144406
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/product.png",
+    "sourceSha256": "af62a192e0fbd79b8323084c65a2f09d4f27781628fd5209b124051c421b4847",
+    "output": "presentation-templates/product.jpg",
+    "sha256": "58184dccdda931af6e5ca783d30c047b0a6ecbe1ee724e1b8095a97497a0dd7c",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 118878
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/research.png",
+    "sourceSha256": "b3cac06a5e8a25c9aa485b4d0560ba127da8f41038f53bd439aab6f208d8c289",
+    "output": "presentation-templates/research.jpg",
+    "sha256": "6faa881ad03dedb34ea25bb129eb1285431e371a98135388a6b1e55998fefb0c",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 136463
+  },
+  {
+    "source": "renderer/src/assets/presentation-templates/workshop.png",
+    "sourceSha256": "9e2b865b9bfd0f095608a716cc7fdeceeee777fcd4d1dee4709eb85cba210fe6",
+    "output": "presentation-templates/workshop.jpg",
+    "sha256": "62a95e73dc8ef140a576b768b9d5bbe175a77650a3ccfb06eb03c2a5c80ffeb9",
+    "originalSize": [
+      1672,
+      941
+    ],
+    "size": [
+      1280,
+      720
+    ],
+    "bytes": 153103
+  }
+]

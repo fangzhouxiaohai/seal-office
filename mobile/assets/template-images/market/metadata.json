@@ -1,0 +1,50 @@
+{
+  "work": {
+    "id": "ea34c85d2ce6cfbadff54defd1c5da7b2561b4c993f79d7a1b1dbdd8b60a15d9",
+    "bytes": 166462,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "work.png"
+  },
+  "business": {
+    "id": "e501cf9643ab875f8bb88ed365ab388e358e387e333f72f9605c011efb1b47e1",
+    "bytes": 143318,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "business.png"
+  },
+  "education": {
+    "id": "b78104a4218e0f27725095639bb8617fbca663b2f51fe2750bf31c7decf9e590",
+    "bytes": 149976,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "education.png"
+  },
+  "technology": {
+    "id": "c5b57d59c1b89e9714ff606f9d865a50efdea9949c63848ced914778b1a0e430",
+    "bytes": 149356,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "technology.png"
+  },
+  "people": {
+    "id": "df9ff406cbe9c62a309f972ad7d6153035e191030f301e08636f053e2b9eb888",
+    "bytes": 165287,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "people.png"
+  },
+  "industry": {
+    "id": "5bbab49d24d24cd8ed824eae206a8a7f5a275aa9f5cc27eb6fdec84ba8770977",
+    "bytes": 192886,
+    "type": "image/png",
+    "width": 1254,
+    "height": 1254,
+    "file": "industry.png"
+  }
+}

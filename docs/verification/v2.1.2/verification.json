@@ -1,0 +1,91 @@
+{
+  "version": "2.1.2",
+  "versionCode": "20102",
+  "preparedAt": "2026-10-21T17:33:44.153Z",
+  "sourceBaseCommit": "746e8821ab9e38e7a55591ad56076d5f4e2583d5",
+  "scope": "Mobile cloud-build sources only; no signed APK, HAP or App Pack generated; no desktop binary release or web deployment",
+  "deliveryDirectory": "release/v2.1.2/verified",
+  "packages": [
+    {
+      "platform": "android",
+      "archive": "seal-office-2.1.2-android-cloud-source.zip",
+      "archiveBytes": 38528030,
+      "sourceBytes": 59792642,
+      "sha256": "a421d666d8e103f76b3c1db9f5847ab6afabfde382e1b654055b16d71c95b67b",
+      "editorSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d"
+    },
+    {
+      "platform": "harmony",
+      "archive": "seal-office-2.1.2-harmony-cloud-source.zip",
+      "archiveBytes": 38528036,
+      "sourceBytes": 59792642,
+      "sha256": "adea85409012998c45eeda10890a93e6c776984aa58bf9d84bbda407e5a62dae",
+      "editorSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d"
+    }
+  ],
+  "androidMaximumBytes": 60000000,
+  "androidZipAndExpandedSourceWithinLimit": true,
+  "nativeChecks": [
+    {
+      "platform": "android",
+      "compiler": "HBuilderX 5.26",
+      "workspaceCompilePassed": true,
+      "extractedArchiveCompilePassed": true,
+      "all59ExtractedFileHashesMatchArchive": true
+    },
+    {
+      "platform": "harmony",
+      "compiler": "HBuilderX 5.26",
+      "workspaceCompilePassed": true,
+      "extractedArchiveCompilePassed": true,
+      "all59ExtractedFileHashesMatchArchive": true
+    }
+  ],
+  "wrongPlatformSourceRejected": true,
+  "completeFontsUnchanged": true,
+  "mobileTemplateImages": 12,
+  "templateImagesPptxRoundTripPassed": true,
+  "desktopOriginalImagesUnchanged": true,
+  "tests": {
+    "renderer": {
+      "files": 100,
+      "passed": 707
+    },
+    "mainAi": {
+      "files": 13,
+      "passed": 184
+    },
+    "mobile": {
+      "passed": 36
+    },
+    "packaging": {
+      "passed": 11
+    },
+    "total": 938,
+    "rootTypecheck": true,
+    "mobileTypecheck": true,
+    "mobileStructureCheck": true,
+    "productionBrowser": {
+      "passed": true,
+      "groups": 6,
+      "checks": 41,
+      "bundleSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d",
+      "scheme": "file",
+      "sameBytesInBothArchives": true
+    }
+  },
+  "validationBoundary": "Browser fixtures simulate native host and AI/identity responses; no paid live model request or new APK/Harmony device installation. Final signed builds need post-cloud signature/package/device checks.",
+  "cleanup": {
+    "releasePrepare": "Failed with EPERM at release/v2.1.0",
+    "draftRemoval": "Automatic approval rejected removal of unpublished Android draft with blocked by policy. No deletion workaround used.",
+    "retainedDraft": "release/v2.1.2/seal-office-2.1.2-android-cloud-source.zip",
+    "doNotUseRetainedDraft": true,
+    "finalAndroidSnapshot": "mobile/unpackage/cloud-ready/2.1.2/android-verified",
+    "finalHarmonySnapshot": "mobile/unpackage/cloud-ready/2.1.2/harmony",
+    "oldLocalDirectoriesRetained": true
+  },
+  "notes": [
+    "Formal binary release and refreshed promo videos await user cloud-built signed packages.",
+    "Existing third-party OFD build warnings and jsdom/Antd test warnings were non-failing."
+  ]
+}

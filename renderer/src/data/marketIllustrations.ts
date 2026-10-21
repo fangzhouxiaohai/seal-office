@@ -14,5 +14,5 @@ const categories:Record<string,keyof typeof images>={'工作汇报':'work','商�
 export const builtinIllustrationUrls={...Object.fromEntries(Object.entries(images).map(([name,url])=>[metadata[name as keyof typeof metadata].id,url])),...templatePhotoUrls}
 export function marketIllustration(category:string){return metadata[categories[category]||'work']}
 export function marketResourceEntries(deck:演示文稿):演示资源条目[]{
-  return Object.keys(deck.资源索引||{}).filter(id=>builtinIllustrationUrls[id]).map(id=>({标识:id,类型:'image/png',数据:builtinIllustrationUrls[id].split(',')[1]}))
+  return Object.keys(deck.资源索引||{}).filter(id=>builtinIllustrationUrls[id]).map(id=>({标识:id,类型:builtinIllustrationUrls[id].startsWith('data:image/jpeg;')?'image/jpeg':'image/png',数据:builtinIllustrationUrls[id].split(',')[1]}))
 }

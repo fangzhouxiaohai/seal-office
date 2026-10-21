@@ -26,7 +26,7 @@ export async function buildPlatform(platform = 'android') {
     const htmlFile = path.join(output, 'index.html'), html = await fs.readFile(htmlFile, 'utf8')
     const entry = html.match(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/)
     if (!entry) throw new Error('未找到本地办公页面的脚本入口')
-    await bundle({ entryPoints: [path.resolve(output, entry[1])], outfile: path.join(output, 'office.js'), bundle: true, format: 'iife', platform: 'browser', external: ['fs', 'https'], define: { 'import.meta.url': 'document.baseURI' }, target: ['chrome100', 'safari15'], minify: true, logLevel: 'warning' })
+    await bundle({ entryPoints: [path.resolve(output, entry[1])], outfile: path.join(output, 'office.js'), bundle: true, format: 'iife', platform: 'browser', external: ['fs', 'https'], define: { 'import.meta.url': 'document.baseURI' }, target: ['chrome100', 'safari15'], minify: true, charset: 'utf8', logLevel: 'warning' })
     await fs.writeFile(htmlFile, html.replace(entry[0], '<script defer src="./office.js"></script>').replace(/<link rel="modulepreload"[^>]*>/g, ''))
     // IIFE 已包含 Vite 的 JS 分块，只保留 CSS 和其它资源，避免在 APK 内重复携带。
     const assets = path.join(output, 'assets')

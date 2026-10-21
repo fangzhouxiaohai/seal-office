@@ -10,13 +10,15 @@ const { artifactName } = createRequire(import.meta.url)('../../scripts/artifact-
 const project = fileURLToPath(new URL('..', import.meta.url))
 const platform = process.argv[2]
 assert.ok(['android', 'harmony'].includes(platform), '请指定 android 或 harmony')
+const revision = process.argv[3] || ''
+assert.ok(!revision || /^[a-z][a-z0-9-]{0,31}$/.test(revision), '快照修订标签必须为安全英文名')
 const manifest = JSON.parse(await fs.readFile(path.join(project, 'manifest.json'), 'utf8'))
 const build = JSON.parse(await fs.readFile(path.join(project, 'static/office/build-info.json'), 'utf8'))
 assert.equal(build.platform, platform, '请先构建对应平台的编辑器资源')
 assert.equal(build.desktopVersion, manifest.versionName, '资源版本与云打包版本必须一致')
 assert.match(manifest.versionName, /^\d+\.\d+\.\d+$/)
 const base = path.resolve(project, 'unpackage/cloud-ready')
-const target = path.resolve(base, manifest.versionName, platform)
+const target = path.resolve(base, manifest.versionName, platform + (revision ? '-' + revision : ''))
 assert.ok(target.startsWith(base + path.sep), '快照目录必须在 cloud-ready 内')
 // 每个发行版本保留一次确定快照；拒绝将旧文件静默混入新版。
 await fs.mkdir(target, { recursive: false }).catch(async error => {

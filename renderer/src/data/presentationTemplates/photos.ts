@@ -16,8 +16,8 @@ export const templatePhotoUrls = Object.fromEntries(Object.entries(urls).map(([k
 export function templatePhotoEntries(deck: 演示文稿): 演示资源条目[] {
   return Object.keys(deck.资源索引 ?? {}).filter(id => templatePhotoUrls[id]).map(id => {
     const url = templatePhotoUrls[id]
-    if (!url.startsWith('data:image/png;base64,')) throw new Error('模板配图未正确打包，请重新安装应用')
-    return { 标识: id, 类型: 'image/png', 数据: url.slice(url.indexOf(',') + 1) }
+    if (!/^data:image\/(png|jpeg);base64,/.test(url)) throw new Error('模板配图未正确打包，请重新安装应用')
+    return { 标识: id, 类型: url.startsWith('data:image/jpeg;') ? 'image/jpeg' : 'image/png', 数据: url.slice(url.indexOf(',') + 1) }
   })
 }
 

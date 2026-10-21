@@ -16,6 +16,8 @@ test('all distribution names use the requested English convention, including Sto
     web: 'seal-office-2.0.0-web.zip',
     android: 'seal-office-2.0.0-android.apk',
     harmony: 'seal-office-2.0.0-harmony.hap',
+    androidSource: 'seal-office-2.0.0-android-cloud-source.zip',
+    harmonySource: 'seal-office-2.0.0-harmony-cloud-source.zip',
   })
   assert.equal(artifactName('windowsSetup', '2.1.3'), 'seal-office-setup-2.1.3.exe')
   assert.equal(artifactName('harmony', '3.0.1'), 'seal-office-3.0.1-harmony.hap')

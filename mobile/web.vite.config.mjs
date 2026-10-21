@@ -9,7 +9,7 @@ const directory = fileURLToPath(new URL('.', import.meta.url))
 const pkg = JSON.parse(fs.readFileSync(path.join(directory, '../package.json'), 'utf8'))
 export default defineConfig({
   root: path.join(directory, 'web'), base: './', publicDir: path.join(directory, 'web/public'),
-  plugins: [共享校验模块(), inlineMarketImages(), react()],
+  plugins: [共享校验模块(), inlineMarketImages({ mobileImages: path.join(directory, 'assets/template-images') }), react()],
   resolve: { alias: [{ find: './pdfWorkerFactory', replacement: path.join(directory, 'web/pdfWorkerFactory.ts') }] },
   esbuild: { charset: 'ascii' },
   define: { __APP_VERSION__: JSON.stringify(pkg.version), __SEAL_PLATFORM__: JSON.stringify(process.env.SEAL_PLATFORM || 'web') },

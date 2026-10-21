@@ -1,0 +1,311 @@
+{
+  "version": "2.1.2",
+  "versionCode": "20102",
+  "platform": "android",
+  "archive": "seal-office-2.1.2-android-cloud-source.zip",
+  "archiveBytes": 38528030,
+  "sourceBytes": 59792642,
+  "sizeLimitBytes": 60000000,
+  "sha256": "a421d666d8e103f76b3c1db9f5847ab6afabfde382e1b654055b16d71c95b67b",
+  "editorSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d",
+  "crcAndAllPayloadHashesVerified": true,
+  "completeFontsUnchanged": true,
+  "generatedNativePackage": false,
+  "files": [
+    {
+      "path": "AndroidManifest.xml",
+      "bytes": 1213,
+      "sha256": "923396273e9823cd48788ce0d7b9b896988355756e8e8fee39a8c151ed43333b"
+    },
+    {
+      "path": "App.uvue",
+      "bytes": 123,
+      "sha256": "b3b845f851b1f2bef770e63ec0e95ce57081f84671b33dc3c9021abd75a03792"
+    },
+    {
+      "path": "harmony-configs/entry/src/main/module.json5",
+      "bytes": 1019,
+      "sha256": "7ccb67c3cf62dcb2f6c1e1336df0ae2660671c42bc573fa13f65ab44f3790bc9"
+    },
+    {
+      "path": "harmony-configs/entry/src/main/resources/base/element/seal_print.json",
+      "bytes": 108,
+      "sha256": "aedf2a79e05446baa34540e3bf63356c39c32ce2c0506a2b75ae78372c932007"
+    },
+    {
+      "path": "main.uts",
+      "bytes": 146,
+      "sha256": "e2b620ca5b9a2e5bb2622ff622d62e39f81c3a8fd6f8e9c12b37d429a8602ca7"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 2795,
+      "sha256": "5da74d7ca4c5768bc5eae49c1b9801f7de0286baf170c2b7705b079c93e98597"
+    },
+    {
+      "path": "native/export.uts",
+      "bytes": 2134,
+      "sha256": "3dd20597e1abe73b5c397d1682adb8a55c93ab59db2726079499ff4a407b611e"
+    },
+    {
+      "path": "native/share.uts",
+      "bytes": 1505,
+      "sha256": "1af2f60d493216e1c28eca021f81353abab135b9ed02e9bfcb6f0777736c5e3d"
+    },
+    {
+      "path": "native/workspace.uts",
+      "bytes": 1428,
+      "sha256": "43dc99f9e2a0c42973f4e33cb29941c99a8b314cbc63c753e6c1d2e1c83adce1"
+    },
+    {
+      "path": "nativeResources/android/res/drawable/icon_background.xml",
+      "bytes": 177,
+      "sha256": "9a9d1a377a2054e5d9afa0a97c617dac408ffae756483386142521126f47c178"
+    },
+    {
+      "path": "nativeResources/android/res/drawable-nodpi/icon_foreground.png",
+      "bytes": 19852,
+      "sha256": "de7a94eb55842121c3e577a2c4bc6feb68d6d4614fbc4d4fcd7a36f28b8c6045"
+    },
+    {
+      "path": "nativeResources/android/res/drawable-nodpi/icon_monochrome.png",
+      "bytes": 6546,
+      "sha256": "0dba563c5c0dbc5e3b91cfab1bcb2668c752c5110780b3b56df4e8d4482f53b3"
+    },
+    {
+      "path": "nativeResources/android/res/mipmap-anydpi-v26/icon.xml",
+      "bytes": 255,
+      "sha256": "0a46fa3a5de0ca4bd201f6a13ef67951b140946a890bdd25272139e339095e1b"
+    },
+    {
+      "path": "nativeResources/android/res/mipmap-anydpi-v33/icon.xml",
+      "bytes": 317,
+      "sha256": "3ee22a5e15db371261af50aaa4456b64c6a39f93165eb75c2d75a9a30230571b"
+    },
+    {
+      "path": "package.json",
+      "bytes": 1429,
+      "sha256": "8c6aa0957f7a87978a277f656d78796079e3a2edc3c593dc8c114a314c8c195d"
+    },
+    {
+      "path": "pages/workspace/workspace.uvue",
+      "bytes": 12690,
+      "sha256": "6a5b5fde717ecb26351acbbd5f916fe9a3f7475168ba62811afee3ea864c01c4"
+    },
+    {
+      "path": "pages.json",
+      "bytes": 245,
+      "sha256": "72cfd276704f9ebad47740c0f27a752009d3e4e1b2ee02113487cad51e715743"
+    },
+    {
+      "path": "snapshot-info.json",
+      "bytes": 9879,
+      "sha256": "85e2098171a082fe1f254e566683d2892c7307aadf2d08570a279ba38bd07d61"
+    },
+    {
+      "path": "static/icon.png",
+      "bytes": 16518,
+      "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+    },
+    {
+      "path": "static/icons/android/icon144.png",
+      "bytes": 8392,
+      "sha256": "84cc76d3b8a871f35303211401e6333616fe51b45078513c02813c66c726f7df"
+    },
+    {
+      "path": "static/icons/android/icon192.png",
+      "bytes": 12505,
+      "sha256": "768de2417e31b825ac6a57e7d8b1b6a7e7a543a449328bd93435fa288737a90d"
+    },
+    {
+      "path": "static/icons/android/icon72.png",
+      "bytes": 4015,
+      "sha256": "38901577b4fcd35873683d388a930b87276eb27436aa2e9c7b4f178bb684b591"
+    },
+    {
+      "path": "static/icons/android/icon96.png",
+      "bytes": 6228,
+      "sha256": "e8f9c18445b2aaf67a98e848fcfffe76f5f5f7a24177b387bd9ad0eb34942b29"
+    },
+    {
+      "path": "static/icons/harmony/background.png",
+      "bytes": 20555,
+      "sha256": "e58f83fa9ce5a13f3444d9bf1d0eebe471a3b40b559508bfd45ba05d33ebfafe"
+    },
+    {
+      "path": "static/icons/harmony/foreground.png",
+      "bytes": 84076,
+      "sha256": "1b81ab2bc7e7310d9133b5ad38420d7ff0038f42aae400ab31a073b3f8126eb6"
+    },
+    {
+      "path": "static/icons/ios/appstore.png",
+      "bytes": 108268,
+      "sha256": "ecdb6463c5ba3e1d46395ccaaeb937432786afa73b88d68692d1a913d6c64b04"
+    },
+    {
+      "path": "static/office/.gitkeep",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "static/office/assets/index-dfdd9dcb.css",
+      "bytes": 215889,
+      "sha256": "dfdd9dcbd5a4cb1e225c9f7b07f0b50dd9d02cab4b0c1854420a7e979a63de28"
+    },
+    {
+      "path": "static/office/assets/logo-da820085.png",
+      "bytes": 16518,
+      "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+    },
+    {
+      "path": "static/office/assets/TemplateLibrary-d5e988b9.css",
+      "bytes": 3623,
+      "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
+    },
+    {
+      "path": "static/office/build-info.json",
+      "bytes": 182,
+      "sha256": "a2d5763ab6084bb84e0e4e4441fac5116c771f4163ed80f764c9f7b6df1f78c3"
+    },
+    {
+      "path": "static/office/compatibility.js",
+      "bytes": 2436,
+      "sha256": "3fc635712b782820f7f93bd4b1a366247df743bd57144b76d38561b75e95e6d7"
+    },
+    {
+      "path": "static/office/fonts/NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "path": "static/office/fonts/NotoSerif-LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "path": "static/office/fonts/NotoSerifCJKsc-Regular.otf",
+      "bytes": 24543080,
+      "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+    },
+    {
+      "path": "static/office/fonts/OFL.txt",
+      "bytes": 4387,
+      "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+    },
+    {
+      "path": "static/office/icons/icon180.png",
+      "bytes": 9295,
+      "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed"
+    },
+    {
+      "path": "static/office/icons/icon192.png",
+      "bytes": 11868,
+      "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78"
+    },
+    {
+      "path": "static/office/icons/icon32.png",
+      "bytes": 1592,
+      "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9"
+    },
+    {
+      "path": "static/office/icons/icon512.png",
+      "bytes": 26134,
+      "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8"
+    },
+    {
+      "path": "static/office/index.html",
+      "bytes": 1189,
+      "sha256": "6f2b8676f8c6eae0c86def3b95f064cd95a2a4ade24abb5f1152399300fd66d8"
+    },
+    {
+      "path": "static/office/licenses/bessel-LICENSE.txt",
+      "bytes": 589,
+      "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e"
+    },
+    {
+      "path": "static/office/licenses/formulajs-LICENSE.txt",
+      "bytes": 3320,
+      "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b"
+    },
+    {
+      "path": "static/office/licenses/frac-LICENSE.txt",
+      "bytes": 589,
+      "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193"
+    },
+    {
+      "path": "static/office/licenses/iconv-lite-0.6.3.txt",
+      "bytes": 1063,
+      "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c"
+    },
+    {
+      "path": "static/office/licenses/isomorphic.js-LICENSE.txt",
+      "bytes": 1108,
+      "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057"
+    },
+    {
+      "path": "static/office/licenses/jstat-LICENSE.txt",
+      "bytes": 1049,
+      "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800"
+    },
+    {
+      "path": "static/office/licenses/lib0-LICENSE.txt",
+      "bytes": 1108,
+      "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73"
+    },
+    {
+      "path": "static/office/licenses/OFD-1.0.6.txt",
+      "bytes": 10678,
+      "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17"
+    },
+    {
+      "path": "static/office/licenses/SheetJS-0.20.3.txt",
+      "bytes": 11355,
+      "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+    },
+    {
+      "path": "static/office/licenses/ssf-LICENSE.txt",
+      "bytes": 11355,
+      "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26"
+    },
+    {
+      "path": "static/office/licenses/yjs-LICENSE.txt",
+      "bytes": 1211,
+      "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff"
+    },
+    {
+      "path": "static/office/manifest.webmanifest",
+      "bytes": 377,
+      "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8"
+    },
+    {
+      "path": "static/office/office.js",
+      "bytes": 16699263,
+      "sha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d"
+    },
+    {
+      "path": "static/office/uni.webview.js",
+      "bytes": 6641,
+      "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8"
+    },
+    {
+      "path": "static/splash/android/icon-xhdpi.png",
+      "bytes": 21088,
+      "sha256": "d5b1e1a8efc0f3044b900693005e6ad8ded7ea8fe25d11a8c83d0336bd6cc8cc"
+    },
+    {
+      "path": "static/splash/android/icon-xxhdpi.png",
+      "bytes": 33740,
+      "sha256": "54bf37c8f7b8dccdcc64db53cae9b5b86904159573a08bd6084946957f2d53d5"
+    },
+    {
+      "path": "static/splash/android/icon-xxxhdpi.png",
+      "bytes": 52276,
+      "sha256": "2d9fed3009b950a0f2a5e9e3a837e2e2c49bb2a39515de4d69da92a623bef0ae"
+    },
+    {
+      "path": "云打包说明.txt",
+      "bytes": 620,
+      "sha256": "3b01fc3478d4733c54225d89c5bf3271ae0a37017a7aafaa26cded48cc0c96d5"
+    }
+  ]
+}

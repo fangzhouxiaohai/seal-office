@@ -5,5 +5,7 @@
   "ubuntu": "seal-office-${version}-amd64.deb",
   "web": "seal-office-${version}-web.zip",
   "android": "seal-office-${version}-android.apk",
-  "harmony": "seal-office-${version}-harmony.hap"
+  "harmony": "seal-office-${version}-harmony.hap",
+  "androidSource": "seal-office-${version}-android-cloud-source.zip",
+  "harmonySource": "seal-office-${version}-harmony-cloud-source.zip"
 }

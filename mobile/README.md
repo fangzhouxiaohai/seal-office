@@ -1,10 +1,10 @@
 # 海豹办公 uni-app x
 
-当前移动源码版本为 **2.1.1 / 20101**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤见 [2.1.1 发行准备](releases/2.1.1.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
+当前移动源码版本为 **2.1.2 / 20102**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤见 [2.1.2 云打包说明](releases/2.1.2.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名：新版 Android APK 为 `seal-office-2.1.1-android.apk`；已签名 Harmony App Pack 外层归档为 `seal-office-2.1.1-harmony.app.zip`。用户提供的两端 2.1.1/20101 成品已验签归档并补充到同版 [GitHub](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.1) 与 [GitCode](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.1)。独立云打包源码 ZIP 继续保留，不能将源码快照称为安装包。Android 描述性平台标签例外和设备验收边界见[本版成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)；App Pack 外层验签通过，内层 HAP 未独立签名，不单独作为可安装 HAP 发布。历史成品及验收保留在对应版本，例如 [2.0.0 移动成品验收](../docs/v2.0.0-发布与移动成品.md)。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名。本次 2.1.2 交付 Android 与 HarmonyOS 两份独立云打包源码，尚未生成新的 APK / App Pack。最终源码在 release/v2.1.2/verified/；Android ZIP 和解压后的总文件大小均限制在 60 MB 以内，用对应平台源码直接在 HBuilderX 提交云打包。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
 
-后续如果取得独立签名 HAP，可使用 `seal-office-2.1.1-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
+后续如果取得独立签名 HAP，可使用 `seal-office-2.1.2-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 
