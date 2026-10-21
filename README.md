@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.1**，移动构建号 **20101**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 提供独立 Android/Harmony 云打包源码，新的原生安装成品由用户云打包后另行验签及设备验证；既有 2.1.0 APK/App Pack 不包含本次修复。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.1**，移动构建号 **20101**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -23,6 +23,8 @@
 | Microsoft Store 上传包 | `seal-office-2.1.1-microsoft-store-x64.msix`，商店身份不变、版本 `2.1.1.0` |
 | Ubuntu amd64 | `seal-office-2.1.1-amd64.deb` |
 | Web 静态包 | `seal-office-2.1.1-web.zip` |
+| Android 发布 APK | [seal-office-2.1.1-android.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-android.apk) |
+| Harmony 已签名 App Pack | [seal-office-2.1.1-harmony.app.zip](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-harmony.app.zip)，解压得到 `.app` 供 AppGallery 上架；内层 HAP 未独立签名 |
 | Android 云打包源码 | `seal-office-2.1.1-android-cloud-source.zip`，尚不是 APK |
 | Harmony 云打包源码 | `seal-office-2.1.1-harmony-cloud-source.zip`，尚不是签名 App/HAP |
 
@@ -34,7 +36,7 @@
 - 修复 Harmony 普通 JSON 消息与 UTSJSONObject 不一致造成的公共桥接无响应，增加启动往返核验、失败反馈和 HTTP 超时。原生 SDK 契约及编译检查不代替真实设备和短信投递验收，见[鸿蒙修复说明](docs/HARMONY_BRIDGE_FIX_2.1.1.md)。
 - 各端生成式 AI 功能要求先登录经过手机号验证的账号。界面与实际调用层都核验有效会话，不依赖本机缓存标记；已验证账号可用密码登录，无需为使用 AI 开通云空间，不向第三方模型传送手机号。依据与测试边界见[AI 身份核验说明](docs/AI身份核验.md)。
 
-本版测试及成品范围见[2.1.1 验收记录](docs/verification/v2.1.1/README.md)。Windows 安装包未做发行证书签名，MSIX 用于 Partner Center 上传；移动原生新包由用户云打包，并在目标设备复验后再提交商店。
+本版测试及成品范围见[2.1.1 验收记录](docs/verification/v2.1.1/README.md)。Windows 安装包未做发行证书签名，MSIX 用于 Partner Center 上传。移动成品的应用身份、版本、签名和编辑器资源已核验；Android 的 `build-info.json` 平台标签及时间来自鸿蒙快照，其余 27 个运行资源与 Android 快照完全一致，严格标签检查未报告为通过。移动新增附件使用 `seal-office-2.1.1-mobile-SHA256SUMS.txt`，原 17 个发行附件及校验文件保持原字节。系统选择器、保存后冷启动和短信真实送达仍需在目标设备复验后再提交商店。
 
 ## 2.1.0 历史升级
 

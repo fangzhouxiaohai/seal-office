@@ -2,7 +2,7 @@
 
 当前移动源码版本为 **2.1.1 / 20101**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤见 [2.1.1 发行准备](releases/2.1.1.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名：新版 Android APK 为 `seal-office-2.1.1-android.apk`；已签名 Harmony App Pack 外层归档为 `seal-office-2.1.1-harmony.app.zip`。当前交付的是各平台云打包源码快照，不能把它们称为已生成的安装包。历史用户提供成品仍保留在对应发行页，不能改名充当新版；例如 [2.0.0 移动成品验收](../docs/v2.0.0-发布与移动成品.md)。App Pack 外层签名和内层 HAP 独立签名需分别核验。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名：新版 Android APK 为 `seal-office-2.1.1-android.apk`；已签名 Harmony App Pack 外层归档为 `seal-office-2.1.1-harmony.app.zip`。用户提供的两端 2.1.1/20101 成品已验签归档并补充到同版 [GitHub](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.1) 与 [GitCode](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.1)。独立云打包源码 ZIP 继续保留，不能将源码快照称为安装包。Android 描述性平台标签例外和设备验收边界见[本版成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)；App Pack 外层验签通过，内层 HAP 未独立签名，不单独作为可安装 HAP 发布。历史成品及验收保留在对应版本，例如 [2.0.0 移动成品验收](../docs/v2.0.0-发布与移动成品.md)。
 
 后续如果取得独立签名 HAP，可使用 `seal-office-2.1.1-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
 
@@ -38,7 +38,7 @@ npm run pack
 
 如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.1.1 发行准备](releases/2.1.1.md)。正式交付优先使用独立冻结目录，打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`。本次准备的源码版本为 `2.1.1 / 20101`，正式 Android / 鸿蒙包由用户云打包后再核验。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+当前 AppID 为用户配置的 `__UNI__B52B65B`。本次源码及已验签的 Android / 鸿蒙成品均为 `2.1.1 / 20101`；新版雷电已安装 APK 完整哈希一致，仅做只读包信息核验，不能代替新版原生功能完整验收。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
 发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
 

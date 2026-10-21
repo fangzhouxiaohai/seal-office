@@ -1,0 +1,162 @@
+{
+  "version": "2.1.1",
+  "tag": "v2.1.1",
+  "recordedAt": "2026-10-21T13:50:12.004597+00:00",
+  "passed": true,
+  "scope": "Supplement user-built signed native packages to the existing 2.1.1 release; application source and original 17 release assets remain unchanged.",
+  "sourceReleaseCommit": "59a42246e73f9e11ddca554b103d3a5cd4c92670",
+  "runtimeSourceSnapshotUnchanged": true,
+  "frozenSourceFiles": 1575,
+  "originalReleaseAssetsUnchanged": true,
+  "supplementAssets": [
+    {
+      "name": "seal-office-2.1.1-android.apk",
+      "bytes": 89500403,
+      "sha256": "3ecb6560eb49812640a48fc0e429caa63e4141dee90447505a1c94bf7d49e4b0"
+    },
+    {
+      "name": "seal-office-2.1.1-harmony.app.zip",
+      "bytes": 60846878,
+      "sha256": "d05c3fc25a9ae8a11d5e4843be7ceb45b735d551c36ed91e2e179a9fad43f10c"
+    },
+    {
+      "name": "seal-office-2.1.1-mobile-verification.json",
+      "bytes": 19963,
+      "sha256": "c417e38feabe12302e91aba15b81d7d8e3b5cbca48a174e23b4f3aa0e00527fa"
+    },
+    {
+      "name": "seal-office-2.1.1-mobile-release-notes.md",
+      "bytes": 2097,
+      "sha256": "36c4fdd30ed74a5e457801f84f62b6afdd62720045ff6c58de15a4d279da056a"
+    },
+    {
+      "name": "seal-office-2.1.1-mobile-SHA256SUMS.txt",
+      "bytes": 417,
+      "sha256": "93030b88896463a616f5578fa22cfb016cf61e5b80b8bfe0467a26cf0fff4b75"
+    }
+  ],
+  "publications": [
+    {
+      "passed": true,
+      "site": "github",
+      "publishedAt": "2026-10-21T13:47:37.013200+00:00",
+      "version": "2.1.1",
+      "tag": "v2.1.1",
+      "sourceReleaseCommit": "59a42246e73f9e11ddca554b103d3a5cd4c92670",
+      "releaseUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.1",
+      "original17AssetsUnchanged": true,
+      "newAssetCount": 5,
+      "releaseAssetCount": 22,
+      "allNewAssetsAnonymousFullDownloadVerified": true,
+      "assets": [
+        {
+          "name": "seal-office-2.1.1-android.apk",
+          "bytes": 89500403,
+          "sha256": "3ecb6560eb49812640a48fc0e429caa63e4141dee90447505a1c94bf7d49e4b0",
+          "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-android.apk",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 89500403,
+          "downloadedSha256": "3ecb6560eb49812640a48fc0e429caa63e4141dee90447505a1c94bf7d49e4b0"
+        },
+        {
+          "name": "seal-office-2.1.1-harmony.app.zip",
+          "bytes": 60846878,
+          "sha256": "d05c3fc25a9ae8a11d5e4843be7ceb45b735d551c36ed91e2e179a9fad43f10c",
+          "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-harmony.app.zip",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 60846878,
+          "downloadedSha256": "d05c3fc25a9ae8a11d5e4843be7ceb45b735d551c36ed91e2e179a9fad43f10c"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-verification.json",
+          "bytes": 19963,
+          "sha256": "c417e38feabe12302e91aba15b81d7d8e3b5cbca48a174e23b4f3aa0e00527fa",
+          "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-verification.json",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 19963,
+          "downloadedSha256": "c417e38feabe12302e91aba15b81d7d8e3b5cbca48a174e23b4f3aa0e00527fa"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-release-notes.md",
+          "bytes": 2097,
+          "sha256": "36c4fdd30ed74a5e457801f84f62b6afdd62720045ff6c58de15a4d279da056a",
+          "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-release-notes.md",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 2097,
+          "downloadedSha256": "36c4fdd30ed74a5e457801f84f62b6afdd62720045ff6c58de15a4d279da056a"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-SHA256SUMS.txt",
+          "bytes": 417,
+          "sha256": "93030b88896463a616f5578fa22cfb016cf61e5b80b8bfe0467a26cf0fff4b75",
+          "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-SHA256SUMS.txt",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 417,
+          "downloadedSha256": "93030b88896463a616f5578fa22cfb016cf61e5b80b8bfe0467a26cf0fff4b75"
+        }
+      ]
+    },
+    {
+      "passed": true,
+      "site": "gitcode",
+      "publishedAt": "2026-10-21T13:49:54.407779+00:00",
+      "version": "2.1.1",
+      "tag": "v2.1.1",
+      "sourceReleaseCommit": "59a42246e73f9e11ddca554b103d3a5cd4c92670",
+      "releaseUrl": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.1",
+      "original17AssetsUnchanged": true,
+      "newAssetCount": 5,
+      "releaseAssetCount": 22,
+      "allNewAssetsAnonymousFullDownloadVerified": true,
+      "assets": [
+        {
+          "name": "seal-office-2.1.1-android.apk",
+          "bytes": 89500403,
+          "sha256": "3ecb6560eb49812640a48fc0e429caa63e4141dee90447505a1c94bf7d49e4b0",
+          "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.1/seal-office-2.1.1-android.apk",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 89500403,
+          "downloadedSha256": "3ecb6560eb49812640a48fc0e429caa63e4141dee90447505a1c94bf7d49e4b0"
+        },
+        {
+          "name": "seal-office-2.1.1-harmony.app.zip",
+          "bytes": 60846878,
+          "sha256": "d05c3fc25a9ae8a11d5e4843be7ceb45b735d551c36ed91e2e179a9fad43f10c",
+          "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.1/seal-office-2.1.1-harmony.app.zip",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 60846878,
+          "downloadedSha256": "d05c3fc25a9ae8a11d5e4843be7ceb45b735d551c36ed91e2e179a9fad43f10c"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-verification.json",
+          "bytes": 19963,
+          "sha256": "c417e38feabe12302e91aba15b81d7d8e3b5cbca48a174e23b4f3aa0e00527fa",
+          "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-verification.json",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 19963,
+          "downloadedSha256": "c417e38feabe12302e91aba15b81d7d8e3b5cbca48a174e23b4f3aa0e00527fa"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-release-notes.md",
+          "bytes": 2097,
+          "sha256": "36c4fdd30ed74a5e457801f84f62b6afdd62720045ff6c58de15a4d279da056a",
+          "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-release-notes.md",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 2097,
+          "downloadedSha256": "36c4fdd30ed74a5e457801f84f62b6afdd62720045ff6c58de15a4d279da056a"
+        },
+        {
+          "name": "seal-office-2.1.1-mobile-SHA256SUMS.txt",
+          "bytes": 417,
+          "sha256": "93030b88896463a616f5578fa22cfb016cf61e5b80b8bfe0467a26cf0fff4b75",
+          "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.1/seal-office-2.1.1-mobile-SHA256SUMS.txt",
+          "anonymousFullDownloadVerified": true,
+          "downloadedBytes": 417,
+          "downloadedSha256": "93030b88896463a616f5578fa22cfb016cf61e5b80b8bfe0467a26cf0fff4b75"
+        }
+      ]
+    }
+  ],
+  "standaloneHapPublished": false,
+  "fullNativeDeviceFunctionalAcceptanceClaimed": false
+}
