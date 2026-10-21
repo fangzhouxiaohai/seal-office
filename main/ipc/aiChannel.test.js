@@ -12,6 +12,19 @@ function 环境() {
   return { 处理器, 服务, 创建发送者 }
 }
 describe('助手任务生命周期', () => {
+  it('只读请求在宿主通道也拒绝写工具，不向窗口发送候选', async () => {
+    const { 处理器, 服务, 创建发送者 } = 环境()
+    服务.对话.mockImplementation(async (_input, { 执行工具 }) => {
+      await 执行工具({ 工具: 'propose_changes', 调用标识: 'write', 参数: { 回复: '写入', 修改: [] } })
+      return { 内容: '不应该执行到这里' }
+    })
+    const sender = 创建发送者(1)
+    const result = await 处理器.get('ai.chat')({ sender }, { 请求标识: 'readonly', 会话标识: 'test', 只读对话: true, 自动执行: true })
+    expect(result).toMatchObject({ 成功: false, 错误: expect.stringContaining('对话模式') })
+    expect(sender.send).not.toHaveBeenCalledWith('ai.toolCall', expect.anything())
+    expect(sender.listenerCount('destroyed')).toBe(0)
+  })
+
   it('文件工具只接受所属窗口和请求的结果，取消释放等待', async () => {
     const 处理器 = new Map()
     const 服务 = { 对话: vi.fn(async (_输入, { 执行工具, 信号 }) => {

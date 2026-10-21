@@ -65,7 +65,7 @@ function 注册智能助手通道(ipcMain, { 助手服务, requireAIIdentity } =
     if (typeof 标识 !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(标识)) return { 成功: false, 错误: '助手请求标识无效' }
     if (进行中.has(发送者.id)) return { 成功: false, 错误: '请等待当前任务完成或停止后重试' }
     const 控制器 = new AbortController()
-    const 任务 = { 标识, 控制器, 工具: new Map(), 引导: [], 引导字数: 0, 接收引导: typeof 输入?.会话标识 === 'string' && 输入?.自动执行 !== false && !输入?.手动压缩 }
+    const 任务 = { 标识, 控制器, 工具: new Map(), 引导: [], 引导字数: 0, 接收引导: typeof 输入?.会话标识 === 'string' && 输入?.自动执行 !== false && !输入?.手动压缩 && !输入?.只读对话 }
     进行中.set(发送者.id, 任务)
     const 停止 = () => 控制器.abort()
     发送者.once('destroyed', 停止)
@@ -82,6 +82,7 @@ function 注册智能助手通道(ipcMain, { 助手服务, requireAIIdentity } =
         推送: (片段) => { if (!发送者.isDestroyed() && !控制器.signal.aborted) 发送者.send('ai.stream', { 请求标识: 标识, ...片段 }) },
         执行工具: (输入工具) => new Promise((完成, 拒绝) => {
           if (控制器.signal.aborted || 发送者.isDestroyed()) return 拒绝(new Error('已停止生成'))
+          if (输入?.只读对话 === true) return 拒绝(new Error('对话模式不允许创建或修改文件'))
           if (输入工具.工具 !== 'propose_changes' || typeof 输入工具.调用标识 !== 'string' || !输入工具.调用标识 || 任务.工具.has(输入工具.调用标识)) return 拒绝(new Error('文件工具调用无效'))
           const 清理 = () => { clearTimeout(计时); 控制器.signal.removeEventListener('abort', 中止); 任务.工具.delete(输入工具.调用标识) }
           const 中止 = () => { 清理(); 拒绝(new Error('已停止生成')) }

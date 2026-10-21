@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { App as AntdApp, Button, Checkbox, Drawer, Input } from 'antd'
+import { App as AntdApp, Button, Checkbox, Input } from 'antd'
 import { useAppStore, type EditorDocument } from '../store'
 import { 桥接, type 助手配置, type 思考强度, type 助手执行记录 } from '../ipc/bridge'
 import { 检查工作簿更新, type Sheet } from '../sheet/model'
@@ -9,6 +9,9 @@ import Icon from '../components/Icon'
 import AiSettingsCard from './AiSettingsCard'
 import AssistantContent from './AssistantContent'
 import SealLogo from '../components/SealLogo'
+import { useIconPlatform } from '../components/IconPlatform'
+import MobileAssistantLauncher from './MobileAssistantLauncher'
+import AssistantSurface from './AssistantSurface'
 import { 解析助手回复, 预览文字修改, 预览表格修改, 预览演示修改, type 助手修改, type 文字修改, type 表格修改, type 演示修改 } from './proposal'
 import { 构建新文件, type 新文件候选, type 创建文件 } from './createDocument'
 import { 生成文字上下文 } from './wordBlocks'
@@ -26,9 +29,9 @@ type 执行任务 = {
   标识: string; 范围: string; 会话标识: string; 文件名: string; 原始正文: string; 思考: string; 已停止: boolean
   文档: EditorDocument | null; 原内容: string; 表格?: Sheet[]; 演示?: 演示文稿; 修改: 助手修改[]
   待刷新: Partial<会话消息>; 计时器?: ReturnType<typeof setTimeout>; 正文已刷新: boolean; 思考已刷新: boolean; 正文待刷新?: boolean; 思考待刷新?: boolean
-  执行记录?: 助手执行记录[]; 已请求?: boolean; 结束状态?: 排队任务['状态']
+  执行记录?: 助手执行记录[]; 已请求?: boolean; 结束状态?: 排队任务['状态']; 只读?: boolean
 }
-type 排队任务 = { id: string; 文本: string; 范围: string; 文件名: string; 会话标识: string; 强度: 思考强度; 自动执行: boolean; 状态: '等待' | '执行中' | '完成' | '失败' | '取消' | '已引导'; 错误?: string }
+type 排队任务 = { id: string; 文本: string; 范围: string; 文件名: string; 会话标识: string; 强度: 思考强度; 自动执行: boolean; 只读?: boolean; 状态: '等待' | '执行中' | '完成' | '失败' | '取消' | '已引导'; 错误?: string }
 const 每页修改数 = 20
 const 计划状态: Record<计划项['status'], string> = { pending: '待执行', in_progress: '执行中', completed: '已完成', failed: '失败', awaiting_confirmation: '待确认修改' }
 
@@ -88,13 +91,19 @@ function 修改说明(项: 助手修改): { 位置: string; 原文: string; 新�
 
 export default function AiAssistant() {
   const 放映中 = 使用放映状态()
+  const 移动端 = useIconPlatform() === 'mobile' || document.documentElement.dataset.sealPlatform === 'app'
+  const [选择目标, set选择目标] = useState<string>()
+  const [移动模式, set移动模式] = useState<'chat' | 'work'>('chat')
+  const [移动快捷指令, set移动快捷指令] = useState<{ 文本: string } | null>(null)
   const {state:账号状态}=useCloud()
   const 待身份核验=useRef(new Set<string>())
   const { message, modal } = AntdApp.useApp()
   const { documents, pdfDocuments, activeDocumentId, activeWorkspaceTabId, 文档路径, 表格文档模型, 演示文档模型, updateEditorHtml, 更新表格文档模型, 更新演示文档模型, createDoc, selectWorkspaceTab } = useAppStore()
-  const 当前文档 = useMemo(() => activeWorkspaceTabId === activeDocumentId
+  const 可选文件 = useMemo(() => [...documents, ...pdfDocuments.filter(项 => 项.data)], [documents, pdfDocuments])
+  const 移动目标 = 可选文件.find(项 => 项.id === 选择目标) ?? 可选文件.find(项 => 项.id === activeWorkspaceTabId) ?? 可选文件[0] ?? null
+  const 当前文档 = useMemo(() => 移动端 ? documents.find(项 => 项.id === 移动目标?.id) ?? null : activeWorkspaceTabId === activeDocumentId
     ? documents.find((项) => 项.id === activeWorkspaceTabId) ?? null
-    : null, [documents, activeDocumentId, activeWorkspaceTabId])
+    : null, [移动端, 移动目标?.id, documents, activeDocumentId, activeWorkspaceTabId])
   const [打开, set打开] = useState(false)
   const [配置展开, set配置展开] = useState(false)
   const [配置, set配置] = useState<助手配置 | null>(null)
@@ -102,9 +111,13 @@ export default function AiAssistant() {
   const 配置请求 = useRef<Promise<助手配置> | null>(null)
   const 配置版本 = useRef(0)
   const [会话按范围, set会话按范围] = useState<Record<string, 会话消息[]>>({})
-  const 当前PDF = pdfDocuments.find((项) => 项.id === activeWorkspaceTabId && 项.data) ?? null
+  const 当前PDF = pdfDocuments.find((项) => 项.id === (移动端 ? 移动目标?.id : activeWorkspaceTabId) && 项.data) ?? null
   const 当前文件 = 当前文档 ?? 当前PDF
+  const 只读对话 = 移动端 && (移动模式 === 'chat' || !当前文档)
+  useEffect(() => { if (移动端 && !当前文档) set移动模式('chat') }, [移动端, 当前文档?.id])
   const 当前范围标识 = 当前文件?.id ?? '无文件'
+  const 移动请求范围 = useRef({ 范围: 当前范围标识, 只读: 只读对话 })
+  移动请求范围.current = { 范围: 当前范围标识, 只读: 只读对话 }
   const 会话 = 会话按范围[当前范围标识] ?? []
   const [输入按范围, set输入按范围] = useState<Record<string, string>>({})
   const 输入 = 输入按范围[当前范围标识] ?? ''
@@ -186,6 +199,7 @@ export default function AiAssistant() {
   }
 
   const 生成候选 = (任务: 执行任务, 修改: 助手修改[]) => {
+    if (任务.只读) throw new Error('对话模式只提供回答，不创建或修改文件')
     const 文档 = 任务.文档
     if (修改.some((项) => 项.种类 === '创建文件')) {
       if (修改.some((项) => 项.种类 !== '创建文件') || 修改.length > 10) throw new Error('新建文件须独立提交，一次最多10个，不能与现有文件修改混合')
@@ -359,14 +373,15 @@ export default function AiAssistant() {
   }, [会话, 打开])
 
   useEffect(() => {
-    const 打开助手 = () => set打开(true)
+    const 打开助手 = () => { set选择目标(undefined); set打开(true) }
     // 选区浮窗与右键菜单的 AI 快捷动作：打开助手并直接发送预置指令。
     // 经 ref 间接调用，避免监听器抓住首次渲染时的旧状态。
     const 接收指令 = (事件: Event) => {
       const 文本 = (事件 as CustomEvent<{ 文本?: string }>).detail?.文本
       if (typeof 文本 !== 'string' || 文本.trim() === '') return
       set打开(true)
-      发送引用.current(文本)
+      if (移动端) { set选择目标(undefined); set移动快捷指令({ 文本 }) }
+      else 发送引用.current(文本)
     }
     window.addEventListener('seal-open-assistant', 打开助手)
     window.addEventListener('seal-assistant-ask', 接收指令)
@@ -374,7 +389,13 @@ export default function AiAssistant() {
       window.removeEventListener('seal-open-assistant', 打开助手)
       window.removeEventListener('seal-assistant-ask', 接收指令)
     }
-  }, [])
+  }, [移动端])
+
+  useEffect(() => {
+    if (!移动快捷指令) return
+    set移动快捷指令(null)
+    发送引用.current(移动快捷指令.文本)
+  }, [移动快捷指令])
 
   const 读取模型配置 = (): Promise<助手配置> => {
     if (配置引用.current) return Promise.resolve(配置引用.current)
@@ -432,8 +453,9 @@ export default function AiAssistant() {
       try{身份通过=await requireAIIdentity()}finally{待身份核验.current.delete(核验键)}
       if(!组件有效.current||核验会话代次!==(会话代次.current.get(当前会话标识)??0))return
       if(!身份通过){set输入按范围(旧=>旧[当前范围标识]?.trim()?旧:{...旧,[当前范围标识]:文本});return}
-      const 项: 排队任务 = { id: crypto.randomUUID(), 文本, 范围: 当前范围标识, 文件名: 当前文件?.name ?? '新建文件 / 一般对话', 会话标识: 当前会话标识, 强度, 自动执行: 文本.toLowerCase() === '/compact' ? false : 指定执行 ?? !仅规划, 状态: '等待' }
-      const 需等待 = !!进行中.current || 队列引用.current.some((项) => 项.状态 === '等待') || 清除中 || 绑定中 || 处理候选中 || (文本.toLowerCase() !== '/compact' && (!!待确认引用.current[项.范围] || !!恢复提示引用.current[项.范围] || 恢复候选锁.current.has(项.范围)))
+      if (移动端 && (移动请求范围.current.范围 !== 当前范围标识 || 移动请求范围.current.只读 !== 只读对话)) { message.info('目标文件或模式已变化，请确认后重新发送'); return }
+      const 项: 排队任务 = { id: crypto.randomUUID(), 文本, 范围: 当前范围标识, 文件名: 当前文件?.name ?? (移动端 ? '一般问答' : '新建文件 / 一般对话'), 会话标识: 当前会话标识, 强度, 自动执行: 只读对话 || 文本.toLowerCase() === '/compact' ? false : 指定执行 ?? !仅规划, ...(移动端 ? { 只读: 只读对话 } : {}), 状态: '等待' }
+      const 需等待 = !!进行中.current || 队列引用.current.some((项) => 项.状态 === '等待') || 清除中 || 绑定中 || 处理候选中 || (!项.只读 && 文本.toLowerCase() !== '/compact' && (!!待确认引用.current[项.范围] || !!恢复提示引用.current[项.范围] || 恢复候选锁.current.has(项.范围)))
       if (需等待 && 队列引用.current.filter((旧项) => ['等待', '执行中'].includes(旧项.状态)).length >= 30) { message.warning('队列已满，请先处理或移除任务'); return }
       if (!指定文本) set输入按范围((当前) => 当前[当前范围标识]===发送源输入?{ ...当前, [当前范围标识]: '' }:当前)
       if (需等待) {
@@ -448,7 +470,7 @@ export default function AiAssistant() {
     const PDF = 最新文件.current.pdfDocuments.find((项) => 项.id === 排队.范围)
     const 范围标识 = 排队.范围
     变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '执行中' } : 项))
-    const 任务: 执行任务 = { 标识, 范围: 范围标识, 会话标识: 排队.范围 === '无文件' ? 'general' : 会话标识按文档.current.get(排队.范围) ?? 排队.会话标识, 文件名: 文档?.name ?? PDF?.name ?? '一般对话', 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }
+    const 任务: 执行任务 = { 标识, 范围: 范围标识, 会话标识: 排队.范围 === '无文件' ? 'general' : 会话标识按文档.current.get(排队.范围) ?? 排队.会话标识, 文件名: 文档?.name ?? PDF?.name ?? '一般对话', 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false, 只读: 排队.只读 }
     进行中.current = 任务
     set发送中(true)
     try {
@@ -463,7 +485,7 @@ export default function AiAssistant() {
       }
       await 恢复会话(范围标识, 任务.会话标识)
       if (!组件有效.current || 任务.已停止) return
-      if (文本.toLowerCase() !== '/compact' && (待确认引用.current[范围标识] || 恢复提示引用.current[范围标识] || 恢复候选锁.current.has(范围标识))) {
+      if (!任务.只读 && 文本.toLowerCase() !== '/compact' && (待确认引用.current[范围标识] || 恢复提示引用.current[范围标识] || 恢复候选锁.current.has(范围标识))) {
         变更队列((旧) => [{ ...排队!, 状态: '等待' }, ...旧.filter((项) => 项.id !== 标识)])
         return
       }
@@ -480,7 +502,7 @@ export default function AiAssistant() {
       set会话按范围((当前) => ({ ...当前, [范围标识]: [...(当前[范围标识] ?? []), { 角色: 'user', 内容: 文本 }, { 角色: 'assistant', 内容: '', 思考: '', 请求标识: 标识, 状态: '执行中', 阶段: '正在准备文件上下文' }] }))
       跟随输出.current = true
       任务.已请求 = true
-      const 结果 = await 桥接.ai.chat({ 消息: 消息列表, 文档上下文: 上下文, 文件快照: 文档 ? 任务.原内容 : undefined, 请求标识: 标识, 思考强度: 配置 ? 排队.强度 : 模型配置.思考强度 ?? 排队.强度, 上下文令牌: 模型配置.上下文令牌 ?? 131072, 会话标识: 任务.会话标识, 自动执行: 排队.自动执行, 手动压缩: 文本.toLowerCase() === '/compact' })
+      const 结果 = await 桥接.ai.chat({ 消息: 消息列表, 文档上下文: 上下文, 文件快照: 文档 && !任务.只读 ? 任务.原内容 : undefined, 请求标识: 标识, 思考强度: 配置 ? 排队.强度 : 模型配置.思考强度 ?? 排队.强度, 上下文令牌: 模型配置.上下文令牌 ?? 131072, 会话标识: 任务.会话标识, 自动执行: 排队.自动执行, 手动压缩: 文本.toLowerCase() === '/compact', ...(任务.只读 !== undefined ? { 只读对话: 任务.只读 } : {}) })
       if (!组件有效.current) return
       刷新任务消息(任务)
       if (任务.已停止 || 结果.数据?.已停止) {
@@ -490,8 +512,8 @@ export default function AiAssistant() {
         return
       }
       if (!结果.成功 || !结果.数据) throw Object.assign(new Error(结果.错误 || '模型服务未返回回复'),{需要登录:(结果 as any).需要登录})
-      const 回复 = 解析助手回复(结果.数据.内容)
-      更新任务消息(范围标识, 标识, { 内容: 回复.回复, 思考: 结果.数据.思考 || 任务.思考, 阶段: '正在校验修改' })
+      const 回复 = 任务.只读 ? { 回复: 提取流式正文(结果.数据.内容) || 结果.数据.内容, 修改: [] } : 解析助手回复(结果.数据.内容)
+      更新任务消息(范围标识, 标识, { 内容: 回复.回复, 思考: 结果.数据.思考 || 任务.思考, 阶段: 任务.只读 ? '正在整理回答' : '正在校验修改' })
       if (回复.修改.length > 0) 生成候选(任务, 回复.修改)
       if (结果.数据.计划 || 结果.数据.摘要 !== undefined || 结果.数据.压缩次数 !== undefined) {
         const 数据 = 结果.数据
@@ -522,15 +544,22 @@ export default function AiAssistant() {
     }
   }
   useEffect(() => {
+    if (!移动端) return
+    const 打开文件 = new Set(可选文件.map(文件 => 文件.id))
+    const 已关闭 = (项: 排队任务) => 项.状态 === '等待' && 项.范围 !== '无文件' && !打开文件.has(项.范围)
+    if (队列.some(已关闭)) 变更队列(旧 => 旧.map(项 => 已关闭(项) ? { ...项, 状态: '失败', 错误: '任务的原文件已关闭，请重新打开文件后发送需求' } : 项))
+  }, [移动端, 可选文件, 队列])
+  useEffect(() => {
     if (发送中 || 进行中.current || 队列暂停 || 引导中 || 清除中 || 处理候选中 || 绑定中 || Object.values(恢复中范围).some(Boolean)) return
     const 下一项 = 队列引用.current.find((项) => 项.状态 === '等待')
-    if (!下一项 || (下一项.文本.toLowerCase() !== '/compact' && (待确认按文件[下一项.范围] || 恢复提示按范围[下一项.范围] || 恢复候选锁.current.has(下一项.范围)))) return
+    if (!下一项 || (!下一项.只读 && 下一项.文本.toLowerCase() !== '/compact' && (待确认按文件[下一项.范围] || 恢复提示按范围[下一项.范围] || 恢复候选锁.current.has(下一项.范围)))) return
     void 发送(下一项.文本, 下一项.自动执行, 下一项)
   }, [队列, 发送中, 队列暂停, 引导中, 清除中, 处理候选中, 绑定中, 恢复中范围, 待确认按文件, 恢复提示按范围])
 
   const 引导任务 = async (项: 排队任务) => {
     const 任务 = 进行中.current
     if (!任务 || 任务.已停止 || 引导中 || 项.状态 !== '等待') return
+    if (任务.只读 || 项.只读) return
     if (任务.范围 !== 项.范围) { message.warning('引导需求必须属于当前正在处理的文件，请切回该文件后发送'); return }
     set引导中(项.id)
     try {
@@ -566,6 +595,7 @@ export default function AiAssistant() {
   }
 
   const 应用修改 = () => {
+    if (只读对话) { message.info('请切换到工作模式后再确认修改'); return }
     const 待确认 = 当前待确认
     if (!待确认) return
     try {
@@ -645,18 +675,28 @@ export default function AiAssistant() {
   }
 
   return <>
-    {放映中 ? null : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
-    <Drawer className="assistant-drawer" title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} placement="right" width="min(460px, 100vw)" mask={false} closable={false} open={打开 && !放映中} onClose={() => set打开(false)} destroyOnClose={false}>
+    {放映中 ? null : 移动端 ? <MobileAssistantLauncher disabled={!桥接.ai.可用} onOpen={() => { set选择目标(undefined); set打开(true) }} /> : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
+    <AssistantSurface mobile={移动端} title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} open={打开 && !放映中} onClose={() => set打开(false)}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
         <div className="assistant-drawer__header"><strong>{配置展开 ? '模型设置' : '文件对话'}</strong><div className="assistant-drawer__header-actions"><Button className="assistant-new-chat" size="small" icon={<Icon name="plus" size={14} />} disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button className="assistant-settings-toggle" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={14} />} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
+        {移动端 ? <div className="assistant-mobile-controls">
+          <label className="assistant-mobile-target">目标文件<select aria-label="助手目标文件" value={当前文件?.id ?? ''} onChange={事件 => set选择目标(事件.target.value)} disabled={!可选文件.length}>
+            {可选文件.length ? 可选文件.map(文件 => <option key={文件.id} value={文件.id}>{文件.name}{文件.id === activeWorkspaceTabId ? '（当前）' : ''}</option>) : <option value="">未打开文件 · 一般问答</option>}
+          </select></label>
+          <div className="assistant-mobile-modes" role="group" aria-label="助手模式">
+            <button type="button" aria-pressed={只读对话} disabled={发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('chat')}>对话模式</button>
+            <button type="button" aria-pressed={!只读对话} disabled={!当前文档 || 发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('work')}>工作模式</button>
+          </div>
+          <p className="assistant-mobile-mode-hint" role="status">{!当前文件 ? '打开文件后可使用工作模式。' : 当前PDF ? 'PDF 可就选中文字问答，正文修改请使用 PDF 编辑功能。' : 只读对话 ? '结合所选文件回答问题，不操作文件。' : '为所选文件生成修改预览，确认后应用。'}</p>
+        </div> : null}
         {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }}>
-          {新版可用 ? <div className="assistant-settings__task-mode"><Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox><p className="assistant-settings__note">开启后，接下来发送的需求先生成计划；点击“执行计划”可继续处理。正在执行或已排队的任务沿用提交时的设置。</p></div> : null}
+          {新版可用 && !只读对话 ? <div className="assistant-settings__task-mode"><Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox><p className="assistant-settings__note">开启后，接下来发送的需求先生成计划；点击“执行计划”可继续处理。正在执行或已排队的任务沿用提交时的设置。</p></div> : null}
         </AiSettingsCard> : null}
         <div className="assistant-drawer__work">
-        <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div>
+        {!移动端 ? <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div> : null}
         {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope"><Button type="link" onClick={()=>void requireAIIdentity()}>登录后使用 AI</Button><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
         {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
-          {当前记忆?.计划.length ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
+          {当前记忆?.计划.length && !只读对话 ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
         {发送中 && 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求 ? <div className="assistant-drawer__initializing" role="status"><span className="assistant-task__spinner" aria-hidden="true" />正在读取模型设置与会话记忆</div> : null}
         <div ref={消息容器} className="assistant-drawer__messages" role="log" aria-label="助手对话" onScroll={() => { const 元素 = 消息容器.current; if (元素) 跟随输出.current = 元素.scrollHeight - 元素.scrollTop - 元素.clientHeight < 64 }}>
           {恢复中 ? <div className="assistant-drawer__empty" role="status">正在恢复本机会话记忆</div> : null}
@@ -668,7 +708,7 @@ export default function AiAssistant() {
             finally { set处理候选中(false) }
           }}>清除过期候选</Button></div> : null}
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
-          {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。</div> : null}
+          {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
             <span className="assistant-message__role">{项.角色 === 'assistant' ? <span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={13} /></span> : null}{项.角色 === 'user' ? '我' : 'AI助手（AI生成）'}</span>
             {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
@@ -677,7 +717,7 @@ export default function AiAssistant() {
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
-        {当前待确认 ? <section className="assistant-preview" aria-label="待确认修改">
+        {当前待确认 && !只读对话 ? <section className="assistant-preview" aria-label="待确认修改">
           <strong>待确认修改，共 {当前待确认.修改.length} 处</strong>
           <div className="assistant-preview__list">{当前待确认.修改.slice(修改页 * 每页修改数, (修改页 + 1) * 每页修改数).map((项, 索引) => {
             const 说明 = 修改说明(项)
@@ -688,20 +728,20 @@ export default function AiAssistant() {
         </section> : null}
         {队列.some((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)) ? <section className="assistant-queue" aria-label="助手任务队列">
           <div className="assistant-queue__heading"><strong>任务队列 · {队列.filter((项) => 项.状态 === '等待').length} 项等待</strong><Button size="small" onClick={() => set队列暂停((旧) => !旧)}>{队列暂停 ? '继续队列' : '暂停队列'}</Button></div>
-          <p role="status">{队列暂停 ? '队列已暂停，正在执行的任务会继续。' : 队列.find((项) => 项.状态 === '等待' && 待确认按文件[项.范围]) ? '等待确认上一项修改后继续。' : '按提交顺序执行；可将同一文件的补充需求引导到当前任务。'}</p>
+          <p role="status">{队列暂停 ? '队列已暂停，正在执行的任务会继续。' : 队列.find((项) => 项.状态 === '等待' && !项.只读 && 待确认按文件[项.范围]) ? '等待确认上一项修改后继续。' : '按提交顺序执行；可将同一文件的补充需求引导到当前任务。'}</p>
           <div className="assistant-queue__list">{队列.filter((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)).map((项) => <div className={`assistant-queue__item assistant-queue__item--${项.状态}`} key={项.id}>
             <div><strong>{项.状态} · {项.文件名}</strong><span>{项.文本}</span>{项.状态 === '失败' && 项.错误 ? <small>失败原因：{项.错误}</small> : null}</div>
-            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button size="small" onClick={() => selectWorkspaceTab(项.范围)}>返回文件</Button> : null}
-            {项.状态 === '等待' ? <><Button size="small" icon={<Icon name="ai" size={15} />} title="不打断当前任务，将补充需求一起处理" aria-label={`引导当前任务：${项.文本}`} disabled={!发送中 || 进行中.current?.范围 !== 项.范围 || !!引导中 || !项.自动执行} loading={引导中 === 项.id} onClick={() => void 引导任务(项)}>引导</Button><Button size="small" disabled={引导中 === 项.id} onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}
+            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button size="small" onClick={() => { if (移动端) set选择目标(项.范围); else selectWorkspaceTab(项.范围) }}>返回文件</Button> : null}
+            {项.状态 === '等待' ? <><Button size="small" icon={<Icon name="ai" size={15} />} title="不打断当前任务，将补充需求一起处理" aria-label={`引导当前任务：${项.文本}`} disabled={!发送中 || 进行中.current?.范围 !== 项.范围 || !!引导中 || !项.自动执行 || 进行中.current?.只读} loading={引导中 === 项.id} onClick={() => void 引导任务(项)}>引导</Button><Button size="small" disabled={引导中 === 项.id} onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}
             {项.状态 === '失败' ? <><Button size="small" onClick={() => { 变更队列((旧) => [{ ...项, id: crypto.randomUUID(), 状态: '等待', 错误: undefined }, ...旧.filter((旧项) => 旧项.id !== 项.id)]); set队列暂停(false) }}>重试</Button><Button size="small" onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}</div>
           </div>)}</div>
         </section> : null}
         </div>
         <div className="assistant-drawer__composer">
-          <Input.TextArea aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={3} disabled={清除中} placeholder="输入需求，或输入 /help 查看命令" onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
-          <div className="assistant-drawer__composer-actions"><div className="assistant-drawer__composer-left"><Button className="assistant-collapse" type="text" shape="circle" icon={<Icon name="arrow-left" size={17} />} aria-label="收起智能助手" title="收起智能助手" onClick={() => set打开(false)} /><span>Ctrl+Enter 发送 · /help</span></div><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || 当前待确认 ? '加入队列' : '发送'}</Button></div></div>
+          <Input.TextArea aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={移动端 ? 2 : 3} disabled={清除中} placeholder={只读对话 ? '输入问题…' : '输入需求，或输入 /help 查看命令'} onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
+          <div className="assistant-drawer__composer-actions"><div className="assistant-drawer__composer-left"><Button className="assistant-collapse" type="text" shape="circle" icon={<Icon name="arrow-left" size={17} />} aria-label="收起智能助手" title="收起智能助手" onClick={() => set打开(false)} /><span>{移动端 ? 只读对话 ? '只问答' : '修改需确认' : 'Ctrl+Enter 发送 · /help'}</span></div><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'}</Button></div></div>
         </div>
       </div>
-    </Drawer>
+    </AssistantSurface>
   </>
 }

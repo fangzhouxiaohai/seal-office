@@ -16,7 +16,8 @@ function run(script, extra = []) {
   })
 }
 try {
-  if (args.includes('--harmony-review')) await run('harmony-review.cjs')
+  if (args.includes('--assistant')) await run('extended-browser.cjs', ['--group=assistant'])
+  else if (args.includes('--harmony-review')) await run('harmony-review.cjs')
   else if (args.includes('--regressions')) await run('mobile-regressions.cjs')
   else {
     const root = path.join(project, args.includes('--web') ? 'mobile/unpackage/web' : 'mobile/static/office')
@@ -31,7 +32,7 @@ try {
     // Every expanded feature retains all its assertions and the same 120s
     // process watchdog. Fresh profiles prevent fixtures leaking between groups.
     const groups = []
-    for (const group of ['reading', 'editor', 'workspace', 'diagram']) {
+    for (const group of ['reading', 'editor', 'workspace', 'diagram', 'assistant']) {
       await run('extended-browser.cjs', ['--group=' + group])
       const file = path.join(output, `${args.includes('--file') ? 'file' : 'http'}-${group}-result.json`)
       assert(fs.statSync(file).mtimeMs >= started)

@@ -14,6 +14,58 @@ const 调用 = (名称, 参数, id) => ({ role: 'assistant', content: null, reas
 const 计划 = [{ id: 'read', title: '读取当前文件', status: 'pending' }, { id: 'format', title: '总结并重新排版', status: 'pending' }]
 const 上下文 = '文件名称：示例.docx\n文件类型：文字\n文件内容：\n' + JSON.stringify([{ 段落标识: '段落-1', 原文: '原始标题', 类型: 'p', 格式: {} }])
 
+describe('移动助手只读对话', () => {
+  it('没有文件的问答不提供任何工具，忽略自动执行标志并保留会话', async () => {
+    const e = 环境([{ content: '一般问答回复' }]); await e.准备()
+    const 执行工具 = vi.fn()
+    const result = await e.服务.对话({ 会话标识: 'general', 只读对话: true, 自动执行: true, 消息: [{ 角色: 'user', 内容: '你好' }], 文档上下文: '' }, { 执行工具 })
+    expect(result.内容).toBe('一般问答回复')
+    expect(e.请求列表[0].tools).toBeUndefined()
+    expect(e.请求列表[0].messages[0].content).toContain('本次为对话模式')
+    expect(执行工具).not.toHaveBeenCalled()
+    expect(e.会话列表.get('general').显示消息.map(item => item.内容)).toEqual(['你好', '一般问答回复'])
+  })
+
+  it('文件问答能分批读取快照，但不能变更旧计划或待确认候选', async () => {
+    const e = 环境([调用('read_document', { offset: 0, limit: 10, step_id: 'edit' }, 'read'), { content: '原文是原始标题' }]); await e.准备()
+    const pending = { 回复: '待确认', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '待确认标题' }], 文档上下文: 上下文, 文件快照: '<p>原始标题</p>' }
+    const plan = [{ id: 'edit', title: '修改标题', status: 'awaiting_confirmation' }]
+    e.会话列表.set('file:read', { 模型消息: [], 显示消息: [], 摘要: '', 计划: plan, 压缩次数: 0, 待确认候选: pending })
+    const 执行工具 = vi.fn()
+    const result = await e.服务.对话({ 会话标识: 'file:read', 只读对话: true, 消息: [{ 角色: 'user', 内容: '标题是什么' }], 文档上下文: 上下文 }, { 执行工具 })
+    expect(result.内容).toBe('原文是原始标题')
+    expect(e.请求列表[0].tools.map(item => item.function.name)).toEqual(['read_document'])
+    expect(e.请求列表[1].messages.find(item => item.role === 'tool').content).toContain('原始标题')
+    expect(e.会话列表.get('file:read').待确认候选).toEqual(pending)
+    expect(e.会话列表.get('file:read').计划).toEqual(plan)
+    expect(执行工具).not.toHaveBeenCalled()
+  })
+
+  it('模型强行调用写工具或计划工具也会被运行时拒绝', async () => {
+    const e = 环境([调用('set_plan', { steps: 计划 }, 'p'), 调用('propose_changes', { 回复: '写入', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '变更' }] }, 'write'), { content: '请切换工作模式再修改。' }]); await e.准备()
+    const 执行工具 = vi.fn()
+    await e.服务.对话({ 会话标识: 'file:readonly', 只读对话: true, 消息: [{ 角色: 'user', 内容: '帮我修改' }], 文档上下文: 上下文 }, { 执行工具 })
+    expect(执行工具).not.toHaveBeenCalled()
+    expect(e.请求列表[2].messages.filter(item => item.role === 'tool').every(item => JSON.parse(item.content).成功 === false)).toBe(true)
+    expect(e.会话列表.get('file:readonly').待确认候选).toBeUndefined()
+    expect(e.会话列表.get('file:readonly').计划).toEqual([])
+  })
+
+  it('旧版 JSON 修改协议不能绕过只读模式', async () => {
+    const e = 环境([{ content: JSON.stringify({ 回复: '修改完成', 修改: [{ 种类: '创建文件', 类型: 'word', 名称: '违规新建', 内容: '不应创建' }] }) }]); await e.准备()
+    const 执行工具 = vi.fn()
+    await expect(e.服务.对话({ 会话标识: 'general', 只读对话: true, 消息: [{ 角色: 'user', 内容: '新建文件' }], 文档上下文: '' }, { 执行工具 })).rejects.toThrow('对话模式不允许文件修改')
+    expect(执行工具).not.toHaveBeenCalled()
+    expect(e.会话列表.get('general').待确认候选).toBeUndefined()
+  })
+
+  it('非布尔模式标志不会意外开启工作能力', async () => {
+    const e = 环境([]); await e.准备()
+    await expect(e.服务.对话({ 会话标识: 'general', 只读对话: 'false', 消息: [{ 角色: 'user', 内容: '问答' }] })).rejects.toThrow('助手对话模式无效')
+    expect(e.请求列表).toHaveLength(0)
+  })
+})
+
 describe('助手原生计划和工具执行', () => {
   it('工具逐行记录开始与结束，绑定步骤按真实读取和候选结果更新并持久保留', async () => {
     const 步骤 = [...计划, { id: 'future', title: '下一阶段另行处理', status: 'pending' }]

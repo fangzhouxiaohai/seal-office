@@ -1,0 +1,265 @@
+{
+  "feature": "移动端可拖动 AI 悬浮球、文件选择与对话/工作模式",
+  "generatedAt": "2026-10-22T01:16:04.7721646+08:00",
+  "projectVersion": "2.1.1",
+  "releaseStatus": "development-source-update; no new signed mobile package or release tag generated",
+  "scope": "Mobile native hosts and mobile browser UI; desktop assistant UI and default execution behavior retained",
+  "behavior": [
+    "56px圆形悬浮球，真实触摸拖动、位置记忆、安全区域和横竖屏边界",
+    "大弹窗默认选择当前打开文件，手动选择其他已打开文件不切换后台编辑器",
+    "对话模式只允许读取所选文件快照；运行时、宿主与界面均拒绝创建/修改候选",
+    "工作模式沿用生成候选、用户确认后应用到目标编辑区的流程",
+    "无打开文件时强制对话并禁用工作；目标文件关闭后回退到仍打开文件",
+    "AI仍要求经手机号验证的账号；取消登录保留草稿",
+    "手机键盘、横屏、系统返回、登录弹窗层级经过实际浏览器检查",
+    "关闭有待确认候选及排队任务的文件后，旧任务明确失败，不阻塞一般问答"
+  ],
+  "automatedTests": {
+    "rendererAssistantAndIdentity": 124,
+    "assistantRuntimeAndHost": 184,
+    "mobile": 35,
+    "uniqueTotal": 343,
+    "mobileFocusedRerun": 20,
+    "rootTypecheck": "passed",
+    "mobileTypecheck": "passed",
+    "mobileStructure": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "browser": {
+    "nativeFileScheme": {
+      "passed": true,
+      "version": "2.1.1",
+      "checks": [
+        "生产构建可在无 Electron preload 的浏览器环境启动",
+        "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+        "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+        "原生保存只写本地文档空间；显式导出才调用系统分享",
+        "中文 PDF 生成与页面旋转",
+        "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+        "页面重载后恢复本地文件与加密模型配置",
+        "无效工作区备份被阻止且允许保留后继续",
+        "手机菜单新建文字文档并进入真实编辑器",
+        "390px 文字正文重排、输入事件与编辑区域可见",
+        "真实工作区备份恢复未保存正文与文字编辑页面",
+        "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+        "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+        "390px 手机布局、底部触控导航、知识库与服务入口",
+        "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+        "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+        "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+        "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+        "360/390/820/1280px 窄屏、平板与 PC 布局",
+        "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+        "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+        "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+        "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+        "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+        "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+        "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+        "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→SLPPT/PPTX保存文件重开保留尺寸和对象；360/390/820/1280px布局",
+        "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+        "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+        "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+        "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+        "图转演示后实际UI保存SLPPT/PPTX文件并按其格式读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+        "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+        "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整",
+        "真实触摸拖动圆形悬浮球；不误触打开；位置持久化",
+        "点击打开大弹窗；无文件禁用工作；原生返回先收起助手",
+        "未登录不调用模型；登录弹窗可见；取消登录保留助手草稿",
+        "横竖屏边界与全窗口弹窗；无文件发送只读一般问答",
+        "默认当前文件；指定另一文件问答；确认后只修改指定文件",
+        "键盘收缩后输入区和发送按钮可见；重启恢复悬浮球位置"
+      ],
+      "pptxAliasShape": {
+        "passed": true,
+        "strict": true,
+        "namespacePrefixes": [
+          "slides",
+          "draw",
+          "relation"
+        ],
+        "nativeShapesPreserved": 1,
+        "preservedText": "引号、Tab、换行、中文及 &<>"
+      },
+      "pptEditingSave": {
+        "passed": true,
+        "shortcut": "Ctrl+S",
+        "textareaFocusedBeforeShortcut": true,
+        "blurredBeforeShortcut": false,
+        "actualSavedFileReopened": true,
+        "latestDraftPreserved": true,
+        "unicodePreserved": true,
+        "charactersVerified": "😀𠀀👩🏽‍💻é"
+      },
+      "errors": [],
+      "scheme": "file",
+      "groups": [
+        {
+          "name": "core",
+          "passed": true,
+          "checks": 19
+        },
+        {
+          "name": "reading",
+          "passed": true,
+          "checks": 2
+        },
+        {
+          "name": "editor",
+          "passed": true,
+          "checks": 5
+        },
+        {
+          "name": "workspace",
+          "passed": true,
+          "checks": 1
+        },
+        {
+          "name": "diagram",
+          "passed": true,
+          "checks": 8
+        },
+        {
+          "name": "assistant",
+          "passed": true,
+          "checks": 6
+        }
+      ],
+      "bundleSha256": "eea8ba31ee5d31a2e36ab534201bb53ebbb13469d51ab0dbf4944be00b5637c8",
+      "processWatchdogMs": 120000,
+      "allGroupsCompleted": true
+    },
+    "httpAssistant": {
+      "passed": true,
+      "group": "assistant",
+      "version": "2.1.1",
+      "checks": [
+        "真实触摸拖动圆形悬浮球；不误触打开；位置持久化",
+        "点击打开大弹窗；无文件禁用工作；原生返回先收起助手",
+        "未登录不调用模型；登录弹窗可见；取消登录保留助手草稿",
+        "横竖屏边界与全窗口弹窗；无文件发送只读一般问答",
+        "默认当前文件；指定另一文件问答；确认后只修改指定文件",
+        "键盘收缩后输入区和发送按钮可见；重启恢复悬浮球位置"
+      ],
+      "errors": [],
+      "scheme": "http"
+    },
+    "inputMethod": "Real CDP touch input and emulated viewport/keyboard geometry in a hidden Electron browser",
+    "modelAndIdentity": "Isolated test responses, no live paid-model or SMS requests"
+  },
+  "nativeCompilation": {
+    "compiler": "HBuilderX uni-app x 5.26",
+    "android": "passed",
+    "harmony": "passed",
+    "androidBuildInfo": {
+      "platform": "android",
+      "desktopVersion": "2.1.1",
+      "builtAt": "2026-10-21T17:11:21.611Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "harmonyBuildInfo": {
+      "platform": "harmony",
+      "desktopVersion": "2.1.1",
+      "builtAt": "2026-10-21T17:11:55.131Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "androidEditorSha256": "eea8ba31ee5d31a2e36ab534201bb53ebbb13469d51ab0dbf4944be00b5637c8",
+    "harmonyEditorSha256": "eea8ba31ee5d31a2e36ab534201bb53ebbb13469d51ab0dbf4944be00b5637c8",
+    "sharedEditorIdentical": true,
+    "newSignedPackageGenerated": false,
+    "newApkDeviceValidation": false,
+    "newHarmonyDeviceValidation": false
+  },
+  "platformPackaging": {
+    "keepSeparateCloudSources": true,
+    "reason": "业务界面共用。Android Intent/FileProvider、HarmonyOS DocumentViewPicker/file API、WebView桥接采用不同原生分支；各平台独立构建、编译校验并冻结资源。",
+    "existingPublished211SnapshotsModified": false
+  },
+  "limitations": [
+    "工作模式的文件修改工具沿用现有文字、表格、演示能力。PDF目前仅就用户引用的选中文字问答，不支持AI直接修改PDF正文。",
+    "本次完成源码与构建检查；新功能尚未进入用户云打包的正式APK或签名App Pack。"
+  ],
+  "screenshots": [
+    {
+      "path": "assistant-mobile-http.png",
+      "sha256": "eea9d44f6489f12027e5efd925935ead1639b35a3c13005e723f65cc7ccbbff2",
+      "source": "Production mobile browser UI with isolated model/account fixtures; not an APK or Harmony device screenshot"
+    },
+    {
+      "path": "assistant-keyboard-http.png",
+      "sha256": "c1796d38682e81bf30da21fb5ae38cb0767df55671bf125b36a2538ead176648",
+      "source": "Production mobile browser UI with isolated model/account fixtures; not an APK or Harmony device screenshot"
+    },
+    {
+      "path": "assistant-landscape-http.png",
+      "sha256": "f0b90b42ba0bd20e07486056844451fdc3e460392efefe75ddde6fb5aee7b353",
+      "source": "Production mobile browser UI with isolated model/account fixtures; not an APK or Harmony device screenshot"
+    }
+  ],
+  "sources": [
+    {
+      "path": "renderer/src/assistant/AiAssistant.tsx",
+      "sha256": "f718d446bd5b4418c5d7c7ceb910705205d722f1f646527df576fd716bc35291"
+    },
+    {
+      "path": "renderer/src/assistant/MobileAssistantLauncher.tsx",
+      "sha256": "fcbc1bec954132dd9849b72c6076451d0539913af3af0d311d92dfccbb05769f"
+    },
+    {
+      "path": "renderer/src/assistant/AssistantSurface.tsx",
+      "sha256": "90f46d83f8290d60ee55e3dd29478de357d476b54f9f727c48ce13d4824d1c60"
+    },
+    {
+      "path": "renderer/src/assistant/assistant.css",
+      "sha256": "e9d5a467408957547c321a4eb4ac1eb234a7c0a30b8fe88567fa7306a66a93de"
+    },
+    {
+      "path": "renderer/src/ipc/bridge.ts",
+      "sha256": "0c63657ea9139ceb751256e9e3f457cd6ae5ccaf1ecf44b16acc5b0dacb4a0ad"
+    },
+    {
+      "path": "main/ai/assistant.js",
+      "sha256": "58bb9031e067d8ca41a636e17ce9d2442e321def1ed376b609c3ecb3b1142569"
+    },
+    {
+      "path": "main/ai/agentRuntime.js",
+      "sha256": "26845edaebc11e0c1397232ba6ad605f30cc998e0b2d897ae1f17b64b5353228"
+    },
+    {
+      "path": "main/ipc/aiChannel.js",
+      "sha256": "f0421731f8e465bc2f9e41663e10e9949266b44eaa816d2ce18af0bd273ebbc2"
+    },
+    {
+      "path": "renderer/src/assistant/MobileAssistant.test.tsx",
+      "sha256": "9998a926b9cdf1e7a0ef98ce315b2b9f727c6c8a0fbad194a49b72abbce0f501"
+    },
+    {
+      "path": "main/ai/agentRuntime.test.js",
+      "sha256": "454ede06c0849bdc002da546cee905c3870612cccf797fde443dcc3d796091df"
+    },
+    {
+      "path": "main/ipc/aiChannel.test.js",
+      "sha256": "8e0190dae518f7b85345e0a0dcb2cd56885b9b4e51fdc89b87a66256c7e91364"
+    },
+    {
+      "path": "mobile/tests/assistant-modes.test.mjs",
+      "sha256": "11f229f5133f37c5de98ecc49e3f4ad2a8aaefbc1d7ed7350bc7e4cdfbdb27f5"
+    },
+    {
+      "path": "mobile/tests/assistant-browser-actions.cjs",
+      "sha256": "64fe305848404a61c79011c4fc32ec3f76fc11a1d242c2be86aaadb6a115562e"
+    },
+    {
+      "path": "mobile/tests/extended-browser.cjs",
+      "sha256": "67fd3fa5a4f849797a4b397567e8cbf1cc159ea13da66ea7dc5d8870d01ecef1"
+    },
+    {
+      "path": "mobile/scripts/browser-check.mjs",
+      "sha256": "d6180e3003b9697328220a3e3b12d29e66f34f0bcc90bd8f72937ba02b0d4f6b"
+    }
+  ]
+}

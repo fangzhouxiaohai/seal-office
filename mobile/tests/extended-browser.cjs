@@ -2,7 +2,7 @@ const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict')
 const project = path.resolve(__dirname, '../..'), output = path.join(project, '.upgrade-private/mobile-verification')
 const group = process.argv.find(arg => arg.startsWith('--group='))?.slice(8)
-assert.ok(['reading', 'editor', 'workspace', 'diagram'].includes(group))
+assert.ok(['reading', 'editor', 'workspace', 'diagram', 'assistant'].includes(group))
 const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
 app.setPath('userData', path.join(output, `browser-profile-${group}-${require('node:crypto').randomUUID()}`)); app.disableHardwareAcceleration()
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.otf': 'font/otf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
@@ -49,6 +49,7 @@ app.whenReady().then(async () => {
     }
     if (group === 'workspace') await require('./workspace-tools-actions.cjs')({ win, evaluate, output, checks })
     if (group === 'diagram') await require('./diagram-browser-actions.cjs')({ win, evaluate, output, checks })
+    if (group === 'assistant') await require('./assistant-browser-actions.cjs')({ win, evaluate, output, checks })
     assert(checks.length > 0)
     assert.equal(errors.filter(message => !/ERR_ABORTED|favicon/.test(message)).length, 0, errors.join('\n'))
     const result = { passed: true, group, version: require('../../package.json').version, checks, errors, scheme: localFile ? 'file' : 'http' }
