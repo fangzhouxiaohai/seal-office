@@ -18,7 +18,7 @@ describe('PDF 工作台', () => {
     try{
       render(<AntdApp><PdfWorkbench 初始文件={{路径:'D:/原件.pdf',名称:'原件.pdf',数据:'JVBERi0='}} onEdited={编辑} onSaved={已保存}/></AntdApp>)
       fireEvent.click(screen.getByRole('button',{name:'展开 PDF 工具'}));fireEvent.click(screen.getByRole('button',{name:'执行并保存'}))
-      await waitFor(()=>expect(编辑).toHaveBeenCalledWith('JVBERi1lZGl0'))
+      await waitFor(()=>expect(编辑).toHaveBeenCalledWith('JVBERi1lZGl0', 'path:D:/原件.pdf'))
       expect(保存).not.toHaveBeenCalled();expect(已保存).not.toHaveBeenCalled()
     }finally{提取.mockRestore();路径.mockRestore();保存.mockRestore()}
   })
@@ -83,7 +83,7 @@ describe('PDF 工作台', () => {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0x' }} onSaved={已保存} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
-      await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.pdf', 'JVBERi0x'))
+      await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.pdf', 'JVBERi0x', undefined, 'path:C:\\文档\\原件.pdf'))
       expect(保存).toHaveBeenCalledOnce()
     } finally {
       提取.mockRestore()
@@ -111,21 +111,24 @@ describe('PDF 工作台', () => {
     }
   })
 
-  it('处理结果保存路径没有扩展名时补齐 PDF', async () => {
+  it('处理结果保存路径没有扩展名时补齐海豹 PDF 并写入专属容器', async () => {
     const 提取 = vi.spyOn(桥接.pdf, 'extract').mockResolvedValue({ 成功: true, 数据: 'JVBERi0x' })
     const 路径 = vi.spyOn(桥接, 'showSaveDialog').mockResolvedValue('C:\\文档\\提取')
     const 保存 = vi.spyOn(桥接, 'saveToFile').mockResolvedValue({ 成功: true })
     const 已保存 = vi.fn()
+    const 编码 = vi.spyOn(桥接.office, 'writeSeal').mockResolvedValue({ 成功: true, 数据: 'UEsDBA==' })
     try {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0x' }} onSaved={已保存} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
-      await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.pdf', 'JVBERi0x'))
-      expect(保存).toHaveBeenCalledWith('C:\\文档\\提取.pdf', expect.any(Uint8Array), '二进制')
+      await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.spdf', 'JVBERi0x', undefined, 'path:C:\\文档\\原件.pdf'))
+      expect(编码).toHaveBeenCalledWith('pdf', { PDF数据: 'JVBERi0x' })
+      expect(保存).toHaveBeenCalledWith('C:\\文档\\提取.spdf', 'UEsDBA==', '二进制', undefined)
     } finally {
       提取.mockRestore()
       路径.mockRestore()
       保存.mockRestore()
+      编码.mockRestore()
     }
   })
 
@@ -139,7 +142,7 @@ describe('PDF 工作台', () => {
     fireEvent.change(选择器, { target: { files: [文件] } })
 
     const 弹窗 = await screen.findByRole('dialog', { name: '文件类型不受支持' })
-    expect(within(弹窗).getByText('请选择 PDF 文件。未添加：说明.txt')).toBeInTheDocument()
+    expect(within(弹窗).getByText('请选择 PDF 或海豹 PDF（.spdf）文件。未添加：说明.txt')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '预览 说明.txt' })).not.toBeInTheDocument()
     样式读取.mockRestore()
   })

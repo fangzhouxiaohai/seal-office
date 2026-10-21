@@ -22,7 +22,7 @@ import { 解析文档, type 文档模型, type 文字页面设置 } from '../off
 import { 桥接 } from '../ipc/bridge'
 import { 可保存扩展 } from '../fileFormats'
 import { 写出办公文档 } from '../office/writeDocument'
-import { 基准文件名, 记录最近文档, 读取本地文件内容, type 打开类型 } from '../fileOpen'
+import { 基准文件名, 记录最近文档, 读取本地文件内容, 准备打开本地文件, type 打开类型 } from '../fileOpen'
 import { 导出为Html, 保存为纯文本, 纯文本损失项, 文字文本输出 } from './exportDoc'
 import { 放大一档, 缩小一档 } from './wheelZoom'
 
@@ -102,7 +102,7 @@ export interface CommandContext {
   /** 读取编辑区当前 HTML */
   读取内容: () => string
   /** 保存前记录旧版自适应图片的实际尺寸，并返回同步后的正文快照 */
-  准备保存内容?: () => string
+  准备保存内容?: (原生?: boolean) => string
   /** Native DOCX-based PDF used by both preview and export. */
   生成原生Pdf?: () => Promise<string>
   /** 触发文件下载 */
@@ -761,7 +761,9 @@ const 导出命令: EditorCommand[] = [
     }
     void 桥接.showOpenDialog().then(async (文件路径) => {
       if (!文件路径) return
-      const 内容 = await 读取本地文件内容(文件路径)
+      const 内容 = await 准备打开本地文件(文件路径)
+      if (!内容) return
+      文件路径 = 内容.打开路径 ?? 文件路径
       const 初始内容 = 内容.类型 === 'ppt' ? 内容.演示文稿 : 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容
       if (内容.文件指纹) 上下文.打开新文档?.(内容.类型, 初始内容, 文件路径, 内容.警告, 内容.页面设置, 内容.文件指纹)
       else 上下文.打开新文档?.(内容.类型, 初始内容, 文件路径, 内容.警告, 内容.页面设置)
@@ -779,7 +781,7 @@ const 导出命令: EditorCommand[] = [
   // 保存命令
   生成回调命令('file.save', '保存', (上下文) => {
     if (桥接.可用) {
-      if (上下文.保真风险 && 上下文.当前文档路径 && 是同一路径(上下文.当前文档路径, 上下文.保真风险.来源路径) && !/\.sealdoc$/i.test(上下文.当前文档路径)) {
+      if (上下文.保真风险 && 上下文.当前文档路径 && 是同一路径(上下文.当前文档路径, 上下文.保真风险.来源路径) && !/\.(sldoc|sealdoc)$/i.test(上下文.当前文档路径)) {
         上下文.提示保真风险?.(上下文.保真风险.警告)
         return
       }
@@ -787,20 +789,19 @@ const 导出命令: EditorCommand[] = [
       const 选择路径 = 上下文.当前文档路径 ?? 桥接.showSaveDialog(文档名, 'word' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
-          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容() : 上下文.读取内容()
-          const 点索引 = 文件路径.lastIndexOf('.')
-          let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
-          // 文字文档的保存类型就是 docx：未带扩展名时补 .docx，不再落文本分支
+          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容(/\.(sldoc|sealdoc)$/i.test(文件路径) || !/\.[^\\/.]+$/.test(文件路径)) : 上下文.读取内容()
+          let 扩展 = 文件路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase() ?? ''
+          // New files default to the complete native model; Office remains an explicit export choice.
           let 保存路径 = 文件路径
           if (扩展 === '') {
-            保存路径 = `${文件路径}.docx`
-            扩展 = '.docx'
+            保存路径 = `${文件路径}.sldoc`
+            扩展 = '.sldoc'
           }
           if (!文字保存扩展.has(扩展)) {
             报告文件错误(上下文, '保存失败', '文字文档无法保存为该文件格式。请使用 DOCX、纯文本、网页或 PDF 格式。')
             return
           }
-          if (上下文.保真风险 && 是同一路径(保存路径, 上下文.保真风险.来源路径) && !/\.sealdoc$/i.test(保存路径)) {
+          if (上下文.保真风险 && 是同一路径(保存路径, 上下文.保真风险.来源路径) && !/\.(sldoc|sealdoc)$/i.test(保存路径)) {
             上下文.提示保真风险?.(上下文.保真风险.警告)
             return
           }
@@ -810,8 +811,8 @@ const 导出命令: EditorCommand[] = [
           if (!/\.(txt|md|json|xml|mht|mhtml|html?|pdf)$/.test(扩展)) {
             // HTML 转 docx 模型并写入二进制文件
             const 页面设置快照 = 从视图提取页面设置(上下文.view)
-            const 模型 = htmlToDocxModel(内容, 页面设置快照)
-            if (模型.未覆盖.length > 0 && 扩展 !== '.sealdoc') {
+            const 模型 = ['.sldoc','.sealdoc'].includes(扩展) ? null : htmlToDocxModel(内容, 页面设置快照)
+            if (模型 && 模型.未覆盖.length > 0) {
               报告文件错误(上下文, '保存失败', `当前文档包含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}。请先移除这些对象，或导出为网页保留当前显示内容。`)
               return
             }
@@ -863,20 +864,19 @@ const 导出命令: EditorCommand[] = [
     if (桥接.可用) {
       桥接.showSaveDialog(上下文.当前文档名, 'word' as const).then(async (文件路径) => {
         if (文件路径) {
-          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容() : 上下文.读取内容()
-          const 点索引 = 文件路径.lastIndexOf('.')
-          let 扩展 = 点索引 >= 0 ? 文件路径.slice(点索引).toLowerCase() : ''
-          // 文字文档的另存为类型就是 docx：未带扩展名时补 .docx
+          const 内容 = 上下文.准备保存内容 ? 上下文.准备保存内容(/\.(sldoc|sealdoc)$/i.test(文件路径) || !/\.[^\\/.]+$/.test(文件路径)) : 上下文.读取内容()
+          let 扩展 = 文件路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase() ?? ''
+          // Keep a separately selected Office extension; otherwise use the native document format.
           let 保存路径 = 文件路径
           if (扩展 === '') {
-            保存路径 = `${文件路径}.docx`
-            扩展 = '.docx'
+            保存路径 = `${文件路径}.sldoc`
+            扩展 = '.sldoc'
           }
           if (!文字保存扩展.has(扩展)) {
             报告文件错误(上下文, '保存失败', '文字文档无法另存为该文件格式。请使用 DOCX、纯文本、网页或 PDF 格式。')
             return
           }
-          if (上下文.保真风险 && !/\.sealdoc$/i.test(保存路径)) {
+          if (上下文.保真风险 && !/\.(sldoc|sealdoc)$/i.test(保存路径)) {
             if (是同一路径(保存路径, 上下文.保真风险.来源路径)) {
               上下文.提示保真风险?.(上下文.保真风险.警告)
               return
@@ -888,8 +888,8 @@ const 导出命令: EditorCommand[] = [
 
           if (!/\.(txt|md|json|xml|mht|mhtml|html?|pdf)$/.test(扩展)) {
             const 页面设置快照 = 从视图提取页面设置(上下文.view)
-            const 模型 = htmlToDocxModel(内容, 页面设置快照)
-            if (模型.未覆盖.length > 0 && 扩展 !== '.sealdoc') {
+            const 模型 = ['.sldoc','.sealdoc'].includes(扩展) ? null : htmlToDocxModel(内容, 页面设置快照)
+            if (模型 && 模型.未覆盖.length > 0) {
               报告文件错误(上下文, '保存失败', `当前文档包含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}。请先移除这些对象，或导出为网页保留当前显示内容。`)
               return
             }

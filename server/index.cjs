@@ -44,7 +44,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const realtimeUsage=user=>Number(db.one("SELECT COALESCE(SUM(LENGTH(seed)+LENGTH(COALESCE(checkpoint,''))),0) n FROM realtime_rooms WHERE owner_id=?",[user]).n)+Number(db.one('SELECT COALESCE(SUM(LENGTH(u.cipher)),0) n FROM realtime_updates u JOIN realtime_rooms r ON r.id=u.room_id WHERE r.owner_id=?',[user]).n)+Number(db.one('SELECT COUNT(*)*160 n FROM realtime_receipts p JOIN realtime_rooms r ON r.id=p.room_id WHERE r.owner_id=?',[user]).n)
   const usage = user => realtimeUsage(user) + collaborationUsage(user) + Number(db.one('SELECT COALESCE(SUM(bytes),0) AS n FROM versions WHERE user_id=?', [user]).n) + Number(db.one(`SELECT COALESCE(SUM(bytes+${publicationMeta}),0) AS n FROM publications WHERE user_id=?`, [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(meta AS BLOB))),0) AS n FROM nodes WHERE user_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(v.bytes),0) n FROM team_versions v JOIN teams t ON t.id=v.team_id WHERE t.owner_id=?', [user]).n) + Number(db.one('SELECT COALESCE(SUM(LENGTH(CAST(n.meta AS BLOB))),0) n FROM team_nodes n JOIN teams t ON t.id=n.team_id WHERE t.owner_id=?', [user]).n)
   const reservation = user => Number(db.one('SELECT COALESCE(SUM(total),0) AS n FROM uploads WHERE user_id=?', [user]).n)
-  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), hasPassword: Boolean(db.one('SELECT user_id FROM passwords WHERE user_id=?', [user.id])), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
+  // Production users can only be created after verifyCode('login') succeeds.
+  // Password login authenticates that existing phone-verified account; it never
+  // creates a new user. This records phone verification, not an ID-card KYC claim.
+  const phoneVerified = user => /^1[3-9]\d{9}$/.test(user?.phone || '')
+  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), identityVerified: phoneVerified(user), identityMethod: phoneVerified(user) ? 'phone' : undefined, hasPassword: Boolean(db.one('SELECT user_id FROM passwords WHERE user_id=?', [user.id])), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
   const nodeFor = (id, user, allowDeleted = false) => {
     const node = db.one('SELECT * FROM nodes WHERE id=? AND user_id=?', [id, user])
     if (!node || (!allowDeleted && node.deleted)) fail(404, '云文件不存在或已删除')
@@ -147,7 +151,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
-      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
+      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
       const user = session && db.one('SELECT * FROM users WHERE id=?', [session.user_id])
@@ -180,6 +184,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         const p = db.one("SELECT * FROM publications WHERE id=? AND status='approved'",[id]); if(!p) fail(404,'公开内容已撤回或不存在')
         if (route.endsWith('/download')) { res.setHeader('Content-Type','application/octet-stream'); return streamObject(p.blob,res) }
         return reply({ id:p.id, title:p.title, name:p.name, text:p.text, kind:p.kind, description:p.description })
+      }
+      if (route === '/v1/ai/identity' && method === 'GET') {
+        if (!user) throw Object.assign(new Error('使用 AI 功能前请先登录并完成手机号验证'), { status: 401, code: 'AI_IDENTITY_REQUIRED' })
+        if (!phoneVerified(user)) throw Object.assign(new Error('请先使用手机号短信验证登录，再使用 AI 功能'), { status: 403, code: 'AI_IDENTITY_REQUIRED' })
+        return reply({ accountId: user.id, verified: true, method: 'phone' })
       }
       if (!user) fail(401, '登录已过期，请重新登录')
       req._sealSessionHash=session.hash
@@ -286,7 +295,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         const p=db.one('SELECT * FROM publications WHERE id=? AND user_id=?',[pmatch[1],user.id]);if(!p)fail(404,'公开内容不存在');db.transaction(()=>db.run("UPDATE publications SET status='withdrawn',text='',cover='',bytes=0 WHERE id=?",[p.id]));unlink(path.join(objects,p.blob));return reply({withdrawn:true})
       }
       fail(404,'接口不存在')
-    } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试'}))}else res.destroy() }
+    } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试',...(error.code==='AI_IDENTITY_REQUIRED'?{code:error.code}:{})}))}else res.destroy() }
   })
   server.requestTimeout=30000;server.headersTimeout=15000
   return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }

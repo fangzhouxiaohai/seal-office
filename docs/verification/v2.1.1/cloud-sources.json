@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "snapshots": {
+    "android": {
+      "directory": "mobile/unpackage/cloud-ready/2.1.1/android",
+      "files": 59,
+      "versionCode": "20101",
+      "generatedNativePackage": false,
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea"
+    },
+    "harmony": {
+      "directory": "mobile/unpackage/cloud-ready/2.1.1/harmony",
+      "files": 59,
+      "versionCode": "20101",
+      "generatedNativePackage": false,
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea"
+    }
+  },
+  "archives": [
+    {
+      "name": "seal-office-2.1.1-android-cloud-source.zip",
+      "bytes": 56587975,
+      "sha256": "9af0e0397165d6423ea645349775122592da6d401255404905710534ea5df49c"
+    },
+    {
+      "name": "seal-office-2.1.1-harmony-cloud-source.zip",
+      "bytes": 56587986,
+      "sha256": "8f745074d312112943f5397ab4246f380b15b6b3345bec9acd65e4e567c84700"
+    }
+  ]
+}

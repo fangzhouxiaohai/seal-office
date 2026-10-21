@@ -35,6 +35,8 @@
   order: 2;
   flex: 0 0 var(--pdf-rail-width);
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-2);
@@ -46,6 +48,7 @@
   place-items: center;
   width: 36px;
   height: 36px;
+  flex: 0 0 36px;
   padding: 0;
   border: 0;
   border-radius: var(--radius-control);
@@ -389,7 +392,8 @@
 }
 
 @container wps-main (max-width: 768px) {
-  .pdf-workbench { --pdf-panel-width: clamp(160px, 40cqi, 240px); }
+  .pdf-workbench { --pdf-panel-width: clamp(160px, 40cqi, 240px); --pdf-rail-width: 60px; }
+  .pdf-workbench__rail-button { width: 44px; height: 44px; flex-basis: 44px; }
   .pdf-workbench__panel-content { padding: var(--space-2); }
   .pdf-viewer { min-height: 440px; }
 }

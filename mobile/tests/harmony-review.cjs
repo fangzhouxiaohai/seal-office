@@ -32,12 +32,17 @@ app.whenReady().then(async () => {
     await evaluate(`window.__nativeActions=[];window.__pickerQueue=[];window.__saveMode='saved';window.__clipboard='';window.sealNative={platform:'harmony',token:'review-fixture'};window.uni={webView:{postMessage:({data})=>{
       window.__nativeActions.push(data);
       const reply=(type,extra={})=>window.sealReceiveNative({id:data.id,type,...extra});
+      if(data.action==='ping'){reply('ready');return}
       if(data.action==='save'||data.action==='print'){if(window.__saveMode!=='pending')setTimeout(()=>reply(data.action==='print'?'printed':window.__saveMode,{path:'file://selected/'+data.name}),0)}
       if(data.action==='pick-files'){const f=window.__pickerQueue.shift();if(!f){reply('cancel');return}reply('file-start',{name:f.name});for(let i=0;i<f.data.length;i+=32768)reply('chunk',{data:f.data.slice(i,i+32768)});reply('file-end');reply('end')}
       if(data.action==='clipboard-write'){window.__clipboard=data.text;reply('written')}
       if(data.action==='font'){const font=data.family==='serif'?window.__nativeSerifFont:window.__nativeFont;for(let i=0;i<font.length;i+=32768)reply('chunk',{data:font.slice(i,i+32768)});reply('end')}
       if(data.action==='request'){reply('end',{status:401,headers:{'Content-Type':'application/json'},data:btoa(JSON.stringify({error:'not_authenticated'}))})}
     }}};window.sealClipboard={writeText:async text=>{window.__clipboard=text}};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{readText:async()=>{throw new DOMException('User paste required','NotAllowedError')}}});true`)
+    // This historical review checks the Office export choice. The application
+    // keeps its native default; only this fixture's selected Save As format is
+    // DOCX/XLSX during the corresponding genuine ZIP/content assertions.
+    await evaluate(`window.__reviewSaveFormat=null;window.__reviewFormatSelections=[];(()=>{const choose=window.electronAPI.showSaveDialog.bind(window.electronAPI);window.electronAPI.showSaveDialog=(name,kind)=>{const selected=window.__reviewSaveFormat?name.replace(/\\.[^.]+$/,'')+'.'+window.__reviewSaveFormat:name;window.__reviewFormatSelections.push({name,selected,kind});return choose(selected,kind)}})();true`)
     await click('未登录，点击登录')
     await until(`!!document.querySelector('.seal-login__brand img')`)
     assert.equal(await evaluate(`(async()=>{const i=document.querySelector('.seal-login__brand img');await i.decode();return i.naturalWidth>0})()`),true)
@@ -85,7 +90,7 @@ app.whenReady().then(async () => {
     await selectText(true); await click('尾注'); await type('textarea[placeholder="尾注内容"]','鸿蒙尾注 & 测试'); await click('插入','.ant-modal button')
     await until(`!!document.querySelector('[data-seal-notes="endnote"]')`)
     await click('开始','[role="tab"]')
-    await evaluate(`window.__saveMode='pending';true`)
+    await evaluate(`window.__reviewSaveFormat='docx';window.__saveMode='pending';true`)
     const before=await evaluate(`window.__nativeActions.filter(e=>e.action==='save').length`)
     await click('另存为')
     await until(`window.__nativeActions.filter(e=>e.action==='save').length>${before}`)
@@ -103,6 +108,8 @@ app.whenReady().then(async () => {
     const bytes=Buffer.from(exported.data,'base64'); fs.writeFileSync(path.join(output,'review-word.docx'),bytes)
     const read=await evaluate(`window.electronAPI.office.readDocx(${JSON.stringify(exported.data)})`)
     assert.equal(read.成功,true); assert.deepEqual(read.警告,[]); assert.match(read.html,/鸿蒙脚注 &amp; 测试/); assert.match(read.html,/鸿蒙尾注 &amp; 测试/)
+    assert.ok(await evaluate(`window.__reviewFormatSelections.some(item=>item.selected.endsWith('.docx'))`))
+    await evaluate(`window.__reviewSaveFormat=null;true`)
     record('中文编号、真实行号、脚注尾注随 DOCX 保存读回；另存为等待宿主确认，取消无假成功')
     await evaluate(`(()=>{const preview=window.electronAPI.printPreview;window.electronAPI.printPreview=(html,format)=>{window.__lastPrintHTML=html;return preview(html,format)}})()`)
     await click('打印'); await until(`!!document.querySelector('.seal-print-preview .pdf-viewer__canvas')?.width`)
@@ -143,12 +150,15 @@ app.whenReady().then(async () => {
     await until(`!!document.querySelector('img[alt="图表预览"]')`)
     await click('插入图表图片','.ant-modal button')
     await until(`document.body.textContent.includes('图表图片已插入')`)
+    await evaluate(`window.__reviewSaveFormat='xlsx';true`)
     await click('开始','[role="tab"]'); await click('另存为')
     await until(`window.__nativeActions.filter(e=>e.action==='save').at(-1)?.name.endsWith('.xlsx')`)
     const savedSheet=await evaluate(`window.__nativeActions.filter(e=>e.action==='save').at(-1)`)
     const xzip=await JSZip.loadAsync(Buffer.from(savedSheet.data,'base64'))
     assert.ok(Object.keys(xzip.files).some(name=>/^xl\/media\/.*\.png$/.test(name)))
     fs.writeFileSync(path.join(output,'review-chart.xlsx'),Buffer.from(savedSheet.data,'base64'))
+    assert.ok(await evaluate(`window.__reviewFormatSelections.some(item=>item.selected.endsWith('.xlsx'))`))
+    await evaluate(`window.__reviewSaveFormat=null;true`)
     record('表格按真实两列数据生成图表图片；XLSX 保存含真实 PNG，不宣称原生可编辑图表')
     await win.capturePage().then(image=>fs.writeFileSync(path.join(output,'review-sheet.png'),image.toPNG()))
     await click('返回首页'); await back()

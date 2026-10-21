@@ -7,49 +7,68 @@ import PrintPreview from '../components/PrintPreview'
 import PdfViewer from './PdfViewer'
 import { 解析页码, PDF命令表, type PDF命令 } from './pdfCommands'
 import { useShortcuts } from '../shortcuts/useShortcuts'
+import { 写出PDF文档 } from '../office/writeDocument'
+import { 读取本地文件内容 } from '../fileOpen'
 import './pdf.css'
 
 interface 本地PDF文件 {
   标识: string
   名称: string
   数据: string
+  路径?: string | null
+  文件指纹?: string
+  警告?: string[]
 }
 
 interface 初始PDF文件 {
   路径: string
   名称: string
   数据: string
+  文件指纹?: string
+  警告?: string[]
 }
 
 interface PdfWorkbenchProps {
   初始文件?: 初始PDF文件 | null
   已打开文件?: 本地PDF文件[]
   当前标识?: string | null
-  onAdded?: (文件: { 路径: string | null; 名称: string; 数据: string }) => void
+  onAdded?: (文件: { 路径: string | null; 名称: string; 数据: string; 文件指纹?: string; 警告?: string[] }) => void
   onSelected?: (标识: string) => void
   onRemoved?: (标识: string) => void
-  onSaved?: (路径: string, 数据: string) => void
-  onEdited?: (数据:string) => void
+  onSaved?: (路径: string, 数据: string, 文件指纹?: string, 标识?: string, 警告?: string[]) => void
+  onEdited?: (数据: string, 标识?: string, 警告?: string[]) => void
+  校验保存路径?: (路径: string, 标识?: string) => string | null
 }
 
 function 读取PDF文件(文件: File): Promise<本地PDF文件> {
   return new Promise((完成, 失败) => {
+    if (/\.spdf$/i.test(文件.name) && 文件.size > 100 * 1024 * 1024) { 失败(new Error(`「${文件.name}」超过海豹文档 100 MiB 大小限制`)); return }
     const 读取器 = new FileReader()
-    读取器.onload = () => {
+    读取器.onload = async () => {
       const 内容 = typeof 读取器.result === 'string' ? 读取器.result : ''
       const 分隔位置 = 内容.indexOf(',')
       if (分隔位置 < 0 || 分隔位置 === 内容.length - 1) {
         失败(new Error(`「${文件.name}」的文件内容为空`))
         return
       }
-      完成({ 标识: `${Date.now()}-${Math.random()}`, 名称: 文件.name, 数据: 内容.slice(分隔位置 + 1) })
+      try {
+        let 数据 = 内容.slice(分隔位置 + 1)
+        let 警告: string[] | undefined
+        if (/\.spdf$/i.test(文件.name)) {
+          const 结果 = await 桥接.office.readSeal('spdf', 数据)
+          if (!结果?.成功 || 结果.类型 !== 'pdf' || typeof 结果.PDF数据 !== 'string') throw new Error(结果?.错误 || '海豹 PDF 内容无效')
+          数据 = 结果.PDF数据
+          警告 = 结果.警告
+        }
+        完成({ 标识: `${Date.now()}-${Math.random()}`, 名称: 文件.name, 数据, 路径: null, ...(警告?.length ? { 警告 } : {}) })
+      } catch (错误) { 失败(new Error(`无法读取「${文件.name}」：${错误 instanceof Error ? 错误.message : '文件内容无效'}`)) }
     }
     读取器.onerror = () => 失败(new Error(`无法读取「${文件.name}」：${读取器.error?.message ?? '请检查文件权限'}`))
     读取器.readAsDataURL(文件)
   })
 }
 
-const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, onSelected, onRemoved, onSaved, onEdited }: PdfWorkbenchProps) => {
+const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, onSelected, onRemoved, onSaved, onEdited, 校验保存路径 }: PdfWorkbenchProps) => {
   const { message, modal } = AntdApp.useApp()
   const [文件列表, set文件列表] = useState<本地PDF文件[]>([])
   const [预览标识, set预览标识] = useState<string | null>(null)
@@ -70,6 +89,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const [编辑图片, set编辑图片] = useState('')
   const [正在读取, set正在读取] = useState(false)
   const [正在处理, set正在处理] = useState(false)
+  const [正在保存, set正在保存] = useState(false)
+  const 保存锁 = useRef(false)
   const [工具展开, set工具展开] = useState(false)
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   const 文件选择器 = useRef<HTMLInputElement | null>(null)
@@ -83,7 +104,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     }
     const 标识 = 当前标识 ?? `path:${初始文件.路径}`
     set文件列表((当前) => {
-      const 文件 = { 标识, 名称: 初始文件.名称, 数据: 初始文件.数据 }
+      const 文件 = { 标识, 名称: 初始文件.名称, 数据: 初始文件.数据, 路径: /^memory:/i.test(初始文件.路径) ? null : 初始文件.路径, 文件指纹: 初始文件.文件指纹, ...(初始文件.警告?.length ? { 警告: 初始文件.警告 } : {}) }
       const 已有位置 = 当前.findIndex((项) => 项.标识 === 标识)
       if (已有位置 < 0) return [...当前, 文件]
       return 当前.map((项, 位置) => 位置 === 已有位置 ? 文件 : 项)
@@ -103,11 +124,11 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     const 待选文件 = Array.from(事件.target.files ?? [])
     事件.target.value = ''
     if (待选文件.length === 0) return
-    const 非PDF = 待选文件.filter((文件) => !文件.name.toLowerCase().endsWith('.pdf'))
+    const 非PDF = 待选文件.filter((文件) => !/\.(spdf|pdf)$/i.test(文件.name))
     if (非PDF.length > 0) {
-      显示错误('文件类型不受支持', `请选择 PDF 文件。未添加：${非PDF.map((文件) => 文件.name).join('、')}`)
+      显示错误('文件类型不受支持', `请选择 PDF 或海豹 PDF（.spdf）文件。未添加：${非PDF.map((文件) => 文件.name).join('、')}`)
     }
-    const PDF文件 = 待选文件.filter((文件) => 文件.name.toLowerCase().endsWith('.pdf'))
+    const PDF文件 = 待选文件.filter((文件) => /\.(spdf|pdf)$/i.test(文件.name))
     if (PDF文件.length === 0) return
     set正在读取(true)
     try {
@@ -120,7 +141,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       if (已读取.length > 0) {
         set文件列表((当前) => [...当前, ...已读取])
         set预览标识((当前) => 当前 ?? 已读取[0].标识)
-        for (const 文件 of 已读取) onAdded?.({ 路径: null, 名称: 文件.名称, 数据: 文件.数据 })
+        for (const 文件 of 已读取) onAdded?.({ 路径: null, 名称: 文件.名称, 数据: 文件.数据, ...(文件.警告?.length ? { 警告: 文件.警告 } : {}) })
       }
     } catch (错误) {
       显示错误('PDF 标签打开失败', 错误 instanceof Error ? 错误.message : '无法将文件加入工作区')
@@ -139,17 +160,18 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       const 路径列表 = await 桥接.showOpenDialogMany('pdf')
       if (路径列表.length === 0) return
       const 结果 = await Promise.allSettled(路径列表.map(async (路径) => {
-        const 读取结果 = await 桥接.readFile(路径)
-        if (!读取结果.成功 || !读取结果.二进制 || !读取结果.内容 || 读取结果.扩展名?.replace(/^\./, '').toLowerCase() !== 'pdf') {
-          throw new Error(`无法读取「${路径}」：${读取结果.错误 || '不是有效的 PDF 文件'}`)
+        const 读取结果 = await 读取本地文件内容(路径)
+        if (读取结果.类型 !== 'pdf' || !读取结果.内容 || /\.ofd$/i.test(路径)) {
+          throw new Error(`无法读取「${路径}」：不是有效的 PDF 或海豹 PDF 文件`)
         }
-        return { 路径, 名称: 路径.split(/[\\/]/).pop() || 'PDF 文件', 数据: 读取结果.内容 }
+        return { 路径, 名称: 路径.split(/[\\/]/).pop() || 'PDF 文件', 数据: 读取结果.内容, 文件指纹: 读取结果.文件指纹, ...(读取结果.警告?.length ? { 警告: 读取结果.警告 } : {}) }
       }))
-      const 已读取 = 结果.filter((项): 项 is PromiseFulfilledResult<{ 路径: string; 名称: string; 数据: string }> => 项.status === 'fulfilled').map((项) => 项.value)
+      const 已读取 = 结果.filter((项): 项 is PromiseFulfilledResult<{ 路径: string; 名称: string; 数据: string; 文件指纹: string | undefined; 警告?: string[] }> => 项.status === 'fulfilled').map((项) => 项.value)
       const 失败项 = 结果.filter((项): 项 is PromiseRejectedResult => 项.status === 'rejected')
       if (失败项.length > 0) 显示错误('PDF 文件读取失败', 失败项.map((项) => 项.reason instanceof Error ? 项.reason.message : '文件无法读取').join('；'))
       if (已读取.length > 0) {
-        set文件列表((当前) => [...当前, ...已读取.map((文件) => ({ 标识: `path:${文件.路径}`, 名称: 文件.名称, 数据: 文件.数据 }))])
+        set文件列表((当前) => [...当前, ...已读取.map((文件) => ({ 标识: `path:${文件.路径}`, 名称: 文件.名称, 数据: 文件.数据, 路径: 文件.路径, 文件指纹: 文件.文件指纹, ...(文件.警告?.length ? { 警告: 文件.警告 } : {}) }))])
+        set预览标识(当前 => 当前 ?? `path:${已读取[0].路径}`)
         for (const 文件 of 已读取) onAdded?.(文件)
       }
     } catch (错误) {
@@ -171,6 +193,10 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       展开操作(操作 as PDF命令)
       return
     }
+    if (标识 === 'file.save' || 标识 === 'file.saveAs') {
+      if (!正在处理 && !正在读取) void 保存当前文件(标识 === 'file.saveAs')
+      return
+    }
     if (标识 !== 'file.print') return false
     void 打印当前文件()
   }, 当前文件 !== null)
@@ -187,22 +213,47 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     set工具展开(true)
   }
 
-  const 保存结果 = async (数据: string, 默认名称: string) => {
-    set文件列表(当前 => 当前.map(f => f.标识 === 预览标识 ? {...f, 数据} : f))
-    onEdited?.(数据)
-    const 原始路径 = await 桥接.showSaveDialog(默认名称, 'pdf')
-    if (!原始路径) return
-    const 扩展 = 原始路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
-    if (扩展 !== undefined && 扩展 !== '.pdf') {
-      显示错误('PDF 保存失败', '请选择 PDF 格式的文件路径；当前路径不能保存处理结果。')
-      return
-    }
-    const 路径 = 扩展 === undefined ? `${原始路径}.pdf` : 原始路径
-    const 保存 = await 桥接.saveToFile(路径, Uint8Array.from(atob(数据), (字符) => 字符.charCodeAt(0)), '二进制')
-    if (!保存.成功) { if (!保存.已取消) 显示错误('PDF 保存失败', 保存.错误 ?? '请检查目标目录的写入权限后重试。'); return }
-    try { onSaved?.(路径, 数据) }
-    catch (错误) { 显示错误('PDF 标签打开失败', `文件已保存到「${路径}」，但无法在标签中打开：${错误 instanceof Error ? 错误.message : '未知错误'}`); return }
-    message.success('PDF 已保存')
+  const 写入PDF文件 = async (文件: 本地PDF文件, 另存为: boolean, 默认名称?: string) => {
+    if (保存锁.current) return
+    保存锁.current = true
+    set正在保存(true)
+    try {
+      const 当前路径 = 文件.路径 && !/^memory:/i.test(文件.路径) ? 文件.路径 : null
+      const 原始路径 = !另存为 && 当前路径
+        ? 当前路径
+        : await 桥接.showSaveDialog(默认名称 ?? 文件.名称.replace(/\.(pdf|spdf)$/i, '') + '.spdf', 'pdf')
+      if (!原始路径) return
+      const 扩展 = 原始路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
+      if (扩展 !== undefined && !['.spdf','.pdf'].includes(扩展)) throw new Error('请选择海豹 PDF（.spdf）或 PDF（.pdf）格式的文件路径。')
+      const 路径 = 扩展 === undefined ? `${原始路径}.spdf` : 原始路径
+      const 占用错误 = 校验保存路径?.(路径, 文件.标识)
+      if (占用错误) throw new Error(占用错误)
+      const 输出 = await 写出PDF文档(路径, 文件.数据, 文件.警告)
+      if (!输出?.成功 || !输出.数据) throw new Error(输出?.错误 || 'PDF 数据生成失败')
+      const 同一路径 = 当前路径?.replace(/\\/g, '/').toLowerCase() === 路径.replace(/\\/g, '/').toLowerCase()
+      const 保存 = await 桥接.saveToFile(路径, 输出.数据, '二进制', 同一路径 ? 文件.文件指纹 : undefined)
+      if (!保存.成功) { if (!保存.已取消) throw new Error(保存.错误 ?? '请检查目标目录的写入权限后重试。'); return }
+      // A later edit may have arrived while encoding/writing. Update the path
+      // and fresh disk fingerprint without replacing those newer document bytes.
+      const 名称 = 路径.split(/[\\/]/).pop() || 文件.名称
+      set文件列表(当前 => 当前.map(f => f.标识 === 文件.标识 ? { ...f, 名称, 路径, 文件指纹: 保存.文件指纹 } : f))
+      try { if (文件.警告?.length) onSaved?.(路径, 文件.数据, 保存.文件指纹, 文件.标识, 文件.警告); else onSaved?.(路径, 文件.数据, 保存.文件指纹, 文件.标识) }
+      catch (错误) { 显示错误('PDF 标签打开失败', `文件已保存到「${路径}」，但无法更新标签：${错误 instanceof Error ? 错误.message : '未知错误'}`); return }
+      message.success('PDF 已保存')
+    } catch (错误) { 显示错误('PDF 保存失败', 错误 instanceof Error ? 错误.message : '文件无法保存') }
+    finally { 保存锁.current = false; set正在保存(false) }
+  }
+
+  const 保存当前文件 = async (另存为 = false) => {
+    if (当前文件) await 写入PDF文件({ ...当前文件 }, 另存为)
+  }
+
+  const 保存结果 = async (数据: string, 默认名称: string, 警告 = 当前文件?.警告) => {
+    if (!当前文件) return
+    const 文件 = { ...当前文件, 数据, ...(警告?.length ? { 警告 } : {}) }
+    set文件列表(当前 => 当前.map(f => f.标识 === 文件.标识 ? { ...f, 数据, ...(警告?.length ? { 警告 } : {}) } : f))
+    if (警告?.length) onEdited?.(数据, 文件.标识, 警告); else onEdited?.(数据, 文件.标识)
+    await 写入PDF文件(文件, true, 默认名称)
   }
 
   const 选择编辑图片 = async (事件: ChangeEvent<HTMLInputElement>) => {
@@ -220,7 +271,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     try {
       const 结果 = await 桥接.pdf.editPage(当前文件.数据, { 类型: 编辑类型, 页码: Number(编辑页码), x: Number(编辑横坐标), y: Number(编辑纵坐标), 宽: Number(编辑宽度), 高: Number(编辑高度), 字号: Number(编辑字号), 颜色: 编辑颜色, 文字: 编辑文字, 图片: 编辑图片 })
       if (!结果.成功 || !结果.数据) { 显示错误('PDF 编辑失败', 结果.错误 || '请检查编辑参数。'); return }
-      await 保存结果(结果.数据, '编辑后的文档.pdf')
+      await 保存结果(结果.数据, '编辑后的文档.spdf')
     } catch (错误) { 显示错误('PDF 编辑失败', 错误 instanceof Error ? 错误.message : '无法编辑 PDF') }
     finally { set正在处理(false) }
   }
@@ -256,7 +307,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         显示错误('PDF 操作失败', 结果.错误 ?? '请检查文件内容和页码后重试。')
         return
       }
-      await 保存结果(结果.数据, '处理后的文档.pdf')
+      const 来源警告 = 命令 === 'merge' ? 文件列表.flatMap(文件 => 文件.警告 ?? []) : 命令 === 'insertPages' ? [...(当前文件.警告 ?? []), ...(来源?.警告 ?? [])] : 当前文件.警告
+      await 保存结果(结果.数据, '处理后的文档.spdf', 来源警告 ? [...new Set(来源警告)] : undefined)
     } catch (错误) {
       显示错误('PDF 操作失败', 错误 instanceof Error ? 错误.message : '请检查文件内容后重试。')
     } finally {
@@ -272,7 +324,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           ref={文件选择器}
           className="pdf-workbench__file-input"
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".spdf,.pdf,application/pdf,application/vnd.seal-office.document+zip"
           multiple
           aria-label="选择 PDF 文件"
           onChange={选择文件}
@@ -280,6 +332,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         <div className="pdf-workbench__rail" aria-label="PDF 工具栏">
           <button type="button" className="pdf-workbench__rail-button" aria-label={工具展开 ? '收起 PDF 工具' : '展开 PDF 工具'} title={工具展开 ? '收起工具' : '展开工具'} aria-expanded={工具展开} onClick={() => set工具展开((当前) => !当前)}><Icon name="sliders" size={18} /></button>
           <button type="button" className="pdf-workbench__rail-button" aria-label="添加 PDF 文件" title="添加 PDF 文件" onClick={() => void 添加PDF文件()}><Icon name="plus" size={18} /></button>
+          <button type="button" className="pdf-workbench__rail-button" aria-label="保存 PDF" title="保存 PDF" disabled={!当前文件 || 正在保存 || 正在处理 || 正在读取} onClick={() => void 保存当前文件()}><Icon name="save" size={18} /></button>
+          <button type="button" className="pdf-workbench__rail-button" aria-label="PDF 另存为" title="PDF 另存为" disabled={!当前文件 || 正在保存 || 正在处理 || 正在读取} onClick={() => void 保存当前文件(true)}><Icon name="save-as" size={18} /></button>
           <button type="button" className="pdf-workbench__rail-button" aria-label="打印 PDF" title="打印 PDF" disabled={!当前文件} onClick={() => void 打印当前文件()}><Icon name="pdf" size={18} /></button>
           {([
             ['extract', 'export-file'],
@@ -335,11 +389,11 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           )}
           {['insertBlank', 'insertPages'].includes(命令) && <><label htmlFor="pdf-insert-position">插入到第几页之前</label><Input id="pdf-insert-position" aria-label="插入位置" type="number" min={1} value={插入位置} onChange={(事件) => set插入位置(事件.target.value)} /></>}
           {命令 === 'insertPages' && <><label htmlFor="pdf-insert-source">来源文件</label><Select id="pdf-insert-source" aria-label="来源 PDF" value={插入来源 || undefined} onChange={set插入来源} options={文件列表.filter((文件) => 文件.标识 !== 当前文件?.标识).map((文件) => ({ value: 文件.标识, label: 文件.名称 }))} /></>}
-          <Button type="primary" block onClick={执行} loading={正在处理} disabled={正在读取}>执行并保存</Button>
+          <Button type="primary" block onClick={执行} loading={正在处理} disabled={正在读取 || 正在保存}>执行并保存</Button>
         </div>
         <div className="pdf-workbench__operation">
           <h2>编辑内容</h2>
-          <p>坐标从页面左上角起，单位为点。修改后另存为新 PDF。</p>
+          <p>坐标从页面左上角起，单位为点。处理结果可保存为海豹 PDF 或 PDF。</p>
           <label htmlFor="pdf-edit-type">编辑操作</label>
           <Select id="pdf-edit-type" aria-label="编辑操作" value={编辑类型} onChange={set编辑类型} options={[{ value: 'text', label: '添加文字' }, { value: 'replace', label: '可见文字替换' }, { value: 'note', label: '添加可见批注' }, { value: 'image', label: '插入图片' }, { value: 'cover', label: '遮盖区域' }]} />
           <label htmlFor="pdf-edit-page">页码</label><Input id="pdf-edit-page" aria-label="编辑页码" type="number" min={1} value={编辑页码} onChange={(事件) => set编辑页码(事件.target.value)} />
@@ -350,7 +404,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           {编辑类型 === 'image' && <><input ref={图片选择器} type="file" accept="image/png,image/jpeg" aria-label="选择插入图片" onChange={(事件) => void 选择编辑图片(事件)} /><span>{编辑图片 ? '图片已就绪' : '请选择图片'}</span></>}
           {编辑类型 !== 'image' && <><label htmlFor="pdf-edit-color">颜色</label><Input id="pdf-edit-color" aria-label="颜色" type="color" value={编辑颜色} onChange={(事件) => set编辑颜色(事件.target.value)} /></>}
           {['cover', 'replace'].includes(编辑类型) && <p>遮盖或可见文字替换只改变显示，原文字仍可能被复制或搜索；请勿用于敏感信息脱敏。</p>}
-          <Button type="primary" block onClick={() => void 执行编辑()} loading={正在处理} disabled={!当前文件}>编辑并另存</Button>
+          <Button type="primary" block onClick={() => void 执行编辑()} loading={正在处理} disabled={!当前文件 || 正在保存}>编辑并另存</Button>
         </div>
         </div>}
       </aside>

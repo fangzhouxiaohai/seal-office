@@ -6,10 +6,17 @@ import PptEditor from './PptEditor'
 import { AppProvider, useAppStore, type AppState } from '../store'
 import { 创建演示文稿 } from './deck'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-pptgeneration', verified: true, method: 'phone' } }
+}) })
+
+
 const 设置后端 = () => {
   Object.defineProperty(window, 'electronAPI', {
     configurable: true,
-    value: {
+    value: { cloud: 受信AI测试账号(),
       backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
       presentationResources: { sync: vi.fn(async () => ({ 成功: true })), release: vi.fn(async () => ({ 成功: true })) },
       presentationGeneration: {

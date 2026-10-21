@@ -14,27 +14,42 @@ const binaryText=(text:string)=>{const data=new TextEncoder().encode(text);let r
 export default function CloudAutosave(){
   const store=useAppStore(),{state,refresh,configure}=useCloud(),[dismissed,setDismissed]=useState<string|null>(null),[status,setStatus]=useState<Record<string,string>>({}),latest=useRef(store),seen=useRef(new Map<string,string>()),timers=useRef(new Map<string,ReturnType<typeof setTimeout>>())
   const owner=useRef(state.account?.id);owner.current=state.account?.id
+  const [draftErrors,setDraftErrors]=useState<Record<string,string>>({})
   latest.current=store
   const scheduled=useRef(new Map<string,string>()),cloudIds=useRef(new Map<string,string>()),dismissedIds=useRef(new Set<string>())
+  const lastDraftVersion=useRef(store.草稿版本??0)
+  const snapshotFor=(active:typeof store,id:string)=>{
+    const tab=active.workspaceTabs.find(t=>t.id===id),doc=active.documents.find(d=>d.id===id),pdf=active.pdfDocuments.find(d=>d.id===id)
+    if(pdf)return pdf.data?JSON.stringify([pdf.data,pdf.警告??[]]):''
+    if(tab?.type==='table')return JSON.stringify([active.表格文档模型[id],doc?.警告??[]])
+    if(tab?.type==='ppt')return active.演示文档模型[id]?JSON.stringify([演示内容快照(active.演示文档模型[id]),doc?.警告??[]]):''
+    return doc?JSON.stringify([doc.html,doc.页面设置,doc.警告??[]]):''
+  }
+  const prepare=(active:typeof store,id:string)=>{
+    const result=active.准备编辑草稿?.(id)
+    if(result&&!result.成功){setDraftErrors(previous=>({...previous,[id]:result.错误}));return null}
+    setDraftErrors(previous=>{if(!previous[id])return previous;const next={...previous};delete next[id];return next})
+    return result?.成功?{...active,表格文档模型:{...active.表格文档模型,...result.表格文档模型},演示文档模型:{...active.演示文档模型,...result.演示文档模型}}:active
+  }
   const saveRef=useRef<(id:string,snapshot:string)=>Promise<void>>(async()=>{})
   const ongoing=useRef(new Map<string,{snapshot:string;task:Promise<void>}>())
-  useEffect(()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();seen.current.clear();cloudIds.current.clear();ongoing.current.clear();setStatus({})},[state.account?.id])
+  useEffect(()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();seen.current.clear();cloudIds.current.clear();ongoing.current.clear();setStatus({});setDraftErrors({})},[state.account?.id])
   const current=store.activeWorkspaceTabId||'',editing=['word','table','ppt','pdf'].includes(store.module),dirty=store.workspaceTabs.some(t=>t.id===current&&t.dirty)
   useEffect(()=>{if(!state.account)return;const timer=window.setInterval(()=>{void cloudCall('refresh').then(refresh).catch(()=>{});if(state.account?.enabled&&state.unlocked)void cloudCall('flush').then(refresh).catch(()=>{})},15000);return()=>clearInterval(timer)},[state.account?.id,state.account?.enabled,state.unlocked,refresh])
   useEffect(()=>{
     if(!state.account?.enabled||!state.account.autosave||!state.unlocked){for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();return}
     const write=async(id:string,snapshot:string,active:typeof store)=>{
       const doc=active.documents.find(d=>d.id===id),pdf=active.pdfDocuments.find(d=>d.id===id);if(!doc&&!pdf)return
-      if(getFileBinding(active.文档路径[id]||doc?.来源路径||''))return
+      if(getFileBinding(pdf?.path||active.文档路径[id]||doc?.来源路径||''))return
       const accountId=state.account?.id
       try{
         let result:any,name=doc?.name||pdf?.name||'文档.pdf'
-        if(pdf){result={成功:true,数据:pdf.data}}
+        if(pdf){result=/\.spdf$/i.test(name)?await 桥接.office.writeSeal('pdf',{PDF数据:pdf.data,警告:pdf.警告??[]}):{成功:true,数据:pdf.data}}
         else if(!doc)return
         else
-        if(doc.type==='word'&&/\.sealdoc$/i.test(name)){result=await 桥接.office.writeSeal('word',{html:doc.html,页面设置:doc.页面设置,警告:doc.警告??[]})}
-        else if(doc.type==='table'&&/\.sealsheet$/i.test(name)){result=await 桥接.office.writeSeal('table',{工作表列表:active.表格文档模型[id]??[],警告:doc.警告??[]})}
-        else if(doc.type==='ppt'&&/\.sealshow$/i.test(name)){const deck=active.演示文档模型[id];if(!deck)return;const resources=await 桥接.presentationResources.export(收集演示资源标识(deck));if(!resources.成功)throw new Error(resources.错误);result=await 桥接.office.writeSeal('ppt',{演示文稿:deck,资源条目:resources.条目??[],警告:doc.警告??[]})}
+        if(doc.type==='word'&&/\.(sldoc|sealdoc)$/i.test(name)){result=await 桥接.office.writeSeal('word',{html:doc.html,页面设置:doc.页面设置,警告:doc.警告??[]})}
+        else if(doc.type==='table'&&/\.(slxls|sealsheet)$/i.test(name)){result=await 桥接.office.writeSeal('table',{工作表列表:active.表格文档模型[id]??[],警告:doc.警告??[]})}
+        else if(doc.type==='ppt'&&/\.(slppt|sealshow)$/i.test(name)){const deck=active.演示文档模型[id];if(!deck)return;const resources=await 桥接.presentationResources.export(收集演示资源标识(deck));if(!resources.成功)throw new Error(resources.错误);result=await 桥接.office.writeSeal('ppt',{演示文稿:deck,资源条目:resources.条目??[],警告:doc.警告??[]})}
         else if(doc.type==='table'){result=await 桥接.office.writeXlsx(导出为Xlsx(active.表格文档模型[id]??[]));if(!/\.xlsx$/i.test(name))name=name.replace(/\.[^.]+$/,'')+'.xlsx'}
         else if(doc.type==='ppt'){const deck=active.演示文档模型[id];if(!deck)return;const ids=收集演示资源标识(deck),resources=await 桥接.presentationResources.export(ids);if(!resources.成功)throw new Error(resources.错误);result=await 桥接.office.writePptx(构建演示保存模型(deck,resources.条目??[]))}
         else if(/\.(txt|md|html?|json)$/i.test(name)){result={成功:true,数据:binaryText(文字文本输出(name,doc.html,doc.页面设置?.页眉Html,doc.页面设置?.页脚Html))}}
@@ -48,38 +63,43 @@ export default function CloudAutosave(){
         void cloudCall('flush').then(refresh).catch(()=>{})
       }catch(e){if(owner.current!==accountId)return;setStatus(previous=>({...previous,[id]:e instanceof Error?e.message:'云端保存失败'}))}
     }
-    const save=(id:string,snapshot:string)=>{
+    const save=(id:string,_requestedSnapshot:string)=>{
+      const active=prepare(latest.current,id)
+      if(!active)return Promise.resolve()
+      const snapshot=snapshotFor(active,id)
+      if(!snapshot)return Promise.resolve()
       const previous=ongoing.current.get(id)
       if(previous?.snapshot===snapshot)return previous.task
       if(!previous&&seen.current.get(id)===snapshot)return Promise.resolve()
-      const active=latest.current,task=(previous?.task||Promise.resolve()).then(()=>write(id,snapshot,active))
+      const task=(previous?.task||Promise.resolve()).then(()=>write(id,snapshot,active))
       ongoing.current.set(id,{snapshot,task})
       return task.finally(()=>{if(ongoing.current.get(id)?.task===task)ongoing.current.delete(id)})
     }
     saveRef.current=save
     const schedule=(id:string,snapshot:string)=>{if(seen.current.get(id)===snapshot||scheduled.current.get(id)===snapshot)return;if(timers.current.has(id))clearTimeout(timers.current.get(id));scheduled.current.set(id,snapshot);timers.current.set(id,setTimeout(()=>{timers.current.delete(id);scheduled.current.delete(id);void save(id,snapshot)},1800))}
-    for(const tab of store.workspaceTabs){if(!tab.dirty&&!seen.current.has(tab.id)&&!scheduled.current.has(tab.id)&&!ongoing.current.has(tab.id))continue;if(tab.type==='pdf'){const pdf=store.pdfDocuments.find(d=>d.id===tab.id);if(pdf?.data)schedule(tab.id,pdf.data);continue}const doc=store.documents.find(d=>d.id===tab.id);if(!doc)continue
-      const deck=store.演示文档模型[tab.id]
-      const snapshot=tab.type==='table'?JSON.stringify(store.表格文档模型[tab.id]):tab.type==='ppt'?(deck?演示内容快照(deck):''):JSON.stringify([doc.html,doc.页面设置])
+    const draftChanged=(store.草稿版本??0)!==lastDraftVersion.current;lastDraftVersion.current=store.草稿版本??0
+    for(const tab of store.workspaceTabs){const draftPending=draftChanged&&tab.id===store.activeWorkspaceTabId&&['table','ppt'].includes(tab.type);if(!draftPending&&!tab.dirty&&!seen.current.has(tab.id)&&!scheduled.current.has(tab.id)&&!ongoing.current.has(tab.id))continue
+      const snapshot=snapshotFor(store,tab.id)+(draftPending?`|draft:${store.草稿版本}`:'')
       if(snapshot)schedule(tab.id,snapshot)
     }
-  },[store.pdfDocuments,store.documents,store.workspaceTabs,store.表格文档模型,store.演示文档模型,state.account?.id,state.account?.enabled,state.account?.autosave,state.unlocked,refresh])
+  },[store.pdfDocuments,store.documents,store.workspaceTabs,store.表格文档模型,store.演示文档模型,store.草稿版本,state.account?.id,state.account?.enabled,state.account?.autosave,state.unlocked,refresh])
   useEffect(()=>registerCloudFlush(async(targetId)=>{
     if(!state.account?.enabled||!state.account.autosave||!state.unlocked)return
     const changed=new Set(scheduled.current.keys())
     for(const [id,timer] of timers.current)if(!targetId||id===targetId){clearTimeout(timer);timers.current.delete(id);scheduled.current.delete(id)}
-    const active=latest.current
-    for(const tab of active.workspaceTabs){
+    const source=latest.current
+    for(const tab of source.workspaceTabs){
       if(targetId&&tab.id!==targetId)continue
-      if(!tab.dirty&&!seen.current.has(tab.id)&&!ongoing.current.has(tab.id)&&!changed.has(tab.id))continue
-      const doc=active.documents.find(d=>d.id===tab.id),pdf=active.pdfDocuments.find(d=>d.id===tab.id)
-      const snapshot=pdf?.data||(tab.type==='table'?JSON.stringify(active.表格文档模型[tab.id]):tab.type==='ppt'?(active.演示文档模型[tab.id]?演示内容快照(active.演示文档模型[tab.id]):''):doc?JSON.stringify([doc.html,doc.页面设置]):'')
+      const active=prepare(source,tab.id)
+      if(!active)continue
+      const snapshot=snapshotFor(active,tab.id),draftChanged=snapshot!==snapshotFor(source,tab.id)
+      if(!draftChanged&&!tab.dirty&&!seen.current.has(tab.id)&&!ongoing.current.has(tab.id)&&!changed.has(tab.id))continue
       if(snapshot&&seen.current.get(tab.id)!==snapshot)await saveRef.current(tab.id,snapshot)
     }
   }),[state.account?.enabled,state.account?.autosave,state.unlocked])
   useEffect(()=>()=>{for(const timer of timers.current.values())clearTimeout(timer)},[])
-  if(!editing||getFileBinding(store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))return null
-  if(state.account?.autosave)return <div className="seal-cloud-banner" role="status"><span>{state.statuses[cloudIds.current.get(current)||'']||status[current]||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void cloudCall('flush').then(refresh).catch(e=>setStatus(previous=>({...previous,[current]:e.message})))}}>立即同步</Button></div>
+  if(!editing||getFileBinding(store.pdfDocuments.find(doc=>doc.id===current)?.path||store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))return null
+  if(state.account?.autosave)return <div className="seal-cloud-banner" role="status"><span>{draftErrors[current]||state.statuses[cloudIds.current.get(current)||'']||status[current]||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void cloudCall('flush').then(refresh).catch(e=>setStatus(previous=>({...previous,[current]:e.message})))}}>立即同步</Button></div>
   if(!dirty||dismissed===current||dismissedIds.current.has(current))return null
   return <div className="seal-cloud-banner"><span>开启云文档自动保存，在不同设备继续编辑；文件加密上传，由你决定是否开启。</span><Button size="small" onClick={configure}>开启云端能力</Button><Button size="small" type="text" aria-label="关闭云端提示" onClick={()=>{dismissedIds.current.add(current);setDismissed(current)}}>关闭</Button></div>
 }

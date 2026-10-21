@@ -1,0 +1,42 @@
+const {test}=require('node:test')
+const assert=require('node:assert/strict')
+const {createLocalCollaborationFixture}=require('./collaborationFixture.cjs')
+
+test('AI 身份核验拒绝匿名和伪造字段，短信验证后不要求开通云空间',async t=>{
+  const f=await createLocalCollaborationFixture(t,{clients:false}),phone='13800112801'
+  const anonymous=await f.request('/v1/ai/identity',{headers:{'X-Verified-Phone':phone}})
+  assert.equal(anonymous.status,401);assert.equal(anonymous.body.code,'AI_IDENTITY_REQUIRED')
+  assert.equal(f.cloud.db.one('SELECT COUNT(*) n FROM users').n,0)
+  await f.request('/v1/auth/code',{method:'POST',data:{phone}})
+  const wrong=await f.request('/v1/auth/login',{method:'POST',data:{phone,code:'000000'}})
+  assert.equal(wrong.status,400);assert.equal(f.cloud.db.one('SELECT COUNT(*) n FROM users').n,0)
+  const logged=await f.request('/v1/auth/login',{method:'POST',data:{phone,code:f.codes.get(phone)}})
+  assert.equal(logged.status,200)
+  assert.equal(logged.body.account.identityVerified,true)
+  assert.equal(logged.body.account.identityMethod,'phone')
+  assert.equal(logged.body.account.enabled,false)
+  const identity=await f.request('/v1/ai/identity',{token:logged.body.token})
+  assert.equal(identity.status,200)
+  assert.deepEqual(identity.body,{accountId:logged.body.account.id,verified:true,method:'phone'})
+  assert.equal(JSON.stringify(identity.body).includes(phone),false)
+  assert.equal(Object.hasOwn(identity.body,'phone'),false)
+  await f.request('/v1/auth/logout',{method:'POST',token:logged.body.token})
+  const expired=await f.request('/v1/ai/identity',{token:logged.body.token})
+  assert.equal(expired.status,401);assert.equal(expired.body.code,'AI_IDENTITY_REQUIRED')
+})
+
+test('已验证手机号账号的密码登录可通过 AI 核验，撤销会话立即失效',async t=>{
+  const f=await createLocalCollaborationFixture(t,{clients:false}),phone='13800112802',password='已验证手机号 Password🦭2026'
+  await f.request('/v1/auth/code',{method:'POST',data:{phone}})
+  const initial=(await f.request('/v1/auth/login',{method:'POST',data:{phone,code:f.codes.get(phone)}})).body
+  f.advance(61000)
+  await f.request('/v1/auth/code',{method:'POST',token:initial.token,data:{purpose:'password'}})
+  assert.equal((await f.request('/v1/auth/password',{method:'POST',token:initial.token,data:{password,code:f.codes.get(phone)}})).status,200)
+  await f.request('/v1/auth/logout',{method:'POST',token:initial.token})
+  const logged=await f.request('/v1/auth/password-login',{method:'POST',data:{phone,password}})
+  assert.equal(logged.status,200);assert.equal(logged.body.account.enabled,false)
+  assert.equal(logged.body.account.identityVerified,true)
+  assert.equal((await f.request('/v1/ai/identity',{token:logged.body.token})).status,200)
+  f.cloud.db.transaction(()=>f.cloud.db.run('DELETE FROM sessions WHERE user_id=?',[logged.body.account.id]))
+  assert.equal((await f.request('/v1/ai/identity',{token:logged.body.token})).status,401)
+})

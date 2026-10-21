@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "package": "E:\\seal-office\\release\\v2.1.1\\seal-office-2.1.1-amd64.deb",
+  "version": "2.1.1",
+  "bytes": 141943952,
+  "sha256": "9e89b3c438cd44619c90ae328f1476aa5e3cf95de6c9345fd143d3dc782a4479",
+  "architecture": "amd64",
+  "nativeMimeTypes": {
+    "sldoc": "application/vnd.seal-office.word",
+    "slxls": "application/vnd.seal-office.sheet",
+    "slppt": "application/vnd.seal-office.presentation",
+    "spdf": "application/vnd.seal-office.pdf"
+  },
+  "freshPayloadSha256": {
+    "fonts/NotoSansSC.ttf": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+    "fonts/NotoSerifCJKsc-Regular.otf": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca",
+    "fonts/OFL.txt": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded",
+    "fonts/NotoSerif-LICENSE.txt": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+    "app.asar": "b253e47ccab52528398a8ee2520b7a74e66ed702af4a7f1d6a92bb5f127180a2"
+  },
+  "installationTest": "Not installed; archive and declaration verification only",
+  "modifiesUserDefaults": false
+}

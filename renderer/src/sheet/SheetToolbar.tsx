@@ -10,12 +10,13 @@ interface Props {
   on地址提交: (文本: string) => void
   on公式提交: (值: string) => boolean | void
   on草稿变化?: (值: string, 组合中: boolean) => { 值: string; 已发布: boolean }
+  on取消草稿?: () => void
   on文件按键?: (事件: React.KeyboardEvent) => void
   兼容模式?: 'Excel' | 'WPS'
   on兼容模式?: (模式: 'Excel' | 'WPS') => void
 }
 
-const SheetToolbar = ({ 地址文本, 公式值, 只读提示, on地址提交, on公式提交, on草稿变化, on文件按键, 兼容模式, on兼容模式 }: Props) => {
+const SheetToolbar = ({ 地址文本, 公式值, 只读提示, on地址提交, on公式提交, on草稿变化, on取消草稿, on文件按键, 兼容模式, on兼容模式 }: Props) => {
   const [地址草稿, set地址草稿] = useState(地址文本)
   const [公式草稿, set公式草稿] = useState(公式值)
   // 标记草稿刚被清空（提交后），跳过一次同步
@@ -81,6 +82,9 @@ const SheetToolbar = ({ 地址文本, 公式值, 只读提示, on地址提交, o
       },
       onKeyDown: (事件: React.KeyboardEvent) => {
         if (只读提示) return
+        if (事件.key === 'Escape' && !组合中.current && !事件.nativeEvent.isComposing && 事件.nativeEvent.keyCode !== 229) {
+          事件.preventDefault(); on取消草稿?.(); 脏草稿.current = false; 跳过一次同步.current = false; set公式草稿(公式值); return
+        }
         on文件按键?.(事件)
         if (事件.defaultPrevented) return
         if (事件.key === 'Enter' && !事件.nativeEvent.isComposing && 事件.nativeEvent.keyCode !== 229) {

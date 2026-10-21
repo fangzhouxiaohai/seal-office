@@ -18,24 +18,47 @@ function send(data: Record<string, unknown>) {
 }
 export async function waitForNative() {
   if (!new URLSearchParams(location.search).has('native')) return
-  if (window.sealNative) return
-  await new Promise<void>((resolve, reject) => {
+  if (!window.sealNative) await new Promise<void>((resolve, reject) => {
     const ready = () => { clearTimeout(timer); resolve() }
     const timer = setTimeout(() => { window.removeEventListener('seal-native-ready', ready); reject(new Error('原生接口初始化超时，请重新打开应用')) }, 15000)
     window.addEventListener('seal-native-ready', ready, { once: true })
+  })
+  // A config object alone does not prove that WebView -> host -> WebView works.
+  // Fail at startup with a usable retry screen instead of inert file/login UI.
+  await new Promise<void>((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('原生接口连接超时，请重新打开应用')) }, 5000)
+    pending.set(id, event => {
+      clearTimeout(timer); pending.delete(id)
+      event.type === 'ready' ? resolve() : reject(new Error(event.error || '原生接口连接失败，请重新打开应用'))
+    })
+    try { send({ id, action: 'ping' }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
   })
 }
 export function nativeFetch(url: string, options: RequestInit = {}): Promise<Response> {
   return new Promise((resolve, reject) => {
     if (options.signal?.aborted) { reject(new DOMException('已停止', 'AbortError')); return }
     const id = crypto.randomUUID(), headers = Object.fromEntries(new Headers(options.headers)), chunks: Uint8Array[] = []
-    let controller: ReadableStreamDefaultController<Uint8Array>, delivered = false, started = false, finished = false
-    const cleanup = () => { pending.delete(id); options.signal?.removeEventListener('abort', abort) }
+    let controller: ReadableStreamDefaultController<Uint8Array>, delivered = false, started = false, finished = false, streaming = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const cleanup = () => { clearTimeout(timer); pending.delete(id); options.signal?.removeEventListener('abort', abort) }
+    const fail = (error: unknown) => {
+      if (finished) return
+      finished = true; cleanup()
+      if (started) controller?.error(error); else reject(error)
+    }
+    const resetTimeout = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        try { send({ id, action: 'abort' }) } catch { /* 宿主可能已退出 */ }
+        fail(new Error('网络请求超时，请检查网络后重试'))
+      }, streaming && started ? 120000 : 70000)
+    }
     const begin = (status = 200, responseHeaders: Record<string, string> = {}) => {
       if (started) return
-      started = true
-      if ([204, 205, 304].includes(status)) resolve(new Response(null, { status, headers: responseHeaders }))
-      else resolve(new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; for (const chunk of chunks) c.enqueue(chunk) }, cancel() { abort() } }), { status, headers: responseHeaders }))
+      const response = [204, 205, 304].includes(status) ? new Response(null, { status, headers: responseHeaders })
+        : new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; for (const chunk of chunks) c.enqueue(chunk) }, cancel() { abort() } }), { status, headers: responseHeaders })
+      started = true; resolve(response)
     }
     const abort = () => {
       if (finished) return
@@ -45,6 +68,8 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
       if (started) controller?.error(error); else reject(error)
     }
     pending.set(id, (event) => {
+      if (finished) return
+      try {
       if (event.type === 'headers') begin(event.status, event.headers)
       else if (event.type === 'chunk') {
         delivered = true; const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64'))
@@ -52,19 +77,21 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
       } else if (event.type === 'end') {
         begin(event.status, event.headers)
         if (!delivered && event.data) controller?.enqueue(new Uint8Array(Buffer.from(event.data, 'base64')))
-        finished = true; controller?.close(); cleanup()
+        finished = true; cleanup(); controller?.close()
       } else if (event.type === 'error') {
-        finished = true; cleanup(); const error = new Error(event.error || '网络请求失败')
-        if (started) controller?.error(error); else reject(error)
+        fail(new Error(event.error || '网络请求失败'))
       }
+      if (!finished) resetTimeout()
+      } catch (error) { fail(error) }
     })
     options.signal?.addEventListener('abort', abort, { once: true })
     try {
       const body = options.body == null ? undefined : typeof options.body === 'string' ? Buffer.from(options.body) : Buffer.from(options.body as Uint8Array)
       let stream = new Headers(options.headers).get('accept')?.includes('event-stream') ?? false
       if (body) { try { stream ||= JSON.parse(body.toString()).stream === true } catch { /* 二进制与表单请求不使用 SSE */ } }
+      streaming = stream; resetTimeout()
       send({ id, action: 'request', url, method: options.method ?? 'GET', headers, body: body?.toString('base64'), stream })
-    } catch (error) { cleanup(); reject(error) }
+    } catch (error) { fail(error) }
   })
 }
 const browserFetch = window.fetch.bind(window)

@@ -10,12 +10,13 @@ import {
 } from './mock/recentDocs'
 import { DOC_TYPE_TO_MODULE, NAV_GROUPS, NEW_DOC_NAMES, type ModuleKey } from './navConfig'
 import { 桥接, type 演示资源条目 } from './ipc/bridge'
-import { 基准文件名, 记录最近文档, 读取本地文件内容 } from './fileOpen'
+import { 基准文件名, 记录最近文档, 读取本地文件内容, 准备打开本地文件 } from './fileOpen'
 import { 创建工作表, 检查工作簿更新, 重算工作簿, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
 import { 创建演示文稿, type 演示文稿 } from './ppt/deck'
 import { 迁移演示文稿, 演示内容快照, 收集演示资源标识, 校验演示备份资源 } from './ppt/model/migrations'
 import { 页面设置相同, type 文字页面设置 } from './office/docModel'
+import { 创建草稿生命周期, type 编辑草稿准备结果, type 单文档草稿结果 } from './editor/draftLifecycle'
 
 export type ViewMode = 'grid' | 'list'
 
@@ -58,10 +59,13 @@ export interface PdfDocument {
   path: string | null
   data: string | null
   dirty?: boolean
+  文件指纹?: string
+  警告?: string[]
 }
 
 type 备份结果 = { 成功: boolean; 错误?: string }
 type 备份任务 = { 操作: '保存'; 内容: string } | { 操作: '清理' }
+class 编辑草稿未就绪 extends Error {}
 
 export interface AppState {
   /** 当前模块，home 为首页，其余为编辑器 */
@@ -98,10 +102,10 @@ export interface AppState {
   演示文档模型: Record<string, 演示文稿>
   设置演示历史资源: (标识: string, 引用: string[]) => void
   更新演示文档模型: (标识: string, 更新: React.SetStateAction<演示文稿>) => void
-  PDF待预览: { 路径: string; 名称: string; 数据: string } | null
+  PDF待预览: { 路径: string; 名称: string; 数据: string; 文件指纹?: string; 警告?: string[] } | null
   pdfDocuments: readonly PdfDocument[]
-  更新PDF内容: (标识:string, 数据:string) => void
-  保存PDF文档: (标识:string, 路径:string, 数据:string) => void
+  更新PDF内容: (标识:string, 数据:string, 警告?:string[]) => void
+  保存PDF文档: (标识:string, 路径:string, 数据:string, 文件指纹?:string, 警告?:string[]) => void
   /** 重命名文档；传入纯空白名称时不生效，避免写入无效文件名 */
   renameDoc: (标识: string, 名称: string) => Promise<void>
   /** 删除文档；若删除的是当前打开文档，同时清空选中标识 */
@@ -137,6 +141,12 @@ export interface AppState {
   启动恢复结束: boolean
   /** 关闭前取消防抖，等待已发出的写入，再将最新工作区写盘。 */
   刷新工作状态备份: () => Promise<备份结果>
+  /** 仅通知输入变化以触发防抖；不会逐字提交模型或撤销栈。 */
+  草稿版本: number
+  通知编辑草稿变化: () => void
+  注册编辑草稿: (标识: string, 处理: () => 单文档草稿结果) => () => void
+  /** 取快照前调用；成功后应以返回模型覆盖同次读取的旧 React 闭包。 */
+  准备编辑草稿: (标识?: string) => 编辑草稿准备结果
   清除备份提示: () => void
   /** 切换到设置页面 */
   showSettings: () => void
@@ -167,16 +177,16 @@ function 生成文档标识(): string {
 
 /** 取模块对应的默认文档名，home 不参与编辑器 */
 function 模块默认文档名(模块: ModuleKey): string {
-  return 模块 === 'home' ? '未命名文档.docx' : NEW_DOC_NAMES[模块]
+  return 模块 === 'home' ? NEW_DOC_NAMES.word : NEW_DOC_NAMES[模块]
 }
 
 function 是同一路径(左: string | null | undefined, 右: string): boolean {
   return typeof 左 === 'string' && 左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
 }
 
-function 预览PDF文档(文档: PdfDocument | null | undefined): { 路径: string; 名称: string; 数据: string } | null {
+function 预览PDF文档(文档: PdfDocument | null | undefined): { 路径: string; 名称: string; 数据: string; 文件指纹?:string; 警告?:string[] } | null {
   if (!文档?.data) return null
-  return { 路径: 文档.path ?? `memory:${文档.id}`, 名称: 文档.name, 数据: 文档.data }
+  return { 路径: 文档.path ?? `memory:${文档.id}`, 名称: 文档.name, 数据: 文档.data, 文件指纹: 文档.文件指纹, 警告: 文档.警告 }
 }
 
 function 是工作表模型(值: unknown): 值 is Sheet {
@@ -200,6 +210,19 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   const [最近读取错误, set最近读取错误] = useState<string | null>(null)
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const [documents, setDocuments] = useState<EditorDocument[]>([])
+  const 草稿生命周期 = useRef<ReturnType<typeof 创建草稿生命周期> | null>(null)
+  if (!草稿生命周期.current) 草稿生命周期.current = 创建草稿生命周期()
+  const [草稿版本, set草稿版本] = useState(0)
+  const 通知编辑草稿变化 = useCallback(() => set草稿版本(版本 => 版本 + 1), [])
+  const 注册编辑草稿 = useCallback((标识: string, 处理: () => 单文档草稿结果) => 草稿生命周期.current!.注册(标识, 处理), [])
+  const 准备编辑草稿 = useCallback((标识?: string) => 草稿生命周期.current!.准备(标识), [])
+  const 导航前提交草稿 = useCallback((): boolean => {
+    const 草稿 = 准备编辑草稿()
+    if (草稿.成功) return true
+    弹窗.warning({ title: '请先完成当前编辑', content: 草稿.错误 })
+    return false
+  }, [准备编辑草稿, 弹窗])
+  const 受保护切换模块 = useCallback((目标: ModuleKey) => { if (导航前提交草稿()) setModule(目标) }, [导航前提交草稿])
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null)
   const [文档路径, set文档路径状态] = useState<Record<string, string | null>>({})
   const [表格文档模型, set表格文档模型] = useState<Record<string, Sheet[]>>({})
@@ -254,9 +277,11 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       弹窗.error({ title: '演示资源释放失败', content: 错误 instanceof Error ? 错误.message : '演示资源无法释放' })
     })
   }, [])
-  const [PDF待预览, setPDF待预览] = useState<{ 路径: string; 名称: string; 数据: string } | null>(null)
+  const [PDF待预览, setPDF待预览] = useState<{ 路径: string; 名称: string; 数据: string; 文件指纹?:string; 警告?:string[] } | null>(null)
   const [pdfDocuments, setPdfDocuments] = useState<PdfDocument[]>([])
   const [activePdfId, setActivePdfId] = useState<string | null>(null)
+  const 当前PDF列表 = useRef(pdfDocuments), 当前PDF标识 = useRef(activePdfId)
+  当前PDF列表.current = pdfDocuments; 当前PDF标识.current = activePdfId
   const [workspaceOrder, setWorkspaceOrder] = useState<string[]>([])
   const [工作状态设置, set工作状态设置] = useState<{ 值: boolean | null; 错误: string | null }>(() => {
     try { return { 值: localStorage.getItem('seal-session-restore') !== 'false', 错误: null } }
@@ -373,11 +398,13 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     if (!状态.备份就绪) throw new Error('工作状态恢复仍在进行中，请稍后重试')
     if (状态.保存工作状态 === null) throw new Error('无法读取工作状态设置，请检查本机设置后重试')
     if (!状态.保存工作状态 || (状态.documents.length === 0 && 状态.pdfDocuments.length === 0)) return { 操作: '清理' }
+    const 草稿 = 准备编辑草稿()
+    if (!草稿.成功) throw new 编辑草稿未就绪(草稿.错误)
     return { 操作: '保存', 内容: JSON.stringify({
       documents: 状态.documents, activeDocumentId: 状态.activeDocumentId,
-      文档路径: 状态.文档路径, 表格文档模型: 状态.表格文档模型,
-      演示文档模型: 状态.演示文档模型,
-      pdfDocuments: 状态.pdfDocuments.map(({ id, name, path, data, dirty }) => ({ id, name, path, ...(dirty ? {dirty:true} : {}), ...(path === null || dirty ? { data } : {}) })),
+      文档路径: 状态.文档路径, 表格文档模型: { ...状态.表格文档模型, ...草稿.表格文档模型 },
+      演示文档模型: { ...状态.演示文档模型, ...草稿.演示文档模型 },
+      pdfDocuments: 状态.pdfDocuments.map(({ id, name, path, data, dirty, 警告 }) => ({ id, name, path, ...(警告 !== undefined ? { 警告 } : {}), ...(dirty ? {dirty:true} : {}), ...(path === null || dirty ? { data } : {}) })),
       activePdfId: 状态.activePdfId, activeModule: 状态.module, workspaceOrder: 状态.workspaceOrder,
     }) }
   }
@@ -417,6 +444,10 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       备份计时.current = null
     }
     try {
+      // Closing must see unblurred input even when workspace backup is disabled.
+      // Preparing changes only the model; the setting still controls persistence.
+      const 草稿 = 准备编辑草稿()
+      if (!草稿.成功) return { 成功: false, 错误: 草稿.错误 }
       for (let 次数 = 0; 次数 < 3; 次数 += 1) {
         const 任务 = 创建当前备份任务()
         const 结果 = await 排队执行备份(任务)
@@ -445,6 +476,10 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       let 任务: 备份任务
       try { 任务 = 创建当前备份任务() }
       catch (错误) {
+        // In-progress IME/invalid drafts are not a valid snapshot. Keep the last
+        // good backup and retry after the next draft change; manual close/flush
+        // receives the explicit failure through 刷新工作状态备份.
+        if (错误 instanceof 编辑草稿未就绪) return
         弹窗.error({ title: '自动备份失败', content: 错误 instanceof Error ? 错误.message : '无法创建工作状态备份' })
         return
       }
@@ -462,7 +497,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         window.clearTimeout(备份计时.current)
       }
     }
-  }, [备份就绪, 保存工作状态, documents, activeDocumentId, 文档路径, 表格文档模型, 演示文档模型, pdfDocuments, activePdfId, module, workspaceOrder])
+  }, [备份就绪, 保存工作状态, documents, activeDocumentId, 文档路径, 表格文档模型, 演示文档模型, pdfDocuments, activePdfId, module, workspaceOrder, 草稿版本])
 
   useEffect(() => {
     if (!备份就绪 || 保存工作状态 !== false || !桥接.可用) return
@@ -511,7 +546,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           表格文档模型?: Record<string, Sheet[]>
           演示文档模型?: Record<string, 演示文稿>
           演示资源字节?: 演示资源条目[]
-          pdfDocuments?: Array<{ id: string; name: string; path: string | null; data?: string | null; dirty?: boolean }>
+          pdfDocuments?: Array<{ id: string; name: string; path: string | null; data?: string | null; dirty?: boolean; 警告?:string[] }>
           activePdfId?: string | null
           activeModule?: ModuleKey
           workspaceOrder?: string[]
@@ -552,7 +587,8 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         }
         const PDF读取结果 = await Promise.allSettled(PDF元数据.map(async (记录): Promise<PdfDocument> => {
           if (typeof 记录?.id !== 'string' || typeof 记录.name !== 'string' ||
-              (记录.path !== null && typeof 记录.path !== 'string')) {
+              (记录.path !== null && typeof 记录.path !== 'string') ||
+              (记录.警告 !== undefined && (!Array.isArray(记录.警告) || !记录.警告.every(项 => typeof 项 === 'string')))) {
             throw new Error('PDF 标签记录格式无效')
           }
           if (记录.path === null || 记录.dirty) {
@@ -562,7 +598,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
           }
           const 内容 = await 读取本地文件内容(记录.path)
           if (内容.类型 !== 'pdf' || typeof 内容.内容 !== 'string') throw new Error(`无法恢复「${记录.name}」`)
-          return { ...记录, data: 内容.内容 }
+          return { ...记录, data: 内容.内容, 文件指纹: 内容.文件指纹, ...((记录.警告 !== undefined || 内容.警告?.length) ? { 警告: [...new Set([...(记录.警告 ?? []), ...(内容.警告 ?? [])])] } : {}) }
         }))
         if (!有效) return
         const 有效PDF = PDF读取结果.flatMap((项) => 项.status === 'fulfilled' ? [项.value] : [])
@@ -673,6 +709,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const createDoc = (类型: DocItem['type'], 初始内容?: unknown, 来源?: { 路径?: string; 名称?: string; 警告?: string[]; 页面设置?: 文字页面设置; 文件指纹?: string }) => {
+    if (!导航前提交草稿()) return
     const 来源路径 = typeof 来源?.路径 === 'string' && 来源.路径.trim() !== '' ? 来源.路径 : null
     if (来源路径 !== null && 类型 !== 'pdf') {
       const 已开文档 = documents.find((项) => 是同一路径(文档路径[项.id], 来源路径))
@@ -693,10 +730,10 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       if (已开PDF) {
         if (来源 !== undefined) {
           setPdfDocuments((当前) => 当前.map((项) => 项.id === 已开PDF.id
-            ? { ...项, name: PDF名称!, data: 初始内容 as string } : 项))
+            ? { ...项, name: PDF名称!, data: 初始内容 as string, 文件指纹: 来源.文件指纹, 警告: 来源.警告 ?? 项.警告 } : 项))
         }
         setActivePdfId(已开PDF.id)
-        setPDF待预览(来源 !== undefined ? 预览PDF文档({ ...已开PDF, name: PDF名称!, data: 初始内容 as string }) : null)
+        setPDF待预览(来源 !== undefined ? 预览PDF文档({ ...已开PDF, name: PDF名称!, data: 初始内容 as string, 文件指纹: 来源.文件指纹, 警告: 来源.警告 ?? 已开PDF.警告 }) : null)
         setModule('pdf')
         setNavKey('pdf')
         return
@@ -706,6 +743,8 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
         name: PDF名称 ?? 'PDF 工具',
         path: 来源路径,
         data: 来源 ? 初始内容 as string : null,
+        文件指纹: 来源?.文件指纹,
+        警告: 来源?.警告,
       }
       setPdfDocuments((当前) => [...当前, PDF文档])
       setWorkspaceOrder((当前) => [...当前, PDF文档.id])
@@ -762,6 +801,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const openDoc = async (文档: DocItem): Promise<void> => {
+    if (!导航前提交草稿()) return
     if (!文档.路径) throw new Error('最近记录缺少文件路径，无法打开')
     const 路径 = 文档.路径
     const 已存在 = documents.find((项) => 是同一路径(文档路径[项.id], 路径))
@@ -774,14 +814,18 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       refreshRecents()
       return
     }
-    const 内容 = await 读取本地文件内容(路径)
-    createDoc(内容.类型, 内容.类型 === 'ppt' ? 内容.演示文稿 : 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容, { 路径, 警告: 内容.警告, 页面设置: 内容.页面设置, 文件指纹: 内容.文件指纹 })
+    const 内容 = await 准备打开本地文件(路径)
+    if (!内容) return
+    if (!导航前提交草稿()) return
+    const 打开路径 = 内容.打开路径 ?? 路径
+    createDoc(内容.类型, 内容.类型 === 'ppt' ? 内容.演示文稿 : 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容, { 路径: 打开路径, 警告: 内容.警告, 页面设置: 内容.页面设置, 文件指纹: 内容.文件指纹 })
     setActiveDocId(文档.id)
-    await 记录最近文档(路径, 文档.name, 内容.类型, 文档.starred)
+    await 记录最近文档(打开路径, 基准文件名(打开路径), 内容.类型, 文档.starred)
     refreshRecents()
   }
 
   const createEditorDoc = () => {
+    if (!导航前提交草稿()) return
     const 目标模块: ModuleKey = module === 'home' ? 'word' : module
     if (目标模块 === 'word') 新建标签(模块默认文档名(目标模块), 'word')
     else if (目标模块 === 'table' || 目标模块 === 'ppt') createDoc(目标模块)
@@ -828,6 +872,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     workspaceTabsRef.current.find((标签) => 标签.id !== 当前标识 && 是同一路径(标签.path, 目标路径)) ?? null
 
   const 选择编辑文档 = (标识: string | null) => {
+    if (!导航前提交草稿()) return
     if (标识 === null) {
       setActiveDocumentId(null)
       return
@@ -839,6 +884,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const closeEditorDoc = (标识: string) => {
+    if (!导航前提交草稿()) return
     const 原位置 = workspaceOrder.indexOf(标识)
     const 剩余顺序 = workspaceOrder.filter((项) => 项 !== 标识)
     const 下个标识 = 剩余顺序[Math.min(Math.max(原位置 - 1, 0), 剩余顺序.length - 1)]
@@ -864,6 +910,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const selectWorkspaceTab = (标识: string) => {
+    if (!导航前提交草稿()) return
     if (标识 === 'home') {
       goHome()
       return
@@ -885,20 +932,21 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     throw new Error('找不到要切换的工作区标签')
   }
 
-  const 更新PDF内容 = (标识:string, 数据:string) => {
-    setPdfDocuments(当前 => 当前.map(文档 => 文档.id === 标识 ? {...文档,data:数据,dirty:true} : 文档))
-    if (activePdfId === 标识) setPDF待预览(当前 => 当前 ? {...当前,数据} : 当前)
+  const 更新PDF内容 = (标识:string, 数据:string, 警告?:string[]) => {
+    setPdfDocuments(当前 => 当前.map(文档 => 文档.id === 标识 ? {...文档,data:数据,dirty:true,...(警告 !== undefined ? {警告} : {})} : 文档))
+    if (当前PDF标识.current === 标识) setPDF待预览(当前 => 当前 ? {...当前,数据,...(警告 !== undefined ? {警告} : {})} : 当前)
   }
-  const 保存PDF文档 = (标识:string, 路径:string, 数据:string) => {
-    const 文档 = pdfDocuments.find(d => d.id === 标识)
+  const 保存PDF文档 = (标识:string, 路径:string, 数据:string, 文件指纹?:string, 警告?:string[]) => {
+    const 文档 = 当前PDF列表.current.find(d => d.id === 标识)
     if (!文档) throw new Error('PDF 标签已关闭')
-    if (pdfDocuments.some(d => d.id !== 标识 && 是同一路径(d.path, 路径))) throw new Error('此路径已在其他 PDF 标签打开')
-    setPdfDocuments(当前 => 当前.map(d => d.id === 标识 ? {...d,path:路径,name:基准文件名(路径),data:数据,dirty:false} : d))
-    if (activePdfId === 标识) setPDF待预览({路径,名称:基准文件名(路径),数据})
+    if (当前PDF列表.current.some(d => d.id !== 标识 && 是同一路径(d.path, 路径))) throw new Error('此路径已在其他 PDF 标签打开')
+    setPdfDocuments(当前 => 当前.map(d => d.id === 标识 ? {...d,path:路径,name:基准文件名(路径),data:d.data ?? 数据,文件指纹,dirty:d.data !== null && d.data !== 数据,...(警告 !== undefined ? {警告} : {})} : d))
+    if (当前PDF标识.current === 标识) setPDF待预览(当前 => ({路径,名称:基准文件名(路径),数据:当前?.数据 ?? 数据,文件指纹,警告:警告 ?? 当前?.警告 ?? 当前PDF列表.current.find(d => d.id === 标识)?.警告}))
   }
 
   const closeWorkspaceTab = (标识: string) => {
     if (标识 === 'home') return
+    if (!导航前提交草稿()) return
     if (documents.some((项) => 项.id === 标识)) {
       closeEditorDoc(标识)
       return
@@ -960,16 +1008,19 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const showSettings = () => {
+    if (!导航前提交草稿()) return
     setModule('settings')
     setNavKey('settings')
   }
 
   const showHelp = () => {
+    if (!导航前提交草稿()) return
     setModule('help')
     setNavKey('help')
   }
 
   const goHome = () => {
+    if (!导航前提交草稿()) return
     setModule('home')
     setNavKey('home')
   }
@@ -1044,6 +1095,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   const handleNav = (键: string, 提示: (文本: string) => void) => {
+    if (!导航前提交草稿()) return
     const 目标项 = NAV_GROUPS.flat().find((项) => 项.key === 键)
     if (目标项 === undefined) {
       提示('该导航项不存在')
@@ -1060,7 +1112,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   const 值 = useMemo<AppState>(
     () => ({
       module,
-      setModule,
+      setModule: 受保护切换模块,
       navKey,
       setNavKey,
       搜索词,
@@ -1102,6 +1154,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       备份恢复提示,
       启动恢复结束,
       刷新工作状态备份,
+      草稿版本, 注册编辑草稿, 通知编辑草稿变化, 准备编辑草稿,
       清除备份提示: () => set备份恢复提示(null),
       表格文档模型,
       更新表格文档模型,
@@ -1115,7 +1168,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       showHelp,
       goHome,
     }),
-    [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId, documents, activeDocumentId, 文档路径, 表格文档模型, 演示文档模型, PDF待预览, 备份恢复提示, 启动恢复结束, 搜索词, 最近读取错误, workspaceTabs, activeWorkspaceTabId, pdfDocuments, workspaceOrder]
+    [module, navKey, viewMode, sortKey, docs, visibleDocs, activeDocId, documents, activeDocumentId, 文档路径, 表格文档模型, 演示文档模型, PDF待预览, 备份恢复提示, 启动恢复结束, 搜索词, 最近读取错误, workspaceTabs, activeWorkspaceTabId, pdfDocuments, workspaceOrder, 草稿版本]
   )
 
   return React.createElement(AppContext.Provider, { value: 值 }, children)

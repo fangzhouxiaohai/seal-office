@@ -33,10 +33,13 @@ function Find-Menu($name) {
   )
   return [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
 }
-$taskLabels = @{doc='DOC 文档';docx='DOCX 文档';ppt='PPT 演示文稿';pptx='PPTX 演示文稿';pdf='PDF 文档';xls='XLS 工作表';xlsx='XLSX 工作表'}
+$taskProject = Split-Path -Parent $PSScriptRoot
+$taskLabels = @{}
+foreach ($format in (Get-Content -LiteralPath (Join-Path $taskProject 'main/documentFormats.json') -Raw -Encoding UTF8 | ConvertFrom-Json)) { $taskLabels[$format.extension] = $format.label }
+$taskNewFormats = @('doc','docx','ppt','pptx','pdf','xls','xlsx','sldoc','slxls','slppt','spdf')
 $taskFiles = [Collections.Generic.List[object]]::new()
 try {
-  foreach ($ext in @('doc','docx','ppt','pptx','pdf','xls','xlsx')) {
+  foreach ($ext in $taskNewFormats) {
     [void][SealExplorerInput]::ShowWindow($taskHandle, 9)
     [void][SealExplorerInput]::SetForegroundWindow($taskHandle)
     if ([SealExplorerInput]::GetForegroundWindow() -ne $taskHandle) { throw '资源管理器测试窗口未获得前台焦点' }

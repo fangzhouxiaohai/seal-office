@@ -1,8 +1,17 @@
 // 文件命令测试：打开、保存、导出
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createRequire } from 'node:module'
+import { createHash } from 'node:crypto'
+import { createElement } from 'react'
+import { App as AntdApp, Modal } from 'antd'
+import { act, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { 命令表 } from './commands'
 import { 读取本地文件内容 } from '../fileOpen'
 import { 净化富文本 } from './sanitizeHtml'
+import { AppProvider, useAppStore, type AppState } from '../store'
+
+const 原生编解码器 = createRequire(import.meta.url)('../../../main/office/sealFormat.js')
 
 const 页面视图 = {
   纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无',
@@ -16,6 +25,7 @@ describe('文件命令', () => {
 
   afterEach(() => {
     Reflect.deleteProperty(window, 'electronAPI')
+    Modal.destroyAll()
   })
 
   describe('file.open 打开文件命令', () => {
@@ -24,27 +34,80 @@ describe('文件命令', () => {
       expect(命令表['file.open'].label).toBe('打开文件')
     })
 
-    it('从工具栏打开文字文件时新建标签，不覆盖当前编辑内容', async () => {
+    it.each([false, true])('从工具栏打开带警告文字文件先确认转换或取消，不覆盖当前未保存正文（转换=%s）', async 转换 => {
       const 路径 = 'C:\\资料\\第二份.docx'
-      const 打开新文档 = vi.fn()
+      const 副本路径 = 'C:\\资料\\第二份.sldoc'
+      const 原件字节 = Buffer.from('原DOCX测试字节，不可改写')
+      const 文件 = new Map<string, Buffer>([[路径, 原件字节]])
+      const 指纹 = (数据: Buffer) => createHash('sha256').update(数据).digest('hex')
+      let 状态!: AppState
+      const 打开新文档 = vi.fn((类型: any, 内容: unknown, 新路径: string, 警告?: string[], 页面设置?: any, 文件指纹?: string) => {
+        状态.createDoc(类型, 内容, { 路径: 新路径, 警告, 页面设置, 文件指纹 })
+      })
       const 应用内容 = vi.fn()
+      const 设置文档路径 = vi.fn()
+      const 另存位置 = vi.fn().mockResolvedValue(副本路径)
+      const 保存 = vi.fn(async (目标: string, 数据: string, 格式: string) => {
+        expect(目标).toBe(副本路径); expect(格式).toBe('二进制')
+        文件.set(目标, Buffer.from(数据, 'base64'))
+        return { 成功: true, 文件指纹: 指纹(文件.get(目标)!) }
+      })
+      const 读取 = vi.fn(async (目标: string) => {
+        const 数据 = 文件.get(目标)
+        if (!数据) return { 成功: false, 错误: '文件尚未写出，不能打开内存副本' }
+        return { 成功: true, 二进制: true, 内容: 数据.toString('base64'), 扩展名: 目标 === 路径 ? '.docx' : '.sldoc', 文件指纹: 指纹(数据) }
+      })
+      const 编码 = vi.fn(async (类型: string, 数据: unknown) => ({ 成功: true, 数据: (await 原生编解码器.writeSeal(类型, 数据)).toString('base64') }))
+      const 解码 = vi.fn(async (扩展: string, 数据: string) => ({ 成功: true, ...await 原生编解码器.readSeal(扩展, Buffer.from(数据, 'base64')) }))
       ;(window as any).electronAPI = {
         showOpenDialog: vi.fn().mockResolvedValue(路径),
-        readFile: vi.fn().mockResolvedValue({ 成功: true, 二进制: true, 内容: 'AA==', 扩展名: '.docx' }),
-        office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] }) },
-        recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+        showSaveDialog: 另存位置, saveToFile: 保存, readFile: 读取,
+        office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] }), writeSeal: 编码, readSeal: 解码 },
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }), recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }), backupClear: vi.fn().mockResolvedValue({ 成功: true }),
       }
+      const 探针 = () => { 状态 = useAppStore(); return null }
+      render(createElement(AntdApp, null, createElement(AppProvider, null, createElement(探针))))
+      await vi.waitFor(() => expect(状态.启动恢复结束).toBe(true))
+      act(() => 状态.createDoc('word', '<p>第一份已保存正文</p>', { 路径: 'C:\\资料\\第一份.docx' }))
+      const 第一份标识 = 状态.activeDocumentId!
+      act(() => 状态.updateEditorHtml(第一份标识, '<p>第一份未保存正文</p>'))
       命令表['file.open'].run({
         当前文档名: '第一份.docx',
-        读取内容: () => '<p>第一份未保存正文</p>',
+        读取内容: () => 状态.documents.find(项 => 项.id === 第一份标识)!.html,
         打开新文档,
         应用内容,
-        设置文档路径: vi.fn(),
+        设置文档路径,
         notify: vi.fn(),
         history: { record: vi.fn() },
       } as any)
-      await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入'], undefined))
+      const 对话框 = await screen.findByRole('dialog', { name: '此文件需要转换后打开' })
+      expect(within(对话框).getByText('图片尚未导入')).toBeInTheDocument()
+      expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
+      await userEvent.click(within(对话框).getByRole('button', { name: 转换 ? '转换为海豹格式' : '取消打开' }))
+      if (转换) {
+        await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 副本路径, ['图片尚未导入'], undefined, 指纹(文件.get(副本路径)!)))
+        expect(另存位置).toHaveBeenCalledWith('第二份.sldoc', 'word')
+        expect(保存).toHaveBeenCalledOnce(); expect(编码).toHaveBeenCalledOnce(); expect(解码).toHaveBeenCalledOnce()
+        expect(读取.mock.calls.map(([目标]) => 目标)).toEqual([路径, 副本路径])
+        expect(await 原生编解码器.readSeal('sldoc', 文件.get(副本路径))).toMatchObject({ 类型: 'word', html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] })
+        expect(状态.documents).toHaveLength(2)
+        const 第二份 = 状态.documents.find(项 => 项.id !== 第一份标识)!
+        expect(第二份).toMatchObject({ name: '第二份.sldoc', html: '<p>第二份正文</p>', 来源路径: 副本路径, 警告: ['图片尚未导入'], 文件指纹: 指纹(文件.get(副本路径)!) })
+        expect(状态.文档路径[第二份.id]).toBe(副本路径)
+        expect(状态.workspaceTabs.find(项 => 项.id === 第二份.id)?.dirty).toBe(false)
+      } else {
+        await vi.waitFor(() => expect(screen.queryByRole('dialog', { name: '此文件需要转换后打开' })).toBeNull())
+        expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
+        expect(编码).not.toHaveBeenCalled(); expect(解码).not.toHaveBeenCalled()
+        expect(状态.documents).toHaveLength(1); expect(状态.activeDocumentId).toBe(第一份标识)
+      }
       expect(应用内容).not.toHaveBeenCalled()
+      expect(设置文档路径).not.toHaveBeenCalled()
+      expect(状态.documents.find(项 => 项.id === 第一份标识)?.html).toBe('<p>第一份未保存正文</p>')
+      expect(状态.workspaceTabs.find(项 => 项.id === 第一份标识)?.dirty).toBe(true)
+      expect(文件.get(路径)).toBe(原件字节)
+      expect(文件.get(路径)?.toString()).toBe('原DOCX测试字节，不可改写')
     })
 
     it('应该在 Electron 环境中调用打开对话框', () => {

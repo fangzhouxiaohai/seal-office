@@ -130,7 +130,6 @@ async function initialize() {
   for (const folder of ['/seal/private', '/seal/documents', '/seal/tmp', '/seal/private/cloud-outbox']) storage.mkdirSync(folder, { recursive: true })
   window.fetch = platformFetch as typeof fetch
   platform.configureDialogs(() => pickFiles(undefined, true), (filename: string, data: Uint8Array) => downloadFile(path.basename(filename), data))
-  const assistant = core.assistant.创建助手服务({ 配置路径: '/seal/private/assistant-config.secure', 安全存储: vault.safeStorage })
   const services = core.services.创建服务配置存储({ 配置路径: '/seal/private/presentation-services.secure', 安全存储: vault.safeStorage })
   const cloud = core.cloudService.createService({ directory: '/seal/private', safeStorage: vault.safeStorage, mergeUpdates,
     defaultUrl: !window.sealNative && /^https?:$/.test(window.location.protocol) ? new URL('/api', window.location.origin).href : undefined,
@@ -147,13 +146,18 @@ async function initialize() {
       } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', abort) }
     } })
   installConversionService(core, cloud)
-  core.office.注册Office通道(ipcMain); core.ai.注册智能助手通道(ipcMain, { 助手服务: assistant })
-  core.presentationAi.注册演示智能通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private' })
-  core.generation.注册演示生成通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private' })
-  core.cloud.注册云端通道(ipcMain, { cloudService: cloud, 助手服务: assistant })
+  const requireAIIdentity = () => cloud.requireAIIdentity()
+  const assistantSource = core.assistant.创建助手服务({ 配置路径: '/seal/private/assistant-config.secure', 安全存储: vault.safeStorage, 请求: core.ai.创建实名AI请求(requireAIIdentity) })
+  // The common assistant returned by this registration enforces the same
+  // server identity check for cloud OCR, Q&A and recognition on every host.
+  const assistant = core.ai.注册智能助手通道(ipcMain, { 助手服务: assistantSource, requireAIIdentity })
+  core.office.注册Office通道(ipcMain)
+  core.presentationAi.注册演示智能通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private', requireAIIdentity })
+  core.generation.注册演示生成通道(ipcMain, { 助手服务: assistant, 服务存储: services, 用户数据目录: '/seal/private', requireAIIdentity })
+  core.cloud.注册云端通道(ipcMain, { cloudService: cloud, 助手服务: assistant, requireAIIdentity })
   const recording = core.recording.创建录制服务({ 捕获源: null, 最大字节: 100 * 1024 * 1024 })
   // 第二个参数是演示资源存储；服务依赖必须放在第三个参数，否则模板恢复/读取图片都会调用到错误的对象。
-  core.presentation.注册演示通道(ipcMain, undefined, { 识别服务: core.recognition.创建识别服务({ 助手服务: assistant }), 录制服务: recording })
+  core.presentation.注册演示通道(ipcMain, undefined, { 识别服务: core.recognition.创建识别服务({ 助手服务: assistant }), 录制服务: recording, requireAIIdentity })
   handle('presentation.recording.save', async (data: string, format: string, name: string) => {
     const result = await recording.保存录制({ 数据: data, 格式: format, 建议名: name })
     if (!result.取消) await platform.exportStoredFile(result.路径)

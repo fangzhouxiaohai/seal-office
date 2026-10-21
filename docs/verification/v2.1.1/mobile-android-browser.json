@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "checks": [
+    "生产构建可在无 Electron preload 的浏览器环境启动",
+    "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+    "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+    "原生保存只写本地文档空间；显式导出才调用系统分享",
+    "中文 PDF 生成与页面旋转",
+    "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+    "页面重载后恢复本地文件与加密模型配置",
+    "无效工作区备份被阻止且允许保留后继续",
+    "手机菜单新建文字文档并进入真实编辑器",
+    "390px 文字正文重排、输入事件与编辑区域可见",
+    "真实工作区备份恢复未保存正文与文字编辑页面",
+    "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+    "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+    "390px 手机布局、底部触控导航、知识库与服务入口",
+    "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+    "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+    "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+    "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+    "360/390/820/1280px 窄屏、平板与 PC 布局",
+    "Word全屏按屏重排真实阅读页、CDP真单指横向翻页/双指缩放、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留",
+    "PDF真实三页CDP真单指横滑/双指文档缩放保持页码、360/390/820px全屏、返回连续阅读和原缩放；删除可见连续滚动文案保留可访问切换",
+    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+    "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+    "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+    "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+    "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出",
+    "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→SLPPT/PPTX保存文件重开保留尺寸和对象；360/390/820/1280px布局",
+    "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+    "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图",
+    "脑图生产UI：键盘Tab/Enter/Delete、备注/形状/配色/线标签、撤销重做、真实鼠标缩放坐标、双触点缩放、360/390/820px、JSON/SVG导出及导入重开",
+    "图转演示后实际UI保存SLPPT/PPTX文件并按其格式读取：可编辑形状、原生连接器、线标签与完整节点备注数据保留",
+    "流程图生产UI：自动布局后有向箭头、开始椭圆与判断菱形实际SVG导出",
+    "迁移原项目经可见回收站永久删除后，真实重载不会从保留v1再次复活，其他项目正文保持完整"
+  ],
+  "pptxAliasShape": {
+    "passed": true,
+    "strict": true,
+    "namespacePrefixes": [
+      "slides",
+      "draw",
+      "relation"
+    ],
+    "nativeShapesPreserved": 1,
+    "preservedText": "引号、Tab、换行、中文及 &<>"
+  },
+  "pptEditingSave": {
+    "passed": true,
+    "shortcut": "Ctrl+S",
+    "textareaFocusedBeforeShortcut": true,
+    "blurredBeforeShortcut": false,
+    "actualSavedFileReopened": true,
+    "latestDraftPreserved": true,
+    "unicodePreserved": true,
+    "charactersVerified": "😀𠀀👩🏽‍💻é"
+  },
+  "errors": [],
+  "scheme": "file",
+  "platform": "android",
+  "groups": [
+    {
+      "name": "core",
+      "passed": true,
+      "checks": 19,
+      "resumedSuccessfulProcess": true
+    },
+    {
+      "name": "reading",
+      "passed": true,
+      "checks": 2,
+      "resumedSuccessfulProcess": true
+    },
+    {
+      "name": "editor",
+      "passed": true,
+      "checks": 5,
+      "resumedSuccessfulProcess": true
+    },
+    {
+      "name": "workspace",
+      "passed": true,
+      "checks": 1,
+      "resumedSuccessfulProcess": true
+    },
+    {
+      "name": "diagram",
+      "passed": true,
+      "checks": 8
+    }
+  ],
+  "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+  "allGroupsCompleted": true,
+  "processWatchdogMs": 120000,
+  "artifactDirectory": "mobile/unpackage/cloud-ready/2.1.1/android/static/office",
+  "harnessSourceSha256": {
+    "browser-smoke.cjs": "1e8d31dc3c596afd315215ac0a51416a5370ca9c4b4691d6ba4ee78778bb9dd4",
+    "extended-browser.cjs": "3a8ff26d8c745f117c21a0fcdb52026e4fc1f6092ebe1db3976b0c99767ecc6d",
+    "reading-pages-actions.cjs": "8aadccae948b06290b86945e568ce4da85846832985a549d7c41c5b76152355a"
+  },
+  "harnessRootOverrideOnly": true
+}

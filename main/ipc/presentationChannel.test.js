@@ -97,7 +97,7 @@ describe('演示资源通道', () => {
 describe('截屏、录屏与识别通道', () => {
   const 建通道 = (服务) => {
     const 处理 = new Map()
-    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储(), 服务)
+    注册演示通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, 创建资源存储(), { ...服务, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
     return (名称, ...参数) => 处理.get(名称)(null, ...参数)
   }
 

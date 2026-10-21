@@ -28,9 +28,14 @@ describe('关闭前保存全部文档', () => {
     expect(result.失败).toEqual([]);expect(写入).not.toHaveBeenCalled();expect(保存).toHaveBeenCalledWith('D:/资料.txt','甲\n\n乙','文本');expect(保存).toHaveBeenCalledWith('D:/配置.json','{"name":"seal"}','文本');expect(保存).toHaveBeenCalledWith('D:/网页.html',expect.stringContaining('<!DOCTYPE html>'),'文本')
   })
   it('按类型补扩展名并逐条写出，返回新的文件指纹', () => {
-    expect(规范保存路径('word', 'D:\\文档\\报告')).toBe('D:\\文档\\报告.docx')
-    expect(规范保存路径('table', 'D:\\文档\\表格')).toBe('D:\\文档\\表格.xlsx')
-    expect(规范保存路径('ppt', 'D:\\文档\\演示')).toBe('D:\\文档\\演示.pptx')
+    expect(规范保存路径('word', 'D:\\文档\\报告')).toBe('D:\\文档\\报告.sldoc')
+    expect(规范保存路径('table', 'D:\\文档\\表格')).toBe('D:\\文档\\表格.slxls')
+    expect(规范保存路径('ppt', 'D:\\文档\\演示')).toBe('D:\\文档\\演示.slppt')
+    expect(规范保存路径('pdf', 'D:\\文档\\版式')).toBe('D:\\文档\\版式.spdf')
+    for (const [类型, 扩展] of [['word','sldoc'],['table','slxls'],['ppt','slppt'],['pdf','spdf']] as const) {
+      expect(规范保存路径(类型, `D:\\文档.v2\\报告.最终.${扩展}`)).toBe(`D:\\文档.v2\\报告.最终.${扩展}`)
+      expect(规范保存路径(类型, 'D:\\文档.v2\\报告')).toBe(`D:\\文档.v2\\报告.${扩展}`)
+    }
     expect(规范保存路径('word', 'D:\\文档\\报告.DOCX')).toBe('D:\\文档\\报告.DOCX')
     expect(规范保存路径('table', 'D:\\文档\\表格.csv')).toBe('D:\\文档\\表格.csv')
     expect(规范保存路径('table', 'D:\\文档\\表格.pdf')).toBeNull()

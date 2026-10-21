@@ -1,0 +1,472 @@
+{
+  "passed": true,
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.85",
+    "revision": "@0e66b94549a8bd85f03fbdf189b752d6e7b63c32",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.25"
+  },
+  "checks": [
+    "android: frozen local IIFE starts in native mode after real uni.webview ping/ready round trip",
+    "android: sldoc shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "android: slxls shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "android: slppt shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "android: spdf shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "android: all four formats survive complete page reconstruction; saved byte payloads are identical and Node codec reads every field",
+    "android: actual Services → assistant → send opens accessible phone-login reason; cancel retains Unicode input and emits zero identity/model network requests while anonymous",
+    "android: all 16 actual production AI IPC actions return AI_IDENTITY_REQUIRED with valid local fixture inputs/configuration; no identity/model network requests while anonymous",
+    "harmony: frozen local IIFE starts in native mode after real uni.webview ping/ready round trip",
+    "harmony: sldoc shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "harmony: slxls shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "harmony: slppt shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "harmony: spdf shared codec → actual IndexedDB write → second save with fingerprint → Node codec exact model/bytes verification",
+    "harmony: all four formats survive complete page reconstruction; saved byte payloads are identical and Node codec reads every field",
+    "harmony: actual Services → assistant → send opens accessible phone-login reason; cancel retains Unicode input and emits zero identity/model network requests while anonymous",
+    "harmony: all 16 actual production AI IPC actions return AI_IDENTITY_REQUIRED with valid local fixture inputs/configuration; no identity/model network requests while anonymous"
+  ],
+  "errors": [],
+  "results": [
+    {
+      "platform": "android",
+      "directory": "E:\\seal-office\\mobile\\unpackage\\cloud-ready\\2.1.1\\android\\static\\office",
+      "sha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "buildInfo": {
+        "platform": "android",
+        "desktopVersion": "2.1.1",
+        "builtAt": "2026-10-21T11:19:11.906Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "files": [
+        {
+          "extension": "sldoc",
+          "path": "/seal/documents/native-final/android.sldoc",
+          "sha256": "2b8a9b68d852694330de3f1f34151e5e0a197f5896c022cf8ff9216cba60b12b"
+        },
+        {
+          "extension": "slxls",
+          "path": "/seal/documents/native-final/android.slxls",
+          "sha256": "ee13ebd94af8f57b565f3067e3639bb09b12a74f89307dc039f56a5aaefac21c"
+        },
+        {
+          "extension": "slppt",
+          "path": "/seal/documents/native-final/android.slppt",
+          "sha256": "79c1e883eb2e4dcaec899176c467e1a4eb3bbe01b529fa89ce02786e009236c3"
+        },
+        {
+          "extension": "spdf",
+          "path": "/seal/documents/native-final/android.spdf",
+          "sha256": "3425c54163a2a127507bb967e27ba74c76cd155d85870c4c6e1294bacbafda1f"
+        }
+      ],
+      "anonymousAI": {
+        "identityUi": {
+          "role": "dialog",
+          "title": "账号登录",
+          "reason": "使用 AI 功能前，请先登录已完成手机号短信验证的海豹办公账号。无需开通云空间。",
+          "input": "匿名原稿保留𠮷🦭",
+          "network": []
+        },
+        "blocked": [
+          {
+            "name": "chat",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "translate",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "proofread",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "speak",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "generateScript",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "narrate",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "outline",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "pages",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "singlePage",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "beautify",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "diagram",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "semanticSearch",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "recognize",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "question",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "imagePresentation",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "ocrImage",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "action": "ping",
+          "id": "4b086c4e-95b2-4d46-bd77-df7586f94d42"
+        },
+        {
+          "action": "state"
+        },
+        {
+          "action": "state"
+        },
+        {
+          "action": "state"
+        }
+      ]
+    },
+    {
+      "platform": "harmony",
+      "directory": "E:\\seal-office\\mobile\\unpackage\\cloud-ready\\2.1.1\\harmony\\static\\office",
+      "sha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "buildInfo": {
+        "platform": "harmony",
+        "desktopVersion": "2.1.1",
+        "builtAt": "2026-10-21T11:20:42.406Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "files": [
+        {
+          "extension": "sldoc",
+          "path": "/seal/documents/native-final/harmony.sldoc",
+          "sha256": "4570c3a1bfd35b87943e7c317b970242c248026d7bcf9c8e2bfb03d01a15dfbe"
+        },
+        {
+          "extension": "slxls",
+          "path": "/seal/documents/native-final/harmony.slxls",
+          "sha256": "9295d165fa091b8b45381f0ad69b81a7c7af5f75a7c36d71855bc4bfc47ca8e7"
+        },
+        {
+          "extension": "slppt",
+          "path": "/seal/documents/native-final/harmony.slppt",
+          "sha256": "53db7ba354710a74cb81a2cd8067a5f315918a90099211f0985889d4e735ad1b"
+        },
+        {
+          "extension": "spdf",
+          "path": "/seal/documents/native-final/harmony.spdf",
+          "sha256": "37f9e34518719f85ce9602a0d18dd72a92732a483c75764bd856bd94c331f89b"
+        }
+      ],
+      "anonymousAI": {
+        "identityUi": {
+          "role": "dialog",
+          "title": "账号登录",
+          "reason": "使用 AI 功能前，请先登录已完成手机号短信验证的海豹办公账号。无需开通云空间。",
+          "input": "匿名原稿保留𠮷🦭",
+          "network": []
+        },
+        "blocked": [
+          {
+            "name": "chat",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "translate",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "proofread",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "speak",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "generateScript",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "narrate",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "outline",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "pages",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "singlePage",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "beautify",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "diagram",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "semanticSearch",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "recognize",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "question",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "imagePresentation",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          },
+          {
+            "name": "ocrImage",
+            "result": {
+              "成功": false,
+              "错误": "使用 AI 功能前请先登录并完成手机号验证",
+              "状态码": 401,
+              "code": "AI_IDENTITY_REQUIRED",
+              "需要登录": true
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "action": "ping",
+          "id": "875f9ffa-e317-4366-952e-ba12a4389b91"
+        },
+        {
+          "action": "state"
+        },
+        {
+          "action": "state"
+        },
+        {
+          "action": "state"
+        }
+      ]
+    }
+  ],
+  "scope": "Frozen Android/Harmony local IIFEs served over loopback in Chrome390. Actual mobile shared codec, uni.webview messaging path, browser filesystem and IndexedDB commit/reconstruction. Host is a deterministic plain-object ping/file/network shim. This is not APK/HAP installation or native OS picker/UTS execution acceptance."
+}

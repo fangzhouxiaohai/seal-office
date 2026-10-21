@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal } from 'antd'
-import { 读取本地文件内容, 注册最近文档错误弹窗, 记录最近文档, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
+import { 读取本地文件内容, 注册最近文档错误弹窗, 注册导入确认弹窗, 记录最近文档, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 保存为纯文本 } from './editor/exportDoc'
 import { 创建工作表, 写入单元格 } from './sheet/model'
 import { 创建演示文稿 } from './ppt/deck'
@@ -260,7 +260,7 @@ describe('本地文件打开', () => {
     expect(已打开).toBe(true)
   })
 
-  it('从系统对话框打开时把保真警告传给编辑器', async () => {
+  it('从系统对话框打开不完整文档前要求转换，取消时不创建编辑标签', async () => {
     const 路径 = 'C:\\资料\\报告.docx'
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
@@ -272,8 +272,13 @@ describe('本地文件打开', () => {
       },
     })
     const 打开 = vi.fn()
-    await 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)
-    expect(打开).toHaveBeenCalledWith('word', '<p>正文</p>', 路径, ['图片尚未导入'])
+    const 确认 = vi.fn(选项 => 选项.onCancel?.())
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      expect(await 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)).toBe(false)
+      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ title: '此文件需要转换后打开', cancelText: '取消打开' }))
+      expect(打开).not.toHaveBeenCalled()
+    } finally { 取消注册() }
   })
 
   it('打开失败时展示友好弹窗，不调用编辑器', async () => {

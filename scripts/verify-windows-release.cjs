@@ -102,7 +102,12 @@ async function 验收() {
       const 图标路径正确=globalThis.验收图标目录===path.join(process.env.PORTABLE_EXECUTABLE_FILE?electron.app.getPath('userData'):process.resourcesPath,'file-icons')
       return {安装:await globalThis.验收关联执行('GetInstallation'),字节一致,图标一致,图标路径正确,路径正确:globalThis.验收程序路径===(process.env.PORTABLE_EXECUTABLE_FILE||electron.app.getPath('exe')),模板:fs.readdirSync(templates).filter(名称=>名称.startsWith('blank.'))}
     })()`)
-    检查(安装.字节一致 && 安装.模板.length === 7, '打包注册组件与七种模板完整')
+    const 新建扩展 = ['doc','docx','xls','xlsx','ppt','pptx','pdf','sldoc','slxls','slppt','spdf']
+    检查(安装.字节一致 && 安装.模板.length === 新建扩展.length && 新建扩展.every(扩展=>安装.模板.includes('blank.'+扩展)), '打包注册组件与十一种有效新建模板完整')
+    if (阶段 === 'first') {
+      const 原生核验 = await 主.执行(`(async()=>{const e=process.mainModule.require('electron'),p=process.mainModule.require('path'),probe=process.mainModule.require(${JSON.stringify(path.join(__dirname, 'verify-native-formats.cjs'))});return probe.verifyNativeFormats({load:name=>process.mainModule.require(p.join(e.app.getAppPath(),name)),directory:${JSON.stringify(path.join(数据目录, 'native-formats'))},resources:process.resourcesPath})})()`, 60000)
+      检查(原生核验.passed && 原生核验.formats.length === 4 && 原生核验.formats.every(项=>项.cycles===2&&项.unicodeAndResourcesPreserved), '成品四种专属格式真实编解码与两轮保存重开保留Unicode、图片和公式来源')
+    }
     检查(安装.安装.已安装, '真实隔离注册表安装成功')
     检查(安装.路径正确, '默认程序路径指向持久启动文件，便携版不指向临时目录')
     检查(安装.图标一致, '四种外置文件图标与应用内可信资源一致')

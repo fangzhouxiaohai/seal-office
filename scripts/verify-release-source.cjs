@@ -15,7 +15,7 @@ function inventory() {
     }
   }
   for (const directory of ['main', 'renderer/src', 'renderer/public', 'mobile/web', 'mobile/native', 'mobile/pages', 'mobile/tests', 'mobile/scripts', 'server', 'scripts']) walk(directory)
-  for (const name of ['package.json', 'package-lock.json', 'mobile/package.json', 'mobile/package-lock.json', 'mobile/manifest.json', 'mobile/AndroidManifest.xml', 'mobile/App.uvue', 'mobile/main.uts', 'mobile/pages.json', 'mobile/web.vite.config.mjs', 'build/electron-ubuntu.cjs', 'build/artifact-names.json', 'docs/promo/current-storyboard.json', 'AGENTS.md', '.github/workflows/ubuntu.yml', 'vitest.main.config.js', 'vite.config.js']) {
+  for (const name of ['package.json', 'package-lock.json', 'mobile/package.json', 'mobile/package-lock.json', 'mobile/manifest.json', 'mobile/AndroidManifest.xml', 'mobile/App.uvue', 'mobile/main.uts', 'mobile/pages.json', 'mobile/web.vite.config.mjs', 'build/electron-ubuntu.cjs', 'build/prepare-shell-new.cjs', 'build/artifact-names.json', 'docs/promo/current-storyboard.json', 'AGENTS.md', '.github/workflows/ubuntu.yml', 'vitest.main.config.js', 'vite.config.js']) {
     if (fs.existsSync(path.join(root, name))) names.push(name)
   }
   return [...new Set(names)].sort().map(name => { const bytes = fs.readFileSync(path.join(root, name)); return { path: name, bytes: bytes.length, sha256: sha(bytes) } })

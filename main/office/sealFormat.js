@@ -1,6 +1,7 @@
 const JSZip = require('jszip')
 const { createHash } = require('crypto')
-const TYPES = { sealdoc:'word', sealsheet:'table', sealshow:'ppt' }
+// Version 1 containers remain readable under their original extensions.
+const TYPES = { sldoc:'word', slxls:'table', slppt:'ppt', spdf:'pdf', sealdoc:'word', sealsheet:'table', sealshow:'ppt' }
 const MIME = 'application/vnd.seal-office.document+zip'
 const LIMIT = 100 * 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -14,6 +15,10 @@ function validatePayload(type,payload){
   if(type==='word'&&typeof payload.html==='string')return
   if(type==='table'&&Array.isArray(payload.工作表列表)&&payload.工作表列表.length>0)return
   if(type==='ppt'&&payload.演示文稿&&Array.isArray(payload.演示文稿.幻灯片列表)&&Array.isArray(payload.资源条目))return
+  if(type==='pdf'&&typeof payload.PDF数据==='string'&&payload.PDF数据.length%4===0&&/^[A-Za-z0-9+/]+={0,2}$/.test(payload.PDF数据)){
+    const bytes=Buffer.from(payload.PDF数据,'base64')
+    if(bytes.subarray(0,5).toString('ascii')==='%PDF-'&&bytes.toString('base64')===payload.PDF数据)return
+  }
   reject('文档类型与内容不匹配')
 }
 // Explicit tags preserve values JSON normally drops, including formula cache sentinels.

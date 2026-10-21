@@ -5,6 +5,13 @@ import { App as AntdApp, ConfigProvider } from 'antd'
 import { AppProvider, useAppStore } from '../store'
 import AiAssistant from './AiAssistant'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-taskqueue', verified: true, method: 'phone' } }
+}) })
+
+
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 function 环境() {
@@ -13,7 +20,7 @@ function 环境() {
   const guide = vi.fn().mockResolvedValue({ 成功: true })
   const cancel = vi.fn().mockResolvedValue({ 成功: true })
   const updateSessionPlan = vi.fn().mockResolvedValue({ 成功: true })
-  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
     getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '本机', 服务商: 'custom', 地址: 'http://localhost/chat', 模型: '测试', 上下文令牌: 131072 } }), chat, guide, cancel, updateSessionPlan,
   }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
   function 入口() {

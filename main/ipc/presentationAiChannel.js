@@ -5,16 +5,18 @@ const { 翻译条目, 校验译文可应用 } = require('../ppt/translate')
 const { 语义校对, 校验建议可应用 } = require('../ppt/proofread')
 const { 合成语音, 列出声线, 创建语音缓存 } = require('../ppt/speech')
 const { 生成讲稿, 合成讲解音频 } = require('../ppt/narration')
+const { 创建实名助手服务, 创建实名AI请求, 校验实名AI访问, AI失败结果 } = require('../ai/identityGate')
 
 /** 演示智能服务通道：翻译、语义校对、朗读、讲稿与能力核验。 */
-function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音缓存, 用户数据目录 } = {}) {
+function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音缓存, 用户数据目录, requireAIIdentity } = {}) {
   if (!助手服务) throw new Error('演示智能通道需要已初始化的助手服务')
+  助手服务 = 创建实名助手服务(助手服务, requireAIIdentity)
   const 存储 = 服务存储 || 创建服务配置存储({ 配置路径: path.join(用户数据目录 ?? process.cwd(), 'presentation-services.secure'), 安全存储: require('electron').safeStorage })
   const 缓存 = 语音缓存 || 创建语音缓存({ 目录: path.join(用户数据目录 ?? process.cwd(), 'presentation-speech-cache') })
   const 进行中 = new Map()
   const 包装 = (处理) => async (事件, ...参数) => {
     try { return { 成功: true, 数据: await 处理(事件, ...参数) } }
-    catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演示智能服务操作失败' } }
+    catch (错误) { return AI失败结果(错误, '演示智能服务操作失败') }
   }
 
   /** 文本能力：统一走助手服务的文本链路，不另建第二套模型设置。 */
@@ -64,7 +66,7 @@ function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音�
         调用模型: 调用文本模型, 推送: 推送器(事件, 标识), 信号: 输入.信号,
       })
       return { 成功: true, 数据: 结果 }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '翻译失败' } }
+    } catch (错误) { return AI失败结果(错误, '翻译失败') }
     finally { 收尾(事件) }
   })
 
@@ -77,7 +79,7 @@ function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音�
         调用模型: 调用文本模型, 推送: 推送器(事件, 标识), 信号: 输入.信号,
       })
       return { 成功: true, 数据: 结果 }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '语义校对失败' } }
+    } catch (错误) { return AI失败结果(错误, '语义校对失败') }
     finally { 收尾(事件) }
   })
 
@@ -94,11 +96,12 @@ function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音�
 
   ipcMain.handle('presentation.ai.speak', async (事件, 输入) => {
     try {
+      await 校验实名AI访问(requireAIIdentity)
       const 配置 = await 存储.读取('语音')
       if (!配置) throw new Error('请先配置 AI 语音合成服务')
-      const 结果 = await 合成语音(输入?.文本, { 配置: { ...配置, 密钥: 存储.读取内部密钥('语音') }, 缓存, 信号: 输入?.信号 })
+      const 结果 = await 合成语音(输入?.文本, { 配置: { ...配置, 密钥: 存储.读取内部密钥('语音') }, 缓存, 信号: 输入?.信号, 请求: 创建实名AI请求(requireAIIdentity) })
       return { 成功: true, 数据: { 音频: 结果.音频, 类型: 结果.类型, 字节数: 结果.字节数, 命中缓存: 结果.命中缓存, 缓存键: 结果.缓存键 } }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '语音合成失败' } }
+    } catch (错误) { return AI失败结果(错误, '语音合成失败') }
   })
 
   ipcMain.handle('presentation.ai.generateScript', async (事件, 输入) => {
@@ -107,19 +110,21 @@ function 注册演示智能通道(ipcMain, { 助手服务, 服务存储, 语音�
       await 需要文本能力()
       const 结果 = await 生成讲稿({ 页列表: 输入.页列表, 风格: 输入.风格, 调用模型: 调用文本模型, 推送: 推送器(事件, 标识), 信号: 输入.信号 })
       return { 成功: true, 数据: 结果 }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '讲稿生成失败' } }
+    } catch (错误) { return AI失败结果(错误, '讲稿生成失败') }
     finally { 收尾(事件) }
   })
 
   ipcMain.handle('presentation.ai.narrate', async (事件, 输入) => {
     try {
+      await 校验实名AI访问(requireAIIdentity)
       const 配置 = await 存储.读取('语音')
       const 结果 = await 合成讲解音频({
         讲稿: 输入?.讲稿, 语音配置: 配置 ? { ...配置, 密钥: 存储.读取内部密钥('语音') } : null,
         缓存, 信号: 输入?.信号, 推送: (片段) => { if (!事件.sender.isDestroyed()) 事件.sender.send('presentation.ai.stream', { 请求标识: 输入?.请求标识 ?? '', ...片段 }) },
+        请求: 创建实名AI请求(requireAIIdentity),
       })
       return { 成功: true, 数据: 结果 }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '讲解音频合成失败' } }
+    } catch (错误) { return AI失败结果(错误, '讲解音频合成失败') }
   })
 
   ipcMain.handle('presentation.ai.clearAudioCache', 包装(async () => { await 缓存.清除(); return {} }))

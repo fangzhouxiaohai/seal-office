@@ -8,6 +8,7 @@ import { shareExport } from './share.uts'
 /** A saved reply is sent only after the system-selected destination is written. */
 export function exportDocument(filename: string, name: string, mime: string, done: (status: string, path: string, error: string) => void) {
   // #ifdef APP-HARMONY
+  try {
   const view = new picker.DocumentViewPicker(UTSHarmony.getUIAbilityContext())
   view.save({ newFileNames: [name] }).then((uris: string[]) => {
     if (uris.length == 0) { done('cancel', '', ''); return }
@@ -18,6 +19,7 @@ export function exportDocument(filename: string, name: string, mime: string, don
       done('saved', uris[0], '')
     } catch (_) { done('error', '', '无法写入所选位置，请选择可写的文档目录') }
   }).catch((_) => { done('error', '', '系统保存未完成，请重新选择保存位置') })
+  } catch (_) { done('error', '', '无法打开系统保存界面，请回到应用前台后重试') }
   // #endif
   // #ifndef APP-HARMONY
   shareExport(filename, mime, (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) })
@@ -28,9 +30,11 @@ export function exportDocument(filename: string, name: string, mime: string, don
 /** Opening the system print UI is not a claim that a printer finished the job. */
 export function printDocument(filename: string, done: (status: string, path: string, error: string) => void) {
   // #ifdef APP-HARMONY
+  try {
   print.print([filename], UTSHarmony.getUIAbilityContext()).then((_) => {
     done('printed', filename, '')
   }).catch((_) => { done('error', '', '无法打开系统打印界面，请确认系统打印服务可用') })
+  } catch (_) { done('error', '', '无法打开系统打印界面，请回到应用前台后重试') }
   // #endif
   // #ifndef APP-HARMONY
   shareExport(filename, 'application/pdf', (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) })

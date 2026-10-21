@@ -985,7 +985,7 @@ describe('表格保存为 xlsx', () => {
       expect(saveToFile).toHaveBeenCalledWith('D:/docs/Sheet1.xlsx', 'UEsDBAo=', '二进制')
     })
     // 打开对话框应请求表格类型过滤器
-    expect(showSaveDialog).toHaveBeenCalledWith('Sheet1.xlsx', 'table')
+    expect(showSaveDialog).toHaveBeenCalledWith('Sheet1.slxls', 'table')
   })
 })
 

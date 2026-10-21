@@ -1,0 +1,126 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "recordedAt": "2026-10-21T12:24:02.617982+00:00",
+  "unitRegression": {
+    "tests": 3776,
+    "suites": {
+      "renderer": {
+        "passed": true,
+        "files": 277,
+        "tests": 2602,
+        "failed": 0,
+        "skipped": 0,
+        "fullUnfilteredRun": true,
+        "reportSha256": "6b53269dc4050242c6f2c5ab2fac7c9af69b887f4f03ca696e9e46816f5a4e3c",
+        "startedAt": 1792583788930
+      },
+      "main": {
+        "passed": true,
+        "files": 111,
+        "tests": 1083,
+        "failed": 0,
+        "skipped": 0,
+        "fullUnfilteredRun": true,
+        "reportSha256": "d78ad031059e49134864ddae5063c5fadea43dc15d5c4aca951dd1d8ef64e01a",
+        "startedAt": 1792581321440
+      },
+      "server": {
+        "passed": true,
+        "tests": 46,
+        "failed": 0,
+        "skipped": 0,
+        "reportSha256": "802f15bdadf2bf16d267bd06188c867592f2bc3547b4d5a4428e264fa3f35194"
+      },
+      "mobile": {
+        "passed": true,
+        "tests": 34,
+        "failed": 0,
+        "skipped": 0,
+        "reportSha256": "654eae7dd02c33785fda345c7aa9ec3d0955f3351587e55a6905630a5b6575d6"
+      },
+      "packaging": {
+        "passed": true,
+        "tests": 11,
+        "failed": 0,
+        "skipped": 0,
+        "reportSha256": "9254e81eabd252c6ca21d981aa808f84262f5a0436417eca943a364cc7fa2be3"
+      }
+    },
+    "failed": 0,
+    "skipped": 0
+  },
+  "browserPlatforms": {
+    "web": {
+      "passed": true,
+      "groups": 5,
+      "checks": 35
+    },
+    "android": {
+      "passed": true,
+      "groups": 5,
+      "checks": 35
+    },
+    "harmony": {
+      "passed": true,
+      "groups": 5,
+      "checks": 35
+    }
+  },
+  "nativeBrowser": {
+    "checks": 16,
+    "passed": true,
+    "realNativeDevice": false
+  },
+  "diagramCollaboration": {
+    "cases": 6,
+    "checksPerCase": 6,
+    "passed": true,
+    "productionAccountOperations": 0
+  },
+  "packagedCodecs": {
+    "checks": 12,
+    "passed": true
+  },
+  "ubuntu": {
+    "passed": true,
+    "version": "2.1.1",
+    "packageSha256": "05ab9f70a2c7d741c44b14dc0c5f0c04e6210e83c68a7779a37982293ba35d02",
+    "packageBytes": 158806836,
+    "buildCommit": "23db73abc543bdea6be98bfab0671841b1c36372",
+    "reports": {
+      "ubuntu-22.04": {
+        "passed": true,
+        "checks": 77,
+        "sandboxBypassed": false,
+        "report": "ubuntu-22.04.json"
+      },
+      "ubuntu-24.04": {
+        "passed": true,
+        "checks": 77,
+        "sandboxBypassed": false,
+        "report": "ubuntu-24.04.json"
+      }
+    },
+    "runtimeInputsMatch": true
+  },
+  "windowsRuntimeReport": "windows-runtime.json",
+  "msixReport": "msix.json",
+  "nsisReport": "windows-nsis.json",
+  "publicWebReport": "public-web.json",
+  "backendDeploymentReport": "backend-deployment.json",
+  "promoReport": "promo.json",
+  "cloudSourcesReport": "cloud-sources.json",
+  "sourceInputsReport": "source-inputs.json",
+  "limits": [
+    "Android/Harmony cloud source snapshots, UTS compilation and browser/host simulation are verified; no new signed APK/HAP/App Pack or physical Harmony device acceptance.",
+    "No production SMS delivery, customer account deletion, or Microsoft Store submission performed.",
+    "Portable cold extraction and launcher cleanup require longer bounded QA waits; see Windows runtime report.",
+    "Known unsupported external Office features require explicit conversion or cancellation; no universal WPS engine compatibility claim."
+  ],
+  "localReleaseCleanup": {
+    "completed": false,
+    "oldDirectory": "release/v2.1.0",
+    "reason": "Automatic approval review rejected recursive old-release removal: blocked by policy. No alternate deletion or move attempted."
+  }
+}

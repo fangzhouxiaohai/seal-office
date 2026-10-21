@@ -44,11 +44,12 @@ test('宿主加载错误先探测存活工作台，原生返回必须等待网�
   const source=page.match(/<script lang="uts">([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm,'')
   const compiled=await transform(source,{loader:'ts',format:'esm'})
   const options=(await import('data:text/javascript;base64,'+Buffer.from(compiled.code).toString('base64'))).default
-  const previous={uni:globalThis.uni,onUIThread:globalThis.onUIThread,isWorkspaceDocument:globalThis.isWorkspaceDocument,setTimeout:globalThis.setTimeout}
+  const previous={uni:globalThis.uni,onUIThread:globalThis.onUIThread,isWorkspaceDocument:globalThis.isWorkspaceDocument,messageString:globalThis.messageString,messageBoolean:globalThis.messageBoolean,messageNumber:globalThis.messageNumber,setTimeout:globalThis.setTimeout}
   const scripts=[],timers=[];let backgrounds=0
   try{
     globalThis.uni={createWebViewContext:(id,owner)=>{assert.equal(id,'seal-office');assert.ok(owner);return {evalJS:script=>scripts.push(script)}}}
     globalThis.onUIThread=task=>task();globalThis.isWorkspaceDocument=native.isWorkspaceDocument
+    for(const key of ['messageString','messageBoolean','messageNumber'])globalThis[key]=native[key]
     globalThis.setTimeout=task=>{timers.push(task);return 1}
     const host=Object.assign(options.data(),options.methods,{moveToBackground:()=>backgrounds++})
     host.workspaceReady=true
@@ -56,7 +57,7 @@ test('宿主加载错误先探测存活工作台，原生返回必须等待网�
     assert.equal(timers.length,0);assert.equal(host.errorText,'')
     host.onError({detail:{fullUrl:'file:///app/static/office/index.html?native=1',src:'',errCode:-6}})
     assert.match(scripts.at(-1),/seal-native-probe/)
-    const message=action=>({getString:key=>key==='action'?action:key==='token'?host.token:null})
+    const message=action=>({action,token:host.token})
     host.onMessage({detail:{data:[message('healthy')]}});timers.shift()();assert.equal(host.errorText,'')
     assert.equal(options.onBackPress.call(host),true);assert.equal(backgrounds,0);assert.match(scripts.at(-1),/seal-native-back/)
     host.onMessage({detail:{data:[message('back-root')]}});assert.equal(backgrounds,1)

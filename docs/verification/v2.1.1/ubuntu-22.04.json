@@ -1,0 +1,395 @@
+{
+  "version": "2.1.1",
+  "os": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.5 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=jammy\n",
+  "arch": "x64",
+  "sandboxBypassed": false,
+  "checks": [
+    "Deb package version and architecture",
+    "Desktop launcher and CSV MIME registration",
+    "Linux package excludes Windows compatibility binaries",
+    "sldoc installed MIME XML glob and desktop association declared",
+    "slxls installed MIME XML glob and desktop association declared",
+    "slppt installed MIME XML glob and desktop association declared",
+    "spdf installed MIME XML glob and desktop association declared",
+    "Cold launch opens Unicode CSV argument without an error",
+    "Installed renderer preload and IPC version",
+    "Packaged application integrity manifest",
+    "Renderer sandbox and context isolation remain enabled",
+    "Default-app tests use only the disposable XDG configuration and data directories",
+    "Four native formats use packaged codecs and preserve Unicode, resources, formula caches and embedded PDF bytes across two disk save cycles",
+    "CSV IPC read preserves Unicode and leading zeros",
+    "CSV native save retains original extension",
+    "Stale file fingerprint prevents overwriting newer content",
+    "Default-app confirmation button is clickable",
+    "Explicit default-app action applies and verifies Linux MIME defaults",
+    "Every supported document extension is registered",
+    "docx packaged IPC write and reopen",
+    "xlsx packaged IPC write and reopen",
+    "pptx packaged IPC write and reopen",
+    "doc native offline save and reopen, including leading zeros",
+    "doc actual file MIME default: application/msword",
+    "dot native offline save and reopen, including leading zeros",
+    "dot actual file MIME default: application/msword-template",
+    "dotx native offline save and reopen, including leading zeros",
+    "dotx actual file MIME default: application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+    "rtf native offline save and reopen, including leading zeros",
+    "rtf actual file MIME default: application/rtf",
+    "odt native offline save and reopen, including leading zeros",
+    "odt actual file MIME default: application/vnd.oasis.opendocument.text",
+    "ott native offline save and reopen, including leading zeros",
+    "ott actual file MIME default: application/vnd.oasis.opendocument.text-template",
+    "fodt native offline save and reopen, including leading zeros",
+    "fodt actual file MIME default: application/vnd.oasis.opendocument.text-flat-xml",
+    "xls native offline save and reopen, including leading zeros",
+    "xls actual file MIME default: application/vnd.ms-excel",
+    "xlt native offline save and reopen, including leading zeros",
+    "xlt actual file MIME default: application/vnd.ms-excel",
+    "xltx native offline save and reopen, including leading zeros",
+    "xltx actual file MIME default: application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+    "ods native offline save and reopen, including leading zeros",
+    "ods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet",
+    "ots native offline save and reopen, including leading zeros",
+    "ots actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-template",
+    "fods native offline save and reopen, including leading zeros",
+    "fods actual file MIME default: application/vnd.oasis.opendocument.spreadsheet-flat-xml",
+    "dbf native offline save and reopen, including leading zeros",
+    "dbf actual file MIME default: application/x-dbf",
+    "prn native offline save and reopen, including leading zeros",
+    "prn actual file MIME default: application/x-sealoffice-prn",
+    "dif native offline save and reopen, including leading zeros",
+    "dif actual file MIME default: application/x-dif",
+    "slk native offline save and reopen, including leading zeros",
+    "slk actual file MIME default: text/spreadsheet",
+    "ppt native offline save and reopen, including leading zeros",
+    "ppt actual file MIME default: application/vnd.ms-powerpoint",
+    "pot native offline save and reopen, including leading zeros",
+    "pot actual file MIME default: application/vnd.ms-powerpoint",
+    "potx native offline save and reopen, including leading zeros",
+    "potx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.template",
+    "pps native offline save and reopen, including leading zeros",
+    "pps actual file MIME default: application/vnd.ms-powerpoint",
+    "ppsx native offline save and reopen, including leading zeros",
+    "ppsx actual file MIME default: application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+    "odp native offline save and reopen, including leading zeros",
+    "odp actual file MIME default: application/vnd.oasis.opendocument.presentation",
+    "otp native offline save and reopen, including leading zeros",
+    "otp actual file MIME default: application/vnd.oasis.opendocument.presentation-template",
+    "fodp native offline save and reopen, including leading zeros",
+    "fodp actual file MIME default: application/vnd.oasis.opendocument.presentation-flat-xml",
+    "xlsb fixture imports body and protects source",
+    "xla fixture imports body and protects source",
+    "PDF Chinese text embeds bundled font: passed",
+    "Installed application screenshot captured",
+    "Installed application exits normally"
+  ],
+  "failures": [],
+  "packageFile": "seal-office-2.1.1-amd64.deb",
+  "packageBytes": 158806836,
+  "packageSha256": "05ab9f70a2c7d741c44b14dc0c5f0c04e6210e83c68a7779a37982293ba35d02",
+  "package": "2.1.1 amd64",
+  "nativeFormats": {
+    "passed": true,
+    "formats": [
+      {
+        "extension": "sldoc",
+        "type": "word",
+        "cycles": 2,
+        "bytes": 1213,
+        "sha256": "655e3a1f579da821ca0b92771011ec67a13eac86e5de569f6459f682ff0ee267",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "slxls",
+        "type": "table",
+        "cycles": 2,
+        "bytes": 1670,
+        "sha256": "fd99630c858764260a6af0865f39ad1a9a4ef593095dcc704ae3df1b3a1d94fe",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "slppt",
+        "type": "ppt",
+        "cycles": 2,
+        "bytes": 1202,
+        "sha256": "31a201d5420ab75a4ef8256d324f41f8a94ed56e39b17aff98cbf022aecb1994",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "spdf",
+        "type": "pdf",
+        "cycles": 2,
+        "bytes": 51353,
+        "sha256": "c34e728fad1beafae30ffba4df05bddd0111ba15fa103e82549e0a9f5401557e",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": false
+      }
+    ],
+    "fonts": [
+      {
+        "name": "NotoSansSC.ttf",
+        "bytes": 17772300,
+        "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+      },
+      {
+        "name": "NotoSerifCJKsc-Regular.otf",
+        "bytes": 24543080,
+        "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+      },
+      {
+        "name": "OFL.txt",
+        "bytes": 4387,
+        "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+      },
+      {
+        "name": "NotoSerif-LICENSE.txt",
+        "bytes": 4301,
+        "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+      }
+    ],
+    "modifiesUserDefaults": false,
+    "installsApplication": false
+  },
+  "defaultApps": {
+    "成功": true,
+    "已全部默认": true,
+    "格式": [
+      {
+        "扩展名": "docx",
+        "已默认": true
+      },
+      {
+        "扩展名": "xlsx",
+        "已默认": true
+      },
+      {
+        "扩展名": "pptx",
+        "已默认": true
+      },
+      {
+        "扩展名": "pdf",
+        "已默认": true
+      },
+      {
+        "扩展名": "csv",
+        "已默认": true
+      },
+      {
+        "扩展名": "txt",
+        "已默认": true
+      },
+      {
+        "扩展名": "md",
+        "已默认": true
+      },
+      {
+        "扩展名": "html",
+        "已默认": true
+      },
+      {
+        "扩展名": "htm",
+        "已默认": true
+      },
+      {
+        "扩展名": "json",
+        "已默认": true
+      },
+      {
+        "扩展名": "doc",
+        "已默认": true
+      },
+      {
+        "扩展名": "dot",
+        "已默认": true
+      },
+      {
+        "扩展名": "dotx",
+        "已默认": true
+      },
+      {
+        "扩展名": "docm",
+        "已默认": true
+      },
+      {
+        "扩展名": "dotm",
+        "已默认": true
+      },
+      {
+        "扩展名": "rtf",
+        "已默认": true
+      },
+      {
+        "扩展名": "odt",
+        "已默认": true
+      },
+      {
+        "扩展名": "ott",
+        "已默认": true
+      },
+      {
+        "扩展名": "fodt",
+        "已默认": true
+      },
+      {
+        "扩展名": "mht",
+        "已默认": true
+      },
+      {
+        "扩展名": "mhtml",
+        "已默认": true
+      },
+      {
+        "扩展名": "xml",
+        "已默认": true
+      },
+      {
+        "扩展名": "xls",
+        "已默认": true
+      },
+      {
+        "扩展名": "xlt",
+        "已默认": true
+      },
+      {
+        "扩展名": "xltx",
+        "已默认": true
+      },
+      {
+        "扩展名": "xlsm",
+        "已默认": true
+      },
+      {
+        "扩展名": "xltm",
+        "已默认": true
+      },
+      {
+        "扩展名": "xlsb",
+        "已默认": true
+      },
+      {
+        "扩展名": "xla",
+        "已默认": true
+      },
+      {
+        "扩展名": "xlam",
+        "已默认": true
+      },
+      {
+        "扩展名": "ods",
+        "已默认": true
+      },
+      {
+        "扩展名": "ots",
+        "已默认": true
+      },
+      {
+        "扩展名": "fods",
+        "已默认": true
+      },
+      {
+        "扩展名": "dbf",
+        "已默认": true
+      },
+      {
+        "扩展名": "prn",
+        "已默认": true
+      },
+      {
+        "扩展名": "dif",
+        "已默认": true
+      },
+      {
+        "扩展名": "tsv",
+        "已默认": true
+      },
+      {
+        "扩展名": "slk",
+        "已默认": true
+      },
+      {
+        "扩展名": "ppt",
+        "已默认": true
+      },
+      {
+        "扩展名": "pot",
+        "已默认": true
+      },
+      {
+        "扩展名": "potx",
+        "已默认": true
+      },
+      {
+        "扩展名": "pptm",
+        "已默认": true
+      },
+      {
+        "扩展名": "potm",
+        "已默认": true
+      },
+      {
+        "扩展名": "pps",
+        "已默认": true
+      },
+      {
+        "扩展名": "ppsx",
+        "已默认": true
+      },
+      {
+        "扩展名": "ppsm",
+        "已默认": true
+      },
+      {
+        "扩展名": "odp",
+        "已默认": true
+      },
+      {
+        "扩展名": "otp",
+        "已默认": true
+      },
+      {
+        "扩展名": "fodp",
+        "已默认": true
+      },
+      {
+        "扩展名": "ofd",
+        "已默认": true
+      },
+      {
+        "扩展名": "sldoc",
+        "已默认": true
+      },
+      {
+        "扩展名": "slxls",
+        "已默认": true
+      },
+      {
+        "扩展名": "slppt",
+        "已默认": true
+      },
+      {
+        "扩展名": "spdf",
+        "已默认": true
+      },
+      {
+        "扩展名": "sealdoc",
+        "已默认": true
+      },
+      {
+        "扩展名": "sealsheet",
+        "已默认": true
+      },
+      {
+        "扩展名": "sealshow",
+        "已默认": true
+      }
+    ],
+    "未生效": [],
+    "清除用户选择的格式": [],
+    "已处理": false
+  },
+  "phase": "Document conversion: fodp",
+  "passed": true,
+  "finishedAt": "2026-10-21T11:35:09.141Z"
+}

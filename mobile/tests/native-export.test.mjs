@@ -25,5 +25,10 @@ test('鸿蒙另存为仅在系统目标写入后返回成功，取消不会报�
     native.exportDocument('/cache/source','中文.docx','application/octet-stream',(...reply)=>replies.push(reply))
     select(['file://chosen']); await new Promise(resolve=>setImmediate(resolve)); assert.equal(replies.at(-1)[0],'error')
     native.printDocument('/cache/source',(...reply)=>replies.push(reply)); await new Promise(resolve=>setImmediate(resolve)); assert.equal(replies.at(-1)[0],'printed')
+    globalThis.picker.DocumentViewPicker=class { constructor(){throw new Error('ability unavailable')} }
+    native.exportDocument('/cache/source','中文.docx','application/octet-stream',(...reply)=>replies.push(reply))
+    assert.equal(replies.at(-1)[0],'error'); assert.match(replies.at(-1)[2],/无法打开系统保存界面/)
+    globalThis.print.print=()=>{throw new Error('ability unavailable')}
+    native.printDocument('/cache/source',(...reply)=>replies.push(reply)); assert.equal(replies.at(-1)[0],'error')
   } finally { Object.assign(globalThis, previous) }
 })

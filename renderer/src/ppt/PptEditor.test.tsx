@@ -9,6 +9,13 @@ import GlobalTabs from '../components/GlobalTabs'
 import { AppProvider, useAppStore, type AppState } from '../store'
 import { 添加幻灯片, 创建演示文稿 } from './deck'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-ppteditor', verified: true, method: 'phone' } }
+}) })
+
+
 const 渲染演示 = () =>
   render(
     <ConfigProvider button={{ autoInsertSpace: false }}>
@@ -200,17 +207,28 @@ describe('演示文稿编辑器容器', () => {
     expect(写入).not.toHaveBeenCalled()
   })
 
-  it('另存为路径没有扩展名时补齐 PPTX', async () => {
+  it('另存为路径没有扩展名时补齐 SLPPT 并真实保存完整原生模型', async () => {
+    const 原生编解码器 = createRequire(import.meta.url)('../../../main/office/sealFormat.js')
     const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '新指纹' })
+    const 编码 = vi.fn(async (类型: string, 内容: unknown) => ({ 成功: true, 数据: (await 原生编解码器.writeSeal(类型, 内容)).toString('base64') }))
+    const 写PPTX = vi.fn()
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
       backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
       showSaveDialog: vi.fn().mockResolvedValue('C:\\资料\\汇报'),
       saveToFile: 写入,
-      office: { writePptx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+      office: { writeSeal: 编码, writePptx: 写PPTX },
     } })
     渲染演示()
     await userEvent.click(screen.getByRole('button', { name: '另存为' }))
-    await waitFor(() => expect(写入).toHaveBeenCalledWith('C:\\资料\\汇报.pptx', 'UEsDBAo=', '二进制'))
+    await waitFor(() => expect(写入).toHaveBeenCalledOnce())
+    expect(写入).toHaveBeenCalledWith('C:\\资料\\汇报.slppt', expect.any(String), '二进制')
+    expect(编码).toHaveBeenCalledOnce(); expect(编码.mock.calls[0][0]).toBe('ppt')
+    const 原始模型 = 编码.mock.calls[0][1] as { 演示文稿: { 幻灯片列表: unknown[] }; 资源条目: unknown[] }
+    expect(原始模型.演示文稿.幻灯片列表.length).toBeGreaterThan(0)
+    expect(原始模型.资源条目).toEqual([])
+    const 重开 = await 原生编解码器.readSeal('slppt', Buffer.from(写入.mock.calls[0][1], 'base64'))
+    expect(重开).toEqual({ ...原始模型, 类型: 'ppt' })
+    expect(写PPTX).not.toHaveBeenCalled()
   })
 
   it('每份演示保留独立撤销历史', async () => {
@@ -600,7 +618,7 @@ describe('演示文稿编辑器容器', () => {
   })
 
   it('工具标签提供截屏、录屏与图片转文字入口，并显示识别与编码的真实状态', async () => {
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),
       backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
       presentationCapture: {
         sources: vi.fn(async () => ({ 成功: true, 源列表: [] })),
@@ -622,7 +640,7 @@ describe('演示文稿编辑器容器', () => {
   })
 
   it('图片转文字未配置时功能按钮禁用并给出原因', async () => {
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),
       backupLoad: vi.fn(async () => ({ 成功: true, 内容: null })),
       presentationCapture: {
         sources: vi.fn(async () => ({ 成功: true, 源列表: [] })),

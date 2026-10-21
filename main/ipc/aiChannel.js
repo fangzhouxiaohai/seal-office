@@ -2,12 +2,14 @@ const path = require('path')
 const { app, safeStorage } = require('electron')
 const { 创建助手服务 } = require('../ai/assistant')
 const { randomUUID } = require('crypto')
+const { 创建实名助手服务, 创建实名AI请求, AI失败结果 } = require('../ai/identityGate')
 
-function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
-  const 服务 = 助手服务 || 创建助手服务({
+function 注册智能助手通道(ipcMain, { 助手服务, requireAIIdentity } = {}) {
+  const 服务 = 创建实名助手服务(助手服务 || 创建助手服务({
     配置路径: path.join(app.getPath('userData'), 'assistant-config.secure'),
     安全存储: safeStorage,
-  })
+    请求: 创建实名AI请求(requireAIIdentity),
+  }), requireAIIdentity)
   const 包装 = (处理) => async (_事件, 输入) => {
     try { return { 成功: true, 数据: await 处理(输入) } }
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '智能助手操作失败' } }
@@ -91,7 +93,7 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
         }),
       })
       return { 成功: true, 数据 }
-    } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '智能助手处理失败' } }
+    } catch (错误) { return AI失败结果(错误, '智能助手处理失败') }
     finally {
       for (const 等待 of 任务.工具.values()) 等待.拒绝(new Error('助手任务已经结束'))
       进行中.delete(发送者.id)
@@ -108,4 +110,4 @@ function 注册智能助手通道(ipcMain, { 助手服务 } = {}) {
   return 服务
 }
 
-module.exports = { 注册智能助手通道 }
+module.exports = { 注册智能助手通道, 创建实名AI请求 }

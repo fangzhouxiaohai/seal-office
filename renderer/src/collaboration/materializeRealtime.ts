@@ -11,9 +11,10 @@ import { readModel, Y } from './crdtModel'
 import type { SharedFileBinding } from './fileAccess'
 import type { CollaborationDownload } from './types'
 import { diagramExtension, encodeDiagramFile, parseDiagramCloud } from '../localTools/diagramCloud'
+import { 原生文档类型 } from '../fileFormats'
 const bytes = (text: string) => Uint8Array.from(atob(text), char => char.charCodeAt(0))
 const base64 = (data: Uint8Array) => { let result = ''; for (let offset = 0; offset < data.length; offset += 32768) result += String.fromCharCode(...data.subarray(offset, offset + 32768)); return btoa(result) }
-export type MaterializedDownload = CollaborationDownload & { live?: { type: 'word' | 'table' | 'ppt'; content: any; page?: CollaborativeWord['页面设置']; fingerprint?: string } }
+export type MaterializedDownload = CollaborationDownload & { live?: { type: 'word' | 'table' | 'ppt'; content: any; page?: CollaborativeWord['页面设置']; fingerprint?: string; warnings?: string[] } }
 /** A readonly download consumes the CRDT log, but never creates a new room. */
 export async function materializeRealtime(file: CollaborationDownload, binding: Pick<SharedFileBinding, 'kind' | 'id' | 'nodeId'>): Promise<MaterializedDownload> {
   let snapshot: any
@@ -39,16 +40,16 @@ export async function materializeRealtime(file: CollaborationDownload, binding: 
       return { ...file, path, name, data }
     }
     let content: any, page: CollaborativeWord['页面设置'] | undefined, result: any
-    const nativeExtension=({word:'sealdoc',table:'sealsheet',ppt:'sealshow'} as Record<string,string>)[type]
-    const native=file.name.toLowerCase().endsWith('.'+nativeExtension)
+    const nativeExtension=file.name.match(/\.([^\\/.]+)$/)?.[1]?.toLowerCase() ?? ''
+    const native=原生文档类型(nativeExtension)===type
     let nativeSource:any
     if(native){const original=await 桥接.readFile(file.path);if(!original.成功||typeof original.内容!=='string')throw new Error(original.错误||'海豹来源文件不可用');nativeSource=await 桥接.office.readSeal(nativeExtension,original.内容);if(!nativeSource.成功)throw new Error(nativeSource.错误||'海豹来源文件解析失败')}
     const nativeWarnings=nativeSource?.警告??[]
     if (type === 'word') {
       const invalid = validateWordModel(model); if (invalid) throw new Error(invalid)
       content = joinWordModel(model); page = model.页面设置
-      const intermediate = htmlToDocxModel(content, page)
-      if (intermediate.未覆盖.length&&!native) throw new Error('实时文档含尚不能完整导出的结构，请在原编辑器中保留副本')
+      const intermediate = native ? null : htmlToDocxModel(content, page)
+      if (intermediate?.未覆盖.length) throw new Error('实时文档含尚不能完整导出的结构，请在原编辑器中保留副本')
       result = native?await 桥接.office.writeSeal('word',{html:content,页面设置:page,警告:nativeWarnings}):await 桥接.office.writeDocx(intermediate)
     } else if (type === 'table') {
       const invalid = 校验协作工作簿(model); if (invalid) throw new Error(invalid)
@@ -76,6 +77,6 @@ export async function materializeRealtime(file: CollaborationDownload, binding: 
     // The exact CRDT identifiers travel into the newly opened editor via its
     // safe cache; it never seeds a second document from an OOXML re-import.
     await cloudCall('realtimeState', { binding, state: base64(Y.encodeStateAsUpdate(doc)), after })
-    return { ...file, path, name, data: result.数据, live: { type, content, page, fingerprint: written.文件指纹 } }
+    return { ...file, path, name, data: result.数据, live: { type, content, page, fingerprint: written.文件指纹, warnings: nativeWarnings } }
   } finally { doc.destroy() }
 }

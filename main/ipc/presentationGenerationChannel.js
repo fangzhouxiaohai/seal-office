@@ -7,12 +7,14 @@ const {
   生成提纲, 生成页面, 生成单页, 生成美化建议, 生成智能图形, 摘要素材候选, 校验候选可应用,
 } = require('../ppt/generation')
 const { 读取提纲文件 } = require('../ppt/documentOutline')
+const { 创建实名助手服务, AI失败结果 } = require('../ai/identityGate')
 
 const 单条素材字节上限 = 50 * 1024 * 1024
 
 /** 注册演示生成与素材通道。 */
-function 注册演示生成通道(ipcMain, { 助手服务, 服务存储, 素材库, 用户数据目录 } = {}) {
+function 注册演示生成通道(ipcMain, { 助手服务, 服务存储, 素材库, 用户数据目录, requireAIIdentity } = {}) {
   if (!助手服务) throw new Error('演示生成通道需要已初始化的助手服务')
+  助手服务 = 创建实名助手服务(助手服务, requireAIIdentity)
   const 库 = 素材库 || 创建素材库({ 根目录: path.join(用户数据目录 ?? process.cwd(), 'presentation-assets') })
   const 进行中 = new Map()
   const 包装 = (处理) => async (事件, ...参数) => {
@@ -53,7 +55,7 @@ function 注册演示生成通道(ipcMain, { 助手服务, 服务存储, 素材�
         await 需要文本能力()
         const 数据 = await 执行({ 输入: 输入 ?? {}, 推送: 推送器(事件, 标识) })
         return { 成功: true, 数据 }
-      } catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : 失败文案 } }
+      } catch (错误) { return AI失败结果(错误, 失败文案) }
       finally { 收尾(事件) }
     })
   }

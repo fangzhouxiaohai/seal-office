@@ -5,6 +5,24 @@ export function isWorkspaceDocument(url: string): boolean {
   return (path.startsWith('/') || path.startsWith('file://') || path.startsWith('resource://rawfile/')) && path.endsWith('/static/office/index.html')
 }
 
+// Harmony web-view emits JSON.parse(...).data as an ordinary object. Calling
+// UTSJSONObject.getString/getBoolean on that object throws before dispatch.
+// Indexed access also works on Android's UTSJSONObject implementation.
+export function messageString(message: UTSJSONObject, key: string, fallback: string = ''): string {
+  const value = message[key]
+  return typeof value == 'string' ? value as string : fallback
+}
+
+export function messageBoolean(message: UTSJSONObject, key: string, fallback: boolean = false): boolean {
+  const value = message[key]
+  return typeof value == 'boolean' ? value as boolean : fallback
+}
+
+export function messageNumber(message: UTSJSONObject, key: string, fallback: number = 0): number {
+  const value = message[key]
+  return typeof value == 'number' ? value as number : fallback
+}
+
 export function onUIThread(task: () => void) {
   // #ifdef APP-ANDROID
   UTSAndroid.getUniActivity()?.runOnUiThread(task)

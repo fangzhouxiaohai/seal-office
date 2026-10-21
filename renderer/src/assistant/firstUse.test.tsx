@@ -6,6 +6,13 @@ import { type 助手流片段, type 助手对话输入 } from '../ipc/bridge'
 import { 交给助手, 通用AI指令 } from './quickActions'
 import AiAssistant from './AiAssistant'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-firstuse', verified: true, method: 'phone' } }
+}) })
+
+
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 const 已保存配置 = { 名称: '已保存服务', 地址: 'https://example.com/chat/completions', 模型: '已保存模型', 已配置密钥: true, 思考强度: 'medium', 上下文令牌: 65536 }
 function 延迟<T>() {
@@ -21,7 +28,7 @@ function 环境(类型: 'word' | 'table' | 'ppt' | 'pdf' = 'word') {
     chat: vi.fn((_输入: 助手对话输入) => 回复.promise), onToolCall: () => () => {},
     onStream: (监听: typeof 推送) => { 推送 = 监听; return () => {} },
   }
-  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai,
+  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai,
     backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }),
   } })
   function 入口() {

@@ -1,0 +1,18 @@
+{
+  "version": "2.1.1",
+  "passed": true,
+  "package": "seal-office-setup-2.1.1.exe",
+  "bytes": 422977023,
+  "sha256": "dd85a84ba0322c1a005ee92574a7367c7835bd6c2aaa7c661321f6b90ead6c83",
+  "extractedAsarSha256": "7151d3a3edab5f1107ebafb58ccc18d5c7891cb30f9919c562c05518c5723154",
+  "asarMatchesRuntimeTestedUnpackedBuild": true,
+  "allSourcePayloadFilesCompared": 19578,
+  "allSourcePayloadBytesCompared": 2163948207,
+  "allSourcePayloadSha256Passed": true,
+  "installerExecuted": false,
+  "note": "NSIS payload extracted without installing or changing user file associations; unpacked and portable applications are runtime tested separately.",
+  "payloadDecoder": {
+    "path": "E:\\DevCache\\electron-builder\\7zip@1.0.0\\7zip-win-x64-a34pt\\bin\\7za.exe",
+    "sha256": "223b873c50380fe9a39f1a22b6abf8d46db506e1c08d08312902f6f3cd1f7ac3"
+  }
+}

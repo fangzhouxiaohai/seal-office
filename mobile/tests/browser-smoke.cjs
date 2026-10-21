@@ -4,7 +4,7 @@ const project = path.resolve(__dirname, '../..'), output = path.join(project, '.
 const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
 const version = require('../../package.json').version
 app.setPath('userData', path.join(output, 'browser-profile-' + (localFile ? 'file' : 'web') + '-' + require('node:crypto').randomUUID())); app.disableHardwareAcceleration()
-const contentTypes = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const contentTypes = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.otf': 'font/otf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
   fs.mkdirSync(output, { recursive: true })
   const server = http.createServer((request, response) => {
@@ -54,7 +54,7 @@ app.whenReady().then(async () => {
     checks.push('生产构建可在无 Electron preload 的浏览器环境启动')
     if (localFile) {
       // 字体与导出使用确定性的宿主模拟；页面和编辑器本身从 file:// 加载。
-      await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin + '/fonts/NotoSansSC.ttf')});xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+      await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     }
     const roundtrip = await evaluate(`(async () => {
       const api=window.electronAPI;

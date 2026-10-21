@@ -8,6 +8,7 @@ import { RECENT_DOCS } from './mock/recentDocs'
 import { 桥接 } from './ipc/bridge'
 import { SettingsProvider, useSettings } from './store/settingsStore'
 import { htmlToDocxModel } from './editor/commands'
+import { useAppStore } from './store'
 
 const 加载模块 = createRequire(import.meta.url)
 const { 生成docx } = 加载模块('../../main/office/docxWriter.js')
@@ -48,6 +49,10 @@ describe('应用外壳（WPS 版式首页）', () => {
         await userEvent.click(screen.getByRole('button', { name: '列表视图' }))
         await userEvent.click(screen.getByRole('button', { name: '打开 黑色标题.docx' }))
       }
+      // The click starts asynchronous real ZIP/XML parsing. Drain that actual
+      // operation and its React updates before checking the resulting tab.
+      await waitFor(() => expect(读取).toHaveBeenCalledOnce())
+      await act(async () => { await 读取.mock.results[0].value })
       const 标签 = await screen.findByRole('tab', { name: '黑色标题.docx' })
       const 标题 = container.querySelector('.wps-editor-canvas__content h1') as HTMLElement
       expect(标题).toHaveTextContent('黑色标题')
@@ -200,11 +205,16 @@ describe('应用外壳（WPS 版式首页）', () => {
     }
   })
 
-  it('收到保存后退出请求时保存全部未保存文档并回报结果', async () => {
+  it.each([false, true])('收到保存后退出请求时核对写盘期间的新修改（继续编辑：%s）', async (继续编辑) => {
+    let 最新状态: ReturnType<typeof useAppStore> | undefined
+    const 状态探针 = () => { 最新状态 = useAppStore(); return null }
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     let 请求保存: ((标识: string) => void) | undefined
     const 回报 = vi.fn().mockResolvedValue({ 成功: true })
-    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '指纹-新' })
+    let 完成写入: ((结果: { 成功: boolean; 文件指纹: string }) => void) | undefined
+    const 写入 = vi.fn(() => 继续编辑
+      ? new Promise<{ 成功: boolean; 文件指纹: string }>(完成 => { 完成写入 = 完成 })
+      : Promise.resolve({ 成功: true, 文件指纹: '指纹-新' }))
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
       showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\导入.docx'),
       readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'YQ==', 二进制: true, 扩展名: 'docx' }),
@@ -225,7 +235,7 @@ describe('应用外壳（WPS 版式首页）', () => {
       respondSaveAll: 回报,
     } })
     try {
-      const { container } = render(<App 初始最近文档={[]} />)
+      const { container } = render(<App 初始最近文档={[]} 跨端导航={状态探针} />)
       await userEvent.click(screen.getByRole('button', { name: '打开' }))
       await screen.findByRole('tab', { name: '导入.docx' })
       const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
@@ -235,13 +245,24 @@ describe('应用外壳（WPS 版式首页）', () => {
 
       await act(async () => { 请求保存?.('保存请求-1') })
 
+      if (继续编辑) {
+        await waitFor(() => expect(写入).toHaveBeenCalledOnce())
+        编辑区.innerHTML = '<p>写入期间增加的正文</p>'
+        fireEvent.input(编辑区)
+        await act(async () => { 完成写入?.({ 成功: true, 文件指纹: '指纹-新' }) })
+      }
+
       await waitFor(() => expect(回报).toHaveBeenCalledOnce())
       const [标识, 结果] = 回报.mock.calls[0]
       expect(标识).toBe('保存请求-1')
-      expect(结果).toMatchObject({ 成功: true, 已保存: ['导入.docx'], 失败: [], 已取消: false })
+      expect(结果, JSON.stringify({结果,文档:最新状态?.documents,标签:最新状态?.workspaceTabs})).toMatchObject({ 成功: !继续编辑, 已保存: ['导入.docx'], 已取消: false })
+      expect(结果.失败).toEqual(继续编辑 ? [{ 名称: '导入.docx', 原因: '保存期间文档有新的修改，请再次保存后退出' }] : [])
       // 写回原路径（打开时未带指纹，按三参数写入）
       expect(写入).toHaveBeenCalledWith('C:\\资料\\导入.docx', expect.any(Uint8Array), '二进制')
-      await waitFor(() => expect(container.querySelector('.wps-global-tab__dirty')).toBeNull())
+      if (继续编辑) {
+        expect(container.querySelector('.wps-global-tab__dirty')).not.toBeNull()
+        expect(编辑区.textContent).toContain('写入期间增加的正文')
+      } else await waitFor(() => expect(container.querySelector('.wps-global-tab__dirty')).toBeNull())
     } finally {
       if (原接口) Object.defineProperty(window, 'electronAPI', 原接口)
       else Reflect.deleteProperty(window, 'electronAPI')
@@ -298,7 +319,7 @@ describe('应用外壳（WPS 版式首页）', () => {
     try {
       render(<App 初始最近文档={[]} />)
       await 通过新建菜单创建('新建文字')
-      expect(screen.getByRole('tab', { name: /未命名文档\.docx/ })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /未命名文档\.sldoc/ })).toBeInTheDocument()
       expect(请求关闭).toBeTypeOf('function')
       请求关闭?.('本次关闭')
       await waitFor(() => expect(备份).toHaveBeenCalledOnce())
@@ -549,24 +570,24 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(screen.getByRole('tab', { name: '首页' })).toHaveAttribute('aria-selected', 'true')
     await 通过新建菜单创建('新建文字')
     expect(container.querySelector('.wps-main--editor > .wps-doc-tabs')).toBeNull()
-    expect(screen.getByRole('tab', { name: /未命名文档\.docx/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /未命名文档\.sldoc/ })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     await 通过新建菜单创建('新建表格')
-    expect(screen.getByRole('tab', { name: /未命名表格\.xlsx/ })).toHaveAttribute('aria-selected', 'true')
-    await userEvent.click(screen.getByRole('tab', { name: /未命名文档\.docx/ }))
+    expect(screen.getByRole('tab', { name: /未命名表格\.slxls/ })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(screen.getByRole('tab', { name: /未命名文档\.sldoc/ }))
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
   })
 
   it('新建文档时顶栏显示未命名文档，不显示无关文件名', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await 通过新建菜单创建('新建表格')
-    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.xlsx')
+    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.slxls')
   })
 
   it('推荐面板的本机工具入口进入实际编辑模块', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByRole('button', { name: '空白表格' }))
-    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.xlsx')
+    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.slxls')
   })
 
   it('侧栏 PDF 工具入口切换到 PDF 模块', async () => {

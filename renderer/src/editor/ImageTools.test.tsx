@@ -31,7 +31,11 @@ function 准备(只读 = false) {
 describe('图片调整工具', () => {
   it('提取文字复用识别服务，结果预览后才将纯文本插入图片后的正文', async () => {
     const 识别 = vi.fn(async () => ({ 成功: true, 文本: '第一行\n<b>识别原文</b>' }))
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { presentationCapture: { recognitionStatus: async () => ({ 成功: true, 可用: true, 模型: 'vision-test' }), recognize: 识别 } } })
+    const 身份核验 = vi.fn(async (action: string) => {
+      expect(action).toBe('requireAIIdentity')
+      return { 成功: true, 数据: { accountId: 'isolated-image-tools', verified: true, method: 'phone' } }
+    })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: { invoke: 身份核验 }, presentationCapture: { recognitionStatus: async () => ({ 成功: true, 可用: true, 模型: 'vision-test' }), recognize: 识别 } } })
     const 编码 = vi.spyOn(像素操作, '识别用图片').mockResolvedValue({ 数据: 'isolated-test-image', 类型: 'image/png' })
     const { 图, 根, 完成 } = 准备()
     图.src = 'data:image/png;base64,test'
@@ -44,6 +48,7 @@ describe('图片调整工具', () => {
     await userEvent.click(screen.getByRole('button', { name: '开始识别' }))
     expect(await screen.findByDisplayValue(/识别原文/)).toHaveValue('第一行\n<b>识别原文</b>')
     expect(识别).toHaveBeenCalledWith('isolated-test-image', 'image/png')
+    expect(身份核验).toHaveBeenCalledWith('requireAIIdentity', {})
     expect(根.innerHTML).toBe(原文)
     expect(完成).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: '插入正文' }))

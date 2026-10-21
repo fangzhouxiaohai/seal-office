@@ -77,7 +77,8 @@ export interface SheetImage {
 
 export interface 页面设置 {
   页边距: '常规' | '窄' | '适中' | '宽'
-  方向: '纵向' | '横向'
+  /** OOXML 的 default 由打印机决定，不能在保存时擅自改成 portrait。 */
+  方向: '纵向' | '横向' | '跟随打印机'
   纸张大小: 'A4' | 'A5' | 'B5' | 'Letter' | '跟随打印机'
 }
 

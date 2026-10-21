@@ -1,0 +1,41 @@
+{
+  "version": "2.1.1",
+  "passed": true,
+  "reviewer": "shell_native_new",
+  "method": "Independently decode and inspect the midpoint of each of 8 subtitle scenes in each final encoded MP4, plus full-resolution PC Word and Android reading frames",
+  "samplesInspected": 16,
+  "pc": {
+    "file": "seal-office-2.1.1-pc-intro-1080p.mp4",
+    "sha256": "2e46e7ddbefb8a732804331ec2ceecdcc7aa830cb990031ab3fae5f28da75193",
+    "width": 1920,
+    "height": 1080,
+    "scenes": 8
+  },
+  "android": {
+    "file": "seal-office-2.1.1-android-intro-1080p.mp4",
+    "sha256": "21d125f6dfe232d5ded606b04f19dcd85b47b4aa862891c2e58d3a865b4be8ef",
+    "width": 1080,
+    "height": 1920,
+    "scenes": 8
+  },
+  "checks": [
+    "Final MP4 SHA-256 values exactly match release/promo/verification.json",
+    "Version 2.1.1 is visible on all inspected scenes",
+    "No blank, corrupt or black UI scene among the 16 representative frames",
+    "Headings and Mandarin subtitles remain within the canvas and readable at native resolution",
+    "PC Word scene has no extra revision-history button row",
+    "Mobile home and services scenes show five complete bottom feature tabs and top import entry",
+    "Mobile reading scene hides top and bottom operation bars",
+    "Presentation template scenes contain the actual current template illustrations",
+    "Mindmap scenes show the project-list interface",
+    "AI scene shows verified-phone sign-in requirement and password-login UI",
+    "Both QR codes decoded from final encoded outro frames to https://seal.xingmasoft.com/office/"
+  ],
+  "limits": [
+    "Edited introduction uses still UI frames with narration; it is not a continuous interaction recording",
+    "PC footage is the production responsive Web build; Android footage is the production IIFE layout in a browser, as disclosed in the visible frame labels",
+    "This visual review does not replace APK/HAP installation or physical-device testing",
+    "Audio full-decode and loudness checks are recorded separately by the generator; this independent review inspected visual frames and subtitle text"
+  ],
+  "evidence": ".upgrade-private/release-v211/video-review/proof.json"
+}

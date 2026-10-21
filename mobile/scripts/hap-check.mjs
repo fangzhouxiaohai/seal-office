@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { archiveArtifact } from './archive-artifact.mjs'
+import { inspectPdfFonts } from './pdf-font-resources.mjs'
 
 const require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
@@ -21,10 +22,11 @@ export async function inspectHap(data, manifest, currentEditor) {
   const prefix = builds[0].slice(0, -'build-info.json'.length)
   const build = JSON.parse(await zip.file(builds[0]).async('string'))
   const editor = zip.file(prefix + 'office.js')
-  if (build.platform !== 'harmony' || build.desktopVersion !== manifest.versionName || !editor || !zip.file(prefix + 'index.html') || !zip.file(prefix + 'fonts/NotoSansSC.ttf')) throw new Error('HAP 内置编辑器的平台、版本或必要资源不完整')
+  if (build.platform !== 'harmony' || build.desktopVersion !== manifest.versionName || !editor || !zip.file(prefix + 'index.html')) throw new Error('HAP 内置编辑器的平台、版本或必要资源不完整')
+  const embeddedPdfFonts = await inspectPdfFonts(zip, prefix)
   const editorHash = digest(await editor.async('nodebuffer'))
   if (!currentEditor || editorHash !== digest(currentEditor)) throw new Error('HAP 不包含当前鸿蒙构建资源，请重新云打包')
-  return { bundleName: app.bundleName, version: app.versionName, versionCode: String(app.versionCode), build, embeddedEditorSha256: editorHash, matchesCurrentSourceBuild: true, crcPassed: true, signatureVerified: false, deviceVerified: false }
+  return { bundleName: app.bundleName, version: app.versionName, versionCode: String(app.versionCode), build, embeddedEditorSha256: editorHash, embeddedPdfFonts, matchesCurrentSourceBuild: true, crcPassed: true, signatureVerified: false, deviceVerified: false }
 }
 
 export async function main(args = process.argv.slice(2)) {

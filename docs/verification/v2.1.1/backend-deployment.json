@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "started": "2026-10-21T12:21:10.924Z",
+  "completed": "2026-10-21T12:21:11.911Z",
+  "release": "/www/wwwroot/seal.xingmasoft.com/releases/2.1.1-backend-identity-20261021-191812",
+  "previous": "/www/wwwroot/seal.xingmasoft.com/releases/2.1.0-backend-security-20261021-012934",
+  "health": {
+    "caps": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "passwordAuth": 1,
+      "accountDeletion": 1,
+      "aiIdentity": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymous": {
+      "ai/identity": 401,
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401
+    }
+  },
+  "allExistingTablesPreserved": true,
+  "converterRestarted": false,
+  "dependenciesChanged": false,
+  "adminPreserved": true,
+  "adminRelativeLinkAndContentVerified": true,
+  "nginxPreserved": true,
+  "webPreserved": true,
+  "envPreserved": true,
+  "productionAccountOperations": 0
+}

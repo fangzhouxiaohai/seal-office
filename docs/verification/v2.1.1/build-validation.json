@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "checks": {
+    "typecheck-release-final.log": {
+      "passed": true,
+      "sha256": "e21e29beb71ce7f0825fabeeb0e1f31dd02f88519f76ce61db4d816e37a51222"
+    },
+    "mobile-typecheck-final.log": {
+      "passed": true,
+      "sha256": "b85df3ba235a01a4dd6318a3ce958466ea37fd1acaa3143bac9f3bd6f3c9be9e"
+    },
+    "mobile-structure-final.log": {
+      "passed": true,
+      "sha256": "ddb7ba8db1150dbb9888b921a183d9f1c917b8d096db4758d149055b995b8a0c"
+    },
+    "uts-android-final.log": {
+      "passed": true,
+      "sha256": "875d17cf0220c39f0a2459096f7da2255d8839d2d628025f0ec5160e211f4d06"
+    },
+    "uts-harmony-final.log": {
+      "passed": true,
+      "sha256": "c9fb2e1e6b1c8191f761cd4a90366ee5cbf7f3c1bd82d702acd63be6bf1aa443"
+    }
+  },
+  "compiler": "HBuilderX 5.26 uni-app x",
+  "nativePackagesGenerated": false,
+  "physicalHarmonyDeviceAcceptance": false,
+  "systemFilePickerAndSmsDeliveryAcceptance": false
+}

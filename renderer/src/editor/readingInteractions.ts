@@ -68,13 +68,13 @@ export function useReadingFullscreen(root:RefObject<HTMLElement>,active:boolean,
     const background=Array.from(document.body.children).filter(node=>node instanceof HTMLElement&&node!==element&&!node.contains(element)).map(node=>({node:node as HTMLElement,inert:(node as HTMLElement).inert,hidden:node.getAttribute('aria-hidden')}))
     for(const {node}of background){node.inert=true;node.setAttribute('aria-hidden','true')}
     document.body.style.overflow='hidden';element.focus({preventScroll:true})
-    const fullscreen=()=>{if(document.fullscreenElement===element){enteredNative=true;setNative(true)}else if(enteredNative)latest.current()}
+    const fullscreen=()=>{if(disposed)return;if(document.fullscreenElement===element){enteredNative=true;setNative(true)}else if(enteredNative)latest.current()}
     const close=(event:Event)=>{event.preventDefault();latest.current()}
     const key=(event:KeyboardEvent)=>{
       if(event.isComposing||event.keyCode===229)return
       if(event.key==='Escape'){event.preventDefault();latest.current();return}
       if(event.key==='Tab'){
-        const items=Array.from(element.querySelectorAll<HTMLElement>('button:not([disabled]),select:not([disabled]),input:not([disabled]),[tabindex="0"],a[href]')).filter(node=>!node.hidden&&getComputedStyle(node).display!=='none')
+        const items=Array.from(element.querySelectorAll<HTMLElement>('button:not([disabled]),select:not([disabled]),input:not([disabled]),[tabindex="0"],a[href]')).filter(node=>!node.closest('[hidden],[inert]')&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden')
         const first=items[0],last=items[items.length-1]
         if(!first){event.preventDefault();element.focus()}else if(event.shiftKey&&(document.activeElement===first||document.activeElement===element)){event.preventDefault();last?.focus()}else if(!event.shiftKey&&(document.activeElement===last||document.activeElement===element)){event.preventDefault();first.focus()}
       }

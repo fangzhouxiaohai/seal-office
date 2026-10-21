@@ -26,6 +26,9 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     await command('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await wait(350)
   }
   const shot=async name=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,name),(await win.capturePage()).toPNG())}
+  // Hidden mobile chrome must be revealed through its UI event before using a
+  // toolbar; calling .click() on hidden buttons would bypass the new contract.
+  const reveal=async selector=>{await evaluate(`document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}))`);await until(`document.querySelector(${JSON.stringify(selector)}).closest('[data-reading-controls]')?.dataset.readingControls==='visible'`,'Double click must reveal mobile reading chrome')}
   const open=async filename=>{await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(filename)};(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})()`)}
   try{
     // Offscreen Electron cannot present an OS fullscreen surface. Exercise the
@@ -39,6 +42,7 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     await evaluate(`window.__readingOriginal=document.querySelector('.wps-editor-canvas__content');document.querySelector('[aria-label="全屏左右翻页阅读"]').click()`)
     await until(`Number(document.querySelector('.seal-word-reader__viewport')?.dataset.readingPages)>2`,'Word must have real fragmented screen pages')
     const initial=await evaluate(`({pages:Number(document.querySelector('.seal-word-reader__viewport').dataset.readingPages),page:Number(document.querySelector('.seal-word-reader__viewport').dataset.readingPage),fullscreen:document.querySelector('.seal-word-reader').dataset.fullscreen})`)
+    assert.equal(await evaluate(`document.querySelector('.seal-word-reader').dataset.readingControls`),'hidden','Word mobile fullscreen controls start hidden')
     await swipe('.seal-word-reader__viewport')
     const page=await evaluate(`Number(document.querySelector('.seal-word-reader__viewport').dataset.readingPage)`);assert.ok(page>initial.page,'Native horizontal touch must advance a real Word reading page '+JSON.stringify(await evaluate(`(()=>{const v=document.querySelector('.seal-word-reader__viewport');return {left:v.scrollLeft,scrollWidth:v.scrollWidth,width:v.clientWidth,pages:v.dataset.readingPages,action:getComputedStyle(v).touchAction}})()`)))
     const before=await evaluate(`Number(document.querySelector('.seal-word-reader__viewport').dataset.readingZoom)`)
@@ -52,10 +56,12 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     for(const width of[360,390,820]){await size(width);const bounds=await evaluate(`(()=>{const r=document.querySelector('.seal-word-reader').getBoundingClientRect(),v=document.querySelector('.seal-word-reader__viewport');return {left:r.left,right:r.right,width:innerWidth,height:v.clientHeight,pages:Number(v.dataset.readingPages),scroll:document.documentElement.scrollWidth}})()`);assert.ok(bounds.left>=0&&bounds.right<=width+1&&bounds.height>150&&bounds.pages>1&&bounds.scroll<=width+1,JSON.stringify(bounds));widths.push({width,...bounds});await shot('word-fullscreen-pages-'+width+'.png')}
     await size(390)
     const zoom=await evaluate(`document.querySelector('.seal-word-reader__viewport').dataset.readingZoom`)
+    await reveal('.seal-word-reader__viewport')
     await evaluate(`document.querySelector('.seal-word-reader [aria-label="切换连续阅读"]').click()`);await wait()
     assert.ok(await evaluate(`(()=>{const v=document.querySelector('.seal-word-reader__viewport--continuous');return v&&v.scrollHeight>v.clientHeight})()`),'Word full-screen continuous mode remains available')
     await evaluate(`document.querySelector('.seal-word-reader [aria-label="切换左右翻页"]').click()`);await wait()
     const savedPage=await evaluate(`document.querySelector('.seal-word-reader__viewport').dataset.readingPage`)
+    await reveal('.seal-word-reader__viewport')
     await evaluate(`document.querySelector('.seal-word-reader [aria-label="退出全屏阅读"]').click()`);await wait()
     assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content')===window.__readingOriginal`),true)
     assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').innerHTML`),original,'Word full-screen pagination/zoom never edits source HTML')
@@ -68,13 +74,16 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     checks.push('Word全屏按屏重排真实阅读页、'+(offscreen?'离屏原生横向wheel/DOM双指（Chrome另验真触控）':'CDP真单指横向翻页/双指缩放')+'、360/390/820px、返回焦点及重入进度，原正文节点和HTML完整保留')
 
     const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica)
-    for(let i=1;i<=3;i++){const p=pdf.addPage([600,800]);p.drawText('Reading page '+i,{x:60,y:720,size:32,font});p.drawRectangle({x:70,y:450,width:220,height:160,color:rgb(.15*i,.3,.7)})}
+    // Hidden mobile chrome gives the page the full viewport. Use a tall page
+    // so the 1.5x gesture actually overflows both axes before checking anchors.
+    for(let i=1;i<=3;i++){const p=pdf.addPage([600,1200]);p.drawText('Reading page '+i,{x:60,y:720,size:32,font});p.drawRectangle({x:70,y:450,width:220,height:160,color:rgb(.15*i,.3,.7)})}
     const data=Buffer.from(await pdf.save()).toString('base64'),pdfFile=await evaluate(`(async()=>{const api=window.electronAPI,file=await api.showSaveDialog('全屏PDF触控验收.pdf','pdf');const result=await api.saveToFile(file,${JSON.stringify(data)},'二进制');if(!result.成功)throw new Error(result.错误);return file})()`)
     await open(pdfFile);await until(`document.querySelector('.pdf-viewer__counter')?.textContent.includes('共 3 页')&&!!document.querySelector('.pdf-viewer__canvas')?.width`,'PDF real three-page canvas must load')
     assert.equal(await evaluate(`Array.from(document.querySelector('.pdf-viewer').querySelectorAll('span')).some(n=>n.textContent==='连续滚动')`),false)
     const oldZoom=await evaluate(`document.querySelector('.pdf-viewer__zoom').textContent`)
     await evaluate(`document.querySelector('.pdf-viewer [aria-label="全屏左右翻页阅读"]').click()`);await wait(450)
     assert.equal(await evaluate(`document.querySelector('.pdf-viewer__stage').dataset.viewMode`),'pages')
+    assert.equal(await evaluate(`document.querySelector('.pdf-viewer--fullscreen').dataset.readingControls`),'hidden','PDF mobile fullscreen controls start hidden')
     await swipe('.pdf-viewer__stage')
     assert.match(await evaluate(`document.querySelector('.pdf-viewer__counter').textContent`),/第 [23] 页/,'PDF native touch swipe must advance physical page '+JSON.stringify(await evaluate(`(()=>{const s=document.querySelector('.pdf-viewer__stage'),p=document.querySelector('[data-pdf-slide]'),r=s.getBoundingClientRect();return {left:s.scrollLeft,scroll:s.scrollWidth,width:s.clientWidth,slideWidth:p.clientWidth,slideScroll:p.scrollWidth,slideLeft:p.scrollLeft,rect:{x:r.x,y:r.y,w:r.width,h:r.height},root:getComputedStyle(document.querySelector('.pdf-viewer__pages')).flexDirection}})()`)))
     const physical=await evaluate(`document.querySelector('.pdf-viewer__counter').textContent`),active=Number(physical.match(/第 (\d+)/)[1])
@@ -83,7 +92,7 @@ module.exports=async function readingPagesActions({win,evaluate,output,checks}){
     const pdfAnchor=await evaluate(`(()=>{const p=document.querySelector('[data-pdf-slide="${active}"]');return {left:p.scrollLeft,top:p.scrollTop}})()`);assert.ok(pdfAnchor.left>0&&pdfAnchor.top>0,'PDF pinch keeps the touched region anchored by scrolling the enlarged physical page')
     assert.equal(await evaluate(`document.querySelector('.pdf-viewer__counter').textContent`),physical,'PDF zoom retains physical page')
     for(const width of[360,390,820]){await size(width);const bounds=await evaluate(`(()=>{const r=document.querySelector('.pdf-viewer--fullscreen').getBoundingClientRect(),s=document.querySelector('.pdf-viewer__stage');return {left:r.left,right:r.right,height:s.clientHeight,width:innerWidth}})()`);assert.ok(bounds.left>=0&&bounds.right<=width+1&&bounds.height>150,JSON.stringify(bounds));assert.equal(await evaluate(`document.querySelector('.pdf-viewer__counter').textContent`),physical,'PDF resize preserves physical page');await shot('pdf-fullscreen-pages-'+width+'.png')}
-    await size(390);await evaluate(`document.querySelector('.pdf-viewer [aria-label="退出全屏阅读"]').click()`);await wait(450)
+    await size(390);await reveal('.pdf-viewer__stage');await evaluate(`document.querySelector('.pdf-viewer [aria-label="退出全屏阅读"]').click()`);await wait(450)
     assert.equal(await evaluate(`document.querySelector('.pdf-viewer__stage').dataset.viewMode`),'continuous')
     assert.equal(await evaluate(`document.querySelector('.pdf-viewer__zoom').textContent`),oldZoom,'PDF exit restores original zoom')
     assert.equal(await evaluate(`document.querySelector('.pdf-viewer__counter').textContent`),physical,'PDF exit maps the current physical page back to continuous reading '+JSON.stringify(await evaluate(`(()=>{const s=document.querySelector('.pdf-viewer__stage');return {top:s.scrollTop,height:s.clientHeight,scrollHeight:s.scrollHeight,width:s.clientWidth,pages:Array.from(document.querySelectorAll('[data-pdf-page]')).map(p=>({top:p.getBoundingClientRect().top,height:p.clientHeight})),stageTop:s.getBoundingClientRect().top}})()`)))

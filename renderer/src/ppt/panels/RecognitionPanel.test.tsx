@@ -3,8 +3,15 @@ import { App } from 'antd'
 import { afterEach, expect, it, vi } from 'vitest'
 import RecognitionPanel from './RecognitionPanel'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-recognitionpanel', verified: true, method: 'phone' } }
+}) })
+
+
 const 装桥接 = (捕获: Record<string, unknown>) => {
-  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { presentationCapture: 捕获 } })
+  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  presentationCapture: 捕获 } })
 }
 const 图片文件 = (类型 = 'image/png') => {
   const 文件 = new File([new Uint8Array([137, 80, 78, 71])], '截图.png', { type: 类型 })

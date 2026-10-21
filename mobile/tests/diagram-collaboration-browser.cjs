@@ -12,10 +12,13 @@ const output = path.resolve(__dirname, '../../.upgrade-private/v' + require('../
 const startedAt = new Date().toISOString(), hash = file => require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 const bundleFile = path.join(root, mode === 'web' ? fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1] : 'office.js'), bundleSha256 = hash(bundleFile)
 app.setPath('userData', path.join(output, 'profile-' + process.pid)); app.disableHardwareAcceleration()
-const checks = [], errors = [], windows = [], offline = new Set(), requests = [], controllers = new Map()
-let fixture, server, finished = false
-const watchdog = setTimeout(() => { if (!finished) { fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, checks, errors, error: '120 second process watchdog' }, null, 2)); app.exit(1) } }, 120000)
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const checks = [], errors = [], windows = [], offline = new Set(), requests = [], controllers = new Map(), upstreams = new Set(), proxySockets = new Set(), nativeTasks = new Set()
+// This test owns both the HTTP proxy and the simulated native host transport.
+// Keep their sockets out of Electron's process-wide fetch connection pool.
+const upstreamAgent = new http.Agent({ keepAlive: false })
+let fixture, server, finished = false, closing = false, result, phase = 'startup'
+const watchdog = setTimeout(() => { if (!finished) { fs.mkdirSync(output, { recursive: true }); fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, mode, group, phase, checks, errors, error: '120 second process watchdog' }, null, 2)); app.exit(1) } }, 120000)
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.otf': 'font/otf', '.png': 'image/png', '.svg': 'image/svg+xml' }
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
 async function evaluate(win, code) { const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await(${code})}}catch(error){return{error:error.stack||String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value }
 async function wait(win, code, label) { for (let n = 0; n < 180; n++) { if (await evaluate(win, code)) return; await new Promise(resolve => setTimeout(resolve, 80)) } throw new Error('等待失败：' + label) }
@@ -35,6 +38,19 @@ async function flush(win) { await wait(win, `document.querySelector('[aria-label
 async function has(win, text) { await wait(win, `[...document.querySelectorAll('.diagram-node[data-node-id]')].some(item=>item.getAttribute('aria-label').startsWith(${JSON.stringify(text)}))`, '远端节点 ' + text) }
 function decode(value) { if (value instanceof Y.Text) return value.toString(); if (value instanceof Y.Array) return value.toArray().map(decode); if (value instanceof Y.Map) { if (value.get('__seal_crdt_id_list__')) return value.get('order').toArray().filter((id, i, arr) => arr.indexOf(id) === i && value.get('items').has(id)).map(id => decode(value.get('items').get(id))); return Object.fromEntries([...value.entries()].map(([key, item]) => [key, decode(item)])) }; return value }
 async function latest(actor, binding) { const snapshot = await actor.realtimeSnapshot({ binding }), doc = new Y.Doc(); try { if (snapshot.checkpoint) Y.applyUpdate(doc, Buffer.from(snapshot.checkpoint, 'base64')); if (snapshot.seed) Y.applyUpdate(doc, Buffer.from(snapshot.seed, 'base64')); let after = snapshot.checkpoint ? snapshot.checkpointSeq : 0, page = snapshot; do { for (const item of page.updates || []) { Y.applyUpdate(doc, Buffer.from(item.update, 'base64')); after = Math.max(after, item.seq) }; if (after >= page.head) break; page = await actor.realtimePull({ binding, after }) } while (true); return decode(doc.getMap('document').get('model')) } finally { doc.destroy() } }
+function trackUpstream(request) { upstreams.add(request); request.once('close', () => upstreams.delete(request)); return request }
+function nativeRequest(url, options) {
+  if (closing) return Promise.reject(new Error('Native test transport is closing'))
+  return new Promise((resolve, reject) => {
+    const request = trackUpstream(http.request(url, { ...options, agent: upstreamAgent }, response => {
+      const chunks = []
+      response.on('data', chunk => chunks.push(chunk))
+      response.once('error', reject); response.once('aborted', () => reject(new Error('Fixture response aborted')))
+      response.once('end', () => resolve({ status: response.statusCode, headers: response.headers, data: Buffer.concat(chunks) }))
+    }))
+    request.once('error', reject); request.end(options.body)
+  })
+}
 async function createWindow(actor, phone, origin) {
   const win = new BrowserWindow({ show: false, width: 1280, height: 950, webPreferences: { partition: 'diagram-' + process.pid + '-' + actor, offscreen: false, contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false } }); windows.push(win)
   win.webContents.on('will-prevent-unload', event => event.preventDefault())
@@ -43,22 +59,31 @@ async function createWindow(actor, phone, origin) {
   if (mode !== 'web') {
     await win.loadURL('about:blank'); const cdp = win.webContents.debugger; cdp.attach('1.3'); await cdp.sendCommand('Page.enable'); await cdp.sendCommand('Runtime.enable'); await cdp.sendCommand('Runtime.addBinding', { name: '__sealDiagramNative' })
     await cdp.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `window.sealNative={token:'isolated-diagram-${actor}',platform:'android'};window.__uniapp_x_postMessage=({data})=>window.__sealDiagramNative(JSON.stringify(data));` })
-    cdp.on('message', async (_, method, params) => {
-      if (method !== 'Runtime.bindingCalled' || params.name !== '__sealDiagramNative') return
+    cdp.on('message', (_, method, params) => {
+      if (closing || method !== 'Runtime.bindingCalled' || params.name !== '__sealDiagramNative') return
+      const task = (async () => {
       let data
-      const deliver = event => evaluate(win, `window.sealReceiveNative?.(${JSON.stringify(event)})`).catch(() => {})
+      const deliver = event => closing || win.isDestroyed() ? Promise.resolve() : evaluate(win, `window.sealReceiveNative?.(${JSON.stringify(event)})`).catch(() => {})
       try {
         data = JSON.parse(params.payload); assert.equal(data.token, 'isolated-diagram-' + actor)
+        if (data.action === 'ping') { await deliver({ id: data.id, type: 'ready' }); return }
+        if (data.action === 'font') {
+          const font = fs.readFileSync(path.join(root, 'fonts', data.family === 'serif' ? 'NotoSerifCJKsc-Regular.otf' : 'NotoSansSC.ttf'))
+          for (let offset = 0; offset < font.length; offset += 98304) await deliver({ id: data.id, type: 'chunk', data: font.subarray(offset, offset + 98304).toString('base64') })
+          await deliver({ id: data.id, type: 'end' }); return
+        }
         if (data.action === 'state') return
         if (data.action === 'abort') { controllers.get(data.id)?.abort(); return }
         assert.equal(data.action, 'request', 'Unexpected native operation'); const target = new URL(data.url)
         assert.ok(target.origin === 'https://seal.xingmasoft.com' || target.origin === origin, 'Native request outside approved fixture mapping'); assert.ok(target.pathname.startsWith('/api/'))
         requests.push({ actor, route: target.pathname, native: true }); if (offline.has(actor)) throw new Error('模拟原生宿主断网')
         const controller = new AbortController(); controllers.set(data.id, controller)
-        const response = await fetch(fixture.url + target.pathname.slice(4) + target.search, { method: data.method, headers: data.headers, body: data.body ? Buffer.from(data.body, 'base64') : undefined, signal: controller.signal })
-        await deliver({ id: data.id, type: 'headers', status: response.status, headers: Object.fromEntries(response.headers) })
-        const bytes = Buffer.from(await response.arrayBuffer()); if (bytes.length) await deliver({ id: data.id, type: 'chunk', data: bytes.toString('base64') }); await deliver({ id: data.id, type: 'end' })
+        const response = await nativeRequest(fixture.url + target.pathname.slice(4) + target.search, { method: data.method, headers: data.headers, body: data.body ? Buffer.from(data.body, 'base64') : undefined, signal: controller.signal })
+        await deliver({ id: data.id, type: 'headers', status: response.status, headers: response.headers })
+        const bytes = response.data; if (bytes.length) await deliver({ id: data.id, type: 'chunk', data: bytes.toString('base64') }); await deliver({ id: data.id, type: 'end' })
       } catch (error) { if (data?.id) await deliver({ id: data.id, type: 'error', error: error.message }); else errors.push(error.message) } finally { if (data) controllers.delete(data.id) }
+      })()
+      nativeTasks.add(task); void task.finally(() => nativeTasks.delete(task)).catch(error => { if (!closing) errors.push(error.message) })
     })
   }
   await win.loadURL(mode === 'native-file' ? pathToFileURL(path.join(root, 'index.html')).href + '?native=1' : origin + '/office/' + (mode !== 'web' ? '?native=1' : '')); await ready(win)
@@ -68,13 +93,20 @@ async function screenshots(win, stem) { for (const width of [1280, 820, 390, 360
 app.whenReady().then(async () => {
   fs.mkdirSync(output, { recursive: true })
   try {
+    phase = 'functional assertions'
     fixture = await createLocalCollaborationFixture()
     server = http.createServer((request, response) => {
-      if (request.url.startsWith('/api/')) { requests.push({ route: request.url }); const upstream = http.request(fixture.url + request.url.slice(4), { method: request.method, headers: { ...request.headers, host: new URL(fixture.url).host } }, result => { response.writeHead(result.statusCode, result.headers); result.pipe(response) }); upstream.on('error', () => { response.writeHead(502); response.end() }); request.pipe(upstream); return }
+      if (closing) { response.writeHead(503); response.end(); return }
+      if (request.url.startsWith('/api/')) {
+        requests.push({ route: request.url })
+        const upstream = trackUpstream(http.request(fixture.url + request.url.slice(4), { method: request.method, agent: upstreamAgent, headers: { ...request.headers, host: new URL(fixture.url).host } }, result => { if (response.destroyed) { result.destroy(); return }; response.writeHead(result.statusCode, result.headers); result.pipe(response) }))
+        upstream.on('error', () => { if (!response.destroyed) { if (!response.headersSent) response.writeHead(502); response.end() } })
+        request.once('aborted', () => upstream.destroy()); response.once('close', () => { if (!response.writableFinished) upstream.destroy() }); request.pipe(upstream); return
+      }
       const filename = path.resolve(root, '.' + decodeURIComponent(new URL(request.url, 'http://localhost').pathname).replace(/^\/office\//, '/').replace(/\/$/, '/index.html'))
       if (!filename.startsWith(root + path.sep) || !fs.existsSync(filename)) { response.writeHead(404); response.end(); return }
       response.writeHead(200, { 'Content-Type': types[path.extname(filename)] || 'application/octet-stream', ...(mode === 'web' ? { 'Content-Security-Policy': csp } : {}) }); fs.createReadStream(filename).pipe(response)
-    }); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); const origin = 'http://127.0.0.1:' + server.address().port
+    }); server.on('connection', socket => { proxySockets.add(socket); socket.once('close', () => proxySockets.delete(socket)) }); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); const origin = 'http://127.0.0.1:' + server.address().port
     const type = group === 'team' ? 'flowchart' : 'mindmap', title = group === 'team' ? '团队跨端流程' : '个人跨端脑图'
     const model = { format: 'seal-diagram', schema: 1, type: type === 'mindmap' ? '脑图' : '流程图', title, graph: { 节点: [{ id: 'root', 文本: '中心主题', x: 100, y: 100 }, { id: 'child', 文本: '分支', x: 400, y: 100 }], 连线: [{ id: 'edge', 起点: 'root', 终点: 'child' }] } }, filename = title + (type === 'mindmap' ? '.sealmind' : '.sealflow'), data = Buffer.from(JSON.stringify(model)).toString('base64')
     let saved, team, shared, invitation, binding
@@ -100,7 +132,26 @@ app.whenReady().then(async () => {
     else { await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'viewer' }); await connected(b, true); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); await input(a, '文字', '降权后仍可查看远端更新'); await flush(a); await has(b, '降权后仍可查看远端更新'); await fixture.a.teamUpdateMember({ id: team.id, userId: fixture.b.status().account.id, role: 'editor' }); await connected(b); assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), false); await input(b, '节点备注', '重新授权后继续协作'); await flush(b); assert.equal((await latest(fixture.a, binding)).graph.节点.find(node=>node.文本==='降权后仍可查看远端更新').备注, '重新授权后继续协作'); await fixture.a.teamRemoveMember({ id: team.id, userId: fixture.b.status().account.id }); await wait(b, `document.querySelector('.diagram-cloud-status')?.textContent.includes('访问权限已撤销')`, '团队移除') }
     assert.equal(await evaluate(b, '[...document.querySelectorAll("button")].find(button=>button.textContent==="添加节点").disabled'), true); checks.push(group === 'team' ? '团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写' : '共享撤销由服务端执行、禁写且所有者仍能继续同步')
     assert.ok(requests.some(item => item.route.includes('/realtime/'))); if (mode !== 'web') assert.ok(requests.some(item => item.native)); assert.deepEqual(errors, []); assert.equal(hash(bundleFile), bundleSha256, 'Production bundle changed during acceptance')
-    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: true, version: require('../../package.json').version, startedAt, bundleSha256, harnessSha256: hash(__filename), mode, group, checks, errors, nativeHostSimulated: mode !== 'web', productionRequests: 0, requests: requests.length, completedAt: new Date().toISOString() }, null, 2)); console.log(JSON.stringify({ passed: true, mode, group, checks }, null, 2))
-  } catch (error) { const states = await Promise.all(windows.map(win => evaluate(win, '({body:document.body.innerText.slice(-3000),url:location.href})').catch(() => null))); fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, mode, group, checks, errors, states, error: error.stack }, null, 2)); console.error(error); process.exitCode = 1 }
-  finally { finished = true; clearTimeout(watchdog); for (const controller of controllers.values()) controller.abort(); windows.forEach(win => win.destroy()); server?.closeAllConnections?.(); server?.close(); await fixture?.cleanup(); app.exit(process.exitCode || 0) }
+    result = { passed: true, version: require('../../package.json').version, startedAt, bundleSha256, harnessSha256: hash(__filename), mode, group, checks, errors, nativeHostSimulated: mode !== 'web', productionRequests: 0, requests: requests.length, assertionsCompletedAt: new Date().toISOString() }
+  } catch (error) { const states = await Promise.all(windows.map(win => evaluate(win, '({body:document.body.innerText.slice(-3000),url:location.href})').catch(() => null))); result = { passed: false, mode, group, checks, errors, states, error: error.stack }; console.error(error); process.exitCode = 1 }
+  finally {
+    closing = true; phase = 'transport teardown'; const teardownStarted = Date.now(), stages = []
+    try {
+      // Stop accepting new proxy/native requests before cancelling existing ones;
+      // otherwise a late renderer poll can reconnect during fixture.close().
+      const proxyClosed = server ? new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())) : Promise.resolve()
+      const ownedClosed = [...upstreams, ...proxySockets].map(connection => connection.closed ? Promise.resolve() : new Promise(resolve => connection.once('close', resolve)))
+      for (const controller of controllers.values()) controller.abort()
+      for (const win of windows) if (!win.isDestroyed()) win.destroy()
+      for (const request of upstreams) request.destroy()
+      upstreamAgent.destroy(); server?.closeAllConnections?.(); for (const socket of proxySockets) socket.destroy()
+      await Promise.allSettled([...nativeTasks]); await Promise.all(ownedClosed); await proxyClosed
+      assert.equal(controllers.size, 0); assert.equal(upstreams.size, 0); assert.equal(proxySockets.size, 0); assert.equal(nativeTasks.size, 0)
+      stages.push({ stage: 'owned transports closed', elapsedMs: Date.now() - teardownStarted })
+      phase = 'fixture teardown'; await fixture?.cleanup(); stages.push({ stage: 'fixture cleanup completed', elapsedMs: Date.now() - teardownStarted })
+      result.teardown = { completed: true, stages, activeControllers: controllers.size, activeUpstreams: upstreams.size, activeProxySockets: proxySockets.size, activeNativeTasks: nativeTasks.size }
+    } catch (error) { result = { ...result, passed: false, teardown: { completed: false, stages, error: error.stack } }; console.error(error); process.exitCode = 1 }
+    finished = true; clearTimeout(watchdog); result.completedAt = new Date().toISOString()
+    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify({ passed: result.passed, mode, group, checks, teardown: result.teardown }, null, 2)); app.exit(process.exitCode || 0)
+  }
 })

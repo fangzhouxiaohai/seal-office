@@ -55,6 +55,7 @@ import { withShortcutLabels } from '../shortcuts/shortcutMenu'
 import { useMobileReading } from './useMobileReading'
 import MobileReadingToolbar from './MobileReadingToolbar'
 import WordReadingView from './WordReadingView'
+import { 原生文档类型 } from '../fileFormats'
 
 const 默认视图: ViewState = {
   缩放: 默认文件缩放,
@@ -290,7 +291,7 @@ const DocEditor = () => {
   }
 
   useEffect(() => {
-    if (当前文档?.警告?.length && !已提示导入警告.current.has(当前文档.id)) {
+    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示导入警告.current.has(当前文档.id)) {
       已提示导入警告.current.add(当前文档.id)
       展示导入警告(当前文档.警告)
     }
@@ -864,12 +865,14 @@ const DocEditor = () => {
     },
     插入内容,
     读取内容: () => 编辑区引用.current?.innerHTML ?? '',
-    准备保存内容: () => {
+    准备保存内容: (原生) => {
       const 根 = 编辑区引用.current
       if (!根 || 当前文档标识引用.current !== 文档标识) throw new Error('当前文档已切换，请在目标文档中重新保存')
-      const 内容 = 准备图片保存内容(根)
+      // Native HTML stores the actual layout, including relative image sizes;
+      // it does not need to reduce those objects to the DOCX subset.
+      if (!原生) 准备图片保存内容(根)
       同步内容()
-      return 内容
+      return 根.innerHTML
     },
     生成原生Pdf: () => 生成原生Pdf(),
     下载: (内容: string, 文件名: string, 类型: string) => 下载文本(内容, 文件名, 类型),

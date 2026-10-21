@@ -4,10 +4,10 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 const directory = fileURLToPath(new URL('..', import.meta.url)), root = path.dirname(directory)
 
-export async function buildCore() {
-  await fs.mkdir(path.join(directory, 'web/generated'), { recursive: true })
+export async function buildCore(outputFile = path.join(directory, 'web/generated/core.mjs')) {
+  await fs.mkdir(path.dirname(outputFile), { recursive: true })
   await build({
-    entryPoints: [path.join(directory, 'web/core.cjs')], outfile: path.join(directory, 'web/generated/core.mjs'),
+    entryPoints: [path.join(directory, 'web/core.cjs')], outfile: outputFile,
     bundle: true, platform: 'browser', format: 'esm', target: ['chrome100', 'safari15'], minify: true,
     inject: [path.join(directory, 'web/shims/globals.js')],
     alias: {

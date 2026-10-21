@@ -1,13 +1,53 @@
 const JSZip=require('jszip'),path=require('node:path')
+const {readSeal,TYPES}=require('./nativeCodec.cjs')
+
+const validatePdf=raw=>{if(!raw.subarray(0,8).toString().startsWith('%PDF-'))throw new Error('PDF 文件签名无效');if(/\/(JavaScript|Launch|EmbeddedFile|JS)\b/.test(raw.toString('latin1')))throw new Error('公开 PDF 不能包含活动脚本或嵌入程序')}
+const decodeAttribute=value=>value.replace(/&#(?:x([0-9a-f]+)|(\d+));?/gi,(_,hex,decimal)=>{const code=parseInt(hex||decimal,hex?16:10);return code<=0x10ffff?String.fromCodePoint(code):''}).replace(/&(colon|Tab|NewLine|amp);/g,(_,name)=>({colon:':',Tab:'\t',NewLine:'\n',amp:'&'})[name])
+function validateMarkup(text){
+  if(/<\s*(script|iframe|object|embed|base|meta|link|foreignObject)\b|\bon[a-z]+\s*=/i.test(text))throw new Error('公开文档不能包含活动脚本或嵌入程序')
+  const normalized=decodeAttribute(text).replace(/[\u0000-\u0020\u007f]/g,'')
+  if(/(?:javascript|vbscript|file):|data:(?:text\/html|application\/(?:javascript|x-msdownload))/i.test(normalized)||/expression\(|-moz-binding|behavior:/i.test(normalized))throw new Error('文档包含不安全的外部链接')
+}
+async function validateNative(payload){
+  let count=0
+  const visit=async(value,key='',depth=0)=>{
+    if(++count>3000000||depth>256)throw new Error('文档结构超出安全限制')
+    if(typeof value==='string'){
+      if(/html$/i.test(key)||key==='html'){
+        validateMarkup(value)
+        // 原生文字会保留原始 OOXML 以完整往返；公开时也检查该包，不能夹带宏。
+        for(const match of value.matchAll(/\bdata-seal-docx-package\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)){
+          const data=match[1]??match[2]??match[3]
+          if(!/^[A-Za-z0-9+/]+={0,2}$/.test(data))throw new Error('DOCX 原始包无效')
+          await validatePublic(Buffer.from(data,'base64'),'source.docx','knowledge')
+        }
+      }
+      if(/^data:image\/svg\+xml[;,]/i.test(value)){
+        const comma=value.indexOf(','),header=value.slice(0,comma),body=value.slice(comma+1)
+        validateMarkup(/;base64$/i.test(header)?Buffer.from(body,'base64').toString('utf8'):decodeURIComponent(body))
+      }
+      if(/^(?:src|href|url|uri|链接|地址|路径|来源地址)$/i.test(key))validateMarkup(value)
+      return
+    }
+    if(!value||typeof value!=='object')return
+    if(!Array.isArray(value)&&value.类型==='image/svg+xml'&&typeof value.数据==='string')validateMarkup(Buffer.from(value.数据,'base64').toString('utf8'))
+    if(Array.isArray(value)){for(const item of value)await visit(item,key,depth+1)}
+    else for(const [name,item] of Object.entries(value))await visit(item,name,depth+1)
+  }
+  await visit(payload)
+  if(payload.类型==='pdf')validatePdf(Buffer.from(payload.PDF数据,'base64'))
+}
 
 /** 公开文件经过有限解析；不执行宏、脚本或文档嵌入程序。 */
 async function validatePublic(raw,name,kind){
   const ext=path.extname(name||'').toLowerCase()
-  if(!['.docx','.xlsx','.pptx','.pdf','.txt','.md'].includes(ext)||(kind==='template'&&ext!=='.pptx'))throw new Error('公开文件仅接受 DOCX、XLSX、PPTX、PDF、TXT 或 MD；模板须为 PPTX')
+  const native=TYPES[ext.slice(1)]
+  if(!native&&!['.docx','.xlsx','.pptx','.pdf','.txt','.md'].includes(ext)||(kind==='template'&&ext!=='.pptx'&&native!=='ppt'))throw new Error('公开文件仅接受海豹专属文档、DOCX、XLSX、PPTX、PDF、TXT 或 MD；模板须为 SLPPT 或 PPTX')
   if(raw.length===0||raw.length>10*1024*1024)throw new Error('公开文件为空或超过 10 MiB')
+  if(native){await validateNative(await readSeal(ext,raw));return}
   if(ext==='.txt'||ext==='.md'){new TextDecoder('utf-8',{fatal:true}).decode(raw);return}
-  if(ext==='.pdf'){if(!raw.subarray(0,8).toString().startsWith('%PDF-'))throw new Error('PDF 文件签名无效');if(/\/(JavaScript|Launch|EmbeddedFile|JS)\b/.test(raw.toString('latin1')))throw new Error('公开 PDF 不能包含活动脚本或嵌入程序');return}
-  if(raw.readUInt32LE(0)!==0x04034b50)throw new Error('Office 文件签名无效')
+  if(ext==='.pdf'){validatePdf(raw);return}
+  if(raw.length<4||raw.readUInt32LE(0)!==0x04034b50)throw new Error('Office 文件签名无效')
   const zip=await JSZip.loadAsync(raw),files=Object.values(zip.files)
   if(files.length>2000)throw new Error('文档部件过多')
   let total=0

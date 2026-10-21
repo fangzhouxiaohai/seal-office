@@ -14,11 +14,12 @@ import { 计算放映序列 } from './model/show'
 import 阅读视图 from './playback/ReadingView'
 import { 读取放映偏好, 保存放映偏好, type 放映偏好 } from './playback/放映偏好'
 // 演示文稿编辑器容器：装配 Ribbon、缩略图、画布与状态栏。
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { 单文档草稿结果 } from '../editor/draftLifecycle'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
-import { 可保存扩展 } from '../fileFormats'
+import { 可保存扩展, 原生文档类型 } from '../fileFormats'
 import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
@@ -49,7 +50,7 @@ import ContextMenu, { 菜单节点 } from '../components/ContextMenu'
 import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
-import { 记录最近文档, 读取本地文件内容 } from '../fileOpen'
+import { 记录最近文档, 准备打开本地文件 } from '../fileOpen'
 import { 构建演示保存模型 } from './saveModel'
 import { 合并文字草稿 } from './textDraft'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
@@ -108,26 +109,30 @@ const 只读可放行 = (标识: string): boolean =>
   标识.startsWith('view.') || 标识.startsWith('slideshow.') || 标识.startsWith('file.') || 只读可放行命令.has(标识)
 
 const 规范演示保存路径 = (路径: string): string | null => {
-  const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
-  return 扩展 === undefined ? `${路径}.pptx` : 可保存扩展('ppt').has(扩展) ? 路径 : null
+  const 扩展 = 路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase()
+  return 扩展 === undefined ? `${路径}.slppt` : 可保存扩展('ppt').has(扩展) ? 路径 : null
 }
 
 const PptEditor = () => {
   const { message, modal } = AntdApp.useApp()
-  const { documents, createDoc, markDocumentSaved, 演示文档模型, 更新演示文档模型, 设置演示历史资源, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径, 查找保存路径占用, 更新文件指纹 } = useAppStore()
+  const { documents, createDoc, markDocumentSaved, 演示文档模型, 更新演示文档模型, 设置演示历史资源, activeDocumentId, 文档路径: 已知文档路径, set文档路径: 设置全局文档路径, 查找保存路径占用, 更新文件指纹, 注册编辑草稿, 通知编辑草稿变化 } = useAppStore()
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
   const [独立文稿, set独立文稿] = useState<演示文稿>(() => 创建演示文稿())
   const 文稿 = activeDocumentId === null ? 独立文稿 : 演示文档模型[activeDocumentId]
   if (!文稿) throw new Error('演示编辑状态缺失，已阻止覆盖文件')
+  const 最新文稿 = useRef(文稿); 最新文稿.current = 文稿
   const set文稿: React.Dispatch<React.SetStateAction<演示文稿>> = (更新) => {
-    if (activeDocumentId === null) set独立文稿(更新)
-    else 更新演示文档模型(activeDocumentId, 更新)
+    const 内容 = typeof 更新 === 'function' ? 更新(最新文稿.current) : 更新
+    最新文稿.current = 内容
+    if (activeDocumentId === null) set独立文稿(内容)
+    else 更新演示文档模型(activeDocumentId, 内容)
   }
   const 实时接收 = useRef<(内容: 演示文稿) => void>(() => {})
   const 实时协作 = useRealtimePresentation(activeDocumentId, 文稿, 内容 => 实时接收.current(内容))
   const [选中框标识, set选中框标识] = useState<string | null>(null)
   const [编辑框标识, set编辑框标识] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
+  const 文字草稿 = useRef<{ 标识: string; 页标识: string; 值: string; 组合中: boolean } | null>(null)
   const [当前标签, set当前标签] = useState('start')
   const 对象剪贴板 = useRef<{ documentId: string; page: import('./deck').幻灯片 } | null>(null)
   const [工具区, set工具区] = useState<工具区>('截屏')
@@ -360,6 +365,7 @@ const PptEditor = () => {
     set选中框标识(null)
     set编辑框标识(null)
     set编辑值('')
+    文字草稿.current = null
     set选中起始(undefined)
     set选中结束(undefined)
     set菜单可见(false)
@@ -376,7 +382,7 @@ const PptEditor = () => {
   }, [activeDocumentId])
 
   useEffect(() => {
-    if (当前文档?.警告?.length && !已提示警告.current.has(当前文档.id)) {
+    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示警告.current.has(当前文档.id)) {
       已提示警告.current.add(当前文档.id)
       展示导入警告(当前文档.警告)
     }
@@ -452,13 +458,15 @@ const PptEditor = () => {
 
   /** 保存命令不依赖 blur：同步取得包含当前文字草稿的快照，再用于整条写盘链路。 */
   const 读取草稿快照 = (): 演示文稿 => {
-    if (只读 || 编辑框标识 === null || 当前幻灯片 === null) return 文稿
-    const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
-    if (!框) return 文稿
-    const 新框 = 合并文字草稿(框, 编辑值)
-    if (新框 === 框) return 文稿
-    return 更新幻灯片(文稿, 当前幻灯片.id, {
-      文本框列表: 当前幻灯片.文本框列表.map(项 => 项.id === 框.id ? 新框 : 项),
+    const 当前 = 最新文稿.current, 草稿 = 文字草稿.current
+    if (只读 || (!草稿 && 编辑框标识 === null)) return 当前
+    const 页 = 草稿 ? 当前.幻灯片列表.find(项 => 项.id === 草稿.页标识) : 读取当前幻灯片(当前)
+    const 框 = 页?.文本框列表.find(项 => 项.id === (草稿?.标识 ?? 编辑框标识))
+    if (!框 || !页) return 当前
+    const 新框 = 合并文字草稿(框, 草稿?.值 ?? 编辑值)
+    if (新框 === 框) return 当前
+    return 更新幻灯片(当前, 页.id, {
+      文本框列表: 页.文本框列表.map(项 => 项.id === 框.id ? 新框 : 项),
     })
   }
   // CRDT callbacks bypass the local snapshot undo stack. Undo in a live session
@@ -467,6 +475,7 @@ const PptEditor = () => {
     const 编辑框 = 编辑框标识 && 内容.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)
     if (编辑框) set编辑值(编辑框.text)
     else if (编辑框标识) set编辑框标识(null)
+    if (文字草稿.current && 编辑框 && !文字草稿.current.组合中) 文字草稿.current.值 = 编辑框.text
     set文稿(内容)
   }
 
@@ -481,6 +490,16 @@ const PptEditor = () => {
     // 把本地修改提交到文稿会话：其他窗口收到广播后同步，版本过期时提示重新读取
     void 会话引用.current?.提交(新文稿)
   }
+  const 准备草稿引用 = useRef<() => 单文档草稿结果>(() => ({ 成功: true, 类型: 'ppt', 模型: 最新文稿.current, 已修改: false }))
+  准备草稿引用.current = () => {
+    const 草稿 = 文字草稿.current, 当前 = 最新文稿.current
+    if (草稿?.组合中) return { 成功: false, 错误: '请先完成输入法候选字，再保存' }
+    if (草稿 && !只读 && !当前.幻灯片列表.find(页 => 页.id === 草稿.页标识)?.文本框列表.some(框 => 框.id === 草稿.标识)) return { 成功: false, 错误: '草稿所在文本框已删除，已保留本机输入，请复制后重新选择文本框' }
+    const 快照 = 读取草稿快照()
+    if (快照 !== 当前) 更新文稿(快照)
+    return { 成功: true, 类型: 'ppt', 模型: 快照, 已修改: 快照 !== 当前 }
+  }
+  useLayoutEffect(() => activeDocumentId ? 注册编辑草稿(activeDocumentId, () => 准备草稿引用.current()) : undefined, [activeDocumentId, 注册编辑草稿])
   const 对象提交 = (修改: Record<string, 几何修改>) => {
     if (只读 || !当前幻灯片) return
     try {
@@ -765,7 +784,7 @@ const PptEditor = () => {
       return
     }
     set文稿(上一步)
-    if (编辑框标识) set编辑值(上一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? '')
+    if (编辑框标识) { const 值 = 上一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? ''; set编辑值(值); if (文字草稿.current) 文字草稿.current.值 = 值 }
     set选中框标识(null)
     message.success('已撤销')
   }
@@ -779,7 +798,7 @@ const PptEditor = () => {
       return
     }
     set文稿(下一步)
-    if (编辑框标识) set编辑值(下一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? '')
+    if (编辑框标识) { const 值 = 下一步.幻灯片列表.flatMap(页 => 页.文本框列表).find(框 => 框.id === 编辑框标识)?.text ?? ''; set编辑值(值); if (文字草稿.current) 文字草稿.current.值 = 值 }
     set选中框标识(null)
     message.success('已重做')
   }
@@ -866,6 +885,7 @@ const PptEditor = () => {
   }
 
   const 执行命令 = (标识: string, 参数?: string) => {
+    if (文字草稿.current?.组合中 && /^(file\.|export\.)/.test(标识)) { message.info('请先完成输入法候选字，再保存'); return }
     const 目标对象 = 选中对象.length ? 选中对象 : 选中框标识 ? [选中框标识] : []
     if (标识 === 'edit.selectAll') {
       if (!当前幻灯片) return
@@ -984,7 +1004,9 @@ const PptEditor = () => {
       }
       void 桥接.showOpenDialog('ppt').then(async 文件路径 => {
         if (!文件路径) return
-        const 内容 = await 读取本地文件内容(文件路径)
+        const 内容 = await 准备打开本地文件(文件路径)
+        if (!内容) return
+        文件路径 = 内容.打开路径 ?? 文件路径
         if (内容.类型 !== 'ppt' || !内容.演示文稿) throw new Error('请选择受支持的演示文稿文件')
         const 恢复文稿 = 内容.演示文稿 as 演示文稿
         恢复文稿.主题 = 恢复文稿.主题 ? 匹配内置主题(恢复文稿.主题 as 主题定义) : undefined
@@ -998,14 +1020,14 @@ const PptEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      if (保真风险 && 文档路径 && 是同一路径(文档路径, 保真风险.来源路径) && !/\.sealshow$/i.test(文档路径)) {
+      if (保真风险 && 文档路径 && 是同一路径(文档路径, 保真风险.来源路径) && !/\.(slppt|sealshow)$/i.test(文档路径)) {
         提示禁止覆盖(保真风险.警告)
         return
       }
       let 保存文稿 = 读取草稿快照()
       if (保存文稿 !== 文稿) 更新文稿(保存文稿)
-      const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
-      const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.pptx`
+      const 基准名 = 文稿.name.replace(/\.(slppt|sealshow|pptx|pptx\.json)$/i, '').trim()
+      const 默认路径 = 文档路径 ?? `${基准名 || '未命名演示'}.slppt`
       Promise.resolve(文档路径 ?? 桥接.showSaveDialog(默认路径, 'ppt' as const)).then(async (原始文件路径: string | null) => {
         if (原始文件路径) {
           const 文件路径 = 规范演示保存路径(原始文件路径)
@@ -1014,7 +1036,7 @@ const PptEditor = () => {
             return
           }
           if (路径被其他标签占用(文件路径)) return
-          if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径) && !/\.sealshow$/i.test(文件路径)) {
+          if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径) && !/\.(slppt|sealshow)$/i.test(文件路径)) {
             提示禁止覆盖(保真风险.警告)
             return
           }
@@ -1024,10 +1046,10 @@ const PptEditor = () => {
             try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
             catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
           }
-          if(!/\.sealshow$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
+          if(!/\.(slppt|sealshow)$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
           const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
+          const 模型 = /\.(slppt|sealshow)$/i.test(文件路径) ? null : 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
@@ -1061,8 +1083,8 @@ const PptEditor = () => {
       }
       let 保存文稿 = 读取草稿快照()
       if (保存文稿 !== 文稿) 更新文稿(保存文稿)
-      const 基准名 = 文稿.name.replace(/\.(pptx|pptx\.json)$/i, '').trim()
-      桥接.showSaveDialog(文档路径 && 规范演示保存路径(文档路径) ? 文档路径.replace(/^.*[\\/]/, '') : `${基准名 || '未命名演示'}.pptx`, 'ppt' as const).then(async (原始文件路径: string | null) => {
+      const 基准名 = 文稿.name.replace(/\.(slppt|sealshow|pptx|pptx\.json)$/i, '').trim()
+      桥接.showSaveDialog(文档路径 && 规范演示保存路径(文档路径) ? 文档路径.replace(/^.*[\\/]/, '') : `${基准名 || '未命名演示'}.slppt`, 'ppt' as const).then(async (原始文件路径: string | null) => {
         if (原始文件路径) {
           const 文件路径 = 规范演示保存路径(原始文件路径)
           if (!文件路径) {
@@ -1070,7 +1092,7 @@ const PptEditor = () => {
             return
           }
           if (路径被其他标签占用(文件路径)) return
-          if (保真风险 && !/\.sealshow$/i.test(文件路径)) {
+          if (保真风险 && !/\.(slppt|sealshow)$/i.test(文件路径)) {
             if (是同一路径(文件路径, 保真风险.来源路径)) {
               提示禁止覆盖(保真风险.警告)
               return
@@ -1083,10 +1105,10 @@ const PptEditor = () => {
             try { await 实时协作.publish(保存文稿, 文稿); await 实时协作.flush(); 保存文稿 = 实时协作.getSnapshot() }
             catch { message.warning('实时更新尚未确认，继续保存本机内容；待同步修改已保留') }
           }
-          if(!/\.sealshow$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
+          if(!/\.(slppt|sealshow)$/i.test(文件路径))校验当前Pptx写入能力(保存文稿)
           const 资源结果 = 收集演示资源标识(保存文稿).length ? await 桥接.presentationResources.export(收集演示资源标识(保存文稿)) : { 成功: true, 条目: [] }
           if (!资源结果.成功 || !资源结果.条目) throw new Error(资源结果.错误 ?? '图片资源导出失败')
-          const 模型 = 构建演示保存模型(保存文稿, 资源结果.条目)
+          const 模型 = /\.(slppt|sealshow)$/i.test(文件路径) ? null : 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
           写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
@@ -1140,10 +1162,12 @@ const PptEditor = () => {
   }
 
   const 提交编辑 = () => {
+    if (文字草稿.current?.组合中) return
     const 快照 = 读取草稿快照()
     if (快照 !== 文稿) 更新文稿(快照)
     set编辑框标识(null)
     set编辑值('')
+    文字草稿.current = null; 通知编辑草稿变化()
   }
 
   const 取激活态 = (标识: string): boolean => {
@@ -1271,7 +1295,7 @@ const PptEditor = () => {
       onDropdownOpen: 处理下拉框打开,
     }),
     React.createElement('div', { className: 'wps-ppt-object-toolbar' },
-      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, disabled: Boolean(文稿.定稿), onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null) } }), 文稿.定稿 ? '只读查看（本文稿已定稿）' : '只读查看'),
+      React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 只读, disabled: Boolean(文稿.定稿), onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { set只读(事件.target.checked); set编辑框标识(null); 文字草稿.current = null; 通知编辑草稿变化() } }), 文稿.定稿 ? '只读查看（本文稿已定稿）' : '只读查看'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 显示标尺, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set显示标尺(事件.target.checked) }), '标尺'),
       React.createElement('label', null, React.createElement('input', { type: 'checkbox', checked: 吸附, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => set吸附(事件.target.checked) }), '吸附'),
       React.createElement('button', { type: 'button', onClick: () => set参考线({ 垂直: [480], 水平: [270] }) }, '中心参考线'),
@@ -1341,10 +1365,14 @@ const PptEditor = () => {
             on选中框: 处理选框,
             on双击框: (标识: string) => {
               const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 标识)
+              文字草稿.current = { 标识, 页标识: 当前幻灯片.id, 值: 框?.text ?? '', 组合中: false }
               set编辑框标识(标识)
               set编辑值(框?.text ?? '')
             },
             on编辑值变化: (值: string) => {
+              if (只读) return
+              if (文字草稿.current) 文字草稿.current.值 = 值
+              通知编辑草稿变化()
               set编辑值(值)
               if (!实时协作.active || 实时协作.isComposing() || 只读) return
               const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
@@ -1353,8 +1381,10 @@ const PptEditor = () => {
               void 实时协作.publish(新文稿, 文稿).catch(() => {})
               set文稿(新文稿)
             },
-            on组合开始: () => { if (实时协作.active) 实时协作.beginComposition() },
+            on组合开始: () => { if (文字草稿.current) 文字草稿.current.组合中 = true; 通知编辑草稿变化(); if (实时协作.active) 实时协作.beginComposition() },
             on组合结束: (值: string) => {
+              if (文字草稿.current) { 文字草稿.current.组合中 = false; 文字草稿.current.值 = 值 }
+              set编辑值(值); 通知编辑草稿变化()
               if (!实时协作.active) return
               const 框 = 当前幻灯片.文本框列表.find(项 => 项.id === 编辑框标识)
               if (!框) return
@@ -1363,6 +1393,7 @@ const PptEditor = () => {
               void 实时协作.endComposition(新文稿).catch(() => {})
             },
             on提交编辑: 提交编辑,
+            on取消编辑: () => { 文字草稿.current = null; set编辑框标识(null); set编辑值(''); 通知编辑草稿变化() },
             on拖动框: (标识: string, x: number, y: number) => {
               const 框 = 当前幻灯片.文本框列表.find((项) => 项.id === 标识)
               if (框 === undefined) {

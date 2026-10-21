@@ -1,11 +1,12 @@
 import { Buffer } from 'buffer'
-import { PDFDocument, StandardFonts } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { downloadFile, readBundledFont } from './native'
 import { preparePdfImages } from './exportImages'
 import { runPdfPhases } from './pdfPhases'
 
 const fontPromises = new Map<string, Promise<Uint8Array>>()
+const parsedFonts = new Map<string, Promise<{ bytes: Uint8Array; font: any }>>()
 async function chineseFont(family: 'sans' | 'serif' = 'sans'): Promise<Uint8Array> {
   if (!fontPromises.has(family)) fontPromises.set(family, readBundledFont(family).catch((error) => { fontPromises.delete(family); throw error }))
   return fontPromises.get(family)!
@@ -146,9 +147,16 @@ async function ofdPdf(html: string): Promise<Uint8Array> {
   } finally { frame.remove() }
 }
 export async function installExportAdapters(core: any, save: any, handle: any) {
-  ;(globalThis as any).sealBrowserPdfFont = async (doc: any, text: string) => {
-    if (/^[\x00-\x7f]*$/.test(text)) return doc.embedFont(StandardFonts.Helvetica)
-    doc.registerFontkit(fontkit); return doc.embedFont(await chineseFont(), { subset: true })
+  ;(globalThis as any).sealBrowserPdfFont = async (doc: any, text: string, size: number) => {
+    doc.registerFontkit(core.pdf.可靠PDF字体引擎(fontkit))
+    const sources = (['sans', 'serif'] as const).map(family => ({
+      name: family === 'sans' ? 'NotoSansSC.ttf' : 'NotoSerifCJKsc-Regular.otf',
+      load: () => {
+        if (!parsedFonts.has(family)) parsedFonts.set(family, chineseFont(family).then(bytes => ({ bytes, font: (fontkit as any).create(bytes) })).catch(error => { parsedFonts.delete(family); throw error }))
+        return parsedFonts.get(family)!
+      },
+    }))
+    return core.pdf.创建PDF文字布局(doc, text, size, sources)
   }
   const pdfFunctions = { extract: '提取页面', merge: '合并文档', delete: '删除页面', rotate: '旋转页面', insertBlank: '插入空白页', insertPages: '插入文件页', editPage: '编辑页面' }
   for (const [channel, method] of Object.entries(pdfFunctions)) handle('pdf.' + channel, async (...args: any[]) => {

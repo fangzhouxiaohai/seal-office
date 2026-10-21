@@ -21,6 +21,36 @@ function 安装全屏接口(进入 = vi.fn().mockResolvedValue({ 成功: true, �
 
 const 渲染放映 = (on退出 = vi.fn()) => render(<AntdApp><SlideshowView 文稿={创建演示文稿()} 当前索引={0} on翻页={vi.fn()} on退出={on退出} /></AntdApp>)
 
+it('移动放映默认隐藏顶底栏，双击显示不误翻页，3秒后隐藏，单击和系统返回仍有效',async()=>{
+  安装全屏接口()
+  const media=vi.spyOn(window,'matchMedia').mockImplementation(query=>({matches:query.includes('max-width'),media:query,onchange:null,addEventListener:vi.fn(),removeEventListener:vi.fn(),addListener:vi.fn(),removeListener:vi.fn(),dispatchEvent:vi.fn()}))
+  vi.useFakeTimers()
+  try{
+    const next=vi.fn(),exit=vi.fn(),deck=添加幻灯片(创建演示文稿())
+    const {unmount}=render(<AntdApp><SlideshowView 文稿={deck} 当前索引={0} on翻页={next} on退出={exit}/></AntdApp>)
+    const reader=screen.getByRole('dialog',{name:'幻灯片放映'})
+    expect(next).toHaveBeenCalledWith(0);next.mockClear()
+    expect(screen.queryByRole('toolbar',{name:'演示工具'})).toBeNull()
+    fireEvent.click(reader,{detail:1});act(()=>{vi.advanceTimersByTime(100)});fireEvent.click(reader,{detail:2});fireEvent.doubleClick(reader)
+    expect(screen.getByRole('toolbar',{name:'演示工具'})).toBeVisible()
+    act(()=>{vi.advanceTimersByTime(400)})
+    expect(next).not.toHaveBeenCalled()
+    act(()=>{vi.advanceTimersByTime(2600)})
+    expect(screen.queryByRole('toolbar',{name:'演示工具'})).toBeNull()
+    const tap=()=>{fireEvent.touchStart(reader,{touches:[{identifier:1,clientX:150,clientY:120}]});return fireEvent.touchEnd(reader,{touches:[]})}
+    tap();fireEvent.click(reader,{detail:1});act(()=>{vi.advanceTimersByTime(100)});tap()
+    act(()=>{vi.advanceTimersByTime(400)})
+    expect(next).not.toHaveBeenCalled()
+    expect(screen.getByRole('toolbar',{name:'演示工具'})).toBeVisible()
+    act(()=>{vi.advanceTimersByTime(2600)})
+    fireEvent.click(reader,{detail:1});act(()=>{vi.advanceTimersByTime(400)})
+    expect(next).toHaveBeenCalledWith(1)
+    const back=new Event('seal-before-native-back',{cancelable:true});fireEvent(window,back)
+    expect(back.defaultPrevented).toBe(true);expect(exit).toHaveBeenCalledOnce()
+    unmount()
+  }finally{vi.useRealTimers();media.mockRestore()}
+})
+
 it('放映根实际获得焦点时也能改绑黑屏/退出，普通弹窗键位不会泄漏',()=>{
   安装全屏接口();saveShortcutOverrides({'slideshow:show.black':['K'],'slideshow:show.exit':['Q']})
   const exit=vi.fn();渲染放映(exit)

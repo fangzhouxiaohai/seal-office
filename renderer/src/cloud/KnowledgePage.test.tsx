@@ -1,8 +1,14 @@
 import {fireEvent,render,screen,waitFor,within} from '@testing-library/react'
 import {App as AntdApp} from 'antd'
-import {beforeEach,describe,it,expect,vi} from 'vitest'
+import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest'
 import KnowledgePage from './KnowledgePage'
 const cloud=vi.hoisted(()=>({state:{} as any,call:vi.fn(),refresh:vi.fn(async()=>{}),configure:vi.fn()}))
+const originalAPI=Object.getOwnPropertyDescriptor(window,'electronAPI')
+beforeEach(()=>{Object.defineProperty(window,'electronAPI',{configurable:true,value:{cloud:{invoke:vi.fn(async(action:string)=>{
+  expect(action).toBe('requireAIIdentity')
+  return {成功:true,数据:{accountId:'isolated-knowledge',verified:true,method:'phone'}}
+})}}})})
+afterEach(()=>{if(originalAPI)Object.defineProperty(window,'electronAPI',originalAPI);else Reflect.deleteProperty(window,'electronAPI')})
 vi.mock('./CloudProvider',()=>({useCloud:()=>cloud,cloudCall:cloud.call}))
 beforeEach(()=>{cloud.state={account:{id:'user',enabled:true},unlocked:true};cloud.call.mockReset();cloud.call.mockImplementation(async action=>action==='list'?[{id:'private',kind:'knowledge',parent:null,deleted:0,meta:{name:'机密资料',text:JSON.stringify([{location:'第一节',text:'只有本人的私有内容'}])}}]:{items:[]})})
 describe('知识库权限与来源',()=>{

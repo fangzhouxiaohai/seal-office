@@ -54,6 +54,17 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
   const encodeMeta=(id,meta)=>seal(root(),Buffer.from(JSON.stringify(meta)),`seal-meta:${id}`).toString('base64')
   const decodeMeta=n=>({...n,meta:JSON.parse(unseal(root(),Buffer.from(n.meta,'base64'),`seal-meta:${n.id}`).toString())})
   async function refresh(){if(state.token){const account=await request('/v1/me');if(state.account?.autosave&&!account.autosave){epoch++;for(const req of active)req.destroy()}state.account=account;if(!account.enabled){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};clearOutbox()}persist()}return status()}
+  async function requireAIIdentity(){
+    const required=(status=401,message='使用 AI 功能前请先登录并完成手机号验证')=>Object.assign(new Error(message),{status,code:'AI_IDENTITY_REQUIRED'})
+    if(!state.token||!state.account||state.deletionReceipt)throw required()
+    const token=state.token,accountId=state.account.id,startedEpoch=epoch
+    let identity
+    try{identity=await request('/v1/ai/identity')}
+    catch(error){if(error.status===401||error.status===403)throw required(error.status,error.message);throw error}
+    if(startedEpoch!==epoch||token!==state.token||accountId!==state.account?.id)throw required()
+    if(identity?.verified!==true||identity.accountId!==accountId||identity.method!=='phone')throw required(403,'请先使用手机号短信验证登录，再使用 AI 功能')
+    return {accountId,verified:true,method:'phone'}
+  }
   async function list(){requireSpace();const result=await request('/v1/nodes');return result.items.map(decodeMeta)}
   async function createNode(meta,kind='file',parent=null){
     requireSpace();const id=randomUUID(),fileKey=randomBytes(32)
@@ -151,7 +162,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     ...realtime,
     async conversionCapabilities(){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/capabilities')},
     async convertDocument(input){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');if(!input||input.consent!==true)throw new Error('请确认本次文档正文上传转换授权');const source=documentFormats.find(f=>f.extension===input.inputFormat),target=documentFormats.find(f=>f.extension===input.outputFormat),standard={word:'docx',table:'xlsx',ppt:'pptx'};if(!standard[input.type]||!source||!target||(source.type!==input.type&&source.extension!=='xml')||(target.type!==input.type&&target.extension!=='pdf')||target.readOnlySource||!target.outputFilter&&target.extension!==standard[input.type]&&target.extension!=='pdf'||['xml','mhtml','prn'].includes(target.outputFilter))throw new Error('转换格式不受支持');if(typeof input.data!=='string'||input.data.length>Math.ceil(20*1024*1024/3)*4)throw new Error('文档转换最多支持20 MiB');const raw=Buffer.from(input.data,'base64');if(!raw.length||raw.length>20*1024*1024||raw.toString('base64')!==input.data)throw new Error('转换文件数据无效或超过20 MiB');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/convert',{method:'POST',data:{inputFormat:input.inputFormat,outputFormat:input.outputFormat,type:input.type,data:input.data,consent:true},timeout:110000})},
-    status,refresh,list,save,flush,download,request,pending,pendingFile,keepConflict,
+    status,refresh,requireAIIdentity,list,save,flush,download,request,pending,pendingFile,keepConflict,
     async discardPending(id){requireSpace();if(locks.has(id))throw new Error('请等待当前同步结束');const file=queuePath(id),q=JSON.parse(fs.readFileSync(file,'utf8'));if(q.upload){try{await request(`/v1/uploads/${q.upload}`,{method:'DELETE'})}catch(error){if(error.status!==404)throw error}}fs.unlinkSync(file);fs.unlinkSync(path.join(outbox,q.blob));delete state.statuses[id];persist();return status()},
     async linkFile(id,localPath,data,version){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('云文件不存在');state.links[localPath]={id,meta:node.meta,created:true,version,digest:digest(Buffer.from(data,'base64')),parent:node.parent,kind:node.kind};persist()},
     async replaceTemplate(id,data){const node=(await list()).find(n=>n.id===id&&!n.deleted);if(!node||!node.meta.template)throw new Error('请选择自己的演示模板');const pubs=(await request('/v1/publications')).items;if(pubs.some(p=>p.node_id===id&&['pending','approved'].includes(p.status)))throw new Error('请先撤回此模板的公开申请，再替换版本并重新审核');const linkId='template:'+id;state.links[linkId]={id,meta:node.meta,created:true,version:node.version,digest:null,parent:node.parent,kind:node.kind};persist();return save({linkId,name:node.meta.name,data,template:true})},

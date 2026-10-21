@@ -2,26 +2,33 @@ import React,{createContext,useCallback,useContext,useEffect,useRef,useState} fr
 import {App,Button,Checkbox,Input,Modal} from 'antd'
 import {CloudLoginForm} from './CloudLoginForm'
 import {AccountSecurity} from './AccountSecurity'
-export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string;hasPassword?:boolean}
+import {AI身份提示事件,AI登录原因,检查AI身份,提示AI身份,requireAIIdentity,type AI身份提示} from './aiIdentity'
+export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string;hasPassword?:boolean;identityVerified?:boolean;identityMethod?:'phone'}
 export interface CloudState {account:CloudAccount|null;unlocked:boolean;statuses:Record<string,string>;pending:number;recoveryPending?:string;deletionPending?:boolean}
 const initial:CloudState={account:null,unlocked:false,statuses:{},pending:0}
 export async function cloudCall<T=any>(action:string,input?:unknown):Promise<T>{
   const api=window.electronAPI?.cloud
   if(!api){if(action==='status')return initial as T;throw new Error('云端功能需要桌面版海豹办公')}
+  if(['question','imagePresentation','ocrImage'].includes(action)){const identity=await 检查AI身份();if(!identity.成功)throw Object.assign(new Error(identity.错误),{status:identity.状态码,code:identity.code,需要登录:identity.需要登录})}
   const result=await api.invoke(action,input)
-  if(!result.成功)throw Object.assign(new Error(result.错误||'云端操作失败'),{status:result.状态码})
+  if(!result.成功){if(['question','imagePresentation','ocrImage'].includes(action)&&(result.需要登录||result.code==='AI_IDENTITY_REQUIRED'))提示AI身份(undefined,result.错误);throw Object.assign(new Error(result.错误||'云端操作失败'),{status:result.状态码,code:result.code,需要登录:result.需要登录})}
   if(action==='shareCreate')window.dispatchEvent(new Event('seal-collaboration-binding'))
   return result.数据 as T
 }
-interface CloudContextValue {state:CloudState;refresh:()=>Promise<void>;configure:()=>void;call:typeof cloudCall}
-const Context=createContext<CloudContextValue>({state:initial,refresh:async()=>{},configure:()=>{},call:cloudCall})
+interface CloudContextValue {state:CloudState;refresh:()=>Promise<void>;configure:()=>void;call:typeof cloudCall;reason:string;requireAIIdentity:typeof requireAIIdentity}
+const Context=createContext<CloudContextValue>({state:initial,refresh:async()=>{},configure:()=>{},call:cloudCall,reason:'',requireAIIdentity})
 export const useCloud=()=>useContext(Context)
 export function CloudProvider({children}:{children:React.ReactNode}){
   const {modal,message}=App.useApp(),[state,setState]=useState(initial),[open,setOpen]=useState(false),[busy,setBusy]=useState(false)
   const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[agreed,setAgreed]=useState(false),[recovery,setRecovery]=useState(''),[shownRecovery,setShownRecovery]=useState(''),[confirmedRecovery,setConfirmedRecovery]=useState(false),[cooldown,setCooldown]=useState(0)
   const [loginError,setLoginError]=useState(''),operationPending=useRef(false)
+  const [reason,setReason]=useState(''),[forceLogin,setForceLogin]=useState(false)
   const refresh=useCallback(async()=>{const result=await cloudCall<CloudState>('status');setState(result)},[])
   useEffect(()=>{void refresh().catch(e=>message.error(e.message))},[refresh,message])
+  useEffect(()=>{
+    const prompt=(event:Event)=>{const detail=(event as CustomEvent<AI身份提示>).detail;if(!detail)return;if(!detail.loginRequired){modal.error({title:'AI 账号核验未完成',content:detail.error});return}setReason(detail.reason||AI登录原因);setForceLogin(true);setCode('');setLoginError('');setOpen(true);void refresh().catch(()=>{})}
+    window.addEventListener(AI身份提示事件,prompt);return()=>window.removeEventListener(AI身份提示事件,prompt)
+  },[modal,refresh])
   useEffect(()=>{if(state.recoveryPending)setShownRecovery(state.recoveryPending)},[state.recoveryPending])
   useEffect(()=>{
     if(!open||!state.deletionPending)return
@@ -34,11 +41,14 @@ export function CloudProvider({children}:{children:React.ReactNode}){
   const run=async(task:()=>Promise<any>,inline=false)=>{if(operationPending.current)return;operationPending.current=true;setBusy(true);if(inline)setLoginError('');try{await task()}catch(e){const error=e instanceof Error?e.message:'请稍后重试';if(inline)setLoginError(error);else modal.error({title:'云端操作未完成',content:error})}finally{await refresh().catch(()=>{});operationPending.current=false;setBusy(false)}}
   const send=()=>{if(cooldown||!/^1[3-9]\d{9}$/.test(phone))return;void run(async()=>{await cloudCall('code',{phone});setCooldown(60);message.success('验证码已发送')},true)}
   const enable=()=>run(async()=>{const result=await cloudCall<CloudState&{recovery:string}>('enable',{consent:agreed});setShownRecovery(result.recovery);setConfirmedRecovery(false);setState(result)})
-  const configure=()=>{setCode('');setRecovery('');setAgreed(false);setLoginError('');setOpen(true)}
-  return <Context.Provider value={{state,refresh,configure,call:cloudCall}}>{children}
-    <Modal title={state.account?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={!state.account?'seal-login-modal':undefined} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current)setOpen(false)}} width={state.account?560:440}>
+  const configure=()=>{setReason('');setForceLogin(false);setCode('');setRecovery('');setAgreed(false);setLoginError('');setOpen(true)}
+  const login=async(action:'login'|'loginPassword',input:unknown)=>{await cloudCall(action,input);if(reason||forceLogin){const identity=await 检查AI身份(reason||AI登录原因);if(!identity.成功)throw new Error(identity.错误);setOpen(false);setReason('');setForceLogin(false)}setCode('');message.success('登录成功')}
+  const loginVisible=!state.account||forceLogin
+  return <Context.Provider value={{state,refresh,configure,call:cloudCall,reason,requireAIIdentity}}>{children}
+    <Modal title={!loginVisible?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={loginVisible?'seal-login-modal':undefined} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current){setOpen(false);setReason('');setForceLogin(false)}}} width={!loginVisible?560:440}>
+      {reason?<p role="status">{reason}</p>:null}
       {state.deletionPending&&<div role="status"><p>注销请求正在确认或清理历史备份。服务器确认完成后，账号与对应云数据无法恢复；可以查看进度。</p><Button loading={busy} onClick={()=>void run(async()=>{const result=await cloudCall('deletionStatus');if(result.deleted)message.success('账号与云数据已永久删除；历史备份清理完成')})}>查看注销进度</Button></div>}
-      {!state.account?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(async()=>{await cloudCall('loginPassword',{phone,password});message.success('登录成功')},true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(async()=>{await cloudCall('login',{phone,code});setCode('');message.success('登录成功')},true)}}/>:<>
+      {!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
         <p>已登录：{state.account.phone} <Button size="small" onClick={()=>run(()=>cloudCall('logout'))}>退出登录</Button></p>
         <AccountSecurity key={state.account.id} account={state.account} onChanged={refresh}/>
         {!state.account.enabled?<>

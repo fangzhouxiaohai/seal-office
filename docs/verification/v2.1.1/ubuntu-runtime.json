@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "packageSha256": "05ab9f70a2c7d741c44b14dc0c5f0c04e6210e83c68a7779a37982293ba35d02",
+  "packageBytes": 158806836,
+  "buildCommit": "23db73abc543bdea6be98bfab0671841b1c36372",
+  "reports": {
+    "ubuntu-22.04": {
+      "passed": true,
+      "checks": 77,
+      "sandboxBypassed": false,
+      "report": "ubuntu-22.04.json"
+    },
+    "ubuntu-24.04": {
+      "passed": true,
+      "checks": 77,
+      "sandboxBypassed": false,
+      "report": "ubuntu-24.04.json"
+    }
+  },
+  "runtimeInputsMatch": true
+}

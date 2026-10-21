@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "suites": {
+    "renderer": {
+      "passed": true,
+      "files": 277,
+      "tests": 2602,
+      "failed": 0,
+      "skipped": 0,
+      "fullUnfilteredRun": true,
+      "reportSha256": "6b53269dc4050242c6f2c5ab2fac7c9af69b887f4f03ca696e9e46816f5a4e3c",
+      "startedAt": 1792583788930
+    },
+    "main": {
+      "passed": true,
+      "files": 111,
+      "tests": 1083,
+      "failed": 0,
+      "skipped": 0,
+      "fullUnfilteredRun": true,
+      "reportSha256": "d78ad031059e49134864ddae5063c5fadea43dc15d5c4aca951dd1d8ef64e01a",
+      "startedAt": 1792581321440
+    },
+    "server": {
+      "passed": true,
+      "tests": 46,
+      "failed": 0,
+      "skipped": 0,
+      "reportSha256": "802f15bdadf2bf16d267bd06188c867592f2bc3547b4d5a4428e264fa3f35194"
+    },
+    "mobile": {
+      "passed": true,
+      "tests": 34,
+      "failed": 0,
+      "skipped": 0,
+      "reportSha256": "654eae7dd02c33785fda345c7aa9ec3d0955f3351587e55a6905630a5b6575d6"
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 11,
+      "failed": 0,
+      "skipped": 0,
+      "reportSha256": "9254e81eabd252c6ca21d981aa808f84262f5a0436417eca943a364cc7fa2be3"
+    }
+  },
+  "tests": 3776,
+  "priorRendererRuns": [
+    {
+      "threads": 2,
+      "tests": 2601,
+      "passed": 2598,
+      "failed": 3,
+      "resolution": "Updated OCR fixture with a trusted test identity; tested actual convert/cancel flow instead of the former partial-open behavior; await DOCX parsing before recent-open assertions."
+    },
+    {
+      "threads": 4,
+      "tests": 2602,
+      "passed": 2599,
+      "failed": 3,
+      "resolution": "Await real PDF child tasks and drain them before restoring mocks. DiagramCloudUI retained every original assertion and its existing 10-second UI wait; its full five-case file passed unchanged under the canonical single worker. Final complete run uses that unchanged repository single-worker configuration."
+    }
+  ],
+  "assertionsRemoved": false,
+  "productOrUiTimeoutsIncreased": false
+}

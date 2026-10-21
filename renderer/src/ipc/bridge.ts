@@ -1,3 +1,4 @@
+import {认证AI调用} from '../cloud/aiIdentity'
 export type 文本编码 = 'utf8' | 'utf16le' | 'utf16be' | 'gb18030'
 export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
 export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string; 已取消?: boolean }
@@ -27,7 +28,7 @@ export interface 助手工具结果 { 请求标识: string; 调用标识: string
 export interface 助手对话结果 { 内容: string; 思考?: string; 已停止?: boolean; 计划?: 助手计划项[]; 摘要?: string; 压缩次数?: number }
 export interface 助手结果<T> { 成功: boolean; 数据?: T; 错误?: string }
 /** Cloud service and browser/mobile adapters share this failure envelope. */
-export interface 云端响应<T = unknown> { 成功: boolean; 数据?: T; 错误?: string }
+export interface 云端响应<T = unknown> { 成功: boolean; 数据?: T; 错误?: string; 状态码?:number;code?:string;需要登录?:boolean }
 export interface 本机文件夹结果 { 成功: boolean; 路径?: string; 文件?: Array<{ 名称: string; 路径: string; 扩展名: string; 大小: number; 修改时间: number }>; 错误?: string }
 export interface 关联文件领取结果 { 成功: boolean; 路径列表?: string[]; 错误?: string }
 export interface 关闭状态 { 未保存数量: number; 备份成功: boolean; 备份错误?: string }
@@ -242,7 +243,7 @@ export interface 电子接口 {
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
-  cloud?: { invoke: (action: string, input?: unknown) => Promise<{ 成功: boolean; 数据?: any; 错误?: string; 状态码?: number }> }
+  cloud?: { invoke: (action: string, input?: unknown) => Promise<云端响应<any>> }
   ai: {
     getConfig: () => Promise<助手结果<助手配置>>
     saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>
@@ -476,3 +477,16 @@ export const 桥接 = {
     extract: (数据: string, 页码: number[]) => 取后端()?.pdf.extract(数据, 页码) ?? 失败('当前环境不支持 PDF 页面提取'), merge: (列表: string[]) => 取后端()?.pdf.merge(列表) ?? 失败('当前环境不支持 PDF 合并'), delete: (数据: string, 页码: number[]) => 取后端()?.pdf.delete(数据, 页码) ?? 失败('当前环境不支持 PDF 删除页面'), rotate: (数据: string, 页码: number[], 角度: number) => 取后端()?.pdf.rotate(数据, 页码, 角度) ?? 失败('当前环境不支持 PDF 旋转页面'), exportToPath: (html: string, 保存路径: string) => 取后端()?.pdf.exportToPath(html, 保存路径) ?? 失败('当前环境不支持 PDF 导出'),
   },
 }
+
+// Every renderer (desktop, responsive web, Android and Harmony WebView) uses
+// these adapters. Config/read/local validation and current-task controls remain
+// independent of generation; the host repeats identity validation before I/O.
+function 保护AI生成(target:object,names:string[]){
+  const methods=target as Record<string,unknown>
+  for(const name of names){const original=methods[name];if(typeof original==='function')methods[name]=(...args:unknown[])=>认证AI调用(()=>Reflect.apply(original,target,args))}
+}
+保护AI生成(桥接.ai,['chat'])
+保护AI生成(桥接.presentationAi,['translate','proofread','speak','generateScript','narrate'])
+保护AI生成(桥接.presentationGeneration,['outline','pages','singlePage','beautify','diagram'])
+保护AI生成(桥接.presentationGeneration.assets,['semanticSearch'])
+保护AI生成(桥接.presentationCapture,['recognize'])

@@ -118,7 +118,9 @@ export function 页面设置相同(左?: 文字页面设置, 右?: 文字页面�
     左.原始纸张.宽 === 右.原始纸张.宽 && 左.原始纸张.高 === 右.原始纸张.高
   const 边距相同 = 左.原始页边距 === 右.原始页边距 || !!左.原始页边距 && !!右.原始页边距 &&
     (['上', '右', '下', '左'] as const).every((字段名) => 左.原始页边距![字段名] === 右.原始页边距![字段名])
-  return 纸张相同 && 边距相同 && 左.页眉Html === 右.页眉Html && 左.页脚Html === 右.页脚Html
+  // Empty headers/footers may be omitted by the native save snapshot. They do
+  // not represent an edit; populated content remains compared exactly.
+  return 纸张相同 && 边距相同 && (左.页眉Html || '') === (右.页眉Html || '') && (左.页脚Html || '') === (右.页脚Html || '')
 }
 
 /** 文档模型 */

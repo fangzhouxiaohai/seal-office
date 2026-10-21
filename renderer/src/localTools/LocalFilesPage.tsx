@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { App as AntdApp, Button } from 'antd'
-import { 基准文件名, 记录最近文档, 读取本地文件内容 } from '../fileOpen'
+import { 基准文件名, 记录最近文档, 准备打开本地文件 } from '../fileOpen'
 import { 桥接 } from '../ipc/bridge'
 import { useAppStore } from '../store'
 import './localTools.css'
@@ -43,10 +43,12 @@ export default function LocalFilesPage({ 位置 }: { 位置: 本机位置 }) {
   const 打开文件 = async (目标: 本机文件) => {
     设正在打开(目标.路径)
     try {
-      const 内容 = await 读取本地文件内容(目标.路径)
+      const 内容 = await 准备打开本地文件(目标.路径)
+      if (!内容) return
+      const 路径 = 内容.打开路径 ?? 目标.路径
       const 初始内容 = 内容.类型 === 'ppt' ? 内容.演示文稿 : 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容
-      createDoc(内容.类型, 初始内容, { 路径: 目标.路径, 警告: 内容.警告, 页面设置: 内容.页面设置, 文件指纹: 内容.文件指纹 })
-      const 已记录 = await 记录最近文档(目标.路径, 基准文件名(目标.路径), 内容.类型)
+      createDoc(内容.类型, 初始内容, { 路径, 警告: 内容.警告, 页面设置: 内容.页面设置, 文件指纹: 内容.文件指纹 })
+      const 已记录 = await 记录最近文档(路径, 基准文件名(路径), 内容.类型)
       if (已记录) {
         refreshRecents()
       }

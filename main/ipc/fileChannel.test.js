@@ -39,7 +39,7 @@ describe('保存/打开对话框过滤器映射', () => {
     expect(保存过滤器映射.table.flatMap(项 => 项.extensions)).toEqual(expect.arrayContaining(['xlsx', 'xls', 'ods', 'csv', 'json', 'dbf', 'dif']))
     expect(保存过滤器映射.ppt.flatMap(项 => 项.extensions)).toEqual(expect.arrayContaining(['pptx', 'ppt', 'odp', 'potx', 'ppsx']))
     expect(Object.values(保存过滤器映射).flatMap(组 => 组.flatMap(项 => 项.extensions))).not.toEqual(expect.arrayContaining(['docm', 'xlsm', 'pptm', 'xlam']))
-    expect(保存过滤器映射.pdf).toEqual([{ name: 'PDF 文件', extensions: ['pdf'] }])
+    expect(保存过滤器映射.pdf).toEqual([{ name: '海豹 PDF', extensions: ['spdf'] }, { name: 'PDF 文件', extensions: ['pdf'] }])
   })
 
   it('表格打开过滤器支持 XLSX、CSV 和旧版 JSON', () => {

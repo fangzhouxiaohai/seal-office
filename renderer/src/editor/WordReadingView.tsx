@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { 净化富文本 } from './sanitizeHtml'
 import { useReadingFullscreen, useReadingPinch, type ReadingPoint } from './readingInteractions'
+import { useReadingChrome } from './useReadingChrome'
 import './reading.css'
 
 export interface WordReadingState { page:number; zoom:number; mode:'pages'|'continuous'; top:number }
@@ -13,6 +14,7 @@ export default function WordReadingView({html,title,fontSize,revisionView='marku
   const [width,setWidth]=useState(0),[height,setHeight]=useState(0),[pages,setPages]=useState(1),[page,setPage]=useState(initialState?.page??1),[zoom,setZoom]=useState(initialState?.zoom??1),[mode,setMode]=useState<'pages'|'continuous'>(initialState?.mode??'pages')
   const savedTop=useRef(initialState?.top??0),pendingAnchor=useRef<unknown>(null)
   const safe=useMemo(()=>净化富文本(html),[html]),native=useReadingFullscreen(root,true,onClose)
+  const chrome=useReadingChrome(root,true)
   const go=(value:number)=>{const next=Math.max(1,Math.min(pages,value));setPage(next);if(viewport.current)viewport.current.scrollLeft=(next-1)*width}
   const capture=(point:ReadingPoint)=>{
     const doc=document as Document & {caretPositionFromPoint?:(x:number,y:number)=>{offsetNode:Node;offset:number}|null}
@@ -49,8 +51,8 @@ export default function WordReadingView({html,title,fontSize,revisionView='marku
   useEffect(()=>{const area=viewport.current;if(!area)return;if(pendingAnchor.current){restore(pendingAnchor.current);pendingAnchor.current=null}else if(mode==='pages')area.scrollLeft=(page-1)*width;else area.scrollTop=savedTop.current},[width,mode,pages])
   useEffect(()=>{onStateChange?.({page,zoom,mode,top:savedTop.current})},[page,zoom,mode,onStateChange])
   const switchMode=()=>{const area=viewport.current,rect=area?.getBoundingClientRect();pendingAnchor.current=capture({x:(rect?.left??0)+20,y:(rect?.top??0)+20});setMode(mode==='pages'?'continuous':'pages')}
-  return createPortal(<section ref={root} className="seal-fullscreen-reader seal-word-reader" role="dialog" aria-modal="true" aria-label="文字全屏阅读" tabIndex={-1} data-fullscreen={native?'native':'viewport'}>
-    <div className="seal-fullscreen-reader__toolbar" role="toolbar" aria-label="全屏阅读工具">
+  return createPortal(<section ref={root} className="seal-fullscreen-reader seal-word-reader" role="dialog" aria-modal="true" aria-label="文字全屏阅读" aria-description={chrome.description} tabIndex={-1} data-fullscreen={native?'native':'viewport'} data-reading-controls={chrome.visible?'visible':'hidden'} data-reading-auto-hide={chrome.autoHide?'true':undefined}>
+    <div className="seal-fullscreen-reader__toolbar" role="toolbar" aria-label="全屏阅读工具" data-reading-chrome hidden={!chrome.visible}>
       <button type="button" onClick={onClose} aria-label="退出全屏阅读">返回</button><span className="seal-fullscreen-reader__title">{title}</span>
       <button type="button" aria-label={mode==='pages'?'切换连续阅读':'切换左右翻页'} onClick={switchMode}>{mode==='pages'?'连续阅读':'左右翻页'}</button>
       <button type="button" aria-label="缩小阅读内容" disabled={zoom<=.75} onClick={()=>changeZoom(zoom-.25)}>−</button><output aria-label="阅读缩放">{Math.round(zoom*100)}%</output><button type="button" aria-label="放大阅读内容" disabled={zoom>=3} onClick={()=>changeZoom(zoom+.25)}>＋</button>
@@ -59,7 +61,7 @@ export default function WordReadingView({html,title,fontSize,revisionView='marku
       <div ref={content} className="seal-word-reader__content" contentEditable={false} data-seal-revision-view={revisionView} style={{'--reading-width':`${width}px`,'--reading-height':`${height}px`,fontSize:`${fontSize*zoom}px`} as React.CSSProperties} dangerouslySetInnerHTML={{__html:safe}}/>
       {mode==='pages'&&Array.from({length:pages},(_,index)=><span key={index} className="seal-word-reader__snap" aria-hidden="true" style={{left:index*width,width}}/>)}
     </div>
-    <div className="seal-fullscreen-reader__footer">
+    <div className="seal-fullscreen-reader__footer" data-reading-chrome hidden={!chrome.visible}>
       {mode==='pages'?<><button type="button" aria-label="上一阅读页" disabled={page<=1} onClick={()=>go(page-1)}>上一页</button><span aria-live="polite">阅读页 {page} / {pages}</span><button type="button" aria-label="下一阅读页" disabled={page>=pages} onClick={()=>go(page+1)}>下一页</button></>:<span>连续阅读</span>}
       <small>按屏重排 · 双指缩放</small>
     </div>

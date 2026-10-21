@@ -7,6 +7,7 @@ const { 创建文稿会话服务 } = require('../ppt/session')
 const { 批量检查 } = require('../ppt/batch')
 const { 提取资源, 压缩图片 } = require('../ppt/resourceTools')
 const fs = require('fs')
+const { 校验实名AI访问, AI失败结果 } = require('../ai/identityGate')
 
 function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 服务 = {}) {
   const 会话 = 服务.会话 ?? 创建文稿会话服务()
@@ -91,7 +92,7 @@ function 注册演示通道(ipcMain, 资源存储 = 创建资源存储(), 服务
   ipcMain.handle('presentation.recording.save', (_事件, 数据, 格式, 建议名) => 执行异步(async () => 取录制服务().保存录制({ 数据, 格式, 建议名 })))
   ipcMain.handle('presentation.recording.support', () => 执行(() => 取录制服务().读取支持情况()))
   ipcMain.handle('presentation.recognition.status', () => 执行异步(async () => 取识别服务().读取状态()))
-  ipcMain.handle('presentation.recognition.recognize', (_事件, 数据, 类型) => 执行异步(async () => 取识别服务().识别({ 数据, 类型 })))
+  ipcMain.handle('presentation.recognition.recognize', (_事件, 数据, 类型) => 执行异步(async () => { try { await 校验实名AI访问(服务.requireAIIdentity); return await 取识别服务().识别({ 数据, 类型 }) } catch (error) { return AI失败结果(error, '文字识别失败') } }))
 
   // 文稿会话：同文件多个编辑窗口共享内容、版本与保存结果
   ipcMain.handle('presentation.session.register', (_事件, 文稿标识, 视图标识, 初始内容, 路径) => 异步执行(async () => {

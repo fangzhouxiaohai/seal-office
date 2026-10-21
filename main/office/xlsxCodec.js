@@ -5,7 +5,7 @@ const path = require('path')
 const { 规范Xlsx命名空间 } = require('./xlsxNamespaces')
 const { 解码Xml实体 } = require('./xmlEntities')
 const { 读取原始公式, 展开共享公式Xml } = require('./xlsxFormulas')
-const { 读取工作簿元数据, 读取工作簿日期基准, 写入动态元数据 } = require('./xlsxMetadata')
+const { 读取工作簿元数据, 读取工作簿日期基准, 读取工作表打印方向, 写入动态元数据 } = require('./xlsxMetadata')
 const { 规范公式函数名 } = require('./xlsxFunctionNames')
 const { 读取公式兼容模式, 写入公式兼容模式 } = require('./xlsxCompatibility')
 
@@ -516,7 +516,7 @@ async function 写入筛选Xml(原数据, 筛选列表) {
   return 压缩包.generateAsync({ type: 'nodebuffer' })
 }
 
-function 读取页面设置(工作表, 警告) {
+function 读取页面设置(工作表, 警告, 打印方向) {
   const 原设置 = 工作表.pageSetup ?? {}
   const 页边距 = Object.entries(页边距方案).find(([, 预设]) =>
     Object.entries(预设).every(([字段, 值]) => Math.abs((原设置.margins?.[字段] ?? 值) - 值) < 0.001)
@@ -526,13 +526,17 @@ function 读取页面设置(工作表, 警告) {
     ? '跟随打印机'
     : Object.entries(纸张编号).find(([, 编号]) => 编号 === 原设置.paperSize)?.[0]
   if (!纸张大小) 警告.add('当前纸张规格未导入')
-  if (原设置.orientation !== 'portrait' && 原设置.orientation !== 'landscape') 警告.add('纸张方向未导入')
+  // ST_Orientation has three valid values. Website exporters commonly write
+  // "default" (use the printer's orientation), which is not malformed content.
+  // Preserve that choice in the edit model so saving does not force portrait.
+  const 方向 = new Map([['portrait', '纵向'], ['landscape', '横向'], ['default', '跟随打印机']]).get(打印方向 ?? 原设置.orientation ?? 'default')
+  if (!方向) 警告.add('纸张方向未导入')
   if (原设置.fitToPage || (typeof 原设置.scale === 'number' && 原设置.scale !== 100)) {
     警告.add('打印缩放和分页设置未导入')
   }
   return {
     页边距: 页边距 ?? '常规',
-    方向: 原设置.orientation === 'landscape' ? '横向' : '纵向',
+    方向: 方向 ?? '纵向',
     纸张大小: 纸张大小 ?? '跟随打印机',
   }
 }
@@ -541,10 +545,10 @@ function 写入页面设置(工作表, 页面) {
   if (!页面) return
   const 页边距 = 页边距方案[页面.页边距]
   const 纸张 = 纸张编号[页面.纸张大小]
-  if (!页边距 || (页面.纸张大小 !== '跟随打印机' && !纸张) || !['纵向', '横向'].includes(页面.方向)) {
+  if (!页边距 || (页面.纸张大小 !== '跟随打印机' && !纸张) || !['纵向', '横向', '跟随打印机'].includes(页面.方向)) {
     throw new Error('页面设置选项无效')
   }
-  工作表.pageSetup.orientation = 页面.方向 === '横向' ? 'landscape' : 'portrait'
+  工作表.pageSetup.orientation = { 横向: 'landscape', 纵向: 'portrait', 跟随打印机: 'default' }[页面.方向]
   工作表.pageSetup.margins = { ...页边距 }
   if (纸张) 工作表.pageSetup.paperSize = 纸张
 }
@@ -679,13 +683,15 @@ async function 读取xlsx(数据) {
   let 兼容数据 = await 规范Xlsx命名空间(压缩包, 原始数据)
   const 公式来源列表 = []
   const 原始数字列表 = []
+  const 打印方向列表 = []
   const 公式警告 = new Set()
   const 单元元数据 = await 读取工作簿元数据(压缩包, 公式警告)
   let 已展开共享公式 = false
   for (const 路径 of await 工作表Xml路径列表(压缩包)) {
     const 部件 = 路径 ? 压缩包.file(路径) : null
-    if (!部件) { 公式来源列表.push({}); 原始数字列表.push({}); continue }
+    if (!部件) { 公式来源列表.push({}); 原始数字列表.push({}); 打印方向列表.push(undefined); continue }
     const xml = await 部件.async('string')
+    打印方向列表.push(读取工作表打印方向(xml))
     const 原始数字 = {}
     const 来源 = 读取原始公式(xml, 公式警告, 单元元数据, 原始数字)
     原始数字列表.push(原始数字)
@@ -715,7 +721,7 @@ async function 读取xlsx(数据) {
   const 工作表列表 = 工作簿.worksheets.map((工作表, 索引) => ({
     名称: 工作表.name || 'Sheet1',
     html: 工作表转Html(工作表, 公式来源列表[索引], 原始数字列表[索引]),
-    页面设置: 读取页面设置(工作表, 页面警告),
+    页面设置: 读取页面设置(工作表, 页面警告, 打印方向列表[索引]),
     元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引], 主题颜色), ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
   }))
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }

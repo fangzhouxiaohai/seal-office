@@ -1,0 +1,187 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "verifiedAt": "2026-10-21T11:57:31.362655+00:00",
+  "unpacked": {
+    "passed": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 21,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-unpacked-first.json",
+        "reportSha256": "8f6b4741a383a9f3485ea55dd3c76e2647be45d9e57681674c3907324d4154f3"
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-unpacked-repeat.json",
+        "reportSha256": "2876b4e4fc49ab550023ec87288523f9a9ebb77c2ef34133f9f81ecd659bd7d4"
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-unpacked-confirm.json",
+        "reportSha256": "067b1cd70c7689f19ba72ddc75e8a36ff72db5acb5aa9e8dd48a88126052a263"
+      }
+    ],
+    "phaseCheckTotal": 64,
+    "allThreeLaunchesExitedNormally": true,
+    "normalExitEvidence": {
+      "harnessExitCode": 0,
+      "powershellSummary": {
+        "版本": "2.1.1",
+        "成品": "unpacked",
+        "核验阶段": [
+          "first",
+          "repeat",
+          "confirm"
+        ],
+        "全部所选启动正常退出": true
+      },
+      "log": ".upgrade-private/release-v211/windows-runtime/unpacked.log"
+    },
+    "appAsarSha256": "7151d3a3edab5f1107ebafb58ccc18d5c7891cb30f9919c562c05518c5723154"
+  },
+  "portable": {
+    "passed": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 21,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-portable-first.json",
+        "reportSha256": "8f6b4741a383a9f3485ea55dd3c76e2647be45d9e57681674c3907324d4154f3",
+        "launchedAt": "2026-10-21T11:51:00.6137294Z",
+        "debugEndpointWaitMilliseconds": [
+          80260,
+          636
+        ],
+        "launcherExitMilliseconds": 7964,
+        "launcherExitLimitMilliseconds": 120000
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-portable-repeat.json",
+        "reportSha256": "2876b4e4fc49ab550023ec87288523f9a9ebb77c2ef34133f9f81ecd659bd7d4",
+        "launchedAt": "2026-10-21T11:53:42.4425120Z",
+        "debugEndpointWaitMilliseconds": [
+          68844,
+          567
+        ],
+        "launcherExitMilliseconds": 7441,
+        "launcherExitLimitMilliseconds": 120000
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "release/v2.1.1/核验-portable-confirm.json",
+        "reportSha256": "067b1cd70c7689f19ba72ddc75e8a36ff72db5acb5aa9e8dd48a88126052a263",
+        "launchedAt": "2026-10-21T11:55:03.5569338Z",
+        "debugEndpointWaitMilliseconds": [
+          58798,
+          479
+        ],
+        "launcherExitMilliseconds": 7271,
+        "launcherExitLimitMilliseconds": 120000
+      }
+    ],
+    "phaseCheckTotal": 64,
+    "allThreeLaunchesExitedNormally": true,
+    "normalExitEvidence": {
+      "harnessExitCode": 0,
+      "powershellSummary": {
+        "版本": "2.1.1",
+        "成品": "portable",
+        "核验阶段": [
+          "first",
+          "repeat",
+          "confirm"
+        ],
+        "全部所选启动正常退出": true
+      },
+      "log": ".upgrade-private/release-v211/windows-runtime/portable-final.log"
+    },
+    "artifact": {
+      "file": "seal-office-2.1.1-portable.exe",
+      "bytes": 422751556,
+      "sha256": "62bfa85de1d2cef8fe0ceda643248cb78c818a6dfcf7ce4cb01dd368430a3b31"
+    }
+  },
+  "attemptHistory": [
+    {
+      "attempt": 1,
+      "target": "portable",
+      "passed": false,
+      "failure": "Initial 120-second debug-endpoint allowance expired while the portable launcher was still extracting its payload; an owned Electron instance appeared later and was explicitly profile-checked before app.quit.",
+      "log": ".upgrade-private/release-v211/windows-runtime/portable-first-timeout.log"
+    },
+    {
+      "attempt": 2,
+      "target": "portable",
+      "passed": false,
+      "firstPhaseFunctionalChecksPassed": 21,
+      "coldLaunchObservedUpperBoundSeconds": 101.548505,
+      "coldTimingNote": "Independent observer began after launch; observed-ready time is an upper bound and includes concurrent read-only installer verification I/O. It is not a performance benchmark.",
+      "failure": "Functional first phase passed, but the original 10-second launcher-exit allowance expired during temporary payload cleanup. The owned process subsequently exited naturally; no profile process remained at the check before the final rerun.",
+      "log": ".upgrade-private/release-v211/windows-runtime/portable-functional-pass-exit-timeout.log"
+    },
+    {
+      "attempt": 3,
+      "target": "portable",
+      "passed": true,
+      "allThreePhasesRunTogetherWithOneIsolatedProfile": true,
+      "log": ".upgrade-private/release-v211/windows-runtime/portable-final.log"
+    }
+  ],
+  "boundedQaWaitAdjustment": {
+    "scope": "Private test wrapper only; public verification script and product bundles were not changed",
+    "debugEndpointAllowanceSeconds": {
+      "original": 120,
+      "final": 600
+    },
+    "portableLauncherExitAllowanceSeconds": {
+      "original": 10,
+      "final": 120
+    },
+    "uiInteractionAndGenerationHttpTimeoutsUnchanged": true,
+    "assertionsUnchanged": true,
+    "notClaimedToPassOriginal120SecondColdAllowance": true
+  },
+  "isolation": {
+    "installsApplication": false,
+    "modifiesUserDefaults": false,
+    "profiles": "Fresh random E:/Temp/seal-windows-release-* directories; no user profile reused",
+    "registry": "Random Software/SealOfficeIntegrationTests/GUID sandbox only; each harness cleans its sandbox in finally",
+    "realSystemSettingsLaunchIntercepted": true
+  },
+  "performanceLimits": [
+    "The portable package expands a 2,163,948,207-byte payload; cold extraction and temporary-file cleanup were noticeably slow in this test environment.",
+    "Observed timing includes concurrent read-only installer hashing and filesystem/cache effects; it is not a performance benchmark or a general claim about the installed desktop application."
+  ],
+  "artifactPayloadReports": {
+    "nsis": "docs/verification/v2.1.1/windows-nsis.json",
+    "msix": "docs/verification/v2.1.1/msix.json",
+    "unpackedNativeModels": "docs/verification/v2.1.1/windows-unpacked-native-formats.json",
+    "portableNativeModels": "docs/verification/v2.1.1/windows-portable-native-formats.json"
+  },
+  "publicEvidenceReview": {
+    "passed": true,
+    "jsonFilesScanned": 26,
+    "windowsScreenshotsVisuallyInspected": 9,
+    "privateUserDocumentPathsFound": 0,
+    "phoneNumbersOrCredentialValuesFound": 0,
+    "notes": "Screenshots contain only the isolated blank home page, built-in templates and generated test documents. Public JSON contains build/source paths and package identity as technical evidence, but no personal account material."
+  }
+}

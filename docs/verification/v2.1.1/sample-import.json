@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "sourceSha256": "4afe07de92324ae01a7a24afa2f5a5344ff955ba038c627b099d79e2fbda1de1",
+  "sourceBytes": 8000,
+  "sourceUnchanged": true,
+  "sheets": [
+    {
+      "index": 0,
+      "nonEmptyCells": 12,
+      "allSourceCellTextPreserved": true,
+      "defaultPrintOrientationPreserved": true
+    },
+    {
+      "index": 1,
+      "nonEmptyCells": 14,
+      "allSourceCellTextPreserved": true,
+      "defaultPrintOrientationPreserved": true
+    }
+  ],
+  "warnings": [],
+  "scope": "Read-only actual user workbook import; every nonempty ExcelJS source cell text compared with decoded HTML at the same sheet/row/column. No customer cell values or input workbook included in this report."
+}

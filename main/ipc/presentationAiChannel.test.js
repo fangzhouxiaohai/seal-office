@@ -20,7 +20,7 @@ function 建环境({ 助手配置 = 文本配置, 对话回复 = '{"译文":[{"�
   const 助手服务 = { 读取配置: async () => 助手配置, 对话: vi.fn(async () => ({ 内容: 对话回复 })) }
   const 缓存 = { 读取: vi.fn(async () => null), 写入: vi.fn(async () => {}), 清除: vi.fn(async () => {}) }
   const 发送 = []
-  注册演示智能通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, { 助手服务, 服务存储, 语音缓存: 缓存, 用户数据目录: process.cwd() })
+  注册演示智能通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, { 助手服务, 服务存储, 语音缓存: 缓存, 用户数据目录: process.cwd(), requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
   const 事件 = { sender: { id: 7, isDestroyed: () => false, send: (...参数) => 发送.push(参数) } }
   const 调用 = (名称, ...参数) => 处理.get(名称)(事件, ...参数)
   return { 调用, 助手服务, 缓存, 发送, 已保存, 事件 }

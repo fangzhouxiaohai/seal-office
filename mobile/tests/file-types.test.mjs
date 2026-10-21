@@ -16,4 +16,8 @@ test('安卓文件提供方未识别 MIME 时按扩展名验证，分享保留 O
   assert.equal(files.exportMime('打印.pdf'), 'application/pdf')
   const formats = JSON.parse(await fs.readFile(new URL('../../main/documentFormats.json', import.meta.url), 'utf8'))
   for (const format of formats) assert.notEqual(files.exportMime('文档.' + format.extension), 'application/octet-stream', format.extension)
+  for (const [extension,mime] of [['sldoc','word'],['slxls','sheet'],['slppt','presentation'],['spdf','pdf']]) {
+    assert.doesNotThrow(() => files.validateImport(`报告.最终.${extension.toUpperCase()}`, formats.map(item=>'.'+item.extension).join(',')))
+    assert.equal(files.exportMime(`报告.最终.${extension}`),`application/vnd.seal-office.${mime}`)
+  }
 })

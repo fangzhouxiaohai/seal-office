@@ -39,10 +39,10 @@ module.exports = async function workspaceTools({ win, evaluate, output, checks =
     win.setContentSize(390,844);await pause()
     assert.ok(await evaluate(`document.querySelector('.wps-ppt-canvas').textContent.includes('让创意成为行动')`))
     await evaluate(`document.querySelector('.wps-ppt-canvas').dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`)
-    await until(`!!window.__toolsQa.ppt`,'设计真实保存')
-    const design=await evaluate(`(async()=>{const r=window.__toolsQa.ppt;if(!r.成功)throw new Error(r.错误);return window.electronAPI.office.readPptx(r.数据)})()`)
+    await until(`window.__toolsQa.files.some(f=>/\\.(?:slppt|sealshow|pptx)$/i.test(f.path)&&f.result.成功)`,'设计真实保存')
+    const design=await evaluate(`(async()=>{const api=window.electronAPI,saved=window.__toolsQa.files.filter(f=>/\\.(?:slppt|sealshow|pptx)$/i.test(f.path)&&f.result.成功).at(-1),file=await api.readFile(saved.path);if(!file.成功)throw new Error(file.错误);const ext=saved.path.split('.').pop().toLowerCase();return ext==='pptx'?api.office.readPptx(file.内容):api.office.readSeal(ext,file.内容)})()`)
     assert.equal(design.成功,true);assert.deepEqual(design.演示文稿.页面尺寸,{宽:960,高:1280});assert.ok(design.演示文稿.幻灯片列表[0].对象列表.length>=3)
     for(const key of ['multitable','notes','design']){await navigate(key);for(const width of[360,820,1280]){win.setContentSize(width,844);await pause();assert.ok(await evaluate(`document.documentElement.scrollWidth<=innerWidth+1`),key+'不能横向撑开整页')}win.setContentSize(390,844);await pause()}
-    checks.push('多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→PPTX保留尺寸和对象；360/390/820/1280px布局')
+    checks.push('多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→SLPPT/PPTX保存文件重开保留尺寸和对象；360/390/820/1280px布局')
   } finally { await evaluate(`(()=>{const q=window.__toolsQa;if(q){window.electronAPI.saveToFile=q.save;window.electronAPI.office.writePptx=q.write;window.electronAPI.office.writeXlsx=q.xlsx;delete window.__toolsQa}})()`);win.setContentSize(390,844) }
 }

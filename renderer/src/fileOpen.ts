@@ -3,16 +3,26 @@ import { 恢复导入图片 } from './ppt/render/resources'
 // 首页「打开文件」与最近文档点击共用同一条链路，避免两套行为不一致。
 import { 桥接 } from './ipc/bridge'
 import { Modal } from 'antd'
+import { createElement } from 'react'
 import { 净化富文本 } from './editor/sanitizeHtml'
 import type { 文字页面设置 } from './office/docModel'
 import type { Sheet } from './sheet/model'
-import { 文档格式 } from './fileFormats'
+import { 文档格式, 原生文档类型, 原生默认扩展 } from './fileFormats'
+import { 从Html表格构建工作表 } from './sheet/sheetImport'
+import { 收集演示资源标识 } from './ppt/model/migrations'
+import type { 演示文稿 } from './ppt/deck'
 import { 读取单文件网页 } from './office/mhtml'
 
 export type 打开类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
 type 最近文档错误处理 = (选项: { title: string; content: string }) => void
 let 最近文档错误弹窗: 最近文档错误处理 | null = null
+type 导入确认处理 = (选项: Parameters<typeof Modal.confirm>[0]) => unknown
+let 导入确认弹窗: 导入确认处理 | null = null
+export function 注册导入确认弹窗(处理: 导入确认处理): () => void {
+  导入确认弹窗 = 处理
+  return () => { if (导入确认弹窗 === 处理) 导入确认弹窗 = null }
+}
 
 /** 应用外壳提供随主题切换的弹窗实例；独立调用时仍保留错误提示。 */
 export function 注册最近文档错误弹窗(处理: 最近文档错误处理): () => void {
@@ -30,6 +40,8 @@ export interface 本地文件内容 {
   警告?: string[]
   页面设置?: 文字页面设置
   文件指纹?: string
+  /** 用户确认转换后，真实写入的专属副本路径。来源文件始终保持不变。 */
+  打开路径?: string
 }
 
 function 转义Html(文本: string): string {
@@ -189,13 +201,14 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     throw new Error('文档转换后未得到有效内容')
   }
   if (结果.二进制) {
-    if(['sealdoc','sealsheet','sealshow'].includes(扩展)){
+    if(原生文档类型(扩展)){
       const 数据:any=await 桥接.office.readSeal(扩展,结果.内容)
       if(!数据?.成功)throw new Error(数据?.错误||'海豹文档读取失败')
       const 提示=Array.isArray(数据.警告)?{警告:数据.警告}:{}
-      if(数据.类型==='word'&&typeof 数据.html==='string')return 带文件指纹({类型:'word',内容:净化富文本(数据.html),...提示,...(数据.页面设置?{页面设置:{...数据.页面设置,页眉Html:净化富文本(数据.页面设置.页眉Html||''),页脚Html:净化富文本(数据.页面设置.页脚Html||'')}}:{})})
+      if(数据.类型==='word'&&typeof 数据.html==='string')return 带文件指纹({类型:'word',内容:净化富文本(数据.html),...提示,...(数据.页面设置?{页面设置:{...数据.页面设置,...(typeof 数据.页面设置.页眉Html==='string'?{页眉Html:净化富文本(数据.页面设置.页眉Html)}:{}),...(typeof 数据.页面设置.页脚Html==='string'?{页脚Html:净化富文本(数据.页面设置.页脚Html)}:{})}}:{})})
       if(数据.类型==='table'&&Array.isArray(数据.工作表列表)&&数据.工作表列表.length&&数据.工作表列表.every(是旧版工作表))return 带文件指纹({类型:'table',工作表列表:数据.工作表列表,...提示})
       if(数据.类型==='ppt'&&数据.演示文稿)return 带文件指纹({类型:'ppt',演示文稿:await 恢复导入图片(数据),...提示})
+      if(数据.类型==='pdf'&&typeof 数据.PDF数据==='string')return 带文件指纹({类型:'pdf',内容:数据.PDF数据,...提示})
       throw new Error('海豹文档内容结构不正确，文件未打开')
     }
     if (扩展 === 'docx') {
@@ -247,6 +260,73 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     })
   }
   throw new Error(`不支持打开 ${扩展 || '未知'} 格式的文件`)
+}
+
+/** All interactive open entrances pass this gate before creating an editor tab. */
+export async function 准备打开本地文件(路径: string): Promise<本地文件内容 | null> {
+  let 内容: 本地文件内容
+  try { 内容 = await 读取本地文件内容(路径) }
+  catch (错误) {
+    const 原因 = 错误 instanceof Error ? 错误.message : '文件内容无法识别'
+    if (原生文档类型(路径) || !/加密|password|encrypt|解密|无法识别|格式|解析|不支持|损坏|文件内容为空|零字节|zip|central directory|invalid|corrupt/i.test(原因)) throw 错误
+    await new Promise<void>(完成 => {
+      ;(导入确认弹窗 ?? Modal.confirm)({
+        title: '文件未打开：无法完整识别内容',
+        content: createElement('div', null,
+          createElement('p', null, 原因),
+          createElement('p', null, '未创建编辑标签，也未修改原文件。专有格式、未知结构或加密文件不能作为已完整导入的文档打开。')),
+        okText: '查看转换方法', cancelText: '取消打开', maskClosable: false,
+        onOk: () => {
+          Modal.info({title:'转换文件后重新打开',content:'请在原软件中使用正确密码打开文件，再导出为未加密的 DOCX、XLSX、PPTX 或 PDF。重新选择导出文件后，海豹办公会检查内容；能够识别的内容可另存为 .sldoc、.slxls、.slppt 或 .spdf。无法解密或读取的内容不能通过更改后缀恢复。'})
+          完成()
+        }, onCancel: () => { 完成() },
+      })
+    })
+    return null
+  }
+  if (原生文档类型(路径) || !内容.警告?.length) return 内容
+  const 警告 = [...new Set(内容.警告)]
+  const 确认 = await new Promise<boolean>(完成 => {
+    ;(导入确认弹窗 ?? Modal.confirm)({
+      title: '此文件需要转换后打开',
+      content: createElement('div', null,
+        createElement('p', null, '当前尚不能完整识别以下内容，文件还未进入编辑器。'),
+        createElement('ul', null, 警告.map((项, 索引) => createElement('li', { key: 索引 }, 项))),
+        createElement('p', null, '可将已识别的内容另存为海豹专属格式后打开。上列内容可能在副本中缺失或改变；原文件保持不变。若需要完整原貌，请取消并使用原软件处理。')),
+      okText: '转换为海豹格式', cancelText: '取消打开', maskClosable: false,
+      onOk: () => { 完成(true) }, onCancel: () => { 完成(false) },
+    })
+  })
+  if (!确认) return null
+  const 扩展 = 原生默认扩展[内容.类型]
+  const 默认名称 = 基准文件名(路径).replace(/\.[^.]+$/, '') + '.' + 扩展
+  const 选择 = await 桥接.showSaveDialog(默认名称, 内容.类型)
+  if (!选择) return null
+  const 目标 = /\.[^\\/]+$/.test(选择) ? 选择 : 选择 + '.' + 扩展
+  if (原生文档类型(目标) !== 内容.类型) throw new Error(`转换副本请选择 .${扩展} 格式`)
+  if (目标.replace(/\\/g, '/').toLowerCase() === 路径.replace(/\\/g, '/').toLowerCase()) throw new Error('转换副本必须使用不同路径，原文件未修改')
+  let 模型: unknown
+  if (内容.类型 === 'word') 模型 = { html: 内容.内容 ?? '', 页面设置: 内容.页面设置, 警告 }
+  else if (内容.类型 === 'table') {
+    const 表列表 = 内容.工作表列表 ?? [{ 名称: 'Sheet1', html: 内容.内容 ?? '' }]
+    const 工作表列表 = 表列表.map(表 => 'html' in 表
+      ? 从Html表格构建工作表(表.html, 表.名称, (表 as any).页面设置, (表 as any).元数据) : 表)
+    if (!工作表列表.length || 工作表列表.some(表 => !表)) throw new Error('未得到有效工作表，转换未执行')
+    模型 = { 工作表列表, 警告 }
+  } else if (内容.类型 === 'ppt') {
+    const 文稿 = 内容.演示文稿 as 演示文稿
+    const 标识 = 收集演示资源标识(文稿)
+    const 资源 = 标识.length ? await 桥接.presentationResources.export(标识) : { 成功: true, 条目: [] }
+    if (!资源.成功 || !资源.条目) throw new Error(资源.错误 || '图片资源不可用，转换未执行')
+    模型 = { 演示文稿: 文稿, 资源条目: 资源.条目, 警告 }
+  } else 模型 = { PDF数据: 内容.内容, 警告 }
+  const 生成 = await 桥接.office.writeSeal(内容.类型, 模型)
+  if (!生成?.成功 || !生成.数据) throw new Error(生成?.错误 || '转换专属格式失败')
+  const 保存 = await 桥接.saveToFile(目标, 生成.数据, '二进制')
+  if (!保存.成功) { if (保存.已取消) return null; throw new Error(保存.错误 || '转换副本写入失败') }
+  // Read the actual saved bytes instead of opening the in-memory intermediate.
+  const 已保存 = await 读取本地文件内容(目标)
+  return { ...已保存, 打开路径: 目标 }
 }
 
 /** 取路径中的文件名（兼容反斜杠与正斜杠分隔） */
@@ -324,12 +404,15 @@ export async function 通过路径打开文件(
     ? 消息.loading?.('正在转换并打开文档，首次处理可能需要稍等…', 0) : undefined
   try {
     if (typeof 文件路径 !== 'string' || 文件路径.trim() === '') throw new Error('未提供有效的文件路径')
-    const 内容 = await 读取本地文件内容(文件路径)
+    const 内容 = await 准备打开本地文件(文件路径)
+    if (!内容) return false
+    文件路径 = 内容.打开路径 ?? 文件路径
     if (内容.类型 === 'ppt') {
       if (内容.文件指纹) 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告, undefined, 内容.文件指纹)
       else 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告)
     } else if (内容.类型 === 'pdf') {
-      打开('pdf', 内容.内容, 文件路径, 内容.警告)
+      if (内容.文件指纹) 打开('pdf', 内容.内容, 文件路径, 内容.警告, undefined, 内容.文件指纹)
+      else 打开('pdf', 内容.内容, 文件路径, 内容.警告)
     } else {
       const 初始内容 = 内容.类型 === 'table' ? (内容.工作表列表 ?? 内容.内容) : 内容.内容
       if (内容.文件指纹) 打开(内容.类型, 初始内容, 文件路径, 内容.警告, 内容.页面设置, 内容.文件指纹)

@@ -5,6 +5,13 @@ import { 创建演示文稿, 创建幻灯片 } from '../deck'
 import TranslationPanel from './TranslationPanel'
 import NarrationPanel from './NarrationPanel'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-aipanels', verified: true, method: 'phone' } }
+}) })
+
+
 const 可用能力 = {
   文本: { 状态: '可用' as const, 模型: 'deepseek-flash' },
   语音合成: { 状态: '可用' as const, 声线: '女声-甲' },
@@ -32,7 +39,7 @@ function 装配({ 能力 = 可用能力, 译文, 校验, 讲稿, 讲解 } = {} a
     clearAudioCache: vi.fn(async () => ({ 成功: true })),
     onStream: vi.fn(() => () => {}),
   }
-  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { presentationAi: 智能 } })
+  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  presentationAi: 智能 } })
   return 智能
 }
 

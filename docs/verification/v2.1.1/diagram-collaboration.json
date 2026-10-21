@@ -1,0 +1,200 @@
+{
+  "passed": true,
+  "version": "2.1.1",
+  "cases": [
+    {
+      "mode": "web",
+      "group": "personal",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "bundleSha256": "fea31505c1ff03775c008487e9e379146a3b4e55b600c19c56d8e4c1524d2c78",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 5
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 13
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    },
+    {
+      "mode": "web",
+      "group": "team",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "bundleSha256": "fea31505c1ff03775c008487e9e379146a3b4e55b600c19c56d8e4c1524d2c78",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 12
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 25
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "personal",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 12
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 25
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    },
+    {
+      "mode": "native-file",
+      "group": "team",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 5
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 13
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "personal",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "personal：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "共享撤销由服务端执行、禁写且所有者仍能继续同步"
+      ],
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 5
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 12
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    },
+    {
+      "mode": "native-http",
+      "group": "team",
+      "checks": [
+        "两个独立生产窗口：真实登录解锁、加密文件、共享/团队导航打开、并行文字与备注合并",
+        "远端新增节点、分离撤销/重做、服务端最新加密图形验证",
+        "断网编辑、真实页面重载、加密 IndexedDB 恢复、重连同步",
+        "team：1280 / 820 / 390 / 360 px 无页面横向溢出",
+        "360 px 原生触摸双指缩放",
+        "团队实时降权只读、接收更新、提升后立即可编辑、移除后禁写"
+      ],
+      "bundleSha256": "1fc13072962fd67e157e3b762da7bcac4abb164c8935dc4e0cb7fa4c9e29e8ea",
+      "passed": true,
+      "productionRequests": 0,
+      "teardown": {
+        "completed": true,
+        "stages": [
+          {
+            "stage": "owned transports closed",
+            "elapsedMs": 8
+          },
+          {
+            "stage": "fixture cleanup completed",
+            "elapsedMs": 19
+          }
+        ],
+        "activeControllers": 0,
+        "activeUpstreams": 0,
+        "activeProxySockets": 0,
+        "activeNativeTasks": 0
+      }
+    }
+  ],
+  "scope": "Isolated real HTTP service and two production browser clients; no production account operations.",
+  "harnessSha256": "32472dfab571c1a19a87d93532395c7f272c777baa600ce32a4acc1fdd208367"
+}
