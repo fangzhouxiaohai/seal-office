@@ -1,5 +1,7 @@
 // 应用外壳：按当前模块装配首页视图或编辑器视图，并统一挂载顶栏、侧栏与状态栏。
 import React, { useEffect, useState } from 'react'
+import { 页面设置相同 } from './office/docModel'
+import { 演示内容快照 } from './ppt/model/migrations'
 import CollaborationSaveBanner from './collaboration/CollaborationSaveBanner'
 import CollaborationLinkEntry from './collaboration/CollaborationLinkEntry'
 import { App as AntdApp, ConfigProvider, Modal, theme as antdTheme } from 'antd'
@@ -14,7 +16,7 @@ import HomeRail from './components/HomeRail'
 import HomeSidebar from './components/HomeSidebar'
 import RecommendPanel from './components/RecommendPanel'
 import HomePage from './pages/HomePage'
-import { 基准文件名, 注册最近文档错误弹窗, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
+import { 基准文件名, 注册最近文档错误弹窗, 注册导入确认弹窗, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 分组拖入文件, 在局部投放区, 携带文件, 读取拖入路径 } from './fileDrop'
 import { 桥接 } from './ipc/bridge'
 import type { 保存全部应答 } from './ipc/bridge'
@@ -57,7 +59,8 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
   const { message, modal } = AntdApp.useApp()
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
-  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, pdfDocuments, 保存PDF文档, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
+  useEffect(() => 注册导入确认弹窗(选项 => modal.confirm(选项)), [modal])
+  const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, pdfDocuments, 保存PDF文档, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, 准备编辑草稿, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
   const { 主题, 切换主题, 语言, 设置语言 } = useSettings()
   const cloud = useCloud()
 
@@ -185,6 +188,8 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   const 风险文档数 = workspaceTabs.filter((标签) => 标签.dirty).length
   const 最新风险文档数 = React.useRef(风险文档数)
   最新风险文档数.current = 风险文档数
+  const 最新保存状态 = React.useRef({workspaceTabs,documents,pdfDocuments,表格文档模型,演示文档模型,准备编辑草稿})
+  最新保存状态.current = {workspaceTabs,documents,pdfDocuments,表格文档模型,演示文档模型,准备编辑草稿}
   const 最新备份刷新 = React.useRef(刷新工作状态备份)
   最新备份刷新.current = 刷新工作状态备份
   useEffect(() => {
@@ -209,7 +214,10 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   // “保存后退出”：把每个未保存文档写回原路径（没有路径的先询问位置），并把结果回报给主进程。
   const 最新保存全部 = React.useRef<() => Promise<保存全部应答>>(async () => ({ 成功: true, 已保存: [], 失败: [], 已取消: false }))
   最新保存全部.current = async () => {
-    const 待保存标签 = workspaceTabs.filter((标签) => 标签.dirty)
+    const 草稿 = 准备编辑草稿()
+    if (!草稿.成功) return {成功:false,已保存:[],失败:[{名称:workspaceTabs.find(项=>项.id===草稿.标识)?.name??'当前编辑',原因:草稿.错误}],已取消:false}
+    const 表格快照 = {...表格文档模型,...草稿.表格文档模型}, 演示快照 = {...演示文档模型,...草稿.演示文档模型}
+    const 待保存标签 = workspaceTabs.filter((标签) => 标签.dirty || 草稿.已提交.includes(标签.id))
     const 待保存 = 待保存标签.map((标签) => {
       const 文档 = documents.find((项) => 项.id === 标签.id)
       return {
@@ -224,27 +232,48 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
           来源路径: 文档.来源路径,
           警告: 文档.警告,
         }),
-        ...(标签.type === 'pdf' ? {PDF数据:pdfDocuments.find(d=>d.id===标签.id)?.data||undefined} : {}),
-        ...(标签.type === 'table' ? { 表格模型: 表格文档模型[标签.id] } : {}),
-        ...(标签.type === 'ppt' ? { 演示模型: 演示文档模型[标签.id] } : {}),
+        ...(标签.type === 'pdf' ? {PDF数据:pdfDocuments.find(d=>d.id===标签.id)?.data||undefined,文件指纹:pdfDocuments.find(d=>d.id===标签.id)?.文件指纹,警告:pdfDocuments.find(d=>d.id===标签.id)?.警告} : {}),
+        ...(标签.type === 'table' ? { 表格模型: 表格快照[标签.id] } : {}),
+        ...(标签.type === 'ppt' ? { 演示模型: 演示快照[标签.id] } : {}),
       }
     })
     const 结果 = await 保存全部文档(待保存)
+    const 最新 = 最新保存状态.current
+    const 失败 = 结果.失败.map((项) => ({ 名称: 项.名称, 原因: 项.原因 }))
+    const 尾部草稿 = 最新.准备编辑草稿()
+    if (!尾部草稿.成功) 失败.push({名称:最新.workspaceTabs.find(项=>项.id===尾部草稿.标识)?.name??'当前编辑',原因:尾部草稿.错误})
+    const 最新表格 = {...最新.表格文档模型,...(尾部草稿.成功?尾部草稿.表格文档模型:{})}
+    const 最新演示 = {...最新.演示文档模型,...(尾部草稿.成功?尾部草稿.演示文档模型:{})}
+    // 比较实际写盘快照与最新内容，不能依赖尚未提交的 React “已保存”状态。
+    if (!结果.已取消) for (const 标签 of 最新.workspaceTabs) {
+      const 原快照 = 待保存.find(项 => 项.标识 === 标签.id)
+      const 文档 = 最新.documents.find(项 => 项.id === 标签.id)
+      let 有新修改 = !原快照 && (标签.dirty || 尾部草稿.成功 && 尾部草稿.已提交.includes(标签.id))
+      if (原快照 && 结果.已保存.some(项 => 项.标识 === 标签.id)) {
+        有新修改 = 标签.type === 'pdf' ? 最新.pdfDocuments.find(项 => 项.id === 标签.id)?.data !== 原快照.PDF数据
+          : 标签.type === 'table' ? JSON.stringify(最新表格[标签.id]) !== JSON.stringify(原快照.表格模型)
+          : 标签.type === 'ppt' ? 演示内容快照(最新演示[标签.id]) !== 演示内容快照(原快照.演示模型!)
+          : 文档?.html !== 原快照.html || !页面设置相同(文档?.页面设置, 原快照.页面设置)
+      }
+      if (有新修改 && !结果.失败.some(项 => 项.标识 === 标签.id)) {
+        失败.push({ 名称: 标签.name, 原因: '保存期间文档有新的修改，请再次保存后退出' })
+      }
+    }
     for (const 项 of 结果.已保存) {
       const 标签 = 待保存标签.find((当前) => 当前.id === 项.标识)
       const 文档 = documents.find((当前) => 当前.id === 项.标识)
-      if (标签?.type === 'pdf') { 保存PDF文档(项.标识,项.路径,pdfDocuments.find(d=>d.id===项.标识)?.data||''); continue }
-      if (标签?.type === 'table') markDocumentSaved(项.标识, '', JSON.stringify(表格文档模型[项.标识] ?? []))
-      else if (标签?.type === 'ppt') markDocumentSaved(项.标识, '', JSON.stringify(演示文档模型[项.标识]))
+      if (标签?.type === 'pdf') { 保存PDF文档(项.标识,项.路径,待保存.find(d=>d.标识===项.标识)?.PDF数据||'',项.文件指纹); continue }
+      if (标签?.type === 'table') markDocumentSaved(项.标识, '', JSON.stringify(表格快照[项.标识] ?? []))
+      else if (标签?.type === 'ppt') markDocumentSaved(项.标识, '', JSON.stringify(演示快照[项.标识]))
       else markDocumentSaved(项.标识, 文档?.html ?? '', undefined, { 页面设置: 文档?.页面设置 })
       set文档路径(项.标识, 项.路径)
       if (项.文件指纹) 更新文件指纹(项.标识, 项.文件指纹)
     }
     if (结果.已保存.length > 0) message.success(`已保存 ${结果.已保存.length} 个文档`)
     return {
-      成功: 结果.失败.length === 0 && !结果.已取消,
+      成功: 失败.length === 0 && !结果.已取消,
       已保存: 结果.已保存.map((项) => 项.名称),
-      失败: 结果.失败.map((项) => ({ 名称: 项.名称, 原因: 项.原因 })),
+      失败,
       已取消: 结果.已取消,
     }
   }

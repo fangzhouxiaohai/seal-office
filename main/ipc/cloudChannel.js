@@ -1,11 +1,15 @@
 const path=require('path'),fs=require('fs'),{randomUUID}=require('crypto')
 const {app,safeStorage,dialog,nativeImage}=require('electron')
 const {createService}=require('../cloud/service')
-function 注册云端通道(ipcMain,{cloudService,助手服务}={}){
+const {创建实名助手服务,校验实名AI访问,AI失败结果}=require('../ai/identityGate')
+function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity}={}){
   let instance=cloudService
   const service=()=>instance||(instance=createService({directory:app.getPath('userData'),safeStorage}))
+  const identityCheck=requireAIIdentity||(()=>service().requireAIIdentity())
+  if(助手服务)助手服务=创建实名助手服务(助手服务,identityCheck)
   const privateCopy=async operation=>{const file=await operation,folder=path.join(app.getPath('temp'),'seal-office-collaboration',randomUUID());fs.mkdirSync(folder,{recursive:true,mode:0o700});const base=path.basename(file.name||'协作文件').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_'),name=/^\.{1,2}$/.test(base)?'协作文件':base,filename=path.join(folder,name);fs.writeFileSync(filename,Buffer.from(file.data,'base64'),{mode:0o600});return {...file,path:filename}}
   const calls={
+    requireAIIdentity:()=>校验实名AI访问(identityCheck),
     ...Object.fromEntries(['realtimeSource','realtimeRecovery','realtimeCapabilities','realtimeCatalog','realtimeNodeBinding','realtimeSnapshot','realtimeStage','realtimeBindFile','realtimeFileBinding','realtimeRestore','realtimeOpen','realtimeQueue','realtimeState','realtimePush','realtimePull','realtimeCheckpoint','realtimePresence','realtimeLeave'].map(action=>[action,input=>service()[action](input)])),
     realtimeDownload:i=>privateCopy(service().download(i.id)),
     ...Object.fromEntries(['shareList','shareCreate','shareAccept','shareRevoke','shareSave','deviceRegister','deviceList','deviceRename','deviceRevoke','tagList','tagCreate','tagUpdate','tagDelete','tagAssign','tagFilter','teamList','teamCreate','teamUpdate','teamMembers','teamInvite','teamAccept','teamRevokeInvite','teamUpdateMember','teamRemoveMember','teamNodes','teamFolder','teamSave','teamUpdateNode','teamRemoveNode','teamDelete'].map(action=>[action,input=>service()[action](input)])),
@@ -50,7 +54,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务}={}){
   }
   ipcMain.handle('cloud.invoke',async(_event,action,input={})=>{
     try{if(!Object.prototype.hasOwnProperty.call(calls,action))throw new Error('云端操作不受支持');if(!input||typeof input!=='object')throw new Error('请求参数无效');const result=await calls[action](input);if(result&&typeof result==='object'&&!Array.isArray(result)&&Object.prototype.hasOwnProperty.call(result,'url')){const {url,...data}=result;return {成功:true,数据:data}}return {成功:true,数据:result}}
-    catch(error){return {成功:false,错误:error.message||'云端操作失败',...(error.status?{状态码:error.status}:{})}}
+    catch(error){return AI失败结果(error,'云端操作失败')}
   })
 }
 module.exports={注册云端通道}

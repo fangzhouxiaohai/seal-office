@@ -65,7 +65,7 @@ async function 创建环境() {
   const 服务 = 创建服务()
   await 服务.保存配置({ 名称: '生命周期测试', 地址: 'https://example.com/chat/completions', 模型: 'test', 服务商: 'custom', 参数模式: 'none', 上下文令牌: 131072 })
   const 处理器 = new Map()
-  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务 })
+  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
   const 窗口 = new Map()
   let 请求计数 = 0
   const 获取窗口 = (标识) => {

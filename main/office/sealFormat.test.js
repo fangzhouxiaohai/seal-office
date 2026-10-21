@@ -21,6 +21,24 @@ describe('海豹原生格式容器',()=>{
       await expect(readSeal('sealdoc',await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE'}))).rejects.toThrow()
     }
   })
+  it.each([['word','sldoc','sealdoc',word],['table','slxls','sealsheet',{工作表列表:[{name:'预算.最终',单元格:{A1:{原始值:'=SEQUENCE(2,2)'},B4:{原始值:'001𠮷🦭'}}}]}],['ppt','slppt','sealshow',{演示文稿:{幻灯片列表:[{id:'一',备注:'𠮷🦭'}]},资源条目:[{标识:'图片',数据:'AAECAw=='}]}]])('新旧 %s 扩展读写同一完整模型',async(type,current,legacy,payload)=>{
+    const bytes=await writeSeal(type,payload)
+    const next=await readSeal(current,bytes)
+    expect(next).toEqual({...payload,类型:type})
+    expect(await readSeal(legacy,bytes)).toEqual(next)
+    expect(await readSeal(current,await writeSeal(type,next))).toEqual(next)
+  })
+  it('SPDF 保留完整 PDF 字节，并拒绝非 PDF 及不规范的 base64',async()=>{
+    const {PDFDocument}=require('pdf-lib'),pdf=await PDFDocument.create()
+    pdf.addPage([321,456]);pdf.setTitle('原始版式𠮷🦭')
+    const data=Buffer.from(await pdf.save()).toString('base64')
+    const reopened=await readSeal('spdf',await writeSeal('pdf',{PDF数据:data}))
+    expect(reopened.PDF数据).toBe(data)
+    expect((await PDFDocument.load(Buffer.from(reopened.PDF数据,'base64'))).getPage(0).getSize()).toEqual({width:321,height:456})
+    await expect(writeSeal('pdf',{PDF数据:Buffer.from('not a pdf').toString('base64')})).rejects.toThrow()
+    await expect(writeSeal('pdf',{PDF数据:data+'!!'})).rejects.toThrow()
+    await expect(readSeal('sldoc',await writeSeal('pdf',{PDF数据:data}))).rejects.toThrow(/扩展名/)
+  })
   it('提前限制解压字节，拒绝伪造的尺寸和循环引用',async()=>{
     const source=Buffer.from(await writeSeal('word',{html:'保真'.repeat(10000)}))
     for(let at=0;at<source.length-46;at++)if(source.readUInt32LE(at)===0x02014b50){const length=source.readUInt16LE(at+28);if(source.subarray(at+46,at+46+length).toString()==='document.json')source.writeUInt32LE(1,at+24)}

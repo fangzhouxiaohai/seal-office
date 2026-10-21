@@ -12,7 +12,7 @@ function 建环境({ 助手配置 = 文本配置, 对话回复 = '{"提纲":[{"�
   const 服务存储 = { 读取: async () => null, 读取内部密钥: () => '' }
   const 目录 = fs.mkdtempSync(path.join(process.env.TEMP ?? os.tmpdir(), 'seal-gen-channel-'))
   const 发送 = []
-  注册演示生成通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, { 助手服务, 服务存储, 用户数据目录: 目录 })
+  注册演示生成通道({ handle: (名称, 回调) => 处理.set(名称, 回调) }, { 助手服务, 服务存储, 用户数据目录: 目录, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
   const 事件 = { sender: { id: 11, isDestroyed: () => false, send: (...参数) => 发送.push(参数) } }
   const 调用 = (名称, ...参数) => 处理.get(名称)(事件, ...参数)
   return { 调用, 助手服务, 发送, 目录 }

@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {Button,Checkbox,Dropdown,Empty,Tooltip,type MenuProps} from 'antd'
 import Icon from '../components/Icon'
 import {useSettings} from '../store/settingsStore'
+import {原生文档类型} from '../fileFormats'
 
 export interface CloudNode {
   id:string;parent:string|null;kind:string;deleted:number;version:number;updated:number
@@ -11,6 +12,8 @@ export const isFolder=(node:CloudNode)=>['folder','library'].includes(node.kind)
 const fileIcon=(node:CloudNode)=>{
   if(isFolder(node))return 'folder'
   const extension=(node.meta.filename||node.meta.name).split('.').pop()?.toLowerCase()
+  const native=原生文档类型(extension||'')
+  if(native)return {word:'doc-word',table:'doc-table',ppt:'doc-ppt',pdf:'doc-pdf'}[native]
   if(extension==='pdf')return 'doc-pdf'
   if(['ppt','pptx','odp'].includes(extension||''))return 'doc-ppt'
   if(['xls','xlsx','csv','ods'].includes(extension||''))return 'doc-table'

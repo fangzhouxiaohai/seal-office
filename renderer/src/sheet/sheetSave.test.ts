@@ -62,4 +62,12 @@ describe('CSV 原格式保存与重开', () => {
     expect(输出.损失).toEqual([])
     expect(JSON.parse(输出.内容)).toEqual(表)
   })
+  it('保存 CSV 会明确说明超链接目标丢失，保留可见文字', () => {
+    const 表 = 写入单元格(创建工作表('链接'), 'A1', '资料𠮷')
+    表.单元格.A1.超链接 = 'https://example.com/资料?q=𠮷&x=1'
+    const 输出 = 表格文本输出('链接.csv', [表])!
+    expect(输出.损失).toContain('超链接目标')
+    expect(输出.内容).toContain('资料𠮷')
+    expect(输出.内容).not.toContain('https://')
+  })
 })

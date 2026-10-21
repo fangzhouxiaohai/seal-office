@@ -37,7 +37,7 @@ export function useCollaborationFiles(accountId: string) {
     let opened: boolean
     if (result.live) {
       const live = result.live
-      store.createDoc(live.type, live.content, { 路径: result.path, 页面设置: live.page, 文件指纹: live.fingerprint })
+      store.createDoc(live.type, live.content, { 路径: result.path, 页面设置: live.page, 文件指纹: live.fingerprint, 警告: live.warnings })
       await 记录最近文档(result.path, result.name, live.type); opened = true
     } else opened = await 通过路径打开文件(result.path, message, modal, (type, content, path, warnings, page, fingerprint) => store.createDoc(type, content, { 路径: path, 警告: warnings, 页面设置: page, 文件指纹: fingerprint }))
     if (!opened) throw new Error('无法打开下载的副本，请检查文件格式')

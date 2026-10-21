@@ -6,6 +6,13 @@ import { 创建演示文稿 } from '../deck'
 import GenerationPanel from './GenerationPanel'
 import AssetLibraryPanel from './AssetLibraryPanel'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-generationpanels', verified: true, method: 'phone' } }
+}) })
+
+
 const 设置后端 = (覆盖: Record<string, unknown> = {}) => {
   const 生成 = {
     outline: vi.fn().mockResolvedValue({ 成功: true, 数据: { 提纲: [
@@ -33,7 +40,7 @@ const 设置后端 = (覆盖: Record<string, unknown> = {}) => {
   }
   Object.defineProperty(window, 'electronAPI', {
     configurable: true,
-    value: { presentationGeneration: 生成, showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\稿件.docx'), readFile: vi.fn().mockResolvedValue({ 成功: true, 二进制: true, 内容: 'AA==' }), ...覆盖 },
+    value: { cloud: 受信AI测试账号(),  presentationGeneration: 生成, showOpenDialog: vi.fn().mockResolvedValue('C:\\资料\\稿件.docx'), readFile: vi.fn().mockResolvedValue({ 成功: true, 二进制: true, 内容: 'AA==' }), ...覆盖 },
   })
   return 生成
 }

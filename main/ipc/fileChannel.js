@@ -158,7 +158,7 @@ const 保存过滤器映射 = {
   word: 文档格式.filter(项 => (项.type === 'word' || 项.extension === 'pdf') && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })),
   table: [...文档格式.filter(项 => 项.type === 'table' && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })), { name: '旧版 JSON 表格', extensions: ['json'] }],
   ppt: 文档格式.filter(项 => 项.type === 'ppt' && !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })),
-  pdf: [{ name: 'PDF 文件', extensions: ['pdf'] }],
+  pdf: [{ name: '海豹 PDF', extensions: ['spdf'] }, { name: 'PDF 文件', extensions: ['pdf'] }],
   ofd: [{ name: 'OFD 版式文档', extensions: ['ofd'] }],
 }
 
@@ -166,7 +166,7 @@ const 打开过滤器映射 = {
   word: [{ name: '文字文档', extensions: 文档格式.filter(项 => 项.type === 'word').map(项 => 项.extension) }],
   table: [{ name: '表格文档', extensions: [...文档格式.filter(项 => 项.type === 'table').map(项 => 项.extension), 'json'] }],
   ppt: [{ name: '演示文档', extensions: 文档格式.filter(项 => 项.type === 'ppt').map(项 => 项.extension) }],
-  pdf: [{ name: '版式文档', extensions: ['pdf', 'ofd'] }],
+  pdf: [{ name: '版式文档', extensions: ['spdf', 'pdf', 'ofd'] }],
 }
 
 const 兜底保存过滤器 = 文档格式.filter(项 => !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] }))

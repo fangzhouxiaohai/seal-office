@@ -14,6 +14,12 @@ def digest(stream):
 
 
 def verify(package, source, version):
+    definitions = json.loads((Path(__file__).resolve().parent.parent / "main/documentFormats.json").read_text(encoding="utf-8"))
+    expected_extensions = {"." + item["extension"] for item in definitions}
+    external_resources = ["resources/fonts/" + name for name in
+                          ["NotoSansSC.ttf", "NotoSerifCJKsc-Regular.otf", "OFL.txt", "NotoSerif-LICENSE.txt"]]
+    external_resources += ["resources/shell-new/blank." + extension for extension in
+                           ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf", "sldoc", "slxls", "slppt", "spdf"]]
     with zipfile.ZipFile(package) as archive:
         # MakeAppx stores non-ASCII payload names as percent-encoded OPC part URIs.
         # The manifest and block map refer to the decoded Windows file names.
@@ -21,7 +27,7 @@ def verify(package, source, version):
         if len(parts) != len(archive.namelist()):
             raise ValueError("Duplicate decoded MSIX part names")
         names = set(parts)
-        required = {"AppxManifest.xml", "AppxBlockMap.xml", "海豹办公.exe", "resources/app.asar"}
+        required = {"AppxManifest.xml", "AppxBlockMap.xml", "海豹办公.exe", "resources/app.asar", *external_resources}
         if not required <= names:
             raise ValueError(f"MSIX missing files: {required - names}")
         if archive.testzip() is not None:
@@ -40,6 +46,19 @@ def verify(package, source, version):
         application = manifest.find("{*}Applications/{*}Application")
         if application is None or application.get("Executable") != "海豹办公.exe":
             raise ValueError("MSIX executable should retain the Chinese application name")
+        file_types = [node.text for node in application.findall("{*}Extensions/{*}Extension/{*}FileTypeAssociation/{*}SupportedFileTypes/{*}FileType")]
+        if len(file_types) != len(set(file_types)) or set(file_types) != expected_extensions:
+            raise ValueError("MSIX file-type declarations must match every supported extension, including .sldoc/.slxls/.slppt/.spdf")
+        resource_hashes = {}
+        for name in external_resources:
+            if archive.getinfo(parts[name]).file_size <= 0:
+                raise ValueError(f"MSIX has an empty external resource: {name}")
+            with archive.open(parts[name]) as stream:
+                actual = digest(stream)
+            with (source / name).open("rb") as stream:
+                if actual != digest(stream):
+                    raise ValueError(f"MSIX external resource differs from fresh Windows build: {name}")
+            resource_hashes[name] = actual
         blockmap = ET.fromstring(archive.read("AppxBlockMap.xml"))
         if blockmap.get("HashMethod") != "http://www.w3.org/2001/04/xmlenc#sha256":
             raise ValueError("Unexpected MSIX block-map hash algorithm")
@@ -68,6 +87,7 @@ def verify(package, source, version):
             "sha256": package_hash, "identity": expected, "displayNames": "seal-office",
             "crcPassed": True, "blockMapFilesVerified": verified, "blockMapSha256Passed": True,
             "appAsarSha256": asar_hash, "asarMatchesFreshWindowsBuild": True,
+            "associatedExtensions": sorted(file_types), "externalResourcesSha256": resource_hashes,
             "signed": signed, "installationTest": "Not installed; this is an unsigned Store-upload package"}
 
 

@@ -16,6 +16,8 @@ import { 构造演讲者快照 } from './playback/presenterSnapshot'
 import { 默认放映偏好, type 放映偏好 } from './playback/放映偏好'
 import { dispatchShortcut } from '../shortcuts/shortcuts'
 import { useShortcutLabel } from '../shortcuts/useShortcuts'
+import { useReadingChrome } from '../editor/useReadingChrome'
+import '../editor/reading.css'
 
 interface Props {
   图片地址?: 图片地址表
@@ -40,6 +42,10 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
   const 键位提示 = useShortcutLabel('slideshow')
   const { modal } = AntdApp.useApp()
   const 放映根 = React.useRef<HTMLDivElement>(null)
+  const 单击计时器 = React.useRef<ReturnType<typeof setTimeout>>()
+  const 取消单击 = () => { if (单击计时器.current !== undefined) clearTimeout(单击计时器.current); 单击计时器.current = undefined }
+  const chrome = useReadingChrome(放映根,true,取消单击)
+  React.useEffect(() => () => 取消单击(), [])
   const 退出引用 = React.useRef(on退出)
   退出引用.current = on退出
   const 保留引用 = React.useRef(on保留笔迹)
@@ -85,6 +91,12 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     })
   }, [modal])
   const 结束引用 = React.useRef(结束放映); 结束引用.current = 结束放映
+  React.useEffect(() => {
+    if (!chrome.autoHide) return
+    const 返回 = (event: Event) => { event.preventDefault(); 结束引用.current() }
+    window.addEventListener('seal-before-native-back',返回)
+    return () => window.removeEventListener('seal-before-native-back',返回)
+  },[chrome.autoHide])
   React.useLayoutEffect(() => {
     const 释放放映状态 = 标记放映开始()
     const 原焦点 = document.activeElement
@@ -125,13 +137,16 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
           if (已卸载) await 恢复窗口(会话标识)
         } else {
           const 根 = 放映元素
-          if (!根?.requestFullscreen) throw new Error('当前环境不支持全屏放映，请使用 Windows 桌面版')
+          if (!根?.requestFullscreen) {
+            if (chrome.autoHide) return // Mobile WebViews retain the fixed viewport reader.
+            throw new Error('当前环境不支持全屏放映，请使用 Windows 桌面版')
+          }
           await 根.requestFullscreen()
           浏览器全屏归本视图 = true
           if (已卸载 && document.fullscreenElement === 根) await document.exitFullscreen()
         }
       } catch (错误) {
-        if (!已卸载) {
+        if (!已卸载 && !(chrome.autoHide && !桥接.放映全屏可用)) {
           退出引用.current()
           展示错误('无法开始全屏放映', 错误)
         }
@@ -260,15 +275,26 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     return false
   }
   const 处理点击 = (事件: React.MouseEvent) => {
+    if (事件.target instanceof Element && 事件.target.closest('[data-reading-chrome]')) return
     if (工具 !== '无' || 屏幕 !== '无') return
     const 目标 = 事件.target instanceof Element ? 事件.target.closest('[data-对象标识]') : null
     const 对象 = 目标 && 文稿.幻灯片列表[安全索引]?.对象列表?.find(项 => 项.id === 目标.getAttribute('data-对象标识'))
     if (对象 && 执行动作(对象)) { 事件.stopPropagation(); return }
     前进()
   }
+  const 处理页面点击 = (事件: React.MouseEvent) => {
+    if (!chrome.autoHide) { 处理点击(事件); return }
+    if (事件.target instanceof Element && 事件.target.closest('[data-reading-chrome]')) return
+    // Keep single-tap advance, but wait until a possible second tap has been
+    // classified. Revealing the chrome cancels this pending advance.
+    取消单击()
+    if (事件.detail > 1) return
+    单击计时器.current=setTimeout(()=>{单击计时器.current=undefined;处理点击(事件)},400)
+  }
 
   React.useEffect(() => {
     const 处理按键 = (事件: KeyboardEvent) => {
+      if (chrome.autoHide && 事件.key === 'Tab') return
       // 隔离隐藏编辑器的保存、增删页和标签切换快捷键。
       事件.stopImmediatePropagation()
       if (事件.key === 'Tab' || (事件.target instanceof HTMLButtonElement && ['Enter',' '].includes(事件.key))) return
@@ -292,7 +318,7 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     document.addEventListener('keydown', 处理按键, true)
     return () => document.removeEventListener('keydown', 处理按键, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [安全位置, 总页数])
+  }, [安全位置, 总页数,chrome.autoHide])
 
   const 当前页 = 文稿.幻灯片列表[安全索引]
   const 音效地址 = 当前页?.音效 ? 图片地址?.[当前页.音效.资源标识] : undefined
@@ -301,7 +327,9 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
     onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 执行() },
   }, 名称)
   const 停靠属性 = (位置: 停靠位置, 方位类名: string) => ({
-    className: `wps-slideshow__dock ${方位类名}${停靠可见[位置] ? '' : ' is-hidden'}`,
+    className: `wps-slideshow__dock ${方位类名}${(chrome.autoHide?chrome.visible:停靠可见[位置]) ? '' : ' is-hidden'}`,
+    'data-reading-chrome':true,
+    hidden:chrome.autoHide&&!chrome.visible,
     style: { zIndex: 放映浮层层级.控件 },
     onPointerEnter: () => 显示停靠(位置, false),
     onPointerLeave: () => 安排隐藏(位置),
@@ -318,7 +346,10 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
       tabIndex: -1,
       role: 'dialog',
       'aria-label': '幻灯片放映',
-      onClick: 处理点击,
+      'aria-description':chrome.description,
+      'data-reading-controls':chrome.visible?'visible':'hidden',
+      'data-reading-auto-hide':chrome.autoHide?'true':undefined,
+      onClick: 处理页面点击,
       onContextMenu: (事件: React.MouseEvent) => 事件.preventDefault(),
     },
     状态 && React.createElement(播放画面, { 图片地址, 文稿, 状态, 缩放, on媒体失败: (错误: unknown) => modal.error({ title: '媒体播放失败', content: 错误 instanceof Error ? 错误.message : '媒体无法播放' }) }),
@@ -333,8 +364,8 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
       { className: 'wps-slideshow__indicator' },
       `${安全位置 + 1} / ${总页数}${状态?.暂停 ? '　已暂停' : ''}${批迹.笔画.length ? `　笔迹 ${批迹.笔画.length} 笔` : ''}`
     ),
-    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--top', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'top', 'aria-hidden': true, onPointerEnter: () => 显示停靠('顶部') }),
-    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--bottom', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'bottom', 'aria-hidden': true, onPointerEnter: () => 显示停靠('底部') }),
+    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--top', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'top', 'aria-hidden': true, hidden:chrome.autoHide, onPointerEnter: () => 显示停靠('顶部') }),
+    React.createElement('div', { className: 'wps-slideshow__edge-hotzone wps-slideshow__edge-hotzone--bottom', style: { zIndex: 放映浮层层级.边缘感应 }, 'data-dock-edge': 'bottom', 'aria-hidden': true, hidden:chrome.autoHide, onPointerEnter: () => 显示停靠('底部') }),
     React.createElement('div', 停靠属性('顶部', 'wps-slideshow__dock--top'),
       React.createElement('div', { className: 'wps-slideshow__tools', role: 'toolbar', 'aria-label': '演示工具' },
         按钮('画笔', 工具 === '画笔', () => set工具(值 => 值 === '画笔' ? '无' : '画笔'), `画笔${键位提示('show.ink')}：临时批迹，退出时可选择保留`),
@@ -345,6 +376,7 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
         按钮('白屏', 屏幕 === '白', () => set屏幕(值 => 值 === '白' ? '无' : '白'), `白屏${键位提示('show.white')}`))),
     React.createElement('div', 停靠属性('底部', 'wps-slideshow__dock--bottom'),
       React.createElement('div', { className: 'wps-slideshow__bottom-tools', role: 'toolbar', 'aria-label': '放映控制' },
+        chrome.autoHide&&React.createElement('button',{type:'button',onClick:(事件:React.MouseEvent)=>{事件.stopPropagation();结束引用.current()}},'返回编辑'),
         React.createElement('button', { type: 'button', className: 'wps-slideshow__presenter', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); if (演讲者) { void 桥接.presenter.close(演讲者.会话标识); set演讲者(null) } else void 打开演讲者() } }, 演讲者 ? '关闭演讲者视图' : '演讲者视图'),
         React.createElement('button', { type: 'button', className: 'wps-slideshow__pause', onClick: (事件: React.MouseEvent) => { 事件.stopPropagation(); 控制器.current?.暂停(!状态?.暂停) } }, 状态?.暂停 ? '继续放映' : '暂停放映')))
   ), document.body)

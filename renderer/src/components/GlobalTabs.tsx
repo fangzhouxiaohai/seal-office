@@ -5,6 +5,7 @@ import { useAppStore, type WorkspaceTab } from '../store'
 import './bottomTabs.css'
 import {flushCloudBeforeClose} from '../cloud/autosaveLifecycle'
 import { useIconPlatform } from './IconPlatform'
+import { 演示内容快照, 迁移演示文稿 } from '../ppt/model/migrations'
 
 const 类型图标: Record<WorkspaceTab['type'], string> = {
   word: 'doc-word',
@@ -15,7 +16,7 @@ const 类型图标: Record<WorkspaceTab['type'], string> = {
 
 const GlobalTabs = () => {
   const { modal } = AntdApp.useApp()
-  const { workspaceTabs, activeWorkspaceTabId, selectWorkspaceTab, closeWorkspaceTab, createDoc } = useAppStore()
+  const { workspaceTabs, documents, activeWorkspaceTabId, selectWorkspaceTab, closeWorkspaceTab, createDoc, 准备编辑草稿 } = useAppStore()
   const mobile=useIconPlatform()==='mobile'
   if(mobile&&workspaceTabs.length===0)return null
 
@@ -37,7 +38,16 @@ const GlobalTabs = () => {
   }
 
   const 请求关闭 = (标签: WorkspaceTab) => {
-    if (!标签.dirty) {
+    const 草稿 = 准备编辑草稿(标签.id)
+    if (!草稿.成功) { modal.warning({ title: '请先完成当前编辑', content: 草稿.错误 }); return }
+    const 文档 = documents.find(项 => 项.id === 标签.id)
+    let 有修改 = 标签.dirty || 草稿.已提交.includes(标签.id)
+    if (文档 && 草稿.表格文档模型[标签.id]) 有修改 ||= JSON.stringify(草稿.表格文档模型[标签.id]) !== 文档.已保存模型
+    if (文档 && 草稿.演示文档模型[标签.id]) {
+      try { 有修改 ||= !文档.已保存模型 || 演示内容快照(草稿.演示文档模型[标签.id]) !== 演示内容快照(迁移演示文稿(JSON.parse(文档.已保存模型))) }
+      catch { 有修改 = true }
+    }
+    if (!有修改) {
       closeWorkspaceTab(标签.id)
       return
     }

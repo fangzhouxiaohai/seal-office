@@ -407,24 +407,55 @@
     "readOnlySource": true
   },
   {
-    "extension": "sealdoc",
+    "extension": "sldoc",
     "type": "word",
     "label": "海豹文档",
     "icon": "word",
     "native": true
   },
   {
-    "extension": "sealsheet",
+    "extension": "slxls",
     "type": "table",
     "label": "海豹表格",
     "icon": "table",
     "native": true
   },
   {
-    "extension": "sealshow",
+    "extension": "slppt",
     "type": "ppt",
     "label": "海豹演示",
     "icon": "presentation",
     "native": true
+  },
+  {
+    "extension": "spdf",
+    "type": "pdf",
+    "label": "海豹 PDF",
+    "icon": "pdf",
+    "native": true
+  },
+  {
+    "extension": "sealdoc",
+    "type": "word",
+    "label": "海豹文档",
+    "icon": "word",
+    "native": true,
+    "legacy": true
+  },
+  {
+    "extension": "sealsheet",
+    "type": "table",
+    "label": "海豹表格",
+    "icon": "table",
+    "native": true,
+    "legacy": true
+  },
+  {
+    "extension": "sealshow",
+    "type": "ppt",
+    "label": "海豹演示",
+    "icon": "presentation",
+    "native": true,
+    "legacy": true
   }
 ]

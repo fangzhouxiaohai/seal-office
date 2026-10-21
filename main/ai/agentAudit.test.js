@@ -49,7 +49,7 @@ function 创建环境(回复来源) {
 
 function 创建通道(服务, 接收 = () => {}) {
   const 处理器 = new Map()
-  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务 })
+  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
   const 发送者 = Object.assign(new EventEmitter(), { id: 901, isDestroyed: () => false, send: vi.fn(接收) })
   return { 处理器, 事件: { sender: 发送者 }, 发送者 }
 }

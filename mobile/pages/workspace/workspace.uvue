@@ -11,7 +11,7 @@
 
 <script lang="uts">
 import { exportDocument, printDocument } from '../../native/export.uts'
-import { isWorkspaceDocument, onUIThread } from '../../native/workspace.uts'
+import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber } from '../../native/workspace.uts'
 export default {
   data() {
     return {
@@ -108,46 +108,53 @@ export default {
     reloadOffice() { this.workspaceReady = false; this.loadErrorSerial++; this.errorText = ''; this.source = '/static/office/index.html?native=1&reload=' + Date.now().toString() },
     onMessage(event: UniWebViewMessageEvent) {
       event.detail.data.forEach((message: UTSJSONObject) => {
-        if (message.getString('token') != this.token) return
-        const action = message.getString('action') ?? ''
-        if (action == 'state') { this.workspaceReady = true; this.atHome = message.getBoolean('atHome') ?? false; this.unsaved = message.getNumber('unsaved') ?? 0; return }
+        if (message == null || messageString(message, 'token') != this.token) return
+        const action = messageString(message, 'action')
+        if (action == 'state') { this.workspaceReady = true; this.atHome = messageBoolean(message, 'atHome'); this.unsaved = messageNumber(message, 'unsaved'); return }
         if (action == 'healthy') { this.loadErrorSerial++; return }
         if (action == 'back-root') { this.moveToBackground(); return }
-        const id = message.getString('id') ?? ''
+        const id = messageString(message, 'id')
         if (id.length == 0 || id.length > 100) return
-        if (action == 'abort') { this.tasks.get(id)?.abort(); this.tasks.delete(id) }
+        try {
+        if (action == 'ping') this.reply({ id: id, type: 'ready' })
+        else if (action == 'abort') { this.tasks.get(id)?.abort(); this.tasks.delete(id) }
         else if (action == 'request') this.request(id, message)
         else if (action == 'save' || action == 'print') this.save(id, message)
-        else if (action == 'font') this.font(id, message.getString('family') ?? 'sans')
-        else if (action == 'pick-files') this.pickFiles(id, message.getBoolean('multiple') ?? false)
+        else if (action == 'font') this.font(id, messageString(message, 'family', 'sans'))
+        else if (action == 'pick-files') this.pickFiles(id, messageBoolean(message, 'multiple'))
         else if (action == 'clipboard-write') {
-          const text = message.getString('text') ?? ''
+          const text = messageString(message, 'text')
           if (text.length > 4194304) { this.reply({ id: id, type: 'error', error: '复制内容超过 4 MiB，请分段复制' }); return }
           uni.setClipboardData({ data: text, showToast: false,
             success: (_) => { this.reply({ id: id, type: 'written' }) },
             fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
           })
         }
+        else this.reply({ id: id, type: 'error', error: '当前原生接口不支持此操作，请更新应用' })
+        } catch (_) {
+          this.reply({ id: id, type: 'error', error: '系统操作未能启动，请重试；仍失败时请重新打开应用' })
+        }
       })
     },
     request(id: string, message: UTSJSONObject) {
-      const url = message.getString('url') ?? ''
+      const url = messageString(message, 'url')
       if (!url.startsWith('https://') && !url.startsWith('http://127.0.0.1:') && !url.startsWith('http://localhost:')) { this.reply({ id: id, type: 'error', error: '联网地址须使用 HTTPS' }); return }
-      const body = message.getString('body')
+      const body = message['body'] == null ? null : messageString(message, 'body')
       const data = body == null ? null : uni.base64ToArrayBuffer(body)
-      const headers = message.getJSON('headers') ?? {} as UTSJSONObject
+      const headers = (message['headers'] as UTSJSONObject | null) ?? {} as UTSJSONObject
+      const stream = messageBoolean(message, 'stream')
       const task = uni.request<ArrayBuffer>({
         url: url,
-        method: message.getString('method') ?? 'GET',
+        method: messageString(message, 'method', 'GET'),
         header: headers,
         data: data,
         responseType: 'arraybuffer',
-        enableChunked: message.getBoolean('stream') ?? false,
-        timeout: 900000,
+        enableChunked: stream,
+        timeout: stream ? 900000 : 60000,
         success: (response) => {
           this.reply({ id: id, type: 'end', status: response.statusCode, headers: response.header, data: response.data == null ? '' : uni.arrayBufferToBase64(response.data!) })
         },
-        fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) },
+        fail: (error) => { this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.errMsg }) },
         complete: (_) => { onUIThread(() => { this.tasks.delete(id) }) }
       })
       task.onHeadersReceived((response) => { this.reply({ id: id, type: 'headers', status: response.statusCode, headers: response.header }) })
@@ -174,7 +181,7 @@ export default {
           if (total > 104857600) { this.reply({ id: id, type: 'error', error: '一次导入的文件总大小不能超过 100 MiB' }); return }
           this.readPickedFile(id, result.tempFiles, 0, 0)
         },
-        fail: (error) => { this.reply({ id: id, type: error.errMsg.toLowerCase().includes('cancel') ? 'cancel' : 'error', error: error.errMsg }) }
+        fail: (error) => { this.reply({ id: id, type: error.errCode == 1101001 || error.errMsg.toLowerCase().includes('cancel') ? 'cancel' : 'error', error: error.errMsg }) }
       })
     },
     readPickedFile(id: string, files: ChooseFileTempFile[], index: number, transferred: number) {
@@ -196,8 +203,8 @@ export default {
       })
     },
     save(id: string, message: UTSJSONObject) {
-      const name = (message.getString('name') ?? '文档').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
-      const data = message.getString('data') ?? ''
+      const name = messageString(message, 'name', '文档').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+      const data = messageString(message, 'data')
       if (data.length > 150000000 || name.length > 240) { this.reply({ id: id, type: 'error', error: '文件过大或名称过长' }); return }
       let directory = uni.env.USER_DATA_PATH
       // #ifdef APP-HARMONY
@@ -209,8 +216,8 @@ export default {
         success: (_) => {
           onUIThread(() => {
             const done = (status: string, path: string, error: string) => { this.reply({ id: id, type: status, path: path, error: error }) }
-            if (message.getString('action') == 'print') printDocument(filename, done)
-            else exportDocument(filename, name, message.getString('mime') ?? 'application/octet-stream', done)
+            if (messageString(message, 'action') == 'print') printDocument(filename, done)
+            else exportDocument(filename, name, messageString(message, 'mime', 'application/octet-stream'), done)
           })
         },
         fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }

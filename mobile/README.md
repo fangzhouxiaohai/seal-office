@@ -1,10 +1,10 @@
 # 海豹办公 uni-app x
 
-当前移动源码版本为 **2.0.0 / 20000**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤和更新说明见 [2.0.0 发行准备](releases/2.0.0.md)。
+当前移动源码版本为 **2.1.1 / 20101**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。Android 与鸿蒙新版云打包步骤见 [2.1.1 发行准备](releases/2.1.1.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名：Android 为 `seal-office-2.0.0-android.apk`；本次鸿蒙成品是正式签名 App Pack，发行封装为 `seal-office-2.0.0-harmony.app.zip`。2026-10-19 用户已提供两个真实成品，Android SDK 与华为 SDK 验签和资源对照详见 [移动成品验收](../docs/v2.0.0-发布与移动成品.md)，尚未执行真机安装验收。鸿蒙 APP 内的 HAP 没有独立签名，不将其冒充可直接安装包。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名：新版 Android APK 为 `seal-office-2.1.1-android.apk`；已签名 Harmony App Pack 外层归档为 `seal-office-2.1.1-harmony.app.zip`。当前交付的是各平台云打包源码快照，不能把它们称为已生成的安装包。历史用户提供成品仍保留在对应发行页，不能改名充当新版；例如 [2.0.0 移动成品验收](../docs/v2.0.0-发布与移动成品.md)。App Pack 外层签名和内层 HAP 独立签名需分别核验。
 
-后续如果取得独立签名 HAP，可使用 `seal-office-2.0.0-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
+后续如果取得独立签名 HAP，可使用 `seal-office-2.1.1-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 
@@ -18,7 +18,7 @@ npm --prefix mobile ci
 npm run mobile:dev
 ```
 
-打开 http://127.0.0.1:5180。手机显示“首页 / 文件 / 助手 / 功能”底部导航，宽屏沿用桌面工作台。“功能”可以进入文字、表格、演示、PDF、云空间、知识库、模板市场、脑图、流程图、日历及设置。
+打开 http://127.0.0.1:5180。手机显示“首页 / 云盘 / 服务 / 模板 / 我的”底部导航，宽屏沿用桌面工作台。“服务”可以进入文字、表格、演示、PDF、知识库、脑图、流程图、日历和其他工具，导入文件是页面内操作。
 
 ```powershell
 # 安卓包内的编辑器资源，不生成 APK
@@ -36,9 +36,9 @@ npm run pack
 
 `static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
 
-如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。本次同时准备鸿蒙新版，切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.0.0 发行准备](releases/2.0.0.md)。打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
+如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.1.1 发行准备](releases/2.1.1.md)。正式交付优先使用独立冻结目录，打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
 
-当前 AppID 为用户配置的 `__UNI__B52B65B`。本次准备的源码版本为 `2.0.0 / 20000`，正式 Android / 鸿蒙包由用户云打包后再核验。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
+当前 AppID 为用户配置的 `__UNI__B52B65B`。本次准备的源码版本为 `2.1.1 / 20101`，正式 Android / 鸿蒙包由用户云打包后再核验。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
 发布页的 [完整补充源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)附带已核验的 `static/office/` 编辑器资源，便于直接在 HBuilderX 打开移动项目。Git 克隆不包含这些生成文件，需先执行 `npm run mobile:build`；源码包的 `release-source.json` 记录提交和包内编辑器哈希。
 
@@ -72,7 +72,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 | 安全配置 | WebCrypto 不可导出的包装密钥保护模型/云端安全记录；云文件继续使用 AES-GCM/HKDF 格式；普通本地文档和工作区备份不做全盘加密 |
 | 桌面系统功能 | Windows 格式关联、资源管理器预览、桌面/下载目录、独立演示窗口、桌面屏幕捕获及安装完整性检查不适用于移动/Web；相关设置已隐藏，无法使用的操作返回明确提示 |
 
-清理站点数据或卸载 App 会删除应用内存储，重要文档应导出。支持 Web Locks 的环境只允许同源一个工作区，防止多页覆盖状态。尚不支持从系统文件管理器直接唤起 App，请用应用内“文件”导入。
+清理站点数据或卸载 App 会删除应用内存储，重要文档应导出。支持 Web Locks 的环境只允许同源一个工作区，防止多页覆盖状态。尚不支持从系统文件管理器直接唤起 App，请用首页或服务页的“导入文件”。
 
 ## 验证
 
@@ -87,7 +87,7 @@ npm --prefix mobile run test:browser -- --web
 
 本轮结果与待验项在 [verification.json](verification.json)，详细平台和品牌矩阵在 [compatibility.md](compatibility.md)。1.9.11 主进程 921 项、移动单元 11 项通过，网页和本地 WebView 宿主模拟两种加载方式各 18 组通过。办公格式验收覆盖 37 组兼容读取、25 组保存重开及服务配置操作，使用实际本地转换服务。渲染层全量运行 1,848 项，OFD 的一项问题修复后在最终受影响的 82 项回归和真实 OFD/PDF 流程中通过；详细原始结果与复测说明见[本版验收](../docs/v1.9.11-修复与验收.md)。1.9.10 的完整基线另行归档，不作为新 APK 或各品牌真机均通过的证明。
 
-检查覆盖中文 DOCX/XLSX/PPTX 往返、保存重开、来源指纹冲突、密钥重新加载、中文 PDF 生成/旋转/阅读、手机新建文字和全部功能入口。Word 图片回归实际操作八个手柄、旋转、翻转、布局、裁剪、移动、删除和撤销重做，并检查裁剪像素、PDF 中的旋转翻转像素及工作区恢复。旧 APK 已验证 DOCX 导入、中文编辑、保存、后台和杀进程后恢复，并发现系统分享与 MIME 文件选择差异；对应源码修复须通过新 APK 再验收。2.0.0 按本次要求准备 Android 与鸿蒙的版本和内置资源，由用户分别提交云打包。
+检查覆盖中文 DOCX/XLSX/PPTX 与四种海豹专属格式的保存重开、来源指纹冲突、密钥重新加载、中文 PDF 生成/旋转/阅读、手机新建文字和功能入口。Word 图片回归实际操作八个手柄、旋转、翻转、布局、裁剪、移动、删除和撤销重做，并检查裁剪像素、PDF 中的旋转翻转像素及工作区恢复。旧 APK 的设备结果保留在历史报告，不能代表新版已通过原生验收。2.1.1 准备 Android 与鸿蒙的独立版本资源和云打包源码，由用户分别提交云打包；本版范围见[2.1.1 验收记录](../docs/verification/v2.1.1/README.md)。
 
 Android 目标为 9–16，配置 minSdk 28、targetSdk 36，包含 32/64 位 ARM。系统 WebView 也必须具备所需能力，当前构建基线 Chromium 100+ / Safari 15.4+，旧组件有明确的升级提示。国产 ROM、iOS 27 与 HarmonyOS 真机状态及验收要求见 [compatibility.md](compatibility.md)。只有当前安卓模拟器实测，不能将代码配置或浏览器模拟作为各品牌均通过的证明。
 

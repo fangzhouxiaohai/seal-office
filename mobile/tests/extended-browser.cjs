@@ -5,7 +5,7 @@ const group = process.argv.find(arg => arg.startsWith('--group='))?.slice(8)
 assert.ok(['reading', 'editor', 'workspace', 'diagram'].includes(group))
 const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
 app.setPath('userData', path.join(output, `browser-profile-${group}-${require('node:crypto').randomUUID()}`)); app.disableHardwareAcceleration()
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.otf': 'font/otf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
   console.log(JSON.stringify({stage:'ready',group,localFile}))
   fs.mkdirSync(output, { recursive: true })
@@ -38,7 +38,7 @@ app.whenReady().then(async () => {
     if (localFile) await win.loadFile(path.join(webRoot, 'index.html')); else await win.loadURL(origin + '/')
     console.log(JSON.stringify({stage:'page-loaded',group,localFile}))
     await until(`!!document.querySelector('.wps-app')`, '生产应用必须挂载',600)
-    if (localFile) await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin + '/fonts/NotoSansSC.ttf')});xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+    if (localFile) await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     if (group === 'reading') await require('./reading-pages-actions.cjs')({ win, evaluate, output, checks })
     if (group === 'editor') {
       await evaluate(`document.querySelector('[aria-label="服务"]').click()`)

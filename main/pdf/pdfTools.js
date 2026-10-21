@@ -1,6 +1,9 @@
-const { PDFDocument, degrees, rgb, StandardFonts } = require('pdf-lib')
+const { PDFDocument, degrees, rgb } = require('pdf-lib')
 const fs = require('fs')
 const path = require('path')
+const { 创建PDF文字布局, 绘制PDF文字 } = require('./pdfTextLayout')
+const { 可靠PDF字体引擎 } = require('./safeFontkit')
+const 字体缓存 = new Map()
 
 function 校验页码(总数, 页码列表) {
   const 结果 = [...new Set(页码列表.map(Number))]
@@ -89,16 +92,16 @@ function 颜色(值) {
   return rgb(...[1, 3, 5].map((索引) => parseInt(值.slice(索引, 索引 + 2), 16) / 255))
 }
 
-async function 字体(文档, 内容) {
-  if (/^[\x00-\x7f]*$/.test(内容)) return 文档.embedFont(StandardFonts.Helvetica)
+async function 字体(文档, 内容, 字号) {
   const fontkit = require('@pdf-lib/fontkit')
-  const 目录 = process.platform === 'win32' ? path.join(process.env.WINDIR || 'C:\\Windows', 'Fonts') : '/usr/share/fonts'
-  const 候选 = process.platform === 'win32' ? ['simhei.ttf', 'simsunb.ttf', 'simfang.ttf'] : ['truetype/noto/NotoSansCJK-Regular.ttc', 'truetype/dejavu/DejaVuSans.ttf']
-  const Linux字体 = [path.join(process.resourcesPath || '', 'fonts/NotoSansSC.ttf'), path.join(__dirname, '../../mobile/web/public/fonts/NotoSansSC.ttf')]
-  const 路径 = (process.platform === 'linux' ? Linux字体 : 候选.map((名字) => path.join(目录, 名字))).find((名字) => fs.existsSync(名字))
-  if (!路径) throw new Error('系统未安装可用于 PDF 中文编辑的字体')
-  文档.registerFontkit(fontkit)
-  return 文档.embedFont(fs.readFileSync(路径), { subset: true })
+  文档.registerFontkit(可靠PDF字体引擎(fontkit))
+  const 来源 = ['NotoSansSC.ttf', 'NotoSerifCJKsc-Regular.otf'].map(名称 => ({ name: 名称, load: () => {
+    const 文件 = [...(process.resourcesPath ? [path.join(process.resourcesPath, 'fonts', 名称)] : []), path.join(__dirname, '../../mobile/web/public/fonts', 名称)].find(候选 => fs.existsSync(候选))
+    if (!文件) throw new Error(`缺少海豹办公内置 PDF 字体 ${名称}，请修复安装；未修改原 PDF`)
+    if (!字体缓存.has(文件)) { const bytes = fs.readFileSync(文件); 字体缓存.set(文件, { bytes, font: fontkit.create(bytes) }) }
+    return 字体缓存.get(文件)
+  } }))
+  return 创建PDF文字布局(文档, 内容, 字号, 来源)
 }
 
 /** 页面坐标从左上角起，单位为 PDF 点。遮盖仅改变视觉效果，不删除原内容。 */
@@ -120,18 +123,19 @@ async function 编辑页面(数据, 操作) {
     if (!Number.isFinite(宽) || !Number.isFinite(高) || 宽 <= 0 || 高 <= 0 || x + 宽 > 页.getWidth() || y + 高 > 页.getHeight()) throw new Error('遮盖区域超出页面范围')
     页.drawRectangle({ x, y: 页.getHeight() - y - 高, width: 宽, height: 高, color: 颜色(操作.颜色 || '#ffffff') })
   } else if (['text', 'note', 'replace'].includes(操作.类型)) {
-    const 内容 = String(操作.文字 || '').trim()
+    const 内容 = String(操作.文字 || '')
     const 字号 = Number(操作.字号 || 12)
-    if (!内容 || !Number.isFinite(字号) || 字号 < 4 || 字号 > 72) throw new Error('文字内容或字号无效')
-    const 嵌入字体 = await 字体(文档, 内容)
+    if (!内容.trim() || !Number.isFinite(字号) || 字号 < 4 || 字号 > 72) throw new Error('文字内容或字号无效')
+    const 文字布局 = await 字体(文档, 内容, 字号)
+    if (x + 文字布局.width > 页.getWidth() || y + 文字布局.height > 页.getHeight()) throw new Error('新增文字超出页面范围，请减小字号、换行或调整位置；未修改原 PDF')
     if (操作.类型 === 'replace') {
       if (!Number.isFinite(宽) || !Number.isFinite(高) || 宽 <= 0 || 高 <= 0 || x + 宽 > 页.getWidth() || y + 高 > 页.getHeight()) throw new Error('替换区域超出页面范围')
       页.drawRectangle({ x, y: 页.getHeight() - y - 高, width: 宽, height: 高, color: rgb(1, 1, 1) })
     }
-    if (操作.类型 === 'note') 页.drawRectangle({ x: x - 3, y: 页.getHeight() - y - 字号 - 4, width: Math.min(页.getWidth() - x + 3, 嵌入字体.widthOfTextAtSize(内容, 字号) + 6), height: 字号 + 7, color: rgb(1, .96, .72) })
-    页.drawText(内容, { x, y: 页.getHeight() - y - 字号, size: 字号, font: 嵌入字体, color: 颜色(操作.颜色 || '#111111') })
+    if (操作.类型 === 'note') 页.drawRectangle({ x: x - 3, y: 页.getHeight() - y - 文字布局.height - 4, width: Math.min(页.getWidth() - x + 3, 文字布局.width + 6), height: 文字布局.height + 7, color: rgb(1, .96, .72) })
+    绘制PDF文字(页, 文字布局, { x, y: 页.getHeight() - y - 字号, color: 颜色(操作.颜色 || '#111111') })
   } else throw new Error('不支持的 PDF 编辑操作')
   return Buffer.from(await 文档.save())
 }
 
-module.exports = { 提取页面, 合并文档, 删除页面, 旋转页面, 插入空白页, 插入文件页, 编辑页面 }
+module.exports = { 提取页面, 合并文档, 删除页面, 旋转页面, 插入空白页, 插入文件页, 编辑页面, 创建PDF文字布局, 可靠PDF字体引擎 }

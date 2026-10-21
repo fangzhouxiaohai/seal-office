@@ -10,7 +10,7 @@ function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number 
   let 最大列 = -1
   Object.keys(工作表.单元格).forEach((地址) => {
     const 单元 = 工作表.单元格[地址]
-    if (单元.原始值.length === 0 && 单元.显示值.length === 0 && !单元.批注 && !单元.数据验证 && Object.keys(单元.格式).length === 0) {
+    if (单元.原始值.length === 0 && 单元.显示值.length === 0 && !单元.批注 && !单元.数据验证 && !单元.超链接 && Object.keys(单元.格式).length === 0) {
       return
     }
     const 位置 = 解析地址(地址)
@@ -88,7 +88,7 @@ export function 生成表格文件名(工作表名: string, 扩展名: string): 
  * 导出为 xlsx 的写入模型，支持单表或整本多工作表。
  * 主进程写入 xlsx 读 { 工作表: [{ 名称, 数据: 二维数组 }] }。
  * 公式携带表达式与计算结果；普通单元格保留原始输入。
- * 全部工作表均无内容时返回 null。
+ * 单张默认空表返回 null；多表工作簿保留空表的名称、顺序与引用目标。
  */
 type Xlsx单元格 = string | { 值: string | number | boolean | { error: string }; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 公式: string; 结果?: string | number | boolean | { error: string }; 数组范围?: string; 动态数组?: boolean; 保留公式拼写?: boolean; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 文字: Array<{ 文本: string }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证; 超链接?: string }
 type Xlsx工作表 = {
@@ -126,7 +126,7 @@ export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表:
   const 公式兼容模式 = 列表[0]?.公式兼容模式
   if (列表.some(表 => (表.公式兼容模式 ?? 'Excel') !== (公式兼容模式 ?? 'Excel'))) throw new Error('工作表公式兼容模式不一致')
   const 表定义列表 = 重算工作簿(列表)
-    .map((工作表) => 构建单表模型(工作表))
+    .map((工作表) => 构建单表模型(工作表, 列表.length > 1))
     .filter((表): 表 is Xlsx工作表 => 表 !== null)
   if (表定义列表.length === 0) {
     return null
@@ -135,11 +135,13 @@ export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表:
 }
 
 /** 构建单张工作表的写入模型；空表返回 null */
-function 构建单表模型(工作表: Sheet): Xlsx工作表 | null {
+function 构建单表模型(工作表: Sheet, 保留空表 = false): Xlsx工作表 | null {
   const { 行数, 列数 } = 计算有效范围(工作表)
-  const 有布局 = 工作表.合并区域.length > 0 || 工作表.冻结 !== undefined || 工作表.筛选 !== undefined || 工作表.保护 !== undefined ||
+  const 自定义页面 = Object.keys(默认页面设置).some(键 => (工作表.页面设置 ?? 默认页面设置)[键 as keyof typeof 默认页面设置] !== 默认页面设置[键 as keyof typeof 默认页面设置])
+  const 有布局 = 工作表.合并区域.length > 0 || 工作表.冻结 !== undefined || 工作表.筛选 !== undefined || 工作表.保护 !== undefined || 自定义页面 ||
+    工作表.日期系统1904 === true || 工作表.公式兼容模式 === 'WPS' ||
     工作表.列宽.some((宽) => 宽 !== 默认列宽) || 工作表.行高.some((高) => 高 !== 默认行高) || (工作表.图片?.length ?? 0) > 0
-  if ((行数 === 0 || 列数 === 0) && !有布局) {
+  if ((行数 === 0 || 列数 === 0) && !有布局 && !保留空表) {
     return null
   }
   const 数据: Xlsx单元格[][] = []

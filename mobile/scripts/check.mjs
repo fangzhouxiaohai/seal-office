@@ -3,12 +3,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { findHBuilder } from './hbuilder.mjs'
+import { pdfFontResources } from './pdf-font-resources.mjs'
 const directory = fileURLToPath(new URL('..', import.meta.url))
 const manifest = JSON.parse(await fs.readFile(path.join(directory, 'manifest.json'), 'utf8'))
 assert.ok(Object.hasOwn(manifest, 'uni-app-x'), '项目必须标记为 uni-app x')
 const pages = JSON.parse(await fs.readFile(path.join(directory, 'pages.json'), 'utf8'))
 for (const page of pages.pages) await fs.access(path.join(directory, page.path + '.uvue'))
-for (const filename of ['App.uvue', 'main.uts', 'web/public/uni.webview.js', 'web/public/fonts/NotoSansSC.ttf']) await fs.access(path.join(directory, filename))
+for (const filename of ['App.uvue', 'main.uts', 'web/public/uni.webview.js', ...pdfFontResources.map(name => 'web/public/fonts/' + name)]) assert.ok((await fs.stat(path.join(directory, filename))).size > 0, filename + ' 不能为空')
 assert.equal(manifest['app-android'].distribute.minSdkVersion, 28, '最低安卓版本应为 Android 9')
 assert.equal(manifest['app-android'].distribute.targetSdkVersion, 36, '目标安卓版本应为 Android 16')
 assert.deepEqual(manifest['app-android'].distribute.abiFilters, ['armeabi-v7a', 'arm64-v8a'])

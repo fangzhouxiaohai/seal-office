@@ -7,7 +7,7 @@ function 环境() {
     推送({ 类型: '思考', 内容: '服务返回的思考' })
     return new Promise((完成) => 信号.addEventListener('abort', () => 完成({ 内容: '', 已停止: true }), { once: true }))
   }) }
-  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务 })
+  注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
   const 创建发送者 = (id) => Object.assign(new EventEmitter(), { id, send: vi.fn(), isDestroyed: () => false })
   return { 处理器, 服务, 创建发送者 }
 }
@@ -18,11 +18,11 @@ describe('助手任务生命周期', () => {
       try { return { 内容: JSON.stringify(await 执行工具({ 调用标识: 'call-1', 工具: 'propose_changes', 参数: { 回复: '建议', 修改: [] } })) } }
       catch (错误) { if (信号.aborted) return { 内容: '', 已停止: true }; throw 错误 }
     }) }
-    注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务 })
+    注册智能助手通道({ handle: (名称, 处理) => 处理器.set(名称, 处理) }, { 助手服务: 服务, requireAIIdentity: async () => ({ accountId: 'verified-test', verified: true, method: 'phone' }) })
     const 甲 = Object.assign(new EventEmitter(), { id: 1, send: vi.fn(), isDestroyed: () => false })
     const 乙 = Object.assign(new EventEmitter(), { id: 2, send: vi.fn(), isDestroyed: () => false })
     const 任务 = 处理器.get('ai.chat')({ sender: 甲 }, { 请求标识: 'request-a' })
-    expect(甲.send).toHaveBeenCalledWith('ai.toolCall', expect.objectContaining({ 请求标识: 'request-a', 调用标识: 'call-1' }))
+    await vi.waitFor(() => expect(甲.send).toHaveBeenCalledWith('ai.toolCall', expect.objectContaining({ 请求标识: 'request-a', 调用标识: 'call-1' })))
     const 结果 = { 请求标识: 'request-a', 调用标识: 'call-1', 成功: true, 数据: { 候选已生成: true } }
     expect((await 处理器.get('ai.submitToolResult')({ sender: 乙 }, 结果)).成功).toBe(false)
     expect((await 处理器.get('ai.submitToolResult')({ sender: 甲 }, { ...结果, 请求标识: 'other' })).成功).toBe(false)
@@ -38,7 +38,7 @@ describe('助手任务生命周期', () => {
     const { 处理器, 创建发送者 } = 环境()
     const 甲 = 创建发送者(1), 乙 = 创建发送者(2)
     const 任务 = 处理器.get('ai.chat')({ sender: 甲 }, { 请求标识: 'request-a' })
-    expect(甲.send).toHaveBeenCalledWith('ai.stream', { 请求标识: 'request-a', 类型: '思考', 内容: '服务返回的思考' })
+    await vi.waitFor(() => expect(甲.send).toHaveBeenCalledWith('ai.stream', { 请求标识: 'request-a', 类型: '思考', 内容: '服务返回的思考' }))
     expect(处理器.get('ai.cancel')({ sender: 乙 }, 'request-a').成功).toBe(false)
     expect((await 处理器.get('ai.chat')({ sender: 甲 }, { 请求标识: 'request-b' })).成功).toBe(false)
     expect(处理器.get('ai.cancel')({ sender: 甲 }, 'request-a').成功).toBe(true)
@@ -67,6 +67,7 @@ describe('不中断任务的补充引导', () => {
     expect(处理器.get('ai.guide')({ sender: 乙 }, 'guided-task', '补充预算').成功).toBe(false)
     expect(处理器.get('ai.guide')({ sender: 甲 }, 'wrong-task', '补充预算').成功).toBe(false)
     expect(处理器.get('ai.guide')({ sender: 甲 }, 'guided-task', '补充预算').成功).toBe(true)
+    await vi.waitFor(() => expect(options).toBeDefined())
     expect(options.信号.aborted).toBe(false)
     expect(options.读取引导(true)).toEqual(['补充预算'])
     expect(处理器.get('ai.guide')({ sender: 甲 }, 'guided-task', '加上负责人').成功).toBe(true)

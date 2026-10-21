@@ -5,6 +5,13 @@ import { App as AntdApp, ConfigProvider } from 'antd'
 import TranslateDialog from './TranslateDialog'
 import { 读取翻译配置 } from './translateSettings'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-translatedialog', verified: true, method: 'phone' } }
+}) })
+
+
 vi.mock('./translateSettings', async () => {
   const 实际 = await vi.importActual<typeof import('./translateSettings')>('./translateSettings')
   return {
@@ -19,7 +26,7 @@ const 翻译 = vi.fn()
 const 安装安全翻译通道 = (覆盖: Record<string, unknown> = {}) => {
   Object.defineProperty(window, 'electronAPI', {
     configurable: true,
-    value: {
+    value: { cloud: 受信AI测试账号(),
       presentationAi: {
         capabilities: vi.fn(async () => ({ 成功: true, 数据: {} })),
         translate: 翻译,

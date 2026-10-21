@@ -16,6 +16,8 @@ module.exports = {
   extraResources: [
     { from: 'mobile/web/public/fonts/NotoSansSC.ttf', to: 'fonts/NotoSansSC.ttf' },
     { from: 'mobile/web/public/fonts/OFL.txt', to: 'fonts/OFL.txt' },
+    { from: 'mobile/web/public/fonts/NotoSerifCJKsc-Regular.otf', to: 'fonts/NotoSerifCJKsc-Regular.otf' },
+    { from: 'mobile/web/public/fonts/NotoSerif-LICENSE.txt', to: 'fonts/NotoSerif-LICENSE.txt' },
   ],
   fileAssociations: 文件关联,
   npmRebuild: false,

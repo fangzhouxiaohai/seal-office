@@ -30,6 +30,7 @@ export function 表格文本输出(路径: string, 工作簿: Sheet[]): { 内容
     if (Object.keys(格.格式).length) 损失.add('单元格样式')
     if (格.批注) 损失.add('批注')
     if (格.数据验证) 损失.add('数据验证')
+    if (格.超链接) 损失.add('超链接目标')
     if (!格.原始值 && !格.显示值) continue
     const 位置 = 解析地址(地址)
     if (位置) 字段数[位置.行] = Math.max(字段数[位置.行] ?? 0, 位置.列 + 1)

@@ -6,6 +6,15 @@ const { createHash } = require('crypto')
 const root = path.resolve(__dirname, '..'), releaseDirectory = path.join(root, 'release', 'v' + require('../package.json').version), output = path.join(releaseDirectory, 'verification')
 fs.mkdirSync(output, { recursive: true })
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-ubuntu-verify-'))
+// All explicit default-app tests below are confined to disposable XDG paths.
+// Never change the verification operator's desktop defaults.
+const testConfig = path.join(temp, 'xdg-config'), testData = path.join(temp, 'xdg-data')
+fs.mkdirSync(testConfig); fs.mkdirSync(testData)
+const { MIME类型: privateMimeTypes } = require('../main/linux/mimeTypes')
+fs.mkdirSync(path.join(testData, 'applications'))
+fs.writeFileSync(path.join(testData, 'applications', 'seal-verification-other.desktop'), '[Desktop Entry]\nType=Application\nName=Seal Verification Placeholder\nExec=/bin/true %U\nNoDisplay=true\nMimeType=' + privateMimeTypes.join(';') + ';\n')
+fs.writeFileSync(path.join(testConfig, 'mimeapps.list'), '[Default Applications]\n' + privateMimeTypes.map(type => type + '=seal-verification-other.desktop;').join('\n') + '\n')
+const testEnvironment = { ...process.env, XDG_CONFIG_HOME: testConfig, XDG_DATA_HOME: testData }
 const version = require('../package.json').version
 const report = { version, os: fs.readFileSync('/etc/os-release', 'utf8'), arch: process.arch, sandboxBypassed: false, checks: [], failures: [] }
 const sockets = [], processes = []
@@ -55,10 +64,14 @@ async function verify() {
   const desktop = fs.readFileSync('/usr/share/applications/sealoffice.desktop', 'utf8')
   check(desktop.includes('MimeType=') && desktop.includes('text/csv') && /Exec=.* %U/.test(desktop), 'Desktop launcher and CSV MIME registration')
   check(!fs.existsSync('/opt/海豹办公/resources/office-runtime/program/soffice.com'), 'Linux package excludes Windows compatibility binaries')
+  const installedMime = fs.readFileSync('/usr/share/mime/packages/sealoffice.xml', 'utf8')
+  for (const item of require('../main/linux/mimeTypes').文件关联.filter(item=>['sldoc','slxls','slppt','spdf'].includes(item.ext))) {
+    check(installedMime.includes('type="'+item.mimeType+'"') && installedMime.includes('pattern="*.'+item.ext+'"') && desktop.includes(item.mimeType), item.ext + ' installed MIME XML glob and desktop association declared')
+  }
   const source = path.join(temp, '冷启动 中文.csv')
   fs.writeFileSync(source, '编号,内容\r\n0012,中文验收\r\n')
   const log = fs.openSync(path.join(output, 'application.log'), 'w')
-  const child = spawn('/usr/bin/sealoffice', ['--inspect=9231', '--remote-debugging-port=9230', '--user-data-dir=' + path.join(temp, 'profile'), source], { detached: true, stdio: ['ignore', log, log] })
+  const child = spawn('/usr/bin/sealoffice', ['--inspect=9231', '--remote-debugging-port=9230', '--user-data-dir=' + path.join(temp, 'profile'), source], { detached: true, env: testEnvironment, stdio: ['ignore', log, log] })
   processes.push(child)
   const main = await connect(9231, item => !!item.webSocketDebuggerUrl)
   const page = await connect(9230, item => item.url.endsWith('/dist/index.html'))
@@ -74,6 +87,10 @@ async function verify() {
   check(integrity.成功 && integrity.完整, 'Packaged application integrity manifest')
   const options = await main.evaluate(`(()=>{const e=process.mainModule.require('electron');return e.BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences()})()`)
   check(options.sandbox && options.contextIsolation && !options.nodeIntegration, 'Renderer sandbox and context isolation remain enabled')
+  const isolated = await main.evaluate(`process.env.XDG_CONFIG_HOME===${JSON.stringify(testConfig)}&&process.env.XDG_DATA_HOME===${JSON.stringify(testData)}`)
+  check(isolated, 'Default-app tests use only the disposable XDG configuration and data directories')
+  report.nativeFormats = await main.evaluate(`(async()=>{const e=process.mainModule.require('electron'),p=process.mainModule.require('path'),probe=process.mainModule.require(${JSON.stringify(path.join(__dirname,'verify-native-formats.cjs'))});return probe.verifyNativeFormats({load:name=>process.mainModule.require(p.join(e.app.getAppPath(),name)),directory:${JSON.stringify(path.join(temp,'native-formats'))},resources:process.resourcesPath})})()`)
+  check(report.nativeFormats.passed && report.nativeFormats.formats.length === 4, 'Four native formats use packaged codecs and preserve Unicode, resources, formula caches and embedded PDF bytes across two disk save cycles')
   const csv = await page.evaluate(`window.electronAPI.readFile(${JSON.stringify(source)})`)
   check(csv.成功 && csv.内容.includes('0012') && csv.内容.includes('中文'), 'CSV IPC read preserves Unicode and leading zeros')
   const saved = await page.evaluate(`window.electronAPI.saveToFile(${JSON.stringify(source)}, '编号,内容\\r\\n0012,修改成功\\r\\n', 'csv', ${JSON.stringify(csv.文件指纹)})`)

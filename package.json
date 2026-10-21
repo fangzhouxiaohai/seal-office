@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "海豹办公 Seal Office",
   "homepage": "https://github.com/fangzhouxiaohai/seal-office",
   "main": "main/main.js",
@@ -79,6 +79,7 @@
     "vitest": "^0.34.6"
   },
   "build": {
+    "beforePack": "build/prepare-shell-new.cjs",
     "appId": "com.sealoffice.desktop",
     "productName": "海豹办公",
     "directories": {
@@ -123,6 +124,22 @@
       ]
     },
     "extraResources": [
+      {
+        "from": "mobile/web/public/fonts/NotoSansSC.ttf",
+        "to": "fonts/NotoSansSC.ttf"
+      },
+      {
+        "from": "mobile/web/public/fonts/OFL.txt",
+        "to": "fonts/OFL.txt"
+      },
+      {
+        "from": "mobile/web/public/fonts/NotoSerifCJKsc-Regular.otf",
+        "to": "fonts/NotoSerifCJKsc-Regular.otf"
+      },
+      {
+        "from": "mobile/web/public/fonts/NotoSerif-LICENSE.txt",
+        "to": "fonts/NotoSerif-LICENSE.txt"
+      },
       {
         "from": "build/office-runtime-notice.txt",
         "to": "office-runtime-notice.txt"

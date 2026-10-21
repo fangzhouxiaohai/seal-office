@@ -20,6 +20,7 @@ const require = createRequire(import.meta.url), Module = require('node:module'),
 let factory: any
 try { Module._load = function (id: string, ...args: any[]) { const result = load.call(this, id, ...args); return id === 'node:worker_threads' ? { ...result, isMainThread: true } : result }; factory = require('../../../server/test/collaborationFixture.cjs').createLocalCollaborationFixture } finally { Module._load = load }
 const docx = require('../../../main/office/docxWriter.js'), reader = require('../../../main/office/docxReader.js'), xlsx = require('../../../main/office/xlsxCodec.js'), pptx = require('../../../main/office/pptxCodec.js')
+const native = require('../../../main/office/sealFormat.js')
 let fixture: any, clients: RealtimeClient<any>[] = [], originalCrypto: PropertyDescriptor | undefined, service: any, failWriter = false
 beforeEach(async () => {
   originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto'); Object.defineProperty(globalThis, 'crypto', { configurable: true, value: webcrypto })
@@ -30,6 +31,8 @@ beforeEach(async () => {
     readFile: async (filename: string) => ({ 成功: true, 内容: fs.readFileSync(filename).toString('base64'), 二进制: true, 文件指纹: createHash('sha256').update(fs.readFileSync(filename)).digest('hex') }),
     saveToFile: async (filename: string, data: string) => { fs.writeFileSync(filename, Buffer.from(data, 'base64')); return { 成功: true, 文件指纹: createHash('sha256').update(fs.readFileSync(filename)).digest('hex') } },
     office: {
+      writeSeal: async (type:string,model:any) => ({成功:true,数据:(await native.writeSeal(type,model)).toString('base64')}),
+      readSeal: async (extension:string,data:string) => ({成功:true,...await native.readSeal(extension,Buffer.from(data,'base64'))}),
       writeDocx: async (model: any) => failWriter ? { 成功: false, 错误: '真实来源包拒绝有损结构写回' } : ({ 成功: true, 数据: (await docx.生成docx(model)).toString('base64') }),
       writeXlsx: async (model: any) => ({ 成功: true, 数据: (await xlsx.写入xlsx(model)).toString('base64') }),
       writePptx: async (model: any) => ({ 成功: true, 数据: (await pptx.写入pptx(model)).toString('base64') }),
@@ -46,6 +49,13 @@ async function teamFile(name: string, data: Buffer) {
   return { kind: 'team' as const, id: team.id, nodeId: saved.id }
 }
 function copy(file: any) { const filename = path.join(fixture.directory, crypto.randomUUID(), file.name); fs.mkdirSync(path.dirname(filename)); fs.writeFileSync(filename, Buffer.from(file.data, 'base64')); return { ...file, path: filename } }
+
+it('原生共享文字下载保留完整原生结构和来源警告记录，并交给新编辑器继续保存',async()=>{
+  const warnings=['原始来源含尚未支持的域'],model={html:'<p>原文𠮷🦭</p>',source:''},binding=await teamFile('协作.sldoc',await native.writeSeal('word',{html:model.html,警告:warnings})),client=await wire(fixture.a,binding,'word',model)
+  await client.publish({...model,html:'<p><strong>最新𠮷🦭</strong></p>'},model);await client.flush()
+  const latest=await materializeRealtime(copy(await fixture.b.teamDownload({id:binding.id,nodeId:binding.nodeId})),binding),decoded=await native.readSeal('sldoc',fs.readFileSync(latest.path))
+  expect(decoded.html).toContain('最新𠮷🦭');expect(decoded.警告).toEqual(warnings);expect(latest.live).toMatchObject({type:'word',warnings,content:decoded.html})
+},60000)
 
 it('共享与个人云重新下载会真实生成最新DOCX，新设备所有者可从根密钥解密同一实时房间', async () => {
   const model = { html: '<p>起点😀终点</p>', source: '' }, original = await docx.生成docx(htmlToDocxModel(model.html)), saved = await fixture.a.save({ linkId: 'latest-docx', name: '最新.docx', data: original.toString('base64') })

@@ -9,8 +9,8 @@ import { 桥接 } from '../ipc/bridge'
 import {文字文本输出,导出为Html} from './exportDoc'
 import type { Sheet } from '../sheet/model'
 import { 表格文本输出, 单表数据输出 } from '../sheet/sheetSave'
-import { 可保存扩展 } from '../fileFormats'
-import { 写出办公文档 } from '../office/writeDocument'
+import { 可保存扩展, 原生文档类型 } from '../fileFormats'
+import { 写出办公文档, 写出PDF文档 } from '../office/writeDocument'
 import type { 演示文稿 } from '../ppt/deck'
 
 export type 待保存类型 = 'word' | 'table' | 'ppt' | 'pdf'
@@ -48,25 +48,25 @@ function 是同一路径(左: string, 右: string): boolean {
 
 /** 按类型补齐或校验扩展名；无法保存的格式返回 null */
 export function 规范保存路径(类型: 待保存类型, 路径: string): string | null {
-  const 扩展 = 路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase()
-  if (类型 === 'pdf') return 扩展 === undefined ? `${路径}.pdf` : 扩展 === '.pdf' ? 路径 : null
+  const 扩展 = 路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase()
+  if (类型 === 'pdf') return 扩展 === undefined ? `${路径}.spdf` : ['.spdf', '.pdf'].includes(扩展) ? 路径 : null
   if (类型 === 'word') {
-    if (扩展 === undefined) return `${路径}.docx`
+    if (扩展 === undefined) return `${路径}.sldoc`
     return 文字保存扩展.has(扩展) ? 路径 : null
   }
   if (类型 === 'table') {
-    if (扩展 === undefined) return `${路径}.xlsx`
+    if (扩展 === undefined) return `${路径}.slxls`
     return 可保存扩展('table').has(扩展) ? 路径 : null
   }
-  if (扩展 === undefined) return `${路径}.pptx`
+  if (扩展 === undefined) return `${路径}.slppt`
   return 可保存扩展('ppt').has(扩展) ? 路径 : null
 }
 
 function 格式提示(类型: 待保存类型): string {
-  if (类型 === 'pdf') return 'PDF 文档只能保存为 PDF 格式'
-  if (类型 === 'word') return '文字文档请选择 DOCX、DOC、RTF、开放文本、纯文本、网页或 PDF 格式'
-  if (类型 === 'table') return '表格请选择 XLSX、CSV、XLS、开放表格或其他可保存的数据格式'
-  return '演示文稿请选择 PPTX、PPT 或开放演示格式'
+  if (类型 === 'pdf') return 'PDF 文档请选择 SPDF 或 PDF 格式'
+  if (类型 === 'word') return '文字文档请选择 SLDOC、DOCX、DOC、RTF、开放文本、纯文本、网页或 PDF 格式'
+  if (类型 === 'table') return '表格请选择 SLXLS、XLSX、CSV、XLS、开放表格或其他可保存的数据格式'
+  return '演示文稿请选择 SLPPT、PPTX、PPT 或开放演示格式'
 }
 
 /** 转换与写盘可能抛出非 Error（例如 DOMException），这里统一取到可读原因 */
@@ -81,7 +81,9 @@ function 描述错误(错误: unknown, 兜底: string): string {
 async function 写出文档(文档: 待保存文档, 路径: string): Promise<string | undefined> {
   if (文档.类型 === 'pdf') {
     if (!文档.PDF数据) throw new Error('PDF 内容缺失，无法保存')
-    const 保存 = await 桥接.saveToFile(路径, Uint8Array.from(atob(文档.PDF数据), c => c.charCodeAt(0)), '二进制')
+    const 生成 = await 写出PDF文档(路径, 文档.PDF数据, 文档.警告)
+    if (!生成?.成功 || !生成.数据) throw new Error(生成?.错误 || 'PDF 生成失败')
+    const 保存 = await 桥接.saveToFile(路径, 生成.数据, '二进制', 文档.文件指纹)
     if (!保存.成功) throw new Error(保存.错误 || 'PDF 写入失败')
     return 保存.文件指纹
   }
@@ -97,8 +99,8 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
       if(!保存.成功)throw new Error(保存.错误||'PDF 导出失败')
       return '文件指纹' in 保存 ? 保存.文件指纹 : undefined
     }
-    const 模型 = htmlToDocxModel(文档.html ?? '', 文档.页面设置)
-    if (模型.未覆盖.length > 0 && !/\.sealdoc$/i.test(路径)) throw new Error(`含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}`)
+    const 模型 = 原生文档类型(路径) === 'word' ? null : htmlToDocxModel(文档.html ?? '', 文档.页面设置)
+    if (模型 && 模型.未覆盖.length > 0) throw new Error(`含尚无法写入 DOCX 的内容：${模型.未覆盖.join('、')}`)
     const 结果: any = await 写出办公文档('word', 路径, 模型, undefined, {html:文档.html??'',页面设置:文档.页面设置,警告:文档.警告??[]})
     if (!结果?.成功 || !结果.数据) throw new Error(结果?.错误 || '文档格式转换失败')
     const 字节 = Uint8Array.from(atob(结果.数据), (字符) => 字符.charCodeAt(0))
@@ -107,6 +109,13 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
     return 保存.文件指纹
   }
   if (文档.类型 === 'table') {
+    if (原生文档类型(路径) === 'table') {
+      const 生成 = await 桥接.office.writeSeal('table', { 工作表列表: 文档.表格模型 ?? [], 警告: 文档.警告 ?? [] })
+      if (!生成?.成功 || !生成.数据) throw new Error(生成?.错误 || '海豹表格生成失败')
+      const 保存 = await 桥接.saveToFile(路径, 生成.数据, '二进制', 文档.文件指纹)
+      if (!保存.成功) throw new Error(保存.错误 || '海豹表格写入失败')
+      return 保存.文件指纹
+    }
     const 文本 = 表格文本输出(路径, 文档.表格模型 ?? [])
     if (文本) {
       if (文本.损失.length) throw new Error(`CSV 无法保留${文本.损失.join('、')}，请先另存为 XLSX，或手动保存 CSV 并确认格式转换后再退出`)
@@ -129,7 +138,7 @@ async function 写出文档(文档: 待保存文档, 路径: string): Promise<st
   const 标识列表 = 收集演示资源标识(文稿)
   const 资源 = 标识列表.length > 0 ? await 桥接.presentationResources.export(标识列表) : { 成功: true, 条目: [] }
   if (!资源.成功 || !资源.条目) throw new Error(资源.错误 || '图片资源导出失败')
-  const 结果: any = await 写出办公文档('ppt', 路径, 构建演示保存模型(文稿, 资源.条目), undefined, {演示文稿:文稿,资源条目:资源.条目,警告:文档.警告??[]})
+  const 结果: any = await 写出办公文档('ppt', 路径, 原生文档类型(路径) === 'ppt' ? null : 构建演示保存模型(文稿, 资源.条目), undefined, {演示文稿:文稿,资源条目:资源.条目,警告:文档.警告??[]})
   if (!结果?.成功 || !结果.数据) throw new Error(结果?.错误 || '生成演示文稿文件失败')
   const 保存 = await 桥接.saveToFile(路径, 结果.数据, '二进制', 文档.文件指纹)
   if (!保存.成功) throw new Error(保存.错误 || '文件写入失败')
@@ -146,7 +155,7 @@ export async function 保存全部文档(列表: 待保存文档[]): Promise<保
   let 已取消 = false
   for (const 文档 of 列表) {
     try {
-      if (文档.来源路径 && 文档.路径 && (文档.警告?.length ?? 0) > 0 && 是同一路径(文档.路径, 文档.来源路径) && !/\.(sealdoc|sealsheet|sealshow)$/i.test(文档.路径)) {
+      if (文档.来源路径 && 文档.路径 && (文档.警告?.length ?? 0) > 0 && 是同一路径(文档.路径, 文档.来源路径) && !/\.(sldoc|slxls|slppt|sealdoc|sealsheet|sealshow)$/i.test(文档.路径)) {
         throw new Error('导入时有未完整导入的内容，已阻止覆盖来源文件，请另存为副本')
       }
       let 路径 = 文档.路径

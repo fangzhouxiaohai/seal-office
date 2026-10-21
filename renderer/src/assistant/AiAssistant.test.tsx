@@ -8,13 +8,20 @@ import DocEditor from '../editor/DocEditor'
 import AiAssistant from './AiAssistant'
 import { 标记放映开始 } from '../ppt/presentationState'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-aiassistant', verified: true, method: 'phone' } }
+}) })
+
+
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手对话修改链路', () => {
   it('恢复的计划仅有执行中步骤时仍可继续执行任务', async () => {
     const 计划 = [{ id: '继续读取', title: '继续核对当前文件', status: 'in_progress' }]
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: '已继续完成核对。', 计划: [{ ...计划[0], status: 'completed' }] } })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: () => () => {}, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '核对尚未结束。', 状态: '已停止' }], 摘要: '', 压缩次数: 0, 计划 } }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
@@ -30,7 +37,7 @@ describe('智能助手对话修改链路', () => {
     let 调用工具: (输入: { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }) => void = () => {}
     let 完成: (结果: unknown) => void = () => {}
     const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve })), 回传 = vi.fn().mockResolvedValue({ 成功: true })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
@@ -57,7 +64,7 @@ describe('智能助手对话修改链路', () => {
   it('停止接口异常时显示弹窗并恢复停止按钮', async () => {
     let 完成: (结果: unknown) => void = () => {}
     const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve }))
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       cancel: vi.fn().mockRejectedValue(new Error('停止接口连接失败')),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
@@ -74,7 +81,7 @@ describe('智能助手对话修改链路', () => {
 
   it('恢复快照一致的持久候选，应用后即使没有计划也清除持久候选', async () => {
     const 更新计划 = vi.fn().mockResolvedValue({ 成功: true })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: vi.fn(), onToolCall: () => () => {}, updateSessionPlan: 更新计划,
       getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '已有标题候选' }], 摘要: '', 计划: [], 压缩次数: 0, 待确认候选: { 回复: '已有标题候选', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '持久标题' }], 文档上下文: '', 文件快照: '<p>原始标题</p>' } } }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
@@ -92,7 +99,7 @@ describe('智能助手对话修改链路', () => {
   it('恢复时原文变化只提示候选过期，放弃有效候选会清除持久记录', async () => {
     const 放弃 = vi.fn().mockResolvedValue({ 成功: true })
     const 读取 = vi.fn().mockImplementation(async (标识: string) => ({ 成功: true, 数据: { 显示消息: [], 摘要: '', 计划: [], 压缩次数: 0, 待确认候选: { 回复: '标题修改候选', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '持久标题' }], 文档上下文: '', 文件快照: 标识.startsWith('file:') ? '<p>原始标题</p>' : '<p>旧版本</p>' } } }))
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: vi.fn(), onToolCall: () => () => {}, getSession: 读取, discardSessionProposal: 放弃,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开变动文件</button><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>', { 路径: 'C:\\资料\\候选.docx' })}>打开有效文件</button><AiAssistant /></> }
@@ -116,7 +123,7 @@ describe('智能助手对话修改链路', () => {
       记忆.set(输入.会话标识, { 显示消息: [...输入.消息, { 角色: 'assistant', 内容: '记住草稿修改目标' }], 摘要: '', 计划: [], 压缩次数: 0 })
       return { 成功: true, 数据: { 内容: '记住草稿修改目标' } }
     })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: () => () => {}, getSession: 读取, bindSession: 绑定,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
@@ -143,7 +150,7 @@ describe('智能助手对话修改链路', () => {
     let 推送: (片段: { 请求标识: string; 类型: '正文'; 内容: string }) => void = () => {}
     let 完成: (结果: unknown) => void = () => {}
     const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve }))
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onStream: (回调: typeof 推送) => { 推送 = 回调; return () => {} },
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
@@ -167,7 +174,7 @@ describe('智能助手对话修改链路', () => {
     let 调用工具: (输入: { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }) => void = () => {}
     let 完成: (结果: unknown) => void = () => {}
     const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve })), 回传 = vi.fn().mockResolvedValue({ 成功: true })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
@@ -190,7 +197,7 @@ describe('智能助手对话修改链路', () => {
     const 原文 = '长文件正文'.repeat(25000)
     const 修改 = Array.from({ length: 240 }, (_, 索引) => ({ 种类: '文字替换', 段落标识: `段落-${索引 + 2}`, 查找: '批量原文', 替换为: `批量新文${索引 + 1}` }))
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '完整修改建议', 修改 }) } })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', `<p>${原文}</p>${'<p>批量原文</p>'.repeat(240)}`)}>打开长文件</button><AiAssistant /></> }
@@ -211,7 +218,7 @@ describe('智能助手对话修改链路', () => {
     const 历史 = Array.from({ length: 24 }, (_, 索引) => ({ 角色: 索引 % 2 ? 'assistant' : 'user', 内容: `历史消息${索引}` }))
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: '继续分析', 摘要: '已保留文件目标', 压缩次数: 2 } })
     const 清除 = vi.fn().mockResolvedValue({ 成功: true })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 上下文令牌: 262144, 已配置密钥: false } }),
       chat: 对话, onToolCall: () => () => {}, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: 历史, 摘要: '已保留文件目标', 计划: [], 压缩次数: 2 } }), clearSession: 清除,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
@@ -239,7 +246,7 @@ describe('智能助手对话修改链路', () => {
       await new Promise((完成) => setTimeout(完成, 0))
       return { 成功: true, 数据: { 内容: '请审阅标题修改', 计划: [{ ...计划[0], status: 'awaiting_confirmation' }] } }
     })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),  ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传, updateSessionPlan: 更新计划, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: null }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
@@ -270,7 +277,7 @@ describe('智能助手对话修改链路', () => {
     const 释放 = vi.fn()
     const 对话 = vi.fn(() => new Promise((resolve) => { 完成 = resolve }))
     const 停止 = vi.fn(async () => { 完成({ 成功: true, 数据: { 内容: '', 已停止: true } }); return { 成功: true } })
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),
       ai: {
         getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost/chat/completions', 模型: '测试', 参数模式: 'six', 思考强度: 'high', 已配置密钥: false } }),
         chat: 对话, cancel: 停止, onStream: (回调: typeof 推送) => { 推送 = 回调; return 释放 },
@@ -300,7 +307,7 @@ describe('智能助手对话修改链路', () => {
     unmount(); expect(释放).toHaveBeenCalled()
   })
   it('放映隐藏入口和已经打开的面板，退出后保留输入并恢复面板', async () => {
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),
       ai: {
         getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
         chat: vi.fn(),
@@ -323,7 +330,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '建议将标题写得更明确。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '项目概览' }] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -356,7 +363,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '已收到。', 修改: [] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -377,7 +384,7 @@ describe('智能助手对话修改链路', () => {
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开 PDF' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
-    expect(document.querySelector('.assistant-drawer__scope')?.textContent).toContain('未选择文件')
+    expect(screen.getByText('当前范围：').closest('.assistant-drawer__scope')?.textContent).toContain('未选择文件')
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '你好')
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
     await waitFor(() => expect(对话).toHaveBeenCalledTimes(1))
@@ -388,7 +395,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '建议修改标题。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '项目概览' }] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -426,7 +433,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '建议调整状态。', 修改: [{ 种类: '单元格写入', 工作表: 'Sheet1', 地址: 'A1', 原值: '待办', 新值: '完成' }] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -462,7 +469,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '已收到。', 修改: [] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -500,7 +507,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '建议调整标题。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '正式标题' }] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -545,7 +552,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockImplementation(() => new Promise((完成) => { 完成对话 = 完成 }))
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -583,7 +590,7 @@ describe('智能助手对话修改链路', () => {
     const 对话 = vi.fn().mockResolvedValue({ 成功: false, 错误: '模型服务鉴权失败' })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -606,7 +613,7 @@ describe('智能助手对话修改链路', () => {
       .mockResolvedValueOnce({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '乙文件已分析。', 修改: [] }) } })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,
@@ -644,7 +651,7 @@ describe('智能助手对话修改链路', () => {
       .mockResolvedValueOnce({ 成功: false, 错误: '模型服务暂时不可用' })
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
-      value: {
+      value: { cloud: 受信AI测试账号(),
         ai: {
           getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试服务', 地址: 'http://localhost:11434/v1/chat/completions', 模型: '测试模型', 已配置密钥: false } }),
           chat: 对话,

@@ -79,6 +79,25 @@ async function 读取工作簿日期基准(压缩包) {
   return 标记 === '1' || 标记 === 'true'
 }
 
+/** ExcelJS gives an omitted orientation the constructor's portrait value.
+ * Read the optional OOXML attribute before that normalization, preserving the
+ * schema's default/printer choice rather than changing it during an edit.
+ */
+function 读取工作表打印方向(xml) {
+  const 解析器 = sax.parser(true, { xmlns: true })
+  let 深度 = 0, 方向 = 'default', 页设置数 = 0
+  解析器.onopentag = 节点 => {
+    深度 += 1
+    if (深度 !== 2 || 节点.uri !== 主空间 || 节点.local !== 'pageSetup') return
+    if (++页设置数 > 1) throw new Error('工作表页面设置重复')
+    方向 = Object.values(节点.attributes).find(属性 => 属性.local === 'orientation' && !属性.prefix)?.value ?? 'default'
+  }
+  解析器.onclosetag = () => { 深度 -= 1 }
+  解析器.ondoctype = () => { throw new Error('表格 XML 不支持文档类型声明') }
+  解析器.write(xml).close()
+  return 方向
+}
+
 function 动态元数据Xml() {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><metadata xmlns="${主空间}" xmlns:xda="${动态空间}"><metadataTypes count="1"><metadataType name="XLDAPR" minSupportedVersion="120000" copy="1" pasteAll="1" pasteValues="1" merge="1" splitFirst="1" rowColShift="1" clearFormats="1" clearComments="1" assign="1" coerce="1" cellMeta="1"/></metadataTypes><futureMetadata name="XLDAPR" count="1"><bk><extLst><ext uri="${扩展标识}"><xda:dynamicArrayProperties fDynamic="1" fCollapsed="0"/></ext></extLst></bk></futureMetadata><cellMetadata count="1"><bk><rc t="1" v="0"/></bk></cellMetadata></metadata>`
 }
@@ -111,4 +130,4 @@ async function 写入动态元数据(数据, 工作表地址列表) {
   return 压缩包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
 }
 
-module.exports = { 读取动态元数据, 读取工作簿元数据, 读取工作簿日期基准, 写入动态元数据, 动态元数据Xml, 未导入警告 }
+module.exports = { 读取动态元数据, 读取工作簿元数据, 读取工作簿日期基准, 读取工作表打印方向, 写入动态元数据, 动态元数据Xml, 未导入警告 }

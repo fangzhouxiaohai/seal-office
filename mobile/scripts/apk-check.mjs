@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { createRequire } from 'node:module'
 import { archiveArtifact } from './archive-artifact.mjs'
+import { inspectPdfFonts } from './pdf-font-resources.mjs'
 
 const run = promisify(execFile), require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
@@ -37,8 +38,9 @@ async function main() {
   const appRoot = roots[0].slice(0, -'manifest.json'.length), officeRoot = appRoot + 'static/office/'
   const json = async name => JSON.parse(await zip.file(name).async('string'))
   const manifest = await json(roots[0]), build = await json(officeRoot + 'build-info.json')
-  const office = zip.file(officeRoot + 'office.js'), font = zip.file(officeRoot + 'fonts/NotoSansSC.ttf')
-  if (!office || !font || !zip.file(officeRoot + 'index.html') || build.platform !== 'android') throw new Error('安卓包内办公脚本、中文字体或平台信息缺失')
+  const office = zip.file(officeRoot + 'office.js')
+  if (!office || !zip.file(officeRoot + 'index.html') || build.platform !== 'android') throw new Error('安卓包内办公脚本或平台信息缺失')
+  const embeddedPdfFonts = await inspectPdfFonts(zip, officeRoot)
   const localOffice = path.join(project, 'mobile/static/office/office.js')
   const report = {
     inspectedAt: new Date().toISOString(), apkPath, sha256: hash(data), bytes: data.length,
@@ -46,6 +48,7 @@ async function main() {
     embeddedEditor: { present: true, sha256: hash(await office.async('nodebuffer')), matchesCurrentSourceBuild: await exists(localOffice) ? hash(await office.async('nodebuffer')) === hash(await fs.readFile(localOffice)) : null },
     duplicatedJavaScriptBytes: 0, sdkMetadata: null, signature: null, device: null,
     nativeLibraries16KiB: [],
+    embeddedPdfFonts,
   }
   for (const [name, item] of Object.entries(zip.files)) {
     if (!item.dir && name.startsWith(officeRoot + 'assets/') && /\.m?js$/.test(name)) report.duplicatedJavaScriptBytes += (await item.async('nodebuffer')).length

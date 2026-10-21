@@ -10,6 +10,7 @@ import { 通用AI指令, 交给助手 } from '../assistant/quickActions'
 import { writeClipboardText } from '../editor/clipboard'
 import { useShortcuts } from '../shortcuts/useShortcuts'
 import { useReadingFullscreen, useReadingPinch } from '../editor/readingInteractions'
+import { useReadingChrome } from '../editor/useReadingChrome'
 import '../editor/reading.css'
 
 interface Props {
@@ -127,6 +128,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const 退出全屏 = () => {const before=进入前.current;待恢复.current=true;set全屏(false);if(before){set分页模式(before.mode);set缩放(before.zoom)}}
   const 切换分页 = () => {待切换页.current=当前页;set分页模式(value=>!value)}
   const 系统全屏 = useReadingFullscreen(全屏根,全屏,退出全屏,()=>全屏根.current?.querySelector<HTMLElement>('[aria-label="全屏左右翻页阅读"]'))
+  const chrome=useReadingChrome(全屏根,全屏)
   const 进入全屏 = () => {进入前.current={mode:分页模式,zoom:缩放,page:当前页,left:阅读区.current?.scrollLeft??0,top:阅读区.current?.scrollTop??0};set分页模式(true);set全屏(true)}
   useReadingPinch(阅读区,{enabled:状态==='就绪',scale:缩放,onScale:set缩放,min:阅读缩放范围.下限,max:阅读缩放范围.上限,identity:`${分页模式}:${全屏}`,resolveViewport:target=>target instanceof Element?target.closest<HTMLElement>('.pdf-viewer__slide'):null})
 
@@ -390,8 +392,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   }
 
   const 内容 = (
-    <section ref={全屏根} className={`pdf-viewer${全屏?' seal-fullscreen-reader pdf-viewer--fullscreen':''}`} aria-label="PDF 阅读预览" role={全屏?'dialog':undefined} aria-modal={全屏?true:undefined} tabIndex={全屏?-1:undefined} data-fullscreen={全屏?系统全屏?'native':'viewport':undefined}>
-      <div className="pdf-viewer__toolbar">
+    <section ref={全屏根} className={`pdf-viewer${全屏?' seal-fullscreen-reader pdf-viewer--fullscreen':''}`} aria-label="PDF 阅读预览" aria-description={chrome.description} role={全屏?'dialog':undefined} aria-modal={全屏?true:undefined} tabIndex={全屏?-1:undefined} data-fullscreen={全屏?系统全屏?'native':'viewport':undefined} data-reading-controls={chrome.visible?'visible':'hidden'} data-reading-auto-hide={chrome.autoHide?'true':undefined}>
+      <div className="pdf-viewer__toolbar" data-reading-chrome hidden={!chrome.visible}>
         <span className="pdf-viewer__name" title={文件名}>{数据 ? 文件名 : '文档预览'}</span>
         <div className="pdf-viewer__controls">
           <button type="button" aria-label={分页模式?'切换连续阅读':'切换左右翻页'} title={分页模式?'当前为左右翻页，切换连续阅读':'当前为连续阅读，切换左右翻页'} disabled={状态!=='就绪'} aria-pressed={分页模式} onClick={切换分页}><Icon name="page-view" size={15}/></button>
@@ -457,7 +459,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           })}
         </div>}
       </div>
-      {全屏&&<div className="seal-fullscreen-reader__footer"><small>{分页模式?'左右滑动翻页':'连续阅读'} · 双指缩放</small></div>}
+      {全屏&&<div className="seal-fullscreen-reader__footer" data-reading-chrome hidden={!chrome.visible}><small>{分页模式?'左右滑动翻页':'连续阅读'} · 双指缩放</small></div>}
       <SelectionFloatPanel
         打开={!菜单可见 && 选区浮窗.打开}
         位置={选区浮窗.位置}

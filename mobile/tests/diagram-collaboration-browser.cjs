@@ -15,7 +15,7 @@ app.setPath('userData', path.join(output, 'profile-' + process.pid)); app.disabl
 const checks = [], errors = [], windows = [], offline = new Set(), requests = [], controllers = new Map()
 let fixture, server, finished = false
 const watchdog = setTimeout(() => { if (!finished) { fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ passed: false, checks, errors, error: '120 second process watchdog' }, null, 2)); app.exit(1) } }, 120000)
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.otf': 'font/otf', '.png': 'image/png', '.svg': 'image/svg+xml' }
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
 async function evaluate(win, code) { const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await(${code})}}catch(error){return{error:error.stack||String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value }
 async function wait(win, code, label) { for (let n = 0; n < 180; n++) { if (await evaluate(win, code)) return; await new Promise(resolve => setTimeout(resolve, 80)) } throw new Error('等待失败：' + label) }
@@ -49,6 +49,12 @@ async function createWindow(actor, phone, origin) {
       const deliver = event => evaluate(win, `window.sealReceiveNative?.(${JSON.stringify(event)})`).catch(() => {})
       try {
         data = JSON.parse(params.payload); assert.equal(data.token, 'isolated-diagram-' + actor)
+        if (data.action === 'ping') { await deliver({ id: data.id, type: 'ready' }); return }
+        if (data.action === 'font') {
+          const font = fs.readFileSync(path.join(root, 'fonts', data.family === 'serif' ? 'NotoSerifCJKsc-Regular.otf' : 'NotoSansSC.ttf'))
+          for (let offset = 0; offset < font.length; offset += 98304) await deliver({ id: data.id, type: 'chunk', data: font.subarray(offset, offset + 98304).toString('base64') })
+          await deliver({ id: data.id, type: 'end' }); return
+        }
         if (data.action === 'state') return
         if (data.action === 'abort') { controllers.get(data.id)?.abort(); return }
         assert.equal(data.action, 'request', 'Unexpected native operation'); const target = new URL(data.url)

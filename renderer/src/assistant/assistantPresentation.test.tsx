@@ -6,6 +6,13 @@ import { AppProvider } from '../store'
 import AiAssistant from './AiAssistant'
 import type { 助手配置, 助手对话输入 } from '../ipc/bridge'
 
+// This file exercises AI behavior as an explicitly verified, isolated account.
+const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
+  expect(action).toBe('requireAIIdentity')
+  return { 成功: true, 数据: { accountId: 'isolated-assistantpresentation', verified: true, method: 'phone' } }
+}) })
+
+
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 it('设置面板的思考强度用于下一次请求，历史和最终回复按类型展示且新对话清理结果', async () => {
@@ -13,7 +20,7 @@ it('设置面板的思考强度用于下一次请求，历史和最终回复按�
   let 完成!: (值: unknown) => void
   const 对话 = vi.fn((_输入: 助手对话输入) => new Promise((resolve) => { 完成 = resolve }))
   const 清理 = vi.fn().mockResolvedValue({ 成功: true })
-  Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+  Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(),
     backupLoad: async () => ({ 成功: true, 内容: null }), backupSave: async () => ({ 成功: true }), backupClear: async () => ({ 成功: true }), ai: {
       getConfig: async () => ({ 成功: true, 数据: 配置 }),
       saveConfig: async (值: 助手配置) => { 配置 = { ...值, 已配置密钥: false }; return { 成功: true, 数据: 配置 } },

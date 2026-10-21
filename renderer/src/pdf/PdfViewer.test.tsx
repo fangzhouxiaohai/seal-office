@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PdfViewer from './PdfViewer'
 import { saveShortcutOverrides, SHORTCUT_STORAGE_KEY } from '../shortcuts/shortcuts'
@@ -10,11 +10,33 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
 }))
 
 describe('PDF 阅读预览', () => {
-  afterEach(()=>{vi.restoreAllMocks()})
+  afterEach(()=>{vi.useRealTimers();vi.restoreAllMocks()})
   beforeEach(() => {
     localStorage.removeItem(SHORTCUT_STORAGE_KEY)
     vi.clearAllMocks()
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as CanvasRenderingContext2D)
+  })
+
+  it('移动全屏默认隐藏操作栏，翻页不唤出工具，双击显示并在3秒后隐藏，Esc仍可返回',async()=>{
+    vi.spyOn(window,'matchMedia').mockImplementation(query=>({matches:true,media:query,onchange:null,addEventListener:vi.fn(),removeEventListener:vi.fn(),addListener:vi.fn(),removeListener:vi.fn(),dispatchEvent:vi.fn()}))
+    PDF模拟.取文档.mockReturnValue({promise:Promise.resolve({numPages:3,getPage:vi.fn(async()=>({getViewport:({scale}:{scale:number})=>({width:600*scale,height:800*scale}),render:()=>({promise:Promise.resolve(),cancel:vi.fn()}),getTextContent:async()=>({items:[]})}))}),destroy:vi.fn()})
+    render(<PdfViewer 数据={btoa('%PDF-1.7')} />)
+    await screen.findByText('第 1 页 / 共 3 页')
+    fireEvent.click(screen.getByRole('button',{name:'全屏左右翻页阅读'}))
+    const reader=screen.getByRole('dialog',{name:'PDF 阅读预览'}),stage=reader.querySelector<HTMLElement>('.pdf-viewer__stage')!
+    expect(reader).toHaveAttribute('data-reading-controls','hidden')
+    expect(screen.queryByRole('button',{name:'退出全屏阅读'})).toBeNull()
+    Object.defineProperty(stage,'clientWidth',{configurable:true,value:390});Object.defineProperty(stage,'clientHeight',{configurable:true,value:600});fireEvent(window,new Event('resize'))
+    stage.scrollLeft=390;fireEvent.scroll(stage)
+    expect(reader).toHaveAttribute('data-reading-controls','hidden')
+    fireEvent.doubleClick(stage)
+    expect(screen.getByRole('button',{name:'退出全屏阅读'})).toBeVisible()
+    vi.useFakeTimers();fireEvent.click(screen.getByRole('button',{name:'放大'}))
+    act(()=>{vi.advanceTimersByTime(3000)})
+    expect(reader).toHaveAttribute('data-reading-controls','hidden')
+    fireEvent.keyDown(reader,{key:'Escape'})
+    expect(screen.queryByRole('dialog',{name:'PDF 阅读预览'})).toBeNull()
+    expect(screen.getByRole('button',{name:'全屏左右翻页阅读'})).toBeVisible()
   })
 
   it('退出全屏先按原阅读区实际宽度排版，再恢复同一物理页，避免旧宽度定位落到下一页', async () => {

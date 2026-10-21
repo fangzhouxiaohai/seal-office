@@ -6,6 +6,7 @@ import os from 'node:os'
 import { createRequire } from 'node:module'
 import { archiveArtifact } from '../scripts/archive-artifact.mjs'
 import { inspectHap } from '../scripts/hap-check.mjs'
+import { pdfFontResources, inspectPdfFonts } from '../scripts/pdf-font-resources.mjs'
 
 const JSZip = createRequire(import.meta.url)('jszip')
 const manifest = { versionName: '2.0.0', versionCode: '20000', 'app-harmony': { distribute: { bundleName: 'com.sealoffice.mobile' } } }
@@ -14,7 +15,7 @@ async function hap({ app = {}, build = {}, missing = '' } = {}) {
   const zip = new JSZip()
   zip.file('module.json', JSON.stringify({ app: { bundleName: 'com.sealoffice.mobile', versionName: '2.0.0', versionCode: 20000, debug: false, ...app }, module: { type: 'entry' } }))
   const prefix = 'resources/rawfile/apps/__UNI__B52B65B/www/static/office/'
-  const entries = { 'build-info.json': JSON.stringify({ platform: 'harmony', desktopVersion: '2.0.0', ...build }), 'office.js': editor, 'index.html': '<html></html>', 'fonts/NotoSansSC.ttf': Buffer.from('test-font') }
+  const entries = { 'build-info.json': JSON.stringify({ platform: 'harmony', desktopVersion: '2.0.0', ...build }), 'office.js': editor, 'index.html': '<html></html>', ...Object.fromEntries(pdfFontResources.map(name => ['fonts/' + name, Buffer.from('test-font-resource-' + name)])) }
   for (const [name, bytes] of Object.entries(entries)) if (name !== missing) zip.file(prefix + name, bytes)
   return zip.generateAsync({ type: 'nodebuffer' })
 }
@@ -65,8 +66,22 @@ test('实际读取HAP ZIP样本核对身份、版本和当前内置资源，不�
   assert.equal(result.versionCode, '20000')
   assert.equal(result.signatureVerified, false)
   assert.equal(result.deviceVerified, false)
+  assert.deepEqual(result.embeddedPdfFonts.map(item => item.name), pdfFontResources)
   for (const options of [{ app: { bundleName: 'other.app' } }, { app: { versionCode: 19999 } }, { app: { debug: true } }, { app: { debug: null } }, { build: { platform: 'android' } }, { missing: 'fonts/NotoSansSC.ttf' }]) await assert.rejects(inspectHap(await hap(options), manifest, editor))
+  for (const name of pdfFontResources) await assert.rejects(inspectHap(await hap({ missing: 'fonts/' + name }), manifest, editor), /字体或许可证缺失/)
   await assert.rejects(inspectHap(await hap(), manifest, Buffer.from('stale-editor')), /当前鸿蒙构建资源/)
   const sourceZip = new JSZip(); sourceZip.file('manifest.json', '{}')
   await assert.rejects(inspectHap(await sourceZip.generateAsync({ type: 'nodebuffer' }), manifest, editor), /module.json/)
+})
+
+test('APK/HAP 共用双字体与双许可证校验，缺少或空资源均拒绝，读取不改变压缩包', async () => {
+  const prefix = 'assets/apps/__UNI__test/www/static/office/', zip = new JSZip()
+  for (const name of pdfFontResources) zip.file(prefix + 'fonts/' + name, 'resource-' + name)
+  const bytes = await zip.generateAsync({ type: 'nodebuffer' }), copy = Buffer.from(bytes)
+  const report = await inspectPdfFonts(await JSZip.loadAsync(bytes), prefix)
+  assert.equal(report.length, 4)
+  assert.ok(report.every(item => item.bytes > 0 && /^[a-f0-9]{64}$/.test(item.sha256)))
+  assert.deepEqual(bytes, copy)
+  zip.file(prefix + 'fonts/NotoSerifCJKsc-Regular.otf', '')
+  await assert.rejects(inspectPdfFonts(zip, prefix), /字体或许可证为空.*NotoSerif/)
 })

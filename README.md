@@ -8,11 +8,35 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.0**，移动构建号 **20100**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.0 已附用户云打包后验签的 Android APK 与 Harmony App Pack，并保留独立云打包源码快照；源码 ZIP 与原生安装成品明确区分。历史 2.0.0 移动成品的验签范围见 [2.0.0 发行说明](docs/v2.0.0-发布与移动成品.md)。iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.1**，移动构建号 **20101**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 提供独立 Android/Harmony 云打包源码，新的原生安装成品由用户云打包后另行验签及设备验证；既有 2.1.0 APK/App Pack 不包含本次修复。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
-## 2.1.0 本次升级
+## 2.1.1 修复版
+
+下载：[GitHub 2.1.1](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.1) · [GitCode 2.1.1](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.1) · [在线使用](https://seal.xingmasoft.com/office/)。
+
+| 平台 | 2.1.1 文件 |
+| --- | --- |
+| Windows x64 安装版 | `seal-office-setup-2.1.1.exe` |
+| Windows x64 便携版 | `seal-office-2.1.1-portable.exe` |
+| Microsoft Store 上传包 | `seal-office-2.1.1-microsoft-store-x64.msix`，商店身份不变、版本 `2.1.1.0` |
+| Ubuntu amd64 | `seal-office-2.1.1-amd64.deb` |
+| Web 静态包 | `seal-office-2.1.1-web.zip` |
+| Android 云打包源码 | `seal-office-2.1.1-android-cloud-source.zip`，尚不是 APK |
+| Harmony 云打包源码 | `seal-office-2.1.1-harmony-cloud-source.zip`，尚不是签名 App/HAP |
+
+- 四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 统一用于 Windows、Linux、Web、Android 和 HarmonyOS，旧三种后缀继续兼容。原生文字、表格、演示直接保存当前编辑模型及资源，SPDF 包含完整 PDF 字节；见[格式说明](docs/SEAL_FORMAT.md)。
+- 修复原生文字保存后仍显示未保存、实际图表 SVG 被富文本净化删除、表格空工作表导出丢失，以及合法打印方向 `default` 被误报不兼容。无法完整导入时，先选择转换副本或取消打开，原文件保持。
+- 手机全屏阅读默认隐藏顶部和底部操作栏，双击页面唤出，三秒无操作后收起；原有翻页、双指缩放及键盘入口保留。
+- 修复未失焦表格/PPT 草稿在云快照、备份、退出保存及导航时遗漏；保存期间继续输入会阻止直接退出。
+- 修复 PDF 新增中文的字体子集漏画，实际光栅与完整字体对照；无法可靠绘制的新增文字明确拒绝，保留原字节，见[PDF 边界](docs/PDF文字兼容边界.md)。
+- 修复 Harmony 普通 JSON 消息与 UTSJSONObject 不一致造成的公共桥接无响应，增加启动往返核验、失败反馈和 HTTP 超时。原生 SDK 契约及编译检查不代替真实设备和短信投递验收，见[鸿蒙修复说明](docs/HARMONY_BRIDGE_FIX_2.1.1.md)。
+- 各端生成式 AI 功能要求先登录经过手机号验证的账号。界面与实际调用层都核验有效会话，不依赖本机缓存标记；已验证账号可用密码登录，无需为使用 AI 开通云空间，不向第三方模型传送手机号。依据与测试边界见[AI 身份核验说明](docs/AI身份核验.md)。
+
+本版测试及成品范围见[2.1.1 验收记录](docs/verification/v2.1.1/README.md)。Windows 安装包未做发行证书签名，MSIX 用于 Partner Center 上传；移动原生新包由用户云打包，并在目标设备复验后再提交商店。
+
+## 2.1.0 历史升级
 
 下载：[GitHub 2.1.0](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.0) · [GitCode 2.1.0](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.0) · [在线使用](https://seal.xingmasoft.com/office/)。
 

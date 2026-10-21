@@ -355,7 +355,7 @@ describe('应用状态层', () => {
     await userEvent.click(screen.getByText('新建文字文档'))
     expect(screen.getByTestId('editor-doc-count')).toHaveTextContent('1')
     expect(screen.getByTestId('module')).toHaveTextContent('word')
-    expect(screen.getByTestId('active-doc-name')).toHaveTextContent('未命名文档.docx')
+    expect(screen.getByTestId('active-doc-name')).toHaveTextContent('未命名文档.sldoc')
   })
 
   it('打开本地文件保留真实文件名和路径', async () => {
@@ -423,7 +423,7 @@ describe('createDoc 按文档保存模型', () => {
     状态!.updateEditorHtml(文字标识, '<p>修改</p>')
     await userEvent.click(screen.getByText('新建表格'))
     await userEvent.click(screen.getByText('打开手册'))
-    expect(screen.getByTestId('标签顺序')).toHaveTextContent('未命名文档.docx、未命名表格.xlsx、手册.pdf')
+    expect(screen.getByTestId('标签顺序')).toHaveTextContent('未命名文档.sldoc、未命名表格.slxls、手册.pdf')
     expect(状态!.workspaceTabs[0].dirty).toBe(true)
     await userEvent.click(screen.getByText('选择首页'))
     expect(screen.getByTestId('当前模块')).toHaveTextContent('home')
@@ -441,7 +441,7 @@ describe('createDoc 按文档保存模型', () => {
     render(<AppProvider><读取 /></AppProvider>)
     await userEvent.click(screen.getByText('创建文档'))
     const 标识 = 状态!.activeDocumentId!
-    expect(状态!.workspaceTabs[0]).toMatchObject({ name: '未命名文档.docx', dirty: true, path: null })
+    expect(状态!.workspaceTabs[0]).toMatchObject({ name: '未命名文档.sldoc', dirty: true, path: null })
     act(() => {
       状态!.set文档路径(标识, 'C:\\资料\\正式稿.docx')
       状态!.markDocumentSaved(标识, '<p>原文</p>')
@@ -480,7 +480,7 @@ describe('createDoc 按文档保存模型', () => {
     await userEvent.click(screen.getByText('关闭说明'))
     expect(状态!.module).toBe('word')
     expect(状态!.workspaceTabs).toHaveLength(1)
-    expect(状态!.workspaceTabs[0].name).toBe('未命名文档.docx')
+    expect(状态!.workspaceTabs[0].name).toBe('未命名文档.sldoc')
   })
 
   it('表格和演示保存基线随模型变化更新标签状态', async () => {

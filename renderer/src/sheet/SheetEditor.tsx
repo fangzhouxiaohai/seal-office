@@ -1,5 +1,6 @@
 // 表格编辑器容器：装配 Ribbon、名称框与公式栏、网格、工作表标签与状态栏。
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { 单文档草稿结果 } from '../editor/draftLifecycle'
 import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
@@ -27,7 +28,7 @@ import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单�
 import { 统计选区 } from './selectionStats'
 import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名 } from './sheetExport'
 import { 表格文本输出, 单表数据输出 } from './sheetSave'
-import { 可保存扩展 } from '../fileFormats'
+import { 可保存扩展, 原生文档类型 } from '../fileFormats'
 import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
 import GridView from './GridView'
@@ -43,7 +44,7 @@ import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
-import { 读取本地文件内容, 记录最近文档 } from '../fileOpen'
+import { 准备打开本地文件, 记录最近文档 } from '../fileOpen'
 import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import SheetChartDialog from './SheetChartDialog'
@@ -61,7 +62,7 @@ const 基准名 = (路径: string): string => {
   return 部件.length > 0 ? 部件[部件.length - 1] : 路径
 }
 
-const 规范表格路径 = (路径: string): string => /\.[^\\/]+$/.test(路径) ? 路径 : `${路径}.xlsx`
+const 规范表格路径 = (路径: string): string => /\.[^\\/.]+$/.test(路径) ? 路径 : `${路径}.slxls`
 const 是同一路径 = (左: string, 右: string): boolean =>
   左.replace(/\\/g, '/').toLowerCase() === 右.replace(/\\/g, '/').toLowerCase()
 
@@ -73,6 +74,7 @@ const SheetEditor = () => {
     markDocumentSaved, activeDocumentId,
     文档路径: 已知文档路径, set文档路径: 设置全局文档路径,
     查找保存路径占用, 更新文件指纹,
+    注册编辑草稿, 通知编辑草稿变化,
   } = useAppStore()
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
   const 已提示导入警告 = useRef<Set<string>>(new Set())
@@ -108,9 +110,10 @@ const SheetEditor = () => {
   })
   const [编辑地址, set编辑地址] = useState<string | null>(null)
   const [编辑值, set编辑值] = useState('')
+  const [草稿重置版本, set草稿重置版本] = useState(0)
   const 草稿 = useRef<{ address: string; sheetId: string; base: Sheet[]; value: string; composing: boolean; release: () => void } | null>(null)
   const 公式草稿 = useRef<{ address: string; value: string; composing: boolean } | null>(null)
-  const 结束草稿 = () => { 草稿.current?.release(); 草稿.current = null; 公式草稿.current = null }
+  const 结束草稿 = () => { const 有草稿 = 草稿.current !== null || 公式草稿.current !== null; 草稿.current?.release(); 草稿.current = null; 公式草稿.current = null; if (有草稿) 通知编辑草稿变化() }
   useEffect(() => () => { 草稿.current?.release() }, [activeDocumentId])
   远端接收.current = value => {
     应用工作簿(value)
@@ -194,7 +197,7 @@ const SheetEditor = () => {
     })
   })
   useEffect(() => {
-    if (当前文档?.警告?.length && !已提示导入警告.current.has(当前文档.id)) {
+    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示导入警告.current.has(当前文档.id)) {
       已提示导入警告.current.add(当前文档.id)
       modal.warning({
         title: '表格内容可能未完整导入',
@@ -307,6 +310,7 @@ const SheetEditor = () => {
   }
   const 同步草稿 = (address: string, value: string, composing = false) => {
     const draft = 开始草稿(address); draft.value = value; draft.composing = composing
+    通知编辑草稿变化()
     if (!实时协作.active || 实时协作.readOnly || composing) return { 值: value, 已发布: false }
     const base = 重算工作簿(draft.base), index = base.findIndex(sheet => sheet.id === draft.sheetId)
     if (index < 0) return { 值: value, 已发布: false }
@@ -442,6 +446,7 @@ const SheetEditor = () => {
       message.info('没有可撤销的操作')
       return
     }
+    结束草稿(); set编辑地址(null); set编辑值(''); set草稿重置版本(版本 => 版本 + 1)
     set工作表列表(上一步)
     set当前索引((当前) => Math.min(当前, 上一步.length - 1))
     message.success('已撤销')
@@ -455,6 +460,7 @@ const SheetEditor = () => {
       message.info('没有可重做的操作')
       return
     }
+    结束草稿(); set编辑地址(null); set编辑值(''); set草稿重置版本(版本 => 版本 + 1)
     set工作表列表(下一步)
     set当前索引((当前) => Math.min(当前, 下一步.length - 1))
     message.success('已重做')
@@ -755,7 +761,7 @@ const SheetEditor = () => {
               return
             }
             if (导出路径已打开(保存路径)) return
-            if (保真风险 && 是同一路径(保存路径, 保真风险.来源路径) && !/\.sealsheet$/i.test(保存路径)) {
+            if (保真风险 && 是同一路径(保存路径, 保真风险.来源路径) && !/\.(slxls|sealsheet)$/i.test(保存路径)) {
               提示禁止覆盖(保真风险.警告)
               return
             }
@@ -783,7 +789,9 @@ const SheetEditor = () => {
       if (!桥接.可用) { message.info('当前环境不支持打开文件功能，请使用打包后的版本'); return }
       void 桥接.showOpenDialog('table').then(async 文件路径 => {
         if (!文件路径) return
-        const 内容 = await 读取本地文件内容(文件路径)
+        const 内容 = await 准备打开本地文件(文件路径)
+        if (!内容) return
+        文件路径 = 内容.打开路径 ?? 文件路径
         if (内容.类型 !== 'table') throw new Error('请选择受支持的表格文件，普通 JSON 应从文字编辑器打开')
         createDoc('table', 内容.工作表列表 ?? 内容.内容, { 路径: 文件路径, 文件指纹: 内容.文件指纹, 警告: 内容.警告 ?? [] })
         await 记录最近文档(文件路径, 基准名(文件路径), 'table')
@@ -795,10 +803,10 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      const 可直接保存 = 文档路径 !== null && 可保存扩展('table').has(文档路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase() ?? '')
+      const 可直接保存 = 文档路径 !== null && 可保存扩展('table').has(文档路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase() ?? '')
       const 默认名称 = 文档路径 && !可直接保存
-        ? `${基准名(文档路径).replace(/\.[^.]+$/, '')}.xlsx`
-        : 生成表格文件名(工作表.name, '.xlsx')
+        ? `${基准名(文档路径).replace(/\.[^.]+$/, '')}.slxls`
+        : 生成表格文件名(工作表.name, '.slxls')
       const 选择路径 = 可直接保存 ? 文档路径 : 桥接.showSaveDialog(默认名称, 'table' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
@@ -814,14 +822,14 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      桥接.showSaveDialog(文档路径 ? 基准名(文档路径) : 生成表格文件名(工作表.name, '.xlsx'), 'table' as const).then(async (文件路径) => {
+      桥接.showSaveDialog(文档路径 ? 基准名(文档路径) : 生成表格文件名(工作表.name, '.slxls'), 'table' as const).then(async (文件路径) => {
         if (文件路径) {
           if (路径被其他标签占用(规范表格路径(文件路径))) return
-          if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径) && !/\.sealsheet$/i.test(文件路径)) {
+          if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径) && !/\.(slxls|sealsheet)$/i.test(文件路径)) {
             提示禁止覆盖(保真风险.警告)
             return
           }
-          if (保真风险 && !/\.sealsheet$/i.test(文件路径) && !await 确认保存副本(保真风险.警告)) return
+          if (保真风险 && !/\.(slxls|sealsheet)$/i.test(文件路径) && !await 确认保存副本(保真风险.警告)) return
           return 保存表格文件(文件路径, '文件已另存为', 保存快照)
         }
       }).catch((error: unknown) => {
@@ -847,16 +855,16 @@ const SheetEditor = () => {
     const 文件路径 = 规范表格路径(原始路径)
     const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
       ? 当前文档.文件指纹 : undefined
-    if (!可保存扩展('table').has(文件路径.match(/\.[^\\/]+$/)?.[0]?.toLowerCase() ?? '')) {
+    if (!可保存扩展('table').has(文件路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase() ?? '')) {
       提示文件错误('保存表格失败', '请选择 XLSX、CSV、XLS、开放表格或其他可保存的数据格式。')
       return
     }
     if (路径被其他标签占用(文件路径)) return
-    if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径) && !/\.sealsheet$/i.test(文件路径)) {
+    if (保真风险 && 是同一路径(文件路径, 保真风险.来源路径) && !/\.(slxls|sealsheet)$/i.test(文件路径)) {
       提示禁止覆盖(保真风险.警告)
       return
     }
-    const 格式名 = 文件路径.match(/\.([^\\/]+)$/)?.[1]?.toUpperCase() ?? 'CSV'
+    const 格式名 = 文件路径.match(/\.([^\\/.]+)$/)?.[1]?.toUpperCase() ?? 'CSV'
     const 文本 = 表格文本输出(文件路径, 快照)
     if (文本) {
       if (文本.损失.length && !await new Promise<boolean>((完成) => modal.confirm({
@@ -884,7 +892,7 @@ const SheetEditor = () => {
       okText: `仍保存 ${数据输出.格式}`, cancelText: '取消', onOk: () => 完成(true), onCancel: () => 完成(false),
     }))) return
     // 空工作簿也允许保存，导出模型为空时回落为空表定义
-    const 模型 = 数据输出?.模型 ?? 导出为Xlsx(快照.length > 1 ? 快照 : 保存工作表) ?? {
+    const 模型 = /\.(slxls|sealsheet)$/i.test(文件路径) ? null : 数据输出?.模型 ?? 导出为Xlsx(快照.length > 1 ? 快照 : 保存工作表) ?? {
       工作表: [{ 名称: 保存工作表.name, 数据: [], 页面设置: 保存工作表.页面设置 }],
     }
     await 写出办公文档('table', 文件路径, 模型, () => message.loading('正在转换并保存表格，请稍等…', 0),{工作表列表:快照,警告:保真风险?.警告??[]}).then((结果: any) => {
@@ -928,26 +936,35 @@ const SheetEditor = () => {
     message.info('没有找到匹配的单元格')
   }
 
-  const 读取草稿快照 = (): Sheet[] | null => {
+  const 草稿错误 = useRef('')
+  const 读取草稿快照 = (提示 = true): Sheet[] | null => {
+    草稿错误.current = ''
     const 当前草稿 = 公式草稿.current ?? (编辑地址 ? { address: 编辑地址, value: 草稿.current?.value ?? 编辑值, composing: 草稿.current?.composing ?? false } : null)
     if (!当前草稿) return 最新工作簿.current
-    if (当前草稿.composing) { message.info('请先完成输入法候选字，再保存'); return null }
-    if (提示数组子格(当前草稿.address)) return null
+    if (当前草稿.composing) { 草稿错误.current = '请先完成输入法候选字，再保存'; if (提示) message.info(草稿错误.current); return null }
+    const 锚点 = 读取单元格(工作表, 当前草稿.address).溢出锚点
+    if (锚点) { 草稿错误.current = `${当前草稿.address} 是动态数组结果，请编辑锚点 ${锚点}`; if (提示) message.info(草稿错误.current); return null }
     if (实时协作.readOnly) return 最新工作簿.current
     try {
       if (实时协作.active) 同步草稿(当前草稿.address, 当前草稿.value)
       const 当前 = 最新工作簿.current, 原表 = 当前.find(sheet => sheet.id === (草稿.current?.sheetId ?? 工作表.id))
-      if (!原表) { message.warning('草稿所在工作表已删除，已保留本机输入，请复制后重新选择单元格'); return null }
+      if (!原表) { 草稿错误.current = '草稿所在工作表已删除，已保留本机输入，请复制后重新选择单元格'; if (提示) message.warning(草稿错误.current); return null }
       const 值 = 实时协作.active ? 草稿.current?.value ?? 当前草稿.value : 当前草稿.value
       if (读取单元格(原表, 当前草稿.address).原始值 === 值) return 当前
       const 新表 = 写入单元格(原表, 当前草稿.address, 值), 错误 = 检查工作表更新(原表, 新表)
-      if (错误) { modal.error({ title: 错误.includes('数据验证') ? '输入不符合数据验证' : '无法修改单元格', content: 错误 }); return null }
+      if (错误) { 草稿错误.current = 错误; if (提示) modal.error({ title: 错误.includes('数据验证') ? '输入不符合数据验证' : '无法修改单元格', content: 错误 }); return null }
       const 快照 = 重算工作簿(当前.map(sheet => sheet.id === 原表.id ? 新表 : sheet))
       if (!实时协作.active) 历史.record(快照)
       set工作表列表(快照)
       return 最新工作簿.current
-    } catch (error) { message.warning(error instanceof Error ? error.message : '无法修改单元格'); return null }
+    } catch (error) { 草稿错误.current = error instanceof Error ? error.message : '无法修改单元格'; if (提示) message.warning(草稿错误.current); return null }
   }
+  const 准备草稿引用 = useRef<() => 单文档草稿结果>(() => ({ 成功: true, 类型: 'table', 模型: 最新工作簿.current, 已修改: false }))
+  准备草稿引用.current = () => {
+    const 原值 = 最新工作簿.current, 快照 = 读取草稿快照(false)
+    return 快照 ? { 成功: true, 类型: 'table', 模型: 快照, 已修改: 快照 !== 原值 } : { 成功: false, 错误: 草稿错误.current || '请先完成当前单元格编辑' }
+  }
+  useLayoutEffect(() => activeDocumentId ? 注册编辑草稿(activeDocumentId, () => 准备草稿引用.current()) : undefined, [activeDocumentId, 注册编辑草稿])
   const 提交编辑 = () => {
     if (!读取草稿快照()) return
     结束草稿()
@@ -1065,6 +1082,7 @@ const SheetEditor = () => {
       message.success('图表图片已插入')
     } }) : null,
     React.createElement(SheetToolbar, {
+      key: `${activeDocumentId ?? '独立'}:${草稿重置版本}`,
       兼容模式: 工作表.公式兼容模式 ?? 'Excel',
       on兼容模式: (模式: 'Excel' | 'WPS') => {
         if (实时协作.readOnly) return
@@ -1076,6 +1094,7 @@ const SheetEditor = () => {
       公式值: 读取单元格(工作表, 读取单元格(工作表, 取首格地址()).溢出锚点 ?? 取首格地址()).原始值,
       只读提示: 实时协作.readOnly ? '当前共享文档为只读' : 读取单元格(工作表, 取首格地址()).溢出锚点 ? `动态数组结果，请编辑锚点 ${读取单元格(工作表, 取首格地址()).溢出锚点}` : undefined,
       on文件按键: 处理按键,
+      on取消草稿: 结束草稿,
       on草稿变化: (value: string, composing: boolean) => {
         const address = 取首格地址()
         const result = 同步草稿(address, value, composing)
@@ -1196,7 +1215,7 @@ const SheetEditor = () => {
           if (!编辑地址) return
           set编辑值(同步草稿(编辑地址, 值, 草稿.current?.composing).值)
         },
-        on组合开始: () => { if (编辑地址) 开始草稿(编辑地址).composing = true },
+        on组合开始: () => { if (编辑地址) { 开始草稿(编辑地址).composing = true; 通知编辑草稿变化() } },
         on组合结束: (值: string) => { if (编辑地址) set编辑值(同步草稿(编辑地址, 值, false).值) },
         on提交编辑: 提交编辑,
         on取消编辑: () => {

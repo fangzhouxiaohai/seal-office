@@ -67,6 +67,7 @@ const defaultDefinitions: ShortcutDefinition[] = [
     ['view.reading', '阅读视图', []], ['view.prev', '上一张幻灯片', ['PageUp'], true], ['view.next', '下一张幻灯片', ['PageDown'], true],
   ]),
   ...commands('pdf', [
+    ['file.save', '保存', ['Ctrl+S']], ['file.saveAs', '另存为', ['Ctrl+Shift+S', 'F12']],
     ['file.print', '打印预览', ['Ctrl+P']],
     ['view.previousPage', '上一页', ['Ctrl+ArrowUp', 'PageUp'], true], ['view.nextPage', '下一页', ['Ctrl+ArrowDown', 'PageDown'], true],
     ['view.firstPage', '第一页', ['Home', 'Ctrl+Home']], ['view.lastPage', '最后一页', ['End', 'Ctrl+End']],

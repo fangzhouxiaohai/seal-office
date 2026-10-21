@@ -80,9 +80,9 @@ export const NEW_DOC_ENTRIES: NewDocEntry[] = [
 
 /** 未打开具体文档时，各编辑器顶栏展示的默认文件名 */
 export const NEW_DOC_NAMES: Record<Exclude<ModuleKey, 'home'>, string> = {
-  word: '未命名文档.docx',
-  table: '未命名表格.xlsx',
-  ppt: '未命名演示.pptx',
+  word: '未命名文档.sldoc',
+  table: '未命名表格.slxls',
+  ppt: '未命名演示.slppt',
   pdf: 'PDF 工具',
   settings: '设置',
   help: '帮助手册',

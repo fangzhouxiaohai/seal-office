@@ -12,6 +12,8 @@ import SealLogo from '../components/SealLogo'
 import { 解析助手回复, 预览文字修改, 预览表格修改, 预览演示修改, type 助手修改, type 文字修改, type 表格修改, type 演示修改 } from './proposal'
 import { 构建新文件, type 新文件候选, type 创建文件 } from './createDocument'
 import { 生成文字上下文 } from './wordBlocks'
+import {requireAIIdentity} from '../cloud/aiIdentity'
+import {useCloud} from '../cloud/CloudProvider'
 import { 提取流式正文 } from './reasoning'
 import './assistant.css'
 
@@ -86,6 +88,8 @@ function 修改说明(项: 助手修改): { 位置: string; 原文: string; 新�
 
 export default function AiAssistant() {
   const 放映中 = 使用放映状态()
+  const {state:账号状态}=useCloud()
+  const 待身份核验=useRef(new Set<string>())
   const { message, modal } = AntdApp.useApp()
   const { documents, pdfDocuments, activeDocumentId, activeWorkspaceTabId, 文档路径, 表格文档模型, 演示文档模型, updateEditorHtml, 更新表格文档模型, 更新演示文档模型, createDoc, selectWorkspaceTab } = useAppStore()
   const 当前文档 = useMemo(() => activeWorkspaceTabId === activeDocumentId
@@ -134,6 +138,7 @@ export default function AiAssistant() {
     会话标识按文档.current.set(当前文件.id, 路径 ? `file:${路径.replace(/\\/g, '/').toLowerCase()}` : `document:${当前文件.id}`)
   }
   const 当前会话标识 = 当前文件 ? 会话标识按文档.current.get(当前文件.id)! : 'general'
+  const 会话代次=useRef(new Map<string,number>())
   const 已恢复 = useRef(new Set<string>())
   const 恢复请求 = useRef(new Map<string, Promise<void>>())
   const 恢复候选锁 = useRef(new Set<string>())
@@ -402,6 +407,7 @@ export default function AiAssistant() {
   }, [打开, modal])
 
   const 发送 = async (指定文本?: string, 指定执行?: boolean, 排队?: 排队任务) => {
+    const 发送源输入=输入
     const 文本 = (指定文本 ?? 输入).trim()
     if (!文本) return
     if (!排队 && 文本.startsWith('/')) {
@@ -418,10 +424,18 @@ export default function AiAssistant() {
       }
     }
     if (!排队) {
+      const 核验会话代次=会话代次.current.get(当前会话标识)??0
+      const 核验键=JSON.stringify([当前范围标识,当前会话标识,核验会话代次,文本])
+      if(待身份核验.current.has(核验键))return
+      待身份核验.current.add(核验键)
+      let 身份通过=false
+      try{身份通过=await requireAIIdentity()}finally{待身份核验.current.delete(核验键)}
+      if(!组件有效.current||核验会话代次!==(会话代次.current.get(当前会话标识)??0))return
+      if(!身份通过){set输入按范围(旧=>旧[当前范围标识]?.trim()?旧:{...旧,[当前范围标识]:文本});return}
       const 项: 排队任务 = { id: crypto.randomUUID(), 文本, 范围: 当前范围标识, 文件名: 当前文件?.name ?? '新建文件 / 一般对话', 会话标识: 当前会话标识, 强度, 自动执行: 文本.toLowerCase() === '/compact' ? false : 指定执行 ?? !仅规划, 状态: '等待' }
       const 需等待 = !!进行中.current || 队列引用.current.some((项) => 项.状态 === '等待') || 清除中 || 绑定中 || 处理候选中 || (文本.toLowerCase() !== '/compact' && (!!待确认引用.current[项.范围] || !!恢复提示引用.current[项.范围] || 恢复候选锁.current.has(项.范围)))
       if (需等待 && 队列引用.current.filter((旧项) => ['等待', '执行中'].includes(旧项.状态)).length >= 30) { message.warning('队列已满，请先处理或移除任务'); return }
-      if (!指定文本) set输入按范围((当前) => ({ ...当前, [当前范围标识]: '' }))
+      if (!指定文本) set输入按范围((当前) => 当前[当前范围标识]===发送源输入?{ ...当前, [当前范围标识]: '' }:当前)
       if (需等待) {
         变更队列((旧) => [...旧.filter((旧项) => !['完成', '取消'].includes(旧项.状态)).slice(-49), 项])
         return
@@ -475,7 +489,7 @@ export default function AiAssistant() {
         更新任务消息(范围标识, 标识, { 状态: '已停止', 阶段: '已停止，未应用修改' })
         return
       }
-      if (!结果.成功 || !结果.数据) throw new Error(结果.错误 || '模型服务未返回回复')
+      if (!结果.成功 || !结果.数据) throw Object.assign(new Error(结果.错误 || '模型服务未返回回复'),{需要登录:(结果 as any).需要登录})
       const 回复 = 解析助手回复(结果.数据.内容)
       更新任务消息(范围标识, 标识, { 内容: 回复.回复, 思考: 结果.数据.思考 || 任务.思考, 阶段: '正在校验修改' })
       if (回复.修改.length > 0) 生成候选(任务, 回复.修改)
@@ -496,7 +510,7 @@ export default function AiAssistant() {
       变更队列((旧) => 旧.some((项) => 项.id === 标识) ? 旧.map((项) => 项.id === 标识 ? 失败项 : 项) : [失败项, ...旧]); set队列暂停(true)
       更新任务消息(范围标识, 标识, { 状态: '失败', 阶段: '处理失败，未应用修改' })
       set输入按范围((旧) => 旧[范围标识]?.trim() ? 旧 : { ...旧, [范围标识]: 文本 })
-      modal.error({ title: '智能助手处理失败', content: 错误 instanceof Error ? 错误.message : '请检查模型设置与当前文件内容' })
+      if(!(错误 as any)?.需要登录)modal.error({ title: '智能助手处理失败', content: 错误 instanceof Error ? 错误.message : '请检查模型设置与当前文件内容' })
     } finally {
       刷新任务消息(任务)
       if (任务.已停止 && !任务.结束状态) { 任务.结束状态 = '取消'; set队列暂停(true); 变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '取消' } : 项)) }
@@ -611,6 +625,7 @@ export default function AiAssistant() {
 
   const 新对话 = async () => {
     if (进行中.current || 清除中 || 恢复中 || 绑定中 || 处理候选中) return
+    会话代次.current.set(当前会话标识,(会话代次.current.get(当前会话标识)??0)+1)
     const 范围 = 当前范围标识
     set清除中(true)
     try {
@@ -639,6 +654,7 @@ export default function AiAssistant() {
         </AiSettingsCard> : null}
         <div className="assistant-drawer__work">
         <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div>
+        {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope"><Button type="link" onClick={()=>void requireAIIdentity()}>登录后使用 AI</Button><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
         {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
           {当前记忆?.计划.length ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
         {发送中 && 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求 ? <div className="assistant-drawer__initializing" role="status"><span className="assistant-task__spinner" aria-hidden="true" />正在读取模型设置与会话记忆</div> : null}
@@ -654,10 +670,10 @@ export default function AiAssistant() {
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。</div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
-            <span className="assistant-message__role">{项.角色 === 'assistant' ? <span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={13} /></span> : null}{项.角色 === 'user' ? '我' : '助手'}</span>
+            <span className="assistant-message__role">{项.角色 === 'assistant' ? <span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={13} /></span> : null}{项.角色 === 'user' ? '我' : 'AI助手（AI生成）'}</span>
             {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
-            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div> : null}
+            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div><div style={{fontSize:11,color:'#999',marginTop:4}}>本内容由AI生成</div></div> : null}
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
