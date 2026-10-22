@@ -13,6 +13,8 @@ import { 应用结构引用调整, 标记结构调整 } from './structureReferen
 import { 计算溢出工作簿 } from './spillCalculation'
 
 export interface CellFormat {
+  字体元数据?: { charset?: number; family?: number; scheme?: string }
+  对齐元数据?: { horizontal?: 'general'; shrinkToFit?: false; indent?: 0; textRotation?: 0; readingOrder?: 0 }
   字体?: string
   字号?: number
   加粗?: boolean
@@ -36,6 +38,7 @@ export type 单元格数据验证 =
   | { 类型: '整数' | '小数'; 最小值: number; 最大值: number; 允许空白: boolean }
 
 export interface SheetCell {
+  富文本?: Array<{ 文本: string; 格式?: CellFormat }>
   /** 用户输入的原始值，公式以 = 开头 */
   原始值: string
   /** 计算或格式化后的展示值 */
@@ -76,6 +79,7 @@ export interface SheetImage {
 }
 
 export interface 页面设置 {
+  自定义页边距?: { left: number; right: number; top: number; bottom: number; header: number; footer: number }
   页边距: '常规' | '窄' | '适中' | '宽'
   /** OOXML 的 default 由打印机决定，不能在保存时擅自改成 portrait。 */
   方向: '纵向' | '横向' | '跟随打印机'
@@ -289,7 +293,9 @@ export function 删除图片(工作表: Sheet, 标识: string): Sheet {
 
 /** 更新工作表页面设置，兼容旧版文件中没有页面设置的模型。 */
 export function 设置页面设置(工作表: Sheet, 更新: Partial<页面设置>): Sheet {
-  return { ...工作表, 页面设置: { ...默认页面设置, ...工作表.页面设置, ...更新 } }
+  const 页面 = { ...默认页面设置, ...工作表.页面设置, ...更新 }
+  if (更新.页边距 !== undefined && 更新.自定义页边距 === undefined) delete 页面.自定义页边距
+  return { ...工作表, 页面设置: 页面 }
 }
 
 /** 写入单元格原始值并重算 */
@@ -306,7 +312,7 @@ export function 批量写入单元格(工作表: Sheet, 更新: Record<string, s
   const 新单元格 = { ...工作表.单元格 }
   for (const [地址, 原始值] of Object.entries(更新)) {
     const 原单元 = 读取单元格(工作表, 地址)
-    const { 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, 溢出锚点: _溢出源, 溢出范围: _溢出范围, 溢出错误: _溢出错误, 计算值: _计算值, 计算错误: _计算错误, 布尔结果: _布尔, 动态数组: _动态, ...更新前单元 } = 原单元
+    const { 富文本: _旧富文本, 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, 溢出锚点: _溢出源, 溢出范围: _溢出范围, 溢出错误: _溢出错误, 计算值: _计算值, 计算错误: _计算错误, 布尔结果: _布尔, 动态数组: _动态, ...更新前单元 } = 原单元
     if (原始值.length === 0 && Object.keys(原单元.格式).length === 0 && !原单元.批注 && !原单元.数据验证) delete 新单元格[地址]
     else 新单元格[地址] = { ...更新前单元, 原始值, 显示值: 原始值 }
   }
@@ -327,7 +333,7 @@ export function 清空单元格(工作表: Sheet, 地址列表: string[]): Sheet
     if (Object.keys(单元.格式).length === 0 && !单元.批注 && !单元.数据验证) {
       delete 新单元格[地址]
     } else {
-      const { 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, ...保留属性 } = 单元
+      const { 富文本: _旧富文本, 值类型: _导入值类型, 公式来源: _旧公式来源, 公式状态: _旧状态, ...保留属性 } = 单元
       新单元格[地址] = { ...保留属性, 原始值: '', 显示值: '' }
     }
   })
@@ -368,7 +374,8 @@ export function 设置格式(工作表: Sheet, 区域: string, 格式: Partial<C
     const 单元 = 新单元格[地址] ?? { ...空单元格 }
     const 新格式 = { ...单元.格式, ...格式 }
     if (格式.数字格式 !== undefined || 格式.小数位 !== undefined) delete 新格式.数字格式代码
-    新单元格[地址] = { ...单元, 格式: 新格式 }
+    const 富文本 = 单元.富文本?.map(段 => ({ ...段, 格式: { ...段.格式, ...Object.fromEntries(Object.entries(格式).filter(([键]) => ['字体', '字号', '加粗', '斜体', '下划线', '字体颜色'].includes(键))) } }))
+    新单元格[地址] = { ...单元, ...(富文本 ? { 富文本 } : {}), 格式: 新格式 }
   })
   return 重算工作表({ ...工作表, 单元格: 新单元格 })
 }

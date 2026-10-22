@@ -103,6 +103,7 @@ const 开始标签: RibbonTabSpec = {
         大('edit.clear', '清除内容', 'retry'),
         大('data.sortAsc', '升序', 'sort'),
         大('data.sortDesc', '降序', 'sort'),
+        大('sheet.autoFitColumns', '自适应列宽', 'table'),
       ],
     },
   ],

@@ -675,7 +675,7 @@ export default function AiAssistant() {
   }
 
   return <>
-    {放映中 ? null : 移动端 ? <MobileAssistantLauncher disabled={!桥接.ai.可用} onOpen={() => { set选择目标(undefined); set打开(true) }} /> : <button type="button" className="assistant-launcher" onClick={() => set打开(true)} aria-label="打开智能助手" disabled={!桥接.ai.可用} title={桥接.ai.可用 ? undefined : '请在 Windows 桌面版使用智能助手'}><Icon name="ai" size={16} /><span>智能助手</span></button>}
+    {放映中 ? null : <MobileAssistantLauncher desktop={!移动端} disabled={!桥接.ai.可用} onOpen={() => { if (移动端) set选择目标(undefined); set打开(true) }} />}
     <AssistantSurface mobile={移动端} title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} open={打开 && !放映中} onClose={() => set打开(false)}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
         <div className="assistant-drawer__header"><strong>{配置展开 ? '模型设置' : '文件对话'}</strong><div className="assistant-drawer__header-actions"><Button className="assistant-new-chat" size="small" icon={<Icon name="plus" size={14} />} disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button className="assistant-settings-toggle" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={14} />} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>

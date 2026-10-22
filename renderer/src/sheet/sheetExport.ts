@@ -2,7 +2,7 @@
 // 导出内容取自单元格的显示值，因此公式导出的是计算结果而非公式原文。
 
 import { 生成地址, 解析地址 } from './address'
-import { 读取单元格, 重算工作簿, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
+import { 读取单元格, 查询合并, 重算工作簿, 默认列宽, 默认行高, 默认页面设置, type CellFormat, type Sheet, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
 
 /** 计算实际有内容的范围，避免导出整张空表 */
 function 计算有效范围(工作表: Sheet): { 行数: number; 列数: number } {
@@ -53,6 +53,15 @@ function 转义Html(文本: string): string {
   return 文本.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+function 写入显示字体(element: HTMLElement, format: CellFormat): void {
+  if (format.字体) element.style.fontFamily = format.字体
+  if (format.字号) element.style.fontSize = `${format.字号}px`
+  if (format.加粗 !== undefined) element.style.fontWeight = format.加粗 ? '600' : '400'
+  if (format.斜体 !== undefined) element.style.fontStyle = format.斜体 ? 'italic' : 'normal'
+  if (format.下划线 !== undefined) element.style.textDecoration = format.下划线 ? 'underline' : 'none'
+  if (format.字体颜色) element.style.color = format.字体颜色
+}
+
 /** 导出为独立的 HTML 表格文档；无内容时返回空字符串 */
 export function 导出为Html表格(工作表: Sheet, 标题: string): string {
   const { 行数, 列数 } = 计算有效范围(工作表)
@@ -63,15 +72,34 @@ export function 导出为Html表格(工作表: Sheet, 标题: string): string {
   for (let 行 = 0; 行 < 行数; 行 += 1) {
     const 单元格列表: string[] = []
     for (let 列 = 0; 列 < 列数; 列 += 1) {
-      const 文本 = 读取单元格(工作表, 生成地址(行, 列)).显示值
-      单元格列表.push(`<td style="border:1px solid #E8EBF0;padding:6px 8px">${转义Html(文本)}</td>`)
+      const 合并 = 查询合并(工作表, {行,列})
+      if (合并 && !合并.是左上角) continue
+      const 单元 = 读取单元格(工作表, 生成地址(行, 列)), 格式 = 单元.格式
+      const td = document.createElement('td')
+      td.style.cssText = 'border:1px solid #E8EBF0;padding:6px 8px'
+      写入显示字体(td, 格式)
+      td.style.textAlign = 格式.水平对齐 ?? (格式.对齐元数据?.horizontal === 'general' && typeof 单元.计算值 === 'number' ? 'right' : 'left')
+      td.style.verticalAlign = 格式.垂直对齐 ?? 'middle'
+      td.style.whiteSpace = 格式.自动换行 ? 'pre-wrap' : 'nowrap'
+      if (格式.填充颜色) td.style.backgroundColor = 格式.填充颜色
+      if (合并) { td.colSpan = 合并.跨度列; td.rowSpan = 合并.跨度行 }
+      if (单元.富文本 && 单元.富文本.map(段=>段.文本).join('') === 单元.显示值) {
+        for (const 段 of 单元.富文本) { const span=document.createElement('span'); span.textContent=段.文本; 写入显示字体(span,段.格式??{}); td.append(span) }
+      } else td.textContent = 单元.显示值
+      单元格列表.push(td.outerHTML)
     }
-    行列表.push(`<tr>${单元格列表.join('')}</tr>`)
+    行列表.push(`<tr style="height:${工作表.行高[行] ?? 默认行高}px">${单元格列表.join('')}</tr>`)
   }
+  const 页面 = { ...默认页面设置, ...工作表.页面设置 }, 自定义 = 页面.自定义页边距
+  if (自定义 && !['top','right','bottom','left'].every(key => Number.isFinite(自定义[key as keyof typeof 自定义]) && 自定义[key as keyof typeof 自定义] >= 0 && 自定义[key as keyof typeof 自定义] <= 100)) throw new Error('自定义页边距无效')
+  const 边距 = 自定义 ? `${自定义.top}in ${自定义.right}in ${自定义.bottom}in ${自定义.left}in` : ({常规:'.75in .7in',窄:'.75in .25in',适中:'1in .75in',宽:'1in'}[页面.页边距])
+  const 纸张 = ['A4','A5','B5','Letter'].includes(页面.纸张大小) ? 页面.纸张大小 : 'auto'
+  const 方向 = 页面.方向 === '横向' ? 'landscape' : 页面.方向 === '纵向' ? 'portrait' : ''
+  const 列组 = Array.from({length:列数},(_,列)=>`<col style="width:${工作表.列宽[列] ?? 默认列宽}px">`).join('')
   return (
     '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n' +
-    `<title>${转义Html(标题)}</title>\n</head>\n<body>\n` +
-    `<table style="border-collapse:collapse">${行列表.join('')}</table>\n</body>\n</html>\n`
+    `<title>${转义Html(标题)}</title>\n<style>@page{size:${纸张} ${方向};margin:${边距}}</style></head>\n<body>\n` +
+    `<table style="border-collapse:collapse;table-layout:fixed"><colgroup>${列组}</colgroup>${行列表.join('')}</table>\n</body>\n</html>\n`
   )
 }
 
@@ -90,7 +118,7 @@ export function 生成表格文件名(工作表名: string, 扩展名: string): 
  * 公式携带表达式与计算结果；普通单元格保留原始输入。
  * 单张默认空表返回 null；多表工作簿保留空表的名称、顺序与引用目标。
  */
-type Xlsx单元格 = string | { 值: string | number | boolean | { error: string }; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 公式: string; 结果?: string | number | boolean | { error: string }; 数组范围?: string; 动态数组?: boolean; 保留公式拼写?: boolean; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 文字: Array<{ 文本: string }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证; 超链接?: string }
+type Xlsx单元格 = string | { 值: string | number | boolean | { error: string }; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 公式: string; 结果?: string | number | boolean | { error: string }; 数组范围?: string; 动态数组?: boolean; 保留公式拼写?: boolean; 批注?: string; 格式?: CellFormat; 数据验证?: 单元格数据验证; 超链接?: string } | { 文字: Array<{ 文本: string }>; 富文本?: Array<{ 文本: string; 格式?: CellFormat }>; 批注?: string; 格式?: CellFormat; 类型?: '文本'; 数据验证?: 单元格数据验证; 超链接?: string }
 type Xlsx工作表 = {
   名称: string
   日期系统1904?: boolean
@@ -137,7 +165,7 @@ export function 导出为Xlsx(工作表或列表: Sheet | Sheet[]): { 工作表:
 /** 构建单张工作表的写入模型；空表返回 null */
 function 构建单表模型(工作表: Sheet, 保留空表 = false): Xlsx工作表 | null {
   const { 行数, 列数 } = 计算有效范围(工作表)
-  const 自定义页面 = Object.keys(默认页面设置).some(键 => (工作表.页面设置 ?? 默认页面设置)[键 as keyof typeof 默认页面设置] !== 默认页面设置[键 as keyof typeof 默认页面设置])
+  const 自定义页面 = !!工作表.页面设置?.自定义页边距 || Object.keys(默认页面设置).some(键 => (工作表.页面设置 ?? 默认页面设置)[键 as keyof typeof 默认页面设置] !== 默认页面设置[键 as keyof typeof 默认页面设置])
   const 有布局 = 工作表.合并区域.length > 0 || 工作表.冻结 !== undefined || 工作表.筛选 !== undefined || 工作表.保护 !== undefined || 自定义页面 ||
     工作表.日期系统1904 === true || 工作表.公式兼容模式 === 'WPS' ||
     工作表.列宽.some((宽) => 宽 !== 默认列宽) || 工作表.行高.some((高) => 高 !== 默认行高) || (工作表.图片?.length ?? 0) > 0
@@ -166,8 +194,8 @@ function 构建单表模型(工作表: Sheet, 保留空表 = false): Xlsx工作�
         if (单元.计算错误 && /^#(?:N\/A|SPILL!|CALC!|REF!|VALUE!|DIV\/0!|NUM!|NAME\?|NULL!)$/.test(String(结果))) 结果 = { error: String(结果) }
         const 数组范围 = 单元.动态数组 ? 单元.溢出范围 ?? `${生成地址(行, 列)}:${生成地址(行, 列)}` : 来源?.数组范围
         单元格列表.push({ 公式: 单元.原始值.slice(1), ...(来源 ? { 保留公式拼写: true } : {}), ...(结果 !== undefined ? { 结果 } : {}), ...(数组范围 ? { 数组范围 } : {}), ...(单元.动态数组 || 来源?.动态数组 ? { 动态数组: true } : {}), ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...格式, ...验证, ...链接 })
-      } else if (单元.批注 || Object.keys(格式).length > 0 || 单元.值类型 || 单元.数据验证 || 单元.超链接) {
-        单元格列表.push({ 文字: [{ 文本: 单元.原始值 }], ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...(单元.值类型 ? { 类型: 单元.值类型 } : {}), ...格式, ...验证, ...链接 })
+      } else if (单元.富文本 || 单元.批注 || Object.keys(格式).length > 0 || 单元.值类型 || 单元.数据验证 || 单元.超链接) {
+        单元格列表.push({ 文字: [{ 文本: 单元.原始值 }], ...(单元.富文本 ? { 富文本: 单元.富文本 } : {}), ...(单元.批注 ? { 批注: 单元.批注 } : {}), ...(单元.值类型 ? { 类型: 单元.值类型 } : {}), ...格式, ...验证, ...链接 })
       } else {
         单元格列表.push(单元.原始值)
       }

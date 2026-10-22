@@ -194,7 +194,7 @@ function 读取颜色(颜色, 警告, 主题颜色) {
 
 function 写入基础格式(单元格, 格式) {
   if (!格式 || Object.keys(格式).length === 0) return
-  const 字体 = {}
+  const 字体 = { ...格式.字体元数据 }
   if (格式.字体 !== undefined) 字体.name = 格式.字体
   if (格式.字号 !== undefined) 字体.size = 格式.字号
   if (格式.加粗 !== undefined) 字体.bold = 格式.加粗
@@ -203,7 +203,7 @@ function 写入基础格式(单元格, 格式) {
   if (格式.字体颜色) 字体.color = 转写颜色(格式.字体颜色)
   if (Object.keys(字体).length > 0) 单元格.font = 字体
   if (格式.填充颜色) 单元格.fill = { type: 'pattern', pattern: 'solid', fgColor: 转写颜色(格式.填充颜色) }
-  const 对齐 = {}
+  const 对齐 = { ...格式.对齐元数据 }
   if (格式.水平对齐) 对齐.horizontal = 格式.水平对齐
   if (格式.垂直对齐) 对齐.vertical = 格式.垂直对齐
   if (格式.自动换行 !== undefined) 对齐.wrapText = 格式.自动换行
@@ -233,6 +233,8 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
   const 格式 = {}
   const 字体 = 原格式.font
   if (字体) {
+    const 元数据 = Object.fromEntries(['charset', 'family', 'scheme'].filter(键 => 字体[键] !== undefined).map(键 => [键, 字体[键]]))
+    if (Object.keys(元数据).length) 格式.字体元数据 = 元数据
     if (字体.name) 格式.字体 = 字体.name
     if (typeof 字体.size === 'number') 格式.字号 = 字体.size
     if (字体.bold !== undefined) 格式.加粗 = !!字体.bold
@@ -242,7 +244,7 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
       if (字体.underline !== true && 字体.underline !== false && 字体.underline !== 'single') 警告.add('部分下划线样式未导入')
     }
     if (字体.color) 格式.字体颜色 = 读取颜色(字体.color, 警告, 主题颜色)
-    if (Object.keys(字体).some((字段) => !['name', 'size', 'bold', 'italic', 'underline', 'color', 'family', 'scheme'].includes(字段))) 警告.add('部分字体样式未导入')
+    if (Object.keys(字体).some((字段) => !['name', 'size', 'bold', 'italic', 'underline', 'color', 'family', 'scheme', 'charset'].includes(字段))) 警告.add('部分字体样式未导入')
   }
   if (原格式.fill) {
     if (原格式.fill.type === 'pattern' && 原格式.fill.pattern === 'solid') 格式.填充颜色 = 读取颜色(原格式.fill.fgColor, 警告, 主题颜色)
@@ -252,6 +254,7 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
   if (对齐) {
     if (对齐.horizontal) {
       if (['left', 'center', 'right'].includes(对齐.horizontal)) 格式.水平对齐 = 对齐.horizontal
+      else if (对齐.horizontal === 'general') 格式.对齐元数据 = { horizontal: 'general' }
       else 警告.add('部分水平对齐样式未导入')
     }
     if (对齐.vertical) {
@@ -259,7 +262,12 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
       else 警告.add('部分垂直对齐样式未导入')
     }
     if (对齐.wrapText !== undefined) 格式.自动换行 = !!对齐.wrapText
-    if (Object.keys(对齐).some((字段) => !['horizontal', 'vertical', 'wrapText'].includes(字段))) 警告.add('部分对齐样式未导入')
+    for (const [字段, 值] of Object.entries(对齐)) {
+      if (['horizontal', 'vertical', 'wrapText'].includes(字段)) continue
+      if ((字段 === 'shrinkToFit' && 值 === false) || (['indent', 'textRotation', 'readingOrder'].includes(字段) && 值 === 0)) {
+        格式.对齐元数据 = { ...格式.对齐元数据, [字段]: 值 }
+      } else 警告.add('部分对齐样式未导入')
+    }
   }
   if (原格式.numFmt && 原格式.numFmt !== 'General') {
     if (原格式.numFmt === 基础数字格式.货币) 格式.数字格式 = '货币'
@@ -374,10 +382,12 @@ function 读取工作表验证(工作表, 警告) {
 
 function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜色) {
   const 单元格格式 = {}
+  const 单元格富文本 = {}
   const 超链接 = {}
   工作表.eachRow({ includeEmpty: true }, (行) => {
     行.eachCell({ includeEmpty: true }, (单元格) => {
       const 格式 = 读取基础格式(单元格, 警告, 主题颜色)
+      if (Array.isArray(单元格.value?.richText)) 单元格富文本[单元格.address] = 单元格.value.richText.map(片段 => ({ 文本: 片段.text, 格式: 读取基础格式({ style: { font: 片段.font } }, 警告, 主题颜色) }))
       if (Object.keys(格式).length > 0) 单元格格式[单元格.address] = 格式
       if (单元格.hyperlink) {
         const 目标 = 校验超链接目标(单元格.hyperlink)
@@ -410,6 +420,7 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
   }
   return {
     单元格格式,
+    单元格富文本,
     超链接,
     单元格验证: 读取工作表验证(工作表, 警告),
     合并区域: [...(工作表.model.merges ?? [])],
@@ -521,7 +532,6 @@ function 读取页面设置(工作表, 警告, 打印方向) {
   const 页边距 = Object.entries(页边距方案).find(([, 预设]) =>
     Object.entries(预设).every(([字段, 值]) => Math.abs((原设置.margins?.[字段] ?? 值) - 值) < 0.001)
   )?.[0]
-  if (!页边距) 警告.add('自定义页边距未导入')
   const 纸张大小 = 原设置.paperSize === undefined
     ? '跟随打印机'
     : Object.entries(纸张编号).find(([, 编号]) => 编号 === 原设置.paperSize)?.[0]
@@ -536,6 +546,7 @@ function 读取页面设置(工作表, 警告, 打印方向) {
   }
   return {
     页边距: 页边距 ?? '常规',
+    ...(!页边距 ? { 自定义页边距: { ...原设置.margins } } : {}),
     方向: 方向 ?? '纵向',
     纸张大小: 纸张大小 ?? '跟随打印机',
   }
@@ -543,7 +554,8 @@ function 读取页面设置(工作表, 警告, 打印方向) {
 
 function 写入页面设置(工作表, 页面) {
   if (!页面) return
-  const 页边距 = 页边距方案[页面.页边距]
+  const 页边距 = 页面.自定义页边距 ?? 页边距方案[页面.页边距]
+  if (页面.自定义页边距 && !['left', 'right', 'top', 'bottom', 'header', 'footer'].every(键 => Number.isFinite(页边距[键]) && 页边距[键] >= 0 && 页边距[键] <= 100)) throw new Error('自定义页边距无效')
   const 纸张 = 纸张编号[页面.纸张大小]
   if (!页边距 || (页面.纸张大小 !== '跟随打印机' && !纸张) || !['纵向', '横向', '跟随打印机'].includes(页面.方向)) {
     throw new Error('页面设置选项无效')
@@ -605,7 +617,7 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
         if (单元格.note && 读取批注文本(单元格.note) === null) 警告.add('批注未导入')
         else if (单元格.note && typeof 单元格.note !== 'string') 警告.add('批注格式未导入')
         const 值 = 单元格.value
-        if ((值 instanceof Date && 原始数字列表?.[索引]?.[单元格.address] === undefined) || typeof 值 === 'boolean' && !已保留布尔格.has(单元格.address) || (值 && typeof 值 === 'object' && 值.richText)) {
+        if ((值 instanceof Date && 原始数字列表?.[索引]?.[单元格.address] === undefined) || typeof 值 === 'boolean' && !已保留布尔格.has(单元格.address)) {
           警告.add('日期、布尔值或富文本单元格类型未保留')
         }
       })
@@ -625,7 +637,7 @@ function 工作表转Html(工作表, 公式来源, 原始数字) {
       const 公式 = !从属合并格 && 公式原文
         ? ` data-formula="${转义(公式原文)}"`
         : ''
-      const 值类型 = !从属合并格 && typeof 单元.value === 'string' ? ' data-value-type="text"' : ''
+      const 值类型 = !从属合并格 && (typeof 单元.value === 'string' || Array.isArray(单元.value?.richText)) ? ' data-value-type="text"' : ''
       const 批注文本 = 从属合并格 ? null : 读取批注文本(单元.note)
       const 批注 = 批注文本 !== null && 批注文本 !== '' ? ` data-comment="${转义(批注文本)}"` : ''
       // ExcelJS 会把带日期格式的数字（含虚构的 serial 60）变为 Date，原始 XML 数字才是计算/保存依据。
@@ -837,6 +849,9 @@ async function 写入xlsx(模型) {
           const 超链接 = 校验超链接目标(单元.超链接)
           if (!超链接) throw new Error('单元格超链接目标无效，无法保存')
           目标单元.value = { text: 文本, hyperlink: 超链接 }
+        } else if (单元 && typeof 单元 === 'object' && 单元.富文本) {
+          if (!Array.isArray(单元.富文本) || 单元.富文本.some(段 => typeof 段?.文本 !== 'string') || 单元.富文本.map(段 => 段.文本).join('') !== 文本) throw new Error('富文本内容不一致，无法保存')
+          目标单元.value = { richText: 单元.富文本.map(段 => { const 格 = {}; 写入基础格式(格, 段.格式); return { text: 段.文本, ...(格.font ? { font: 格.font } : {}) } }) }
         } else {
           目标单元.value = 单元 && typeof 单元 === 'object' && 单元.类型 === '文本' ? 文本 : 转单元格值(文本)
         }

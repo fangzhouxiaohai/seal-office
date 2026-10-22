@@ -1,3 +1,4 @@
+import { installImageTransfer } from './imageTransfer'
 // 编辑器容器：装配文档标签栏、Ribbon、标尺、编辑区、查找面板与状态栏。
 // 全部编辑行为通过 commands.ts 的命令注册表派发，此文件只负责上下文实现与区域编排。
 import React, { useEffect, useRef, useState } from 'react'
@@ -520,41 +521,52 @@ const DocEditor = () => {
     记录历史()
   }
 
-  const 选择图片 = (): void => {
-    const 目标文档标识 = 文档标识
+  const 插入图片文件 = async (文件列表: File[], 插入位置: Range | null): Promise<void> => {
+    if (只读引用.current) { message.info(只读提示); return }
+    const 目标标识 = 当前文档标识引用.current
     const 原编辑区 = 编辑区引用.current
+    const 原内容 = 原编辑区?.innerHTML
+    try {
+      if (!原编辑区 || !文件列表.length) return
+      const 样式 = window.getComputedStyle(原编辑区)
+      const 栏数 = Math.max(1, parseInt(样式.columnCount) || 1)
+      const 间距 = 栏数 > 1 ? parseFloat(样式.columnGap) || 0 : 0
+      const 可用宽 = (原编辑区.clientWidth - 间距 * (栏数 - 1)) / 栏数
+      if (!可用宽) throw new Error('未能获取正文可用宽度，请返回文档后重新插入。')
+      const 图片列表 = await Promise.all(文件列表.map(文件 => 读取插入图片(文件, 可用宽)))
+      if (当前文档标识引用.current !== 目标标识 || 编辑区引用.current !== 原编辑区 || !原编辑区.isConnected) throw new Error('当前文档已经切换，请在目标文档中重新插入图片')
+      if (只读引用.current || 原编辑区.contentEditable === 'false') throw new Error('当前文档处于只读状态，无法插入图片')
+      if (原编辑区.innerHTML !== 原内容) throw new Error('读取图片期间文档已改变，请重新选择插入位置')
+      const 范围 = 插入位置 ?? document.createRange()
+      if (!插入位置) { 范围.selectNodeContents(原编辑区); 范围.collapse(false) }
+      if (!恢复选区(原编辑区, 范围)) throw new Error('原插入位置已改变，请重新选择插入位置')
+      选区快照.current = 范围
+      图片插入引用.current(图片列表.join(''))
+    } catch (错误) {
+      modal.error({ title: '图片插入失败', content: 错误 instanceof Error ? 错误.message : '图片读取失败', okText: '确定' })
+    }
+  }
+  const 图片插入引用 = useRef(插入内容)
+  图片插入引用.current = 插入内容
+  const 图片文件引用 = useRef(插入图片文件)
+  图片文件引用.current = 插入图片文件
+  useEffect(() => {
+    const root = 编辑区引用.current
+    if (!root) return
+    return installImageTransfer(root, (files, range) => { void 图片文件引用.current(files, range) })
+  }, [文档标识])
+
+  const 选择图片 = (): void => {
+    const 原编辑区 = 编辑区引用.current
+    const 目标标识 = 当前文档标识引用.current
     const 插入位置 = 原编辑区 ? 保存选区(原编辑区) : null
     const 输入 = document.createElement('input')
     输入.type = 'file'
     输入.accept = 'image/png,image/jpeg,image/gif,image/bmp,.png,.jpg,.jpeg,.gif,.bmp'
+    输入.multiple = true
     输入.onchange = () => {
-      const 文件 = 输入.files?.[0]
-      if (文件 === undefined) {
-        return
-      }
-      const 目标编辑区 = 编辑区引用.current
-      const 正文样式 = 目标编辑区 ? window.getComputedStyle(目标编辑区) : null
-      const 栏数 = 正文样式 ? Math.max(1, parseInt(正文样式.columnCount) || 1) : 1
-      const 栏间距 = 正文样式 && 栏数 > 1 ? parseFloat(正文样式.columnGap) : 0
-      const 可用宽 = 目标编辑区 ? (目标编辑区.clientWidth - 栏间距 * (栏数 - 1)) / 栏数 : 0
-      if (!可用宽) {
-        modal.error({ title: '图片插入失败', content: '未能获取正文可用宽度，请返回文档后重新插入。', okText: '确定' })
-        return
-      }
-      void 读取插入图片(文件, 可用宽).then((html) => {
-        const 编辑区 = 编辑区引用.current
-        if (当前文档标识引用.current !== 目标文档标识 || !编辑区?.isConnected || 编辑区 !== 原编辑区) throw new Error('当前文档已经切换，请在目标文档中重新插入图片')
-        if (编辑区.contentEditable === 'false') throw new Error('当前文档处于只读状态，无法插入图片')
-        if (插入位置 && !恢复选区(编辑区, 插入位置)) throw new Error('原插入位置已改变，请重新选择插入位置')
-        if (!插入位置) {
-          const 范围 = document.createRange()
-          范围.selectNodeContents(编辑区)
-          范围.collapse(false)
-          window.getSelection()?.removeAllRanges()
-          window.getSelection()?.addRange(范围)
-        }
-        插入内容(html)
-      }).catch((错误) => { modal.error({ title: '图片插入失败', content: 错误 instanceof Error ? 错误.message : '图片读取失败', okText: '确定' }) })
+      if (当前文档标识引用.current !== 目标标识 || 编辑区引用.current !== 原编辑区) return
+      void 图片文件引用.current(Array.from(输入.files ?? []), 插入位置)
     }
     输入.click()
   }

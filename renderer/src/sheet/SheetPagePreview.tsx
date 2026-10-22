@@ -51,7 +51,8 @@ export default function SheetPagePreview({ 工作表 }: Props) {
   const 设置 = { ...默认页面设置, ...工作表.页面设置 }
   const 原尺寸 = 纸张像素[设置.纸张大小] ?? 纸张像素.A4
   const [宽, 高] = 设置.方向 === '横向' ? [原尺寸[1], 原尺寸[0]] : 原尺寸
-  const 边距 = 页边距英寸[设置.页边距] ?? 页边距英寸.常规
+  const 自定义 = 设置.自定义页边距
+  const 边距 = 自定义 ? { 左: 自定义.left, 右: 自定义.right, 上: 自定义.top, 下: 自定义.bottom } : 页边距英寸[设置.页边距] ?? 页边距英寸.常规
   const 留白 = { 左: 边距.左 * 96, 右: 边距.右 * 96, 上: 边距.上 * 96, 下: 边距.下 * 96 }
   const 列页 = 按尺寸分页(
     Array.from({ length: 最大列 + 1 }, (_, 列) => 工作表.列宽[列] ?? 默认列宽),
@@ -67,7 +68,7 @@ export default function SheetPagePreview({ 工作表 }: Props) {
     <div className="wps-sheet-print-preview" role="region" aria-label="页面布局预览">
       <div className="wps-sheet-print-preview__heading">
         <strong>{工作表.name}</strong>
-        <span>{设置.纸张大小}，{设置.方向}，{设置.页边距}页边距，共 {页面列表.length} 页</span>
+        <span>{设置.纸张大小}，{设置.方向}，{自定义 ? '自定义' : 设置.页边距}页边距，共 {页面列表.length} 页</span>
       </div>
       {页面列表.map(({ 行号列表, 列号列表 }, 页号) => (
         <section

@@ -1,3 +1,4 @@
+import { hasImageTransfer } from './editor/imageTransfer'
 // 拖入文件打开：从系统拖放数据里取出本地路径，并按可打开的扩展名分流。
 import { 归一化扩展名 } from './fileOpen'
 import 文档格式 from '../../main/documentFormats.json'
@@ -46,8 +47,8 @@ export function 分组拖入文件(路径列表: string[]): 拖入文件分组 {
  * 拖放位置是否落在编辑区自己的投放区里（如幻灯片舞台接收图片）。
  * 这些区域有自己的拖放语义，窗口级的「拖入即打开」不再介入，提示层也不显示。
  */
-export function 在局部投放区(目标: EventTarget | null): boolean {
+export function 在局部投放区(目标: EventTarget | null, 数据?: DataTransfer | null): boolean {
   const 元素 = 目标 as Element | null
   if (元素 === null || typeof 元素.closest !== 'function') return false
-  return 元素.closest('[data-seal-dropzone]') !== null
+  return 元素.closest('[data-seal-dropzone]') !== null || (元素.closest('[data-seal-image-dropzone]') !== null && hasImageTransfer(数据))
 }

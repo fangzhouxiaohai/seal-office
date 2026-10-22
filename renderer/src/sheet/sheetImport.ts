@@ -7,6 +7,7 @@ export interface Xlsx工作表元数据 {
   日期系统1904?: boolean
   公式兼容模式?: 'Excel' | 'WPS'
   单元格格式?: Record<string, CellFormat>
+  单元格富文本?: Record<string, NonNullable<SheetCell['富文本']>>
   单元格验证?: Record<string, 单元格数据验证>
   超链接?: Record<string, string>
   公式来源?: Record<string, NonNullable<SheetCell['公式来源']>>
@@ -86,6 +87,11 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     const 位置 = 解析地址(地址)
     if (!位置 || 位置.行 >= 行数 || 位置.列 >= 列数) return
     工作表.单元格[地址] = { ...读取单元格(工作表, 地址), 格式 }
+  })
+  Object.entries(元数据?.单元格富文本 ?? {}).forEach(([地址, 富文本]) => {
+    const 单元 = 工作表.单元格[地址]
+    if (!单元 || !Array.isArray(富文本) || 富文本.some(段 => typeof 段?.文本 !== 'string') || 富文本.map(段 => 段.文本).join('') !== 单元.原始值) return
+    工作表.单元格[地址] = { ...单元, 富文本, 值类型: '文本' }
   })
   Object.entries(元数据?.单元格验证 ?? {}).forEach(([地址, 规则]) => {
     const 位置 = 解析地址(地址)

@@ -1,13 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import Icon from '../components/Icon'
+import SealLogo from '../components/SealLogo'
 
-const storageKey = 'seal.mobile.assistant.position.v1'
 type Position = { x: number; y: number }
 type Bounds = { left: number; top: number; width: number; height: number }
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(value, Math.max(low, high)))
 
 /** The native host and mobile browser both keep the control inside the visible viewport. */
-export default function MobileAssistantLauncher({ onOpen, disabled }: { onOpen: () => void; disabled: boolean }) {
+export default function MobileAssistantLauncher({ onOpen, disabled, desktop = false }: { onOpen: () => void; disabled: boolean; desktop?: boolean }) {
+  const storageKey = desktop ? 'seal.desktop.assistant.position.v1' : 'seal.mobile.assistant.position.v1'
   const button = useRef<HTMLButtonElement>(null)
   const safeArea = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<Position | null>(null)
@@ -36,6 +37,7 @@ export default function MobileAssistantLauncher({ onOpen, disabled }: { onOpen: 
     }
   }
   useLayoutEffect(() => {
+    ratio.current = null
     try {
       const stored = JSON.parse(localStorage.getItem(storageKey) || 'null')
       if (stored && Number.isFinite(stored.x) && Number.isFinite(stored.y)) ratio.current = { x: clamp(stored.x, 0, 1), y: clamp(stored.y, 0, 1) }
@@ -53,11 +55,11 @@ export default function MobileAssistantLauncher({ onOpen, disabled }: { onOpen: 
       window.visualViewport?.removeEventListener('resize', resize)
       window.visualViewport?.removeEventListener('scroll', resize)
     }
-  }, [])
+  }, [desktop])
 
   return <>
     <div ref={safeArea} className="assistant-mobile-safe-area" aria-hidden="true" />
-    <button ref={button} type="button" className={`assistant-mobile-launcher${dragging ? ' is-dragging' : ''}`}
+    <button ref={button} type="button" className={`assistant-mobile-launcher${desktop ? ' assistant-desktop-launcher' : ''}${dragging ? ' is-dragging' : ''}`}
       style={position ? { left: position.x, top: position.y, right: 'auto', bottom: 'auto' } : undefined}
       disabled={disabled} aria-label="打开智能助手" title="智能助手：点击打开，拖动移动位置；方向键也可移动"
       onPointerDown={event => {
@@ -91,7 +93,7 @@ export default function MobileAssistantLauncher({ onOpen, disabled }: { onOpen: 
         move({ x: current.current.x + direction[0] * 16, y: current.current.y + direction[1] * 16 }, true)
       }}
       onClick={event => { if (suppressClick.current) { suppressClick.current = false; event.preventDefault(); return }; onOpen() }}>
-      <Icon name="ai" size={26} />
+      {desktop ? <span aria-hidden="true" style={{ display: 'flex', pointerEvents: 'none' }}><SealLogo size={46} withBackground={false} /></span> : <Icon name="ai" size={26} />}
     </button>
   </>
 }

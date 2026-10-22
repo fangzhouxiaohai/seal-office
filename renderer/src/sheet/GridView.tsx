@@ -1,3 +1,4 @@
+import RichCellText from './RichCellText'
 // 表格网格视图：列标、行号与单元格。
 // 单元格为受控组件，编辑状态由上层维护。支持鼠标左键按下拖动框选区域。
 import React, { useEffect, useRef } from 'react'
@@ -201,8 +202,8 @@ const GridView = ({
               gridRow: 合并 !== null && 合并.是左上角 ? `${行 + 2} / span ${合并.跨度行}` : 行 + 2,
               width: `${Array.from({ length: 合并?.跨度列 ?? 1 }, (_, 偏移) => 工作表.列宽[列 + 偏移] ?? 默认列宽).reduce((和, 宽) => 和 + 宽, 0)}px`,
               height: `${Array.from({ length: 合并?.跨度行 ?? 1 }, (_, 偏移) => 隐藏行?.has(行 + 偏移) ? 0 : 工作表.行高[行 + 偏移] ?? 默认行高).reduce((和, 高) => 和 + 高, 0)}px`,
-              textAlign: 单元.格式.水平对齐 ?? 'left',
-              justifyContent: 单元.格式.水平对齐 === 'right' ? 'flex-end' : 单元.格式.水平对齐 === 'center' ? 'center' : 'flex-start',
+              textAlign: 单元.格式.水平对齐 ?? (单元.格式.对齐元数据?.horizontal === 'general' && typeof 单元.计算值 === 'number' ? 'right' : 'left'),
+              justifyContent: (单元.格式.水平对齐 === 'right' || !单元.格式.水平对齐 && 单元.格式.对齐元数据?.horizontal === 'general' && typeof 单元.计算值 === 'number') ? 'flex-end' : 单元.格式.水平对齐 === 'center' ? 'center' : 'flex-start',
               alignItems: 单元.格式.垂直对齐 === 'top' ? 'flex-start' : 单元.格式.垂直对齐 === 'bottom' ? 'flex-end' : 'center',
               fontFamily: 单元.格式.字体,
               fontSize: 单元.格式.字号 === undefined ? undefined : `${单元.格式.字号}px`,
@@ -284,7 +285,7 @@ const GridView = ({
                 },
                 onBlur: on提交编辑,
               })
-            : 单元.显示值
+            : React.createElement(RichCellText, { cell: 单元 })
         )
       )
     }

@@ -50,6 +50,8 @@
 .assistant-mobile-launcher.is-dragging { cursor: grabbing; box-shadow: 0 6px 22px rgb(30 75 170 / 38%); }
 .assistant-mobile-launcher:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
 .assistant-mobile-launcher:disabled { opacity: .5; }
+.assistant-desktop-launcher { background: linear-gradient(145deg, #8175ef, #5b50c5); }
+.assistant-desktop-launcher > svg { pointer-events: none; }
 .assistant-mobile-modal-wrap.ant-modal-wrap { display: block; overscroll-behavior: contain; }
 .assistant-mobile-modal-wrap .assistant-mobile-modal.ant-modal {
   --assistant-mobile-height: calc(var(--seal-viewport-height, 100vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px);

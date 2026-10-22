@@ -233,6 +233,7 @@ const EditorCanvas = ({
       React.createElement('div', {
         ref: 引用,
         className: 'wps-editor-canvas__content',
+        'data-seal-image-dropzone': true,
         contentEditable: editable,
         suppressContentEditableWarning: true,
         spellCheck: false,

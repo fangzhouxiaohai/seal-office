@@ -136,7 +136,7 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   }
   useEffect(() => {
     // 落在编辑区自己的投放区（幻灯片舞台等）里时，交给该区域处理，窗口级拖入不介入
-    const 交给局部 = (事件: DragEvent) => 在局部投放区(事件.target)
+    const 交给局部 = (事件: DragEvent) => 在局部投放区(事件.target, 事件.dataTransfer)
     const 进入 = (事件: DragEvent) => {
       if (!携带文件(事件.dataTransfer) || 交给局部(事件)) return
       拖入层级.current += 1

@@ -16,6 +16,7 @@ import {
   type Sheet,
 } from './model'
 import { type 数字格式 } from './numberFormat'
+import { 自适应列宽 } from './autoFitColumns'
 
 export interface 选区范围 {
   起点: 单元格位置
@@ -245,6 +246,10 @@ function 选区剪贴板内容(上下文: 表格命令上下文): { 地址列表
 }
 
 const 命令列表: 表格命令[] = [
+  {
+    id: 'sheet.autoFitColumns', label: '自适应列宽',
+    run: (上下文) => { 上下文.更新工作表(自适应列宽(上下文.工作表)); 上下文.notify('已按当前工作表内容调整列宽') },
+  },
   {
     id: 'edit.undo',
     label: '撤销',

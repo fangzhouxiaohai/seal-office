@@ -72,7 +72,7 @@ describe('HTML 导出', () => {
 
   it('生成表格结构并包含全部内容', () => {
     const html = 导出为Html表格(构造表(), '测试表')
-    expect((html.match(/<tr>/g) ?? []).length).toBe(3)
+    expect(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('tr')).toHaveLength(3)
     expect(html).toContain('张三')
     expect(html).toContain('2400')
   })
