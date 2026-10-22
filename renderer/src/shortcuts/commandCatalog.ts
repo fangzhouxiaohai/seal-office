@@ -536,6 +536,10 @@ export const commandCatalog = {
       "降序"
     ],
     [
+      "sheet.autoFitColumns",
+      "自适应列宽"
+    ],
+    [
       "data.textToColumns",
       "分列"
     ],

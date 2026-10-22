@@ -406,6 +406,7 @@ const 英文界面: Record<string, string> = {
   '清除内容': 'Clear Contents',
   '升序': 'Sort Ascending',
   '降序': 'Sort Descending',
+  '自适应列宽': 'AutoFit Column Width',
   '数据透视表': 'PivotTable',
   '跟随打印机': 'Use Printer Settings',
   '工作表选项': 'Sheet Options',

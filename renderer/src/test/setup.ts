@@ -4,6 +4,24 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
+// jsdom does not implement pointer capture. Preserve its per-element state so
+// userEvent clicks can exercise the launcher without unhandled API errors.
+// Real capture and dragging are separately checked in the Chromium UI harness.
+const capturedPointers = new WeakMap<Element, Set<number>>()
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = function (pointerId: number) {
+    const pointers = capturedPointers.get(this) ?? new Set<number>()
+    pointers.add(pointerId)
+    capturedPointers.set(this, pointers)
+  }
+  Element.prototype.hasPointerCapture = function (pointerId: number) {
+    return capturedPointers.get(this)?.has(pointerId) ?? false
+  }
+  Element.prototype.releasePointerCapture = function (pointerId: number) {
+    capturedPointers.get(this)?.delete(pointerId)
+  }
+}
+
 // 关闭 globals 后 Testing Library 无法自动注册清理钩子，
 // 若不显式清理，前一个用例的 DOM 会残留并造成重复匹配。
 afterEach(() => {
