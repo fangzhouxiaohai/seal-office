@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "suites": {
+    "renderer": {
+      "passed": true,
+      "tests": 2619,
+      "files": 283,
+      "skipped": 1,
+      "failed": 0,
+      "fullUnfilteredRun": true,
+      "logSha256": "c8b158f2b4972fe578e4f08c0949fcedc19c8f37b7b7d28c55a82e87504e294d"
+    },
+    "main": {
+      "passed": true,
+      "tests": 1089,
+      "files": 111,
+      "skipped": 0,
+      "failed": 0,
+      "fullUnfilteredRun": true,
+      "logSha256": "489bdc61aab4713e67a18d6a61595a207ba4b2124cf8270f16b5a3d1a984c4cf"
+    },
+    "server": {
+      "passed": true,
+      "tests": 46,
+      "failed": 0,
+      "logSha256": "7eba91958b3e5c5704ba64785451a896aecbf4686e73d4bacba38fb722f6f140"
+    },
+    "mobile": {
+      "passed": true,
+      "tests": 36,
+      "failed": 0,
+      "logSha256": "e9a683498108ebdafe1de83a35afa8409a8409e0991ad2e3243d5cef4906c766"
+    },
+    "packaging": {
+      "passed": true,
+      "tests": 11,
+      "failed": 0,
+      "logSha256": "528770e6aae22bf3675ad8df881c58aaf0394de4f0d838845e851cfe48e0a26a"
+    }
+  },
+  "testsPassed": 3801,
+  "failed": 0,
+  "conditionalUserSample": {
+    "passed": true,
+    "tests": 2,
+    "note": "The private-path sample case is skipped in portable full regression and explicitly executed separately with SEAL_XLS_SAMPLE. The other synthetic case is repeated.",
+    "logSha256": "31e7b91b07a0c056097f5dd4858099b3be85b080f2aa61c1d40d71d1ff507594"
+  },
+  "resolvedInitialFailures": [
+    "Decorative assistant logo hidden from duplicate accessible-brand query",
+    "Column autofit translation and configurable shortcut registration added",
+    "Rich-text HTML printing test aligned with validated margins",
+    "jsdom pointer-capture state stub added; real Chromium drag verified separately",
+    "Task queue test awaits the actual asynchronous guide-rejection message; all nine task-queue tests then pass, followed by final full regression"
+  ],
+  "unhandledErrors": 0
+}

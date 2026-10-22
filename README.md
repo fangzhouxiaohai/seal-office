@@ -8,9 +8,27 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码统一为 **2.1.1**，移动构建号 **20101**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码版本为 **2.1.2**，移动构建号 **20102**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
+
+## 2.1.2 桌面编辑与格式修复
+
+下载：[GitHub 2.1.2](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2) · [GitCode 2.1.2](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2)。
+
+| 桌面成品 | 文件 |
+| --- | --- |
+| Windows x64 安装版 | `seal-office-setup-2.1.2.exe` |
+| Windows x64 便携版 | `seal-office-2.1.2-portable.exe` |
+| Microsoft Store 上传包 | `seal-office-2.1.2-microsoft-store-x64.msix` |
+| Ubuntu amd64 | `seal-office-2.1.2-amd64.deb` |
+
+- 表格「开始 → 编辑」新增自适应列宽，按当前工作表内容与字体测量；支持撤销、重做，保存后保留。
+- 文字正文支持直接粘贴、拖入多张本机图片，验证图片实际内容并限制尺寸；支持撤销、重做和专属格式保存重开。
+- 桌面助手使用可拖动的圆形海豹悬浮球，记住位置并保持在窗口内，方向键也可调整。
+- XLS/XLSX 保留富文本分段、字体字符集和自定义页边距，正确识别默认对齐属性。用户提供的 BIFF 报名表经过真实导入、编辑、XLS 保存及重开回归，不再产生原来的五条提示。未知、不支持的其他对象仍会如实提示。
+
+本次发布桌面安装包；Android/Harmony 2.1.2 云打包源码的独立冻结记录保留在 [移动源码验收](docs/verification/v2.1.2/verification.json)，不把源码 ZIP 当作新的 APK/HAP。桌面测试、成品和视频范围见 [2.1.2 桌面验收](docs/verification/v2.1.2-desktop/README.md)。
 
 ## 2.1.1 修复版
 

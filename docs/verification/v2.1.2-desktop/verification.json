@@ -1,0 +1,234 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "recordedAt": "2026-10-22T19:56:30.115206+00:00",
+  "runtimeBuildCommit": "0de78b8240271f5f5fb376a0a34a066709f443f9",
+  "unitRegression": {
+    "passed": true,
+    "version": "2.1.2",
+    "suites": {
+      "renderer": {
+        "passed": true,
+        "tests": 2619,
+        "files": 283,
+        "skipped": 1,
+        "failed": 0,
+        "fullUnfilteredRun": true,
+        "logSha256": "c8b158f2b4972fe578e4f08c0949fcedc19c8f37b7b7d28c55a82e87504e294d"
+      },
+      "main": {
+        "passed": true,
+        "tests": 1089,
+        "files": 111,
+        "skipped": 0,
+        "failed": 0,
+        "fullUnfilteredRun": true,
+        "logSha256": "489bdc61aab4713e67a18d6a61595a207ba4b2124cf8270f16b5a3d1a984c4cf"
+      },
+      "server": {
+        "passed": true,
+        "tests": 46,
+        "failed": 0,
+        "logSha256": "7eba91958b3e5c5704ba64785451a896aecbf4686e73d4bacba38fb722f6f140"
+      },
+      "mobile": {
+        "passed": true,
+        "tests": 36,
+        "failed": 0,
+        "logSha256": "e9a683498108ebdafe1de83a35afa8409a8409e0991ad2e3243d5cef4906c766"
+      },
+      "packaging": {
+        "passed": true,
+        "tests": 11,
+        "failed": 0,
+        "logSha256": "528770e6aae22bf3675ad8df881c58aaf0394de4f0d838845e851cfe48e0a26a"
+      }
+    },
+    "testsPassed": 3801,
+    "failed": 0,
+    "conditionalUserSample": {
+      "passed": true,
+      "tests": 2,
+      "note": "The private-path sample case is skipped in portable full regression and explicitly executed separately with SEAL_XLS_SAMPLE. The other synthetic case is repeated.",
+      "logSha256": "31e7b91b07a0c056097f5dd4858099b3be85b080f2aa61c1d40d71d1ff507594"
+    },
+    "resolvedInitialFailures": [
+      "Decorative assistant logo hidden from duplicate accessible-brand query",
+      "Column autofit translation and configurable shortcut registration added",
+      "Rich-text HTML printing test aligned with validated margins",
+      "jsdom pointer-capture state stub added; real Chromium drag verified separately",
+      "Task queue test awaits the actual asynchronous guide-rejection message; all nine task-queue tests then pass, followed by final full regression"
+    ],
+    "unhandledErrors": 0
+  },
+  "typecheck": {
+    "passed": true,
+    "logSha256": "99991723dbf7eacdb5fc1dffc58ce1ce13eb020da8e3abecf7c9ecbd4047d9e7"
+  },
+  "mobileCheck": {
+    "passed": true,
+    "logSha256": "42951b85eb3190798e782e88e73ce99935495bcbe7d1acc52e20dfd82a16a711"
+  },
+  "windows": {
+    "passed": true,
+    "version": "2.1.2",
+    "isolation": "Fresh random user-data directories, sandbox registry; no real default-app settings changed.",
+    "unpacked": {
+      "passed": true,
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 21,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-unpacked-first.json"
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-unpacked-repeat.json"
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-unpacked-confirm.json"
+        }
+      ],
+      "checks": 64,
+      "allThreeLaunchesExitedNormally": true,
+      "logSha256": "b25fc3c01ca0610d438c4338132d2a28285d9e3b09bec6b50527f7f2969369b4"
+    },
+    "portable": {
+      "passed": true,
+      "phases": [
+        {
+          "phase": "first",
+          "checks": 21,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-portable-first.json"
+        },
+        {
+          "phase": "repeat",
+          "checks": 11,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-portable-repeat.json"
+        },
+        {
+          "phase": "confirm",
+          "checks": 32,
+          "passed": true,
+          "normalExitConfirmed": true,
+          "report": "windows-portable-confirm.json"
+        }
+      ],
+      "checks": 64,
+      "allThreeLaunchesExitedNormally": true,
+      "logSha256": "b131a829f1c99fc1b75cf74f58e836f5d6ace0eaf0f4102bd89a924d197d9a76"
+    },
+    "appAsarSha256": "3f9b785ee9dfc842050165320e8de5e375e8781d752ad442309c4e44e28b0388",
+    "portableSha256": "fb5c429a680a2af1f97832f722470c2825acf834bbdc57b15b66e83a4f884ee2",
+    "portableWaitBounds": {
+      "startupSeconds": 600,
+      "cleanupSeconds": 120,
+      "functionalAssertionsUnchanged": true,
+      "scope": "Private test wrapper; not a daily editing speed benchmark."
+    }
+  },
+  "packagedCodecs": {
+    "passed": true,
+    "checks": 12
+  },
+  "webBrowser": {
+    "passed": true,
+    "checks": 41,
+    "groups": 6,
+    "deployed": false
+  },
+  "linux": {
+    "passed": true,
+    "version": "2.1.2",
+    "package": "seal-office-2.1.2-amd64.deb",
+    "bytes": 158796308,
+    "sha256": "4b0d86e1a04a7c79886cbfbb971102ccb2ad2acc416819552c42ad479c3da72a",
+    "architecture": "amd64",
+    "buildCommit": "0de78b8240271f5f5fb376a0a34a066709f443f9",
+    "workflow": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/39843622387",
+    "sameRuntimeAndBuildInputsAsCurrentSource": true,
+    "runtimeAndBuildInputsCompared": 529,
+    "installationTests": {
+      "ubuntu-22.04": {
+        "passed": true,
+        "checks": 77,
+        "sandboxBypassed": false,
+        "report": "ubuntu-22.04.json"
+      },
+      "ubuntu-24.04": {
+        "passed": true,
+        "checks": 77,
+        "sandboxBypassed": false,
+        "report": "ubuntu-24.04.json"
+      }
+    },
+    "sandboxBypassed": false,
+    "note": "The released bytes are the native CI-built DEB installed and tested on both Ubuntu versions."
+  },
+  "msix": {
+    "passed": true,
+    "signed": false,
+    "installationTested": false
+  },
+  "nsis": {
+    "passed": true,
+    "installerExecuted": false,
+    "allPayloadFilesCompared": true
+  },
+  "videos": [
+    {
+      "platform": "pc",
+      "file": "seal-office-2.1.2-pc-intro-1080p.mp4",
+      "bytes": 4418352,
+      "sha256": "eb5a760d9113b48d368864b64bb05ba134e247330d9ddea5f0f99757cd5c5a35",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "durationSeconds": 113.33333333333333,
+      "videoAndAudioFullyDecoded": true,
+      "narration": "Microsoft Huihui Desktop",
+      "integratedLufs": -16.63,
+      "truePeakDb": -1.38,
+      "qrUrl": "https://seal.xingmasoft.com/office/",
+      "subtitles": 8,
+      "scenes": 8
+    },
+    {
+      "platform": "android",
+      "file": "seal-office-2.1.2-android-intro-1080p.mp4",
+      "bytes": 4795700,
+      "sha256": "289aa79538b222522fe80d0aaf54f0684f54836df8ae7779c2fb2b78005ce578",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "durationSeconds": 114.73333333333333,
+      "videoAndAudioFullyDecoded": true,
+      "narration": "Microsoft Huihui Desktop",
+      "integratedLufs": -16.57,
+      "truePeakDb": -1.2,
+      "qrUrl": "https://seal.xingmasoft.com/office/",
+      "subtitles": 8,
+      "scenes": 8
+    }
+  ],
+  "mobileNativePackagesGenerated": false,
+  "userSourceFilesPublished": false,
+  "firstBrowserAttempt": {
+    "passed": false,
+    "cause": "Test attempted desktop New button before asynchronous responsive layout became visible.",
+    "repair": "Wait for actual visible button within existing bounded wait; full production browser groups rerun."
+  }
+}

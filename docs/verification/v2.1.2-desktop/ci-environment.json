@@ -1,0 +1,10 @@
+{
+  "version": "2.1.2",
+  "firstCandidateRun": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/39840114668",
+  "firstCandidateCommit": "54db545ef53baa31e83ca4ae387166f2699b4ca5",
+  "windowsBuiltFromCommit": "54db545ef53baa31e83ca4ae387166f2699b4ca5",
+  "firstUbuntu22Passed": true,
+  "firstUbuntu24": "Timed out at 20-minute job limit while downloading LibreOffice from azure.archive.ubuntu.com; application runtime verification had not started.",
+  "remediation": "Only CI Ubuntu source URLs changed to official archive.ubuntu.com over HTTPS, preserving signed repositories and suites; bounded acquisition retries/timeouts added. Application runtime code unchanged.",
+  "rerunByNewCommit": "0de78b8240271f5f5fb376a0a34a066709f443f9"
+}

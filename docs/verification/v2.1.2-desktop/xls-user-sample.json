@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "sourceBytes": 20480,
+  "sourceSha256": "4e22ec5ab2d3057c62a82a8b5f315ce93b4be7b083bd88c9f4a167fddf46cab8",
+  "sourceModified": false,
+  "steps": [
+    "Original BIFF XLS -> bundled native conversion -> XLSX codec -> actual renderer Sheet model",
+    "Edit B5 with Unicode text -> XLSX export -> native XLS save -> native conversion -> reopen",
+    "Verify zero fidelity warnings, both sheet names, blank sheet, merged ranges, custom page margins, every unchanged nonempty cell and its rich-text runs, plus the modified B5 cell"
+  ],
+  "normalization": "The XLS conversion engine normalizes legacy charset hints. Unicode text and visible font properties are preserved; XLSX charset preservation is separately asserted.",
+  "regression": "SEAL_XLS_SAMPLE=<local path> vitest run src/sheet/richTextRoundTrip.test.tsx --threads=false",
+  "testResult": "2 passed",
+  "sourceUpload": "User sample is not included in the repository or release.",
+  "sourceDescription": "User-supplied registration workbook (BIFF XLS); original name and contents are not published."
+}

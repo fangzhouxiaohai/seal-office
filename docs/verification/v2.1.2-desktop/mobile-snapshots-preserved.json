@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "scope": "Existing separately verified 2.1.2 source snapshots preserved; not rebuilt or published as new native apps by this desktop release.",
+  "archives": [
+    {
+      "platform": "android",
+      "name": "seal-office-2.1.2-android-cloud-source.zip",
+      "bytes": 38528030,
+      "sha256": "a421d666d8e103f76b3c1db9f5847ab6afabfde382e1b654055b16d71c95b67b",
+      "unchanged": true,
+      "generatedNativePackage": false
+    },
+    {
+      "platform": "harmony",
+      "name": "seal-office-2.1.2-harmony-cloud-source.zip",
+      "bytes": 38528036,
+      "sha256": "adea85409012998c45eeda10890a93e6c776984aa58bf9d84bbda407e5a62dae",
+      "unchanged": true,
+      "generatedNativePackage": false
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "appAsarSha256": "3f9b785ee9dfc842050165320e8de5e375e8781d752ad442309c4e44e28b0388",
+  "checkedIntegrityFiles": 139,
+  "matchesFinalWorkspaceBuild": true,
+  "fileCount": 26343,
+  "testFixturesAndWpsBinariesExcluded": true
+}

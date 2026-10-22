@@ -1,0 +1,12 @@
+{
+  "version": "2.1.2",
+  "passed": true,
+  "checks": [
+    "paste image, undo/redo, native bytes reopen",
+    "drop image, undo/redo, native bytes reopen",
+    "desktop circular seal launcher: real mouse drag, persisted position, no accidental click",
+    "auto-fit actual ribbon, Chinese/rich text measured, empty columns retained, undo/redo, XLSX reopen"
+  ],
+  "scope": "isolated Chromium source harness; native image decoding and real mouse events",
+  "at": "2026-10-22T19:28:32.370Z"
+}

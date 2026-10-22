@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "package": "seal-office-2.1.2-amd64.deb",
+  "bytes": 158796308,
+  "sha256": "4b0d86e1a04a7c79886cbfbb971102ccb2ad2acc416819552c42ad479c3da72a",
+  "architecture": "amd64",
+  "buildCommit": "0de78b8240271f5f5fb376a0a34a066709f443f9",
+  "workflow": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/39843622387",
+  "sameRuntimeAndBuildInputsAsCurrentSource": true,
+  "runtimeAndBuildInputsCompared": 529,
+  "installationTests": {
+    "ubuntu-22.04": {
+      "passed": true,
+      "checks": 77,
+      "sandboxBypassed": false,
+      "report": "ubuntu-22.04.json"
+    },
+    "ubuntu-24.04": {
+      "passed": true,
+      "checks": 77,
+      "sandboxBypassed": false,
+      "report": "ubuntu-24.04.json"
+    }
+  },
+  "sandboxBypassed": false,
+  "note": "The released bytes are the native CI-built DEB installed and tested on both Ubuntu versions."
+}

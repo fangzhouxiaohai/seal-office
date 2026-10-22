@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "isolation": "Fresh random user-data directories, sandbox registry; no real default-app settings changed.",
+  "unpacked": {
+    "passed": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 21,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-unpacked-first.json"
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-unpacked-repeat.json"
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-unpacked-confirm.json"
+      }
+    ],
+    "checks": 64,
+    "allThreeLaunchesExitedNormally": true,
+    "logSha256": "b25fc3c01ca0610d438c4338132d2a28285d9e3b09bec6b50527f7f2969369b4"
+  },
+  "portable": {
+    "passed": true,
+    "phases": [
+      {
+        "phase": "first",
+        "checks": 21,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-portable-first.json"
+      },
+      {
+        "phase": "repeat",
+        "checks": 11,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-portable-repeat.json"
+      },
+      {
+        "phase": "confirm",
+        "checks": 32,
+        "passed": true,
+        "normalExitConfirmed": true,
+        "report": "windows-portable-confirm.json"
+      }
+    ],
+    "checks": 64,
+    "allThreeLaunchesExitedNormally": true,
+    "logSha256": "b131a829f1c99fc1b75cf74f58e836f5d6ace0eaf0f4102bd89a924d197d9a76"
+  },
+  "appAsarSha256": "3f9b785ee9dfc842050165320e8de5e375e8781d752ad442309c4e44e28b0388",
+  "portableSha256": "fb5c429a680a2af1f97832f722470c2825acf834bbdc57b15b66e83a4f884ee2",
+  "portableWaitBounds": {
+    "startupSeconds": 600,
+    "cleanupSeconds": 120,
+    "functionalAssertionsUnchanged": true,
+    "scope": "Private test wrapper; not a daily editing speed benchmark."
+  }
+}
