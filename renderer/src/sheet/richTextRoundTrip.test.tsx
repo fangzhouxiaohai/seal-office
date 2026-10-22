@@ -53,7 +53,11 @@ it.skipIf(!process.env.SEAL_XLS_SAMPLE)('用户原始 XLS 经本机转换、实�
   const sheets=load(imported)
   // The BIFF converter canonicalizes legacy charset hints; compare Unicode text
   // and visible font properties. XLSX charset byte preservation is tested above.
-  const visible=(s:any)=>({name:s.name,page:s.页面设置,merges:s.合并区域,rich:s.单元格.A2?.富文本?.map((run:any)=>({文本:run.文本,格式:Object.fromEntries(Object.entries(run.格式??{}).filter(([key])=>key!=='字体元数据'))}))})
+  const visible=(s:any)=>({name:s.name,page:s.页面设置,merges:s.合并区域,
+    cells:Object.fromEntries(Object.entries(s.单元格).filter(([address,cell]:any)=>address!=='B5'&&cell.原始值!=='').map(([address,cell]:any)=>[address,{
+      value:cell.原始值,display:cell.显示值,
+      rich:cell.富文本?.map((run:any)=>({文本:run.文本,格式:Object.fromEntries(Object.entries(run.格式??{}).filter(([key])=>key!=='字体元数据'))})),
+    }]))})
   const before=sheets.map(visible)
   sheets[0]=写入单元格(sheets[0],'B5','回归测试𠮷')
   const saved=await 转换文档(await 写入xlsx(导出为Xlsx(sheets)),'xlsx','xls','table')

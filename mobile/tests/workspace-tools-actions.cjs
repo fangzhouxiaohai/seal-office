@@ -2,7 +2,13 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 module.exports = async function workspaceTools({ win, evaluate, output, checks = [] }) {
   const pause = () => new Promise(resolve => setTimeout(resolve, 120))
   const until = async (code,label) => { for(let i=0;i<160;i++){if(await evaluate(code))return;await pause()}throw new Error(label) }
-  const click = async (label,scope='document') => { await evaluate(`(()=>{const root=${scope},button=[...root.querySelectorAll('button')].find(b=>b.getClientRects().length&&b.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g,''))});if(!button)throw new Error('Missing '+${JSON.stringify(label)});button.click()})()`);await pause() }
+  const click = async (label,scope='document') => {
+    const target = `(()=>{const root=${scope};return root&&[...root.querySelectorAll('button')].find(b=>b.getClientRects().length&&b.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g,''))});})()`
+    // Native resize and React's responsive layout update are asynchronous.
+    // Wait for the real visible control instead of assuming 120 ms is enough.
+    await until(`!!${target}`, '可见按钮：'+label)
+    await evaluate(`${target}.click()`);await pause()
+  }
   const navigate = async key => { await evaluate(`document.querySelector('[aria-label="服务"]').click()`);await pause();await evaluate(`document.querySelector('[data-nav-key="${key}"]').click()`);await until(`!!document.querySelector('[data-tool="${key}"]')`,key+'实际页面') }
   const type = async (selector,value) => { await evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)});if(!input)throw new Error('Missing input');const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))})()`);await pause() }
   await evaluate(`window.__toolsQa={save:window.electronAPI.saveToFile,write:window.electronAPI.office.writePptx,xlsx:window.electronAPI.office.writeXlsx,files:[],ppt:null,table:null};window.electronAPI.saveToFile=async(...args)=>{const r=await window.__toolsQa.save.apply(window.electronAPI,args);window.__toolsQa.files.push({path:args[0],result:r});return r};window.electronAPI.office.writePptx=async(...args)=>{const r=await window.__toolsQa.write(...args);window.__toolsQa.ppt=r;return r};window.electronAPI.office.writeXlsx=async(...args)=>{const r=await window.__toolsQa.xlsx(...args);window.__toolsQa.table=r;return r};true`)

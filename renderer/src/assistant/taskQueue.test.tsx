@@ -89,7 +89,7 @@ describe('助手多消息队列和引导', () => {
     const e = 环境(); e.guide.mockResolvedValue({ 成功: false, 错误: '正在收尾' })
     await e.打开(); await e.发送('当前需求'); await waitFor(() => expect(e.chat).toHaveBeenCalledTimes(1))
     await e.发送('后续需求'); await userEvent.click(screen.getByRole('button', { name: '引导当前任务：后续需求' }))
-    expect(screen.getByText('正在收尾；需求仍保留在队列中')).toBeInTheDocument()
+    expect(await screen.findByText('正在收尾；需求仍保留在队列中')).toBeInTheDocument()
     await e.返回(0, '当前完成'); await waitFor(() => expect(e.chat).toHaveBeenCalledTimes(2)); await e.返回(1, '后续完成')
   })
   it('已接受的引导不会被后续入队清除，主任务失败后仍能重试', async () => {

@@ -63,8 +63,23 @@ jobs:
           path: ${{ env.RELEASE_DIR }}
       - name: Install package and offline conversion dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y "./$RELEASE_DIR"/*.deb xvfb desktop-file-utils libglib2.0-bin
+          # The runner's Azure mirror can throttle large LibreOffice downloads
+          # below 100 KiB/s. Keep Ubuntu's signing keys and suites, changing only
+          # that mirror to the official archive; support both source formats.
+          sudo python3 - <<'PY'
+          from pathlib import Path
+          sources = [Path('/etc/apt/sources.list')]
+          sources += list(Path('/etc/apt/sources.list.d').glob('*.list'))
+          sources += list(Path('/etc/apt/sources.list.d').glob('*.sources'))
+          for source in sources:
+              if source.is_file():
+                  before = source.read_text()
+                  after = before.replace('http://azure.archive.ubuntu.com/ubuntu', 'https://archive.ubuntu.com/ubuntu').replace('https://azure.archive.ubuntu.com/ubuntu', 'https://archive.ubuntu.com/ubuntu')
+                  if after != before:
+                      source.write_text(after)
+          PY
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y "./$RELEASE_DIR"/*.deb xvfb desktop-file-utils libglib2.0-bin
           desktop-file-validate /usr/share/applications/sealoffice.desktop
           dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' seal-office libreoffice-writer libreoffice-calc libreoffice-impress
       - name: Verify installed application, files and rendering
