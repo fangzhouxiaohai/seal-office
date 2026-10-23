@@ -1,8 +1,12 @@
 const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict')
 const project = path.resolve(__dirname, '../..'), output = path.join(project, '.upgrade-private/mobile-verification')
-const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
+const sourceIndex = process.argv.indexOf('--source')
+if (sourceIndex >= 0) assert.ok(process.argv[sourceIndex + 1] && !process.argv[sourceIndex + 1].startsWith('--'), '--source requires a frozen editor directory')
+const webRoot = sourceIndex >= 0 ? path.resolve(process.argv[sourceIndex + 1]) : path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
 const version = require('../../package.json').version
+const nativePlatform = JSON.parse(fs.readFileSync(path.join(webRoot, 'build-info.json'), 'utf8')).platform
+assert.ok(localFile ? ['android','harmony'].includes(nativePlatform) : nativePlatform === 'web')
 app.setPath('userData', path.join(output, 'browser-profile-' + (localFile ? 'file' : 'web') + '-' + require('node:crypto').randomUUID())); app.disableHardwareAcceleration()
 const contentTypes = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.otf': 'font/otf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
@@ -54,7 +58,7 @@ app.whenReady().then(async () => {
     checks.push('生产构建可在无 Electron preload 的浏览器环境启动')
     if (localFile) {
       // 字体与导出使用确定性的宿主模拟；页面和编辑器本身从 file:// 加载。
-      await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+      await evaluate(`window.sealNative={token:'offline-test',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     }
     const roundtrip = await evaluate(`(async () => {
       const api=window.electronAPI;
@@ -83,7 +87,7 @@ app.whenReady().then(async () => {
     assert.equal(formulaSource.B4.原始值, '=_xlfn.SEAL_CUSTOM(B2)'); assert.equal(formulaSource.B4.结果, 321)
     assert.match(roundtrip.sheet.html, /data-formula="=B2\*2"/)
     checks.push('生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空')
-    const nativeSave = await evaluate(`(async()=>{const api=window.electronAPI;const filename='/seal/documents/'+crypto.randomUUID()+'/save-scope.txt';const oldNative=window.sealNative,oldUni=window.uni,actions=[];try{window.sealNative={token:'synthetic-save',platform:'android'};window.uni={webView:{postMessage:({data})=>{actions.push(data.action);window.sealReceiveNative({id:data.id,type:'saved'})}}};const saved=await api.saveToFile(filename,'手机本地保存验收','文本');const after=await api.readFile(filename);const exported=await api.revealInFolder(filename);return {saved,after,actions,exported}}finally{window.sealNative=oldNative;window.uni=oldUni}})()`)
+    const nativeSave = await evaluate(`(async()=>{const api=window.electronAPI;const filename='/seal/documents/'+crypto.randomUUID()+'/save-scope.txt';const oldNative=window.sealNative,oldUni=window.uni,actions=[];try{window.sealNative={token:'synthetic-save',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:({data})=>{actions.push(data.action);window.sealReceiveNative({id:data.id,type:'saved'})}}};const saved=await api.saveToFile(filename,'手机本地保存验收','文本');const after=await api.readFile(filename);const exported=await api.revealInFolder(filename);return {saved,after,actions,exported}}finally{window.sealNative=oldNative;window.uni=oldUni}})()`)
     assert.equal(nativeSave.saved.成功,true); assert.equal(nativeSave.after.内容,'手机本地保存验收'); assert.equal(nativeSave.exported.成功,true); assert.deepEqual(nativeSave.actions,['save']); checks.push('原生保存只写本地文档空间；显式导出才调用系统分享')
     const data = await evaluate(`(async()=>{const api=window.electronAPI;const result=await api.printPreview('<h1>中文打印验收</h1><p>海豹办公移动与网页</p>','html');if(!result.成功)throw new Error(result.错误);const rotated=await api.pdf.rotate(result.数据,[1],90);const filename=await api.showSaveDialog('PDF阅读验收.pdf');await api.saveToFile(filename,result.数据,'二进制');const canvas=document.createElement('canvas');canvas.width=200;canvas.height=100;const ctx=canvas.getContext('2d');ctx.fillStyle='#ff0000';ctx.fillRect(0,0,100,100);ctx.fillStyle='#0000ff';ctx.fillRect(100,0,100,100);const imagePdf=await api.printPreview('<p>旋转翻转图片导出验收</p><img src="'+canvas.toDataURL('image/png')+'" width="240" height="120" style="width:240px;height:120px;transform:rotate(90deg) scale(-1, 1)">','html');if(!imagePdf.成功)throw new Error(imagePdf.错误);return {result,rotated,filename,imagePdf}})()`)
     assert.ok(data.result.成功); assert.ok(data.rotated.成功, JSON.stringify(data.rotated)); checks.push('中文 PDF 生成与页面旋转')
@@ -217,8 +221,8 @@ app.whenReady().then(async () => {
     }
     checks.push('360/390/820/1280px 窄屏、平板与 PC 布局')
     assert.equal(errors.filter(message => !/ERR_ABORTED|favicon/.test(message)).length, 0, errors.join('\n'))
-    fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: true, version, checks, pptxAliasShape, pptEditingSave, errors, scheme:localFile?'file':'http' }, null, 2))
-    console.log(JSON.stringify({ passed: true, version, checks, pptxAliasShape, pptEditingSave, output }, null, 2)); app.exit(0)
+    fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: true, version, platform: nativePlatform, checks, pptxAliasShape, pptEditingSave, errors, scheme:localFile?'file':'http' }, null, 2))
+    console.log(JSON.stringify({ passed: true, version, platform: nativePlatform, checks, pptxAliasShape, pptEditingSave, output }, null, 2)); app.exit(0)
   } catch (error) { console.error(error); fs.writeFileSync(path.join(output, localFile?'file-result.json':'result.json'), JSON.stringify({ passed: false, version, checks, pptxAliasShape, pptEditingSave, errors, error: error.stack }, null, 2)); app.exit(1) }
   finally { server.close(); win.destroy() }
 })

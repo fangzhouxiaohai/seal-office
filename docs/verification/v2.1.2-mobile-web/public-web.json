@@ -1,0 +1,135 @@
+{
+  "passed": true,
+  "release": "2.1.2-web-20261023-140638",
+  "directory": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.1.2-web-20261023-140638",
+  "backup": "/root/seal-web-deploy/2.1.2-web-20261023-140638",
+  "previousWeb": "/www/wwwroot/seal.xingmasoft.com/web-releases/2.1.1-web-20261021-202126",
+  "backendPointerUnchanged": true,
+  "adminUnchanged": true,
+  "unauthorizedGateway": 401,
+  "assetCount": 38,
+  "nginxHash": "759df4a7652b4badb3fe35ac2bd7d4efea48b4c9ab8b23b8454ce6823a193e2a",
+  "completedAt": "2026-10-23T06:20:04.174Z",
+  "browserCheck": "passed public browser acceptance",
+  "browserAcceptance": {
+    "passed": true,
+    "version": "2.1.2",
+    "group": "all",
+    "origin": "https://seal.xingmasoft.com/office/",
+    "checks": [
+      "公开同域API diagramRealtime/realtime/collaboration/accountConversion能力正确；AI身份/共享/设备/标签/团队/转换及共享/团队实时快照匿名请求均401；未创建账号或房间",
+      "真实UI新建文字、输入中文/Unicode、Ctrl+S写本机文件并按SLDOC/DOCX实际格式读回",
+      "严格CSP下真实表格输入ROUND公式计算为1.24，XLSX公式与缓存真实往返保留",
+      "同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层",
+      "1280px真实四协作入口、登录提示和无横向溢出",
+      "390px真实四协作入口、登录提示和无横向溢出",
+      "360px真实四协作入口、登录提示和无横向溢出",
+      "九页模板真实摄影内嵌且全部加载，使用模板后可编辑画布恢复图片，无外链图片依赖",
+      "1280px脑图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出",
+      "390px流程图真实项目列表→连续新建两张图→重命名→按ID打开→页面重载保留，CSP下缩略图加载且无横向溢出"
+    ],
+    "apiCapabilities": {
+      "version": 1,
+      "collaboration": 1,
+      "realtime": 1,
+      "diagramRealtime": 1,
+      "accountConversion": 1,
+      "passwordAuth": 1,
+      "accountDeletion": 1,
+      "aiIdentity": 1,
+      "quota": 300000000,
+      "chunkSize": 1048576,
+      "sms": true,
+      "encryption": "AES-256-GCM",
+      "agreementVersion": "2026-10-08"
+    },
+    "anonymousStatuses": {
+      "ai/identity": 401,
+      "conversion/capabilities": 401,
+      "shares": 401,
+      "devices": 401,
+      "tags": 401,
+      "teams": 401,
+      "realtime/node/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/share/00000000-0000-4000-8000-000000000001/updates?after=0&initial=1": 401,
+      "realtime/team/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/updates?after=0&initial=1": 401
+    },
+    "template": {
+      "pages": 9,
+      "images": [
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        },
+        {
+          "valid": true,
+          "inline": true
+        }
+      ]
+    },
+    "projectLists": [
+      {
+        "type": "脑图",
+        "width": 1280,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      },
+      {
+        "type": "流程图",
+        "width": 390,
+        "projects": 2,
+        "independentIds": true,
+        "reloaded": true,
+        "renamed": true,
+        "previewImagesDecoded": true,
+        "unobscuredNavigation": true
+      }
+    ],
+    "errors": [],
+    "requestCount": 63,
+    "externalRequests": 0,
+    "productionAccountOperations": 0,
+    "pdfWorker": true,
+    "allGroupsCompleted": true,
+    "processWatchdogMs": 240000,
+    "mainJsSha256": "b4282ef6d9aea9f7c3e9196b91de2df30e5fa6155bebf2db9da1ea908702fd34",
+    "groups": [
+      {
+        "name": "documents",
+        "passed": true,
+        "checks": 7
+      },
+      {
+        "name": "templates",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "projects",
+        "passed": true,
+        "checks": 3
+      }
+    ]
+  },
+  "serverHealthPhaseBrowserStatus": "pending public browser acceptance"
+}

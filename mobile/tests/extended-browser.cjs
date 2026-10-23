@@ -2,8 +2,12 @@ const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict')
 const project = path.resolve(__dirname, '../..'), output = path.join(project, '.upgrade-private/mobile-verification')
 const group = process.argv.find(arg => arg.startsWith('--group='))?.slice(8)
-assert.ok(['reading', 'editor', 'workspace', 'diagram', 'assistant'].includes(group))
-const webRoot = path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
+assert.ok(['reading', 'editor', 'workspace', 'diagram', 'assistant', 'format-editing'].includes(group))
+const sourceIndex = process.argv.indexOf('--source')
+if (sourceIndex >= 0) assert.ok(process.argv[sourceIndex + 1] && !process.argv[sourceIndex + 1].startsWith('--'), '--source requires a frozen editor directory')
+const webRoot = sourceIndex >= 0 ? path.resolve(process.argv[sourceIndex + 1]) : path.resolve(__dirname, process.argv.includes('--web') ? '../unpackage/web' : '../static/office'), localFile = process.argv.includes('--file')
+const nativePlatform = JSON.parse(fs.readFileSync(path.join(webRoot, 'build-info.json'), 'utf8')).platform
+assert.ok(localFile ? ['android','harmony'].includes(nativePlatform) : nativePlatform === 'web')
 app.setPath('userData', path.join(output, `browser-profile-${group}-${require('node:crypto').randomUUID()}`)); app.disableHardwareAcceleration()
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.otf': 'font/otf', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 app.whenReady().then(async () => {
@@ -32,13 +36,23 @@ app.whenReady().then(async () => {
   win.webContents.on('console-message', (_, level, message) => { if (level >= 3) errors.push(message) })
   win.webContents.on('will-prevent-unload', event => event.preventDefault())
   win.webContents.session.on('will-download', (_, item) => item.cancel())
-  const evaluate = async code => { const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await (0,eval)(${JSON.stringify(code)})}}catch(error){return {error:error.stack || String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value }
+  const evaluate = async code => {
+    if (process.argv.includes('--public')) {
+      // Evaluate test expressions through the debugger, keeping production CSP
+      // intact. Calling page eval() would itself require unsafe-eval.
+      if (!win.webContents.debugger.isAttached()) win.webContents.debugger.attach('1.3')
+      const result = await win.webContents.debugger.sendCommand('Runtime.evaluate',{expression:code,awaitPromise:true,returnByValue:true,userGesture:true,allowUnsafeEvalBlockedByCSP:false})
+      if(result.exceptionDetails) throw Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text)
+      return result.result.value
+    }
+    const result = await win.webContents.executeJavaScript(`(async()=>{try{return {value:await (0,eval)(${JSON.stringify(code)})}}catch(error){return {error:error.stack || String(error)}}})()`, true); if (result.error) throw new Error(result.error); return result.value
+  }
   const until = async (code, label, attempts=120) => { for (let i = 0; i < attempts; i++) { if (await evaluate(code)) return; await new Promise(resolve => setTimeout(resolve, 100)) }; throw Error(label) }
   try {
-    if (localFile) await win.loadFile(path.join(webRoot, 'index.html')); else await win.loadURL(origin + '/')
+    if (localFile) await win.loadFile(path.join(webRoot, 'index.html')); else await win.loadURL(process.argv.includes('--public') ? 'https://seal.xingmasoft.com/office/' : origin + '/')
     console.log(JSON.stringify({stage:'page-loaded',group,localFile}))
     await until(`!!document.querySelector('.wps-app')`, '生产应用必须挂载',600)
-    if (localFile) await evaluate(`window.sealNative={token:'offline-test',platform:'android'};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+    if (localFile) await evaluate(`window.sealNative={token:'offline-test',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     if (group === 'reading') await require('./reading-pages-actions.cjs')({ win, evaluate, output, checks })
     if (group === 'editor') {
       await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
@@ -50,9 +64,10 @@ app.whenReady().then(async () => {
     if (group === 'workspace') await require('./workspace-tools-actions.cjs')({ win, evaluate, output, checks })
     if (group === 'diagram') await require('./diagram-browser-actions.cjs')({ win, evaluate, output, checks })
     if (group === 'assistant') await require('./assistant-browser-actions.cjs')({ win, evaluate, output, checks })
+    if (group === 'format-editing') await require('./format-editing-actions.cjs')({ win, evaluate, output, checks })
     assert(checks.length > 0)
     assert.equal(errors.filter(message => !/ERR_ABORTED|favicon/.test(message)).length, 0, errors.join('\n'))
-    const result = { passed: true, group, version: require('../../package.json').version, checks, errors, scheme: localFile ? 'file' : 'http' }
+    const result = { passed: true, group, platform: nativePlatform, version: require('../../package.json').version, checks, errors, scheme: localFile ? 'file' : 'http', ...(process.argv.includes('--public') ? {origin:'https://seal.xingmasoft.com/office/',productionAccountOperations:0} : {}) }
     fs.writeFileSync(path.join(output, `${localFile ? 'file' : 'http'}-${group}-result.json`), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result)); app.exit(0)
   } catch (error) { console.error(error); const diagnostic=await evaluate(`({body:document.body.innerText,ready:document.readyState,api:!!window.electronAPI,url:location.href})`).catch(()=>null);fs.writeFileSync(path.join(output, `${localFile ? 'file' : 'http'}-${group}-result.json`), JSON.stringify({ passed: false, group, errors, checks, diagnostic,error: error.stack }, null, 2)); app.exit(1) }
   finally { server.close(); win.destroy() }

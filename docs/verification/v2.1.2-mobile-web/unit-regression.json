@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "version": "2.1.2",
+  "fullRegression": {
+    "renderer": {
+      "files": 283,
+      "passed": 2619,
+      "skipped": 1
+    },
+    "main": {
+      "files": 111,
+      "passed": 1089
+    },
+    "packaging": {
+      "passed": 11
+    },
+    "logSha256": "f9c1c7c072147741af73ea4ad635f1b489e96fe00babd236a0f4d8ef2e3c7503"
+  },
+  "failed": 0,
+  "unhandledErrors": 0,
+  "mobile": {
+    "passed": 38,
+    "logSha256": "fa099f690ecb59c74848d89314b66aadf71e2ca110ad58ff0f9e5f42edfa3cfe",
+    "conditionalSkipped": 1
+  },
+  "server": {
+    "passed": 46,
+    "logSha256": "ff84d5cda2fdd28a7e09ccfa8e86a1bb2722e70ad9203569c71f22e5c40f49e0",
+    "conditionalSkipped": 0
+  },
+  "regularPassed": 3803,
+  "privateSample": {
+    "mobileAdapterPassed": 1,
+    "rendererRoundTripPassed": 2,
+    "logsSha256": [
+      "2e9914d221b7c4dbbd5d7202f74c021bbae51f8320185737de9aec27cd0f89e9",
+      "eb900d7ab02bf4953f58e06613f90598d347a3a3c680b8181173925987a0cd29"
+    ],
+    "sourceUnmodified": true,
+    "uploaded": false
+  }
+}

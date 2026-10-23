@@ -3,7 +3,12 @@ const {app,BrowserWindow,net}=require('electron'),fs=require('node:fs'),path=req
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version,config=require('../../docs/promo/current-storyboard.json'),output=path.join(root,'release/promo'),work=path.join(output,'work-'+version)
 app.setPath('userData',path.join(work,'profile-'+process.pid));app.disableHardwareAcceleration();if(!global.fetch)global.fetch=net.fetch.bind(net)
 app.on('window-all-closed',()=>{})
-const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms)),sha=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex'),mobileRoot=path.join(root,'mobile/unpackage/cloud-ready',version,fs.existsSync(path.join(root,'mobile/unpackage/cloud-ready',version,'android-verified'))?'android-verified':'android','static/office')
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms)),sha=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+const snapshotsRoot=fs.realpathSync(path.join(root,'mobile/unpackage/cloud-ready',version))
+const mobileRoot=fs.realpathSync(process.env.SEAL_PROMO_ANDROID_ROOT||path.join(snapshotsRoot,fs.existsSync(path.join(snapshotsRoot,'android-verified'))?'android-verified':'android','static/office'))
+assert(mobileRoot.startsWith(snapshotsRoot+path.sep),'Promo source must be a frozen snapshot for the current version')
+const mobileInfo=JSON.parse(fs.readFileSync(path.join(mobileRoot,'build-info.json'),'utf8'))
+assert.equal(mobileInfo.platform,'android');assert.equal(mobileInfo.desktopVersion,version)
 app.whenReady().then(async()=>{let win,server;const captures=[];try{
 fs.mkdirSync(work,{recursive:true})
 server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost'),mobile=url.pathname.startsWith('/android/'),base=mobile?mobileRoot:path.join(root,'mobile/unpackage/web'),filename=path.resolve(base,'.'+decodeURIComponent(url.pathname).replace(/^\/(?:android|pc)\//,'/').replace(/\/$/,'/index.html'));if(url.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}if(!filename.startsWith(base+path.sep)||!fs.existsSync(filename)||!fs.statSync(filename).isFile()){res.writeHead(404);res.end();return}res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml','.ttf':'font/ttf'})[path.extname(filename)]||'application/octet-stream'});fs.createReadStream(filename).pipe(res)})

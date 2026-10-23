@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import { createRequire } from 'node:module'
 import { archiveArtifact } from './archive-artifact.mjs'
 import { inspectPdfFonts } from './pdf-font-resources.mjs'
+import { selectEditorSource } from './editor-source.mjs'
 
 const run = promisify(execFile), require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
@@ -29,7 +30,7 @@ function elfLoads(bytes) {
 
 async function main() {
   const args = process.argv.slice(2), filename = args[0]
-  if (!filename || filename.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:apk -- <APK路径> [--device <ADB序列号>] [--require-current] [--archive <归档目录>]')
+  if (!filename || filename.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:apk -- <APK路径> [--source <云源码目录>] [--device <ADB序列号>] [--require-current] [--archive <归档目录>]')
   const archiveIndex = args.indexOf('--archive')
   const requireCurrent = args.includes('--require-current') || archiveIndex >= 0
   const apkPath = path.resolve(filename), data = await fs.readFile(apkPath), zip = await JSZip.loadAsync(data)
@@ -41,7 +42,11 @@ async function main() {
   const office = zip.file(officeRoot + 'office.js')
   if (!office || !zip.file(officeRoot + 'index.html') || build.platform !== 'android') throw new Error('安卓包内办公脚本或平台信息缺失')
   const embeddedPdfFonts = await inspectPdfFonts(zip, officeRoot)
-  const localOffice = path.join(project, 'mobile/static/office/office.js')
+  const projectManifest = JSON.parse(await fs.readFile(path.join(project, 'mobile/manifest.json'), 'utf8'))
+  const currentFrozen = path.join(project, 'release', 'v'+projectManifest.versionName, 'mobile-web/android-cloud-source/static/office')
+  const sourceDirectory = await selectEditorSource({ args, platform:'android', manifest:projectManifest,
+    fallback: await exists(path.join(currentFrozen,'build-info.json')) ? currentFrozen : path.join(project,'mobile/static/office'), required:requireCurrent })
+  const localOffice = path.join(sourceDirectory, 'office.js')
   const report = {
     inspectedAt: new Date().toISOString(), apkPath, sha256: hash(data), bytes: data.length,
     appId: manifest.id, version: manifest.version, build,

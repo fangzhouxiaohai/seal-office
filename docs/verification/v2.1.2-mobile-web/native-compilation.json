@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "platforms": {
+    "android": {
+      "passed": true,
+      "compiler": "HBuilderX uni-app x 5.26",
+      "logSha256": "21b540ab9df22dfd2ee55aa422ae3c40aab4f9d9710e0d0845305381c7dbfc46",
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "nativeOutputMatchesArchive": true,
+      "generatedNativePackage": false
+    },
+    "harmony": {
+      "passed": true,
+      "compiler": "HBuilderX uni-app x 5.26",
+      "logSha256": "854adba13202a90034c42b52feaa23e0a81846273487e13ba9a0488a3eaa2108",
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "nativeOutputMatchesArchive": true,
+      "generatedNativePackage": false
+    }
+  }
+}

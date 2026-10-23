@@ -20,7 +20,9 @@ try {
   else if (args.includes('--harmony-review')) await run('harmony-review.cjs')
   else if (args.includes('--regressions')) await run('mobile-regressions.cjs')
   else {
-    const root = path.join(project, args.includes('--web') ? 'mobile/unpackage/web' : 'mobile/static/office')
+    const sourceIndex = args.indexOf('--source')
+    if (sourceIndex >= 0) assert.ok(args[sourceIndex + 1] && !args[sourceIndex + 1].startsWith('--'))
+    const root = sourceIndex >= 0 ? path.resolve(args[sourceIndex + 1]) : path.join(project, args.includes('--web') ? 'mobile/unpackage/web' : 'mobile/static/office')
     const main = args.includes('--web') ? fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1] : 'office.js'
     const sha = () => createHash('sha256').update(fs.readFileSync(path.join(root, main))).digest('hex'), bundleSha256 = sha()
     const resultFile = path.join(output, args.includes('--file') ? 'file-result.json' : 'result.json')
@@ -32,11 +34,11 @@ try {
     // Every expanded feature retains all its assertions and the same 120s
     // process watchdog. Fresh profiles prevent fixtures leaking between groups.
     const groups = []
-    for (const group of ['reading', 'editor', 'workspace', 'diagram', 'assistant']) {
+    for (const group of ['reading', 'editor', 'workspace', 'diagram', 'assistant', 'format-editing']) {
       await run('extended-browser.cjs', ['--group=' + group])
       const file = path.join(output, `${args.includes('--file') ? 'file' : 'http'}-${group}-result.json`)
       assert(fs.statSync(file).mtimeMs >= started)
-      const result = JSON.parse(fs.readFileSync(file, 'utf8')); assert(result.passed && result.group === group && result.version === core.version && result.scheme === core.scheme); groups.push(result)
+      const result = JSON.parse(fs.readFileSync(file, 'utf8')); assert(result.passed && result.group === group && result.version === core.version && result.scheme === core.scheme && result.platform === core.platform); groups.push(result)
       assert.equal(sha(), bundleSha256, 'All groups must test exactly the same frozen production bundle')
     }
     const result = { ...core, checks: [...core.checks, ...groups.flatMap(group => group.checks)], errors: [...core.errors, ...groups.flatMap(group => group.errors)], groups: [{ name: 'core', passed: true, checks: core.checks.length }, ...groups.map(group => ({ name: group.group, passed: group.passed, checks: group.checks.length }))], bundleSha256, processWatchdogMs: 120000, allGroupsCompleted: true }

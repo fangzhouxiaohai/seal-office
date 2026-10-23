@@ -7,6 +7,22 @@ const { 转换文档, configureConversion, validateWorkbook } = require('../web/
 const { 写入xlsx, 读取xlsx } = require('../../main/office/xlsxCodec.js')
 const JSZip = require('../../node_modules/jszip')
 configureConversion({ confirmLocal: async () => true })
+test('configured full XLS conversion is explicit, per-result, and never falls back after cancellation', async () => {
+  const { 兼容读取警告 } = require('../web/nativeConversion.cjs')
+  const XLSX = require('../node_modules/xlsx')
+  const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['完整格式𠮷']]),'表')
+  const xls=Buffer.from(XLSX.write(book,{type:'buffer',bookType:'biff8'})),xlsx=await 写入xlsx({工作表:[{名称:'表',数据:[['完整格式𠮷']]}]})
+  let cancelled=false,remoteCalls=0,localCalls=0
+  configureConversion({canUseRemote:()=>true,confirmLocal:async()=>{localCalls++;return true},remote:async(bytes,input,output)=>{remoteCalls++;assert(['xls','xlsx'].includes(input));if(cancelled)throw Error('已取消文档转换');return output==='xlsx'?xlsx:xls}})
+  const converted=await 转换文档(xls,'xls','xlsx','table')
+  assert.deepEqual(兼容读取警告('xls','table',converted),[])
+  assert.equal(兼容读取警告('xls','table',Buffer.from(converted)).length,1)
+  await 转换文档(xlsx,'xlsx','xls','table');assert.equal(localCalls,0)
+  cancelled=true;await assert.rejects(转换文档(xls,'xls','xlsx','table'),/取消/)
+  await assert.rejects(转换文档(xlsx,'xlsx','xls','table'),/取消/);assert.equal(localCalls,0);assert.equal(remoteCalls,4)
+  configureConversion({confirmLocal:async()=>true})
+  assert.equal(兼容读取警告('xls','table',await 转换文档(xls,'xls','xlsx','table')).length,1)
+})
 const model = { 工作表: [{ 名称: '中文预算', 数据: [['编号', '金额'], [{ 类型: '文本', 文字: [{ 文本: '0012' }] }, 123], ['中文项目', 456]] }] }
 test('mobile reads independent real Excel XLSB and XLA fixtures without executing macros', async () => {
   for (const extension of ['xlsb', 'xla']) {

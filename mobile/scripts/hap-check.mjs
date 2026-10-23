@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { archiveArtifact } from './archive-artifact.mjs'
 import { inspectPdfFonts } from './pdf-font-resources.mjs'
+import { selectEditorSource } from './editor-source.mjs'
 
 const require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
@@ -31,9 +32,12 @@ export async function inspectHap(data, manifest, currentEditor) {
 
 export async function main(args = process.argv.slice(2)) {
   const [source] = args
-  if (!source || source.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:hap -- <HAP路径> [--archive <归档目录>]')
+  if (!source || source.startsWith('--')) throw new Error('用法：npm --prefix mobile run check:hap -- <HAP路径> [--source <云源码目录>] [--archive <归档目录>]')
   const manifest = JSON.parse(await fs.readFile(path.join(project, 'mobile/manifest.json'), 'utf8'))
-  const snapshot = path.join(project, 'mobile/unpackage/cloud-ready', manifest.versionName, 'harmony/static/office')
+  const currentFrozen = path.join(project,'release','v'+manifest.versionName,'mobile-web/harmony-cloud-source/static/office')
+  const hasCurrent = await fs.access(path.join(currentFrozen,'build-info.json')).then(()=>true,()=>false)
+  const snapshot = await selectEditorSource({args,platform:'harmony',manifest,
+    fallback:hasCurrent ? currentFrozen : path.join(project, 'mobile/unpackage/cloud-ready', manifest.versionName, 'harmony/static/office')})
   const build = JSON.parse(await fs.readFile(path.join(snapshot, 'build-info.json'), 'utf8'))
   if (build.platform !== 'harmony' || build.desktopVersion !== manifest.versionName) throw new Error('请先保留当前版本鸿蒙云打包快照')
   const filename = path.resolve(source)

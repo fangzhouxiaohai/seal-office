@@ -45,7 +45,7 @@ async function 读取兼容文档(扩展, 字节) {
   const 数据 = 格式.ooxml ? await 标准化OOXML(字节, 类型) : await 转换文档(字节, 扩展, 标准扩展[类型], 类型)
   const 结果 = await 读取器[类型](数据)
   const 警告 = [...(结果.警告 ?? [])]
-  if (兼容读取警告) 警告.push(...兼容读取警告(扩展, 类型))
+  if (兼容读取警告) 警告.push(...兼容读取警告(扩展, 类型, 数据))
   if (['doc', 'dot', 'xls', 'xlt', 'ppt', 'pot', 'pps'].includes(扩展) &&
     (字节.includes(Buffer.from('_VBA_PROJECT', 'utf16le')) || 字节.includes(Buffer.from('VBA', 'utf16le')))) 警告.push('来源文件含旧版宏，宏不会执行或回写，请另存为普通文档以保护原文件')
   if (格式.readOnlySource) 警告.push('宏、加载项或二进制专有结构无法完整回写；来源文件保持不变，请另存为普通文档格式')

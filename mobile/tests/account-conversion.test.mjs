@@ -31,6 +31,7 @@ test('Web 默认当前云账号联网转换：真实 HTTP 网关、每次授权/
   const { installConversionService } = require(filename)
   const core = { storage: { existsSync: name => records.has(name), readFileSync: name => records.get(name), writeFileSync: (name, value) => records.set(name, value), rmSync: name => records.delete(name), flushStorage: async () => {} }, vault: { safeStorage: f.safeStorage }, conversion: { configureConversion: value => { adapter = value } } }
   installConversionService(core, f.a)
+  assert.equal(adapter.canUseRemote(), true)
   const source = Buffer.from('联网转换正文😀𠀀 &<>'), unchanged = Buffer.from(source)
   await assert.rejects(adapter.remote(source, 'doc', 'docx', 'word'), /已取消/)
   assert.equal(converted.length, 0); assert.deepEqual(source, unchanged)
@@ -44,6 +45,7 @@ test('Web 默认当前云账号联网转换：真实 HTTP 网关、每次授权/
   assert.deepEqual(await adapter.remote(source, 'doc', 'docx', 'word'), source)
   assert.match(confirmations[2].content, /127\.0\.0\.1/)
   await window.sealDocumentConversion.clear()
+  assert.equal(adapter.canUseRemote(), false)
   await assert.rejects(adapter.remote(source, 'doc', 'docx', 'word'), /登录并开通/)
   assert.equal(confirmations.length, 3); assert.deepEqual(source, unchanged)
 })

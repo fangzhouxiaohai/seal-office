@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "group": "format-editing",
+  "platform": "web",
+  "version": "2.1.2",
+  "checks": [
+    "真实XLSX富文本/中文字符集/自定义页边距/空工作表导入、列宽自适应并保存重开；360/390/820px",
+    "真实粘贴和拖入PNG、图片解码、撤销重做、SLDOC写盘再读保留两张图片和Unicode正文"
+  ],
+  "errors": [],
+  "scheme": "http",
+  "origin": "https://seal.xingmasoft.com/office/",
+  "productionAccountOperations": 0
+}

@@ -2,8 +2,8 @@ const XLSX = require('xlsx')
 const JSZip = require('jszip')
 const formats = require('../../main/documentFormats.json')
 const { 解码文本 } = require('../../main/textCodec')
-let remote, confirmLocal
-function configureConversion(options) { remote = options.remote; confirmLocal = options.confirmLocal }
+let remote, confirmLocal, canUseRemote
+function configureConversion(options) { remote = options.remote; confirmLocal = options.confirmLocal; canUseRemote = options.canUseRemote }
 const tableInputs = new Set(['xls', 'xlt', 'xlsb', 'xla', 'ods', 'ots', 'fods', 'dbf', 'dif', 'slk'])
 const tableOutputs = { xls: 'biff8', ods: 'ods', fods: 'fods', dbf: 'dbf', dif: 'dif', slk: 'sylk' }
 const templateTypes = {
@@ -13,7 +13,8 @@ const templateTypes = {
   ppsx: ['/ppt/presentation.xml', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml'],
 }
 const localReadWarning = '移动端离线兼容读取主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。来源文件保持不变，请核对后另存为副本'
-function 兼容读取警告(extension, type) { return tableInputs.has(extension) || extension === 'xml' && type === 'table' ? [localReadWarning] : [] }
+const fullConversionResults = new WeakSet()
+function 兼容读取警告(extension, type, convertedBytes) { return convertedBytes && fullConversionResults.has(convertedBytes) ? [] : tableInputs.has(extension) || extension === 'xml' && type === 'table' ? [localReadWarning] : [] }
 function validateWorkbook(workbook, outputFormat) {
   if (!workbook.SheetNames?.length || workbook.SheetNames.length > 100) throw new Error('工作簿为空或工作表数量过多')
   if (['dbf','dif','slk'].includes(outputFormat) && workbook.SheetNames.length !== 1) throw new Error('这种数据格式只能保存一张工作表，请使用 XLSX')
@@ -62,6 +63,14 @@ async function 转换文档(bytes, inputFormat, outputFormat, type) {
   }
   if (type === 'table' && ((tableInputs.has(inputFormat) || inputFormat === 'xml') && outputFormat === 'xlsx' || inputFormat === 'xlsx' && tableOutputs[outputFormat])) {
     await validateLocalInput(bytes, inputFormat)
+    // The offline BIFF writer preserves data/formulas but not all formatting.
+    // A configured full converter uses its own explicit upload-consent dialog.
+    // Cancellation/failure must propagate, never silently fall back to lossy output.
+    if ((['xls','xlt'].includes(inputFormat) || outputFormat === 'xls') && remote && canUseRemote?.()) {
+      const result = await remote(bytes, inputFormat, outputFormat, type)
+      fullConversionResults.add(result)
+      return result
+    }
     // DIF/SYLK readers consume a decoded string directly; their buffer route treats UTF-8 as Latin-1.
     const textInput = ['dif', 'slk'].includes(inputFormat)
     const workbook = XLSX.read(textInput ? 解码文本(bytes).内容.replace(/^\uFEFF/, '') : bytes, { type: textInput ? 'binary' : 'buffer', cellDates: false, cellStyles: true, cellFormula: true, bookVBA: false, WTF: true })

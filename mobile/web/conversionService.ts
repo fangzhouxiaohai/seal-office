@@ -56,6 +56,7 @@ export function installConversionService(core: any, cloud?: AccountConverter) {
     async test(input) { const result = await test(merged(input)); return { inputCount: result.inputs.length, maximumBytes: result.maximumBytes } },
   }
   core.conversion.configureConversion({
+    canUseRemote: () => !!read() || !!cloud?.status().account?.enabled,
     confirmLocal: (extension: string) => confirm('保存兼容表格', extension.toUpperCase() + ' 的手机离线输出主要保留数据和公式，高级样式、图表、图片等可能无法完整保留。请核对后保存副本；需要完整格式时使用 XLSX。', '继续保存'),
     remote: async (bytes: Uint8Array, inputFormat: string, outputFormat: string, type: string) => {
       const configuration = read()

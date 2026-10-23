@@ -12,6 +12,14 @@
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
+## 2.1.2 移动端与网页版同步修复
+
+最新云源码：[GitCode 移动/Web 发行](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-web) · [GitHub 移动/Web 发行](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-web) · [在线使用](https://seal.xingmasoft.com/office/)。应用版本仍为 **2.1.2 / 20102**。
+
+Android、HarmonyOS 和 Web 已同步富文本、字体字符集、自定义页边距、自适应列宽及文字图片粘贴/拖入修复。旧 XLS 在有可用云空间或自建转换服务时，经确认使用完整转换引擎；取消/失败直接停止，无服务的离线兼容路径继续明确提示格式限制。移动悬浮助手、文件选择和对话/工作模式保留。
+
+两份独立云源码和 Web ZIP 归档在 `release/v2.1.2/mobile-web/`，Android ZIP **38,531,176 字节**、解压总量 **59,799,985 字节**，均小于 60,000,000 字节。各平台分别构建、编译检查、生产交互验收、冻结并核对 ZIP 内全部文件。云源码不是 APK/HAP，用户可直接打开对应解包项目提交云打包。步骤见 [云打包说明](mobile/releases/2.1.2-mobile-web.md)，结果见 [同步验收记录](docs/verification/v2.1.2-mobile-web/README.md)。首次移动快照与下方桌面发行保留原校验值，原 `v2.1.2` 标签不移动。
+
 ## 2.1.2 桌面编辑与格式修复
 
 下载：[GitHub 2.1.2](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2) · [GitCode 2.1.2](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2)。
