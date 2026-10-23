@@ -9,7 +9,7 @@ for(const item of fs.readdirSync(output,{withFileTypes:true})){
   if(fs.realpathSync(target)!==target||fs.lstatSync(target).isSymbolicLink())throw new Error('Unsafe promotional cleanup path')
   fs.rmSync(target,{recursive:item.isDirectory(),force:true})
 }
-for(const [program,args]of [[require('electron'),[path.join(__dirname,'current-capture.cjs')]],['python',[path.join(__dirname,'current-video.py')]]]){
+for(const [program,args]of [['python',[path.join(__dirname,'tutorial-voice.py')]],[require('electron'),[path.join(__dirname,'tutorial-record.cjs')]],['python',[path.join(__dirname,'tutorial-render.py')]]]){
   const result=spawnSync(program,args,{cwd:root,stdio:'inherit',shell:false,windowsHide:true})
   if(result.status!==0){console.error('Current promotional build failed:',result.error?.message||result.signal||result.status);process.exit(result.status||1)}
 }

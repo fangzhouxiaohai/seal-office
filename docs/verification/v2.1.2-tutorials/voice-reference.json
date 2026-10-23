@@ -1,0 +1,13 @@
+{
+  "originalPath": "D:\\yewu\\女声配音试听.mp3",
+  "bytes": 202896,
+  "sha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+  "voiceSettings": {
+    "name": "zh-CN-XiaoxiaoNeural",
+    "rate": "+5%",
+    "pitch": "+4Hz"
+  },
+  "identificationSource": "Existing project reference-voice settings; user listened to the 12-second tutorial preview and explicitly confirmed this voice on 2026-10-23.",
+  "userConfirmed": true,
+  "originalWordsOrWaveformReused": false
+}

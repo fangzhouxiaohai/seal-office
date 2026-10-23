@@ -1,114 +1,39 @@
 {
-  "style": {
-    "background": "#f3f6fc",
-    "brand": "#2b6cf6",
-    "ink": "#142844",
-    "muted": "#526780"
-  },
-  "voice": {
-    "engine": "windows-sapi",
-    "name": "Microsoft Huihui Desktop",
-    "rate": "0",
-    "pitch": "+0Hz"
-  },
+  "voice": {"name":"zh-CN-XiaoxiaoNeural","rate":"+5%","pitch":"+4Hz","userConfirmed":true,"reference":"D:/yewu/女声配音试听.mp3","referenceSha256":"a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b"},
+  "highlight": {"color":"#A855F7","purpose":"Outline the actual current operation target; never cover its text or intercept input."},
   "pc": [
-    {
-      "id": "home",
-      "title": "工作，从一处开始",
-      "detail": "最近文档 · 多标签工作区",
-      "narration": "海豹办公新版，将文字、表格、演示和常用工具放在同一个工作区。最近文件集中查看，打开的文档随时切换。"
-    },
-    {
-      "id": "word",
-      "title": "把内容写清楚",
-      "detail": "粘贴与拖入图片 · 撤销重做 · 保存",
-      "narration": "在正文中粘贴或拖入本机图片，按页面宽度插入。图片和文字一起编辑，支持撤销、重做和保存后重新打开。"
-    },
-    {
-      "id": "sheet",
-      "title": "让计算落到结果",
-      "detail": "自适应列宽 · 富文本字体 · 页边距",
-      "narration": "开始功能区新增自适应列宽，一键按内容调整当前工作表。富文本分段、中文字体和自定义页边距在导入与保存时保留。"
-    },
-    {
-      "id": "templates",
-      "title": "从专业模板起步",
-      "detail": "文字 · 表格 · 演示模板",
-      "narration": "在模板库中挑选适合的主题。演示模板包含完整页面和配图，直接进入画布编辑，快速组织一场清楚的汇报。"
-    },
-    {
-      "id": "diagram",
-      "title": "让复杂关系看得见",
-      "detail": "脑图 · 流程图 · 多项目管理",
-      "narration": "脑图和流程图分别管理多个项目，可以创建、重命名与再次打开。内容、备注和操作历史相互独立。"
-    },
-    {
-      "id": "services",
-      "title": "完整保存，继续创作",
-      "detail": "SLDOC · SLXLS · SLPPT · SPDF",
-      "narration": "文字、表格、演示和 PDF 都有海豹专属格式，保存当前编辑模型和资源。四种格式在电脑、网页和移动端统一识别，保存后可以再次打开。"
-    },
-    {
-      "id": "account",
-      "title": "协作与账号，由你管理",
-      "detail": "可拖动海豹助手 · 登录保护 · 密码登录",
-      "narration": "桌面智能助手换成圆形海豹悬浮球，拖到顺手的位置，点击开始使用。生成式 AI 功能须先登录经过手机号验证的账号。"
-    },
-    {
-      "id": "outro",
-      "title": "海豹办公",
-      "detail": "打开网页，或下载桌面版",
-      "narration": "从一份文档到一组项目，让日常办公有条理。访问海豹办公网页版，或从项目发行页下载适合设备的版本。"
-    }
+    {"id":"new-word","chapter":"01 文字与专属格式","title":"新建一份工作计划","narration":"先从首页点击新建，选择文字文档。下面从一份空白文档开始，完成输入、保存和重新打开。","minimumSeconds":8},
+    {"id":"word-title","chapter":"01 文字与专属格式","title":"输入标题","narration":"点击正文，输入每周工作计划，按回车开始下一段。输入位置会显示紫色轮廓，鼠标点击也有圆环提示。","minimumSeconds":9},
+    {"id":"word-body","chapter":"01 文字与专属格式","title":"填写计划内容","narration":"继续输入本周目标和具体安排。文字会随着输入逐字出现；需要修改时，把光标放回正文即可继续编辑。","minimumSeconds":10},
+    {"id":"word-save","chapter":"01 文字与专属格式","title":"保存为 SLDOC","narration":"点击保存，使用海豹文字格式保存当前内容。文件标签会显示 S L D O C 后缀，保存完成后修改标记消失。","minimumSeconds":9},
+    {"id":"word-reopen","chapter":"01 文字与专属格式","title":"关闭后重新打开","narration":"关闭已经保存的文件，再从首页打开同一份文档。标题和正文仍然保留，可以继续编辑。","minimumSeconds":9},
+    {"id":"sheet-open","chapter":"02 表格与计算","title":"打开项目预算表","narration":"回到首页，点击打开，选择准备好的项目预算表。先看项目、数量、单价和预算四列数据。","minimumSeconds":8},
+    {"id":"sheet-formula","chapter":"02 表格与计算","title":"输入求和公式","narration":"在名称框输入 D 五，选中合计单元格。点击公式栏，输入等于 S U M，括号内填写 D 二冒号 D 四，按回车，合计得到两千三百六十。","minimumSeconds":14},
+    {"id":"sheet-save","chapter":"02 表格与计算","title":"自适应列宽并另存","narration":"点击自适应列宽，按当前内容调整工作表。再点击另存为，把可编辑的预算表保存为海豹表格格式。","minimumSeconds":9},
+    {"id":"template-open","chapter":"03 演示模板","title":"预览完整演示模板","narration":"在首页进入演示模板市场，选择精选推荐。点击模板封面查看完整页面，确认主题配图和内容布局。","minimumSeconds":10},
+    {"id":"template-use","chapter":"03 演示模板","title":"创建可编辑的演示副本","narration":"点击使用并编辑副本，进入演示编辑器。点击左侧第二页查看内容，各页保留独立的文本、图形和图片。","minimumSeconds":10},
+    {"id":"mindmap-create","chapter":"04 脑图与流程图","title":"创建独立脑图项目","narration":"回到首页打开脑图，点击新建脑图项目，输入新品发布计划，再点击创建项目。每个项目分别保存。","minimumSeconds":11},
+    {"id":"mindmap-edit","chapter":"04 脑图与流程图","title":"修改主题并增加分支","narration":"在节点编辑区修改主题文字，再添加一个分支，填写产品资料。画布和本机保存状态会随实际编辑更新。","minimumSeconds":12},
+    {"id":"mindmap-list","chapter":"04 脑图与流程图","title":"多个项目分别管理","narration":"返回项目列表，再创建团队工作分解。返回后可以看到两份独立项目，点击任一封面就能继续编辑。","minimumSeconds":12},
+    {"id":"flow","chapter":"04 脑图与流程图","title":"流程图也有独立项目列表","narration":"流程图同样从项目列表开始。创建资料审核流程，进入画布后增加节点，按业务步骤整理流程。","minimumSeconds":12},
+    {"id":"outro","chapter":"海豹办公 2.1.2","title":"从一份文件，到一组项目","narration":"以上是海豹办公二点一点二的实际操作演示。可以访问网页版，或在项目发行页下载适合设备的版本。","minimumSeconds":9}
   ],
   "android": [
-    {
-      "id": "home",
-      "title": "海豹助手，随手唤起",
-      "detail": "海豹 Logo 悬浮球 · 五个功能页",
-      "narration": "海豹办公移动端，智能助手现在使用海豹标志的圆形悬浮球，可以拖到顺手的位置，点击打开。底部保留首页、云盘、服务、模板和我的五个功能页面。"
-    },
-    {
-      "id": "services",
-      "title": "需要什么，直接找到",
-      "detail": "工具搜索 · 新建文档 · 应用服务",
-      "narration": "打开服务页，搜索要用的功能。文字、表格、演示、脑图和流程图，都有清楚的入口；导入文件放在页面上方。"
-    },
-    {
-      "id": "reading",
-      "title": "阅读，更适合手机",
-      "detail": "默认隐藏操作栏 · 双击唤出 · 三秒收起",
-      "narration": "进入手机全屏阅读，顶部和底部操作栏默认隐藏。双击页面唤出，三秒后自动收起。文字支持横向滑动翻页和双指缩放，退出后继续编辑。"
-    },
-    {
-      "id": "sheet",
-      "title": "随身查看与编辑表格",
-        "detail": "自适应列宽 · 富文本字体 · 保存重开",
-        "narration": "手机上也能一键自适应列宽，富文本字体和自定义页边距随文件保存。切换工作表、输入公式，保存后可以继续编辑。"
-    },
-    {
-      "id": "templates",
-      "title": "从模板开始创作",
-      "detail": "分类挑选 · 完整配图 · 可编辑页面",
-      "narration": "模板页按分类展示内容。专业演示模板带有配图和完整页面，可以继续修改文字与布局，方便准备汇报。"
-    },
-    {
-      "id": "diagram",
-      "title": "多个项目，分别维护",
-      "detail": "脑图列表 · 流程图列表 · 独立保存",
-      "narration": "脑图和流程图先展示项目列表。为不同任务创建独立项目，重命名、返回列表再打开，思路和内容不会混在一起。"
-    },
-    {
-      "id": "account",
-      "title": "我的账号，我来管理",
-      "detail": "AI登录保护 · 设备管理 · 永久注销",
-      "narration": "生成式 AI 功能须先登录经过手机号验证的账号。我的页面可管理账号和设备、设置密码，或完成确认后永久注销并清理对应云数据。"
-    },
-    {
-      "id": "outro",
-      "title": "海豹办公",
-      "detail": "移动布局演示 · 同步更新的办公体验",
-      "narration": "手机整理资料，电脑继续办公。访问项目发行页了解当前版本；移动安装包请使用与本版源码一致的正式构建。"
-    }
+    {"id":"navigation","chapter":"01 功能入口","title":"从服务页找到工具","narration":"移动端底部是首页、云盘、服务、模板和我的五个功能页。点击服务，在搜索框输入脑图，就能找到对应入口。","minimumSeconds":11},
+    {"id":"new-word","chapter":"02 文字与保存","title":"新建文字文档","narration":"返回首页，进入服务页，选择文字。打开后直接输入标题和正文，当前输入区会显示紫色轮廓。","minimumSeconds":9},
+    {"id":"word-body","chapter":"02 文字与保存","title":"逐字填写工作计划","narration":"先写每周工作计划，再逐段填写资料整理、预算核对和交付安排。这里展示的输入都实际写入文档。","minimumSeconds":13},
+    {"id":"word-save","chapter":"02 文字与保存","title":"保存海豹文字文件","narration":"点击保存，将这份计划保存为海豹文字格式。保存后仍可继续编辑，文件内容和当前格式一起保留。","minimumSeconds":9},
+    {"id":"reading-enter","chapter":"03 全屏阅读","title":"进入隐藏工具栏的阅读模式","narration":"打开准备好的长文档，点击全屏阅读。进入后顶部和底部操作栏默认隐藏，页面空间留给正文。","minimumSeconds":9},
+    {"id":"reading-swipe","chapter":"03 全屏阅读","title":"左右滑动翻页","narration":"在正文中向左滑动，切换到下一页；向右滑动可以返回上一页。紫色轮廓标出当前阅读区域。","minimumSeconds":10},
+    {"id":"reading-controls","chapter":"03 全屏阅读","title":"双击唤出，三秒后收起","narration":"双击页面，唤出顶部和底部工具栏。停止操作约三秒后，工具栏自动收起，继续专心阅读。","minimumSeconds":10},
+    {"id":"reading-zoom","chapter":"03 全屏阅读","title":"双指缩放阅读内容","narration":"双指向外展开，放大阅读内容。需要退出时，再双击页面唤出工具栏，点击返回，回到原文档。","minimumSeconds":11},
+    {"id":"assistant-drag","chapter":"04 海豹助手","title":"拖动海豹 Logo 悬浮球","narration":"智能助手现在使用海豹办公标志。按住圆形悬浮球拖动，松手后停在新位置，再点击打开大窗口。","minimumSeconds":10},
+    {"id":"assistant-modes","chapter":"04 海豹助手","title":"区分对话和工作模式","narration":"目标文件默认是当前文档。对话模式只回答问题；工作模式可以提出文档修改，先预览确认。使用生成式功能前，需要登录已验证的账号。","minimumSeconds":13},
+    {"id":"sheet-open","chapter":"05 表格与目标文件","title":"打开项目预算表","narration":"先关闭助手，回到首页，导入项目预算表。文字和表格可以同时保留在已打开的文件标签中。","minimumSeconds":10},
+    {"id":"sheet-formula","chapter":"05 表格与目标文件","title":"在手机上输入公式","narration":"选中 D 五，在公式栏输入求和公式，按回车。合计显示两千三百六十，接着可以保存或继续编辑。","minimumSeconds":12},
+    {"id":"assistant-target","chapter":"05 表格与目标文件","title":"切换助手的目标文件","narration":"再次打开助手，展开目标文件列表。选择工作计划，切换到对话模式，就能围绕指定的文件提问。","minimumSeconds":11},
+    {"id":"templates","chapter":"06 模板与项目","title":"从完整模板开始演示","narration":"回到模板页，点击一套模板预览，再使用并编辑副本。主题配图和完整页面会一起进入演示编辑器。","minimumSeconds":12},
+    {"id":"projects","chapter":"06 模板与项目","title":"创建多个脑图项目","narration":"从服务页进入脑图，分别创建新品发布计划和团队工作分解。返回列表，两份项目可以独立打开和维护。","minimumSeconds":15},
+    {"id":"outro","chapter":"海豹办公 2.1.2","title":"随身阅读，继续编辑","narration":"这就是海豹办公移动端的操作方法。本片使用当前生产构建的移动布局演示，安装包和源码可在项目发行页获取。","minimumSeconds":10}
   ]
 }

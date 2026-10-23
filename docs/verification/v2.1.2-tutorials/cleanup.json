@@ -1,0 +1,23 @@
+{
+  "recordedAt": "2026-10-23T12:38:14.743057+00:00",
+  "generatedMaterials": [
+    {
+      "path": "E:\\seal-office\\release\\promo\\work-2.1.2-tutorial",
+      "removed": true,
+      "generatedFiles": 465,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\promo\\work-2.1.2-short",
+      "removed": true,
+      "generatedFiles": 17,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\promo\\seal-office-2.1.2-tutorial-voice-preview.mp3",
+      "removed": true
+    }
+  ],
+  "originalVoiceSamplePreserved": true,
+  "signingAndApplicationDataTouched": false
+}
