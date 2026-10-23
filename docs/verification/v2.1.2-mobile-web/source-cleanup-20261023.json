@@ -1,0 +1,125 @@
+{
+  "recordedAt": "2026-10-23T07:25:36.7756557Z",
+  "passed": true,
+  "version": "2.1.2",
+  "canonicalDirectory": "E:\\seal-office\\release\\v2.1.2\\mobile-web",
+  "userAuthorizedLocalStaleSourceCleanup": true,
+  "removedSourceProjects": 18,
+  "removedArchives": 3,
+  "removedLatestBuildOutputDirectories": 2,
+  "removed": [
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\verified\\android",
+      "directory": true,
+      "files": 115,
+      "bytes": 119590301,
+      "sourceProjects": 1
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\verified\\harmony",
+      "directory": true,
+      "files": 3321,
+      "bytes": 630342915,
+      "sourceProjects": 1
+    },
+    {
+      "path": "E:\\seal-office\\mobile\\unpackage\\cloud-ready",
+      "directory": true,
+      "files": 899,
+      "bytes": 1154402519,
+      "sourceProjects": 16
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\seal-office-2.1.2-android-cloud-source.zip",
+      "directory": false,
+      "files": 1,
+      "bytes": 38527959,
+      "sourceProjects": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\verified\\seal-office-2.1.2-android-cloud-source.zip",
+      "directory": false,
+      "files": 1,
+      "bytes": 38528030,
+      "sourceProjects": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\verified\\seal-office-2.1.2-harmony-cloud-source.zip",
+      "directory": false,
+      "files": 1,
+      "bytes": 38528036,
+      "sourceProjects": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\android-cloud-source\\unpackage",
+      "directory": true,
+      "files": 56,
+      "bytes": 59805002,
+      "sourceProjects": 0
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source\\unpackage",
+      "directory": true,
+      "files": 3262,
+      "bytes": 570785938,
+      "sourceProjects": 0
+    }
+  ],
+  "preservedLatestSources": [
+    {
+      "platform": "android",
+      "version": "2.1.2",
+      "versionCode": "20102",
+      "project": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\android-cloud-source",
+      "archive": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\seal-office-2.1.2-android-cloud-source.zip",
+      "archiveBytes": 38531176,
+      "expandedBytes": 59799985,
+      "files": 59,
+      "sha256": "befe4c48b6807f3cfbb0e60eac3576b278e0aff4af8339a47937636080d241a5",
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "allFolderHashesVerified": true,
+      "archiveHashVerified": true,
+      "platformVerified": true
+    },
+    {
+      "platform": "harmony",
+      "version": "2.1.2",
+      "versionCode": "20102",
+      "project": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source",
+      "archive": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\seal-office-2.1.2-harmony-cloud-source.zip",
+      "archiveBytes": 38531184,
+      "expandedBytes": 59799985,
+      "files": 59,
+      "sha256": "21aef4acb56f1e168fca3992622e592c039d1256417c62303a4df05c4706cd28",
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "allFolderHashesVerified": true,
+      "archiveHashVerified": true,
+      "platformVerified": true
+    }
+  ],
+  "latestSignedOrSourceBytesModified": false,
+  "returnedSignedAppPackPreservedPrivately": true,
+  "freshBuildPackagesPreserved": [
+    {
+      "originalPath": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source\\unpackage\\dist\\build\\app-harmony\\build\\outputs\\release\\app-harmony-release-signed.app",
+      "preservedPath": "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\preserved-latest-harmony-app-harmony-release-signed.app",
+      "bytes": 42432749,
+      "sha256": "8ce916fd273cf08b92f98548dac6f4e785eba03ec8fd6a6d272fb9b1ec1621a3",
+      "bytesUnchanged": true,
+      "releaseVerificationPerformed": false
+    },
+    {
+      "originalPath": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source\\unpackage\\dist\\build\\app-harmony\\entry\\build\\release\\outputs\\default\\entry-default-signed.hap",
+      "preservedPath": "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\preserved-latest-harmony-entry-default-signed.hap",
+      "bytes": 66020738,
+      "sha256": "c1b19835b544d428e46f630fd9e933ba6ae939d0cd40abb472b2da091cc99033",
+      "bytesUnchanged": true,
+      "releaseVerificationPerformed": false
+    }
+  ],
+  "historicalVerificationRecordsPreserved": true,
+  "remoteReleaseAssetsModified": false,
+  "finalZipCrcAndAllPayloadHashesReverified": true,
+  "remainingDeliveryArchives": 2,
+  "remainingDeliveryProjects": 2
+}
