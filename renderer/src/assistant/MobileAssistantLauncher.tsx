@@ -1,5 +1,4 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import Icon from '../components/Icon'
 import SealLogo from '../components/SealLogo'
 
 type Position = { x: number; y: number }
@@ -93,7 +92,7 @@ export default function MobileAssistantLauncher({ onOpen, disabled, desktop = fa
         move({ x: current.current.x + direction[0] * 16, y: current.current.y + direction[1] * 16 }, true)
       }}
       onClick={event => { if (suppressClick.current) { suppressClick.current = false; event.preventDefault(); return }; onOpen() }}>
-      {desktop ? <span aria-hidden="true" style={{ display: 'flex', pointerEvents: 'none' }}><SealLogo size={46} withBackground={false} /></span> : <Icon name="ai" size={26} />}
+      <span aria-hidden="true" style={{ display: 'flex', pointerEvents: 'none' }}><SealLogo size={46} withBackground={false} /></span>
     </button>
   </>
 }

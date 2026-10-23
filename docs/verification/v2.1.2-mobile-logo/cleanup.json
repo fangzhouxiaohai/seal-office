@@ -1,0 +1,73 @@
+{
+  "recordedAt": "2026-10-23T08:30:35.6300064Z",
+  "passed": true,
+  "temporaryDirectoriesRemoved": [
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\mobile-logo-staging",
+      "removed": true,
+      "entries": 0,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\mobile\\unpackage\\cloud-ready",
+      "removed": true,
+      "entries": 181,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\mobile\\unpackage\\native-check",
+      "removed": true,
+      "entries": 160,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\mobile\\unpackage\\native-check-pre-final",
+      "removed": true,
+      "entries": 142,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\mobile\\unpackage\\native-check-pre-ppt-save",
+      "removed": true,
+      "entries": 142,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\.upgrade-private\\mobile-verification",
+      "removed": true,
+      "entries": 21295,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\.upgrade-private\\v212-mobile-web-sync",
+      "removed": true,
+      "entries": 44,
+      "linksUnlinkedWithoutTraversal": 0
+    },
+    {
+      "path": "E:\\seal-office\\.upgrade-private\\v212-assistant-logo",
+      "removed": true,
+      "entries": 198,
+      "linksUnlinkedWithoutTraversal": 0
+    }
+  ],
+  "priorTemporaryFilesRemoved": [
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\android-cloud.apk",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\android-inspection.json",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\app-cert.cer",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\app-profile.p7b",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\app-signature.log",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\before-cleanup-README.txt",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\before-cleanup-verified-README.md",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\clean-cloud-sources.ps1",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\entry-default.hap",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\hap-signature.log",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\harmony-inspection.json",
+    "E:\\seal-office\\.upgrade-private\\v212-mobile-native\\source-cleanup-plan.json"
+  ],
+  "userSignedInputPackagesPreserved": true,
+  "signingCredentialsUntouched": true,
+  "remoteHistoricalAssetsUntouched": true,
+  "canonicalCloudArchives": 2,
+  "canonicalCloudProjects": 2
+}

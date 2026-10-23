@@ -1,0 +1,77 @@
+{
+  "version": "2.1.2",
+  "publicationWithheldForLogoCorrection": true,
+  "reason": "Returned packages match the earlier mobile-web source release, which retained the mobile star icon; new Logo source requires a new signed build.",
+  "android": {
+    "originalFile": "D:/downsoft/__UNI__B52B65B_1023153847.apk",
+    "bytes": 71478003,
+    "sha256": "c09e63d8a4f2d64991ca9a6e53ebdaab29867f1184e30be6466958604935abdb",
+    "appId": "__UNI__B52B65B",
+    "version": {
+      "name": "2.1.2",
+      "code": "20102"
+    },
+    "build": {
+      "platform": "android",
+      "desktopVersion": "2.1.2",
+      "builtAt": "2026-10-23T05:54:54.668Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "embeddedEditor": {
+      "present": true,
+      "sha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "matchesCurrentSourceBuild": true
+    },
+    "signature": {
+      "verified": true,
+      "v1": false,
+      "v2": false,
+      "v3": true,
+      "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+    },
+    "sdkMetadata": {
+      "packageName": "com.sealoffice.mobile",
+      "versionCode": "20102",
+      "versionName": "2.1.2",
+      "minSdk": "28",
+      "targetSdk": "36",
+      "abi": "'arm64-v8a' 'armeabi-v7a'",
+      "debuggable": false,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.sealoffice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+      ],
+      "zipAligned": true
+    },
+    "allNativeLibraries16KiBCompatible": true,
+    "originalFileUnmodified": true
+  },
+  "harmony": {
+    "appPackSha256": "8ce916fd273cf08b92f98548dac6f4e785eba03ec8fd6a6d272fb9b1ec1621a3",
+    "appPackBytes": 42432749,
+    "signatureVerified": true,
+    "digestVerified": true,
+    "zipCrcPassed": true,
+    "embeddedHapCrcPassed": true,
+    "build": {
+      "platform": "harmony",
+      "desktopVersion": "2.1.2",
+      "builtAt": "2026-10-23T06:01:41.801Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+    "publicationWithheldForLogoCorrection": true,
+    "originalSignedBytesUnchanged": true,
+    "originalSuppliedPathWasCleanedPreviously": true,
+    "preservedCopyMatchesPriorCleanupRecord": true
+  },
+  "physicalDeviceTested": false,
+  "newSignedPackagesGenerated": false
+}
