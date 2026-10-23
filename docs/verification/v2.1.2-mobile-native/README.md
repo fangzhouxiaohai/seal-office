@@ -15,3 +15,7 @@
 原 `v2.1.2` 与 `v2.1.2-mobile-web` 发行、标签和历史校验记录保留。附件校验见 `SHA256SUMS.txt`。
 
 验收文件：`android-package.json`、`harmony-package.json`、`android-runtime.json`、`verification.json`、`promo.json`。
+
+发行已完成：[GitHub](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-logo)、[GitCode](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-logo)。每仓库 18 个附件，全部 36 次匿名下载的大小及 SHA-256 验证通过，见 `publication.json` 及两个仓库的逐附件记录。原有两个发行的附件清单保持不变。
+
+PC 横版及 Android 竖版视频已更新并随发行提供。B 站尚未投稿：用户确认两浏览器已登录并启用扩展后，当前任务仍只能发现空的 Codex MCP Apps，分别尝试连接 Edge 与 Chrome 均返回浏览器不可用。未读取浏览器凭据，也未提交任何 B 站稿件；两条视频的标题、简介、封面与路径见 `bilibili-submissions.json`，待浏览器控制连接恢复。

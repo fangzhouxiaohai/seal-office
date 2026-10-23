@@ -1,0 +1,134 @@
+{
+  "tag": "v2.1.2-mobile-logo",
+  "commit": "c61deb17a24981210745334049c5b4e7bcd1eb8a",
+  "releaseUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-logo",
+  "verified": true,
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 1879,
+      "sha256": "306cbffbe8affe47a1536d5308a335a33127968ef2521ee7f4aee3eda5f10418",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/SHA256SUMS.txt"
+    },
+    {
+      "name": "seal-office-2.1.2-android-cloud-source.zip",
+      "bytes": 38531181,
+      "sha256": "5d49d5a6b6c36a4fcead781391861eed87d39ad728c4965f3f29c6e43a0834d5",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-cloud-source.zip"
+    },
+    {
+      "name": "seal-office-2.1.2-android-intro-1080p-cover.jpg",
+      "bytes": 226784,
+      "sha256": "db25e3039a62df39b286c0ba48f81ac061704ca5585a61840c2fdcf9fafcd41f",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-intro-1080p-cover.jpg"
+    },
+    {
+      "name": "seal-office-2.1.2-android-intro-1080p.mp4",
+      "bytes": 5074565,
+      "sha256": "a02960004390dac5d7b845babdba5f24724036a7f07d9f58ee18e271ca376945",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-intro-1080p.mp4"
+    },
+    {
+      "name": "seal-office-2.1.2-android-intro-1080p.srt",
+      "bytes": 1599,
+      "sha256": "d26a7a6f49c0fa8bcc61446c32251d59317fe68e35dd6f12f850c32fb4c3b375",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-intro-1080p.srt"
+    },
+    {
+      "name": "seal-office-2.1.2-android-package-verification.json",
+      "bytes": 8544,
+      "sha256": "d382dc05f42c2054eb8ac67de2fb5c4a4e9f3194dbb3cbe480069d31815a2ba6",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-package-verification.json"
+    },
+    {
+      "name": "seal-office-2.1.2-android-source-verification.json",
+      "bytes": 10948,
+      "sha256": "e2e14d069f9c41b3ace8b854f4ffdda85a5a1467b78375b0f326409e7577efca",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android-source-verification.json"
+    },
+    {
+      "name": "seal-office-2.1.2-android.apk",
+      "bytes": 71478003,
+      "sha256": "9fc2e1b98a10704c9c273d4b375008ec9932af822f31ff36981dc566800a7083",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-android.apk"
+    },
+    {
+      "name": "seal-office-2.1.2-harmony-cloud-source.zip",
+      "bytes": 38531184,
+      "sha256": "2ad9463ec2a86e404a12f83d85e3ad0d8de849a1603d5c5e07cf531e602c1807",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-harmony-cloud-source.zip"
+    },
+    {
+      "name": "seal-office-2.1.2-harmony-package-verification.json",
+      "bytes": 6721,
+      "sha256": "f3b40bca7b6b2ce5925c75c137f474dc08c7f68a1ca47617018c5636f3223f70",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-harmony-package-verification.json"
+    },
+    {
+      "name": "seal-office-2.1.2-harmony-source-verification.json",
+      "bytes": 10944,
+      "sha256": "f99a26e0e2434663462eeca1432f6c57c1a32a01fe79945ba06b4ac39dc9cdd3",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-harmony-source-verification.json"
+    },
+    {
+      "name": "seal-office-2.1.2-harmony.app.zip",
+      "bytes": 42411265,
+      "sha256": "895efbbb96b4c165ba68d4b01fdd6d31f6308d6cc9fef4ea35b32b96603fceac",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-harmony.app.zip"
+    },
+    {
+      "name": "seal-office-2.1.2-mobile-release-notes.md",
+      "bytes": 1745,
+      "sha256": "330c7793f25d201dc54e64248e5b689bf1d8bf76cb499da62decadaa44e1ca54",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-mobile-release-notes.md"
+    },
+    {
+      "name": "seal-office-2.1.2-mobile-release-verification.json",
+      "bytes": 3297,
+      "sha256": "1a564fdf63a8409422422f6b4145a1222e2a71c584f78f275490af35b06450ab",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-mobile-release-verification.json"
+    },
+    {
+      "name": "seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+      "bytes": 207577,
+      "sha256": "d80ad2ce9d9213420bbc533e41fa1c48efc20b35cc52a3144fc2aa43e67ace09",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-pc-intro-1080p-cover.jpg"
+    },
+    {
+      "name": "seal-office-2.1.2-pc-intro-1080p.mp4",
+      "bytes": 4421672,
+      "sha256": "66e90deafae3f457ad35c1bb22db882f1b416672c44d8dab62c664f31c37c914",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-pc-intro-1080p.mp4"
+    },
+    {
+      "name": "seal-office-2.1.2-pc-intro-1080p.srt",
+      "bytes": 1508,
+      "sha256": "57659214ce80246a43730d1ce81db896d1b69a21de11f7616a49ea259951d1ad",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-pc-intro-1080p.srt"
+    },
+    {
+      "name": "seal-office-2.1.2-promo-verification.json",
+      "bytes": 12981,
+      "sha256": "a5fbb8e6e0b69de33a09f6817a4e7d1005381dc5b96826a304dd7009a62d7e3c",
+      "anonymousDownloadVerified": true,
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-mobile-logo/seal-office-2.1.2-promo-verification.json"
+    }
+  ]
+}

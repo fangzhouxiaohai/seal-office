@@ -1,0 +1,19 @@
+{
+  "signingCredentialsPreserved": true,
+  "originalAndroidDownloadPreserved": true,
+  "originalHarmonyBytesPreservedAt": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\seal-office-2.1.2-harmony.app",
+  "publishedArtifactsPreserved": true,
+  "temporaryWorkRemoved": [
+    {
+      "removed": true,
+      "path": "E:\\seal-office\\.upgrade-private\\v212-native-release",
+      "generatedFiles": 18
+    },
+    {
+      "removed": true,
+      "path": "E:\\seal-office\\.upgrade-private\\mobile-verification",
+      "generatedFiles": 2
+    }
+  ],
+  "recordedAt": "2026-10-23T11:58:54.8506939Z"
+}

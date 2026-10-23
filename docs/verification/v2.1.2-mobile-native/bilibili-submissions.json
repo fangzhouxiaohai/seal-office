@@ -1,0 +1,48 @@
+{
+  "version": "2.1.2",
+  "status": "awaiting-browser-connection",
+  "published": false,
+  "connectionObservation": "Rechecked browser inventory after user enabled extension; only Codex MCP Apps is available with no tabs. Direct Edge and Chrome createBrowserTab calls both returned Browser is not available. No upload or submission occurred.",
+  "submissions": [
+    {
+      "title": "海豹办公 2.1.2 电脑版：文字、表格、演示和脑图，一个工作区完成",
+      "video": "E:/seal-office/release/promo/seal-office-2.1.2-pc-intro-1080p.mp4",
+      "cover": "E:/seal-office/release/promo/seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+      "subtitles": "E:/seal-office/release/promo/seal-office-2.1.2-pc-intro-1080p.srt",
+      "videoSha256": "66e90deafae3f457ad35c1bb22db882f1b416672c44d8dab62c664f31c37c914",
+      "width": 1920,
+      "height": 1080,
+      "description": "海豹办公 2.1.2 功能介绍：多标签工作区、文字与图片编辑、表格计算和自适应列宽、演示模板、脑图和流程图多项目管理，以及 SLDOC / SLXLS / SLPPT / SPDF 四种专属格式。\n\n网页版：https://seal.xingmasoft.com/office/\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2\n移动端最新修复包：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-logo\nGitCode：https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-logo\n\n画面来自当前版本的生产浏览器界面演示，使用合成语音配音。",
+      "tags": [
+        "海豹办公",
+        "办公软件",
+        "文档编辑",
+        "表格",
+        "效率工具",
+        "软件分享"
+      ],
+      "submissionId": null,
+      "url": null
+    },
+    {
+      "title": "海豹办公 2.1.2 安卓版：海豹 Logo 悬浮助手、全屏阅读与随身编辑",
+      "video": "E:/seal-office/release/promo/seal-office-2.1.2-android-intro-1080p.mp4",
+      "cover": "E:/seal-office/release/promo/seal-office-2.1.2-android-intro-1080p-cover.jpg",
+      "subtitles": "E:/seal-office/release/promo/seal-office-2.1.2-android-intro-1080p.srt",
+      "videoSha256": "a02960004390dac5d7b845babdba5f24724036a7f07d9f58ee18e271ca376945",
+      "width": 1080,
+      "height": 1920,
+      "description": "海豹办公 2.1.2 移动端功能介绍：海豹 Logo 圆形悬浮助手，首页、云盘、服务、模板和我的五个功能页，全屏阅读隐藏操作栏、双击唤出与三秒自动收起，表格编辑、演示模板，以及脑图和流程图多项目管理。\n\nAndroid APK 与鸿蒙 App Pack、分别冻结的云打包源码：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-logo\nGitCode：https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-logo\n网页版：https://seal.xingmasoft.com/office/\n\n本视频为生产构建的手机尺寸浏览器布局演示，使用合成语音配音，并非 APK 真机录屏。正式包已核对版本、签名与对应源码资源；完整真机验收情况请查看发行页的验证报告。",
+      "tags": [
+        "海豹办公",
+        "安卓应用",
+        "移动办公",
+        "全屏阅读",
+        "效率工具",
+        "软件分享"
+      ],
+      "submissionId": null,
+      "url": null
+    }
+  ]
+}
