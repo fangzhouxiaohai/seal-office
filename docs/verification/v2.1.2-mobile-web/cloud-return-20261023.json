@@ -1,0 +1,190 @@
+{
+  "recordedAt": "2026-10-23T07:08:58.734374+00:00",
+  "version": "2.1.2",
+  "versionCode": "20102",
+  "releaseAcceptancePassed": false,
+  "reason": "Both returned packages contain the earlier 2026-10-22 editor snapshot. They do not contain the formatting/compatibility fixes in the 2026-10-23 mobile-web source release.",
+  "action": "Do not publish these packages as the mobile-web repair release; rebuild both platforms from the independently verified ZIP archives below.",
+  "signedPackagesModified": false,
+  "packagesPublished": false,
+  "physicalDeviceTested": false,
+  "latestSourceCommit": "c5c730254ccb09c3a1dcd314f33123931c7c1f7e",
+  "priorSourceInputsReverified": 1241,
+  "latestSources": {
+    "android": {
+      "archive": "release/v2.1.2/mobile-web/seal-office-2.1.2-android-cloud-source.zip",
+      "sha256": "befe4c48b6807f3cfbb0e60eac3576b278e0aff4af8339a47937636080d241a5",
+      "archiveBytes": 38531176,
+      "expandedBytes": 59799985,
+      "files": 59,
+      "build": {
+        "platform": "android",
+        "desktopVersion": "2.1.2",
+        "builtAt": "2026-10-23T05:54:54.668Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "allFileHashesAndCrcReverified": true
+    },
+    "harmony": {
+      "archive": "release/v2.1.2/mobile-web/seal-office-2.1.2-harmony-cloud-source.zip",
+      "sha256": "21aef4acb56f1e168fca3992622e592c039d1256417c62303a4df05c4706cd28",
+      "archiveBytes": 38531184,
+      "expandedBytes": 59799985,
+      "files": 59,
+      "build": {
+        "platform": "harmony",
+        "desktopVersion": "2.1.2",
+        "builtAt": "2026-10-23T06:01:41.801Z",
+        "architecture": "uni-app-x-local-webview",
+        "defaultPackagePlatform": "android"
+      },
+      "editorSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+      "allFileHashesAndCrcReverified": true
+    }
+  },
+  "android": {
+    "downloadPage": "https://app.liuyingyong.cn/build/download/452ba820-cead-11f1-9b3c-7b5e45dba300",
+    "bytes": 71473907,
+    "sha256": "55f3764f62c2c70b4ab3bec9fe53d6ddfc48d612d3b984c71b1c7f6887e0992c",
+    "appId": "__UNI__B52B65B",
+    "version": {
+      "name": "2.1.2",
+      "code": "20102"
+    },
+    "build": {
+      "platform": "android",
+      "desktopVersion": "2.1.2",
+      "builtAt": "2026-10-21T17:28:05.719Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "sdkMetadata": {
+      "packageName": "com.sealoffice.mobile",
+      "versionCode": "20102",
+      "versionName": "2.1.2",
+      "minSdk": "28",
+      "targetSdk": "36",
+      "abi": "'arm64-v8a' 'armeabi-v7a'",
+      "debuggable": false,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.sealoffice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+      ],
+      "zipAligned": true
+    },
+    "signature": {
+      "verified": true,
+      "v1": false,
+      "v2": false,
+      "v3": true,
+      "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+    },
+    "zipCrcPassed": true,
+    "nativeLibraries16KiBPassed": true,
+    "matchesLatestSource": false,
+    "matchesEarlierVerifiedSnapshot": true,
+    "earlierSnapshotResourcesChecked": 28,
+    "editorSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d",
+    "latestResourceDifferences": [
+      {
+        "path": "assets/index-f2337ea1.css",
+        "present": false,
+        "matchesSnapshot": false,
+        "expectedSha256": "f2337ea155c20e2509d515da59e080e97a8989c1ee4256e918568a721df9f87b",
+        "actualSha256": null
+      },
+      {
+        "path": "build-info.json",
+        "present": true,
+        "matchesSnapshot": false,
+        "expectedSha256": "1799ce0f21e0c3385a3084572517989ae7de2b390206945e32965c50ed933ee8",
+        "actualSha256": "a2d5763ab6084bb84e0e4e4441fac5116c771f4163ed80f764c9f7b6df1f78c3"
+      },
+      {
+        "path": "index.html",
+        "present": true,
+        "matchesSnapshot": false,
+        "expectedSha256": "04c894f1784b842ba80be0cc27228dedba701b1b6fb954b8fa58faf40fe6457f",
+        "actualSha256": "6f2b8676f8c6eae0c86def3b95f064cd95a2a4ade24abb5f1152399300fd66d8"
+      },
+      {
+        "path": "office.js",
+        "present": true,
+        "matchesSnapshot": false,
+        "expectedSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+        "actualSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d"
+      }
+    ],
+    "extraOldResources": [
+      "assets/index-dfdd9dcb.css"
+    ]
+  },
+  "harmony": {
+    "originalPath": "release/v2.1.2/verified/harmony/unpackage/dist/build/app-harmony/build/outputs/release/app-harmony-release-signed.app",
+    "bytes": 42430057,
+    "sha256": "855b39b62a7d3df01bdc896c71220b9e30c725c8f7b008b657300756ff95c018",
+    "bundleName": "com.sealoffice.mobile",
+    "version": {
+      "code": 20102,
+      "name": "2.1.2"
+    },
+    "build": {
+      "platform": "harmony",
+      "desktopVersion": "2.1.2",
+      "builtAt": "2026-10-21T17:32:39.971Z",
+      "architecture": "uni-app-x-local-webview",
+      "defaultPackagePlatform": "android"
+    },
+    "appPackSignatureVerified": true,
+    "appPackDigestVerified": true,
+    "releaseProfileMatchesPrevious": true,
+    "innerHapIndependentlySigned": false,
+    "standaloneHapPublished": false,
+    "zipCrcPassed": true,
+    "embeddedHapCrcPassed": true,
+    "matchesLatestSource": false,
+    "matchesEarlierVerifiedSnapshot": true,
+    "earlierSnapshotResourcesChecked": 28,
+    "editorSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d",
+    "latestResourceDifferences": [
+      {
+        "path": "assets/index-f2337ea1.css",
+        "present": false,
+        "expectedSha256": "f2337ea155c20e2509d515da59e080e97a8989c1ee4256e918568a721df9f87b",
+        "actualSha256": null,
+        "matchesSnapshot": false
+      },
+      {
+        "path": "build-info.json",
+        "present": true,
+        "expectedSha256": "1090902cc1cfa49f060fd587baa70da0d1c235338c881294e0079f333578dda4",
+        "actualSha256": "668a9b4078e673a91600011722226e9087455aa08437c83befe85b93a3daacb4",
+        "matchesSnapshot": false
+      },
+      {
+        "path": "index.html",
+        "present": true,
+        "expectedSha256": "04c894f1784b842ba80be0cc27228dedba701b1b6fb954b8fa58faf40fe6457f",
+        "actualSha256": "6f2b8676f8c6eae0c86def3b95f064cd95a2a4ade24abb5f1152399300fd66d8",
+        "matchesSnapshot": false
+      },
+      {
+        "path": "office.js",
+        "present": true,
+        "expectedSha256": "e2f3a5ed4bb7103878f6f17d6fe779f4c656e947364961579d40e953466ce2b7",
+        "actualSha256": "618baabe2a30bae60ecfe2ac4c351e41c06a603f920675c954ff88c4afc7bc2d",
+        "matchesSnapshot": false
+      }
+    ],
+    "extraOldResources": [
+      "assets/index-dfdd9dcb.css"
+    ]
+  }
+}
