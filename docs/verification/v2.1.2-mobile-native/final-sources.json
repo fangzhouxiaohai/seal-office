@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "sources": {
+    "android": {
+      "files": 59,
+      "expandedBytes": 59799953,
+      "zipBytes": 38531181,
+      "allBytesMatchZip": true,
+      "platformVerified": true
+    },
+    "harmony": {
+      "files": 59,
+      "expandedBytes": 59799953,
+      "zipBytes": 38531184,
+      "allBytesMatchZip": true,
+      "platformVerified": true
+    }
+  }
+}

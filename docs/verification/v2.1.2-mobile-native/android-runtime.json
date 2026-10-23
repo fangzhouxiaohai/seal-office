@@ -1,0 +1,20 @@
+{
+  "recordedAt": "2026-10-23T11:42:55.294629+00:00",
+  "device": "LDPlayer Android emulator",
+  "serial": "emulator-5554",
+  "androidVersion": "14",
+  "apiLevel": 34,
+  "installedPackage": "com.sealoffice.mobile",
+  "installedApkSha256": "9fc2e1b98a10704c9c273d4b375008ec9932af822f31ff36981dc566800a7083",
+  "installedApkMatchesReturnedPackage": true,
+  "nativeScreenshot": "android-installed-logo.png",
+  "sealLogoVisualReviewPassed": true,
+  "appLaunchedSuccessfully": true,
+  "dragMovementObserved": true,
+  "completeTouchSequenceVerified": false,
+  "completeInteractionSession": false,
+  "interruption": "The ADB device disconnected during the follow-up touch check; no complete native interaction pass is claimed.",
+  "physicalDeviceTested": false,
+  "productionCloudDocumentChanges": 0,
+  "appDataCleared": false
+}

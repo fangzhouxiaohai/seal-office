@@ -1,0 +1,25 @@
+{
+  "signedHarmonyBytesPreservedAt": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\seal-office-2.1.2-harmony.app",
+  "recordedAt": "2026-10-23T11:52:11.2323610Z",
+  "unrelatedShortPromoWorkUntouched": true,
+  "targets": [
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\android-cloud-source\\unpackage",
+      "removed": true,
+      "reparsePointsUnlinked": 0,
+      "files": 86
+    },
+    {
+      "path": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source\\unpackage",
+      "removed": true,
+      "reparsePointsUnlinked": 21,
+      "files": 4390
+    },
+    {
+      "path": "E:\\seal-office\\release\\promo\\work-2.1.2",
+      "removed": true,
+      "reparsePointsUnlinked": 0,
+      "files": 533
+    }
+  ]
+}

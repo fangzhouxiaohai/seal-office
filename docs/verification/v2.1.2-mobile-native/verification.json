@@ -1,0 +1,82 @@
+{
+  "passed": true,
+  "recordedAt": "2026-10-23T11:51:41.871214+00:00",
+  "version": "2.1.2",
+  "versionCode": "20102",
+  "revision": "mobile-assistant-logo-native",
+  "tag": "v2.1.2-mobile-logo",
+  "runtimeSourceCommit": "3346ef1885b2faeaeaae7987f8c527a22a3b56dc",
+  "nativeSignedBytesUnchanged": true,
+  "android": {
+    "name": "seal-office-2.1.2-android.apk",
+    "bytes": 71478003,
+    "sha256": "9fc2e1b98a10704c9c273d4b375008ec9932af822f31ff36981dc566800a7083",
+    "signedBytesUnchanged": true
+  },
+  "harmonyAppPack": {
+    "name": "seal-office-2.1.2-harmony.app",
+    "bytes": 42432776,
+    "sha256": "14a755827f46b3ecf8e88adfe02519c0a353c13f3f93c84c3e199468beb41c03",
+    "signedBytesUnchanged": true
+  },
+  "harmonyReleaseWrapper": {
+    "name": "seal-office-2.1.2-harmony.app.zip",
+    "bytes": 42411265,
+    "sha256": "895efbbb96b4c165ba68d4b01fdd6d31f6308d6cc9fef4ea35b32b96603fceac"
+  },
+  "all28ResourcesMatchFrozenSourceOnBothPlatforms": true,
+  "editorSha256": "e04ad8427ece892690f4c4a7ac058181e440694296f8ae85645a119dc548f3f9",
+  "androidSignatureVerified": true,
+  "androidCertificateMatchesEstablishedRelease": true,
+  "android16KiBAlignmentVerified": true,
+  "harmonyAppPackSignatureVerified": true,
+  "harmonyInnerHapIndependentlySigned": false,
+  "standaloneHapPublished": false,
+  "priorSourceVerification": {
+    "record": "../v2.1.2-mobile-logo/verification.json",
+    "assistantUnitTestsPassed": 36,
+    "productionBrowserChecksPassed": 88,
+    "bothNativeCompilationsPassed": true,
+    "rerunForIdenticalReturnedNativeResources": false
+  },
+  "androidRuntime": {
+    "recordedAt": "2026-10-23T11:42:55.294629+00:00",
+    "device": "LDPlayer Android emulator",
+    "serial": "emulator-5554",
+    "androidVersion": "14",
+    "apiLevel": 34,
+    "installedPackage": "com.sealoffice.mobile",
+    "installedApkSha256": "9fc2e1b98a10704c9c273d4b375008ec9932af822f31ff36981dc566800a7083",
+    "installedApkMatchesReturnedPackage": true,
+    "nativeScreenshot": "android-installed-logo.png",
+    "sealLogoVisualReviewPassed": true,
+    "appLaunchedSuccessfully": true,
+    "dragMovementObserved": true,
+    "completeTouchSequenceVerified": false,
+    "completeInteractionSession": false,
+    "interruption": "The ADB device disconnected during the follow-up touch check; no complete native interaction pass is claimed.",
+    "physicalDeviceTested": false,
+    "productionCloudDocumentChanges": 0,
+    "appDataCleared": false
+  },
+  "harmonyPhysicalDeviceTested": false,
+  "promoVerification": "promo.json",
+  "promoPassed": true,
+  "sourceLimits": {
+    "androidZipBytes": 38531181,
+    "androidCleanExpandedBytes": 59799953,
+    "limitBytes": 60000000,
+    "androidWithinBothLimits": true,
+    "harmonyZipBytes": 38531184,
+    "harmonyCleanExpandedBytes": 59799953
+  },
+  "limitations": [
+    "Android emulator verified installed APK identity, Seal Logo appearance and observed movement; ADB disconnected before complete touch sequence.",
+    "No Android physical-device or Harmony physical-device acceptance is claimed.",
+    "Promo videos use production browser UI layouts with disclosed capture source."
+  ],
+  "previousReleaseTagsPreserved": [
+    "v2.1.2",
+    "v2.1.2-mobile-web"
+  ]
+}

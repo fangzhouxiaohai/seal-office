@@ -1,0 +1,199 @@
+{
+  "recordedAt": "2026-10-23T11:35:45.816905+00:00",
+  "passed": true,
+  "version": "2.1.2",
+  "platform": "harmony",
+  "originalPath": "E:\\seal-office\\release\\v2.1.2\\mobile-web\\harmony-cloud-source\\unpackage\\dist\\build\\app-harmony\\build\\outputs\\release\\app-harmony-release-signed.app",
+  "bytes": 42432776,
+  "sha256": "14a755827f46b3ecf8e88adfe02519c0a353c13f3f93c84c3e199468beb41c03",
+  "bundleName": "com.sealoffice.mobile",
+  "versionMetadata": {
+    "code": 20102,
+    "name": "2.1.2"
+  },
+  "appPackSignature": {
+    "exitCode": 0,
+    "verified": true,
+    "digestVerified": true,
+    "signatureNotFound": false
+  },
+  "releaseProfileMatchesEstablishedProfile": true,
+  "releaseProfileSha256": "c6d5e8dc4284b26e02bdb943d724537874bb3e486f9629dffee8d616ca213fda",
+  "embeddedHapSignature": {
+    "exitCode": 1,
+    "verified": false,
+    "digestVerified": false,
+    "signatureNotFound": true
+  },
+  "embeddedHapSha256": "28e26549484deac7f04bbef33196e643289000042bf8e1f9d9e04bf570d40a1c",
+  "standaloneHapPublished": false,
+  "debuggable": false,
+  "originalSignedBytesUnmodified": true,
+  "physicalDeviceTested": false,
+  "build": {
+    "platform": "harmony",
+    "desktopVersion": "2.1.2",
+    "builtAt": "2026-10-23T08:18:49.916Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "sourceArchive": "seal-office-2.1.2-harmony-cloud-source.zip",
+  "sourceArchiveSha256": "2ad9463ec2a86e404a12f83d85e3ad0d8de849a1603d5c5e07cf531e602c1807",
+  "editorSha256": "e04ad8427ece892690f4c4a7ac058181e440694296f8ae85645a119dc548f3f9",
+  "resources": [
+    {
+      "path": "assets/index-f2337ea1.css",
+      "bytes": 216020,
+      "sha256": "f2337ea155c20e2509d515da59e080e97a8989c1ee4256e918568a721df9f87b"
+    },
+    {
+      "path": "assets/logo-da820085.png",
+      "bytes": 16518,
+      "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+    },
+    {
+      "path": "assets/TemplateLibrary-d5e988b9.css",
+      "bytes": 3623,
+      "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
+    },
+    {
+      "path": "build-info.json",
+      "bytes": 182,
+      "sha256": "dab0ee065e4b5e0104efed4cdb988d899ae4c857e67fdbe03f5d2cf7ff2aae37"
+    },
+    {
+      "path": "compatibility.js",
+      "bytes": 2436,
+      "sha256": "3fc635712b782820f7f93bd4b1a366247df743bd57144b76d38561b75e95e6d7"
+    },
+    {
+      "path": "fonts/NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "path": "fonts/NotoSerif-LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "path": "fonts/NotoSerifCJKsc-Regular.otf",
+      "bytes": 24543080,
+      "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+    },
+    {
+      "path": "fonts/OFL.txt",
+      "bytes": 4387,
+      "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+    },
+    {
+      "path": "icons/icon180.png",
+      "bytes": 9295,
+      "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed"
+    },
+    {
+      "path": "icons/icon192.png",
+      "bytes": 11868,
+      "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78"
+    },
+    {
+      "path": "icons/icon32.png",
+      "bytes": 1592,
+      "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9"
+    },
+    {
+      "path": "icons/icon512.png",
+      "bytes": 26134,
+      "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8"
+    },
+    {
+      "path": "index.html",
+      "bytes": 1189,
+      "sha256": "04c894f1784b842ba80be0cc27228dedba701b1b6fb954b8fa58faf40fe6457f"
+    },
+    {
+      "path": "licenses/bessel-LICENSE.txt",
+      "bytes": 589,
+      "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e"
+    },
+    {
+      "path": "licenses/formulajs-LICENSE.txt",
+      "bytes": 3320,
+      "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b"
+    },
+    {
+      "path": "licenses/frac-LICENSE.txt",
+      "bytes": 589,
+      "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193"
+    },
+    {
+      "path": "licenses/iconv-lite-0.6.3.txt",
+      "bytes": 1063,
+      "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c"
+    },
+    {
+      "path": "licenses/isomorphic.js-LICENSE.txt",
+      "bytes": 1108,
+      "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057"
+    },
+    {
+      "path": "licenses/jstat-LICENSE.txt",
+      "bytes": 1049,
+      "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800"
+    },
+    {
+      "path": "licenses/lib0-LICENSE.txt",
+      "bytes": 1108,
+      "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73"
+    },
+    {
+      "path": "licenses/OFD-1.0.6.txt",
+      "bytes": 10678,
+      "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17"
+    },
+    {
+      "path": "licenses/SheetJS-0.20.3.txt",
+      "bytes": 11355,
+      "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+    },
+    {
+      "path": "licenses/ssf-LICENSE.txt",
+      "bytes": 11355,
+      "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26"
+    },
+    {
+      "path": "licenses/yjs-LICENSE.txt",
+      "bytes": 1211,
+      "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 377,
+      "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8"
+    },
+    {
+      "path": "office.js",
+      "bytes": 16706443,
+      "sha256": "e04ad8427ece892690f4c4a7ac058181e440694296f8ae85645a119dc548f3f9"
+    },
+    {
+      "path": "uni.webview.js",
+      "bytes": 6641,
+      "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8"
+    }
+  ],
+  "all28ResourcesMatchLatestFrozenSource": true,
+  "zipCrcPassed": true,
+  "includesMobileSealLogoFix": true,
+  "archive": {
+    "name": "seal-office-2.1.2-harmony.app",
+    "bytes": 42432776,
+    "sha256": "14a755827f46b3ecf8e88adfe02519c0a353c13f3f93c84c3e199468beb41c03",
+    "signedBytesUnchanged": true
+  },
+  "releaseWrapper": {
+    "name": "seal-office-2.1.2-harmony.app.zip",
+    "bytes": 42411265,
+    "sha256": "895efbbb96b4c165ba68d4b01fdd6d31f6308d6cc9fef4ea35b32b96603fceac"
+  }
+}
