@@ -11,3 +11,7 @@
 - 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不会修改安装包或平台源码。
 
 B 站尚未投稿：当前任务只暴露 Codex MCP Apps，无法接入 Edge / Chrome。已备好逐条投稿文案和素材路径，见 bilibili-submissions.json。
+
+教程已独立发布：[GitHub](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-tutorials)、[GitCode](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-tutorials)。每仓库 12 个素材附件，全部 24 次匿名下载逐字节校验通过。`publication.json` 保存逐附件结果；既有移动安装包发行附件保持不变。本机旧介绍片重复副本已清理，历史发行记录保留。
+
+源码与录制证据冻结在 `e27c91d` / `v2.1.2-tutorials`。后续仅调整发布和缓存清理工具：草稿转公开后重新读取附件清单，避免暂存下载地址造成 404；清理缓存时验证专用脚本名称、Python 字节码头和源码大小。本次公开下载在恢复读取清单后已核验通过，不更改已发布影片。

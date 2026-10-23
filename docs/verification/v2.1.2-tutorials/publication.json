@@ -1,0 +1,187 @@
+{
+  "passed": true,
+  "recordedAt": "2026-10-23T12:48:19.639144+00:00",
+  "tag": "v2.1.2-tutorials",
+  "sourceCommit": "e27c91d1a9809fdba56494eca7f2e657b4a5282f",
+  "assetsPerRepository": 12,
+  "all24AnonymousDownloadsVerified": true,
+  "originalMobileReleaseAssetsPreserved": true,
+  "github": {
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-tutorials",
+    "assets": [
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p.mp4",
+        "bytes": 8875629,
+        "sha256": "0404e4f46493ffe005b3ef7f044be1d26b4350be21a35886b58b81cf74898e6b",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p.srt",
+        "bytes": 2661,
+        "sha256": "673cb6f63b4ca27abdc1bd49ef9099dc513d2138e9d7f47ea3f1c4230a3fd82d",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p.srt",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+        "bytes": 331311,
+        "sha256": "437861ebbe8f6a5f191e45226f800f6442a4f4097a21c71814d8497a906f6ef9",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-contact.jpg",
+        "bytes": 356878,
+        "sha256": "52ba41e8c5538387789fe32896099ec728a207487cb17739b758dc17691bbead",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-contact.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-preview.mp4",
+        "bytes": 756241,
+        "sha256": "04f48b18bd8b0ae75c8a292a22d9cfce44afcf6b436cb0a645905f93d818b2e8",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-preview.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p.mp4",
+        "bytes": 14545397,
+        "sha256": "67a3f928be9674342904ce233c8d119f792e3217fa05584b01b3ec179f558f5b",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p.srt",
+        "bytes": 2875,
+        "sha256": "eaa6c95da3f53f5f511729c35ca2cbc27cbb3dd13b0f35bf917d3ddbac55fe66",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p.srt",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-cover.jpg",
+        "bytes": 240322,
+        "sha256": "e283e0cabc468b31ef3cd6939ee314618959e4096377470e0ebb9841f1251b9e",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-cover.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-contact.jpg",
+        "bytes": 526398,
+        "sha256": "1e06c52a7767b178f2b8ff4fdda7e9ace219079c01d3795e9b62c33a5ed740f1",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-contact.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-preview.mp4",
+        "bytes": 1134765,
+        "sha256": "2abc9b3d20e1607907472f00373c5cb26495b800b6da322013334b35b7b35b1a",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-preview.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-tutorial-verification.json",
+        "bytes": 9022,
+        "sha256": "fb5fbe4d77f10c139787ae311d7bfea33c087d1387bc1d95bc0010f47adffd9a",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-tutorial-verification.json",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-tutorial-SHA256SUMS.txt",
+        "bytes": 1221,
+        "sha256": "829a76eb53abd9e1a0a2886d4b472e00a9fb0fceb236b72b7f734804d0cf5e41",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-tutorial-SHA256SUMS.txt",
+        "anonymousDownloadVerified": true
+      }
+    ]
+  },
+  "gitcode": {
+    "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-tutorials",
+    "assets": [
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p.mp4",
+        "bytes": 8875629,
+        "sha256": "0404e4f46493ffe005b3ef7f044be1d26b4350be21a35886b58b81cf74898e6b",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p.srt",
+        "bytes": 2661,
+        "sha256": "673cb6f63b4ca27abdc1bd49ef9099dc513d2138e9d7f47ea3f1c4230a3fd82d",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p.srt",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+        "bytes": 331311,
+        "sha256": "437861ebbe8f6a5f191e45226f800f6442a4f4097a21c71814d8497a906f6ef9",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-cover.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-contact.jpg",
+        "bytes": 356878,
+        "sha256": "52ba41e8c5538387789fe32896099ec728a207487cb17739b758dc17691bbead",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-contact.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-pc-intro-1080p-preview.mp4",
+        "bytes": 756241,
+        "sha256": "04f48b18bd8b0ae75c8a292a22d9cfce44afcf6b436cb0a645905f93d818b2e8",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-pc-intro-1080p-preview.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p.mp4",
+        "bytes": 14545397,
+        "sha256": "67a3f928be9674342904ce233c8d119f792e3217fa05584b01b3ec179f558f5b",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p.srt",
+        "bytes": 2875,
+        "sha256": "eaa6c95da3f53f5f511729c35ca2cbc27cbb3dd13b0f35bf917d3ddbac55fe66",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p.srt",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-cover.jpg",
+        "bytes": 240322,
+        "sha256": "e283e0cabc468b31ef3cd6939ee314618959e4096377470e0ebb9841f1251b9e",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-cover.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-contact.jpg",
+        "bytes": 526398,
+        "sha256": "1e06c52a7767b178f2b8ff4fdda7e9ace219079c01d3795e9b62c33a5ed740f1",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-contact.jpg",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-android-intro-1080p-preview.mp4",
+        "bytes": 1134765,
+        "sha256": "2abc9b3d20e1607907472f00373c5cb26495b800b6da322013334b35b7b35b1a",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-android-intro-1080p-preview.mp4",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-tutorial-verification.json",
+        "bytes": 9022,
+        "sha256": "fb5fbe4d77f10c139787ae311d7bfea33c087d1387bc1d95bc0010f47adffd9a",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-tutorial-verification.json",
+        "anonymousDownloadVerified": true
+      },
+      {
+        "name": "seal-office-2.1.2-tutorial-SHA256SUMS.txt",
+        "bytes": 1221,
+        "sha256": "829a76eb53abd9e1a0a2886d4b472e00a9fb0fceb236b72b7f734804d0cf5e41",
+        "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.1.2-tutorials/seal-office-2.1.2-tutorial-SHA256SUMS.txt",
+        "anonymousDownloadVerified": true
+      }
+    ]
+  }
+}

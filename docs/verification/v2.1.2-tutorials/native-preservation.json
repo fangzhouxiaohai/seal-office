@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "nativePackagesAndFrozenSourcesUnchanged": true,
+  "files": [
+    {
+      "name": "seal-office-2.1.2-android.apk",
+      "bytes": 71478003,
+      "sha256": "9fc2e1b98a10704c9c273d4b375008ec9932af822f31ff36981dc566800a7083",
+      "unchanged": true
+    },
+    {
+      "name": "seal-office-2.1.2-harmony.app",
+      "bytes": 42432776,
+      "sha256": "14a755827f46b3ecf8e88adfe02519c0a353c13f3f93c84c3e199468beb41c03",
+      "unchanged": true
+    },
+    {
+      "name": "seal-office-2.1.2-android-cloud-source.zip",
+      "bytes": 38531181,
+      "sha256": "5d49d5a6b6c36a4fcead781391861eed87d39ad728c4965f3f29c6e43a0834d5",
+      "unchanged": true
+    },
+    {
+      "name": "seal-office-2.1.2-harmony-cloud-source.zip",
+      "bytes": 38531184,
+      "sha256": "2ad9463ec2a86e404a12f83d85e3ad0d8de849a1603d5c5e07cf531e602c1807",
+      "unchanged": true
+    }
+  ],
+  "cleanCloudProjectFilesPerPlatform": 59,
+  "expandedBytesPerPlatform": 59799953,
+  "androidZipAndExpandedUnder60000000": true,
+  "temporaryPromoDirectoriesPresent": false
+}

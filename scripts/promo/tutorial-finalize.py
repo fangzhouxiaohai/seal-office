@@ -1,5 +1,5 @@
 """Freeze reviewed tutorial evidence and remove only known generated materials."""
-import argparse, hashlib, json, os, shutil, subprocess, sys, zipfile
+import argparse, hashlib, importlib.util, json, os, shutil, subprocess, sys, zipfile
 from pathlib import Path
 from datetime import datetime,timezone
 import cv2
@@ -30,7 +30,23 @@ def safe_remove_tree(p):
 def frame(file,seconds,out):
     video=cv2.VideoCapture(str(file));video.set(cv2.CAP_PROP_POS_MSEC,seconds*1000);ok,pixels=video.read();video.release();assert ok;cv2.imwrite(str(out),pixels)
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--record-visual-review',action='store_true');parser.add_argument('--clean',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--record-visual-review',action='store_true');parser.add_argument('--clean',action='store_true');parser.add_argument('--clean-bytecode',action='store_true');args=parser.parse_args()
+    if args.clean_bytecode:
+        removed=[]
+        for name in ['tutorial-voice.py','tutorial-render.py','publish-tutorials.py']:
+            source=ROOT/'scripts/promo'/name;cache=Path(importlib.util.cache_from_source(str(source)))
+            assert cache.parent.resolve()==(ROOT/'scripts/promo/__pycache__').resolve() and source.is_file()
+            if not cache.exists():continue
+            assert not cache.is_symlink() and cache.is_file()
+            content=cache.read_bytes();assert content[:4]==importlib.util.MAGIC_NUMBER and len(content)>16
+            # Accept only timestamp bytecode for these known tutorial scripts,
+            # with a size matching the current source or its frozen release.
+            assert int.from_bytes(content[4:8],'little')==0
+            old=subprocess.check_output(['git','show','v'+VERSION+'-tutorials:scripts/promo/'+name],cwd=ROOT)
+            assert int.from_bytes(content[12:16],'little') in [source.stat().st_size,len(old)]
+            cache.unlink();removed.append(str(cache))
+        write(DOC/'bytecode-cleanup.json',{'passed':True,'removedKnownGeneratedBytecode':removed,'sourceFilesDeleted':False})
+        print(json.dumps({'bytecodeCleanupPassed':True,'removed':len(removed)}),flush=True);return
     assert args.record_visual_review,'Inspect both contact sheets and operation-detail frames before finalization'
     report=read(OUT/'verification.json');assert report['passed'] and report['kind']=='hands-on-tutorial' and len(report['videos'])==2
     DOC.mkdir(parents=True,exist_ok=True)

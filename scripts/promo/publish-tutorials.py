@@ -82,6 +82,10 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:uploaded=list(pool.map(gh_upload,assets))
     assert {r['name'] for r in api('github','GET',f'/releases/{rid}')['assets']}==set(a['name'] for a in assets)
     if release['draft']:release=api('github','PATCH',f'/releases/{rid}',json={'draft':False,'make_latest':'false'})
+    # Draft upload responses can retain provisional URLs. Verify the final public
+    # URLs from a fresh inventory after publication, as on a successful resume.
+    uploaded=api('github','GET',f'/releases/{rid}')['assets']
+    print(json.dumps({'githubPublished':release['html_url'],'assets':len(uploaded)}),flush=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:github=list(pool.map(lambda a:public_check('github',a['name'],next(r['browser_download_url'] for r in uploaded if r['name']==a['name']),a),assets))
     print(json.dumps({'githubVerified':len(github),'url':release['html_url']}),flush=True)
     mirror=api('gitcode','GET','/releases/'+TAG,missing=True)
