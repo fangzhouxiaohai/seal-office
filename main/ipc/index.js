@@ -13,6 +13,7 @@ const { 创建识别服务 } = require('../ppt/recognition')
 const { 注册演示生成通道 } = require('./presentationGenerationChannel')
 const { 注册云端通道 } = require('./cloudChannel')
 const { 注册Access数据库通道 } = require('./databaseChannel')
+const { 注册字体通道 } = require('./fontChannel')
 const { createService } = require('../cloud/service')
 const { 创建实名助手服务, 创建实名AI请求 } = require('../ai/identityGate')
 
@@ -47,6 +48,7 @@ function 注册全部通道(ipcMain, 依赖 = {}) {
   注册演示生成通道(ipcMain, { 助手服务, 用户数据目录: app.getPath('userData'), requireAIIdentity })
   注册云端通道(ipcMain, { 助手服务, cloudService, requireAIIdentity })
   注册Access数据库通道(ipcMain, 依赖)
+  注册字体通道(ipcMain, 依赖)
 }
 
 module.exports = { 注册全部通道, 创建共用助手服务 }

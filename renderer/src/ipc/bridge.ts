@@ -1,4 +1,5 @@
 import {认证AI调用} from '../cloud/aiIdentity'
+import type { 字体目录结果, 字体读取结果, 字体导入结果 } from '../fonts/types'
 export type 文本编码 = 'utf8' | 'utf16le' | 'utf16be' | 'gb18030'
 export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
 export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string; 已取消?: boolean }
@@ -263,13 +264,38 @@ export interface 电子接口 {
   presentationAi?: 演示智能接口
   presentationGeneration?: 演示生成接口
   office: { readSeal:(扩展:string,数据:string)=>Promise<any>;writeSeal:(类型:string,数据:unknown)=>Promise<any>;readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
+  fonts?: {
+    list: (选项?: { 刷新?: boolean }) => Promise<字体目录结果>
+    read: (标识: string) => Promise<字体读取结果>
+    import: () => Promise<字体导入结果>
+    remove: (标识: string) => Promise<{ 成功: boolean; 数据?: { 移除: string[] }; 错误?: string }>
+    openFolder: () => Promise<{ 成功: boolean; 数据?: { 路径: string }; 错误?: string }>
+  }
   pdf: { extract: (数据: string, 页码: number[]) => Promise<any>; merge: (列表: string[]) => Promise<any>; delete: (数据: string, 页码: number[]) => Promise<any>; rotate: (数据: string, 页码: number[], 角度: number) => Promise<any>; insertBlank: (数据: string, 位置: number) => Promise<any>; insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => Promise<any>; editPage: (数据: string, 操作: unknown) => Promise<any>; exportToPath: (html: string, 保存路径: string) => Promise<文件保存结果> }
 }
 declare global { interface Window { electronAPI?: 电子接口 } }
 const 取后端 = (): 电子接口 | null => typeof window !== 'undefined' ? window.electronAPI ?? null : null
 const 失败 = <T = never>(提示: string): Promise<{ 成功: boolean; 数据?: T; 错误: string }> => Promise.resolve({ 成功: false, 错误: 提示 })
+
+type 海豹写入增强器 = (类型: string, 数据: unknown) => Promise<unknown>
+type 海豹读取增强器 = (结果: any, 扩展: string) => Promise<any>
+let 海豹写入增强: 海豹写入增强器 | null = null
+let 海豹读取增强: 海豹读取增强器 | null = null
+/** 字体管理器安装后，专属格式的保存与打开复用同一套嵌入字体处理。 */
+export function 注册海豹格式增强(增强: { 写入?: 海豹写入增强器; 读取?: 海豹读取增强器 }): void {
+  海豹写入增强 = 增强.写入 ?? null
+  海豹读取增强 = 增强.读取 ?? null
+}
 export const 桥接 = {
   get 可用() { return 取后端() !== null },
+  fonts: {
+    get 可用() { return typeof 取后端()?.fonts?.list === 'function' },
+    list: (选项?: { 刷新?: boolean }): Promise<字体目录结果> => 取后端()?.fonts?.list(选项) ?? 失败('当前环境不支持读取字体目录'),
+    read: (标识: string): Promise<字体读取结果> => 取后端()?.fonts?.read(标识) ?? 失败('当前环境不支持读取字体文件'),
+    import: (): Promise<字体导入结果> => 取后端()?.fonts?.import() ?? 失败('当前环境不支持导入字体'),
+    remove: (标识: string) => 取后端()?.fonts?.remove(标识) ?? 失败('当前环境不支持移除字体'),
+    openFolder: () => 取后端()?.fonts?.openFolder() ?? 失败('当前环境不支持打开字体目录'),
+  },
   database: {
     get 可用() { return typeof 取后端()?.database?.invoke === 'function' },
     status: (): Promise<Access数据库状态> => 取后端()?.database?.status() ?? Promise.resolve({ 成功: true, 可用: false, 平台支持: false, 错误: 'Access 数据库功能仅支持 Windows 桌面版' }),
@@ -464,15 +490,20 @@ export const 桥接 = {
     },
   },
   office: {
-    readSeal:(扩展:string,数据:string)=>取后端()?.office.readSeal(扩展,数据)??失败('当前环境不支持海豹文档读取'),
-    writeSeal:(类型:string,数据:unknown)=>取后端()?.office.writeSeal(类型,数据)??失败('当前环境不支持海豹文档保存'),
+    readSeal: async (扩展:string,数据:string) => {
+      const 结果 = await (取后端()?.office.readSeal(扩展,数据) ?? 失败('当前环境不支持海豹文档读取'))
+      return 海豹读取增强 ? 海豹读取增强(结果, 扩展) : 结果
+    },
+    writeSeal: async (类型:string,数据:unknown) => {
+      const 增强后 = 海豹写入增强 ? await 海豹写入增强(类型, 数据) : 数据
+      return 取后端()?.office.writeSeal(类型,增强后) ?? 失败('当前环境不支持海豹文档保存')
+    },
     readCompatible: (扩展: string, 数据: string) => 取后端()?.office.readCompatible?.(扩展, 数据) ?? 失败('当前环境缺少文档兼容引擎'),
     writeCompatible: (类型: string, 扩展: string, 模型: unknown) => 取后端()?.office.writeCompatible?.(类型, 扩展, 模型) ?? 失败('当前环境缺少文档兼容引擎'),
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
   },
   pdf: {
-    insertBlank: (数据: string, 位置: number) => 取后端()?.pdf.insertBlank(数据, 位置) ?? 失败('当前环境不支持 PDF 插入空白页'),
-    insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => 取后端()?.pdf.insertPages(数据, 插入数据, 页码, 位置) ?? 失败('当前环境不支持 PDF 插入页面'),
+    insertBlank: (数据: string, 位置: number) => 取后端()?.pdf.insertBlank(数据, 位置) ?? 失败('当前环境不支持 PDF 插入空白页'),    insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => 取后端()?.pdf.insertPages(数据, 插入数据, 页码, 位置) ?? 失败('当前环境不支持 PDF 插入页面'),
     editPage: (数据: string, 操作: unknown) => 取后端()?.pdf.editPage(数据, 操作) ?? 失败('当前环境不支持 PDF 编辑'),
     extract: (数据: string, 页码: number[]) => 取后端()?.pdf.extract(数据, 页码) ?? 失败('当前环境不支持 PDF 页面提取'), merge: (列表: string[]) => 取后端()?.pdf.merge(列表) ?? 失败('当前环境不支持 PDF 合并'), delete: (数据: string, 页码: number[]) => 取后端()?.pdf.delete(数据, 页码) ?? 失败('当前环境不支持 PDF 删除页面'), rotate: (数据: string, 页码: number[], 角度: number) => 取后端()?.pdf.rotate(数据, 页码, 角度) ?? 失败('当前环境不支持 PDF 旋转页面'), exportToPath: (html: string, 保存路径: string) => 取后端()?.pdf.exportToPath(html, 保存路径) ?? 失败('当前环境不支持 PDF 导出'),
   },

@@ -225,6 +225,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     readPptx: (数据) => ipcRenderer.invoke('office.readPptx', 数据),
     writePptx: (模型) => ipcRenderer.invoke('office.writePptx', 模型),
   },
+  fonts: {
+    list: (选项) => ipcRenderer.invoke('font.list', 选项),
+    read: (标识) => ipcRenderer.invoke('font.read', 标识),
+    import: () => ipcRenderer.invoke('font.import'),
+    remove: (标识) => ipcRenderer.invoke('font.remove', 标识),
+    openFolder: () => ipcRenderer.invoke('font.folder'),
+  },
   pdf: {
     exportToPath: (html, 保存路径) => ipcRenderer.invoke('pdf.exportToPath', html, 保存路径),
     extract: (数据, 页码) => ipcRenderer.invoke('pdf.extract', 数据, 页码),

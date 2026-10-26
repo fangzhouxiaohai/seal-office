@@ -1,0 +1,20 @@
+{
+  "version": "2.2.0",
+  "mode": "static-deb-inspection",
+  "package": "seal-office-2.2.0-amd64.deb",
+  "checks": [
+    "Debian ar structure and version",
+    "2.2.0 amd64 control metadata and conversion dependencies",
+    "Root-owned Chromium SUID sandbox fallback and MIME cache updates are installed without disabling renderer sandboxing",
+    "Archived ELF, Chinese desktop name, and app.asar SHA-256 match the inspected unpacked build"
+  ],
+  "limitations": [
+    "No Linux installation or runtime/UI test was performed on this Windows host."
+  ],
+  "appAsarSha256": "64d3a6841b428703a97293d932e97e2a2e2c8539cdb11863367495e87ca1efb3",
+  "executable": "opt/海豹办公/sealoffice",
+  "desktopName": "海豹办公",
+  "sha256": "b32fdc4e7a6d956fce7e21a6066bdd6bc88338568945d31251e2b98ccd890d3d",
+  "bytes": 141978360,
+  "passed": true
+}

@@ -9,6 +9,7 @@ import AiSettingsCard from '../assistant/AiSettingsCard'
 import CloudSettings from '../cloud/CloudSettings'
 import ConversionServiceSettings from './ConversionServiceSettings'
 import ShortcutSettingsCard from '../shortcuts/ShortcutSettingsCard'
+import FontLibraryCard from '../fonts/FontLibraryCard'
 import { resetShortcutOverrides } from '../shortcuts/shortcuts'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
@@ -241,6 +242,10 @@ const SettingsPage = () => {
             />
           )}
         </div>
+
+        {/* 字体 */}
+        {组标题('字体')}
+        <FontLibraryCard />
 
         {/* 工作环境 */}
         {组标题('工作环境')}

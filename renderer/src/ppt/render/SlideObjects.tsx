@@ -9,6 +9,7 @@ import { TableRenderer } from './TableRenderer'
 import { 公式内容, 附件内容, 图示内容 } from './FormulaRenderer'
 import { 默认页面尺寸, 页脚位置, type 背景填充, type 页脚设置, type 页面尺寸 } from '../model/themes'
 import { MediaRenderer } from './MediaRenderer'
+import { 字体回退Css } from '../../fonts/fallback'
 export function 对象内容({ 对象, 图片地址 = {}, 显示, 放映 = false, on媒体失败 }: { 对象: 演示对象; 图片地址?: 图片地址表; 显示?: 图表显示; 放映?: boolean; on媒体失败?: (错误: unknown) => void }) {
   if (对象.类型 === '图片') return <图片内容 对象={对象} 图片地址={图片地址}/>
   if (对象.类型 === '图形') return <ShapeRenderer 对象={对象}/>
@@ -35,10 +36,10 @@ export function 读取绘制对象(列表: 演示对象[]): 演示对象[] {
   return 读取对象树顺序(列表).filter(项 => 项.类型 !== '组合')
 }
 export function 文本内容({ 框 }: { 框: 文本框 }) {
-  return <>{框.片段列表?.length ? 框.片段列表.map((片段, i) => <span key={i} style={{ color: 片段.颜色 ?? 框.颜色, fontWeight: 片段.加粗 ? 600 : undefined, fontStyle: 片段.斜体 ? 'italic' : undefined, textDecoration: 片段.下划线 ? 'underline' : undefined }}>{片段.文本}</span>) : 框.text}</>
+  return <>{框.片段列表?.length ? 框.片段列表.map((片段, i) => <span key={i} style={{ color: 片段.颜色 ?? 框.颜色, fontFamily: 片段.字体 ? 字体回退Css(片段.字体) : undefined, fontWeight: 片段.加粗 ? 600 : undefined, fontStyle: 片段.斜体 ? 'italic' : undefined, textDecoration: 片段.下划线 ? 'underline' : undefined }}>{片段.文本}</span>) : 框.text}</>
 }
 export function 文本样式(框: 文本框): React.CSSProperties {
-  return { position: 'absolute', left: 框.x, top: 框.y, width: 框.width, height: 框.height, boxSizing: 'border-box', border: '0 solid transparent', padding: '4px 6px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'normal', overflow: 'hidden', lineHeight: 1.35, fontSize: 框.字号, fontFamily: 框.字体 ?? '"Microsoft YaHei", "PingFang SC", Arial, sans-serif', fontWeight: 框.加粗 ? 600 : 400, fontStyle: 框.斜体 ? 'italic' : 'normal', textDecoration: 框.下划线 ? 'underline' : 'none', color: 框.颜色, textAlign: 框.对齐 }
+  return { position: 'absolute', left: 框.x, top: 框.y, width: 框.width, height: 框.height, boxSizing: 'border-box', border: '0 solid transparent', padding: '4px 6px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'normal', overflow: 'hidden', lineHeight: 1.35, fontSize: 框.字号, fontFamily: 字体回退Css(框.字体 ?? 'Microsoft YaHei'), fontWeight: 框.加粗 ? 600 : 400, fontStyle: 框.斜体 ? 'italic' : 'normal', textDecoration: 框.下划线 ? 'underline' : 'none', color: 框.颜色, textAlign: 框.对齐 }
 }
 export function 图片内容({ 对象, 图片地址 }: { 对象: 演示对象; 图片地址: 图片地址表 }) {
   const { modal } = AntdApp.useApp()

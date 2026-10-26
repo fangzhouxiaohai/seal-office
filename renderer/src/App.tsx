@@ -38,6 +38,7 @@ import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
 import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
+import './fonts/fonts.css'
 
 /** 动态 Ant Design 主题配置 */
 const 主题配置 = ({ 深色, 移动 }: { 深色: boolean; 移动: boolean }) => ({
@@ -89,6 +90,26 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   }, [module, documents, activeDocumentId, PDF待预览])
 
   const 页面组件 = 当前模块.page
+
+  useEffect(() => {
+    const 打开字体设置 = () => showSettings()
+    const 缺少字体 = (事件: Event) => {
+      const 字体 = (事件 as CustomEvent<{ 字体?: unknown }>).detail?.字体
+      if (!Array.isArray(字体) || 字体.length === 0) return
+      const 名称 = 字体.filter((项): 项 is string => typeof 项 === 'string').slice(0, 4)
+      if (名称.length === 0) return
+      message.warning(
+        `缺少字体：${名称.join('、')}${字体.length > 名称.length ? ' 等' : ''}。已使用内置/系统字体回退，可在设置中心导入原字体后重新打开。`,
+        8
+      )
+    }
+    window.addEventListener('seal-open-font-settings', 打开字体设置)
+    window.addEventListener('seal-font-missing', 缺少字体)
+    return () => {
+      window.removeEventListener('seal-open-font-settings', 打开字体设置)
+      window.removeEventListener('seal-font-missing', 缺少字体)
+    }
+  }, [showSettings, message])
 
   useEffect(() => {
     if (!备份恢复提示) return

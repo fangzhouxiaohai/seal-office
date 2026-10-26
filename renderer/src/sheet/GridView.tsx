@@ -1,4 +1,5 @@
 import RichCellText from './RichCellText'
+import { 字体回退Css } from '../fonts/fallback'
 // 表格网格视图：列标、行号与单元格。
 // 单元格为受控组件，编辑状态由上层维护。支持鼠标左键按下拖动框选区域。
 import React, { useEffect, useRef } from 'react'
@@ -205,7 +206,7 @@ const GridView = ({
               textAlign: 单元.格式.水平对齐 ?? (单元.格式.对齐元数据?.horizontal === 'general' && typeof 单元.计算值 === 'number' ? 'right' : 'left'),
               justifyContent: (单元.格式.水平对齐 === 'right' || !单元.格式.水平对齐 && 单元.格式.对齐元数据?.horizontal === 'general' && typeof 单元.计算值 === 'number') ? 'flex-end' : 单元.格式.水平对齐 === 'center' ? 'center' : 'flex-start',
               alignItems: 单元.格式.垂直对齐 === 'top' ? 'flex-start' : 单元.格式.垂直对齐 === 'bottom' ? 'flex-end' : 'center',
-              fontFamily: 单元.格式.字体,
+              fontFamily: 单元.格式.字体 ? 字体回退Css(单元.格式.字体) : undefined,
               fontSize: 单元.格式.字号 === undefined ? undefined : `${单元.格式.字号}px`,
               fontWeight: 单元.格式.加粗 === true ? 600 : 400,
               fontStyle: 单元.格式.斜体 === true ? 'italic' : 'normal',

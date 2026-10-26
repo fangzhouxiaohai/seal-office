@@ -1170,6 +1170,15 @@ const PptEditor = () => {
     文字草稿.current = null; 通知编辑草稿变化()
   }
 
+  const 取当前值 = (标识: string): string | undefined => {
+    if (标识 === 'design.font.title') return 文稿.主题?.字体.标题 ?? '微软雅黑'
+    if (标识 === 'design.font.body') return 文稿.主题?.字体.正文 ?? '微软雅黑'
+    if (标识 !== 'text.font') return undefined
+    const 当前框标识 = 选中框标识 ?? 最近选中框标识.current
+    const 框 = 当前幻灯片?.文本框列表.find((项) => 项.id === 当前框标识)
+    return 框?.字体 ?? '微软雅黑'
+  }
+
   const 取激活态 = (标识: string): boolean => {
     if (标识 === 'review.commentToggle') return 显示批注
     const 当前框标识 = 选中框标识 ?? 最近选中框标识.current
@@ -1281,6 +1290,7 @@ const PptEditor = () => {
       tabs: 演示标签,
       onCommand: 执行命令,
       获取激活态: 取激活态,
+      获取当前值: 取当前值,
       获取禁用态: (标识: string) => 读取演示命令状态(标识, {
         只读: 只读 && !只读可放行(标识),
         需要配置: 标识 === 'tools.ocr',

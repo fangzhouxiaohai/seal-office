@@ -7,6 +7,11 @@ import GlobalTabs from '../components/GlobalTabs'
 import { AppProvider, useAppStore } from '../store'
 import { SettingsProvider } from '../store/settingsStore'
 
+vi.mock('../fonts/FontPicker', () => ({
+  default: (props: { onSelect?: (名称: string) => void; onDropdownOpen?: (beforeFocus?: boolean) => void }) =>
+    <><button type="button" aria-label="字体" onClick={() => props.onDropdownOpen?.(true)}>字体</button><button type="button" aria-label="选择 Arial" onClick={() => props.onSelect?.('Arial')}>Arial</button></>,
+}))
+
 /** 记录的格式化调用：[指令, 值] */
 const 格式化调用: Array<[string, string | undefined]> = []
 
@@ -67,10 +72,9 @@ describe('文字编辑器选区浮窗', () => {
     选中正文(container, '浮窗测试')
     await screen.findByRole('toolbar', { name: '选中内容操作' })
     await userEvent.click(screen.getByRole('button', { name: /^字体$/ }))
-    await screen.findByRole('menuitem', { name: 'Arial' })
     fireEvent(document, new Event('selectionchange'))
     expect(screen.queryByRole('toolbar', { name: '选中内容操作' })).toBeNull()
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Arial' }))
+    await userEvent.click(screen.getByRole('button', { name: '选择 Arial' }))
     expect(格式化调用).toContainEqual(['fontName', 'Arial'])
     expect(window.getSelection()?.toString()).toBe('浮窗测试')
     选中正文(container, '正文')

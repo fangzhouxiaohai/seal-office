@@ -12,6 +12,7 @@ const own=(object,key)=>Object.prototype.hasOwnProperty.call(object,key)
 function validatePayload(type,payload){
   if(!payload||typeof payload!=='object'||Array.isArray(payload))reject('文档数据无效')
   if(payload.警告!==undefined&&(!Array.isArray(payload.警告)||!payload.警告.every(item=>typeof item==='string')))reject('导入提示结构无效')
+  validateFonts(payload)
   if(type==='word'&&typeof payload.html==='string')return
   if(type==='table'&&Array.isArray(payload.工作表列表)&&payload.工作表列表.length>0)return
   if(type==='ppt'&&payload.演示文稿&&Array.isArray(payload.演示文稿.幻灯片列表)&&Array.isArray(payload.资源条目))return
@@ -20,6 +21,30 @@ function validatePayload(type,payload){
     if(bytes.subarray(0,5).toString('ascii')==='%PDF-'&&bytes.toString('base64')===payload.PDF数据)return
   }
   reject('文档类型与内容不匹配')
+}
+// 嵌入字体是专属格式的兼容性保证：这里校验结构、数量和 SHA-256，避免把
+// 损坏或伪装成字体的任意大块数据写进文档。
+function validateFonts(payload){
+  if(payload.字体格式!==undefined&&payload.字体格式!==1)reject('字体资源版本不受支持')
+  if(payload.字体缺失!==undefined&&(!Array.isArray(payload.字体缺失)||payload.字体缺失.length>128||!payload.字体缺失.every(item=>typeof item==='string'&&item.length>0&&item.length<=120)))reject('缺失字体记录无效')
+  if(payload.字体嵌入限制!==undefined&&(!Array.isArray(payload.字体嵌入限制)||payload.字体嵌入限制.length>128||!payload.字体嵌入限制.every(item=>item&&typeof item==='object'&&typeof item.名称==='string'&&typeof item.原因==='string')))reject('字体嵌入限制记录无效')
+  if(payload.字体资源===undefined)return
+  if(!Array.isArray(payload.字体资源)||payload.字体资源.length>32)reject('嵌入字体数量无效')
+  let total=0
+  const seen=new Set()
+  for(const font of payload.字体资源){
+    if(!font||typeof font!=='object'||Array.isArray(font))reject('嵌入字体记录无效')
+    for(const key of ['标识','名称','家族','格式','数据'])if(typeof font[key]!=='string'||!font[key])reject('嵌入字体字段无效')
+    if(font.标识.length>80||font.名称.length>120||font.家族.length>120||font.格式.length>16)reject('嵌入字体字段过长')
+    if(seen.has(font.标识))reject('嵌入字体标识重复');seen.add(font.标识)
+    if(font.别名!==undefined&&(!Array.isArray(font.别名)||font.别名.length>24||!font.别名.every(item=>typeof item==='string'&&item.length<=120)))reject('嵌入字体别名无效')
+    if(typeof font.文件大小!=='number'||!Number.isSafeInteger(font.文件大小)||font.文件大小<1)reject('嵌入字体大小无效')
+    const bytes=Buffer.from(font.数据,'base64')
+    if(bytes.length===0||bytes.length!==font.文件大小||bytes.toString('base64')!==font.数据)reject('嵌入字体数据损坏')
+    if(font.数据指纹!==undefined&&(typeof font.数据指纹!=='string'||!new RegExp('^[a-f0-9]{64}$').test(font.数据指纹)||hash(bytes)!==font.数据指纹))reject('嵌入字体指纹校验失败')
+    total+=bytes.length
+    if(total>56*1024*1024)reject('嵌入字体总量超过 56 MiB')
+  }
 }
 // Explicit tags preserve values JSON normally drops, including formula cache sentinels.
 function pack(value){

@@ -1,0 +1,283 @@
+/* 字体选择器与字体管理：沿用海豹办公蓝色主色和 4/8 间距节奏。 */
+.seal-font-trigger {
+  flex: 0 0 auto;
+  width: 128px;
+  height: 32px;
+  margin: 2px 3px;
+  padding: 0 6px;
+  gap: 5px;
+  border: 1px solid var(--border, #d9dee8);
+  background: var(--bg-card, #fff);
+  color: var(--text-1);
+  justify-content: flex-start;
+}
+
+.seal-font-trigger .wps-ribbon-button__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-1);
+  font-size: 13px;
+}
+
+.seal-font-trigger .wps-ribbon-button__caret {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.seal-font-trigger:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.seal-font-popover .ant-popover-inner {
+  padding: 0;
+  overflow: hidden;
+}
+
+.seal-font-menu {
+  width: min(410px, calc(100vw - 28px));
+  max-height: min(66vh, 560px);
+  display: flex;
+  flex-direction: column;
+  color: var(--text-1);
+}
+
+.seal-font-menu__search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.seal-font-menu__loading {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.seal-font-menu__list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 6px 8px;
+}
+
+.seal-font-menu__group > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 6px 4px;
+  background: var(--bg-card, #fff);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.seal-font-menu__group > header small {
+  font-weight: 400;
+  color: var(--text-3);
+}
+
+.seal-font-menu__item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name style" "preview preview";
+  gap: 2px 8px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.seal-font-menu__item:hover {
+  border-color: var(--border);
+  background: var(--bg-hover);
+}
+
+.seal-font-menu__item.is-current {
+  border-color: color-mix(in srgb, var(--brand) 42%, transparent);
+  background: var(--brand-soft);
+}
+
+.seal-font-menu__name {
+  grid-area: name;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.seal-font-menu__style {
+  grid-area: style;
+  color: var(--text-3);
+  font-size: 10px;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.seal-font-menu__preview {
+  grid-area: preview;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.seal-font-menu__more {
+  width: 100%;
+  margin: 2px 0 6px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.seal-font-menu__empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.seal-font-menu__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-app, #f7f9fc);
+}
+
+.seal-font-menu__footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-card);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.seal-font-menu__footer button:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.seal-font-menu__footer button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+/* 设置页字体库 */
+.seal-font-library__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.seal-font-library__summary {
+  flex: 1 0 100%;
+  margin-right: auto;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.seal-font-library__list {
+  display: grid;
+  gap: 0;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.seal-font-library__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.seal-font-library__row:first-child {
+  border-top: 0;
+}
+
+.seal-font-library__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.seal-font-library__meta {
+  grid-column: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+  font-size: 11px;
+}
+
+.seal-font-library__sample {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.seal-font-library__actions {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.seal-font-library__empty {
+  padding: 22px 12px;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: center;
+}
+
+.seal-font-library__error {
+  padding: 0 12px 10px;
+  color: var(--danger, #c53b3b);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .seal-font-trigger { width: 108px; }
+  .seal-font-menu { max-height: min(72vh, 620px); }
+  .seal-font-menu__item { padding: 9px 8px; }
+  .seal-font-library__row { grid-template-columns: minmax(0, 1fr) auto; }
+}

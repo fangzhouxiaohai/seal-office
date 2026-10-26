@@ -8,9 +8,32 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码版本为 **2.1.2**，移动构建号 **20102**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码版本为 **2.2.0**，移动构建号 **20200**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
+
+## 2.2.0 字体适配与自定义字体
+
+本版处理“系统已安装字体读不到、公文字体包装不进海豹办公、换设备字体丢失”的问题：
+
+- **系统字体**：桌面主进程直接解析 Windows/macOS/Linux 字体目录中的 TTF、OTF、TTC，支持中文字体名、字重、斜体、中文/拉丁字形检测与 TTC 字面拆分；不再只显示固定的几种字体。
+- **自定义字体**：设置中心新增“字体”区，可导入 TTF/OTF/TTC 公文字体包中的字体文件，只复制到海豹办公自己的字体目录，不安装、不修改系统字体。字体下拉框支持搜索、分组和真实字形预览。
+- **专属格式嵌入**：保存 `.sldoc`、`.slxls`、`.slppt` 时，把文档实际使用的、授权允许嵌入的完整字体字节写入文档；换设备打开时先注册文档内字体再渲染。文件大小上限与字体授权限制会如实记录，不静默截断。
+- **DOCX/WPS 兼容**：保留来源字体名，追加思源/系统通用字体回退链，覆盖仿宋_GB2312、楷体_GB2312、方正小标宋、华文中宋等常见公文字体；表格、演示同样使用回退链，普通文档不会因缺少通用字体反复中断打开。
+- **移动端**：Android / HarmonyOS / Web 共用导入与字体嵌入通道；HarmonyOS 原生层读取系统字体名称，Android/Web 提供系统通用字体组和内置思源字体。HarmonyOS/Android 真机字体导入与渲染仍须单独验收。
+
+协议与平台限制见[字体读取、自定义导入与专属格式嵌入](docs/字体与跨平台兼容.md)。第三方 Office 文件不携带字体字节，因此只能尽量兼容；专属格式在字体可读取且允许嵌入时才承担跨设备一致的保证。
+
+| 2.2.0 桌面成品 | 文件 |
+| --- | --- |
+| Windows x64 安装版 | `seal-office-setup-2.2.0.exe` |
+| Windows x64 便携版 | `seal-office-2.2.0-portable.exe` |
+| Microsoft Store 上传包 | `seal-office-2.2.0-microsoft-store-x64.msix` |
+| Ubuntu amd64 | `seal-office-2.2.0-amd64.deb` |
+| Android 云打包源码 | `seal-office-2.2.0-android-cloud-source.zip` |
+| HarmonyOS 云打包源码 | `seal-office-2.2.0-harmony-cloud-source.zip` |
+
+Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。
 
 ## 2.1.2 移动端与网页版同步修复
 

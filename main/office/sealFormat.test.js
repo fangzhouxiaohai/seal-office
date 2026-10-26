@@ -28,6 +28,16 @@ describe('海豹原生格式容器',()=>{
     expect(await readSeal(legacy,bytes)).toEqual(next)
     expect(await readSeal(current,await writeSeal(type,next))).toEqual(next)
   })
+  it('保留文档实际使用的嵌入字体并校验大小与 SHA-256',async()=>{
+    const {createHash}=require('crypto'),font=Buffer.from([0,1,0,0,0,0,0,1,0,0,0,0])
+    const resource={标识:'system-0123456789abcdefabcd',名称:'仿宋_GB2312',家族:'仿宋_GB2312',别名:['FangSong_GB2312'],样式:'Regular',字重:400,斜体:false,格式:'ttf',文件大小:font.length,数据:font.toString('base64'),数据指纹:createHash('sha256').update(font).digest('hex')}
+    const payload={html:'<p style="font-family:仿宋_GB2312">正文</p>',字体格式:1,字体资源:[resource]}
+    const opened=await readSeal('sldoc',await writeSeal('word',payload))
+    expect(opened.字体资源).toEqual([resource])
+    await expect(writeSeal('word',{...payload,字体资源:[{...resource,文件大小:1}]})).rejects.toThrow(/字体数据/)
+    await expect(writeSeal('word',{...payload,字体资源:[{...resource,数据指纹:'0'.repeat(64)}]})).rejects.toThrow(/指纹/)
+    await expect(writeSeal('word',{...payload,字体格式:2})).rejects.toThrow(/版本/)
+  })
   it('SPDF 保留完整 PDF 字节，并拒绝非 PDF 及不规范的 base64',async()=>{
     const {PDFDocument}=require('pdf-lib'),pdf=await PDFDocument.create()
     pdf.addPage([321,456]);pdf.setTitle('原始版式𠮷🦭')

@@ -12,6 +12,9 @@
 <script lang="uts">
 import { exportDocument, printDocument } from '../../native/export.uts'
 import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber } from '../../native/workspace.uts'
+// #ifdef APP-HARMONY
+import systemFont from '@ohos.font'
+// #endif
 export default {
   data() {
     return {
@@ -121,6 +124,7 @@ export default {
         else if (action == 'request') this.request(id, message)
         else if (action == 'save' || action == 'print') this.save(id, message)
         else if (action == 'font') this.font(id, messageString(message, 'family', 'sans'))
+        else if (action == 'font-system-list') this.systemFonts(id)
         else if (action == 'pick-files') this.pickFiles(id, messageBoolean(message, 'multiple'))
         else if (action == 'clipboard-write') {
           const text = messageString(message, 'text')
@@ -172,6 +176,27 @@ export default {
         },
         fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
       })
+    },
+    /** HarmonyOS 原生字体枚举；字体字节仍只在用户导入后由应用沙盒提供。 */
+    systemFonts(id: string) {
+      const fonts: Array<UTSJSONObject> = []
+      // #ifdef APP-HARMONY
+      try {
+        const names = systemFont.getSystemFontList()
+        for (let index = 0; index < names.length; index++) {
+          const name = names[index]
+          let weight = 400
+          let italic = false
+          try {
+            const info = systemFont.getFontByName(name)
+            weight = info.weight
+            italic = info.italic
+          } catch (_) {}
+          fonts.push({ 名称: name, 家族: name, 样式: weight >= 700 ? 'Bold' : 'Regular', 字重: weight, 斜体: italic, 格式: 'ttf', 大小: 0, 中文字形: true, 拉丁字形: true, 可嵌入: false, 来源: 'system', 可嵌入原因: '系统字体文件不向应用沙盒公开' })
+        }
+      } catch (_) {}
+      // #endif
+      this.reply({ id: id, type: 'system-fonts', fonts: fonts })
     },
     pickFiles(id: string, multiple: boolean) {
       uni.chooseFile({ type: 'all', count: multiple ? 20 : 1,

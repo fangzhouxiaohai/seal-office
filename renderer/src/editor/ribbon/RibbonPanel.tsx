@@ -4,6 +4,7 @@ import React from 'react'
 import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
+import FontPicker from '../../fonts/FontPicker'
 import { 缩放百分比文本 } from '../wheelZoom'
 
 interface Props {
@@ -48,21 +49,30 @@ const RibbonPanel = ({
         RibbonGroup,
         { key: 组.name, name: 组.name },
         组.items.map((项) =>
-          React.createElement(RibbonButton, {
-            key: `${组.name}-${项.commandId}-${项.label}`,
-            commandId: 项.commandId,
-            icon: 项.icon,
-            label: 项.commandId === 'view.zoomReset' && 缩放 !== undefined ? 缩放百分比文本(缩放) : 项.label,
-            size: 项.kind === 'small' ? 'small' : 'large',
-            active: 获取激活态 ? 获取激活态(项.commandId) : false,
-            disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,
-            disabledReason: 获取禁用原因?.(项.commandId),
-            currentValue: 项.options !== undefined ? (获取当前值?.(项.commandId) ?? 项.currentValue) : undefined,
-            options: 项.commandId === 'font.name' && document.documentElement.dataset.sealPlatform ? ['思源黑体', '思源宋体', 'Arial', 'Times New Roman'] : 项.options,
-            onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
-            onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
-            onDropdownOpen,
-          })
+          ['font.name', 'cell.font', 'text.font', 'design.font.title', 'design.font.body'].includes(项.commandId)
+            ? React.createElement(FontPicker, {
+                key: `${组.name}-${项.commandId}`,
+                label: 项.label,
+                currentValue: 获取当前值?.(项.commandId) ?? 项.currentValue,
+                禁用: 获取禁用态 ? 获取禁用态(项.commandId) : false,
+                onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
+                onDropdownOpen,
+              })
+            : React.createElement(RibbonButton, {
+                key: `${组.name}-${项.commandId}-${项.label}`,
+                commandId: 项.commandId,
+                icon: 项.icon,
+                label: 项.commandId === 'view.zoomReset' && 缩放 !== undefined ? 缩放百分比文本(缩放) : 项.label,
+                size: 项.kind === 'small' ? 'small' : 'large',
+                active: 获取激活态 ? 获取激活态(项.commandId) : false,
+                disabled: 获取禁用态 ? 获取禁用态(项.commandId) : false,
+                disabledReason: 获取禁用原因?.(项.commandId),
+                currentValue: 项.options !== undefined ? (获取当前值?.(项.commandId) ?? 项.currentValue) : undefined,
+                options: 项.options,
+                onClick: () => onCommand && onCommand(项.commandId, 项.固定参数),
+                onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
+                onDropdownOpen,
+              })
         )
       )
     )

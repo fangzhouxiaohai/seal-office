@@ -1,0 +1,87 @@
+{
+  "version": "2.2.0",
+  "versionCode": "20200",
+  "generatedAt": "2026-10-26T16:57:09+08:00",
+  "platform": "AppGallery / HarmonyOS (assets reusable for Android)",
+  "screenshots": [
+    {
+      "file": "build/store-assets/mobile-v2.2.0/01-移动文字编辑-1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB",
+      "alpha": false,
+      "bytes": 306516,
+      "sha256": "e9ca8651135e29b6bb68066e4eac736e71a3a0789a50df2a382a7b214b266434",
+      "aiLabel": false
+    },
+    {
+      "file": "build/store-assets/mobile-v2.2.0/02-表格与数据-1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB",
+      "alpha": false,
+      "bytes": 253554,
+      "sha256": "220c803210121d575d54955ab620b78385033c985c142484de0003d70d456272",
+      "aiLabel": false
+    },
+    {
+      "file": "build/store-assets/mobile-v2.2.0/03-办公服务-1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB",
+      "alpha": false,
+      "bytes": 217104,
+      "sha256": "72fb314fe2b28d64a48335631497490ac92ed13b1add93969bbc39be1eb544de",
+      "aiLabel": false
+    },
+    {
+      "file": "build/store-assets/mobile-v2.2.0/04-AI助手-1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB",
+      "alpha": false,
+      "bytes": 169614,
+      "sha256": "bb4c0b5616cda12e003a08aa049b79004c6aaef7378fb34549db1c06ca4bcf78",
+      "aiLabel": true
+    }
+  ],
+  "checks": {
+    "countInRange3to5": true,
+    "allNineBySixteen": true,
+    "allUnder5MB": true,
+    "noAlpha": true,
+    "noDeviceFrame": true,
+    "noStatusBar": true,
+    "noRealPersonalData": true,
+    "aiScreenshotHasVisibleLabel": true
+  },
+  "source": {
+    "kind": "mobile web production build at 540x960 CSS viewport and 2x device scale",
+    "rawDirectory": "build/store-assets/raw-v2.2.0",
+    "builder": "scripts/build-appstore-screenshots.py",
+    "note": "Titles and brand frame are composed; app UI is not redrawn or fabricated."
+  },
+  "attachedVideo": {
+    "file": "E:/UserData/A/Downloads/bf328fbac2844b16b3bae07604f7c26b.mp4",
+    "sha256": "d95a30581ecd2b4c05d2378f8ad6dacc56c4c8f8f17b314ffd35abb9392716cb",
+    "durationSeconds": 14,
+    "width": 1256,
+    "height": 2760,
+    "audio": "AAC, silent (-91 dB)",
+    "observedError": "Failed to construct 'Response': The status provided (0) is outside the range [200, 599].",
+    "usableAsIntroVideo": false,
+    "reason": "Silent screen recording of a login failure with system recording controls; does not demonstrate editing."
+  },
+  "networkFix": {
+    "file": "mobile/web/native.ts",
+    "statusZeroHandled": true,
+    "message": "网络连接失败，请检查网络后重试",
+    "test": "node --test mobile/tests/native-request.test.mjs",
+    "result": "2 passed, 0 failed"
+  },
+  "limitations": [
+    "No Android or HarmonyOS real-device capture in this run.",
+    "Screenshots use the mobile web layout, not an installed APK/HAP.",
+    "No new introduction video was produced; the attached recording is a defect reproduction and must not be submitted."
+  ]
+}

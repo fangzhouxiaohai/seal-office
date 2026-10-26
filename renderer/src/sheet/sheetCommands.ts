@@ -349,6 +349,7 @@ const 命令列表: 表格命令[] = [
   设置格式命令('cell.alignLeft', '左对齐', { 水平对齐: 'left' }),
   设置格式命令('cell.alignCenter', '居中', { 水平对齐: 'center' }),
   设置格式命令('cell.alignRight', '右对齐', { 水平对齐: 'right' }),
+  设置格式命令('cell.font', '字体', { 字体: '宋体' }, '字体'),
   设置格式命令('cell.fill', '填充颜色', { 填充颜色: '#EBF1FE' }, '填充颜色'),
   设置格式命令('cell.fontColor', '字体颜色', { 字体颜色: '#E34D59' }, '字体颜色'),
   设置格式命令('cell.wrap', '自动换行', { 自动换行: true }),

@@ -42,5 +42,4 @@ async function inventory(directory, prefix = '') {
 await inventory(target)
 const report = { version: manifest.versionName, versionCode: manifest.versionCode, platform, createdAt: new Date().toISOString(), generatedNativePackage: false, expectedArchiveName: artifactName(platform, manifest.versionName), files }
 await fs.writeFile(path.join(target, 'snapshot-info.json'), JSON.stringify(report, null, 2) + '\n')
-await fs.writeFile(path.join(target, '云打包说明.txt'), `海豹办公 ${manifest.versionName} / ${manifest.versionCode}，目标平台：${platform}。\n使用 HBuilderX 打开此目录，沿用原项目的应用身份和签名，手动提交对应平台的云打包。此目录已包含内置编辑器资源，尚未生成 APK 或 HAP。\n云服务返回文件名可能不同，下载后回原仓库运行 check:${platform === 'android' ? 'apk' : 'hap'} -- <下载路径> --archive <归档目录>，归档名为 ${report.expectedArchiveName}；不改应用名、应用身份或签名。鸿蒙签名和设备安装另行验证。\n需要更新源码时请回到原项目 ${project} 构建并重新制作快照；本快照不包含开发依赖。\n`)
 console.log(JSON.stringify({ platform, version: report.version, versionCode: report.versionCode, project: target, files: files.length }, null, 2))

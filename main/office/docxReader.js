@@ -227,7 +227,7 @@ function 生成字符样式(配置) {
   if (配置.颜色) 样式 += `color:${配置.颜色};`
   if (配置.底纹) 样式 += `background-color:${配置.底纹};`
   if (配置.字号) 样式 += `font-size:${配置.字号}pt;`
-  if (配置.字体) 样式 += `font-family:'${配置.字体.replace(/[\\'"<>&]/g, 字符 => '\\' + 字符.codePointAt(0).toString(16) + ' ')}','SealOfficeCJK',sans-serif;`
+  if (配置.字体) 样式 += `font-family:'${配置.字体.replace(/[\\'"<>&]/g, 字符 => '\\' + 字符.codePointAt(0).toString(16) + ' ')}','Noto Sans SC','SealNotoSans','PingFang SC','Microsoft YaHei',sans-serif;`
   if (配置.字间距) 样式 += `letter-spacing:${配置.字间距}pt;`
   if (配置.基线) 样式 += `vertical-align:${配置.基线 === 'superscript' ? 'super' : 配置.基线 === 'subscript' ? 'sub' : 'baseline'};`
   return 样式

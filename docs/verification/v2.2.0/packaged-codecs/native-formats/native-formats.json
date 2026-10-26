@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "formats": [
+    {
+      "extension": "sldoc",
+      "type": "word",
+      "cycles": 2,
+      "bytes": 1213,
+      "sha256": "9273a027b095ede0804476bc8017bf649215311763a23f14391ff37fa5757704",
+      "unicodeAndResourcesPreserved": true,
+      "legacyAliasReadable": true
+    },
+    {
+      "extension": "slxls",
+      "type": "table",
+      "cycles": 2,
+      "bytes": 1670,
+      "sha256": "2a8c115405b3d911ca378461ecf7bfffebeb0729bd130df7f35ad9344c68b83d",
+      "unicodeAndResourcesPreserved": true,
+      "legacyAliasReadable": true
+    },
+    {
+      "extension": "slppt",
+      "type": "ppt",
+      "cycles": 2,
+      "bytes": 1202,
+      "sha256": "ebc74bd470e13788e3a33450d342ba7b5b976be51b818b442d8061cf180d6137",
+      "unicodeAndResourcesPreserved": true,
+      "legacyAliasReadable": true
+    },
+    {
+      "extension": "spdf",
+      "type": "pdf",
+      "cycles": 2,
+      "bytes": 51336,
+      "sha256": "177a3e7ddf38071a7a6135a1e229ffca9f087c04b6a17677e0c144caed4f835f",
+      "unicodeAndResourcesPreserved": true,
+      "legacyAliasReadable": false
+    }
+  ],
+  "fonts": [
+    {
+      "name": "NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "name": "NotoSerifCJKsc-Regular.otf",
+      "bytes": 24543080,
+      "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+    },
+    {
+      "name": "OFL.txt",
+      "bytes": 4387,
+      "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+    },
+    {
+      "name": "NotoSerif-LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    }
+  ],
+  "modifiesUserDefaults": false,
+  "installsApplication": false
+}

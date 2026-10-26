@@ -5,6 +5,12 @@ import { RIBBON_TABS } from './tabSpecs'
 import { 表格标签 } from '../../sheet/ribbonSpecs'
 import { 演示标签 } from '../../ppt/ribbonSpecs'
 
+const 字体命令 = new Set(['font.name', 'cell.font', 'text.font', 'design.font.title', 'design.font.body'])
+vi.mock('../../fonts/FontPicker', () => ({
+  default: (props: { label: string; currentValue?: string; 禁用?: boolean; onSelect?: (名称: string) => void; onDropdownOpen?: (beforeFocus?: boolean) => void }) =>
+    <button type="button" aria-label={props.label} disabled={props.禁用} title={props.禁用 ? '当前文档只读' : `字体：${props.currentValue ?? '宋体'}`} onClick={() => { props.onDropdownOpen?.(true); props.onSelect?.('宋体') }}>{props.currentValue ?? '宋体'}<svg /></button>,
+}))
+
 for(const [kind,tabs] of [['文字',RIBBON_TABS],['表格',表格标签],['演示',演示标签]] as const) {
   describe(kind+'全部功能区控件绑定',()=>{
     it.each(tabs)('$label 标签的每个按钮、下拉入口与参数都可正确派发',async(tab)=>{
@@ -18,7 +24,11 @@ for(const [kind,tabs] of [['文字',RIBBON_TABS],['表格',表格标签],['演�
           const item=tab.groups[i].items[j],button=buttons[j]
           expect(button).toHaveAccessibleName(item.label)
           expect(button.querySelector('svg')).not.toBeNull()
-          if(item.options?.length) {
+          if(字体命令.has(item.commandId)) {
+            fireEvent.click(button)
+            expect(open).toHaveBeenCalled()
+            expect(dispatch).toHaveBeenLastCalledWith(item.commandId,'宋体')
+          }else if(item.options?.length) {
             for(const option of item.options) {
               const label=typeof option==='string'?option:option.label,value=typeof option==='string'?option:option.value
               fireEvent.click(button)
@@ -42,6 +52,6 @@ it('禁用的格式命令有原因提示且不执行，动态值缺省时保留�
   const run=vi.fn()
   render(<RibbonPanel activeKey="start" 获取当前值={()=>undefined} 获取禁用态={id=>id.startsWith('font.')} 获取禁用原因={()=>'文档已保护'} onCommand={run}/>)
   const font=screen.getByRole('button',{name:'字体'})
-  expect(font).toHaveTextContent('宋体');expect(font).toBeDisabled();expect(font).toHaveAttribute('title','文档已保护')
+  expect(font).toHaveTextContent('宋体');expect(font).toBeDisabled();expect(font).toHaveAttribute('title','当前文档只读')
   fireEvent.click(font);expect(run).not.toHaveBeenCalled()
 })

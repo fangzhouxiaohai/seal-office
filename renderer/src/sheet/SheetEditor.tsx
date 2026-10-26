@@ -1060,6 +1060,7 @@ const SheetEditor = () => {
       onDropdownOpen: () => set浮窗位置(null),
       获取激活态: 取激活态,
       获取当前值: (标识: string) => {
+        if (标识 === 'cell.font') return 读取单元格(工作表, 取首格地址()).格式?.字体 ?? '宋体'
         if (标识 === 'layout.margin') return 工作表.页面设置?.页边距 ?? '常规'
         if (标识 === 'layout.orientation') return 工作表.页面设置?.方向 ?? '纵向'
         if (标识 === 'layout.paperSize') return 工作表.页面设置?.纸张大小 ?? 'A4'

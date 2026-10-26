@@ -1,10 +1,10 @@
 # 海豹办公 uni-app x
 
-当前移动源码版本为 **2.1.2 / 20102**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。最新同步修复和云打包步骤见 [2.1.2 移动/Web 同步说明](releases/2.1.2-mobile-web.md)，首次 2.1.2 快照记录见 [原云打包说明](releases/2.1.2.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
+当前移动源码版本为 **2.2.0 / 20200**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。2.2.0 的系统字体读取、自定义字体导入、专属格式字体嵌入和 DOCX/WPS 回退见[字体与跨平台兼容](../docs/字体与跨平台兼容.md)；最新 Android / HarmonyOS 云打包源码在 `release/v2.2.0/mobile-web/`。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名。本次 2.1.2 交付 Android 与 HarmonyOS 两份独立云打包源码，尚未生成新的 APK / App Pack。最新同步修复源码在 `release/v2.1.2/mobile-web/`，此前 `verified/` 的快照保持原校验值；Android ZIP 和解压后的总文件大小均限制在 60,000,000 字节以内，用对应平台源码直接在 HBuilderX 提交云打包。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名。2.2.0 交付 Android 与 HarmonyOS 两份独立云打包源码，尚未生成新的 APK / App Pack。Android ZIP 和解压后的总文件大小均限制在 60,000,000 字节以内，用对应平台源码直接在 HBuilderX 提交云打包。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
 
-后续如果取得独立签名 HAP，可使用 `seal-office-2.1.2-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
+后续如果取得独立签名 HAP，可使用 `seal-office-2.2.0-harmony.hap`。云服务返回的下载文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档。HAP 检查覆盖包结构、身份、版本和当前快照内置资源，签名与设备安装仍需官方工具独立验证；该命令不接受 App Pack。
 
 Android、iOS、HarmonyOS 使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，不是将全部编辑器重写成原生 `.uvue`。基本文件处理和页面不依赖远端网页服务器。
 

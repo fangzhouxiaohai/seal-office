@@ -48,7 +48,10 @@ test('原生 HTTP 无回包会超时、解除等待并中止宿主；SSE 按活�
     assert.doesNotThrow(() => window.sealReceiveNative({ id, type: 'end', status: 200 }))
     const invalid = native.nativeFetch('https://example.test/offline')
     window.sealReceiveNative({ id: requests.at(-1).id, type: 'end', status: 0 })
-    await assert.rejects(invalid, /status|range/i); assert.equal(timers.size, 0)
+    await assert.rejects(invalid, /网络连接失败/); assert.equal(timers.size, 0)
+    const noHeaders = native.nativeFetch('https://example.test/offline-headers')
+    window.sealReceiveNative({ id: requests.at(-1).id, type: 'headers', status: 0 })
+    await assert.rejects(noHeaders, /网络连接失败/); assert.equal(timers.size, 0)
     const handshake = native.waitForNative()
     assert.equal(requests.at(-1).action, 'ping')
     window.sealReceiveNative({ id: requests.at(-1).id, type: 'ready' }); await handshake

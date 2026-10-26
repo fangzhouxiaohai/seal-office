@@ -10,7 +10,7 @@ describe('DOCX 页眉水印与字体回退', () => {
     const result = await 读取docx(await zip.generateAsync({ type: 'nodebuffer' }))
     expect(result.页面设置.水印).toBe('机密')
     expect(result.页面设置.页眉Html).toBeUndefined()
-    expect(result.html).toContain("'SealOfficeCJK',sans-serif")
+    expect(result.html).toContain("'Noto Sans SC','SealNotoSans'")
     expect(result.警告.join(' ')).toContain('无法将其写回 DOCX')
   })
 

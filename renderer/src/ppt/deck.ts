@@ -16,6 +16,8 @@ export interface 文本片段 {
   斜体?: boolean
   下划线?: boolean
   颜色?: string
+  /** 片段级字体；缺省时继承文本框字体。 */
+  字体?: string
 }
 
 export interface 文本框 {
@@ -420,7 +422,7 @@ export function 约束位置(
 // ==================== 文本片段富文本支持 ====================
 
 /** 将纯文本转换为字符片段列表，每个字符一个片段，继承文本框的基础样式 */
-export function 文本转片段(文本: string, _字号: number, 加粗: boolean, 斜体: boolean, 下划线: boolean, 颜色: string): 文本片段[] {
+export function 文本转片段(文本: string, _字号: number, 加粗: boolean, 斜体: boolean, 下划线: boolean, 颜色: string, 字体?: string): 文本片段[] {
   if (!文本 || 文本.length === 0) return []
   return 文本.split('').map((字符) => ({
     文本: 字符,
@@ -428,6 +430,7 @@ export function 文本转片段(文本: string, _字号: number, 加粗: boolean
     斜体,
     下划线,
     颜色,
+    ...(字体 ? { 字体 } : {}),
   }))
 }
 
@@ -463,9 +466,9 @@ export function 应用格式到选中片段(
   文本框: 文本框,
   选中起始索引: number,
   选中结束索引: number,
-  格式: { 加粗?: boolean; 斜体?: boolean; 下划线?: boolean; 颜色?: string }
+  格式: { 加粗?: boolean; 斜体?: boolean; 下划线?: boolean; 颜色?: string; 字体?: string }
 ): 文本框 {
-  const 片段列表 = 文本框.片段列表 || 文本转片段(文本框.text, 文本框.字号, 文本框.加粗, 文本框.斜体, 文本框.下划线, 文本框.颜色)
+  const 片段列表 = 文本框.片段列表 || 文本转片段(文本框.text, 文本框.字号, 文本框.加粗, 文本框.斜体, 文本框.下划线, 文本框.颜色, 文本框.字体)
   const 新片段列表 = 片段列表.map((片段) => ({ ...片段 }))
   for (let i = 0; i < 新片段列表.length; i++) {
     if (i >= 选中起始索引 && i <= 选中结束索引) {
@@ -473,6 +476,7 @@ export function 应用格式到选中片段(
       if (格式.加粗 != null) 新片段列表[i].加粗 = 格式.加粗
       if (格式.斜体 != null) 新片段列表[i].斜体 = 格式.斜体
       if (格式.下划线 != null) 新片段列表[i].下划线 = 格式.下划线
+      if (格式.字体 != null) 新片段列表[i].字体 = 格式.字体
     }
   }
   return {

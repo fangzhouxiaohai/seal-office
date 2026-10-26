@@ -4,6 +4,8 @@ import { 恢复导入图片 } from './ppt/render/resources'
 import { 桥接 } from './ipc/bridge'
 import { Modal } from 'antd'
 import { createElement } from 'react'
+import { 准备打开文档字体 } from './fonts/fontManager'
+import { 增强字体回退Html } from './fonts/fallback'
 import { 净化富文本 } from './editor/sanitizeHtml'
 import type { 文字页面设置 } from './office/docModel'
 import type { Sheet } from './sheet/model'
@@ -194,7 +196,7 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     if (!数据?.成功) throw new Error(数据?.错误 || '文档兼容转换失败')
     if (数据.类型 === 'ppt' && 数据.演示文稿) return 带文件指纹({ 类型: 'ppt', 演示文稿: await 恢复导入图片(数据), 警告: 数据.警告 ?? [] })
     if (['word', 'table'].includes(数据.类型) && typeof 数据.html === 'string') return 带文件指纹({
-      类型: 数据.类型, 内容: 净化富文本(数据.html), 页面设置: 数据.页面设置,
+      类型: 数据.类型, 内容: 数据.类型 === 'word' ? 增强字体回退Html(净化富文本(数据.html)) : 净化富文本(数据.html), 页面设置: 数据.页面设置,
       警告: OfficeXML ? [...(数据.警告 ?? []), 'Office XML 的样式和元数据通过兼容转换导入，请另存为 DOCX 或 XLSX；不能按普通 XML 文本覆盖来源'] : 数据.警告 ?? [],
       ...(Array.isArray(数据.工作表列表) ? { 工作表列表: 数据.工作表列表.map((表: { 名称: string; html: string }) => ({ ...表, html: 净化富文本(表.html) })) } : {}),
     })
@@ -214,7 +216,7 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     if (扩展 === 'docx') {
       const 数据: any = await 桥接.office.readDocx(结果.内容)
       if (数据 && 数据.成功 && typeof 数据.html === 'string') {
-        return 带文件指纹({ 类型: 'word', 内容: 净化富文本(数据.html), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}), ...(数据.页面设置 ? { 页面设置: 数据.页面设置 } : {}) })
+        return 带文件指纹({ 类型: 'word', 内容: 增强字体回退Html(净化富文本(数据.html)), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}), ...(数据.页面设置 ? { 页面设置: 数据.页面设置 } : {}) })
       }
       throw new Error(数据?.错误 || '文字文档解析失败')
     }
@@ -284,7 +286,29 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
     })
     return null
   }
-  if (原生文档类型(路径) || !内容.警告?.length) return 内容
+  if (原生文档类型(路径) || !内容.警告?.length) {
+    if (!原生文档类型(路径)) {
+      const 字体数据 = 内容.类型 === 'word'
+        ? { html: 内容.内容, 页面设置: 内容.页面设置 }
+        : 内容.类型 === 'table'
+          ? { 工作表列表: 内容.工作表列表 }
+          : 内容.类型 === 'ppt'
+            ? { 演示文稿: 内容.演示文稿 }
+            : null
+      if (字体数据) await 准备打开文档字体(内容.类型, 字体数据)
+    }
+    return 内容
+  }
+  if (!原生文档类型(路径)) {
+    const 字体数据 = 内容.类型 === 'word'
+      ? { html: 内容.内容, 页面设置: 内容.页面设置 }
+      : 内容.类型 === 'table'
+        ? { 工作表列表: 内容.工作表列表 }
+        : 内容.类型 === 'ppt'
+          ? { 演示文稿: 内容.演示文稿 }
+          : null
+    if (字体数据) await 准备打开文档字体(内容.类型, 字体数据)
+  }
   const 警告 = [...new Set(内容.警告)]
   const 确认 = await new Promise<boolean>(完成 => {
     ;(导入确认弹窗 ?? Modal.confirm)({

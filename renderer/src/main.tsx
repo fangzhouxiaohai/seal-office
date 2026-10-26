@@ -10,6 +10,7 @@ import './styles/nativeControls.css'
 import './styles/actionColors.css'
 import './styles/flatDesktop.css'
 import '../../main/ui/dialog.css'
+import { 初始化字体目录 } from './fonts/fontManager'
 
 const container = document.getElementById('root')
 
@@ -20,6 +21,8 @@ if (!container) {
 
 const 是演讲者窗口 = typeof location !== 'undefined' &&
   new URLSearchParams(location.search).get('seal-presenter') !== null
+
+if (!是演讲者窗口) void 初始化字体目录()
 
 createRoot(container).render(
   <React.StrictMode>

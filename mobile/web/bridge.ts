@@ -2,11 +2,12 @@ import { Buffer } from 'buffer'
 import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts } from './native'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
 import formats from '../../main/documentFormats.json'
 import { installConversionService } from './conversionService'
+import { parseFontFile, extractFontFace } from '../../main/fonts/fontMeta.js'
 
 const { platform, storage, vault, crypto: cryptoCore } = core
 const { ipcMain } = platform
@@ -21,7 +22,7 @@ const handle = (channel: string, callback: (...args: any[]) => any) => ipcMain.h
 const success = () => ({ 成功: true })
 let unsaved = 0
 
-async function pickFiles(accept = allDocuments, multiple = false): Promise<string[]> {
+async function pickRawFiles(accept = allDocuments, multiple = false): Promise<File[]> {
   const files = window.sealNative?.platform === 'harmony' ? await pickNativeFiles(multiple) : await new Promise<File[]>((resolve) => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = window.sealNative?.platform === 'android' ? '*/*' : accept; input.multiple = multiple; input.hidden = true
     let finished = false, timer: ReturnType<typeof setTimeout> | undefined
@@ -31,8 +32,15 @@ async function pickFiles(accept = allDocuments, multiple = false): Promise<strin
     input.addEventListener('cancel', () => finish([]), { once: true }); window.addEventListener('focus', focus, { once: true })
     document.body.appendChild(input); input.click()
   })
+  for (const file of files) {
+    if (file.size > 96 * 1024 * 1024) throw new Error('单个字体文件不能超过 96 MiB')
+  }
+  return files
+}
+
+async function pickFiles(accept = allDocuments, multiple = false): Promise<string[]> {
+  const files = await pickRawFiles(accept, multiple)
   const paths: string[] = []
-  // 安卓文件提供方的 MIME 对 Markdown 等格式并不一致，选择后统一验证扩展名。
   for (const file of files) {
     validateImport(file.name, accept)
     if (file.size > 100 * 1024 * 1024) throw new Error('单个文件不能超过 100 MiB')
@@ -43,6 +51,64 @@ async function pickFiles(accept = allDocuments, multiple = false): Promise<strin
     storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, Buffer.from(await file.arrayBuffer())); paths.push(filename)
   }
   await storage.flushStorage(); return paths
+}
+const fontRoot = '/seal/private/fonts'
+const fontManifest = '/seal/private/fonts.json'
+const fontExtensions = new Set(['.ttf', '.otf', '.ttc'])
+type MobileFontRecord = { 标识: string; 名称: string; 家族: string; 英文名?: string; 别名: string[]; 样式: string; 字重: number; 斜体: boolean; 格式: string; 大小: number; 集合: boolean; 字面序号: number; 中文字形: boolean; 拉丁字形: boolean; 可嵌入: boolean; 授权位: number; 来源: 'custom'; 文件: string; 文件哈希: string; 导入时间: string; 原始文件名: string }
+const readFontManifest = (): MobileFontRecord[] => {
+  try { const value = storage.existsSync(fontManifest) ? JSON.parse(storage.readFileSync(fontManifest, 'utf8')) : []; return Array.isArray(value) ? value.filter((item: MobileFontRecord) => item && typeof item.标识 === 'string' && typeof item.文件 === 'string' && storage.existsSync(fontRoot + '/' + item.文件)) : [] } catch { return [] }
+}
+const writeFontManifest = (fonts: MobileFontRecord[]) => { storage.mkdirSync('/seal/private', { recursive: true }); storage.writeFileSync(fontManifest, JSON.stringify(fonts)); return fonts }
+const publicFont = ({ 文件, ...record }: MobileFontRecord) => record
+function registerFonts() {
+  handle('font.list', async () => {
+    let system: Array<Record<string, unknown>> = []
+    try { system = await listNativeSystemFonts() } catch { /* 系统字体枚举失败不阻止自定义字体使用 */ }
+    return { 成功: true, 数据: { 系统: system, 自定义: readFontManifest().map(publicFont), 平台: window.sealNative?.platform ?? 'web', 扫描时间: new Date().toISOString(), 目录: [fontRoot], 跳过: 0, 字体目录: fontRoot } }
+  })
+  handle('font.import', async () => {
+    const files = await pickRawFiles('.ttf,.otf,.ttc,font/ttf,font/otf,font/collection', false)
+    const manifest = readFontManifest(), imported: ReturnType<typeof publicFont>[] = [], duplicate: string[] = [], failed: Array<{ 文件: string; 原因: string }> = []
+    for (const file of files) {
+      const extension = path.extname(file.name).toLowerCase()
+      if (!fontExtensions.has(extension)) { failed.push({ 文件: file.name, 原因: '只支持 TTF、OTF 或 TTC 字体' }); continue }
+      try {
+        const bytes = Buffer.from(await file.arrayBuffer())
+        const digest = hash(bytes), faces = parseFontFile(bytes, { fileName: file.name })
+        if (manifest.some((item) => item.文件哈希 === digest)) { duplicate.push(file.name); continue }
+        const stored = digest.slice(0, 16) + extension
+        storage.mkdirSync(fontRoot, { recursive: true }); storage.writeFileSync(fontRoot + '/' + stored, bytes)
+        faces.forEach((face) => {
+          const id = 'user-' + hash(Buffer.from(digest + '::' + face.faceIndex)).slice(0, 20)
+          const record: MobileFontRecord = {
+            标识: id, 名称: face.family, 家族: face.family, 英文名: face.postScriptName || face.fullName, 别名: face.aliases,
+            样式: face.subfamily, 字重: face.weight, 斜体: face.italic, 格式: face.format, 大小: face.bytes, 集合: face.collection,
+            字面序号: face.faceIndex, 中文字形: face.supportsCjk, 拉丁字形: face.supportsLatin, 可嵌入: face.embeddable,
+            授权位: face.fsType, 来源: 'custom', 文件: stored, 文件哈希: digest, 导入时间: new Date().toISOString(), 原始文件名: file.name,
+          }
+          manifest.push(record); imported.push(publicFont(record))
+        })
+      } catch (error) { failed.push({ 文件: file.name, 原因: error instanceof Error ? error.message : '字体解析失败' }) }
+    }
+    if (imported.length > 0) { writeFontManifest(manifest); await storage.flushStorage() }
+    return { 成功: true, 数据: { 导入: imported, 重复: duplicate.map(名称 => ({ 名称, 文件: 名称 })), 失败: failed } }
+  })
+  handle('font.read', (id: string) => {
+    const record = readFontManifest().find((item) => item.标识 === id)
+    if (!record) throw new Error('字体不存在或已被移除')
+    const bytes = storage.readFileSync(fontRoot + '/' + record.文件)
+    const face = record.集合 ? extractFontFace(bytes, record.字面序号) : bytes
+    return { 成功: true, 数据: { ...publicFont(record), 数据: face.toString('base64') } }
+  })
+  handle('font.remove', async (id: string) => {
+    const manifest = readFontManifest(), target = manifest.find((item) => item.标识 === id)
+    if (!target) throw new Error('只能移除通过海豹办公导入的字体')
+    const next = manifest.filter((item) => item.文件 !== target.文件)
+    writeFontManifest(next); storage.rmSync(fontRoot + '/' + target.文件, { force: true }); await storage.flushStorage()
+    return { 成功: true, 数据: { 移除: [target.名称] } }
+  })
+  handle('font.folder', () => { throw new Error('移动端请通过“导入字体”添加字体文件') })
 }
 const acceptFor = (kind?: string) => kind ? formats.filter(format => format.type === kind || kind === 'table' && ['json', 'xml'].includes(format.extension)).map(format => '.' + format.extension).join(',') : allDocuments
 async function save(filename: string, data: string | Uint8Array, format?: string, fingerprint?: string | null, encoding?: string) {
@@ -163,7 +229,7 @@ async function initialize() {
     if (!result.取消) await platform.exportStoredFile(result.路径)
     return { 成功: true, ...result }
   })
-  registerFiles(); await installExportAdapters(core, save, handle)
+  registerFiles(); registerFonts(); await installExportAdapters(core, save, handle)
   // 不提供仅属于 Windows 或独立桌面窗口的能力探测。
   const api = window.electronAPI as any
   for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity']) delete api[key]

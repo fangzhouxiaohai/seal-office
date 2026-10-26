@@ -1,0 +1,38 @@
+[
+  {
+    "file": "01-移动文字编辑-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 306516,
+    "sha256": "e9ca8651135e29b6bb68066e4eac736e71a3a0789a50df2a382a7b214b266434",
+    "source": "build/store-assets/raw-v2.2.0/word.png",
+    "aiLabel": false
+  },
+  {
+    "file": "02-表格与数据-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 253554,
+    "sha256": "220c803210121d575d54955ab620b78385033c985c142484de0003d70d456272",
+    "source": "build/store-assets/raw-v2.2.0/sheet.png",
+    "aiLabel": false
+  },
+  {
+    "file": "03-办公服务-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 217104,
+    "sha256": "72fb314fe2b28d64a48335631497490ac92ed13b1add93969bbc39be1eb544de",
+    "source": "build/store-assets/raw-v2.2.0/services.png",
+    "aiLabel": false
+  },
+  {
+    "file": "04-AI助手-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 169614,
+    "sha256": "bb4c0b5616cda12e003a08aa049b79004c6aaef7378fb34549db1c06ca4bcf78",
+    "source": "build/store-assets/raw-v2.2.0/assistant.png",
+    "aiLabel": true
+  }
+]

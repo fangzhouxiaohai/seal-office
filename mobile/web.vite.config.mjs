@@ -16,5 +16,5 @@ export default defineConfig({
   worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
   server: { host: '127.0.0.1', port: 5180, strictPort: true, fs: { allow: [path.dirname(directory)] }, proxy: { '/api': { target: 'https://seal.xingmasoft.com', changeOrigin: true } } },
   build: { target: ['chrome100', 'safari15'], outDir: path.join(directory, 'static/office'), emptyOutDir: true,
-    commonjsOptions: { include: [/node_modules/, /main[\\/]office[\\/]/] } }
+    commonjsOptions: { include: [/node_modules/, /main[\\/]office[\\/]/, /main[\\/]fonts[\\/]fontMeta\.js$/] } }
 })

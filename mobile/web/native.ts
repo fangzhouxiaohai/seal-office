@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
 
-type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number }
+type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[] }
 type Bridge = { token: string; platform: string }
 declare global {
   interface Window {
@@ -35,6 +35,21 @@ export async function waitForNative() {
     try { send({ id, action: 'ping' }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
   })
 }
+/** HarmonyOS 原生系统字体列表；Android/WebView 不公开字体文件枚举，继续用导入字体与内置字体。 */
+export function listNativeSystemFonts(): Promise<Array<Record<string, unknown>>> {
+  if (!window.sealNative || window.sealNative.platform !== 'harmony') return Promise.resolve([])
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('系统字体列表读取超时')) }, 15000)
+    pending.set(id, (event) => {
+      clearTimeout(timer); pending.delete(id)
+      if (event.type === 'system-fonts' && Array.isArray(event.fonts)) resolve(event.fonts as Array<Record<string, unknown>>)
+      else reject(new Error(event.error || '系统字体列表读取失败'))
+    })
+    try { send({ id, action: 'font-system-list' }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
+  })
+}
+
 export function nativeFetch(url: string, options: RequestInit = {}): Promise<Response> {
   return new Promise((resolve, reject) => {
     if (options.signal?.aborted) { reject(new DOMException('已停止', 'AbortError')); return }
@@ -54,11 +69,19 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
         fail(new Error('网络请求超时，请检查网络后重试'))
       }, streaming && started ? 120000 : 70000)
     }
-    const begin = (status = 200, responseHeaders: Record<string, string> = {}) => {
-      if (started) return
+    const begin = (status = 200, responseHeaders: Record<string, string> = {}): boolean => {
+      // The Harmony/Android host reports status 0 when the connection never
+      // produced an HTTP response. Response() rejects that value, leaking an
+      // English DOMException into the login form. Treat it as a network error.
+      if (!Number.isInteger(status) || status < 200 || status > 599) {
+        fail(new Error('网络连接失败，请检查网络后重试'))
+        return false
+      }
+      if (started) return true
       const response = [204, 205, 304].includes(status) ? new Response(null, { status, headers: responseHeaders })
         : new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; for (const chunk of chunks) c.enqueue(chunk) }, cancel() { abort() } }), { status, headers: responseHeaders })
       started = true; resolve(response)
+      return true
     }
     const abort = () => {
       if (finished) return
@@ -70,12 +93,14 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
     pending.set(id, (event) => {
       if (finished) return
       try {
-      if (event.type === 'headers') begin(event.status, event.headers)
+      if (event.type === 'headers') {
+        if (!begin(event.status === undefined ? 200 : event.status, event.headers)) return
+      }
       else if (event.type === 'chunk') {
         delivered = true; const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64'))
         if (started) controller?.enqueue(chunk); else chunks.push(chunk)
       } else if (event.type === 'end') {
-        begin(event.status, event.headers)
+        if (!begin(event.status === undefined ? 200 : event.status, event.headers)) return
         if (!delivered && event.data) controller?.enqueue(new Uint8Array(Buffer.from(event.data, 'base64')))
         finished = true; cleanup(); controller?.close()
       } else if (event.type === 'error') {

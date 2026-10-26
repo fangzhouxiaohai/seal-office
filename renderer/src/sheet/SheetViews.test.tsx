@@ -46,7 +46,8 @@ describe('表格网格', () => {
     const 表 = 设置格式(构造工作表(), 'A1', { 字体: '宋体', 字号: 16, 水平对齐: 'right', 垂直对齐: 'top' })
     const { container } = 渲染网格({ 工作表: 表 })
     const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
-    expect(单元.style.fontFamily).toBe('宋体')
+    expect(单元.style.fontFamily).toContain('"宋体"')
+    expect(单元.style.fontFamily).toContain('"Noto Serif CJK SC"')
     expect(单元.style.fontSize).toBe('16px')
     expect(单元.style.justifyContent).toBe('flex-end')
     expect(单元.style.alignItems).toBe('flex-start')
