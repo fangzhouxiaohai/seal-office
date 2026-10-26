@@ -1,6 +1,6 @@
 # 2.2.0 字体适配、桌面与移动云源码验收
 
-日期：2026-10-26。本次版本从 2.1.2 升至 2.2.0 / 20200；应用 ID、Windows 中文产品名、Linux `sealoffice` 身份和签名配置未改。
+日期：2026-10-26。本次版本从 2.1.2 升至 2.2.0 / 20200；应用 ID、Windows 中文产品名、Linux `sealoffice` 身份和桌面签名配置未改。HarmonyOS 发布证书/Profile 于同日切换到新主体，见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 
 ## 功能范围
 
@@ -54,10 +54,12 @@ MSIX 身份为 `45C56666.seal-office`、Publisher `CN=F6431C2A-EA55-468A-89D8-89
 
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
-| `seal-office-2.2.0-android-cloud-source.zip` | 38,551,015 | `6237043bdeebc950fe599a2f52901bb59773ed36301a2b35e140ca5fdd2b3aaa` |
-| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,022 | `d4e888726753c7859d2e8a39c39d36d55c1bf3d5434551d9b6b03e4cef850041` |
+| `seal-office-2.2.0-android-cloud-source.zip` | 38,551,007 | `fe7c981e69222ed35ca47a3d24a33565f498cfc897ae6a40349e63802dbf33aa` |
+| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,011 | `0069581675fac47c663bd74f7ca07f32e7169d84cadced0063703e8071452c9b` |
 
-两个解压项目各 59,876,300 字节（Android 低于 60,000,000 字节上限）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复原生 HTTP 状态 0 引发的登录错误而重新冻结，版本仍为 2.2.0 / 20200。
+两个解压项目各 59,876,249 字节（Android 低于 60,000,000 字节上限）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复原生 HTTP 状态 0 引发的登录错误并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
+
+HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.cer`、新 Profile `cer/seal-office-release-20261023Release.p7b`、原私钥库和别名 `sealoffice-release`；证书 SHA-256 `9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB`，Profile App ID `6917619858054370422`。详细核对、旧配置差异和 HBuilderX 操作见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 
 ## AppGallery 审核修改
 

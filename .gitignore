@@ -16,6 +16,7 @@ server/data/
 server/admin/upstream/
 server/admin/dist/
 .upgrade-private/
+cer/
 .publish-profile/
 __pycache__/
 *.py[cod]
