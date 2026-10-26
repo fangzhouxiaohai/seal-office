@@ -35,6 +35,13 @@
 
 Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。
 
+### AppGallery 审核素材（2.2.0）
+
+- 新介绍文字：[简体中文商店资料](build/store-assets/mobile-v2.2.0/listing-zh-CN.md)（含 17 字以内简介、完整描述、AI 标识与审核说明）。
+- 新截图：[4 张 1080×1920 竖屏截图](build/store-assets/mobile-v2.2.0/)，无手机外框/状态栏，04 图带“AI 生成内容”标识。
+- 修复记录：[视频故障、HTTP 状态 0 修复、截图与 AGC 操作清单](docs/verification/v2.2.0/appgallery-review-fix.md)。
+- 随附 14 秒录屏是登录故障复现，不是介绍视频；修复后需重新录制真实操作视频，不能上传该文件。
+
 ## 2.1.2 移动端与网页版同步修复
 
 最新云源码：[GitCode 移动/Web 发行](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-web) · [GitHub 移动/Web 发行](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-web) · [在线使用](https://seal.xingmasoft.com/office/)。应用版本仍为 **2.1.2 / 20102**。
