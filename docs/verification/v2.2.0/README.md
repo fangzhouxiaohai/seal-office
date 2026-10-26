@@ -61,6 +61,19 @@ MSIX 身份为 `45C56666.seal-office`、Publisher `CN=F6431C2A-EA55-468A-89D8-89
 
 HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.cer`、新 Profile `cer/seal-office-release-20261023Release.p7b`、原私钥库和别名 `sealoffice-release`；证书 SHA-256 `9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB`，Profile App ID `6917619858054370422`。详细核对、旧配置差异和 HBuilderX 操作见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 
+## 移动成品
+
+| 文件 | 字节 | SHA-256 |
+| --- | ---: | --- |
+| `seal-office-2.2.0-android.apk` | 71,498,483 | `b897f50d9bed5b7c72447e727f7cd74d606b893b6a0e2c091def654d21cbe8ce` |
+| `seal-office-2.2.0-harmony.app` | 42,457,523 | `27dad70c4472ce39f1adb93048f5c94d23a5ed6e09fa24c0692bacc19e179a71` |
+| `seal-office-2.2.0-harmony.app.zip` | 42,457,679 | `809a7a4e423ff8da8e6d365e917866b1fb3f44dce36117e9a0306288489613f8` |
+
+- Android APK：包名 `com.sealoffice.mobile`，版本 2.2.0 / 20200，minSdk 28，targetSdk 36，v3 签名由 apksigner 验证通过；内置编辑器哈希与当前源码一致。
+- HarmonyOS App Pack：`com.sealoffice.mobile` / 2.2.0 / 20200；内层 HAP 的 CRC、版本、内置编辑器和权限通过检查；App Pack 内嵌新主体 Profile，证书 SHA-256 为 `9C1A6D...`、App ID `6917619858054370422`。
+- HarmonyOS 官方 `hap-sign-tool` 验签和 Android/HarmonyOS 真机安装未执行；App Pack 的内层 HAP 未独立签名，不单独作为安装包发布。
+- 详细记录：[mobile-native-packages.json](mobile-native-packages.json)。
+
 ## AppGallery 审核修改
 
 - 附随 14 秒录屏是登录故障复现，不是介绍视频；其 SHA-256、逐帧分析和根因见 `docs/verification/v2.2.0/appgallery-review-fix.md`。
@@ -71,6 +84,6 @@ HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.ce
 ## 边界与未完成项
 
 - 第三方 DOCX/WPS 字体未随文件携带；缺少专用字体时只能回退并提示。专属格式只有在源字体文件可读取、`fsType` 允许嵌入且总量不超过 56 MiB 时才能携带完整字体。
-- Android / HarmonyOS 本次只生成云打包源码，未生成 APK/HAP；没有真机字体导入、字体渲染、系统字体枚举或签名安装验收。
+- 已生成 Android APK 和 HarmonyOS 已签名 App Pack，但未做真机字体导入、字体渲染、系统字体枚举、安装启动或商店审核验收；HarmonyOS 官方 hap-sign-tool 验签仍未执行。
 - macOS / Linux 系统字体解析代码已覆盖，但未在对应真机运行；Linux DEB 未在 Ubuntu 上安装。
 - 本版本没有重制 PC / Android 介绍视频。`release/promo/` 已清空到历史私有归档，不能把旧视频当作 2.2.0 功能演示。

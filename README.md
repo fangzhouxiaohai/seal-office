@@ -32,6 +32,8 @@
 | Ubuntu amd64 | `seal-office-2.2.0-amd64.deb` |
 | Android 云打包源码 | `seal-office-2.2.0-android-cloud-source.zip` |
 | HarmonyOS 云打包源码 | `seal-office-2.2.0-harmony-cloud-source.zip` |
+| Android APK | `seal-office-2.2.0-android.apk` |
+| HarmonyOS 已签名 App Pack | `seal-office-2.2.0-harmony.app`（附件 `seal-office-2.2.0-harmony.app.zip`） |
 
 Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。HarmonyOS 新主体证书/Profile 的配置与核对见 [签名配置切换](docs/verification/v2.2.0/harmony-signing-config.md)。
 

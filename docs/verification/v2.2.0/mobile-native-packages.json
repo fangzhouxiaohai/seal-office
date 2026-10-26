@@ -1,0 +1,82 @@
+{
+  "version": "2.2.0",
+  "versionCode": "20200",
+  "generatedAt": "2026-10-26T18:38:47+08:00",
+  "android": {
+    "file": "release/v2.2.0/seal-office-2.2.0-android.apk",
+    "source": "D:/downsoft/__UNI__B52B65B_1026175346.apk",
+    "bytes": 71498483,
+    "sha256": "b897f50d9bed5b7c72447e727f7cd74d606b893b6a0e2c091def654d21cbe8ce",
+    "packageName": "com.sealoffice.mobile",
+    "versionName": "2.2.0",
+    "versionCode": "20200",
+    "minSdk": "28",
+    "targetSdk": "36",
+    "abi": ["arm64-v8a", "armeabi-v7a"],
+    "debuggable": false,
+    "zipAligned": true,
+    "signature": {
+      "verified": true,
+      "schemes": { "v1": false, "v2": false, "v3": true },
+      "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad",
+      "certificateDn": "CN=kIyu4gRK%2Fl%2Flmedf2XDlF%2BwZFI3js2VRYqx5Tdf8c7NABMKBL8pK0V8Ls6Nb%2B8DbdzCRIKvZ0DPMNJAPOjX4mg%3D%3D, OU=Android, O=Android, L=, ST=, C=CN"
+    },
+    "embeddedEditorSha256": "b4c50cfea3963473e294ccc63eaea50b4ca866983e8467944148f7b5432ffe9d",
+    "matchesCurrentSourceBuild": true,
+    "deviceVerified": false
+  },
+  "harmony": {
+    "file": "release/v2.2.0/seal-office-2.2.0-harmony.app",
+    "source": "release/v2.2.0/mobile-web/harmony-cloud-source/unpackage/dist/build/app-harmony/build/outputs/release/app-harmony-release-signed.app",
+    "bytes": 42457523,
+    "sha256": "27dad70c4472ce39f1adb93048f5c94d23a5ed6e09fa24c0692bacc19e179a71",
+    "zipAttachment": {
+      "file": "release/v2.2.0/seal-office-2.2.0-harmony.app.zip",
+      "bytes": 42457679,
+      "contains": "seal-office-2.2.0-harmony.app",
+      "innerBytesIdentical": true
+    },
+    "bundleName": "com.sealoffice.mobile",
+    "versionName": "2.2.0",
+    "versionCode": 20200,
+    "innerHap": {
+      "file": "entry-default.hap",
+      "bytes": 65960692,
+      "sha256": "d79916b220b6cc6610dcd9265264820aea835ec76061a098526167e0be106ec7",
+      "embeddedEditorSha256": "b4c50cfea3963473e294ccc63eaea50b4ca866983e8467944148f7b5432ffe9d",
+      "matchesCurrentSourceBuild": true,
+      "crcPassed": true,
+      "debug": false,
+      "buildMode": "release",
+      "permissions": ["ohos.permission.INTERNET", "ohos.permission.PRINT"],
+      "signatureVerifiedByOfficialTool": false
+    },
+    "embeddedProfile": {
+      "present": true,
+      "type": "release",
+      "distributionType": "app_gallery",
+      "bundleName": "com.sealoffice.mobile",
+      "appId": "6917619858054370422",
+      "developerId": "20086000975548278",
+      "uuid": "0a434586-fa71-4645-bee5-8dd0537518b0",
+      "distributionCertificateSha256": "9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB",
+      "matchesNewIssuerCertificate": true
+    },
+    "signatureBlockPresent": true,
+    "verifiedByOfficialHapSignTool": false,
+    "deviceVerified": false
+  },
+  "checks": {
+    "apkPackageAndVersion": true,
+    "apkSignatureVerified": true,
+    "apkEmbeddedEditorMatchesSource": true,
+    "appPackProfileMatchesNewCertificate": true,
+    "appPackHapVersionAndBundle": true,
+    "appPackHapEmbeddedEditorMatchesSource": true
+  },
+  "limitations": [
+    "Android APK signature was checked with apksigner (v3 only).",
+    "HarmonyOS App Pack contains the new release profile and matching certificate; the official hap-sign-tool verification and device install were not available on this host.",
+    "No physical Android or HarmonyOS device test was performed."
+  ]
+}
