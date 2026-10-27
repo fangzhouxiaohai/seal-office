@@ -25,3 +25,7 @@
 - `release/v2.2.1/seal-office-2.2.1-harmony.app.zip`
 - `release/v2.2.1/mobile-web/seal-office-2.2.1-android-cloud-source.zip`
 - `release/v2.2.1/mobile-web/seal-office-2.2.1-harmony-cloud-source.zip`
+
+## 阅读主工具栏二次优化
+
+`MobileReadingToolbar` 进一步改为两层结构：第一层是“阅读/编辑”分段控件、A+字号选择器和只读状态；第二层是目录、查找、全屏三个等宽图文工具。原来单独换行的“全屏阅读”和右侧“只读浏览”不再形成孤立行，字号控件去掉“字号”二字，用 A 与数字表达。相关测试同时校验两层结构、图标和可访问名称。
