@@ -3,7 +3,7 @@ import picker from '@ohos.file.picker'
 import fileIo from '@ohos.file.fs'
 import print from '@ohos.print'
 // #endif
-import { shareExport } from './share.uts'
+import { saveDocument, shareExport } from './share.uts'
 
 /** A saved reply is sent only after the system-selected destination is written. */
 export function exportDocument(filename: string, name: string, mime: string, done: (status: string, path: string, error: string) => void) {
@@ -22,8 +22,14 @@ export function exportDocument(filename: string, name: string, mime: string, don
   } catch (_) { done('error', '', '无法打开系统保存界面，请回到应用前台后重试') }
   // #endif
   // #ifndef APP-HARMONY
+  // #ifdef APP-ANDROID
+  // 保存必须走系统 SAF 文档选择器，不能再用 ACTION_SEND 分享。
+  saveDocument(filename, name, mime, done)
+  // #endif
+  // #ifndef APP-ANDROID
   shareExport(filename, mime, (detail: string) => { uni.showToast({ title: detail, icon: 'none' }) })
   done('saved', filename, '')
+  // #endif
   // #endif
 }
 

@@ -1,8 +1,86 @@
 // #ifdef APP-ANDROID
+import Activity from 'android.app.Activity'
 import Intent from 'android.content.Intent'
 import ClipData from 'android.content.ClipData'
 import File from 'java.io.File'
+import FileInputStream from 'java.io.FileInputStream'
 // #endif
+
+// Android 的旧实现用 ACTION_SEND 分享，系统里没有分享目标时会显示
+// “没有应用可执行此操作”，也不能让用户选择保存位置。保存应使用 SAF 的
+// ACTION_CREATE_DOCUMENT，由系统文件管理器返回可写 URI。
+// #ifdef APP-ANDROID
+class 文档保存回调 implements IUniActivityCallback {
+  private readonly 请求码: number
+  private readonly 来源: string
+  private readonly 完成: (status: string, path: string, error: string) => void
+
+  constructor(请求码: number, 来源: string, 完成: (status: string, path: string, error: string) => void) {
+    this.请求码 = 请求码
+    this.来源 = 来源
+    this.完成 = 完成
+  }
+
+  onActivityResult(params: UniActivityParams, requestCode: number, resultCode: number, data: Intent | null): void {
+    if (requestCode != this.请求码) return
+    UTSAndroid.offActivityCallback(this)
+    if (resultCode != Activity.RESULT_OK || data == null) {
+      this.完成('cancel', '', '')
+      return
+    }
+    const uri = data.getData()
+    if (uri == null) {
+      this.完成('error', '', '系统没有返回保存位置')
+      return
+    }
+    try {
+      const activity = UTSAndroid.getUniActivity()
+      if (activity == null) throw new Error('应用不在前台')
+      const input = new FileInputStream(new File(UTSAndroid.convert2AbsFullPath(this.来源)))
+      const output = activity.getContentResolver().openOutputStream(uri)
+      if (output == null) throw new Error('无法打开保存位置')
+      try {
+        const buffer = new Uint8Array(65536)
+        let read = input.read(buffer)
+        while (read > 0) {
+          output.write(buffer, 0, read)
+          read = input.read(buffer)
+        }
+        output.flush()
+      } finally {
+        input.close()
+        output.close()
+      }
+      this.完成('saved', uri.toString(), '')
+    } catch (错误) {
+      this.完成('error', '', '无法写入所选位置：' + 错误.toString())
+    }
+  }
+}
+// #endif
+
+/** Android SAF 保存；用户选择位置并写入成功后才回报 saved。 */
+export function saveDocument(filename: string, name: string, mime: string, done: (status: string, path: string, error: string) => void) {
+  // #ifdef APP-ANDROID
+  try {
+    const activity = UTSAndroid.getUniActivity()
+    if (activity == null) { done('error', '', '请回到应用前台后再保存'); return }
+    const intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+    intent.addCategory(Intent.CATEGORY_OPENABLE)
+    intent.setType(mime)
+    intent.putExtra(Intent.EXTRA_TITLE, name)
+    intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    const callback = new 文档保存回调(42107, filename, done)
+    UTSAndroid.onActivityCallback(callback)
+    activity.startActivityForResult(intent, 42107)
+  } catch (错误) {
+    done('error', '', '无法打开系统保存界面，请确认系统文件管理器可用：' + 错误.toString())
+  }
+  // #endif
+  // #ifndef APP-ANDROID
+  done('error', '', '当前平台不支持此保存入口')
+  // #endif
+}
 
 export function shareExport(filename: string, mime: string, failed: (message: string) => void) {
   // #ifdef APP-ANDROID

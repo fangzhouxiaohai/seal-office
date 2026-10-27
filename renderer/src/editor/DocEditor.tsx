@@ -407,6 +407,8 @@ const DocEditor = () => {
   }
 
   useEffect(() => {
+    let 格式帧 = 0
+    let 上次格式 = ''
     const 更新格式 = () => {
       const 根 = 取格式编辑区()
       const 选择 = window.getSelection()
@@ -416,7 +418,16 @@ const DocEditor = () => {
       const 字体 = 节点 ? getComputedStyle(节点).fontFamily.split(',')[0].replace(/["']/g, '').trim() : '宋体'
       const 新格式 = { 字体, 字号: 中文字号表.find(x => Math.abs(x.磅值 - 磅值) < 0.02)?.名称 ?? `${Math.round(磅值 * 100) / 100}`,
         加粗: 安全查询格式('bold'), 斜体: 安全查询格式('italic'), 下划线: 安全查询格式('underline'), 删除线: 安全查询格式('strikeThrough') }
-      set选区显示格式(旧 => JSON.stringify(旧) === JSON.stringify(新格式) ? 旧 : 新格式)
+      const 序列化 = JSON.stringify(新格式)
+      if (序列化 === 上次格式) return
+      上次格式 = 序列化
+      set选区显示格式(新格式)
+    }
+    // ArkWeb 会在 contentEditable 的选中/布局变化中重复派发 selectionchange。
+    // 若在事件里同步 setState，React 的嵌套更新会触发 #185；合并到下一帧。
+    const 调度格式 = () => {
+      if (格式帧) return
+      格式帧 = requestAnimationFrame(() => { 格式帧 = 0; 更新格式() })
     }
     const 重置输入字号 = (事件: Event) => {
       if (!(事件.target instanceof Node) || !编辑区引用.current?.closest('.wps-editor-canvas__paper')?.contains(事件.target)) return
@@ -424,10 +435,15 @@ const DocEditor = () => {
       待输入字号.current = null
     }
     更新格式()
-    document.addEventListener('selectionchange', 更新格式)
+    document.addEventListener('selectionchange', 调度格式)
     document.addEventListener('mousedown', 重置输入字号, true)
     document.addEventListener('keydown', 重置输入字号, true)
-    return () => { document.removeEventListener('selectionchange', 更新格式); document.removeEventListener('mousedown', 重置输入字号, true); document.removeEventListener('keydown', 重置输入字号, true) }
+    return () => {
+      document.removeEventListener('selectionchange', 调度格式)
+      document.removeEventListener('mousedown', 重置输入字号, true)
+      document.removeEventListener('keydown', 重置输入字号, true)
+      if (格式帧) cancelAnimationFrame(格式帧)
+    }
   }, [文档标识, 内容版本])
 
   const 执行格式化 = (指令: string, 值?: string): void => {

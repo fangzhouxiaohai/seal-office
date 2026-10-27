@@ -54,10 +54,10 @@ MSIX 身份为 `45C56666.seal-office`、Publisher `CN=F6431C2A-EA55-468A-89D8-89
 
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
-| `seal-office-2.2.0-android-cloud-source.zip` | 38,551,870 | `209863b26b4bc8d565b3c37ca5c500a7f4de82b5403b6be22119881971559a51` |
-| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,856 | `5cf8c7dcd28bb85feddf1654627b1ad23d551ce8a9e6d18ba37a06f0f99799cb` |
+| `seal-office-2.2.0-android-cloud-source.zip` | 38,552,953 | `bec7d8e6435eedb11ed148a24919a6c8ac52905cda11d39c3225254009f3296a` |
+| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,552,960 | `5271ab25e8870c0deadc9da194fd63e2544a06ccf5fb78fdf3541fd07ca3d5af` |
 
-Android 解压项目 59,880,044 字节、HarmonyOS 59,879,971 字节（Android 低于 60,000,000 字节上限，余量约 119,956 字节）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复鸿蒙原生网络状态码丢失并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
+Android/HarmonyOS 解压项目各 59,883,462 字节（Android 低于 60,000,000 字节上限，余量约 116,538 字节）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复鸿蒙原生网络状态码丢失并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
 
 HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.cer`、新 Profile `cer/seal-office-release-20261023Release.p7b`、原私钥库和别名 `sealoffice-release`；证书 SHA-256 `9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB`，Profile App ID `6917619858054370422`。详细核对、旧配置差异和 HBuilderX 操作见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 
@@ -66,7 +66,7 @@ HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.ce
 - Android 可正常取验证码，HarmonyOS 返回“网络连接失败，请检查网络后重试”；原因是 Harmony 的 `uni.request` 适配层在失败时进入 `success` 且 `statusCode` 为 0，真正的网络错误被吞掉。
 - 修复后在 HarmonyOS 使用系统 `@ohos.net.http`：普通请求读取真实 `responseCode/header/result`，流式请求使用 `requestInStream` 的 headers/data 事件；JSON 请求体改走字符串，不再强转 `ArrayBuffer`。
 - 旧 APK/App Pack 构建早于本修复，已移到 `.upgrade-private/release-archive/v2.2.0-native-pre-harmony-http-fix/`，不能作为最终包。
-- 本轮没有重新云打包，也没有鸿蒙真机点击验证；详细复现、错误码和复测步骤见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。
+- 本轮没有重新云打包，也没有鸿蒙真机点击验证；详细复现、错误码和复测步骤见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。\n- Android 保存已改为 SAF `ACTION_CREATE_DOCUMENT`；HarmonyOS 编辑区 `selectionchange` 已改为下一帧合并，修复 React #185。详见 [Android 保存与 HarmonyOS 编辑区渲染修复](mobile-save-and-render-fixes.md)。
 
 ## AppGallery 审核修改
 
