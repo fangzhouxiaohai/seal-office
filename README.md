@@ -40,7 +40,7 @@ Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源�
 ### AppGallery 审核素材（2.2.0）
 
 - 新介绍文字：[简体中文商店资料](build/store-assets/mobile-v2.2.0/listing-zh-CN.md)（含 17 字以内简介、完整描述、AI 标识与审核说明）。
-- 新截图：[4 张 1080×1920 竖屏截图](build/store-assets/mobile-v2.2.0/)，无手机外框/状态栏，04 图带“AI 生成内容”标识。
+- 新截图：[10 张 1080×1920 竖屏截图](build/store-assets/mobile-v2.2.0/)，无手机外框/状态栏，07 图带“AI 生成内容”标识。
 - 修复记录：[视频故障、HTTP 状态 0 修复、截图与 AGC 操作清单](docs/verification/v2.2.0/appgallery-review-fix.md)。
 - 随附 14 秒录屏是登录故障复现，不是介绍视频；修复后需重新录制真实操作视频，不能上传该文件。
 
