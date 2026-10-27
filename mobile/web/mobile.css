@@ -82,14 +82,21 @@ html[data-seal-platform="app"] { --seal-bottom-inset: 0px; }
   .wps-editor-canvas__content { min-height: 400px; column-count: 1 !important; }
   .wps-editor-canvas__content img { max-width: 100%; height: auto; }
   .wps-editor-canvas__header, .wps-editor-canvas__footer { left: 18px !important; right: 18px !important; }
-  .seal-reading-toolbar { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; min-height: 48px; padding: 4px 8px; border-bottom: 1px solid var(--border); background: var(--bg-card); color: var(--text-1); flex-wrap: wrap; }
-  .seal-reading-toolbar button, .seal-reading-toolbar select { min-height: 40px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: inherit; font: inherit; font-size: 1rem; cursor: pointer; }
+  .seal-reading-toolbar { display: flex; flex: 0 0 auto; flex-direction: column; gap: 5px; padding: 5px 9px 7px; border-bottom: 1px solid var(--border); background: var(--bg-card); color: var(--text-1); }
+  .seal-reading-toolbar__bar { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+  .seal-reading-toolbar button, .seal-reading-toolbar select { font: inherit; cursor: pointer; }
   .seal-reading-toolbar button:focus-visible, .seal-reading-toolbar select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
-  .seal-reading-toolbar__modes { display: flex; gap: 2px; }
-  .seal-reading-toolbar button[aria-pressed="true"] { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
-  .seal-reading-toolbar__size { display: flex; align-items: center; gap: 4px; font-size: .875rem; }
-  .seal-reading-toolbar__size select { padding-inline: 5px; }
-  .seal-reading-toolbar__hint { margin-inline-start: auto; color: var(--text-2); font-size: .75rem; white-space: nowrap; }
+  .seal-reading-toolbar__modes { display: flex; flex: 0 0 auto; gap: 2px; padding: 2px; border-radius: 8px; background: var(--bg-app); }
+  .seal-reading-toolbar__modes button { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-2); font-size: .8125rem; }
+  .seal-reading-toolbar__modes button svg, .seal-reading-toolbar__actions button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .seal-reading-toolbar__modes button[aria-pressed="true"] { background: var(--bg-card); color: var(--brand); box-shadow: 0 1px 2px #00000014; }
+  .seal-reading-toolbar__size { display: flex; align-items: center; flex: 0 0 auto; height: 34px; padding: 0 3px 0 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+  .seal-reading-toolbar__size-mark { font-size: 13px; font-weight: 700; color: var(--text-2); }
+  .seal-reading-toolbar__size select { min-height: 30px; padding: 0 0 0 3px; border: 0; background: transparent; color: inherit; font-size: .8125rem; }
+  .seal-reading-toolbar__hint { margin-inline-start: auto; padding: 3px 8px; border-radius: 999px; background: var(--bg-app); color: var(--text-2); font-size: .6875rem; white-space: nowrap; }
+  .seal-reading-toolbar__actions { gap: 2px; padding: 2px; border-radius: 8px; background: var(--bg-app); }
+  .seal-reading-toolbar__actions button { display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; gap: 4px; min-height: 32px; padding: 0 5px; border: 0; border-radius: 6px; background: transparent; color: var(--text-1); font-size: .75rem; }
+  .seal-reading-toolbar__actions button:active, .seal-reading-toolbar__modes button:active { background: var(--bg-card); }
   .wps-editor-workspace--reading .wps-editor-canvas__content { font-size: var(--seal-reading-font-size, 1.125rem); line-height: 1.8; overflow-wrap: anywhere; writing-mode: horizontal-tb; user-select: text; -webkit-user-select: text; cursor: text; }
   .wps-editor-workspace--reading .wps-editor-canvas__content :is(p, li, div, td, th) { line-height: 1.8 !important; }
   .wps-editor-workspace--reading .wps-editor-canvas__content :is(p, li, div, span, font, td, th, a, em, strong, b, i, u, s, code) { font-size: inherit !important; }

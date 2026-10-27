@@ -69,6 +69,12 @@ describe('移动文字阅读模式', () => {
     const { container } = 渲染()
     await userEvent.click(screen.getByRole('button', { name: '导入阅读文档' }))
     const 工具栏 = screen.getByRole('toolbar', { name: '文档阅读与编辑' })
+    expect(工具栏.querySelectorAll('[data-reading-row]')).toHaveLength(2)
+    const 工具行 = 工具栏.querySelector('[data-reading-row="actions"]')!
+    expect(within(工具行 as HTMLElement).getByRole('button', { name: '目录' })).toContainHTML('<svg')
+    expect(within(工具行 as HTMLElement).getByRole('button', { name: '查找' })).toContainHTML('<svg')
+    expect(within(工具行 as HTMLElement).getByRole('button', { name: '全屏左右翻页阅读' })).toContainHTML('<svg')
+    expect(within(工具栏).getByRole('status')).toHaveTextContent('只读')
     const 根 = container.querySelector('.wps-editor-canvas__content')!
     const 原始HTML = 根.innerHTML
     const 原状态 = screen.getByTestId('document-state').textContent
