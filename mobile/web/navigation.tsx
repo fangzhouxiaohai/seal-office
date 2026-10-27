@@ -62,7 +62,7 @@ export default function MobileNavigation() {
   }, [store, message])
   return <>
     <nav className="seal-mobile-nav" aria-label="移动工作台导航">
-      {[{key:'home',section:'home',label:'首页',icon:'home'},{key:'my-cloud',section:'cloud',label:'云盘',icon:'folder'},{key:'apps',section:'services',label:'服务',icon:'grid'},{key:'market',section:'templates',label:'模板',icon:'doc-ppt'},{key:'mobile-profile',section:'mine',label:'我的',icon:'users'}].map(item=><button key={item.key} aria-label={item.label==='首页'?'返回首页':item.label} aria-current={store.module==='home'&&mobileSection(store.navKey)===item.section?'page':undefined} onClick={()=>navigate(item.key)}><Icon name={item.icon} size={23} variant="outline"/><span>{item.label}</span></button>)}
+      {[{key:'home',section:'home',label:'首页',icon:'home'},{key:'my-cloud',section:'cloud',label:'云盘',icon:'folder'},{key:'apps',section:'services',label:'服务',icon:'grid'},{key:'market',section:'templates',label:'模板',icon:'page-view'},{key:'mobile-profile',section:'mine',label:'我的',icon:'users'}].map(item=><button key={item.key} aria-label={item.label==='首页'?'返回首页':item.label} aria-current={store.module==='home'&&mobileSection(store.navKey)===item.section?'page':undefined} onClick={()=>navigate(item.key)}><Icon name={item.icon} size={23} variant="outline"/><span>{item.label}</span></button>)}
     </nav>
   </>
 }

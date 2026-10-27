@@ -108,10 +108,16 @@ useLayoutEffect(() => { 更新.current() }) // 没有依赖数组
 - `ContextMenu`、`ImageTools` 传入各自的锚点测量键，保留跟随定位。
 - `ErrorBoundary` 把错误堆栈和组件栈合并成一条字符串写入 ArkWeb 控制台，避免后续日志只看到第一个参数。
 
-新 App Pack：`42,487,387` 字节，SHA-256 `360e41cba80fdf1326e0346ba6e24b02f77b796ff9ebbf7ce29789f3ea629369`；已安装到模拟器并重复“插入分页符 + 键盘”操作，未再出现 #185。
+新 App Pack：`42,487,392` 字节，SHA-256 `b0d2f445a87ac427a5766dd05f886e78556eafbf7300c79d8d3ab5f6051c19e5`；已安装到模拟器并重复“插入分页符 + 键盘”操作，未再出现 #185。
 
-## 3. 当前交付状态
+## 4. 底部 tab“模板”图标统一
+
+`mobile/web/navigation.tsx` 的底部导航原来给“模板”使用 `doc-ppt`。这个名称在图标组件里会走 `FileTypeIcon`，显示成彩色 PPT 文件图标，和其他四个线性图标不一致。
+
+已改为 `page-view` 线性图标，仍使用 `variant="outline"`，与首页、云盘、服务、我的统一。HarmonyOS 新 App Pack 和 Android 云源码均已包含此修改。
+
+## 5. 当前交付状态
 
 - 本次仍使用 `2.2.0 / 20200`，因为 2.2.0 尚未通过 AppGallery 审核；若商店已接收 2.2.0，需要改为 2.2.1/20201 后重新提交。
-- HarmonyOS 新 App Pack 已在本机构建并安装到模拟器验证；Android 新 APK 已提交 HBuilderX 云打包，仍在免费队列中，尚未做 Android 真机保存验收。
+- HarmonyOS 新 App Pack 已在本机构建并安装到模拟器验证；Android 新 APK 已重新提交 HBuilderX 云打包，仍在免费队列中，尚未做 Android 真机保存验收。
 - 源码仍是云打包源码，不是已签名安装包。
