@@ -186,6 +186,33 @@ describe('docx 往返保真', () => {
     expect(结果.警告).not.toContain('表格合并单元格未导入')
   })
 
+  it('WPS 导出的紧凑行距按单倍下限导入，避免表格文字上下重叠', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr>' +
+      '<w:spacing w:line="185" w:lineRule="auto"/></w:pPr><w:r><w:t>不能重叠的正文</w:t></w:r></w:p>' +
+      '</w:body></w:document>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.html).toContain('line-height:1')
+    expect(结果.html).not.toContain('line-height:0.7708333333333334')
+  })
+
+  it('固定表格列宽与竖排单元格按 WPS 版式导入', async () => {
+    const 压缩包 = new JSZip()
+    压缩包.file('word/document.xml', '<w:document><w:body><w:tbl>' +
+      '<w:tblPr><w:tblW w:w="6000" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr>' +
+      '<w:tblGrid><w:gridCol w:w="1000"/><w:gridCol w:w="5000"/></w:tblGrid>' +
+      '<w:tr><w:tc><w:tcPr><w:tcW w:w="1000" w:type="dxa"/><w:textDirection w:val="tbRlV"/></w:tcPr>' +
+      '<w:p><w:r><w:t>主体信息</w:t></w:r></w:p></w:tc>' +
+      '<w:tc><w:tcPr><w:tcW w:w="5000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>单位名称</w:t></w:r></w:p></w:tc></w:tr>' +
+      '</w:tbl></w:body></w:document>')
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.html).toContain('table-layout:fixed')
+    expect(结果.html).toMatch(/<colgroup><col style="width:66\.6666666666666[0-9]px"><col style="width:333\.3333333333333px"><\/colgroup>/)
+    expect(结果.html).toContain('writing-mode:vertical-rl')
+    expect(结果.html).toContain('text-orientation:upright')
+    expect(结果.html).toContain('主体信息')
+  })
+
   it('越界或非法的合并跨度仍提示未导入', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:tbl>' +

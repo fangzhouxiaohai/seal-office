@@ -418,7 +418,7 @@ function 解析段落属性(pPr, 编号映射) {
   let 行距规则 = null
   if (行距 !== undefined) {
     const 规则 = 间距.行距规则
-    if (规则 === undefined || 规则 === 'auto') 样式 += `line-height:${行距 / 240};`
+    if (规则 === undefined || 规则 === 'auto') 样式 += `line-height:${Math.max(1, 行距 / 240)};`
     else if (规则 === 'exact' || 规则 === 'atLeast') {
       样式 += `line-height:${行距 / 20}pt;`
       行距规则 = 规则
@@ -605,6 +605,11 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
   const 百分比宽 = /^\d+(?:\.\d+)?%$/.test(原始表宽) ? Number.parseFloat(原始表宽) : 数值(表属性, 'w:tblW') / 50
   const 表宽 = 表宽类型 === 'pct' ? `${百分比宽}%` : 表宽类型 === 'dxa' ? `${数值(表属性, 'w:tblW') / 15}px` : 'auto'
   const 间距 = 数值(表属性, 'w:tblCellSpacing') / 15
+  const 网格Xml = 表Xml.match(/<w:tblGrid(?:\s[^>]*)?>([\s\S]*?)<\/w:tblGrid>/i)?.[1] || ''
+  const 网格列 = [...网格Xml.matchAll(/<w:gridCol(?=[\s/>])[^>]*\bw:w\s*=\s*["'](\d+)["'][^>]*>/gi)]
+    .map((项) => Number(项[1]) / 15)
+    .filter((值) => Number.isFinite(值) && 值 > 0)
+  const 固定布局 = /<w:tblLayout(?=[\s/>])[^>]*\bw:type\s*=\s*["']fixed["']/i.test(表属性) || 网格列.length > 0
   const 默认边距 = 表属性.match(/<w:tblCellMar[^>]*>([\s\S]*?)<\/w:tblCellMar>/i)?.[1] || ''
   const 行网格 = []
   const 行正则 = /<w:tr(?:\s[^>]*)?>([\s\S]*?)<\/w:tr>/gi
@@ -635,18 +640,27 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
       const 填充 = 取属性(单元属性, 'w:shd', 'w:fill')
       if (/^[0-9a-f]{6}$/i.test(填充 || '')) 样式.push(`background-color:#${填充}`)
       const 垂直 = 取属性(单元属性, 'w:vAlign', 'w:val')
-      样式.push(`vertical-align:${({ center: 'middle', top: 'top', bottom: 'bottom' })[垂直] || 'middle'}`)
+      const 文字方向 = 取属性(单元属性, 'w:textDirection', 'w:val')
+      const 竖排 = /^(?:tbRl|btLr)/i.test(文字方向 || '')
+      样式.push(`vertical-align:${竖排 ? 'top' : (({ center: 'middle', top: 'top', bottom: 'bottom' })[垂直] || 'middle')}`)
       const 跨列原值 = 取属性(单元属性, 'w:gridSpan', 'w:val')
       const 跨列 = 跨列原值 !== null && /^\d+$/.test(跨列原值) ? Number(跨列原值) : 1
       const 有效跨列 = Number.isSafeInteger(跨列) && 跨列 > 1 && 跨列 <= 256 ? 跨列 : 1
       const 纵向合并 = !存在(单元属性, 'vMerge') ? null
         : 取属性(单元属性, 'w:vMerge', 'w:val') === 'restart' ? 'restart' : 'continue'
+      let 内容 = 段落列表.join('') || '<br>'
+      if (竖排) {
+        // Word/WPS 把竖排文字的段落缩进解释为沿排方向的偏移，直接映射成
+        // margin-left 会把文字推出窄单元格；这里只保留文字本身。
+        内容 = 内容.replace(/margin-(?:left|right):[^;]+;?/g, '')
+        内容 = `<div style="writing-mode:vertical-rl;text-orientation:upright;white-space:nowrap">${内容}</div>`
+      }
       单元列表.push({
         修订属性: revisionAttributes(xmlNodes(单元匹配[0]).find(node => ['w:ins', 'w:del'].includes(node.name) && node.parent?.name === 'w:tcPr')),
         列: 列起点,
         跨列: 有效跨列,
         纵向合并,
-        内容: 段落列表.join('') || '<br>',
+        内容,
         样式: 样式.join(';'),
       })
       列起点 += 有效跨列
@@ -670,11 +684,14 @@ function 解析表格(表Xml, 编号映射, 样式定义) {
         }
       }
       const 合并属性 = (单元.跨列 > 1 ? ` colspan="${单元.跨列}"` : '') + (跨行 > 1 ? ` rowspan="${跨行}"` : '')
-      片段.push(`<td${合并属性}${单元.修订属性} style="${单元.样式}">${单元.内容}</td>`)
+      片段.push(`<td${合并属性}${单元.修订属性} style="${单元.样式};word-break:break-word;overflow-wrap:anywhere">${单元.内容}</td>`)
     }
     return `<tr${单元列表.修订属性 || ''}>${片段.join('')}</tr>`
   })
-  return `<table style="border-collapse:${间距 > 0 ? 'separate' : 'collapse'};border-spacing:${间距}px;width:${表宽}">${行列表.join('')}</table>`
+  const 列组 = 网格列.length > 0
+    ? `<colgroup>${网格列.map((宽) => `<col style="width:${宽}px">`).join('')}</colgroup>`
+    : ''
+  return `<table style="border-collapse:${间距 > 0 ? 'separate' : 'collapse'};border-spacing:${间距}px;width:${表宽};${固定布局 ? 'table-layout:fixed;' : ''}">${列组}${行列表.join('')}</table>`
 }
 
 /** 渲染单个段落 XML；列表项由外层聚合为 ul/ol */
