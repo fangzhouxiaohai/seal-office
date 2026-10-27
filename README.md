@@ -32,8 +32,8 @@
 | Ubuntu amd64 | `seal-office-2.2.0-amd64.deb` |
 | Android 云打包源码 | `seal-office-2.2.0-android-cloud-source.zip` |
 | HarmonyOS 云打包源码 | `seal-office-2.2.0-harmony-cloud-source.zip` |
-| Android APK | `seal-office-2.2.0-android.apk` |
-| HarmonyOS 已签名 App Pack | `seal-office-2.2.0-harmony.app`（附件 `seal-office-2.2.0-harmony.app.zip`） |
+
+Android APK / HarmonyOS App Pack 需使用包含鸿蒙网络修复的最新云源码重新打包；此前生成的旧包不包含本次修复，已移到本机私有归档，不随仓库发布。鸿蒙原生请求改走 `@ohos.net.http` 的说明见 [鸿蒙登录网络错误修复](docs/verification/v2.2.0/harmony-network-fix.md)。
 
 Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。HarmonyOS 新主体证书/Profile 的配置与核对见 [签名配置切换](docs/verification/v2.2.0/harmony-signing-config.md)。
 

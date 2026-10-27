@@ -30,6 +30,7 @@ SHA-256：`d95a30581ecd2b4c05d2378f8ad6dacc56c4c8f8f17b314ffd35abb9392716cb`
 - `headers` 和 `end` 两条事件路径都覆盖，避免 `end` 在分块之后再次构造非法响应。
 - 错误文案改为 `网络连接失败，请检查网络后重试`。
 - 增加 `headers status: 0` 与 `end status: 0` 两个回归场景。
+- 2026-10-27 进一步修复：HarmonyOS 不再使用会返回 `statusCode: 0` 的 `uni.request`，改用系统 `@ohos.net.http`；JSON 请求体改发字符串。详见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。
 
 验证：
 

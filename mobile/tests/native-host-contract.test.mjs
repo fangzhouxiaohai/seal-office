@@ -68,10 +68,10 @@ test('Harmony plain JSON / Android UTS 对象消息均分发；空消息、伪�
 })
 
 test('实际 uni.webview SDK → Harmony 宿主 → 系统选择/持久保存：四个新格式及旧格式字节不变，HTTP短信链无真实发送', async () => {
-  const keys = ['window', 'uni', 'messageString', 'messageBoolean', 'messageNumber', 'onUIThread', 'isWorkspaceDocument', 'UTSHarmony', 'picker', 'fileIo', 'exportDocument', 'printDocument']
+  const keys = ['window', 'uni', 'messageString', 'messageBoolean', 'messageNumber', 'onUIThread', 'isWorkspaceDocument', 'UTSHarmony', 'picker', 'fileIo', 'exportDocument', 'printDocument', 'http']
   const previous = Object.fromEntries(keys.map(key => [key, globalThis[key]]))
   const stored = new Map(), pickerOptions = [], requests = [], scripts = [], errors = [], frames = []
-  let pickerResolve, httpResponse, host, webWindow, serial = 0
+  let pickerResolve, host, webWindow, serial = 0
   const names = ['中文𠀋🦭.sldoc', '公式.slxls', '演示.slppt', '批注.spdf', '旧文字.sealdoc', '旧表格.sealsheet', '旧演示.sealshow']
   const bytes = names.map((name, index) => new Uint8Array([0, 255, index, ...Buffer.from(name + '\n中文𠀋🦭')]))
   try {
@@ -82,6 +82,15 @@ test('实际 uni.webview SDK → Harmony 宿主 → 系统选择/持久保存：
     globalThis.picker = { DocumentViewPicker: class { save(options) { pickerOptions.push(options); return new Promise(resolve => { pickerResolve = resolve }) } } }
     globalThis.fileIo = { OpenMode: { READ_WRITE: 2, CREATE: 64, TRUNC: 512 },
       openSync: uri => ({ fd: uri }), closeSync: () => {}, copyFileSync: (source, destination) => stored.set(destination, new Uint8Array(stored.get(source))) }
+    globalThis.http = {
+      RequestMethod: { GET: 'GET', POST: 'POST', PUT: 'PUT', DELETE: 'DELETE' },
+      HttpDataType: { ARRAY_BUFFER: 2 },
+      createHttp: () => ({
+        request: (url, options, callback) => { requests.push({ url, options, callback }) },
+        requestInStream: (url, options, callback) => { requests.push({ url, options, callback }) },
+        on: () => {}, destroy: () => {},
+      }),
+    }
     const exporter = await importSource(platformSource(exportSource, 'harmony'))
     globalThis.exportDocument = exporter.exportDocument; globalThis.printDocument = exporter.printDocument
     globalThis.uni = {
@@ -94,7 +103,7 @@ test('实际 uni.webview SDK → Harmony 宿主 → 系统选择/持久保存：
         readFile: options => options.success({ data: Buffer.from(stored.get(options.filePath)).toString('base64') }),
         writeFile: options => { assert.equal(options.encoding, 'base64'); stored.set(options.filePath, new Uint8Array(Buffer.from(options.data, 'base64'))); options.success({}) },
       }),
-      request: options => { requests.push(options); httpResponse = options; return { abort: () => { errors.push('abort') }, onHeadersReceived: () => {}, onChunkReceived: () => {} } },
+      request: options => { errors.push('unexpected uni.request'); return { abort: () => {}, onHeadersReceived: () => {}, onChunkReceived: () => {} } },
     }
     for (let index = 0; index < names.length; index++) stored.set('/import/' + index, bytes[index])
     const page = (await importSource(platformSource(hostSource, 'harmony'))).default
@@ -124,15 +133,14 @@ test('实际 uni.webview SDK → Harmony 宿主 → 系统选择/持久保存：
     const cancelled = bridge.downloadFile('取消.spdf', bytes[0]); pickerResolve([])
     await assert.rejects(cancelled, { name: 'AbortError' })
     const sms = bridge.nativeFetch('https://example.test/api/v1/auth/sms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: 'test-not-a-real-number' }) })
-    assert.equal(requests.length, 1); assert.equal(httpResponse.timeout, 60000)
-    assert.equal(httpResponse.method, 'POST'); assert.equal(httpResponse.header['content-type'], 'application/json')
-    assert.deepEqual(JSON.parse(Buffer.from(httpResponse.data).toString()), { phone: 'test-not-a-real-number' })
+    assert.equal(requests.length, 1); assert.equal(requests[0].options.readTimeout, 60000)
+    assert.equal(requests[0].options.method, 'POST'); assert.equal(requests[0].options.header['content-type'], 'application/json')
+    assert.deepEqual(JSON.parse(Buffer.from(requests[0].options.extraData).toString()), { phone: 'test-not-a-real-number' })
     const body = Buffer.from(JSON.stringify({ error: '模拟短信限流，请稍后重试' }))
-    httpResponse.success({ statusCode: 429, header: { 'content-type': 'application/json' }, data: Uint8Array.from(body).buffer })
-    httpResponse.complete({})
+    requests[0].callback(null, { responseCode: 429, header: { 'content-type': 'application/json' }, result: Uint8Array.from(body).buffer })
     const response = await sms; assert.equal(response.status, 429); assert.match(await response.text(), /模拟短信限流/)
     const offline = bridge.nativeFetch('https://example.test/api/v1/auth/sms')
-    httpResponse.fail({ errMsg: 'connection refused' }); httpResponse.complete({})
+    requests[1].callback({ message: 'connection refused' }, null)
     await assert.rejects(offline, /网络请求失败.*connection refused/)
     assert.equal(host.tasks.size, 0); assert.equal(errors.length, 0); assert.ok(scripts.length > 20)
   } finally { Object.assign(globalThis, previous) }

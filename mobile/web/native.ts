@@ -112,10 +112,13 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
     options.signal?.addEventListener('abort', abort, { once: true })
     try {
       const body = options.body == null ? undefined : typeof options.body === 'string' ? Buffer.from(options.body) : Buffer.from(options.body as Uint8Array)
+      // Harmony's uni.request adapter handles a string body more reliably than an
+      // ArrayBuffer for JSON/form posts. Keep the base64 body for binary paths.
+      const bodyText = typeof options.body === 'string' ? options.body : ''
       let stream = new Headers(options.headers).get('accept')?.includes('event-stream') ?? false
       if (body) { try { stream ||= JSON.parse(body.toString()).stream === true } catch { /* 二进制与表单请求不使用 SSE */ } }
       streaming = stream; resetTimeout()
-      send({ id, action: 'request', url, method: options.method ?? 'GET', headers, body: body?.toString('base64'), stream })
+      send({ id, action: 'request', url, method: options.method ?? 'GET', headers, body: body?.toString('base64'), bodyText, stream })
     } catch (error) { fail(error) }
   })
 }

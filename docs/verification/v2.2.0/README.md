@@ -54,30 +54,24 @@ MSIX 身份为 `45C56666.seal-office`、Publisher `CN=F6431C2A-EA55-468A-89D8-89
 
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
-| `seal-office-2.2.0-android-cloud-source.zip` | 38,551,007 | `fe7c981e69222ed35ca47a3d24a33565f498cfc897ae6a40349e63802dbf33aa` |
-| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,011 | `0069581675fac47c663bd74f7ca07f32e7169d84cadced0063703e8071452c9b` |
+| `seal-office-2.2.0-android-cloud-source.zip` | 38,551,870 | `209863b26b4bc8d565b3c37ca5c500a7f4de82b5403b6be22119881971559a51` |
+| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,876 | `337d4179c36b931de3112b865511f300a4d9cf9c0fc7329b0a426daf9fba3cb3` |
 
-两个解压项目各 59,876,249 字节（Android 低于 60,000,000 字节上限）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复原生 HTTP 状态 0 引发的登录错误并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
+两个解压项目各 59,880,044 字节（Android 低于 60,000,000 字节上限，余量约 119,956 字节）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复鸿蒙原生网络状态码丢失并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
 
 HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.cer`、新 Profile `cer/seal-office-release-20261023Release.p7b`、原私钥库和别名 `sealoffice-release`；证书 SHA-256 `9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB`，Profile App ID `6917619858054370422`。详细核对、旧配置差异和 HBuilderX 操作见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 
-## 移动成品
+## 鸿蒙网络修复
 
-| 文件 | 字节 | SHA-256 |
-| --- | ---: | --- |
-| `seal-office-2.2.0-android.apk` | 71,498,483 | `b897f50d9bed5b7c72447e727f7cd74d606b893b6a0e2c091def654d21cbe8ce` |
-| `seal-office-2.2.0-harmony.app` | 42,457,523 | `27dad70c4472ce39f1adb93048f5c94d23a5ed6e09fa24c0692bacc19e179a71` |
-| `seal-office-2.2.0-harmony.app.zip` | 42,457,679 | `809a7a4e423ff8da8e6d365e917866b1fb3f44dce36117e9a0306288489613f8` |
-
-- Android APK：包名 `com.sealoffice.mobile`，版本 2.2.0 / 20200，minSdk 28，targetSdk 36，v3 签名由 apksigner 验证通过；内置编辑器哈希与当前源码一致。
-- HarmonyOS App Pack：`com.sealoffice.mobile` / 2.2.0 / 20200；内层 HAP 的 CRC、版本、内置编辑器和权限通过检查；App Pack 内嵌新主体 Profile，证书 SHA-256 为 `9C1A6D...`、App ID `6917619858054370422`。
-- HarmonyOS 官方 `hap-sign-tool` 验签和 Android/HarmonyOS 真机安装未执行；App Pack 的内层 HAP 未独立签名，不单独作为安装包发布。
-- 详细记录：[mobile-native-packages.json](mobile-native-packages.json)。
+- Android 可正常取验证码，HarmonyOS 返回“网络连接失败，请检查网络后重试”；原因是 Harmony 的 `uni.request` 适配层在失败时进入 `success` 且 `statusCode` 为 0，真正的网络错误被吞掉。
+- 修复后在 HarmonyOS 使用系统 `@ohos.net.http`：普通请求读取真实 `responseCode/header/result`，流式请求使用 `requestInStream` 的 headers/data 事件；JSON 请求体改走字符串，不再强转 `ArrayBuffer`。
+- 旧 APK/App Pack 构建早于本修复，已移到 `.upgrade-private/release-archive/v2.2.0-native-pre-harmony-http-fix/`，不能作为最终包。
+- 本轮没有重新云打包，也没有鸿蒙真机点击验证；详细复现、错误码和复测步骤见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。
 
 ## AppGallery 审核修改
 
 - 附随 14 秒录屏是登录故障复现，不是介绍视频；其 SHA-256、逐帧分析和根因见 `docs/verification/v2.2.0/appgallery-review-fix.md`。
-- `mobile/web/native.ts` 已拒绝 0/非法 HTTP 状态并显示中文网络提示；回归测试 2/2 通过。
+- `mobile/web/native.ts` 已拒绝 0/非法 HTTP 状态并显示中文网络提示；HarmonyOS 进一步改为系统 `@ohos.net.http`，不再依赖会吞状态的 `uni.request`；回归测试 2/2 通过。
 - 新 4 张 1080×1920 截图位于 `build/store-assets/mobile-v2.2.0/`，其中 04 含画面内“AI 生成内容”标识；旧 2.1.2 带手机外框截图不再使用。
 - 新一句话简介、完整描述、更新说明和审核说明位于同目录 `listing-zh-CN.md`。
 

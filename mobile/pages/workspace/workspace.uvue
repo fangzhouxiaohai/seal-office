@@ -14,6 +14,8 @@ import { exportDocument, printDocument } from '../../native/export.uts'
 import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber } from '../../native/workspace.uts'
 // #ifdef APP-HARMONY
 import systemFont from '@ohos.font'
+import http from '@ohos.net.http'
+import { BusinessError } from '@ohos.base'
 // #endif
 export default {
   data() {
@@ -30,6 +32,9 @@ export default {
       safeBottom: 0,
       safeLeft: 0,
       safeRight: 0,
+      // #ifdef APP-HARMONY
+      harmonyTasks: new Map<string, http.HttpRequest>(),
+      // #endif
       tasks: new Map<string, RequestTask>()
     }
   },
@@ -43,6 +48,10 @@ export default {
     uni.$off('seal-persist-workspace', this.persistWorkspace)
     this.tasks.forEach((task: RequestTask) => { task.abort() })
     this.tasks.clear()
+    // #ifdef APP-HARMONY
+    this.harmonyTasks.forEach((task: http.HttpRequest) => { try { task.destroy() } catch (_) {} })
+    this.harmonyTasks.clear()
+    // #endif
   },
   onBackPress(): boolean {
     this.persistWorkspace()
@@ -120,7 +129,16 @@ export default {
         if (id.length == 0 || id.length > 100) return
         try {
         if (action == 'ping') this.reply({ id: id, type: 'ready' })
-        else if (action == 'abort') { this.tasks.get(id)?.abort(); this.tasks.delete(id) }
+        else if (action == 'abort') {
+          // #ifdef APP-HARMONY
+          this.harmonyTasks.get(id)?.destroy()
+          this.harmonyTasks.delete(id)
+          // #endif
+          // #ifndef APP-HARMONY
+          this.tasks.get(id)?.abort()
+          this.tasks.delete(id)
+          // #endif
+        }
         else if (action == 'request') this.request(id, message)
         else if (action == 'save' || action == 'print') this.save(id, message)
         else if (action == 'font') this.font(id, messageString(message, 'family', 'sans'))
@@ -144,12 +162,22 @@ export default {
       const url = messageString(message, 'url')
       if (!url.startsWith('https://') && !url.startsWith('http://127.0.0.1:') && !url.startsWith('http://localhost:')) { this.reply({ id: id, type: 'error', error: '联网地址须使用 HTTPS' }); return }
       const body = message['body'] == null ? null : messageString(message, 'body')
-      const data = body == null ? null : uni.base64ToArrayBuffer(body)
+      const bodyText = message['bodyText'] == null ? '' : messageString(message, 'bodyText')
       const headers = (message['headers'] as UTSJSONObject | null) ?? {} as UTSJSONObject
       const stream = messageBoolean(message, 'stream')
+      const method = messageString(message, 'method', 'GET')
+      // #ifdef APP-HARMONY
+      // uni.request on Harmony may report statusCode 0 for a failed native
+      // exchange. Use the Harmony HTTP stack directly so status, headers and
+      // errors come from the same source that Android uses.
+      this.requestHarmony(id, url, method, headers, body, bodyText, stream)
+      return
+      // #endif
+      // #ifndef APP-HARMONY
+      const data = body == null ? null : uni.base64ToArrayBuffer(body)
       const task = uni.request<ArrayBuffer>({
         url: url,
-        method: messageString(message, 'method', 'GET'),
+        method: method,
         header: headers,
         data: data,
         responseType: 'arraybuffer',
@@ -164,7 +192,62 @@ export default {
       task.onHeadersReceived((response) => { this.reply({ id: id, type: 'headers', status: response.statusCode, headers: response.header }) })
       task.onChunkReceived((chunk) => { this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(chunk.data) }) })
       this.tasks.set(id, task)
+      // #endif
     },
+    // #ifdef APP-HARMONY
+    requestHarmony(id: string, url: string, method: string, headers: UTSJSONObject, body: string | null, bodyText: string, stream: boolean) {
+      let requestMethod = http.RequestMethod.GET
+      if (method == 'POST') requestMethod = http.RequestMethod.POST
+      else if (method == 'PUT') requestMethod = http.RequestMethod.PUT
+      else if (method == 'DELETE') requestMethod = http.RequestMethod.DELETE
+      let payload: string | ArrayBuffer | null = null
+      if (bodyText.length > 0) payload = bodyText
+      else if (body != null && body.length > 0) payload = uni.base64ToArrayBuffer(body)
+      try {
+        const task = http.createHttp()
+        this.harmonyTasks.set(id, task)
+        const options: http.HttpRequestOptions = {
+          method: requestMethod,
+          header: headers as Object,
+          expectDataType: http.HttpDataType.ARRAY_BUFFER,
+          connectTimeout: 30000,
+          readTimeout: stream ? 900000 : 60000,
+          usingCache: false
+        }
+        if (payload != null) options.extraData = payload
+        if (stream) {
+          task.on('headersReceive', (header: Object) => {
+            this.reply({ id: id, type: 'headers', status: 200, headers: header })
+          })
+          task.on('dataReceive', (chunk: ArrayBuffer) => {
+            this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(chunk) })
+          })
+          task.requestInStream(url, options, (error: BusinessError, code: number) => {
+            if (error) this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.message })
+            else this.reply({ id: id, type: 'end', status: code, headers: {} as UTSJSONObject, data: '' })
+            this.finishHarmony(id, task)
+          })
+        } else {
+          task.request(url, options, (error: BusinessError, response: http.HttpResponse) => {
+            if (error) {
+              this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.message })
+            } else {
+              const result = response.result
+              const encoded = result instanceof ArrayBuffer ? uni.arrayBufferToBase64(result as ArrayBuffer) : ''
+              this.reply({ id: id, type: 'end', status: response.responseCode, headers: response.header, data: encoded })
+            }
+            this.finishHarmony(id, task)
+          })
+        }
+      } catch (error) {
+        this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.toString() })
+      }
+    },
+    finishHarmony(id: string, task: http.HttpRequest) {
+      this.harmonyTasks.delete(id)
+      try { task.destroy() } catch (_) {}
+    },
+    // #endif
     font(id: string, family: string) {
       uni.getFileSystemManager().readFile({
         filePath: '/static/office/fonts/' + (family == 'serif' ? 'NotoSerifCJKsc-Regular.otf' : 'NotoSansSC.ttf'), encoding: 'base64',

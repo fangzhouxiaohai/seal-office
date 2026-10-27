@@ -13,6 +13,7 @@ test('原生 SSE 在首块到达时交给阅读器，中止同步到宿主', asy
     const request = module.nativeFetch('https://example.test/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stream: true }), signal: controller.signal })
     assert.equal(requests[0].stream, true)
     assert.equal(requests[0].token, 'test-token')
+    assert.equal(requests[0].bodyText, JSON.stringify({ stream: true }))
     const id = requests[0].id
     window.sealReceiveNative({ id, type: 'headers', status: 200, headers: { 'content-type': 'text/event-stream' } })
     const response = await request, reader = response.body.getReader()
