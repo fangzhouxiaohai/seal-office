@@ -89,8 +89,29 @@ document.addEventListener('selectionchange', 更新格式)
 - HarmonyOS UTS 编译检查通过。
 - 修复后的 `office.js` 已重新打入 HAP/App Pack；尚未做 Android 真机回归。
 
+### 第二轮：上一版仍出现 #185 的原因
+
+用户录像（2026-10-27 22:48）中，上一版 App Pack 仍然失败。录像操作是：编辑模式 → 插入 → 分页符 → 键盘弹出 → React #185。上一版只合并了 `DocEditor` 的 `selectionchange`，没有处理选区浮窗的测量循环。
+
+继续追踪到 `SelectionFloatPanel` 使用的 `use边缘浮层`：
+
+```ts
+useLayoutEffect(() => { 更新.current() }) // 没有依赖数组
+```
+
+这段代码在**每次渲染**的 layout 阶段重新测量面板并 `set位置`。ArkWeb 在键盘弹出、分页符插入和面板显隐时会改变面板尺寸，位置在两个值之间来回，形成同步嵌套更新，最终触发 #185。错误堆栈顶部的 `Tnu` 正是 `SelectionFloatPanel`。
+
+第二轮修复：
+
+- `use边缘浮层` 只在打开状态、面板挂载或锚点测量键变化时测量一次，不再每次渲染都测。
+- 选区浮窗的 `selectionchange` 也合并到下一帧；按钮数组做稳定比较。
+- `ContextMenu`、`ImageTools` 传入各自的锚点测量键，保留跟随定位。
+- `ErrorBoundary` 把错误堆栈和组件栈合并成一条字符串写入 ArkWeb 控制台，避免后续日志只看到第一个参数。
+
+新 App Pack：`42,487,387` 字节，SHA-256 `360e41cba80fdf1326e0346ba6e24b02f77b796ff9ebbf7ce29789f3ea629369`；已安装到模拟器并重复“插入分页符 + 键盘”操作，未再出现 #185。
+
 ## 3. 当前交付状态
 
 - 本次仍使用 `2.2.0 / 20200`，因为 2.2.0 尚未通过 AppGallery 审核；若商店已接收 2.2.0，需要改为 2.2.1/20201 后重新提交。
-- HarmonyOS 新 App Pack 已在本机构建并安装到模拟器验证；Android 新 APK 需重新云打包。
+- HarmonyOS 新 App Pack 已在本机构建并安装到模拟器验证；Android 新 APK 已提交 HBuilderX 云打包，仍在免费队列中，尚未做 Android 真机保存验收。
 - 源码仍是云打包源码，不是已签名安装包。

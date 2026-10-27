@@ -46,7 +46,7 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const 工具条 = useRef<HTMLDivElement>(null)
   const 更多按钮 = useRef<HTMLButtonElement>(null)
   const 取图片保护区 = () => 合并矩形([读取可见矩形(当前图片.current), 读取可见矩形(document.querySelector('.seal-image-rotate'))].filter((r): r is NonNullable<typeof r> => r !== null))
-  const 工具位置 = use边缘浮层(Boolean(图片 && 位置 && !只读), 工具条, 取图片保护区, { 宽: 144, 高: 266 }, ['right', 'left', 'top', 'bottom'])
+  const 工具位置 = use边缘浮层(Boolean(图片 && 位置 && !只读), 工具条, 取图片保护区, { 宽: 144, 高: 266 }, ['right', 'left', 'top', 'bottom'], undefined, undefined, 位置)
   const 忽略点击到 = useRef(0)
   const 异步序号 = useRef(0)
   回调.current = { 开始修改, 完成修改 }

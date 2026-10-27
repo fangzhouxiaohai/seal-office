@@ -98,7 +98,7 @@ const ContextMenu = ({ open, x, y, items, onCommand, 取锚点, 取避让, 优�
     return 合并矩形([...(r ? [r] : []), ...(图 ? [图] : [])])
   }
   const 项总数 = items.reduce((n, 项) => n + (项.type === 'group' ? 项.子项.length + (项.标题 ? 1 : 0) : 1), 0)
-  const 偏移 = use边缘浮层(open, 引用, 取锚点 ?? 默认锚点, { 宽: 菜单面板宽, 高: Math.min(项总数 * 项高 + 8, 菜单最大高) }, 优先边缘 ?? ['right', 'left', 'bottom', 'top'], 取避让, 子菜单 ? undefined : { x, y })
+  const 偏移 = use边缘浮层(open, 引用, 取锚点 ?? 默认锚点, { 宽: 菜单面板宽, 高: Math.min(项总数 * 项高 + 8, 菜单最大高) }, 优先边缘 ?? ['right', 'left', 'bottom', 'top'], 取避让, 子菜单 ? undefined : { x, y }, `${x}:${y}`)
   useEffect(() => {
     if (!open || 子菜单) return
     document.body.classList.add('seal-context-menu-open')

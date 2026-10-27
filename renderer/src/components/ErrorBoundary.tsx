@@ -20,8 +20,9 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // 保留原始错误堆栈，便于定位问题，不使用默认数据掩盖
-    console.error('界面渲染异常：', error, info.componentStack)
+    // 保留原始错误堆栈与组件栈；HarmonyOS 的 ArkWeb 控制台只稳定展示第一个参数，
+    // 因此合并成一条字符串，避免组件栈在日志里丢失。
+    console.error(`界面渲染异常：${error.message}\n错误堆栈：${error.stack ?? ''}\n组件栈：${info.componentStack ?? ''}`)
   }
 
   private 重试 = () => {

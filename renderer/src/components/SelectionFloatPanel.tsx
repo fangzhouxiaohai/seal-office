@@ -100,7 +100,7 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
   const 面板引用 = useRef<HTMLDivElement>(null)
   const 关闭引用 = useRef(on关闭)
   关闭引用.current = on关闭
-  const 实测位置 = use边缘浮层(打开, 面板引用, () => 位置?.取锚点 ? 位置.取锚点() : 位置?.锚点 ?? null, { 宽: 360, 高: 46 }, undefined, undefined, 位置?.锚点 ? undefined : 位置 ?? undefined)
+  const 实测位置 = use边缘浮层(打开, 面板引用, () => 位置?.取锚点 ? 位置.取锚点() : 位置?.锚点 ?? null, { 宽: 360, 高: 46 }, undefined, undefined, 位置?.锚点 ? undefined : 位置 ?? undefined, 位置)
   useEffect(() => {
     if (!打开) return
     const 外部交互 = (事件: Event) => {
@@ -188,6 +188,7 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       set位置(null)
       关闭引用.current?.()
     }
+    let 同步帧 = 0
     const 同步 = () => {
       if (暂停显示.current) return
       const 选择 = window.getSelection()
@@ -205,16 +206,22 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
       if (矩形.bottom <= (上边界 ?? 0) || 矩形.top >= window.innerHeight) { 关闭(); return }
       const 新位置 = 计算浮窗位置(矩形, { 宽: window.innerWidth, 高: window.innerHeight, 上边界 }, 面板)
       if (新位置 === null) { 关闭(); return }
-      set按钮(新按钮)
+      set按钮(旧 => JSON.stringify(旧) === JSON.stringify(新按钮) ? 旧 : 新按钮)
       const 范围 = 选择?.getRangeAt(0).cloneRange()
       const 取锚点 = () => 读取范围可见矩形(范围 ?? null)
       set位置({ ...新位置, 取锚点 })
       set打开(true)
     }
+    // 键盘弹出和 caret 移动会让 ArkWeb 连续派发 selectionchange；合并到下一帧，
+    // 避免在事件栈内同步 setState 触发 React 的最大更新深度保护。
+    const 调度同步 = () => {
+      if (同步帧) return
+      同步帧 = requestAnimationFrame(() => { 同步帧 = 0; 同步() })
+    }
     const 收起 = (事件: Event) => {
       // 面板自身滚动不改变锚点；文档滚动则重新测量。
       if (事件.target instanceof Element && 事件.target.closest('.wps-float-panel')) return
-      同步()
+      调度同步()
     }
     const 指针按下 = (事件: MouseEvent) => {
       const 目标 = 事件.target
@@ -227,16 +234,16 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
     const 指针松开 = (事件: MouseEvent) => {
       if (容器?.current && 事件.target instanceof Node && !容器.current.contains(事件.target)) return
       暂停显示.current = false
-      同步()
+      调度同步()
     }
     const 按键松开 = (事件: KeyboardEvent) => {
       if (事件.key === 'Escape') return
       if (容器?.current && 事件.target instanceof Node && !容器.current.contains(事件.target)) return
       if (事件.shiftKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(事件.key)) 暂停显示.current = false
-      同步()
+      调度同步()
     }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') 关闭() }
-    document.addEventListener('selectionchange', 同步)
+    document.addEventListener('selectionchange', 调度同步)
     document.addEventListener('mousedown', 指针按下, true)
     document.addEventListener('mouseup', 指针松开)
     document.addEventListener('keyup', 按键松开)
@@ -245,7 +252,8 @@ export function use选区浮窗({ 容器, 取按钮, on关闭 }: 钩子选项) {
     window.addEventListener('resize', 收起)
     document.addEventListener('keydown', 键盘)
     return () => {
-      document.removeEventListener('selectionchange', 同步)
+      if (同步帧) cancelAnimationFrame(同步帧)
+      document.removeEventListener('selectionchange', 调度同步)
       document.removeEventListener('mousedown', 指针按下, true)
       document.removeEventListener('mouseup', 指针松开)
       document.removeEventListener('keyup', 按键松开)

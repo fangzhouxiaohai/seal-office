@@ -64,7 +64,7 @@ export function 计算边缘位置(锚点: 边界矩形, 尺寸: { 宽: number; 
 }
 
 /** 实测面板与实时锚点；捕获内部滚动、缩放、触摸可视区和窗口尺寸变化。 */
-export function use边缘浮层(打开: boolean, 面板: RefObject<HTMLElement | null>, 取锚点: () => 边界矩形 | null, 尺寸: { 宽: number; 高: number }, 顺序: 浮层边缘[] = ['top', 'bottom', 'right', 'left'], 取避让: () => 边界矩形[] = () => [], 光标?: { x: number; y: number }) {
+export function use边缘浮层(打开: boolean, 面板: RefObject<HTMLElement | null>, 取锚点: () => 边界矩形 | null, 尺寸: { 宽: number; 高: number }, 顺序: 浮层边缘[] = ['top', 'bottom', 'right', 'left'], 取避让: () => 边界矩形[] = () => [], 光标?: { x: number; y: number }, 测距键?: unknown) {
   const 配置 = useRef({ 取锚点, 尺寸, 顺序, 取避让, 光标 })
   配置.current = { 取锚点, 尺寸, 顺序, 取避让, 光标 }
   const [位置, set位置] = useState<边缘位置 | null>(null)
@@ -86,7 +86,10 @@ export function use边缘浮层(打开: boolean, 面板: RefObject<HTMLElement |
     const 约束 = 新 ? { ...新, maxWidth: Math.min(宽, 新.maxWidth), maxHeight: Math.min(高, 新.maxHeight) } : null
     set位置(旧 => JSON.stringify(旧) === JSON.stringify(约束) ? 旧 : 约束)
   }
-  useLayoutEffect(() => { 更新.current() })
+  // 之前这里没有依赖数组，任何 re-render 都会在 layout 阶段重新测量并 setState。
+  // ArkWeb 的面板尺寸受键盘/缩放影响时会在两个值之间来回，形成同步嵌套更新。
+  // 只在打开状态或锚点输入变化时测一次，滚动/缩放由下面的观察器负责。
+  useLayoutEffect(() => { if (打开) 更新.current() }, [打开, 面板, 测距键])
   useLayoutEffect(() => {
     if (!打开) return
     const 定位 = (事件?: Event) => { if (事件?.target instanceof Node && 面板.current?.contains(事件.target)) return; 更新.current() }
