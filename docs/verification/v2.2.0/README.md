@@ -65,8 +65,10 @@ HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.ce
 
 - Android 可正常取验证码，HarmonyOS 返回“网络连接失败，请检查网络后重试”；原因是 Harmony 的 `uni.request` 适配层在失败时进入 `success` 且 `statusCode` 为 0，真正的网络错误被吞掉。
 - 修复后在 HarmonyOS 使用系统 `@ohos.net.http`：普通请求读取真实 `responseCode/header/result`，流式请求使用 `requestInStream` 的 headers/data 事件；JSON 请求体改走字符串，不再强转 `ArrayBuffer`。
-- 旧 APK/App Pack 构建早于本修复，已移到 `.upgrade-private/release-archive/v2.2.0-native-pre-harmony-http-fix/`，不能作为最终包。
-- 本轮没有重新云打包，也没有鸿蒙真机点击验证；详细复现、错误码和复测步骤见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。\n- Android 保存已改为 SAF `ACTION_CREATE_DOCUMENT`；HarmonyOS 编辑区 `selectionchange` 已改为下一帧合并，修复 React #185。详见 [Android 保存与 HarmonyOS 编辑区渲染修复](mobile-save-and-render-fixes.md)。
+- 旧 APK 构建早于本修复，已移到 `.upgrade-private/release-archive/v2.2.0-native-pre-harmony-http-fix/`，不能作为最终包。
+- HarmonyOS 新 App Pack 已用最新源码重新构建，并在 nova 16 Ultra 模拟器完成安装和编辑区连续点击回归；Android 新 APK 已提交 HBuilderX 云打包，仍在排队，尚未做保存真机验收。
+- 详细复现、错误码和复测步骤见 [鸿蒙登录网络错误修复](harmony-network-fix.md)。
+- Android 保存已改为 SAF `ACTION_CREATE_DOCUMENT`；HarmonyOS 编辑区 `selectionchange` 已改为下一帧合并，修复 React #185。详见 [Android 保存与 HarmonyOS 编辑区渲染修复](mobile-save-and-render-fixes.md)。
 
 ## AppGallery 审核修改
 
