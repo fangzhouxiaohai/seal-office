@@ -7,13 +7,21 @@
 .seal-fullscreen-reader[data-reading-auto-hide="true"] > :is(.seal-fullscreen-reader__toolbar,.pdf-viewer__toolbar,.seal-fullscreen-reader__footer) { position:absolute; inset-inline:0; z-index:3; box-shadow:0 2px 12px #0001; }
 .seal-fullscreen-reader[data-reading-auto-hide="true"] > :is(.seal-fullscreen-reader__toolbar,.pdf-viewer__toolbar) { top:env(safe-area-inset-top,0px); max-height:65%; overflow:auto; }
 .seal-fullscreen-reader[data-reading-auto-hide="true"] > .seal-fullscreen-reader__footer { bottom:0; }
-.seal-fullscreen-reader__toolbar,.seal-fullscreen-reader__footer { display:flex; flex:0 0 auto; align-items:center; flex-wrap:wrap; gap:6px; padding:6px 10px; background:var(--bg-card,#fff); border-bottom:1px solid var(--border,#ddd); }
+.seal-fullscreen-reader__toolbar { display:flex; flex-direction:column; align-items:stretch; flex:0 0 auto; gap:2px; padding:6px 10px 8px; background:var(--bg-card,#fff); border-bottom:1px solid var(--border,#ddd); }
+.seal-fullscreen-reader__heading { display:flex; align-items:center; width:100%; min-width:0; }
+.seal-fullscreen-reader__tools { display:flex; align-items:center; gap:4px; width:100%; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.seal-fullscreen-reader__tools::-webkit-scrollbar { display:none; }
 .seal-fullscreen-reader__toolbar button,.seal-fullscreen-reader__footer button { min-height:40px; min-width:40px; border:1px solid var(--border,#ddd); border-radius:6px; background:var(--bg-card,#fff); color:inherit; font:inherit; padding:6px 9px; }
+.seal-fullscreen-reader__toolbar .seal-fullscreen-reader__icon,.seal-fullscreen-reader__footer .seal-fullscreen-reader__icon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:34px; height:34px; min-width:34px; min-height:34px; padding:0; border-color:transparent; background:transparent; }
+.seal-fullscreen-reader__icon svg,.seal-fullscreen-reader__continuous svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.seal-fullscreen-reader__divider { flex:0 0 auto; width:1px; height:20px; margin:0 2px; background:var(--border,#ddd); }
+.seal-fullscreen-reader__zoom { flex:0 0 auto; min-width:42px; text-align:center; font-size:12px; font-variant-numeric:tabular-nums; color:var(--text-2,#666); }
 .seal-fullscreen-reader button:focus-visible { outline:2px solid var(--brand,#3877d6); outline-offset:1px; }
 .seal-fullscreen-reader button:disabled { opacity:.4; }
-.seal-fullscreen-reader__title { flex:1 1 80px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; }
-.seal-fullscreen-reader__footer { justify-content:center; border-top:1px solid var(--border,#ddd); border-bottom:0; padding-bottom:max(6px,env(safe-area-inset-bottom,0px)); font-size:13px; }
-.seal-fullscreen-reader__footer small { flex:1 1 100%; text-align:center; color:var(--text-2,#666); }
+.seal-fullscreen-reader__title { flex:1 1 auto; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:15px; font-weight:600; }
+.seal-fullscreen-reader__footer { display:flex; flex:0 0 auto; align-items:center; justify-content:center; flex-wrap:nowrap; gap:6px; padding:4px 10px; padding-bottom:max(4px,env(safe-area-inset-bottom,0px)); background:var(--bg-card,#fff); border-top:1px solid var(--border,#ddd); }
+.seal-fullscreen-reader__page { min-width:52px; text-align:center; font-size:12px; font-variant-numeric:tabular-nums; color:var(--text-2,#666); }
+.seal-fullscreen-reader__continuous { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; color:var(--text-2,#666); }
 .seal-word-reader__viewport { flex:1 1 auto; min-height:0; min-width:0; position:relative; overflow:auto; touch-action:pan-x pan-y; overscroll-behavior:contain; }
 .seal-word-reader__viewport--pages { overflow-y:hidden; scroll-snap-type:x mandatory; }
 .seal-word-reader__content { box-sizing:border-box; padding:20px; line-height:1.8; overflow-wrap:anywhere; user-select:text; -webkit-user-select:text; }

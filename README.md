@@ -22,8 +22,10 @@
 - 固定表格列宽、`colgroup`、`colspan/rowspan` 和 `vertical-rl` 竖排单元格。
 - 忽略无效外部超链接；仅页边距有微小差异的多节文档不再被拦截，原 DOCX 可直接打开。
 - 新增 DOCX 版式回归测试；完整说明见 [WPS 版式对照](docs/verification/v2.2.0/docx-wps-layout-compat.md)。
+- 移动端全屏阅读改为双行顶部栏：第一行仅文件名，第二行图标工具；底部翻页工具同步改为图标，释放正文高度。
+- Android SAF 保存的 Kotlin 编译错误改为 `ByteArray` 复制缓冲区，云打包通过。
 
-Windows 2.2.1 绿色包：[seal-office-2.2.1-portable.zip](release/v2.2.1/seal-office-2.2.1-portable.zip)（解压后运行“海豹办公.exe”）。
+Windows 2.2.1 绿色包：[seal-office-2.2.1-portable.zip](release/v2.2.1/seal-office-2.2.1-portable.zip)（解压后运行“海豹办公.exe”）。Android APK：[seal-office-2.2.1-android.apk](release/v2.2.1/seal-office-2.2.1-android.apk)；HarmonyOS App Pack：[seal-office-2.2.1-harmony.app](release/v2.2.1/seal-office-2.2.1-harmony.app)；完整桌面、Ubuntu、Web 与源码包见 [2.2.1 发行目录](release/v2.2.1/README.txt)。
 
 WPS 为闭源商业软件，本次没有复制其代码；上述是本样本所需的 DOCX 行为兼容。XLSX、PPTX、PDF 的完整 WPS 兼容仍需按失败样本逐项对照，不能宣称已经一比一复刻全部文件引擎。
 

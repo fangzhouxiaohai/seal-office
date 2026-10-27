@@ -53,17 +53,39 @@ export default function WordReadingView({html,title,fontSize,revisionView='marku
   const switchMode=()=>{const area=viewport.current,rect=area?.getBoundingClientRect();pendingAnchor.current=capture({x:(rect?.left??0)+20,y:(rect?.top??0)+20});setMode(mode==='pages'?'continuous':'pages')}
   return createPortal(<section ref={root} className="seal-fullscreen-reader seal-word-reader" role="dialog" aria-modal="true" aria-label="文字全屏阅读" aria-description={chrome.description} tabIndex={-1} data-fullscreen={native?'native':'viewport'} data-reading-controls={chrome.visible?'visible':'hidden'} data-reading-auto-hide={chrome.autoHide?'true':undefined}>
     <div className="seal-fullscreen-reader__toolbar" role="toolbar" aria-label="全屏阅读工具" data-reading-chrome hidden={!chrome.visible}>
-      <button type="button" onClick={onClose} aria-label="退出全屏阅读">返回</button><span className="seal-fullscreen-reader__title">{title}</span>
-      <button type="button" aria-label={mode==='pages'?'切换连续阅读':'切换左右翻页'} onClick={switchMode}>{mode==='pages'?'连续阅读':'左右翻页'}</button>
-      <button type="button" aria-label="缩小阅读内容" disabled={zoom<=.75} onClick={()=>changeZoom(zoom-.25)}>−</button><output aria-label="阅读缩放">{Math.round(zoom*100)}%</output><button type="button" aria-label="放大阅读内容" disabled={zoom>=3} onClick={()=>changeZoom(zoom+.25)}>＋</button>
+      <div className="seal-fullscreen-reader__heading" data-reading-row="title">
+        <span className="seal-fullscreen-reader__title" title={title}>{title}</span>
+      </div>
+      <div className="seal-fullscreen-reader__tools" data-reading-row="tools" role="group" aria-label="阅读工具">
+        <button type="button" className="seal-fullscreen-reader__icon" onClick={onClose} aria-label="退出全屏阅读" title="退出全屏阅读">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span className="seal-fullscreen-reader__divider" aria-hidden="true"/>
+        <button type="button" className="seal-fullscreen-reader__icon" aria-label={mode==='pages'?'切换连续阅读':'切换左右翻页'} title={mode==='pages'?'连续阅读':'左右翻页'} onClick={switchMode}>
+          {mode==='pages'
+            ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h16M4 18h10"/></svg>
+            : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v14H4zM14 5h6v14h-6z"/></svg>}
+        </button>
+        <span className="seal-fullscreen-reader__divider" aria-hidden="true"/>
+        <button type="button" className="seal-fullscreen-reader__icon" aria-label="缩小阅读内容" title="缩小" disabled={zoom<=.75} onClick={()=>changeZoom(zoom-.25)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M7.5 10.5h6"/></svg>
+        </button>
+        <output className="seal-fullscreen-reader__zoom" aria-label="阅读缩放">{Math.round(zoom*100)}%</output>
+        <button type="button" className="seal-fullscreen-reader__icon" aria-label="放大阅读内容" title="放大" disabled={zoom>=3} onClick={()=>changeZoom(zoom+.25)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M7.5 10.5h6M10.5 7.5v6"/></svg>
+        </button>
+      </div>
     </div>
     <div ref={viewport} className={`seal-word-reader__viewport seal-word-reader__viewport--${mode}`} aria-label={mode==='pages'?'文字左右翻页阅读区':'文字连续阅读区'} data-reading-page={page} data-reading-pages={pages} data-reading-zoom={zoom} onScroll={()=>{if(!viewport.current)return;if(mode==='pages'){if(viewport.current.clientWidth!==width)return;setPage(Math.min(pages,Math.max(1,Math.round(viewport.current.scrollLeft/Math.max(1,width))+1)))}else {savedTop.current=viewport.current.scrollTop;onStateChange?.({page,zoom,mode,top:savedTop.current})}}}>
       <div ref={content} className="seal-word-reader__content" contentEditable={false} data-seal-revision-view={revisionView} style={{'--reading-width':`${width}px`,'--reading-height':`${height}px`,fontSize:`${fontSize*zoom}px`} as React.CSSProperties} dangerouslySetInnerHTML={{__html:safe}}/>
       {mode==='pages'&&Array.from({length:pages},(_,index)=><span key={index} className="seal-word-reader__snap" aria-hidden="true" style={{left:index*width,width}}/>)}
     </div>
-    <div className="seal-fullscreen-reader__footer" data-reading-chrome hidden={!chrome.visible}>
-      {mode==='pages'?<><button type="button" aria-label="上一阅读页" disabled={page<=1} onClick={()=>go(page-1)}>上一页</button><span aria-live="polite">阅读页 {page} / {pages}</span><button type="button" aria-label="下一阅读页" disabled={page>=pages} onClick={()=>go(page+1)}>下一页</button></>:<span>连续阅读</span>}
-      <small>按屏重排 · 双指缩放</small>
+    <div className="seal-fullscreen-reader__footer" data-reading-chrome hidden={!chrome.visible} role="group" aria-label="阅读翻页工具">
+      {mode==='pages'?<>
+        <button type="button" className="seal-fullscreen-reader__icon" aria-label="上一阅读页" title="上一页" disabled={page<=1} onClick={()=>go(page-1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span className="seal-fullscreen-reader__page" aria-live="polite" aria-label={`第 ${page} 页，共 ${pages} 页`}>{page} / {pages}</span>
+        <button type="button" className="seal-fullscreen-reader__icon" aria-label="下一阅读页" title="下一页" disabled={page>=pages} onClick={()=>go(page+1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </>:<span className="seal-fullscreen-reader__continuous" aria-label="连续阅读" title="连续阅读"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h16M4 18h10"/></svg></span>}
     </div>
   </section>,document.body)
 }

@@ -40,7 +40,7 @@ class 文档保存回调 implements IUniActivityCallback {
       const output = activity.getContentResolver().openOutputStream(uri)
       if (output == null) throw new Error('无法打开保存位置')
       try {
-        const buffer = new Uint8Array(65536)
+        const buffer = new ByteArray(65536)
         let read = input.read(buffer)
         while (read > 0) {
           output.write(buffer, 0, read)
