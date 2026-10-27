@@ -18,7 +18,7 @@ Seal Office is a local-first office suite for mobile, desktop and web. It opens,
 
 ## AI-generated content
 
-The assistant marks replies as “AI助手（AI生成）” and each reply footer says “本内容由AI生成”. Screenshot 04 also carries an “AI 生成内容” badge. AI output can be inaccurate; review it before use. The assistant requires a verified account; basic office features do not.
+The assistant marks replies as “AI助手（AI生成）” and each reply footer says “本内容由AI生成”. Screenshot 07 also carries an “AI 生成内容” badge. AI output can be inaccurate; review it before use. The assistant requires a verified account; basic office features do not.
 
 ## 2.2.0
 
@@ -31,7 +31,13 @@ The assistant marks replies as “AI助手（AI生成）” and each reply foote
 
 ## Screenshots
 
-- `01-移动文字编辑-1080x1920.png`
-- `02-表格与数据-1080x1920.png`
-- `03-办公服务-1080x1920.png`
-- `04-AI助手-1080x1920.png` (contains the AI content badge)
+- `01-移动工作台-1080x1920.png`
+- `02-移动文字编辑-1080x1920.png`
+- `03-表格与数据-1080x1920.png`
+- `04-办公服务-1080x1920.png`
+- `05-模板市场-1080x1920.png`
+- `06-云文档-1080x1920.png`
+- `07-AI助手-1080x1920.png` (contains the AI content badge)
+- `08-演示编辑-1080x1920.png`
+- `09-PDF工具-1080x1920.png`
+- `10-本机文件-1080x1920.png`

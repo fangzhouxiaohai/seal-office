@@ -1,38 +1,92 @@
 [
   {
-    "file": "01-移动文字编辑-1080x1920.png",
+    "file": "01-移动工作台-1080x1920.png",
     "width": 1080,
     "height": 1920,
-    "bytes": 306516,
-    "sha256": "e9ca8651135e29b6bb68066e4eac736e71a3a0789a50df2a382a7b214b266434",
+    "bytes": 344648,
+    "sha256": "bf6fb4220f32c9a87eb8c47430ca945f16579c0b2b652aec794d54fb84b9621e",
+    "source": "build/store-assets/raw-harmony-2.2.0/01-home.jpg",
+    "aiLabel": false
+  },
+  {
+    "file": "02-移动文字编辑-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 335816,
+    "sha256": "9a2a7a63c697dcc606c91dd9254f4f54ffcce2268b71ff4cbf6e457822fc6430",
     "source": "build/store-assets/raw-v2.2.0/word.png",
     "aiLabel": false
   },
   {
-    "file": "02-表格与数据-1080x1920.png",
+    "file": "03-表格与数据-1080x1920.png",
     "width": 1080,
     "height": 1920,
-    "bytes": 253554,
-    "sha256": "220c803210121d575d54955ab620b78385033c985c142484de0003d70d456272",
+    "bytes": 246053,
+    "sha256": "4b78e37003c022aac245d20f072b0cddbfc606ac1b3d31dee1ea631637012f19",
     "source": "build/store-assets/raw-v2.2.0/sheet.png",
     "aiLabel": false
   },
   {
-    "file": "03-办公服务-1080x1920.png",
+    "file": "04-办公服务-1080x1920.png",
     "width": 1080,
     "height": 1920,
-    "bytes": 217104,
-    "sha256": "72fb314fe2b28d64a48335631497490ac92ed13b1add93969bbc39be1eb544de",
-    "source": "build/store-assets/raw-v2.2.0/services.png",
+    "bytes": 317188,
+    "sha256": "0604b64640287a914f750e35bc5c6f8f3878ba6068396cd2d6eb241291e03741",
+    "source": "build/store-assets/raw-harmony-2.2.0/02-services.jpg",
     "aiLabel": false
   },
   {
-    "file": "04-AI助手-1080x1920.png",
+    "file": "05-模板市场-1080x1920.png",
     "width": 1080,
     "height": 1920,
-    "bytes": 169614,
-    "sha256": "bb4c0b5616cda12e003a08aa049b79004c6aaef7378fb34549db1c06ca4bcf78",
-    "source": "build/store-assets/raw-v2.2.0/assistant.png",
+    "bytes": 345621,
+    "sha256": "1f95b0c2bf973b775550a03e8b952847afa8733d345218fd87ad8804ce0f80a3",
+    "source": "build/store-assets/raw-harmony-2.2.0/03-templates.jpg",
+    "aiLabel": false
+  },
+  {
+    "file": "06-云文档-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 288646,
+    "sha256": "24ab174959cf6c1ecc3e770bd434344ea98a03d9ca873ad3a2a0c3af43649c2b",
+    "source": "build/store-assets/raw-harmony-2.2.0/04-cloud.jpg",
+    "aiLabel": false
+  },
+  {
+    "file": "07-AI助手-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 283242,
+    "sha256": "fceac85dc0ad42dadf604a039b739e762e2ae11c063fff2ee5dc552cf16bb218",
+    "source": "build/store-assets/raw-harmony-2.2.0/06-ai.jpg",
     "aiLabel": true
+  },
+  {
+    "file": "08-演示编辑-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 300166,
+    "sha256": "354cdbc7a72ea8dac62047219a3af3762378e955d6201665afa2bf3912fc3bec",
+    "source": "build/store-assets/raw-harmony-2.2.0/08-ppt.jpg",
+    "aiLabel": false
+  },
+  {
+    "file": "09-PDF工具-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 247232,
+    "sha256": "0c243e15b85a2ac28adcea78cb18437d47feac16a2cce8e8b9bff7abaaa89ef4",
+    "source": "build/store-assets/raw-harmony-2.2.0/09-pdf.jpg",
+    "aiLabel": false
+  },
+  {
+    "file": "10-本机文件-1080x1920.png",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 250839,
+    "sha256": "fec7654640b42a70e4ec8fca959f0c83bcec2043f2d087d39a1f4d0ea3d8d428",
+    "source": "build/store-assets/raw-harmony-2.2.0/10-local.jpg",
+    "aiLabel": false
   }
 ]
