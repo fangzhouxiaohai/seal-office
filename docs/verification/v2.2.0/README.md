@@ -55,9 +55,9 @@ MSIX 身份为 `45C56666.seal-office`、Publisher `CN=F6431C2A-EA55-468A-89D8-89
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
 | `seal-office-2.2.0-android-cloud-source.zip` | 38,551,870 | `209863b26b4bc8d565b3c37ca5c500a7f4de82b5403b6be22119881971559a51` |
-| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,876 | `337d4179c36b931de3112b865511f300a4d9cf9c0fc7329b0a426daf9fba3cb3` |
+| `seal-office-2.2.0-harmony-cloud-source.zip` | 38,551,856 | `5cf8c7dcd28bb85feddf1654627b1ad23d551ce8a9e6d18ba37a06f0f99799cb` |
 
-两个解压项目各 59,880,044 字节（Android 低于 60,000,000 字节上限，余量约 119,956 字节）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复鸿蒙原生网络状态码丢失并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
+Android 解压项目 59,880,044 字节、HarmonyOS 59,879,971 字节（Android 低于 60,000,000 字节上限，余量约 119,956 字节）；ZIP 全部条目 CRC 与 SHA-256、快照 `snapshot-info.json`、`static/office/build-info.json` 平台标识、完整字体字节已核对。`archive/` 内没有 APK/HAP，不把源码称为成品。本次因修复鸿蒙原生网络状态码丢失并写入新主体签名配置而重新冻结，版本仍为 2.2.0 / 20200。
 
 HarmonyOS 云打包签名配置：新证书 `cer/seal-office-release-20261023.cer`、新 Profile `cer/seal-office-release-20261023Release.p7b`、原私钥库和别名 `sealoffice-release`；证书 SHA-256 `9C1A6D76D4F18367FE1A8D5DD4D7EE71E201DF04F6CA055A56883528458DCECB`，Profile App ID `6917619858054370422`。详细核对、旧配置差异和 HBuilderX 操作见 [HarmonyOS 签名配置切换](harmony-signing-config.md)。
 

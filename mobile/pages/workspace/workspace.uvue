@@ -15,7 +15,6 @@ import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, message
 // #ifdef APP-HARMONY
 import systemFont from '@ohos.font'
 import http from '@ohos.net.http'
-import { BusinessError } from '@ohos.base'
 // #endif
 export default {
   data() {
@@ -222,13 +221,13 @@ export default {
           task.on('dataReceive', (chunk: ArrayBuffer) => {
             this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(chunk) })
           })
-          task.requestInStream(url, options, (error: BusinessError, code: number) => {
+          task.requestInStream(url, options, (error, code: number) => {
             if (error) this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.message })
             else this.reply({ id: id, type: 'end', status: code, headers: {} as UTSJSONObject, data: '' })
             this.finishHarmony(id, task)
           })
         } else {
-          task.request(url, options, (error: BusinessError, response: http.HttpResponse) => {
+          task.request(url, options, (error, response: http.HttpResponse) => {
             if (error) {
               this.reply({ id: id, type: 'error', error: '网络请求失败：' + error.message })
             } else {
