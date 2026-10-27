@@ -9,6 +9,21 @@ describe('DOCX保留包边界', () => {
     const macro = await base(); macro.file('word/custom.dat', 'inactive test bytes'); macro.file('word/_rels/document.xml.rels', (await macro.file('word/_rels/document.xml.rels').async('string')).replace('</Relationships>', '<Relationship Id="attack" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="custom.dat"/></Relationships>')); await expect(读取安全源包(await macro.generateAsync({ type: 'base64' }))).rejects.toThrow(/活动|嵌入/)
     const safe = await base(); safe.file('word/_rels/document.xml.rels', (await safe.file('word/_rels/document.xml.rels').async('string')).replace('Target="styles.xml"', "Target='/word/styles.xml'")); await expect(读取安全源包(await safe.generateAsync({ type: 'base64' }))).resolves.toBeTruthy()
   })
+  it('残缺的外部超链接按普通文本忽略，不阻止表单 DOCX 打开', async () => {
+    const zip = await base()
+    const rels = (await zip.file('word/_rels/document.xml.rels').async('string'))
+      .replace('</Relationships>', '<Relationship Id="badLink" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="HTTPS" TargetMode="External"/></Relationships>')
+    zip.file('word/_rels/document.xml.rels', rels)
+    const xml = (await zip.file('word/document.xml').async('string')).replace('</w:body>', '<w:p><w:hyperlink r:id="badLink"><w:r><w:t>普通链接文字</w:t></w:r></w:hyperlink></w:p></w:body>')
+    zip.file('word/document.xml', xml)
+    const bytes = await zip.generateAsync({ type: 'nodebuffer' })
+    await expect(读取安全源包(bytes.toString('base64'))).resolves.toBeTruthy()
+    const result = await 读取docx(bytes)
+    expect(result.html).toContain('普通链接文字')
+    expect(result.警告.join('\n')).not.toContain('外部资源')
+    expect(result.警告.join('\n')).not.toContain('超链接目标未导入')
+  })
+
   it('ZIP路径穿越、过多entry和过大展开在解析正文前受限', async () => {
     const traversal = await base(); traversal.file('../escape.xml', '<test/>'); await expect(读取安全源包(await traversal.generateAsync({ type: 'base64' }))).rejects.toThrow('不安全')
     const many = await base(); for (let i = 0; i < 2001; i++) many.file(`customXml/test${i}.xml`, '<test/>'); const bytes = await many.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }); await expect(读取docx(bytes)).rejects.toThrow('2000'); await expect(读取安全源包(bytes.toString('base64'))).rejects.toThrow('2000')

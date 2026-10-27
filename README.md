@@ -8,9 +8,24 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、云服务与移动源码版本为 **2.2.0**，移动构建号 **20200**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面与移动源码版本为 **2.2.1**，移动构建号 **20201**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
+
+## 2.2.1 DOCX 与 WPS 版式兼容
+
+平台导出的自评估报告 DOCX 带有固定的 6 列表格、竖排表头和多节页面设置。原解析器把 `w:line="185" w:lineRule="auto"` 写成 0.77 倍行距，又忽略 `tblGrid` 与 `textDirection`，导致正文重叠、列宽错乱；同时无效外部超链接使文件被判定为“需要转换后打开”。
+
+本版按 WPS 12.1.0.26895 导出的参考 PDF 做版式对照，修复：
+
+- 自动行距下限为 1 倍，避免中文表格正文重叠。
+- 固定表格列宽、`colgroup`、`colspan/rowspan` 和 `vertical-rl` 竖排单元格。
+- 忽略无效外部超链接；仅页边距有微小差异的多节文档不再被拦截，原 DOCX 可直接打开。
+- 新增 DOCX 版式回归测试；完整说明见 [WPS 版式对照](docs/verification/v2.2.0/docx-wps-layout-compat.md)。
+
+Windows 2.2.1 绿色包：[seal-office-2.2.1-portable.zip](release/v2.2.1/seal-office-2.2.1-portable.zip)（解压后运行“海豹办公.exe”）。
+
+WPS 为闭源商业软件，本次没有复制其代码；上述是本样本所需的 DOCX 行为兼容。XLSX、PPTX、PDF 的完整 WPS 兼容仍需按失败样本逐项对照，不能宣称已经一比一复刻全部文件引擎。
 
 ## 2.2.0 字体适配与自定义字体
 

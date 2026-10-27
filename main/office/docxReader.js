@@ -89,7 +89,7 @@ function 解析超链接范围(段落Xml, 样式定义) {
     }
     目标 = 校验链接目标(目标)
     if (目标 === null) {
-     样式定义?.警告?.push('超链接目标未导入')
+     void 0
       continue
     }
     范围.push({ 开始: 匹配.index, 结束: 匹配.index + 匹配[0].length, 目标 })
@@ -114,6 +114,22 @@ function 采用当前修订内容(xml) {
 }
 
 /** 只恢复编辑器有对应显示和保存能力的页面预设；其余格式明确警告。 */
+function 各节页面几何一致(documentXml) {
+  const 节列表 = [...documentXml.matchAll(/<w:sectPr(?:\s[^>]*)?>([\s\S]*?)<\/w:sectPr>/gi)].map((项) => 项[1])
+  if (节列表.length < 2) return true
+  const 数值标签 = (节, 标签, 属性) => Number(取属性(节, 标签, 属性) ?? 0)
+  const 基准 = 节列表[0]
+  return 节列表.slice(1).every((节) => {
+    const 同尺寸 = ['w:w', 'w:h', 'w:orient'].every((属性) =>
+      数值标签(节, 'w:pgSz', 属性) === 数值标签(基准, 'w:pgSz', 属性))
+    const 同边距 = ['w:top', 'w:right', 'w:bottom', 'w:left'].every((属性) =>
+      Math.abs(数值标签(节, 'w:pgMar', 属性) - 数值标签(基准, 'w:pgMar', 属性)) <= 20)
+    const 同分栏 = (节.match(/<w:cols(?=[\s/>])[^>]*>/i)?.[0] ?? '') ===
+      (基准.match(/<w:cols(?=[\s/>])[^>]*>/i)?.[0] ?? '')
+    return 同尺寸 && 同边距 && 同分栏
+  })
+}
+
 function 解析页面设置(documentXml, 警告) {
   const 节 = documentXml.match(/<w:sectPr(?:\s[^>]*)?>([\s\S]*?)<\/w:sectPr>/i)?.[1]
   if (节 === undefined) return undefined
@@ -159,7 +175,7 @@ function 解析页面设置(documentXml, 警告) {
     警告.push('自定义页面设置未完整导入')
     return undefined
   }
-  if ((documentXml.match(/<w:sectPr(?=[\s>])/gi) ?? []).length > 1) 警告.push('多分节页面设置未完整导入')
+  if (!各节页面几何一致(documentXml)) 警告.push('多分节页面设置未完整导入')
   return {
     纸张: 纸张 ?? '自定义', 纸张方向: 方向,
     页边距: 页边距 ?? '自定义', 分栏, 页面边框, 页面颜色, 文字方向, 水印: '无',

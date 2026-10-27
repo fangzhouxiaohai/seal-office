@@ -38,7 +38,13 @@ async function 读取安全源包(data) {
       if (/<!DOCTYPE|<!ENTITY|<(?:[\w.-]+:)?(?:altChunk|OLEObject|object)\b/i.test(xml) || name === '[Content_Types].xml' && /macroEnabled|vbaProject|activeX|oleObject/i.test(xml)) throw new Error('源包包含未允许的活动或嵌入对象')
       if (name.endsWith('.rels')) for (const node of xmlNodes(xml).filter(n => /(?:^|:)Relationship$/.test(n.name))) {
         if (/(?:vbaProject|activeX|oleObject|control|attachedTemplate|aFChunk|package)$/i.test(node.attrs.Type ?? '')) throw new Error('源包包含活动或嵌入对象关系，不能作为普通DOCX保留')
-        if (/^external$/i.test(node.attrs.TargetMode ?? '') && (!node.attrs.Type?.endsWith('/hyperlink') || !/^(?:https?:|mailto:|tel:)/i.test(node.attrs.Target ?? ''))) throw new Error('源包包含外部资源或不安全关系，需先转换为嵌入内容')
+        if (/^external$/i.test(node.attrs.TargetMode ?? '')) {
+          if (!node.attrs.Type?.endsWith('/hyperlink')) throw new Error('源包包含外部资源或不安全关系，需先转换为嵌入内容')
+          // 平台导出的表单偶尔带有无协议或残缺的超链接目标。它只是普通文本
+          // 链接，不参与排版或资源加载；WPS 会忽略这类目标，这里同样忽略，
+          // 不再因此把整份 DOCX 判为不可打开。
+          if (!/^(?:https?:|mailto:|tel:)/i.test(node.attrs.Target ?? '')) continue
+        }
         if (!/^external$/i.test(node.attrs.TargetMode ?? '')) {
           const target = node.attrs.Target ?? ''
           if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target) || /[\\\u0000-\u001f]/.test(target)) throw new Error('源包内部关系目标无效')

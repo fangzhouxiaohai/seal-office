@@ -186,6 +186,16 @@ describe('docx 往返保真', () => {
     expect(结果.警告).not.toContain('表格合并单元格未导入')
   })
 
+  it('仅页边距微差的多节表单不阻断打开', async () => {
+    const 压缩包 = new JSZip()
+    const 节 = (top) => `<w:sectPr><w:pgSz w:w="11900" w:h="16840"/><w:pgMar w:top="${top}" w:right="745" w:bottom="0" w:left="745"/></w:sectPr>`
+    压缩包.file('word/document.xml', `<w:document><w:body><w:p><w:r><w:t>第一页</w:t></w:r></w:p>${节(698)}<w:p><w:r><w:t>第二页</w:t></w:r></w:p>${节(715)}</w:body></w:document>`)
+    const 结果 = await 读取docx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
+    expect(结果.html).toContain('第一页')
+    expect(结果.html).toContain('第二页')
+    expect(结果.警告).not.toContain('多分节页面设置未完整导入')
+  })
+
   it('WPS 导出的紧凑行距按单倍下限导入，避免表格文字上下重叠', async () => {
     const 压缩包 = new JSZip()
     压缩包.file('word/document.xml', '<w:document><w:body><w:p><w:pPr>' +

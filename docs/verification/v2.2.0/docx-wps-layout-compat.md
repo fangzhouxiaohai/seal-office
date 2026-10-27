@@ -31,6 +31,7 @@ WPS 参考 PDF 只用于本次分析，包含个人信息，未进入仓库。
 - 单元格内容增加 `word-break:break-word`，长 URL 不再撑开列。
 - `w:textDirection=tbRlV/btLr` 时用内层 `writing-mode:vertical-rl;text-orientation:upright`，并移除会破坏竖排位置的段落左右缩进。
 - 保留原有 `colspan/rowspan`、边框、底纹和段落样式处理。
+- 忽略残缺的外部超链接；仅页边距有微小差异的多节文档不再触发“需要转换后打开”拦截。
 
 `main/office/docxRoundTrip.test.js` 新增两条回归：
 
@@ -39,7 +40,7 @@ WPS 参考 PDF 只用于本次分析，包含个人信息，未进入仓库。
 
 ## 验证
 
-- `npx vitest run main/office/docxRoundTrip.test.js --config vitest.main.config.js`：64 项通过。
+- `npx vitest run main/office/docxRoundTrip.test.js main/office/docxSourceSecurity.test.js --config vitest.main.config.js`：69 项通过。
 - 对原 DOCX 重新生成 HTML 并在 Chromium 中渲染：功能描述、版本号、用户信息留存等长文本不再重叠；表格列宽与竖排表头按 WPS 参考版式显示。
 - WPS 参考 PDF 与原 DOCX 保留在私有分析目录，不随发行物分发。
 
