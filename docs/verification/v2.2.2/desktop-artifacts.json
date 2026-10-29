@@ -5,7 +5,7 @@
     {
       "platform": "windows",
       "archive": "release\\v2.2.2\\win-unpacked\\resources\\app.asar",
-      "appAsarSha256": "84cbbb82420bd5ca5c6e28362ff9ec20b18e94a96b8a5a89c497eba19f5151cd",
+      "appAsarSha256": "eb2c9b587df8e2d51017554c6d2dea86bb6401cb2b42489bf6e5c98f50c293b2",
       "checkedIntegrityFiles": 142,
       "matchesFinalWorkspaceBuild": true,
       "fileCount": 26347,
@@ -14,7 +14,7 @@
     {
       "platform": "linux",
       "archive": "release\\v2.2.2\\linux-unpacked\\resources\\app.asar",
-      "appAsarSha256": "4212bc97deae1b64b60e8b3aa99d164a042eda33b403f240d412fe658d148ad8",
+      "appAsarSha256": "07fbf598ccd49565ce00cd0504dcf70559aa93f4cadddb803244037820221b7f",
       "checkedIntegrityFiles": 142,
       "matchesFinalWorkspaceBuild": true,
       "fileCount": 26343,

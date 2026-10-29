@@ -260,6 +260,28 @@ describe('本地文件打开', () => {
     expect(已打开).toBe(true)
   })
 
+  it('目录与页码域缓存可直接打开，仍保留保存时的保真风险', async () => {
+    const 路径 = 'E:\\临时文件\\目录域手册.docx'
+    const 警告 = ['域代码未完整导入，已保留可读取的缓存结果']
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'AA==', 二进制: true, 扩展名: '.docx' }),
+        office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>目录正文</p>', 警告 }) },
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
+      },
+    })
+    const 打开 = vi.fn()
+    const 确认 = vi.fn()
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      expect(await 通过路径打开文件(路径, { info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)).toBe(true)
+      expect(确认).not.toHaveBeenCalled()
+      expect(打开).toHaveBeenCalledWith('word', '<p>目录正文</p>', 路径, 警告)
+    } finally { 取消注册() }
+  })
+
+
   it('从系统对话框打开不完整文档前要求转换，取消时不创建编辑标签', async () => {
     const 路径 = 'C:\\资料\\报告.docx'
     Object.defineProperty(window, 'electronAPI', {

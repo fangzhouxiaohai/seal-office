@@ -8,7 +8,7 @@ module.exports = async ({ win, evaluate, output, checks }) => {
   const visible = selector => `(()=>{const el=document.querySelector(${JSON.stringify(selector)});return !!el&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'})()`
   const rect = selector => evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}})()`)
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`)
-  const button = async text => evaluate(`(()=>{const b=[...document.querySelectorAll('.assistant-mobile-modal button')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!b||b.disabled)throw Error('按钮不可用：'+${JSON.stringify(text)});b.click()})()`)
+  const button = async label => evaluate(`(()=>{const b=[...document.querySelectorAll('.assistant-mobile-modal button')].find(b=>b.getAttribute('aria-label')===${JSON.stringify(label)}||b.textContent.trim()===${JSON.stringify(label)});if(!b||b.disabled)throw Error('按钮不可用：'+${JSON.stringify(label)});b.click()})()`)
   const send = async text => {
     await evaluate(`(()=>{const input=document.querySelector('.assistant-mobile-modal textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,${JSON.stringify(text)});input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
     await until(`!document.querySelector('.assistant-mobile-modal .assistant-send').disabled`, '发送按钮必须可用')
@@ -31,6 +31,10 @@ module.exports = async ({ win, evaluate, output, checks }) => {
     fs.writeFileSync(path.join(output, `${name}-${scheme}.png`), (await win.capturePage()).toPNG())
   }
   try {
+    // 本组验证手动预览链路；在页面重新挂载前关闭自动确认，避免默认开启直接应用。
+    await evaluate(`localStorage.setItem('seal.assistant.auto-confirm','关闭')`)
+    win.webContents.reload()
+    await new Promise(resolve => setTimeout(resolve, 500))
     await cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
     await size(390, 844)
     await until(visible(ball), '移动悬浮球必须显示')
@@ -52,7 +56,7 @@ module.exports = async ({ win, evaluate, output, checks }) => {
     await touch('touchStart', moved.x + 28, moved.y + 28); await touch('touchEnd')
     await until(visible(modal), '轻触打开大弹窗')
     assert.equal(await evaluate(`document.querySelector('${target}').disabled`), true)
-    assert.equal(await evaluate(`[...document.querySelectorAll('${modal} button')].find(b=>b.textContent==='工作模式').disabled`), true)
+    assert.equal(await evaluate(`document.querySelector('${modal} [aria-label="工作模式"]').disabled`), true)
     const panel = await rect(modal)
     assert.ok(panel.width >= 350 && panel.right <= 390 && panel.bottom <= 844, '手机大弹窗完整显示在视口内')
     await evaluate(`window.dispatchEvent(new Event('seal-native-back',{cancelable:true}))`)
@@ -116,11 +120,11 @@ module.exports = async ({ win, evaluate, output, checks }) => {
     await until(`window.__assistantRequests.length===2`, '文件问答')
     const question = await evaluate('window.__assistantRequests[1]')
     assert.equal(question.只读对话, true); assert.ok(question.文档上下文.includes('文件甲正文')); assert.ok(!question.文档上下文.includes('文件乙正文'))
-    await until(`![...document.querySelectorAll('${modal} button')].find(b=>b.textContent==='工作模式').disabled`, '任务结束后切换模式')
+    await until(`!document.querySelector('${modal} [aria-label="工作模式"]').disabled`, '任务结束后切换模式')
     await button('工作模式'); await send('修改所选文件')
-    await until(`!![...document.querySelectorAll('${modal} button')].find(b=>b.textContent==='应用修改')`, '工作模式必须先显示修改预览')
+    await until(`!!document.querySelector('${modal} [aria-label="应用修改"]')`, '工作模式必须先显示修改预览')
     await button('应用修改')
-    await until(`![...document.querySelectorAll('${modal} button')].find(b=>b.textContent==='应用修改')`, '确认修改完成')
+    await until(`!document.querySelector('${modal} [aria-label="应用修改"]')`, '确认修改完成')
     await click(`${modal} .assistant-collapse`)
     assert.equal(await evaluate(`document.querySelector('.wps-editor-canvas__content').textContent`), '文件乙正文', '后台当前文件乙不能被误改')
     await evaluate(`document.querySelector('.wps-global-tab__select').click()`)

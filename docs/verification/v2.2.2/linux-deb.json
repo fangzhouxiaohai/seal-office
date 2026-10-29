@@ -11,10 +11,10 @@
   "limitations": [
     "No Linux installation or runtime/UI test was performed on this Windows host."
   ],
-  "appAsarSha256": "4212bc97deae1b64b60e8b3aa99d164a042eda33b403f240d412fe658d148ad8",
+  "appAsarSha256": "07fbf598ccd49565ce00cd0504dcf70559aa93f4cadddb803244037820221b7f",
   "executable": "opt/海豹办公/sealoffice",
   "desktopName": "海豹办公",
-  "sha256": "97231d306c282b1f1ea5a5127bd315d62b27c3ea16e0f3cea0701504bf8ff9cd",
-  "bytes": 141963348,
+  "sha256": "0e6d84a9abd15932fcdf20b19710f28a3d61b3ad8bc561cf7020321dac1c62a8",
+  "bytes": 141981760,
   "passed": true
 }

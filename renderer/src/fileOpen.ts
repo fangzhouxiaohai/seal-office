@@ -14,6 +14,7 @@ import { 从Html表格构建工作表 } from './sheet/sheetImport'
 import { 收集演示资源标识 } from './ppt/model/migrations'
 import type { 演示文稿 } from './ppt/deck'
 import { 读取单文件网页 } from './office/mhtml'
+import { 需要转换确认 } from './fileWarnings'
 
 export type 打开类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
@@ -310,6 +311,9 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
     if (字体数据) await 准备打开文档字体(内容.类型, 字体数据)
   }
   const 警告 = [...new Set(内容.警告)]
+  // 目录、超链接和页码引用等域的缓存结果可直接阅读；只在保存时继续按保真风险提示，
+  // 不能再把它们等同于未识别内容阻止文件进入编辑器。
+  if (!需要转换确认(警告)) return 内容
   const 确认 = await new Promise<boolean>(完成 => {
     ;(导入确认弹窗 ?? Modal.confirm)({
       title: '此文件需要转换后打开',

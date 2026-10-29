@@ -89,6 +89,17 @@ function 修改说明(项: 助手修改): { 位置: string; 原文: string; 新�
   return { 位置: `第 ${项.页码} 页文本框`, 原文: 项.查找, 新文: 项.替换为 }
 }
 
+function 读取助手开关(键: string, 默认值: boolean): boolean {
+  try {
+    const 值 = localStorage.getItem(键)
+    return 值 === null ? 默认值 : 值 !== '关闭'
+  } catch { return 默认值 }
+}
+
+function 保存助手开关(键: string, 开启: boolean): void {
+  try { localStorage.setItem(键, 开启 ? '开启' : '关闭') } catch { /* 本机存储不可用时保留当前会话内的选择 */ }
+}
+
 export default function AiAssistant() {
   const 放映中 = 使用放映状态()
   const 移动端 = useIconPlatform() === 'mobile' || document.documentElement.dataset.sealPlatform === 'app'
@@ -125,6 +136,10 @@ export default function AiAssistant() {
   const [清除中, set清除中] = useState(false)
   const [处理候选中, set处理候选中] = useState(false)
   const [仅规划, set仅规划] = useState(false)
+  const [自动确认修改, set自动确认修改] = useState(() => 读取助手开关('seal.assistant.auto-confirm', true))
+  const [回车发送, set回车发送] = useState(() => 读取助手开关('seal.assistant.enter-send', false))
+  const 设置自动确认修改 = (开启: boolean) => { set自动确认修改(开启); 保存助手开关('seal.assistant.auto-confirm', 开启) }
+  const 设置回车发送 = (开启: boolean) => { set回车发送(开启); 保存助手开关('seal.assistant.enter-send', 开启) }
   const [强度, set强度] = useState<思考强度>('high')
   const 进行中 = useRef<执行任务 | null>(null)
   const [队列, set队列] = useState<排队任务[]>([])
@@ -143,6 +158,8 @@ export default function AiAssistant() {
   const 当前待确认 = 待确认按文件[当前范围标识] ?? null
   const [修改页, set修改页] = useState(0)
   const [记忆按范围, set记忆按范围] = useState<Record<string, 会话记忆>>({})
+  const 记忆引用 = useRef(记忆按范围)
+  记忆引用.current = 记忆按范围
   const [恢复提示按范围, set恢复提示按范围] = useState<Record<string, string>>({})
   const 当前记忆 = 记忆按范围[当前范围标识]
   const 会话标识按文档 = useRef(new Map<string, string>())
@@ -198,41 +215,95 @@ export default function AiAssistant() {
     合并任务消息(任务, { 执行记录: 任务.执行记录 }, true)
   }
 
-  const 生成候选 = (任务: 执行任务, 修改: 助手修改[]) => {
+  function 标记等待确认(范围: string) {
+    set记忆按范围((当前) => {
+      const 记忆 = 当前[范围]
+      if (!记忆 || 记忆.计划.some((项) => 项.status === 'awaiting_confirmation')) return 当前
+      const 执行步骤 = 记忆.计划.map((项) => 项.status).lastIndexOf('in_progress')
+      return { ...当前, [范围]: { ...记忆, 计划: 记忆.计划.map((项, 索引) => 索引 === 执行步骤 ? { ...项, status: 'awaiting_confirmation' } : 项) } }
+    })
+  }
+
+  function 应用候选(待确认: 待确认修改, 自动: boolean): boolean {
+    try {
+      const 文档 = documents.find((项) => 项.id === 待确认.标识)
+      if (待确认.类型 === 'create') {
+        const 文件 = (待确认.修改 as 创建文件[]).map(构建新文件)
+        文件.forEach((项) => createDoc(项.类型, 项.内容, { 名称: 项.名称 }))
+      } else {
+        if (!文档) throw new Error('当前文件已关闭，无法应用修改')
+        if (当前文档?.id !== 待确认.标识) {
+          // 自动确认只在目标文件仍是当前文件时直接写入，否则退回预览，避免在后台误改文件。
+          if (自动) return false
+          throw new Error('当前文件已切换，请返回原文件后重新请求修改')
+        }
+        if (原始快照(文档, 表格文档模型, 演示文档模型) !== 待确认.原内容) throw new Error('文件内容已变化，请重新向助手发送请求')
+        if (待确认.类型 === 'table') {
+          const 原表 = 表格文档模型[文档.id]
+          if (!原表) throw new Error('当前表格模型缺失，无法应用修改')
+          const 候选 = 待确认.候选 as Sheet[]
+          const 错误 = 检查工作簿更新(原表, 候选)
+          if (错误) throw new Error(错误)
+          更新表格文档模型(文档.id, 候选)
+        }
+        else if (待确认.类型 === 'ppt') 更新演示文档模型(文档.id, 待确认.候选 as 演示文稿)
+        else updateEditorHtml(文档.id, 待确认.候选 as string)
+      }
+      set待确认按文件((当前) => ({ ...当前, [待确认.标识]: undefined }))
+      恢复候选锁.current.delete(待确认.范围)
+      const 旧计划 = 记忆引用.current[待确认.范围]?.计划 ?? []
+      const 执行步骤 = 自动 ? 旧计划.map((项) => 项.status).lastIndexOf('in_progress') : -1
+      const 计划 = 旧计划.map((项, 索引): 计划项 => 自动
+        ? 索引 === 执行步骤 ? { ...项, status: 'completed' } : 项
+        : 项.status === 'awaiting_confirmation' ? { ...项, status: 'completed' } : 项)
+      set记忆按范围((当前) => ({ ...当前, [待确认.范围]: { 摘要: 当前[待确认.范围]?.摘要 ?? '', 压缩次数: 当前[待确认.范围]?.压缩次数 ?? 0, 计划 } }))
+      if (typeof window.electronAPI?.ai?.updateSessionPlan === 'function') {
+        set处理候选中(true)
+        void 桥接.ai.updateSessionPlan(待确认.会话标识, 计划).then((结果) => {
+          if (!结果.成功) throw new Error(结果.错误 || '无法保存计划完成状态')
+        }).catch((错误: unknown) => { if (组件有效.current) modal.error({ title: '保存候选完成状态失败', content: `修改已应用到编辑区。${错误 instanceof Error ? 错误.message : '无法清除持久候选'}` }) }).finally(() => { if (组件有效.current) set处理候选中(false) })
+      }
+      message.success(自动 ? 待确认.类型 === 'create' ? '文件已自动创建到编辑区，请保存文件' : '修改已自动应用到当前编辑内容，请保存文件' : 待确认.类型 === 'create' ? '文件已创建到编辑区，请保存文件' : '修改已应用到当前编辑内容，请保存文件')
+      return true
+    } catch (错误) {
+      modal.error({ title: '应用修改失败', content: 错误 instanceof Error ? 错误.message : '当前文件无法应用修改' })
+      return false
+    }
+  }
+
+  const 生成候选 = (任务: 执行任务, 修改: 助手修改[], 允许自动应用 = true): boolean => {
     if (任务.只读) throw new Error('对话模式只提供回答，不创建或修改文件')
     const 文档 = 任务.文档
+    let 待确认: 待确认修改
     if (修改.some((项) => 项.种类 === '创建文件')) {
       if (修改.some((项) => 项.种类 !== '创建文件') || 修改.length > 10) throw new Error('新建文件须独立提交，一次最多10个，不能与现有文件修改混合')
       const 候选 = (修改 as 创建文件[]).map(构建新文件)
       if (new Set(候选.map((项) => 项.名称.toLowerCase())).size !== 候选.length) throw new Error('新文件名称重复')
-      任务.修改 = 修改
-      set待确认按文件((当前) => ({ ...当前, [任务.范围]: { 标识: 任务.范围, 类型: 'create', 原内容: 任务.原内容, 候选, 修改, 范围: 任务.范围, 会话标识: 任务.会话标识 } }))
-      return
-    }
-    if (!文档) throw new Error('当前没有打开的可编辑文件，请使用创建文件指令')
-    const 现文档 = 最新文件.current.documents.find((项) => 项.id === 文档.id)
-    if (!现文档) throw new Error('原文件已关闭，无法生成修改候选')
-    if (原始快照(现文档, 最新文件.current.表格文档模型, 最新文件.current.演示文档模型) !== 任务.原内容) throw new Error('文件内容已变化，请重新向助手发送请求')
-    let 候选: string | Sheet[] | 演示文稿
-    if (文档.type === 'table') {
-      if (修改.some((项) => 项.种类 !== '单元格写入')) throw new Error('模型提出了与当前表格不符的修改')
-      候选 = 预览表格修改(任务.表格!, 修改 as 表格修改[])
-    } else if (文档.type === 'ppt') {
-      if (修改.some((项) => !['演示文本替换', '演示切换', '演示对象动画', '演示表格写入'].includes(项.种类))) throw new Error('模型提出了与当前演示不符的修改')
-      候选 = 预览演示修改(任务.演示!, 修改 as 演示修改[])
+      待确认 = { 标识: 任务.范围, 类型: 'create', 原内容: 任务.原内容, 候选, 修改, 范围: 任务.范围, 会话标识: 任务.会话标识 }
     } else {
-      if (修改.some((项) => !['文字替换', '段落排版', '文字插入'].includes(项.种类))) throw new Error('模型提出了与当前文字文档不符的修改')
-      候选 = 预览文字修改(文档.html, 修改 as 文字修改[])
+      if (!文档) throw new Error('当前没有打开的可编辑文件，请使用创建文件指令')
+      const 现文档 = 最新文件.current.documents.find((项) => 项.id === 文档.id)
+      if (!现文档) throw new Error('原文件已关闭，无法生成修改候选')
+      if (原始快照(现文档, 最新文件.current.表格文档模型, 最新文件.current.演示文档模型) !== 任务.原内容) throw new Error('文件内容已变化，请重新向助手发送请求')
+      let 候选: string | Sheet[] | 演示文稿
+      if (文档.type === 'table') {
+        if (修改.some((项) => 项.种类 !== '单元格写入')) throw new Error('模型提出了与当前表格不符的修改')
+        候选 = 预览表格修改(任务.表格!, 修改 as 表格修改[])
+      } else if (文档.type === 'ppt') {
+        if (修改.some((项) => !['演示文本替换', '演示切换', '演示对象动画', '演示表格写入'].includes(项.种类))) throw new Error('模型提出了与当前演示不符的修改')
+        候选 = 预览演示修改(任务.演示!, 修改 as 演示修改[])
+      } else {
+        if (修改.some((项) => !['文字替换', '段落排版', '文字插入'].includes(项.种类))) throw new Error('模型提出了与当前文字文档不符的修改')
+        候选 = 预览文字修改(文档.html, 修改 as 文字修改[])
+      }
+      set恢复提示按范围((当前) => ({ ...当前, [任务.范围]: '' }))
+      待确认 = { 标识: 文档.id, 类型: 文档.type ?? 'word', 原内容: 任务.原内容, 候选, 修改, 范围: 任务.范围, 会话标识: 任务.会话标识 }
     }
     任务.修改 = 修改
-    set恢复提示按范围((当前) => ({ ...当前, [任务.范围]: '' }))
-    set待确认按文件((当前) => ({ ...当前, [文档.id]: { 标识: 文档.id, 类型: 文档.type ?? 'word', 原内容: 任务.原内容, 候选, 修改, 范围: 任务.范围, 会话标识: 任务.会话标识 } }))
-    set记忆按范围((当前) => {
-      const 记忆 = 当前[任务.范围]
-      if (!记忆 || 记忆.计划.some((项) => 项.status === 'awaiting_confirmation')) return 当前
-      const 执行步骤 = 记忆.计划.map((项) => 项.status).lastIndexOf('in_progress')
-      return { ...当前, [任务.范围]: { ...记忆, 计划: 记忆.计划.map((项, 索引) => 索引 === 执行步骤 ? { ...项, status: 'awaiting_confirmation' } : 项) } }
-    })
+    if (允许自动应用 && 自动确认修改 && 应用候选(待确认, true)) return true
+    if (待确认.类型 !== 'create') 标记等待确认(待确认.范围)
+    set待确认按文件((当前) => ({ ...当前, [待确认.标识]: 待确认 }))
+    return false
   }
 
   useEffect(() => {
@@ -271,9 +342,9 @@ export default function AiAssistant() {
           if (调用.工具 !== 'propose_changes') throw new Error('不支持的助手工具，未执行任何操作')
           const 回复 = 解析助手回复(JSON.stringify(调用.参数))
           if (!回复.修改.length) throw new Error('修改候选不能为空')
-          生成候选(任务, 回复.修改)
-          合并任务消息(任务, { 阶段: '修改已校验，等待确认' }, true)
-          const 结果 = await 桥接.ai.submitToolResult({ 请求标识: 调用.请求标识, 调用标识: 调用.调用标识, 成功: true, 数据: { 候选已生成: true, 修改数量: 回复.修改.length } })
+          const 已自动应用 = 生成候选(任务, 回复.修改)
+          合并任务消息(任务, { 阶段: 已自动应用 ? '修改已自动应用' : '修改已校验，等待确认' }, true)
+          const 结果 = await 桥接.ai.submitToolResult({ 请求标识: 调用.请求标识, 调用标识: 调用.调用标识, 成功: true, 数据: { 候选已生成: true, 已自动应用, 修改数量: 回复.修改.length } })
           if (!结果.成功) throw new Error(结果.错误 || '无法回传修改候选结果')
         } catch (错误) {
           const 原因 = 错误 instanceof Error ? 错误.message : '生成修改候选失败'
@@ -336,13 +407,13 @@ export default function AiAssistant() {
           const 文档 = 最新文件.current.documents.find((项) => 项.id === 范围)
           if (Array.isArray(已保存候选.修改) && 已保存候选.修改.length && 已保存候选.修改.every((项: unknown) => !!项 && typeof 项 === 'object' && (项 as { 种类?: string }).种类 === '创建文件')) {
             const 回复 = 解析助手回复(JSON.stringify({ 回复: 已保存候选.回复, 修改: 已保存候选.修改 }))
-            生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档?.name ?? '新建文件', 原始正文: '', 思考: '', 已停止: false, 文档: 文档 ?? null, 原内容: 已保存候选.文件快照 ?? '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
+            生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档?.name ?? '新建文件', 原始正文: '', 思考: '', 已停止: false, 文档: 文档 ?? null, 原内容: 已保存候选.文件快照 ?? '', 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改, false)
           } else if (typeof 已保存候选.文件快照 !== 'string') set恢复提示按范围((当前) => ({ ...当前, [范围]: '旧修改候选缺少文件快照，请重新发送修改请求。' }))
           else if (!文档 || 原始快照(文档, 最新文件.current.表格文档模型, 最新文件.current.演示文档模型) !== 已保存候选.文件快照) {
             set恢复提示按范围((当前) => ({ ...当前, [范围]: '已保存的修改候选已过期，请重新发送修改请求。' }))
           } else {
             const 回复 = 解析助手回复(JSON.stringify({ 回复: 已保存候选.回复, 修改: 已保存候选.修改 }))
-            if (回复.修改.length) 生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档.name, 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: 已保存候选.文件快照, 表格: 最新文件.current.表格文档模型[文档.id], 演示: 最新文件.current.演示文档模型[文档.id], 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改)
+            if (回复.修改.length) 生成候选({ 标识: '', 范围, 会话标识, 文件名: 文档.name, 原始正文: '', 思考: '', 已停止: false, 文档, 原内容: 已保存候选.文件快照, 表格: 最新文件.current.表格文档模型[文档.id], 演示: 最新文件.current.演示文档模型[文档.id], 修改: [], 待刷新: {}, 正文已刷新: false, 思考已刷新: false }, 回复.修改, false)
           }
           // 初始化的 Promise 返回前就锁定候选，防止快捷指令抢先覆盖尚待确认的修改。
           恢复候选锁.current.add(范围)
@@ -514,13 +585,13 @@ export default function AiAssistant() {
       if (!结果.成功 || !结果.数据) throw Object.assign(new Error(结果.错误 || '模型服务未返回回复'),{需要登录:(结果 as any).需要登录})
       const 回复 = 任务.只读 ? { 回复: 提取流式正文(结果.数据.内容) || 结果.数据.内容, 修改: [] } : 解析助手回复(结果.数据.内容)
       更新任务消息(范围标识, 标识, { 内容: 回复.回复, 思考: 结果.数据.思考 || 任务.思考, 阶段: 任务.只读 ? '正在整理回答' : '正在校验修改' })
-      if (回复.修改.length > 0) 生成候选(任务, 回复.修改)
+      const 已自动应用 = 回复.修改.length > 0 ? 生成候选(任务, 回复.修改) : false
       if (结果.数据.计划 || 结果.数据.摘要 !== undefined || 结果.数据.压缩次数 !== undefined) {
         const 数据 = 结果.数据
         const 计划 = 数据.计划 ? 校验计划(数据.计划) : undefined
         set记忆按范围((当前) => ({ ...当前, [范围标识]: { 摘要: 数据.摘要 ?? 当前[范围标识]?.摘要 ?? '', 压缩次数: 数据.压缩次数 ?? 当前[范围标识]?.压缩次数 ?? 0, 计划: 计划 ?? 当前[范围标识]?.计划 ?? [] } }))
       }
-      更新任务消息(范围标识, 标识, { 状态: '完成', 阶段: 任务.修改.length ? '修改已校验，等待确认' : '已回复，未修改文件' })
+      更新任务消息(范围标识, 标识, { 状态: '完成', 阶段: 任务.修改.length ? 已自动应用 ? '修改已自动应用' : '修改已校验，等待确认' : '已回复，未修改文件' })
       任务.结束状态 = '完成'
       变更队列((旧) => 旧.map((项) => 项.id === 标识 ? { ...项, 状态: '完成' } : 项))
     } catch (错误) {
@@ -598,40 +669,7 @@ export default function AiAssistant() {
     if (只读对话) { message.info('请切换到工作模式后再确认修改'); return }
     const 待确认 = 当前待确认
     if (!待确认) return
-    try {
-      const 文档 = documents.find((项) => 项.id === 待确认.标识)
-      if (待确认.类型 === 'create') {
-        const 文件 = (待确认.修改 as 创建文件[]).map(构建新文件)
-        文件.forEach((项) => createDoc(项.类型, 项.内容, { 名称: 项.名称 }))
-      } else {
-      if (!文档 || 当前文档?.id !== 待确认.标识) throw new Error('当前文件已切换，请返回原文件后重新请求修改')
-      if (原始快照(文档, 表格文档模型, 演示文档模型) !== 待确认.原内容) throw new Error('文件内容已变化，请重新向助手发送请求')
-      if (待确认.类型 === 'table') {
-        const 原表 = 表格文档模型[文档.id]
-        if (!原表) throw new Error('当前表格模型缺失，无法应用修改')
-        const 候选 = 待确认.候选 as Sheet[]
-        const 错误 = 检查工作簿更新(原表, 候选)
-        if (错误) throw new Error(错误)
-        更新表格文档模型(文档.id, 候选)
-      }
-      else if (待确认.类型 === 'ppt') 更新演示文档模型(文档.id, 待确认.候选 as 演示文稿)
-      else updateEditorHtml(文档.id, 待确认.候选 as string)
-      }
-      set待确认按文件((当前) => ({ ...当前, [待确认.标识]: undefined }))
-      恢复候选锁.current.delete(待确认.范围)
-      const 旧计划 = 记忆按范围[待确认.范围]?.计划 ?? []
-      const 计划 = 旧计划.map((项): 计划项 => 项.status === 'awaiting_confirmation' ? { ...项, status: 'completed' } : 项)
-      set记忆按范围((当前) => ({ ...当前, [待确认.范围]: { 摘要: 当前[待确认.范围]?.摘要 ?? '', 压缩次数: 当前[待确认.范围]?.压缩次数 ?? 0, 计划 } }))
-      if (typeof window.electronAPI?.ai?.updateSessionPlan === 'function') {
-        set处理候选中(true)
-        void 桥接.ai.updateSessionPlan(待确认.会话标识, 计划).then((结果) => {
-          if (!结果.成功) throw new Error(结果.错误 || '无法保存计划完成状态')
-        }).catch((错误: unknown) => { if (组件有效.current) modal.error({ title: '保存候选完成状态失败', content: `修改已应用到编辑区。${错误 instanceof Error ? 错误.message : '无法清除持久候选'}` }) }).finally(() => { if (组件有效.current) set处理候选中(false) })
-      }
-      message.success(待确认.类型 === 'create' ? '文件已创建到编辑区，请保存文件' : '修改已应用到当前编辑内容，请保存文件')
-    } catch (错误) {
-      modal.error({ title: '应用修改失败', content: 错误 instanceof Error ? 错误.message : '当前文件无法应用修改' })
-    }
+    应用候选(待确认, false)
   }
 
   const 放弃修改 = async () => {
@@ -697,33 +735,33 @@ export default function AiAssistant() {
             {可选文件.length ? 可选文件.map(文件 => <option key={文件.id} value={文件.id}>{文件.name}{文件.id === activeWorkspaceTabId ? '（当前）' : ''}</option>) : <option value="">未打开文件 · 一般问答</option>}
           </select></label>
           <div className="assistant-mobile-modes" role="group" aria-label="助手模式">
-            <button type="button" aria-pressed={只读对话} disabled={发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('chat')}>对话模式</button>
-            <button type="button" aria-pressed={!只读对话} disabled={!当前文档 || 发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('work')}>工作模式</button>
+            <button type="button" aria-label="对话模式" title="对话模式" aria-pressed={只读对话} disabled={发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('chat')}><Icon name="ai" size={18} /></button>
+            <button type="button" aria-label="工作模式" title="工作模式" aria-pressed={!只读对话} disabled={!当前文档 || 发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('work')}><Icon name="textbox" size={18} /></button>
           </div>
-          <p className="assistant-mobile-mode-hint" role="status">{!当前文件 ? '打开文件后可使用工作模式。' : 当前PDF ? 'PDF 可就选中文字问答，正文修改请使用 PDF 编辑功能。' : 只读对话 ? '结合所选文件回答问题，不操作文件。' : '为所选文件生成修改预览，确认后应用。'}</p>
+          <p className="assistant-mobile-mode-hint" role="status">{!当前文件 ? '打开文件后可使用工作模式。' : 当前PDF ? 'PDF 可就选中文字问答，正文修改请使用 PDF 编辑功能。' : 只读对话 ? '结合所选文件回答问题，不操作文件。' : 自动确认修改 ? '为所选文件生成修改并自动应用。' : '为所选文件生成修改预览，确认后应用。'}</p>
         </div> : null}
-        {配置展开 ? <AiSettingsCard compact onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }}>
+        {配置展开 ? <AiSettingsCard compact 自动确认修改={自动确认修改} 设置自动确认修改={设置自动确认修改} 回车发送={回车发送} 设置回车发送={设置回车发送} onSaved={(新配置) => { 配置版本.current++; 配置请求.current = null; 配置引用.current = 新配置; set配置(新配置); set强度(新配置.思考强度 ?? 'high'); set配置展开(false) }}>
           {新版可用 && !只读对话 ? <div className="assistant-settings__task-mode"><Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox><p className="assistant-settings__note">开启后，接下来发送的需求先生成计划；点击“执行计划”可继续处理。正在执行或已排队的任务沿用提交时的设置。</p></div> : null}
         </AiSettingsCard> : null}
         <div className="assistant-drawer__work">
-        {!移动端 ? <div className="assistant-drawer__scope"><span className="assistant-scope__label">当前范围：</span><strong className="assistant-scope__name">{当前文件 ? 当前文件.name : '未选择文件'}</strong></div> : null}        {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope assistant-drawer__scope--notice"><Button type="link" onClick={()=>void requireAIIdentity()}>登录后使用 AI</Button><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
-        {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
-          {当前记忆?.计划.length && !只读对话 ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
+        {!移动端 ? <div className="assistant-drawer__scope"><span className="assistant-scope__label">当前范围：</span><strong className="assistant-scope__name">{当前文件 ? 当前文件.name : '未选择文件'}</strong></div> : null}        {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope assistant-drawer__scope--notice"><Button className="assistant-icon-button" type="text" icon={<Icon name="users" size={15} />} aria-label="登录后使用 AI" title="登录后使用 AI" onClick={()=>void requireAIIdentity()} /><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
+        {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="close" size={14} />} aria-label="停止" title="停止" onClick={() => void 停止任务()} /></div> : null}
+          {当前记忆?.计划.length && !只读对话 ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="list" size={15} />} aria-label="执行计划" title="执行计划" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)} /> : null}</details> : null}
         {发送中 && 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求 ? <div className="assistant-drawer__initializing" role="status"><span className="assistant-task__spinner" aria-hidden="true" />正在读取模型设置与会话记忆</div> : null}
         <div ref={消息容器} className="assistant-drawer__messages" role="log" aria-label="助手对话" onScroll={() => { const 元素 = 消息容器.current; if (元素) 跟随输出.current = 元素.scrollHeight - 元素.scrollTop - 元素.clientHeight < 64 }}>
           {恢复中 ? <div className="assistant-drawer__empty" role="status">正在恢复本机会话记忆</div> : null}
           {绑定中范围[当前范围标识] ? <div className="assistant-drawer__empty" role="status">正在绑定已保存文件的会话记忆</div> : null}
-          {恢复提示按范围[当前范围标识] ? <div className="assistant-drawer__empty" role="status">{恢复提示按范围[当前范围标识]}<Button size="small" disabled={交互禁用} onClick={async () => {
+          {恢复提示按范围[当前范围标识] ? <div className="assistant-drawer__empty" role="status">{恢复提示按范围[当前范围标识]}<Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="trash" size={15} />} aria-label="清除过期候选" title="清除过期候选" disabled={交互禁用} onClick={async () => {
             set处理候选中(true)
             try { const 结果 = await 桥接.ai.discardSessionProposal(当前会话标识); if (!结果.成功) throw new Error(结果.错误 || '无法清除过期候选'); 恢复候选锁.current.delete(当前范围标识); set恢复提示按范围((旧) => ({ ...旧, [当前范围标识]: '' })) }
             catch (错误) { modal.error({ title: '清除过期候选失败', content: 错误 instanceof Error ? 错误.message : '请重试' }) }
             finally { set处理候选中(false) }
-          }}>清除过期候选</Button></div> : null}
+          }} /></div> : null}
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty assistant-empty">
             <span className="assistant-empty__icon" aria-hidden="true"><Icon name="ai" size={22} /></span>
             <strong>{只读对话 ? 当前文件 ? '围绕当前文件提问' : '开始一段对话' : '从当前文件开始'}</strong>
-            <p>{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</p>
+            <p>{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : 自动确认修改 ? '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改会直接进入编辑区，可在助手设置中改为手动确认。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</p>
           </div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
             {项.角色 === 'assistant' ? <span className="assistant-message__role"><span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={12} /></span>智能助手</span> : null}
@@ -739,31 +777,31 @@ export default function AiAssistant() {
             const 说明 = 修改说明(项)
             return <div className="assistant-preview__item" key={修改页 * 每页修改数 + 索引}><div>{说明.位置}</div><div className="assistant-preview__old">原文：{说明.原文 || '空白'}</div><div className="assistant-preview__new">修改后：{说明.新文 || '空白'}</div></div>
           })}</div>
-          {当前待确认.修改.length > 每页修改数 ? <div className="assistant-preview__pagination"><Button size="small" aria-label="上一页修改" disabled={修改页 === 0} onClick={() => set修改页((页) => 页 - 1)}>上一页</Button><span>第 {修改页 + 1} / {Math.ceil(当前待确认.修改.length / 每页修改数)} 页</span><Button size="small" aria-label="下一页修改" disabled={(修改页 + 1) * 每页修改数 >= 当前待确认.修改.length} onClick={() => set修改页((页) => 页 + 1)}>下一页</Button></div> : null}
-          <div className="assistant-preview__actions"><Button type="primary" onClick={应用修改} disabled={交互禁用}>应用修改</Button><Button disabled={交互禁用} onClick={() => void 放弃修改()}>放弃修改</Button></div>
+          {当前待确认.修改.length > 每页修改数 ? <div className="assistant-preview__pagination"><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-left" size={15} />} aria-label="上一页修改" title="上一页修改" disabled={修改页 === 0} onClick={() => set修改页((页) => 页 - 1)} /><span>第 {修改页 + 1} / {Math.ceil(当前待确认.修改.length / 每页修改数)} 页</span><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-right" size={15} />} aria-label="下一页修改" title="下一页修改" disabled={(修改页 + 1) * 每页修改数 >= 当前待确认.修改.length} onClick={() => set修改页((页) => 页 + 1)} /></div> : null}
+          <div className="assistant-preview__actions"><Button className="assistant-icon-button" type="primary" icon={<Icon name="save" size={15} />} aria-label="应用修改" title="应用修改" onClick={应用修改} disabled={交互禁用} /><Button className="assistant-icon-button" type="text" icon={<Icon name="trash" size={15} />} aria-label="放弃修改" title="放弃修改" disabled={交互禁用} onClick={() => void 放弃修改()} /></div>
         </section> : null}
         {队列.some((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)) ? <section className="assistant-queue" aria-label="助手任务队列">
-          <div className="assistant-queue__heading"><strong>任务队列 · {队列.filter((项) => 项.状态 === '等待').length} 项等待</strong><Button size="small" onClick={() => set队列暂停((旧) => !旧)}>{队列暂停 ? '继续队列' : '暂停队列'}</Button></div>
+          <div className="assistant-queue__heading"><strong>任务队列 · {队列.filter((项) => 项.状态 === '等待').length} 项等待</strong><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name={队列暂停 ? 'redo' : 'clock'} size={15} />} aria-label={队列暂停 ? '继续队列' : '暂停队列'} title={队列暂停 ? '继续队列' : '暂停队列'} onClick={() => set队列暂停((旧) => !旧)} /></div>
           <p role="status">{队列暂停 ? '队列已暂停，正在执行的任务会继续。' : 队列.find((项) => 项.状态 === '等待' && !项.只读 && 待确认按文件[项.范围]) ? '等待确认上一项修改后继续。' : '按提交顺序执行；可将同一文件的补充需求引导到当前任务。'}</p>
           <div className="assistant-queue__list">{队列.filter((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)).map((项) => <div className={`assistant-queue__item assistant-queue__item--${项.状态}`} key={项.id}>
             <div><strong>{项.状态} · {项.文件名}</strong><span>{项.文本}</span>{项.状态 === '失败' && 项.错误 ? <small>失败原因：{项.错误}</small> : null}</div>
-            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button size="small" onClick={() => { if (移动端) set选择目标(项.范围); else selectWorkspaceTab(项.范围) }}>返回文件</Button> : null}
-            {项.状态 === '等待' ? <><Button size="small" icon={<Icon name="ai" size={15} />} title="不打断当前任务，将补充需求一起处理" aria-label={`引导当前任务：${项.文本}`} disabled={!发送中 || 进行中.current?.范围 !== 项.范围 || !!引导中 || !项.自动执行 || 进行中.current?.只读} loading={引导中 === 项.id} onClick={() => void 引导任务(项)}>引导</Button><Button size="small" disabled={引导中 === 项.id} onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}
-            {项.状态 === '失败' ? <><Button size="small" onClick={() => { 变更队列((旧) => [{ ...项, id: crypto.randomUUID(), 状态: '等待', 错误: undefined }, ...旧.filter((旧项) => 旧项.id !== 项.id)]); set队列暂停(false) }}>重试</Button><Button size="small" onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))}>移除</Button></> : null}</div>
+            <div className="assistant-queue__actions">{项.范围 !== '无文件' && 项.范围 !== 当前范围标识 ? <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-left" size={15} />} aria-label="返回文件" title="返回文件" onClick={() => { if (移动端) set选择目标(项.范围); else selectWorkspaceTab(项.范围) }} /> : null}
+            {项.状态 === '等待' ? <><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="ai" size={15} />} title="不打断当前任务，将补充需求一起处理" aria-label={`引导当前任务：${项.文本}`} disabled={!发送中 || 进行中.current?.范围 !== 项.范围 || !!引导中 || !项.自动执行 || 进行中.current?.只读} loading={引导中 === 项.id} onClick={() => void 引导任务(项)} /><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="trash" size={15} />} aria-label="移除" title="移除" disabled={引导中 === 项.id} onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))} /></> : null}
+            {项.状态 === '失败' ? <><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="retry" size={15} />} aria-label="重试" title="重试" onClick={() => { 变更队列((旧) => [{ ...项, id: crypto.randomUUID(), 状态: '等待', 错误: undefined }, ...旧.filter((旧项) => 旧项.id !== 项.id)]); set队列暂停(false) }} /><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="trash" size={15} />} aria-label="移除" title="移除" onClick={() => 变更队列((旧) => 旧.filter((旧项) => 旧项.id !== 项.id))} /></> : null}</div>
           </div>)}</div>
         </section> : null}
         </div>
         <div className="assistant-drawer__composer">
           <div className="assistant-composer">
-            <Input.TextArea className="assistant-composer__input" variant="borderless" aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={移动端 ? 2 : 3} disabled={清除中} placeholder={只读对话 ? '输入问题…' : '描述修改或写作需求，也可以提问…'} title={只读对话 ? undefined : '输入 /help 查看命令'} onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
+            <Input.TextArea className="assistant-composer__input" variant="borderless" aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={移动端 ? 2 : 3} disabled={清除中} placeholder={只读对话 ? '输入问题…' : '描述修改或写作需求，也可以提问…'} title={只读对话 ? undefined : '输入 /help 查看命令'} onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey || (回车发送 && !事件.shiftKey)) { 事件.preventDefault(); void 发送() } }} />
             <div className="assistant-composer__footer">
               <div className="assistant-composer__meta">
-                <span className="assistant-composer__chip">{只读对话 ? '只读问答' : 当前PDF ? 'PDF 问答' : 当前文档 ? '修改需确认' : '可新建文件'}</span>
-                {移动端 ? null : <span className="assistant-composer__hint">Ctrl+Enter 发送</span>}
+                <span className="assistant-composer__chip">{只读对话 ? '只读问答' : 当前PDF ? 'PDF 问答' : 当前文档 ? 自动确认修改 ? '自动应用' : '修改需确认' : '可新建文件'}</span>
+                {移动端 ? null : <span className="assistant-composer__hint">{回车发送 ? 'Enter 发送 · Shift+Enter 换行' : 'Ctrl+Enter 发送'}</span>}
               </div>
               <div className="assistant-composer__actions">
-                {发送中 ? <Button className="assistant-stop" type="text" size="small" onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}
-                <Button className="assistant-send" type="primary" icon={<Icon name="send" size={15} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'}</Button>
+                {发送中 ? <Button className="assistant-stop assistant-icon-button" type="text" size="small" icon={<Icon name="close" size={15} />} aria-label="停止生成" title="停止生成" onClick={() => void 停止任务()} disabled={进行中.current?.已停止} /> : null}
+                <Button className="assistant-send assistant-icon-button" type="primary" icon={<Icon name="send" size={15} />} aria-label={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} title={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()} />
               </div>
             </div>
           </div>

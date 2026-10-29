@@ -1,8 +1,15 @@
 // 测试环境补桩：jsdom 未实现 matchMedia 与 ResizeObserver，
 // Ant Design 的响应式与尺寸监听依赖二者，缺失会导致组件渲染抛错。
 import '@testing-library/jest-dom/vitest'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+
+// 既有助手用例验证“先预览再应用”的手动链路；自动确认由新增用例显式开启。
+// 每个用例恢复手动确认并清除回车发送覆盖，避免本机浏览器记录串入测试。
+beforeEach(() => {
+  localStorage.setItem('seal.assistant.auto-confirm', '关闭')
+  localStorage.removeItem('seal.assistant.enter-send')
+})
 
 // jsdom does not implement pointer capture. Preserve its per-element state so
 // userEvent clicks can exercise the launcher without unhandled API errors.

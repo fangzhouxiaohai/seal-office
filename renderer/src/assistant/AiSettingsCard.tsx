@@ -1,15 +1,24 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { App as AntdApp, Button, Input, InputNumber, Checkbox, Select } from 'antd'
+import { App as AntdApp, Button, Input, InputNumber, Checkbox, Select, Switch } from 'antd'
 import { 桥接, type 助手配置, type 思考强度, type 思考参数模式 } from '../ipc/bridge'
 import 预设列表 from '../../../main/ai/providers.json'
 import { 思考选项, 参数选项, 思考说明 } from './reasoning'
+import Icon from '../components/Icon'
 import './assistant.css'
 
-interface Props { onSaved?: (配置: 助手配置) => void; compact?: boolean; children?: ReactNode }
+interface Props {
+  onSaved?: (配置: 助手配置) => void
+  compact?: boolean
+  children?: ReactNode
+  自动确认修改?: boolean
+  设置自动确认修改?: (开启: boolean) => void
+  回车发送?: boolean
+  设置回车发送?: (开启: boolean) => void
+}
 
 const 空配置: 助手配置 = { 名称: '', 地址: '', 模型: '', 上下文令牌: 131072, 已配置密钥: false }
 
-export default function AiSettingsCard({ onSaved, compact = false, children }: Props) {
+export default function AiSettingsCard({ onSaved, compact = false, children, 自动确认修改, 设置自动确认修改, 回车发送, 设置回车发送 }: Props) {
   const { message, modal } = AntdApp.useApp()
   const [配置, set配置] = useState<助手配置>(空配置)
   const [密钥, set密钥] = useState('')
@@ -92,6 +101,16 @@ export default function AiSettingsCard({ onSaved, compact = false, children }: P
       <span>{桌面可用 ? (配置.已配置密钥 ? '已保存访问密钥' : '未保存访问密钥') : '仅桌面版可配置'}</span>
     </div>
     <p className="assistant-settings__note">{桌面可用 ? '支持兼容聊天补全接口的模型服务。文件内容仅在您发送消息时交给所配置的服务商。' : '请在 Windows 桌面版中配置并使用智能助手。'}</p>
+    {typeof 自动确认修改 === 'boolean' && 设置自动确认修改 ? <div className="assistant-settings__preferences">
+      <div className="assistant-settings__preference">
+        <div><strong>自动确认修改</strong><span>开启后 AI 修改直接写入当前文件，可随时关闭；关闭后先预览再确认。</span></div>
+        <Switch aria-label="自动确认修改" checked={自动确认修改} onChange={设置自动确认修改} />
+      </div>
+      {typeof 回车发送 === 'boolean' && 设置回车发送 ? <div className="assistant-settings__preference">
+        <div><strong>回车键发送消息</strong><span>关闭时 Enter 换行、Ctrl+Enter 发送；开启后 Enter 发送、Shift+Enter 换行。</span></div>
+        <Switch aria-label="回车键发送消息" checked={回车发送} onChange={设置回车发送} />
+      </div> : null}
+    </div> : null}
     <div className="assistant-settings__grid">
       <label>模型服务商
         <Select aria-label="选择模型服务商" value={配置.服务商 ?? 'custom'} disabled={编辑禁用} onChange={选择服务商} options={[...预设列表.map((项) => ({ value: 项.标识, label: 项.名称 })), { value: 'custom', label: '自定义兼容服务' }]} />
@@ -121,7 +140,7 @@ export default function AiSettingsCard({ onSaved, compact = false, children }: P
         <InputNumber aria-label="上下文令牌" value={配置.上下文令牌 ?? 131072} min={8192} max={4194304} step={8192} precision={0} disabled={编辑禁用} onChange={(值) => set配置((当前) => ({ ...当前, 上下文令牌: 值 ?? undefined }))} />
       </label>
       <p className="assistant-settings__note">按模型实际上下文容量填写。达到窗口的80%时自动压缩历史记忆；支持 /compact 手动压缩。自定义留空按128K（131072令牌）处理，完整对话仍保存在本机。</p>
-      </> : <div className="assistant-settings__preset-summary">{配置.名称} · {配置.模型 || '待填写模型'}<Button type="link" onClick={() => set高级展开(true)}>高级设置</Button></div>}
+      </> : <div className="assistant-settings__preset-summary">{配置.名称} · {配置.模型 || '待填写模型'}<Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="sliders" size={15} />} aria-label="高级设置" title="高级设置" onClick={() => set高级展开(true)} /></div>}
       <label>默认思考强度
         <Select aria-label="默认思考强度" value={配置.思考强度 ?? 'high'} disabled={编辑禁用} options={思考选项} onChange={(值: 思考强度) => set配置((当前) => ({ ...当前, 思考强度: 值 }))} />
       </label>
@@ -133,6 +152,6 @@ export default function AiSettingsCard({ onSaved, compact = false, children }: P
     </div>
     {children}
     {配置.已配置密钥 ? <Checkbox checked={清除密钥} disabled={保存中} onChange={(事件) => set清除密钥(事件.target.checked)}>删除已保存密钥</Checkbox> : null}
-    <div className="assistant-settings__actions"><Button onClick={清除设置} disabled={!桌面可用 || 保存中}>清除设置</Button><Button type="primary" onClick={() => void 保存()} loading={保存中} disabled={!桌面可用 || 读取中}>保存模型设置</Button></div>
+    <div className="assistant-settings__actions"><Button className="assistant-icon-button" type="text" icon={<Icon name="trash" size={16} />} aria-label="清除设置" title="清除设置" onClick={清除设置} disabled={!桌面可用 || 保存中} /><Button className="assistant-icon-button" type="primary" icon={<Icon name="save" size={16} />} aria-label="保存模型设置" title="保存模型设置" onClick={() => void 保存()} loading={保存中} disabled={!桌面可用 || 读取中} /></div>
   </section>
 }

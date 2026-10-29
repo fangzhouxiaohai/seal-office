@@ -56,7 +56,7 @@ function 复制按钮({ 内容, 名称 }: { 内容: string; 名称: string }) {
     } catch { message.error('复制失败，请选中内容手动复制') }
     finally { set复制中(false) }
   }
-  return <Button type="text" size="small" icon={<Icon name="copy" size={14} />} aria-label={`复制${名称}`} title={`复制${名称}`} loading={复制中} onClick={() => void 复制()}>复制</Button>
+  return <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="copy" size={14} />} aria-label={`复制${名称}`} title={`复制${名称}`} loading={复制中} onClick={() => void 复制()} />
 }
 
 function 内容面板({ 类型, 名称, 原文, children }: { 类型: string; 名称: string; 原文: string; children: ReactNode }) {

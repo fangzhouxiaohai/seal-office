@@ -23,7 +23,7 @@
         "type": "word",
         "cycles": 2,
         "bytes": 1213,
-        "sha256": "fecc15af621f81a571f157c9b57ea7701c8c34de8a53f2e3cafc677bb073c57b",
+        "sha256": "c6ee15d2591cd36d59cf2b9cb3f2abb3f0e888f62b71e63dc732e1f988fd2024",
         "unicodeAndResourcesPreserved": true,
         "legacyAliasReadable": true
       },
@@ -32,7 +32,7 @@
         "type": "table",
         "cycles": 2,
         "bytes": 1670,
-        "sha256": "11e383f056e1fea135e6dcc065c24bfc162621fc74e770051b60cc83f9492e27",
+        "sha256": "f81904713bf8fdb2be30d9000a81bf8c4a7490cee67c1233155041e8e4885779",
         "unicodeAndResourcesPreserved": true,
         "legacyAliasReadable": true
       },
@@ -41,7 +41,7 @@
         "type": "ppt",
         "cycles": 2,
         "bytes": 1202,
-        "sha256": "6923787fc835d9cd6a04ff49fb2b82bc4a5a43fb8802af5654fe15d8c5405a7f",
+        "sha256": "3aeeb07243ee8e21df809161c6ac95831f3d1371f47cc6157f693e4d9d9c6c8e",
         "unicodeAndResourcesPreserved": true,
         "legacyAliasReadable": true
       },
@@ -49,8 +49,8 @@
         "extension": "spdf",
         "type": "pdf",
         "cycles": 2,
-        "bytes": 51337,
-        "sha256": "a964ceeab2259ca002a360527dff82d1dde2243734a1105f32aa63c7fa2dc4ac",
+        "bytes": 51348,
+        "sha256": "fb570a5da671e3a3d89c7695d45711f8e5e8580f69376b067204a5ec2ef8e237",
         "unicodeAndResourcesPreserved": true,
         "legacyAliasReadable": false
       }

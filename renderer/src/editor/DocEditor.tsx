@@ -8,6 +8,7 @@ import { clipboardTextHtml, copyEditorSelection, readEditorClipboard } from './c
 import { insertDocumentNote } from './notes'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
+import { 可直开保存风险警告 } from '../fileWarnings'
 import { htmlToDocxModel, 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { 桥接 } from '../ipc/bridge'
 import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
@@ -292,9 +293,10 @@ const DocEditor = () => {
   }
 
   useEffect(() => {
-    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示导入警告.current.has(当前文档.id)) {
-      已提示导入警告.current.add(当前文档.id)
-      展示导入警告(当前文档.警告)
+    const 提示警告 = (当前文档?.警告 ?? []).filter((项) => !可直开保存风险警告.has(项))
+    if (提示警告.length && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示导入警告.current.has(当前文档!.id)) {
+      已提示导入警告.current.add(当前文档!.id)
+      展示导入警告(提示警告)
     }
   }, [当前文档?.id, 当前文档?.警告])
 

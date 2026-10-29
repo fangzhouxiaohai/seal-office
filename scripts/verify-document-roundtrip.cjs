@@ -51,7 +51,8 @@ app.whenReady().then(async () => {
     ]
     if (sample) {
       const imported = await 读取docx(fs.readFileSync(sample))
-      assert.deepEqual(imported.警告, [])
+      // 目录/超链接/页码引用域允许直接打开，缓存结果仍会保留；保存副本只在编辑器内提示风险。
+      assert.deepEqual(imported.警告.filter(项 => 项 !== '域代码未完整导入，已保留可读取的缓存结果'), [])
       cases.push({ name:'user-sample',html:imported.html },{ name:'user-edited',html:imported.html,edit:true })
     }
     for (const item of cases) {
@@ -65,7 +66,7 @@ app.whenReady().then(async () => {
         const bytes = await 生成docx(model)
         fs.writeFileSync(path.join(output,`${item.name}-${cycle}.docx`),bytes)
         const reopened = await 读取docx(bytes)
-        assert.deepEqual(reopened.警告, [], item.name)
+        assert.deepEqual(reopened.警告.filter(项 => 项 !== '域代码未完整导入，已保留可读取的缓存结果'), [], item.name)
         const html = item.part ? reopened.页面设置[item.part+'Html'] : reopened.html
         await win.webContents.executeJavaScript(`renderDoc(${JSON.stringify(html)},${JSON.stringify(item.part)},${JSON.stringify(item.width)},${JSON.stringify(item.settings)})`)
         const after = await win.webContents.executeJavaScript('inspectDoc()')

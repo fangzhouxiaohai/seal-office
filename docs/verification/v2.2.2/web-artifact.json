@@ -1,29 +1,14 @@
 {
   "version": "2.2.2",
   "artifact": "seal-office-2.2.2-web.zip",
-  "bytes": 38350780,
-  "sha256": "00269ebcf10ad10b292b03ea720781997c75fe3adda4b69c3ed0b5ac78e79101",
+  "bytes": 38351888,
+  "sha256": "b41489fa4c46e803cab4fcfde271bed1a70db7cf7f62ee3a5405e031cbb14df2",
   "fileCount": 38,
   "files": [
     {
-      "path": "assets/index-65aafa78.js",
-      "bytes": 12338270,
-      "sha256": "360f584537f1f659190195e489af2d524d106c06356d52fd5dec0a1965749ae2"
-    },
-    {
-      "path": "assets/index-7d68ab41.js",
-      "bytes": 17413,
-      "sha256": "85cb61679c7db41b9a0730be613969f46a4c0a833a547474bb9f9ee448bb85e6"
-    },
-    {
-      "path": "assets/index-8ad5c5e2.js",
+      "path": "assets/index-32d48bbb.js",
       "bytes": 9441,
-      "sha256": "7048790c500a50bfece10b914c8b97cd11581799c62adb2dabd2994f10fc4b53"
-    },
-    {
-      "path": "assets/index-8f2dc20d.css",
-      "bytes": 226699,
-      "sha256": "8f2dc20d702d65e5e60aab888bbb67bb66015086d680c327d8ce9e7406fc56fa"
+      "sha256": "7f937987bb47c5c555376a7d2e54bf66267584ac08f4e94e3fe9caca600e7d29"
     },
     {
       "path": "assets/index-c166823d.js",
@@ -31,39 +16,54 @@
       "sha256": "b9a0b0a4f32e7cb6be3fa556d8b2be216a5e5089d4592026edc72d5e245e456f"
     },
     {
+      "path": "assets/index-dccf75db.js",
+      "bytes": 12343894,
+      "sha256": "e945ab530e450d6d1e847c0380e89e0bb8ef421fe04b18c6ac95aa2fd9edb385"
+    },
+    {
+      "path": "assets/index-f438c2b0.css",
+      "bytes": 228197,
+      "sha256": "f438c2b0f0af94ec6c649dcd57aa42763b0c3a3af284c828cfcb905bf2a276e5"
+    },
+    {
+      "path": "assets/index-f46f0871.js",
+      "bytes": 17413,
+      "sha256": "eaa4fc677b26b7f0055c37a7656f5d665eff4de4639ca8102b8b9f5f8d368671"
+    },
+    {
       "path": "assets/logo-da820085.png",
       "bytes": 16518,
       "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
     },
     {
-      "path": "assets/ofd.min-b18e04f0.js",
+      "path": "assets/ofd.min-6df4bade.js",
       "bytes": 996571,
-      "sha256": "6adebd64e21e99a54447648542889110aeefc991111d903c6acdda9a4f7e5683"
+      "sha256": "71e2e865957dc66173622db551ee48936c74cbe982130b57dde235734ac5aa21"
     },
     {
-      "path": "assets/pdf-78b88f7a.js",
+      "path": "assets/pdf-1846e76b.js",
       "bytes": 495926,
-      "sha256": "1b940735c2a751f1fab4bf2403814a4f5fc4cc2b8a25a63d03862f8b325c6802"
+      "sha256": "692924440988442ba4ead0f721b9927a3a5ad04adcb5d006afe6424a9a3bc390"
     },
     {
-      "path": "assets/pdfmake-f0d4ed9f.js",
+      "path": "assets/pdfmake-04907c27.js",
       "bytes": 1581462,
-      "sha256": "eede943707d394cd858296a61277dd18e8e582dd0cb1914e47f043980716f9de"
+      "sha256": "46e7219d93a85c7d38355489e1829e02d25b66a1869e0f705057f88d7f0f40f7"
     },
     {
-      "path": "assets/pptxgen.es-bda9d28c.js",
+      "path": "assets/pptxgen.es-7b7d7b13.js",
       "bytes": 288186,
-      "sha256": "20cb01c04898fd587c1b55c703248681e7fe3514ffd5e066cd8c7306b7019b91"
+      "sha256": "d730dcd75bbf41b18e09108699728c1e16d8d5837ccecd60fe536f2c9844243d"
     },
     {
-      "path": "assets/PresentationMarketPage-dcc19e0c.js",
+      "path": "assets/PresentationMarketPage-cbbc0d03.js",
       "bytes": 1321977,
-      "sha256": "3aa6fbbaa42f3dbc61d08e1a75269cc442943a5de73efad9ed840c808126d9da"
+      "sha256": "3799dd1dd070a6035d8f2d0a9976ca3a763e09295653e70f6b88daa00576b0d3"
     },
     {
-      "path": "assets/TemplateLibrary-ca298802.js",
+      "path": "assets/TemplateLibrary-d4a0f542.js",
       "bytes": 6039,
-      "sha256": "1fbb86dee41785d1cb372c45b736da50a394c69d8d11a5449fcfd65c8347f841"
+      "sha256": "8eb8e194fe5cc148599464993fe6a3f6952c31f7526ef88dfe30b49142617e58"
     },
     {
       "path": "assets/TemplateLibrary-d5e988b9.css",
@@ -71,14 +71,14 @@
       "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
     },
     {
-      "path": "assets/templates-9e557556.js",
+      "path": "assets/templates-e5b40d2c.js",
       "bytes": 1303432,
-      "sha256": "3ad82ba337fbdd061cd3d31ca44865932bda08cc06f3b487eba4e6b718c0f81e"
+      "sha256": "989aefeaac7d8e5b62f9fda317cb6ae5f4e0eff9d75a5b8f6de236ee337a913d"
     },
     {
       "path": "build-info.json",
       "bytes": 178,
-      "sha256": "f5c840a0688f07012dcd73301541d88ac138900a8bb8fcbae38e6ac311b6297f"
+      "sha256": "0b7969e3f7c9ace7b28bc7405cbfe3f1f3798660cf5d3f44a82e9182de1c0050"
     },
     {
       "path": "compatibility.js",
@@ -128,7 +128,7 @@
     {
       "path": "index.html",
       "bytes": 1224,
-      "sha256": "3901b7c807486db3ffad28a50debb42970c6e05f03d0f4522321c614ed3db8e5"
+      "sha256": "c5c5c3b939f97230cd544512b7b204de41d87911f89e9fc23643e07b3860076c"
     },
     {
       "path": "licenses/bessel-LICENSE.txt",

@@ -180,7 +180,6 @@
 .assistant-drawer__layout--settings .assistant-queue,
 .assistant-drawer__layout--settings .assistant-drawer__composer,
 .assistant-drawer__layout--settings .assistant-drawer__background-task { display: none; }
-.assistant-settings--compact .assistant-settings__actions { position: sticky; bottom: 0; background: var(--bg-card); padding-top: var(--space-2); }
 .assistant-settings__heading { display: flex; justify-content: space-between; gap: var(--space-3); align-items: baseline; }
 .assistant-settings__heading strong { font-size: 14px; }
 .assistant-settings__heading span, .assistant-settings__note { color: var(--text-2); font-size: 12px; line-height: 1.55; }
@@ -330,3 +329,26 @@
 
 .assistant-composer__input.ant-input::placeholder { color: var(--text-2); opacity: .8; }
 .assistant-composer__input.ant-input::-webkit-input-placeholder { color: var(--text-2); opacity: .8; }
+
+.assistant-icon-button.ant-btn-primary { color: #fff; background: var(--brand); }
+.assistant-icon-button.ant-btn-primary:hover { color: #fff; background: var(--brand-hover); }
+.assistant-icon-button.ant-btn-primary:disabled { color: var(--text-2); background: var(--bg-hover); border-color: transparent; }
+.assistant-send.ant-btn { width: 34px; min-width: 34px; height: 34px; padding: 0; border-radius: 9px; }
+.assistant-stop.ant-btn { width: 30px; min-width: 30px; height: 30px; padding: 0; }
+.assistant-preview__actions .assistant-icon-button { width: 34px; min-width: 34px; height: 34px; }
+.assistant-queue__actions .assistant-icon-button { width: 30px; min-width: 30px; height: 30px; }
+.assistant-settings__actions .assistant-icon-button { width: 36px; min-width: 36px; height: 36px; }
+.assistant-settings__preferences { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-app); }
+.assistant-settings__preference { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.assistant-settings__preference > div { display: grid; gap: 4px; min-width: 0; }
+.assistant-settings__preference strong { color: var(--text-1); font-size: 13px; font-weight: 600; }
+.assistant-settings__preference span { color: var(--text-2); font-size: 12px; line-height: 1.5; }
+
+
+
+
+.assistant-settings__preference .ant-switch { height: 28px; min-height: 28px; }
+.assistant-settings__preference .ant-switch .ant-switch-handle { top: 5px; width: 18px; height: 18px; }
+.assistant-settings__preference .ant-switch.ant-switch-checked .ant-switch-handle { inset-inline-start: calc(100% - 23px); }
+.assistant-settings__grid .ant-select .ant-select-selector { padding-inline: 12px; }
+.assistant-settings__grid .ant-input { min-height: 28px; }

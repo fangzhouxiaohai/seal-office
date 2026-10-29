@@ -132,6 +132,17 @@ describe('编辑器容器', () => {
     expect(screen.getAllByText('图片尚未导入').length).toBeGreaterThan(0)
   })
 
+  it('目录域缓存直接打开时不弹导入警告，保存风险仍随文档保留', async () => {
+    const 创建入口 = () => {
+      const { createDoc } = useAppStore()
+      return <button onClick={() => createDoc('word', '<p>目录正文</p>', { 路径: 'E:\\临时文件\\目录手册.docx', 警告: ['域代码未完整导入，已保留可读取的缓存结果'] })}>打开目录域文档</button>
+    }
+    render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开目录域文档' }))
+    await waitFor(() => expect(screen.queryByText('文档内容可能未完整导入')).toBeNull())
+  })
+
+
   it('关闭已修改的标签前要求确认，取消后保留文档', async () => {
     const { container } = 渲染带创建入口的编辑器()
     await userEvent.click(screen.getByRole('button', { name: '打开测试文档' }))

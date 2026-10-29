@@ -1,8 +1,8 @@
 {
   "passed": true,
   "package": "E:\\seal-office\\release\\v2.2.2\\seal-office-2.2.2-microsoft-store-x64.msix",
-  "bytes": 770040851,
-  "sha256": "aa7061696a6922677297d7dcc50827151500338f4c00993957d9d8169dbcad94",
+  "bytes": 770035553,
+  "sha256": "16bf6527ef10f50bb4245e31ded93198cb833ff2c9c134f7938b550cd9319ad9",
   "identity": {
     "Name": "45C56666.seal-office",
     "Publisher": "CN=F6431C2A-EA55-468A-89D8-890511FCADF7",
@@ -13,7 +13,7 @@
   "crcPassed": true,
   "blockMapFilesVerified": 19585,
   "blockMapSha256Passed": true,
-  "appAsarSha256": "84cbbb82420bd5ca5c6e28362ff9ec20b18e94a96b8a5a89c497eba19f5151cd",
+  "appAsarSha256": "eb2c9b587df8e2d51017554c6d2dea86bb6401cb2b42489bf6e5c98f50c293b2",
   "asarMatchesFreshWindowsBuild": true,
   "associatedExtensions": [
     ".csv",
@@ -86,10 +86,10 @@
     "resources/shell-new/blank.ppt": "528b3d440b61e99292838bc9099bd7402248c732aa3e336178cba367ff22ac38",
     "resources/shell-new/blank.pptx": "9d5fbf6f6f7f00e8b8e259ee06a2c1d66da711d622a9e8a8961cea3b2d6ea4d1",
     "resources/shell-new/blank.pdf": "cbd51f459e704a63af46fde84b71988c58c4431107db6079719dbf65a66e02a7",
-    "resources/shell-new/blank.sldoc": "1029a28beb941b6ef9d8e7891cf966a4288cb1dc4998499c34ed6cf332eb3c31",
-    "resources/shell-new/blank.slxls": "db6a69387863d2be31422af70f762a021c490dc48c1e6f590246c613ba40ed2f",
-    "resources/shell-new/blank.slppt": "5a3959d9f14f67c61df96b8c0cba27192c3fe63f91854f84981a2a506560305b",
-    "resources/shell-new/blank.spdf": "b5608a91613140c1a893daff4e4433fd54a00f78c4988f62693002c25933d40c"
+    "resources/shell-new/blank.sldoc": "02901d10b387d03132cc46ee7f8bf5e07e5b0f4a415c7590c261523e8825a5e5",
+    "resources/shell-new/blank.slxls": "200c91daddd3d877e24eb7e2be0fcf36ca405708a60afc54add5007bd4bba6b9",
+    "resources/shell-new/blank.slppt": "08b2f99aee1908cc0a7f878e7f7b1a8a42459e526b9b890d0be5b264307a45e1",
+    "resources/shell-new/blank.spdf": "7c778a672346f67fcd44dd23f780fea6bd51d05c32802f1770ac0e994bdceba9"
   },
   "signed": false,
   "installationTest": "Not installed; this is an unsigned Store-upload package"
