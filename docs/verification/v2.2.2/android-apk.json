@@ -1,0 +1,166 @@
+{
+  "inspectedAt": "2026-10-29T15:34:56.223Z",
+  "apkPath": "E:\\seal-office\\release\\v2.2.2\\seal-office-2.2.2-android.apk",
+  "sha256": "9e729fa8693f80f4245e58b6be306610701970b43d5fe9e37ec39fd6673ce425",
+  "bytes": 71506675,
+  "appId": "__UNI__B52B65B",
+  "version": {
+    "name": "2.2.2",
+    "code": "20202"
+  },
+  "build": {
+    "platform": "android",
+    "desktopVersion": "2.2.2",
+    "builtAt": "2026-10-29T14:05:49.575Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "embeddedEditor": {
+    "present": true,
+    "sha256": "40ad2b1ce2a75a240744d265c0f9b5eca139b417242bd087c9728c4a1b31fe54",
+    "matchesCurrentSourceBuild": true
+  },
+  "duplicatedJavaScriptBytes": 0,
+  "sdkMetadata": {
+    "packageName": "com.sealoffice.mobile",
+    "versionCode": "20202",
+    "versionName": "2.2.2",
+    "minSdk": "28",
+    "targetSdk": "36",
+    "abi": "'arm64-v8a' 'armeabi-v7a'",
+    "debuggable": false,
+    "permissions": [
+      "android.permission.INTERNET",
+      "android.permission.READ_MEDIA_IMAGES",
+      "android.permission.READ_MEDIA_VIDEO",
+      "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "com.sealoffice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+    ],
+    "zipAligned": true
+  },
+  "signature": {
+    "verified": true,
+    "v1": false,
+    "v2": false,
+    "v3": true,
+    "certificateDn": "CN=kIyu4gRK%2Fl%2Flmedf2XDlF%2BwZFI3js2VRYqx5Tdf8c7NABMKBL8pK0V8Ls6Nb%2B8DbdzCRIKvZ0DPMNJAPOjX4mg%3D%3D, OU=Android, O=Android, L=, ST=, C=CN",
+    "certificateSha256": "53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad"
+  },
+  "device": null,
+  "nativeLibraries16KiB": [
+    {
+      "name": "lib/arm64-v8a/libbreakpad-core.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libcronet.141.0.7340.3.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libgifimage.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libimagepipeline.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libnative-filters.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libnative-imagetranscoder.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libpl_droidsonroids_gif.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libstatic-webp.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libuniappx.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    },
+    {
+      "name": "lib/arm64-v8a/libuts-runtime.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible": true
+    }
+  ],
+  "embeddedPdfFonts": [
+    {
+      "name": "NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "name": "NotoSerifCJKsc-Regular.otf",
+      "bytes": 24543080,
+      "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+    },
+    {
+      "name": "OFL.txt",
+      "bytes": 4387,
+      "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+    },
+    {
+      "name": "NotoSerif-LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    }
+  ]
+}
