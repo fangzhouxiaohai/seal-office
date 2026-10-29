@@ -2,6 +2,7 @@
 // 缺少 <table> 标记时返回 null；合法空工作表仍可打开。
 import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetCell, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
 import { 展开区域, 生成地址, 解析地址 } from './address'
+import { 压缩列宽 } from './columnLayout'
 
 export interface Xlsx工作表元数据 {
   日期系统1904?: boolean
@@ -14,6 +15,10 @@ export interface Xlsx工作表元数据 {
   合并区域?: string[]
   列宽?: Record<number, number>
   行高?: Record<number, number>
+  列布局?: Sheet['列布局']
+  默认列宽?: number
+  默认行高?: number
+  视图?: Sheet['视图']
   冻结?: { 行: number; 列: number }
   筛选?: { 列: number; 值: string }
   保护?: '本机' | '外部'
@@ -52,13 +57,30 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     ...(元数据?.合并区域 ?? []).flatMap((区域) => 区域.split(':')),
   ].map(解析地址).filter((位置): 位置 is { 行: number; 列: number } => 位置 !== null)
   const 元数据最大行 = Math.max(-1, ...元数据地址.map((位置) => 位置.行), ...Object.keys(元数据?.行高 ?? {}).map(Number))
-  const 元数据最大列 = Math.max(-1, ...元数据地址.map((位置) => 位置.列), ...Object.keys(元数据?.列宽 ?? {}).map(Number), 元数据?.筛选?.列 ?? -1)
+  // 整列宽度是布局默认值，不代表最后一列存在数据；真实内容和合并仍决定边界。
+  const 元数据最大列 = Math.max(-1, ...元数据地址.map((位置) => 位置.列), 元数据?.筛选?.列 ?? -1)
   const 图片最大行 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.行))
   const 图片最大列 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.列))
   // 在数据区外留出编辑余量，工作表尺寸必须覆盖全部已导入数据与布局。
   const 行数 = Math.max(行值列表.length + 5, 元数据最大行 + 1, 图片最大行 + 1, 10)
   const 列数 = Math.max(最大列数 + 3, 元数据最大列 + 1, 图片最大列 + 1, 6)
   const 工作表: Sheet = { ...创建工作表(名称, 行数, 列数), 页面设置: { ...默认页面设置, ...页面 } }
+  if (元数据?.列布局) 工作表.列布局 = 元数据.列布局.map(项 => ({ ...项, ...(项.格式 ? { 格式: { ...项.格式 } } : {}) }))
+  else if (元数据?.列宽 && Object.keys(元数据.列宽).length) 工作表.列布局 = 压缩列宽(元数据.列宽)
+  if (元数据?.视图) 工作表.视图 = { ...元数据.视图 }
+  if (Number.isFinite(元数据?.默认列宽) && 元数据!.默认列宽! > 0) {
+    工作表.默认列宽 = 元数据!.默认列宽
+    工作表.列宽.fill(元数据!.默认列宽!)
+  }
+  if (Number.isFinite(元数据?.默认行高) && 元数据!.默认行高! > 0) {
+    工作表.默认行高 = 元数据!.默认行高
+    工作表.行高.fill(元数据!.默认行高!)
+  }
+  for (const 布局 of 工作表.列布局 ?? []) {
+    if (Number.isFinite(布局.宽度) && 布局.宽度! > 0) {
+      for (let 列 = Math.max(0, 布局.起列); 列 <= Math.min(列数 - 1, 布局.止列); 列++) 工作表.列宽[列] = 布局.宽度!
+    }
+  }
   if (元数据?.日期系统1904 === true) 工作表.日期系统1904 = true
   if (元数据?.公式兼容模式) 工作表.公式兼容模式 = 元数据.公式兼容模式
   const CSV标记 = 表格.getAttribute('data-seal-csv')

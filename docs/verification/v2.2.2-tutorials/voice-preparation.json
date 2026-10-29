@@ -1,0 +1,271 @@
+{
+  "版本": "2.2.2",
+  "校验通过": true,
+  "片段数": 31,
+  "配音参数": {
+    "name": "zh-CN-XiaoxiaoNeural",
+    "rate": "+5%",
+    "pitch": "+4Hz"
+  },
+  "原样音保持原字节": true,
+  "原样音校验值": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+  "文案和全部音频校验值匹配": true,
+  "配音总秒数": {
+    "pc": 147.36,
+    "android": 156.672
+  },
+  "运行环境": {
+    "Python": "3.12.5",
+    "edge_tts": "7.3.1"
+  },
+  "片段": [
+    {
+      "platform": "pc",
+      "id": "new-word",
+      "text": "先从首页点击新建，选择文字文档。下面从一份空白文档开始，完成输入、保存和重新打开。",
+      "file": "pc-new-word.mp3",
+      "seconds": 9.072,
+      "sha256": "bdc97b60c14dc0cb864e6fddce126bd9bd705fdc7cb787f6992e562a68c0dbcb"
+    },
+    {
+      "platform": "pc",
+      "id": "word-title",
+      "text": "点击正文，输入每周工作计划，按回车开始下一段。输入位置会显示紫色轮廓，鼠标点击也有圆环提示。",
+      "file": "pc-word-title.mp3",
+      "seconds": 10.08,
+      "sha256": "36c20a3156538beee395a2b7587feaa8fa2e047981a853042964ba8cef5f46d6"
+    },
+    {
+      "platform": "pc",
+      "id": "word-body",
+      "text": "继续输入本周目标和具体安排。文字会随着输入逐字出现；需要修改时，把光标放回正文即可继续编辑。",
+      "file": "pc-word-body.mp3",
+      "seconds": 10.104,
+      "sha256": "322312ef954e163c6652d12f0c9604dfbcd0611fb55cadf142eed37cc97bfb74"
+    },
+    {
+      "platform": "pc",
+      "id": "word-save",
+      "text": "点击保存，使用海豹文字格式保存当前内容。文件标签会显示 S L D O C 后缀，保存完成后修改标记消失。",
+      "file": "pc-word-save.mp3",
+      "seconds": 10.752,
+      "sha256": "4f892877e8397e18cd4a8cd094098acbe480fe6df6cd3a9877c3a1162c7f91ed"
+    },
+    {
+      "platform": "pc",
+      "id": "word-reopen",
+      "text": "关闭已经保存的文件，再从首页打开同一份文档。标题和正文仍然保留，可以继续编辑。",
+      "file": "pc-word-reopen.mp3",
+      "seconds": 8.232,
+      "sha256": "ddff2b967af73a5ac022bf906e72cda71c8ce26840bb471df84f6342e7de37d1"
+    },
+    {
+      "platform": "pc",
+      "id": "sheet-open",
+      "text": "回到首页，点击打开，选择准备好的项目预算表。先看项目、数量、单价和预算四列数据。",
+      "file": "pc-sheet-open.mp3",
+      "seconds": 8.856,
+      "sha256": "11671e6715d1ada13ca47a408f44a19431654a6b5564039e381d859feaea1728"
+    },
+    {
+      "platform": "pc",
+      "id": "sheet-formula",
+      "text": "在名称框输入 D 五，选中合计单元格。点击公式栏，输入等于 S U M，括号内填写 D 二冒号 D 四，按回车，合计得到两千三百六十。",
+      "file": "pc-sheet-formula.mp3",
+      "seconds": 12.768,
+      "sha256": "7f5251f7f4a6e526c7a9dc487c90a606494f99d5e2d1c61cda7b8ae2db8a3ba3"
+    },
+    {
+      "platform": "pc",
+      "id": "sheet-save",
+      "text": "点击自适应列宽，按当前内容调整工作表。再点击另存为，把可编辑的预算表保存为海豹表格格式。",
+      "file": "pc-sheet-save.mp3",
+      "seconds": 9.696,
+      "sha256": "2116e02510e6a7cfb75900f5a4c631d7378b9125bddd08dc872fff40b8d35c5a"
+    },
+    {
+      "platform": "pc",
+      "id": "template-open",
+      "text": "在首页进入演示模板市场，选择精选推荐。点击模板封面查看完整页面，确认主题配图和内容布局。",
+      "file": "pc-template-open.mp3",
+      "seconds": 10.008,
+      "sha256": "aa016de1e2494ebc26a0bdc95a39e77b6ed7edf3edfa92bc4cc5680e3e5df4b4"
+    },
+    {
+      "platform": "pc",
+      "id": "template-use",
+      "text": "点击使用并编辑副本，进入演示编辑器。点击左侧第二页查看内容，各页保留独立的文本、图形和图片。",
+      "file": "pc-template-use.mp3",
+      "seconds": 9.888,
+      "sha256": "69dc7474867cce12aa1e96e7f498a1d041016f6d7380724651aa915c0962d81e"
+    },
+    {
+      "platform": "pc",
+      "id": "mindmap-create",
+      "text": "回到首页打开脑图，点击新建脑图项目，输入新品发布计划，再点击创建项目。每个项目分别保存。",
+      "file": "pc-mindmap-create.mp3",
+      "seconds": 9.456,
+      "sha256": "d7b3852f054f328cc0e323bab216b49ea0ffc655f220e25df3af988277f201cd"
+    },
+    {
+      "platform": "pc",
+      "id": "mindmap-edit",
+      "text": "在节点编辑区修改主题文字，再添加一个分支，填写产品资料。画布和本机保存状态会随实际编辑更新。",
+      "file": "pc-mindmap-edit.mp3",
+      "seconds": 10.152,
+      "sha256": "0c473de84b1f5bdbc30e1ec4f3530d673fd62f98a1fab8d61a25f4b5f2d3e6f5"
+    },
+    {
+      "platform": "pc",
+      "id": "mindmap-list",
+      "text": "返回项目列表，再创建团队工作分解。返回后可以看到两份独立项目，点击任一封面就能继续编辑。",
+      "file": "pc-mindmap-list.mp3",
+      "seconds": 9.504,
+      "sha256": "b00e335ab9726392a556e387e820ac6f36eb0a2696ccd1d5518884795342d1e1"
+    },
+    {
+      "platform": "pc",
+      "id": "flow",
+      "text": "流程图同样从项目列表开始。创建资料审核流程，进入画布后增加节点，按业务步骤整理流程。",
+      "file": "pc-flow.mp3",
+      "seconds": 9.36,
+      "sha256": "4617e975b5f1fcd1c011a030d6be786fcf440f21f040dab0e493ddc1c732112e"
+    },
+    {
+      "platform": "pc",
+      "id": "outro",
+      "text": "以上是海豹办公二点二点二的实际操作演示。可以访问网页版，或在项目发行页下载适合设备的版本。",
+      "file": "pc-outro.mp3",
+      "seconds": 9.432,
+      "sha256": "e0fdef606ed76485faf099c283f841478ef54086d3390bba0ca00869e6ae9be3"
+    },
+    {
+      "platform": "android",
+      "id": "navigation",
+      "text": "移动端底部是首页、云盘、服务、模板和我的五个功能页。点击服务，在搜索框输入脑图，就能找到对应入口。",
+      "file": "android-navigation.mp3",
+      "seconds": 10.68,
+      "sha256": "46a1d528ddb66d322438731a94f1dd842ce9d2191b7f4df7f91ed3d67c03fcbd"
+    },
+    {
+      "platform": "android",
+      "id": "new-word",
+      "text": "返回首页，进入服务页，选择文字。打开后直接输入标题和正文，当前输入区会显示紫色轮廓。",
+      "file": "android-new-word.mp3",
+      "seconds": 9.384,
+      "sha256": "df541db522552f02e7d8453a727788947b0024f70df79b80b68a2b69482cc9ba"
+    },
+    {
+      "platform": "android",
+      "id": "word-body",
+      "text": "先写每周工作计划，再逐段填写资料整理、预算核对和交付安排。这里展示的输入都实际写入文档。",
+      "file": "android-word-body.mp3",
+      "seconds": 9.648,
+      "sha256": "49a2650c74baa0e4719264a7979de928250aa2136bd72a6fb2adbec8d0bb8474"
+    },
+    {
+      "platform": "android",
+      "id": "word-save",
+      "text": "点击保存，将这份计划保存为海豹文字格式。保存后仍可继续编辑，文件内容和当前格式一起保留。",
+      "file": "android-word-save.mp3",
+      "seconds": 9.96,
+      "sha256": "b1162c7ef0ca165087147942f7a80ae4aadbbb264d1e52ce61c9006f9ab860d6"
+    },
+    {
+      "platform": "android",
+      "id": "reading-enter",
+      "text": "打开准备好的长文档，点击全屏阅读。进入后顶部和底部操作栏默认隐藏，页面空间留给正文。",
+      "file": "android-reading-enter.mp3",
+      "seconds": 9.168,
+      "sha256": "15524f93b1ef2a16db813d7a1124219a9e6f0293a7d3849382715978a3e39200"
+    },
+    {
+      "platform": "android",
+      "id": "reading-swipe",
+      "text": "在正文中向左滑动，切换到下一页；向右滑动可以返回上一页。紫色轮廓标出当前阅读区域。",
+      "file": "android-reading-swipe.mp3",
+      "seconds": 8.928,
+      "sha256": "4dc2906701471b5c4fd9b966109c935f1997ea34dd29a3bcb460595cb59ce531"
+    },
+    {
+      "platform": "android",
+      "id": "reading-controls",
+      "text": "双击页面，唤出顶部和底部工具栏。停止操作约三秒后，工具栏自动收起，继续专心阅读。",
+      "file": "android-reading-controls.mp3",
+      "seconds": 8.856,
+      "sha256": "7835636152b7b1e4cf9604b6fb5394cb944d4f9a76461ace0b8dfce1091311d6"
+    },
+    {
+      "platform": "android",
+      "id": "reading-zoom",
+      "text": "双指向外展开，放大阅读内容。需要退出时，再双击页面唤出工具栏，点击返回，回到原文档。",
+      "file": "android-reading-zoom.mp3",
+      "seconds": 9.432,
+      "sha256": "b80b0388132c093e5fd9d59b45e236dd7537b3ee2b35876a086e262240a22ccb"
+    },
+    {
+      "platform": "android",
+      "id": "assistant-drag",
+      "text": "智能助手现在使用海豹办公标志。按住圆形悬浮球拖动，松手后停在新位置，再点击打开大窗口。",
+      "file": "android-assistant-drag.mp3",
+      "seconds": 9.696,
+      "sha256": "1043e29b1f08051574def7b59dd5622feb3fc0bc0d0b335cd0e5db914e3c92bf"
+    },
+    {
+      "platform": "android",
+      "id": "assistant-modes",
+      "text": "目标文件默认是当前文档。对话模式只回答问题；工作模式可以提出文档修改，先预览确认。使用生成式功能前，需要登录已验证的账号。",
+      "file": "android-assistant-modes.mp3",
+      "seconds": 13.08,
+      "sha256": "7dacbee86ca9c0b6f7d71795445012be3c30efbad368ef87e03b213389b57415"
+    },
+    {
+      "platform": "android",
+      "id": "sheet-open",
+      "text": "先关闭助手，回到首页，导入项目预算表。文字和表格可以同时保留在已打开的文件标签中。",
+      "file": "android-sheet-open.mp3",
+      "seconds": 8.808,
+      "sha256": "f6536b0da89dd72bf7ee03a5f9b8b083fa1947cc333fcdedb1ec48544f19eba8"
+    },
+    {
+      "platform": "android",
+      "id": "sheet-formula",
+      "text": "选中 D 五，在公式栏输入求和公式，按回车。合计显示两千三百六十，接着可以保存或继续编辑。",
+      "file": "android-sheet-formula.mp3",
+      "seconds": 9.72,
+      "sha256": "6ffacdc1c539c21db462a138de1159a4c6af3edf86ec5d745aeca10a74d03953"
+    },
+    {
+      "platform": "android",
+      "id": "assistant-target",
+      "text": "再次打开助手，展开目标文件列表。选择工作计划，切换到对话模式，就能围绕指定的文件提问。",
+      "file": "android-assistant-target.mp3",
+      "seconds": 9.096,
+      "sha256": "880593fafda3bf6f5a3ac5f128da5c005a8ea8633b2cec9a5292b8eb14b54380"
+    },
+    {
+      "platform": "android",
+      "id": "templates",
+      "text": "回到模板页，点击一套模板预览，再使用并编辑副本。主题配图和完整页面会一起进入演示编辑器。",
+      "file": "android-templates.mp3",
+      "seconds": 9.648,
+      "sha256": "d6b0c5172c3db93538bd3dc272721cfe4e818ba6d063dea84ef115f079cb2c39"
+    },
+    {
+      "platform": "android",
+      "id": "projects",
+      "text": "从服务页进入脑图，分别创建新品发布计划和团队工作分解。返回列表，两份项目可以独立打开和维护。",
+      "file": "android-projects.mp3",
+      "seconds": 10.032,
+      "sha256": "69cca3bf79a1d9b44355c9bac8e5d4ee660e36b8c617a52b5f5a314824c617b6"
+    },
+    {
+      "platform": "android",
+      "id": "outro",
+      "text": "这就是海豹办公移动端的操作方法。本片使用当前生产构建的移动布局演示，安装包和源码可在项目发行页获取。",
+      "file": "android-outro.mp3",
+      "seconds": 10.536,
+      "sha256": "046761c1e6092ced1a3940f375a6f0881a4c757aca62b378fc366990d0d09c12"
+    }
+  ]
+}

@@ -674,11 +674,24 @@ export default function AiAssistant() {
     finally { if (组件有效.current) set清除中(false) }
   }
 
+  const 标题栏 = (
+    <span className="assistant-titlebar">
+      <span className="assistant-titlebar__brand">
+        <SealLogo size={24} />
+        <span className="assistant-titlebar__name">智能助手</span>
+      </span>
+      <span className="assistant-titlebar__actions">
+        <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="plus" size={16} />} aria-label="新对话" title="开始新对话" disabled={交互禁用} loading={清除中} onClick={() => void 新对话()} />
+        <Button className={`assistant-icon-button${配置展开 ? ' is-active' : ''}`} type="text" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={16} />} aria-label={配置展开 ? '收起模型设置' : '模型设置'} title={配置展开 ? '收起模型设置' : '模型设置'} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)} />
+        <Button className="assistant-icon-button assistant-collapse" type="text" size="small" icon={<Icon name="close" size={16} />} aria-label="收起智能助手" title="收起智能助手" onClick={() => set打开(false)} />
+      </span>
+    </span>
+  )
+
   return <>
     {放映中 ? null : <MobileAssistantLauncher desktop={!移动端} disabled={!桥接.ai.可用} onOpen={() => { if (移动端) set选择目标(undefined); set打开(true) }} />}
-    <AssistantSurface mobile={移动端} title={<span className="assistant-drawer__title"><SealLogo size={32} /><span>智能助手</span><Icon name="ai" size={15} /></span>} open={打开 && !放映中} onClose={() => set打开(false)}>
+    <AssistantSurface mobile={移动端} title={标题栏} open={打开 && !放映中} onClose={() => set打开(false)}>
       <div className={`assistant-drawer__layout${配置展开 ? ' assistant-drawer__layout--settings' : ''}`}>
-        <div className="assistant-drawer__header"><strong>{配置展开 ? '模型设置' : '文件对话'}</strong><div className="assistant-drawer__header-actions"><Button className="assistant-new-chat" size="small" icon={<Icon name="plus" size={14} />} disabled={交互禁用} loading={清除中} onClick={() => void 新对话()}>新对话</Button><Button className="assistant-settings-toggle" size="small" icon={<Icon name={配置展开 ? 'arrow-left' : 'sliders'} size={14} />} aria-expanded={配置展开} onClick={() => set配置展开((值) => !值)}>{配置展开 ? '收起模型设置' : '模型设置'}</Button></div></div>
         {移动端 ? <div className="assistant-mobile-controls">
           <label className="assistant-mobile-target">目标文件<select aria-label="助手目标文件" value={当前文件?.id ?? ''} onChange={事件 => set选择目标(事件.target.value)} disabled={!可选文件.length}>
             {可选文件.length ? 可选文件.map(文件 => <option key={文件.id} value={文件.id}>{文件.name}{文件.id === activeWorkspaceTabId ? '（当前）' : ''}</option>) : <option value="">未打开文件 · 一般问答</option>}
@@ -693,8 +706,7 @@ export default function AiAssistant() {
           {新版可用 && !只读对话 ? <div className="assistant-settings__task-mode"><Checkbox checked={仅规划} disabled={发送中} onChange={(事件) => set仅规划(事件.target.checked)}>仅生成计划</Checkbox><p className="assistant-settings__note">开启后，接下来发送的需求先生成计划；点击“执行计划”可继续处理。正在执行或已排队的任务沿用提交时的设置。</p></div> : null}
         </AiSettingsCard> : null}
         <div className="assistant-drawer__work">
-        {!移动端 ? <div className="assistant-drawer__scope"><strong>当前范围：</strong>{当前文件 ? 当前文件.name : '未选择文件'}。{当前PDF ? '快捷动作处理选中文字；对话与本文件关联，未读取 PDF 全文。' : 当前文档 ? '发送消息时会提供该文件内容；修改仅在审阅并应用后进入编辑区。' : '可以咨询问题或要求新建文字、表格、演示文件；新文件也会先显示预览。'}</div> : null}
-        {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope"><Button type="link" onClick={()=>void requireAIIdentity()}>登录后使用 AI</Button><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
+        {!移动端 ? <div className="assistant-drawer__scope"><span className="assistant-scope__label">当前范围：</span><strong className="assistant-scope__name">{当前文件 ? 当前文件.name : '未选择文件'}</strong></div> : null}        {!账号状态.account?.identityVerified?<div className="assistant-drawer__scope assistant-drawer__scope--notice"><Button type="link" onClick={()=>void requireAIIdentity()}>登录后使用 AI</Button><span>使用已完成短信验证的账号，无需开通云空间。</span></div>:null}
         {发送中 && 进行中.current?.范围 !== 当前范围标识 ? <div className="assistant-drawer__background-task">正在处理：{进行中.current?.文件名}<Button size="small" onClick={() => void 停止任务()}>停止</Button></div> : null}
           {当前记忆?.计划.length && !只读对话 ? <details key={当前范围标识} className="assistant-context assistant-plan"><summary>任务计划 · {当前记忆.计划.filter((项) => 项.status === 'completed').length}/{当前记忆.计划.length} 已完成</summary><ol>{当前记忆.计划.map((项) => <li key={项.id} data-status={项.status}><span className="assistant-plan__dot" aria-hidden="true" /><span>{项.title}</span><span className="assistant-plan__status">{计划状态[项.status]}</span></li>)}</ol>{当前记忆.计划.some((项) => ['pending', 'in_progress', 'failed'].includes(项.status)) ? <Button size="small" disabled={交互禁用} onClick={() => void 发送('请执行当前任务计划，逐项完成并报告结果；需要修改文件时先生成候选供我确认。', true)}>执行计划</Button> : null}</details> : null}
         {发送中 && 进行中.current?.范围 === 当前范围标识 && !进行中.current.已请求 ? <div className="assistant-drawer__initializing" role="status"><span className="assistant-task__spinner" aria-hidden="true" />正在读取模型设置与会话记忆</div> : null}
@@ -708,12 +720,16 @@ export default function AiAssistant() {
             finally { set处理候选中(false) }
           }}>清除过期候选</Button></div> : null}
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
-          {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty">{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</div> : null}
+          {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty assistant-empty">
+            <span className="assistant-empty__icon" aria-hidden="true"><Icon name="ai" size={22} /></span>
+            <strong>{只读对话 ? 当前文件 ? '围绕当前文件提问' : '开始一段对话' : '从当前文件开始'}</strong>
+            <p>{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</p>
+          </div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
-            <span className="assistant-message__role">{项.角色 === 'assistant' ? <span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={13} /></span> : null}{项.角色 === 'user' ? '我' : 'AI助手（AI生成）'}</span>
+            {项.角色 === 'assistant' ? <span className="assistant-message__role"><span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={12} /></span>智能助手</span> : null}
             {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
-            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div><div style={{fontSize:11,color:'#999',marginTop:4}}>本内容由AI生成</div></div> : null}
+            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className="assistant-message__answer"><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div><div className="assistant-message__disclaimer">本内容由 AI 生成</div></div> : null}
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
@@ -738,8 +754,19 @@ export default function AiAssistant() {
         </section> : null}
         </div>
         <div className="assistant-drawer__composer">
-          <Input.TextArea aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={移动端 ? 2 : 3} disabled={清除中} placeholder={只读对话 ? '输入问题…' : '输入需求，或输入 /help 查看命令'} onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
-          <div className="assistant-drawer__composer-actions"><div className="assistant-drawer__composer-left"><Button className="assistant-collapse" type="text" shape="circle" icon={<Icon name="arrow-left" size={17} />} aria-label="收起智能助手" title="收起智能助手" onClick={() => set打开(false)} /><span>{移动端 ? 只读对话 ? '只问答' : '修改需确认' : 'Ctrl+Enter 发送 · /help'}</span></div><div>{发送中 ? <Button onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}<Button className="assistant-send" type="primary" icon={<Icon name="send" size={16} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'}</Button></div></div>
+          <div className="assistant-composer">
+            <Input.TextArea className="assistant-composer__input" variant="borderless" aria-label="发送给智能助手的消息" value={输入} maxLength={12000} rows={移动端 ? 2 : 3} disabled={清除中} placeholder={只读对话 ? '输入问题…' : '描述修改或写作需求，也可以提问…'} title={只读对话 ? undefined : '输入 /help 查看命令'} onChange={(事件) => set输入按范围((当前) => ({ ...当前, [当前范围标识]: 事件.target.value }))} onPressEnter={(事件) => { if (事件.ctrlKey) { 事件.preventDefault(); void 发送() } }} />
+            <div className="assistant-composer__footer">
+              <div className="assistant-composer__meta">
+                <span className="assistant-composer__chip">{只读对话 ? '只读问答' : 当前PDF ? 'PDF 问答' : 当前文档 ? '修改需确认' : '可新建文件'}</span>
+                {移动端 ? null : <span className="assistant-composer__hint">Ctrl+Enter 发送</span>}
+              </div>
+              <div className="assistant-composer__actions">
+                {发送中 ? <Button className="assistant-stop" type="text" size="small" onClick={() => void 停止任务()} disabled={进行中.current?.已停止}>停止生成</Button> : null}
+                <Button className="assistant-send" type="primary" icon={<Icon name="send" size={15} />} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()}>{发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'}</Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </AssistantSurface>

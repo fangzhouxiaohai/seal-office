@@ -207,6 +207,7 @@ function 写入基础格式(单元格, 格式) {
   if (格式.水平对齐) 对齐.horizontal = 格式.水平对齐
   if (格式.垂直对齐) 对齐.vertical = 格式.垂直对齐
   if (格式.自动换行 !== undefined) 对齐.wrapText = 格式.自动换行
+  if (格式.缩小字体填充 !== undefined) 对齐.shrinkToFit = 格式.缩小字体填充
   if (Object.keys(对齐).length > 0) 单元格.alignment = 对齐
   if (格式.数字格式代码 !== undefined) {
     if (typeof 格式.数字格式代码 !== 'string' || !格式.数字格式代码 || 格式.数字格式代码.length > 4096) throw new Error('数字格式代码无效')
@@ -264,6 +265,10 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
     if (对齐.wrapText !== undefined) 格式.自动换行 = !!对齐.wrapText
     for (const [字段, 值] of Object.entries(对齐)) {
       if (['horizontal', 'vertical', 'wrapText'].includes(字段)) continue
+      if (字段 === 'shrinkToFit' && typeof 值 === 'boolean') {
+        格式.缩小字体填充 = 值
+        continue
+      }
       if ((字段 === 'shrinkToFit' && 值 === false) || (['indent', 'textRotation', 'readingOrder'].includes(字段) && 值 === 0)) {
         格式.对齐元数据 = { ...格式.对齐元数据, [字段]: 值 }
       } else 警告.add('部分对齐样式未导入')
@@ -397,12 +402,18 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
     })
   })
   const 列宽 = {}
-  ;(工作表.columns ?? []).forEach((列, 索引) => {
-    if (typeof 列.width === 'number') 列宽[索引] = Math.round(列.width * 7)
+  const 实际列数 = 工作表.columnCount
+  ;(工作表.columns ?? []).slice(0, 实际列数).forEach((列, 索引) => {
+    if (typeof 列.width === 'number') 列宽[索引] = 列.width * 7
   })
+  const 列布局 = (工作表.model.cols ?? []).map(列 => ({
+    起列: 列.min - 1, 止列: 列.max - 1,
+    ...(typeof 列.width === 'number' ? { 宽度: 列.width * 7 } : {}),
+    格式: 读取基础格式({ style: 列.style }, 警告, 主题颜色),
+  }))
   const 行高 = {}
   工作表.eachRow({ includeEmpty: true }, (行) => {
-    if (typeof 行.height === 'number') 行高[行.number - 1] = Math.round(行.height * 4 / 3)
+    if (typeof 行.height === 'number') 行高[行.number - 1] = 行.height * 4 / 3
   })
   const 视图 = 工作表.views?.[0]
   let 冻结
@@ -411,9 +422,9 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
   }
   const 默认显示 = (视图) =>
     (!视图.state || 视图.state === 'normal' || 视图.state === 'frozen') &&
-    !视图.rightToLeft && 视图.showGridLines !== false && 视图.showRowColHeaders !== false &&
-    (视图.zoomScale === undefined || 视图.zoomScale === 100) &&
-    (视图.zoomScaleNormal === undefined || 视图.zoomScaleNormal === 100) &&
+    !视图.rightToLeft && 视图.showRowColHeaders !== false &&
+    (视图.zoomScale === undefined || Number.isFinite(视图.zoomScale) && 视图.zoomScale >= 10 && 视图.zoomScale <= 400) &&
+    (视图.zoomScaleNormal === undefined || Number.isFinite(视图.zoomScaleNormal) && 视图.zoomScaleNormal >= 10 && 视图.zoomScaleNormal <= 400) &&
     (!视图.style || 视图.style === 'normal')
   if ((工作表.views?.length ?? 0) > 1 || (视图 && (!默认显示(视图) || (视图.state === 'frozen' && !冻结)))) {
     警告.add('部分工作表视图设置未导入')
@@ -425,6 +436,14 @@ function 读取工作表元数据(工作表, 警告, 筛选, 保护, 主题颜�
     单元格验证: 读取工作表验证(工作表, 警告),
     合并区域: [...(工作表.model.merges ?? [])],
     列宽, 行高,
+    ...(列布局.length ? { 列布局 } : {}),
+    ...(Number.isFinite(工作表.properties.defaultColWidth) ? { 默认列宽: 工作表.properties.defaultColWidth * 7 } : {}),
+    ...(Number.isFinite(工作表.properties.defaultRowHeight) ? { 默认行高: 工作表.properties.defaultRowHeight * 4 / 3 } : {}),
+    ...(视图 ? { 视图: {
+      ...(Number.isFinite(视图.zoomScale) ? { 缩放: 视图.zoomScale } : {}),
+      ...(Number.isFinite(视图.zoomScaleNormal) ? { 普通缩放: 视图.zoomScaleNormal } : {}),
+      显示网格线: 视图.showGridLines !== false,
+    } } : {}),
     ...(冻结 ? { 冻结 } : {}),
     ...(筛选 ? { 筛选 } : {}),
     ...(保护 ? { 保护 } : {}),
@@ -766,6 +785,7 @@ async function 写入xlsx(模型) {
         const 名称 = typeof 表.名称 === 'string' && 表.名称.trim() !== '' ? 表.名称 : `工作表${序号 + 1}`
         return { 名称, 数据: 表.数据, 页面设置: 表.页面设置, 日期系统1904: 表.日期系统1904 ?? 表.元数据?.日期系统1904, 公式兼容模式: 表.公式兼容模式 ?? 表.元数据?.公式兼容模式,
           图片: 表.图片 !== undefined ? 表.图片 : 表.元数据?.图片,
+          列布局: 表.列布局, 默认列宽: 表.默认列宽, 默认行高: 表.默认行高, 视图: 表.视图,
           合并区域: 表.合并区域, 列宽: 表.列宽, 行高: 表.行高, 冻结: 表.冻结, 筛选: 表.筛选, 保护: 表.保护 }
       })
       .filter((表) => 表 !== null)
@@ -791,6 +811,30 @@ async function 写入xlsx(模型) {
     动态数组地址列表.push(动态数组地址)
     if (表定义.保护 === true) 工作表.sheetProtection = { sheet: true }
     写入页面设置(工作表, 表定义.页面设置)
+    if (表定义.默认列宽 !== undefined) {
+      if (!Number.isFinite(表定义.默认列宽) || 表定义.默认列宽 <= 0) throw new Error('默认列宽无效')
+      工作表.properties.defaultColWidth = 表定义.默认列宽 / 7
+    }
+    if (表定义.默认行高 !== undefined) {
+      if (!Number.isFinite(表定义.默认行高) || 表定义.默认行高 <= 0) throw new Error('默认行高无效')
+      工作表.properties.defaultRowHeight = 表定义.默认行高 * 3 / 4
+    }
+    if (表定义.列布局 !== undefined) {
+      if (!Array.isArray(表定义.列布局) || 表定义.列布局.length > 16384) throw new Error('整列默认布局无效')
+      let 上次止列 = -1
+      for (const 布局 of 表定义.列布局) {
+        if (!布局 || !Number.isInteger(布局.起列) || !Number.isInteger(布局.止列) || 布局.起列 <= 上次止列 || 布局.止列 < 布局.起列 || 布局.止列 >= 16384 ||
+          布局.宽度 !== undefined && (!Number.isFinite(布局.宽度) || 布局.宽度 <= 0)) throw new Error('整列默认布局范围无效')
+        上次止列 = 布局.止列
+        const 样式 = {}
+        写入基础格式(样式, 布局.格式)
+        for (let 列 = 布局.起列; 列 <= 布局.止列; 列++) {
+          const 目标列 = 工作表.getColumn(列 + 1)
+          目标列.style = 样式
+          if (布局.宽度 !== undefined) 目标列.width = 布局.宽度 / 7
+        }
+      }
+    }
     if (Array.isArray(表定义.列宽)) 表定义.列宽.forEach((宽, 索引) => {
       if (Number.isFinite(宽) && 宽 > 0) 工作表.getColumn(索引 + 1).width = 宽 / 7
     })
@@ -800,10 +844,28 @@ async function 写入xlsx(模型) {
     if (表定义.冻结 && (表定义.冻结.行 > 0 || 表定义.冻结.列 > 0)) {
       工作表.views = [{ state: 'frozen', xSplit: 表定义.冻结.列, ySplit: 表定义.冻结.行 }]
     }
+    if (表定义.视图 !== undefined) {
+      const 视图 = 表定义.视图
+      if (!视图 || typeof 视图 !== 'object' || Array.isArray(视图) ||
+        ['缩放', '普通缩放'].some(键 => 视图[键] !== undefined && (!Number.isFinite(视图[键]) || 视图[键] < 10 || 视图[键] > 400)) ||
+        视图.显示网格线 !== undefined && typeof 视图.显示网格线 !== 'boolean') throw new Error('工作表视图设置无效')
+      工作表.views = [{ state: 'normal', ...工作表.views?.[0],
+        ...(视图.缩放 !== undefined ? { zoomScale: 视图.缩放 } : {}),
+        ...(视图.普通缩放 !== undefined ? { zoomScaleNormal: 视图.普通缩放 } : {}),
+        ...(视图.显示网格线 !== undefined ? { showGridLines: 视图.显示网格线 } : {}),
+      }]
+    }
     表定义.数据.forEach((行数据, 行号) => {
       const 单元格列表 = Array.isArray(行数据) ? 行数据 : [行数据]
       单元格列表.forEach((单元, 列号) => {
+        // 空白占位不创建单元格；旧版本大范围表可能带来百万级空串，直接写入会生成无意义空单元。
+        if (单元 === '' || 单元 === null || 单元 === undefined) return
         const 目标单元 = 工作表.getCell(行号 + 1, 列号 + 1)
+        // 显式单元格格式是完整快照，包括空格式，不能重新混入列默认填充或数字格式。
+        if (单元 && typeof 单元 === 'object' && 单元.格式 !== undefined) {
+          if (!单元.格式 || typeof 单元.格式 !== 'object' || Array.isArray(单元.格式)) throw new Error('单元格格式无效')
+          目标单元.style = {}
+        }
         if (单元 && typeof 单元 === 'object' && typeof 单元.公式 === 'string') {
           if (单元.公式.trim() === '') throw new Error('单元格公式不能为空')
           if (单元.超链接 !== undefined) throw new Error('公式单元格暂不能同时保存超链接')
@@ -862,7 +924,8 @@ async function 写入xlsx(模型) {
         if (单元 && typeof 单元 === 'object') 写入数据验证(目标单元, 单元.数据验证)
       })
     })
-    if (Array.isArray(表定义.合并区域)) 表定义.合并区域.forEach((区域) => 工作表.mergeCells(区域))
+    // 合并子格可以分别保存外缘边框，不能用主格样式覆盖这些真实格式。
+    if (Array.isArray(表定义.合并区域)) 表定义.合并区域.forEach((区域) => 工作表.mergeCellsWithoutStyle(区域))
     if (表定义.筛选) {
       const { 列, 值 } = 表定义.筛选
       if (!Number.isInteger(列) || 列 < 0 || typeof 值 !== 'string') throw new Error('工作表筛选条件无效')

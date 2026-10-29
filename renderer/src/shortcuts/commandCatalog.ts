@@ -476,6 +476,10 @@ export const commandCatalog = {
       "填充颜色"
     ],
     [
+      "cell.font",
+      "字体"
+    ],
+    [
       "cell.fontColor",
       "字体颜色"
     ],
@@ -936,6 +940,10 @@ export const commandCatalog = {
     [
       "text.color",
       "字体颜色"
+    ],
+    [
+      "text.font",
+      "字体"
     ],
     [
       "text.italic",

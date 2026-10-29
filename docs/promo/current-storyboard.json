@@ -16,7 +16,7 @@
     {"id":"mindmap-edit","chapter":"04 脑图与流程图","title":"修改主题并增加分支","narration":"在节点编辑区修改主题文字，再添加一个分支，填写产品资料。画布和本机保存状态会随实际编辑更新。","minimumSeconds":12},
     {"id":"mindmap-list","chapter":"04 脑图与流程图","title":"多个项目分别管理","narration":"返回项目列表，再创建团队工作分解。返回后可以看到两份独立项目，点击任一封面就能继续编辑。","minimumSeconds":12},
     {"id":"flow","chapter":"04 脑图与流程图","title":"流程图也有独立项目列表","narration":"流程图同样从项目列表开始。创建资料审核流程，进入画布后增加节点，按业务步骤整理流程。","minimumSeconds":12},
-    {"id":"outro","chapter":"海豹办公 2.1.2","title":"从一份文件，到一组项目","narration":"以上是海豹办公二点一点二的实际操作演示。可以访问网页版，或在项目发行页下载适合设备的版本。","minimumSeconds":9}
+    {"id":"outro","chapter":"海豹办公 2.2.2","title":"从一份文件，到一组项目","narration":"以上是海豹办公二点二点二的实际操作演示。可以访问网页版，或在项目发行页下载适合设备的版本。","minimumSeconds":9}
   ],
   "android": [
     {"id":"navigation","chapter":"01 功能入口","title":"从服务页找到工具","narration":"移动端底部是首页、云盘、服务、模板和我的五个功能页。点击服务，在搜索框输入脑图，就能找到对应入口。","minimumSeconds":11},
@@ -34,6 +34,6 @@
     {"id":"assistant-target","chapter":"05 表格与目标文件","title":"切换助手的目标文件","narration":"再次打开助手，展开目标文件列表。选择工作计划，切换到对话模式，就能围绕指定的文件提问。","minimumSeconds":11},
     {"id":"templates","chapter":"06 模板与项目","title":"从完整模板开始演示","narration":"回到模板页，点击一套模板预览，再使用并编辑副本。主题配图和完整页面会一起进入演示编辑器。","minimumSeconds":12},
     {"id":"projects","chapter":"06 模板与项目","title":"创建多个脑图项目","narration":"从服务页进入脑图，分别创建新品发布计划和团队工作分解。返回列表，两份项目可以独立打开和维护。","minimumSeconds":15},
-    {"id":"outro","chapter":"海豹办公 2.1.2","title":"随身阅读，继续编辑","narration":"这就是海豹办公移动端的操作方法。本片使用当前生产构建的移动布局演示，安装包和源码可在项目发行页获取。","minimumSeconds":10}
+    {"id":"outro","chapter":"海豹办公 2.2.2","title":"随身阅读，继续编辑","narration":"这就是海豹办公移动端的操作方法。本片使用当前生产构建的移动布局演示，安装包和源码可在项目发行页获取。","minimumSeconds":10}
   ]
 }

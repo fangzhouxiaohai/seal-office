@@ -41,7 +41,7 @@ describe('xlsxCodec', () => {
       expect(result.警告).toEqual([])
     })
 
-    it.each([{ state: 'split', xSplit: 20, ySplit: 20 }, { state: 'normal', zoomScale: 80 }, { state: 'normal', showGridLines: false }, { state: 'normal', rightToLeft: true }])('未支持的真实视图设置仍有风险提示：%j', async view => {
+    it.each([{ state: 'split', xSplit: 20, ySplit: 20 }, { state: 'normal', rightToLeft: true }])('未支持的真实视图设置仍有风险提示：%j', async view => {
       const workbook = new ExcelJS.Workbook()
       workbook.addWorksheet('视图', { views: [view] })
       const result = await 读取xlsx(await workbook.xlsx.writeBuffer())
@@ -107,13 +107,14 @@ describe('xlsxCodec', () => {
       expect(sheet.getCell('B2').value).toBe('B2')
     })
 
-    it('null 值应该转为空字符串', async () => {
+    it('null 值保持空白且不影响后续列位置', async () => {
       const result = await 写入xlsx({ 行: [[null, '值']] })
       expect(Buffer.isBuffer(result)).toBe(true)
       const workbook = new ExcelJS.Workbook()
       await workbook.xlsx.load(result)
       const sheet = workbook.worksheets[0]
-      expect(sheet.getCell('A1').value).toBe('')
+      expect(sheet.getCell('A1').value).toBeNull()
+      expect(sheet.getCell('B1').value).toBe('值')
     })
 
     it('应该支持渲染层 { 工作表 } 契约', async () => {

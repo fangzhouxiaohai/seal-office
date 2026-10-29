@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, Modal } from 'antd'
 import SettingsPage from './SettingsPage'
@@ -208,15 +208,19 @@ describe('设置页状态与真实能力一致', () => {
   it('恢复默认时清除已保存的翻译配置并更新页面内容', async () => {
     localStorage.setItem('seal.office.translate', JSON.stringify({ 地址: 'https://a.example.com', 目标语言: 'zh' }))
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
-    await userEvent.click(screen.getByRole('button', { name: '恢复默认' }))
-    expect(await screen.findByRole('dialog', { name: '确认恢复初始设置' })).toBeInTheDocument()
+    const 恢复按钮 = screen.getByRole('button', { name: '恢复默认' })
+    await userEvent.click(恢复按钮)
+    const 首次确认 = await screen.findByRole('dialog', { name: '确认恢复初始设置' })
+    expect(首次确认).toBeInTheDocument()
     expect(localStorage.getItem('seal.office.translate')).not.toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: /取\s*消/ }))
+    // 对话框操作限定在当前弹窗，避免反复扫描整页控件及其计算样式。
+    await userEvent.click(within(首次确认).getByRole('button', { name: /取\s*消/ }))
     expect(localStorage.getItem('seal.office.translate')).not.toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: '恢复默认' }))
-    await userEvent.click(screen.getByRole('button', { name: '确认恢复' }))
+    await userEvent.click(恢复按钮)
+    const 再次确认 = await screen.findByRole('dialog', { name: '确认恢复初始设置' })
+    await userEvent.click(within(再次确认).getByRole('button', { name: '确认恢复' }))
     expect(localStorage.getItem('seal.office.translate')).toBeNull()
-    expect(screen.getByRole('textbox', { name: '翻译服务地址' })).toHaveValue('')
+    expect(screen.getByLabelText('翻译服务地址')).toHaveValue('')
   })
 
   it('恢复默认清除深色主题后不重复写入主题设置', async () => {

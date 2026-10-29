@@ -11,6 +11,8 @@ import {
 import { 格式化数字, 格式化来源数字, type 数字格式 } from './numberFormat'
 import { 应用结构引用调整, 标记结构调整 } from './structureReferences'
 import { 计算溢出工作簿 } from './spillCalculation'
+import { 调整列布局 } from './columnLayout'
+import { 获取合并边界 } from './gridGeometry'
 
 export interface CellFormat {
   字体元数据?: { charset?: number; family?: number; scheme?: string }
@@ -25,6 +27,7 @@ export interface CellFormat {
   水平对齐?: 'left' | 'center' | 'right'
   垂直对齐?: 'top' | 'middle' | 'bottom'
   自动换行?: boolean
+  缩小字体填充?: boolean
   数字格式?: 数字格式
   /** 来源 OOXML 数字格式代码；日期、时间、科学计数、分数和自定义代码保持原文。 */
   数字格式代码?: string
@@ -101,6 +104,11 @@ export interface Sheet {
   列数: number
   列宽: number[]
   行高: number[]
+  /** 整列默认布局使用区间保存，不用于扩大实际编辑范围。 */
+  列布局?: Array<{ 起列: number; 止列: number; 宽度?: number; 格式?: CellFormat }>
+  默认列宽?: number
+  默认行高?: number
+  视图?: { 缩放?: number; 普通缩放?: number; 显示网格线?: boolean }
   /** 已合并的区域地址列表 */
   合并区域: string[]
   /** 图片以左上角单元格为锚点，旧版工作表可能缺少该字段。 */
@@ -126,7 +134,11 @@ const 空单元格: SheetCell = { 原始值: '', 显示值: '', 格式: {} }
 
 /** 读取单元格；不存在时返回空单元格，不写入工作表 */
 export function 读取单元格(工作表: Sheet, 地址: string): SheetCell {
-  return 工作表.单元格[地址] ?? 空单元格
+  const 已存 = 工作表.单元格[地址]
+  if (已存) return 已存
+  const 位置 = 工作表.列布局?.length ? 解析地址(地址) : null
+  const 列格式 = 位置 && 工作表.列布局?.find(项 => 位置.列 >= 项.起列 && 位置.列 <= 项.止列)?.格式
+  return 列格式 ? { ...空单元格, 格式: 列格式 } : 空单元格
 }
 
 /** 在指定区域设置或清除可写回表格文件的验证规则。 */
@@ -371,7 +383,7 @@ export function 设置格式(工作表: Sheet, 区域: string, 格式: Partial<C
   const 新单元格 = { ...工作表.单元格 }
   位置列表.forEach((位置) => {
     const 地址 = 生成地址(位置.行, 位置.列)
-    const 单元 = 新单元格[地址] ?? { ...空单元格 }
+    const 单元 = 读取单元格(工作表, 地址)
     const 新格式 = { ...单元.格式, ...格式 }
     if (格式.数字格式 !== undefined || 格式.小数位 !== undefined) delete 新格式.数字格式代码
     const 富文本 = 单元.富文本?.map(段 => ({ ...段, 格式: { ...段.格式, ...Object.fromEntries(Object.entries(格式).filter(([键]) => ['字体', '字号', '加粗', '斜体', '下划线', '字体颜色'].includes(键))) } }))
@@ -421,18 +433,12 @@ export interface 合并信息 {
  * 返回 null 表示该位置不属于任何合并区域。
  */
 export function 查询合并(工作表: Sheet, 位置: 单元格位置): 合并信息 | null {
-  for (const 区域 of 工作表.合并区域) {
-    const 位置列表 = 展开区域(区域)
-    if (!位置列表.some((项) => 项.行 === 位置.行 && 项.列 === 位置.列)) {
-      continue
-    }
-    const 起点 = 位置列表[0]
-    const 行集合 = 位置列表.map((项) => 项.行)
-    const 列集合 = 位置列表.map((项) => 项.列)
+  for (const { 起点, 终点 } of 获取合并边界(工作表.合并区域)) {
+    if (位置.行 < 起点.行 || 位置.行 > 终点.行 || 位置.列 < 起点.列 || 位置.列 > 终点.列) continue
     return {
       是左上角: 起点.行 === 位置.行 && 起点.列 === 位置.列,
-      跨度行: Math.max(...行集合) - Math.min(...行集合) + 1,
-      跨度列: Math.max(...列集合) - Math.min(...列集合) + 1,
+      跨度行: 终点.行 - 起点.行 + 1,
+      跨度列: 终点.列 - 起点.列 + 1,
     }
   }
   return null
@@ -558,6 +564,7 @@ export function 插入列(工作表: Sheet, 列: number): Sheet {
     单元格: 新单元格,
     列数: 工作表.列数 + 1,
     列宽: 新列宽,
+    ...(工作表.列布局 ? { 列布局: 调整列布局(工作表.列布局, 有效列, false) } : {}),
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).map((图片) => 图片.列 >= 有效列 ? { ...图片, 列: 图片.列 + 1 } : 图片),
   }, '列', 有效列, false)
@@ -702,6 +709,7 @@ export function 删除列(工作表: Sheet, 列: number): Sheet {
     单元格: 新单元格,
     列数: 工作表.列数 - 1,
     列宽: 新列宽,
+    ...(工作表.列布局 ? { 列布局: 调整列布局(工作表.列布局, 列, true) } : {}),
     合并区域: 新合并区域,
     图片: (工作表.图片 ?? []).filter((图片) => 图片.列 !== 列).map((图片) => 图片.列 > 列 ? { ...图片, 列: 图片.列 - 1 } : 图片),
   }, '列', 列, true)

@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "group": "editor",
+  "platform": "web",
+  "version": "2.2.2",
+  "checks": [
+    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+    "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开",
+    "动态数组：真实XLSX错缓存导入重算、二维SEQUENCE/跨表/ANCHORARRAY、子格只读及部分删除保护",
+    "表格草稿：未失焦CtrlS实际保存XLSX、扩展区域及跨表#引用缓存重开正确；无效验证草稿禁止保存",
+    "WPS/Excel公式兼容模式：Unicode计数及空白数组差异可切换，原生自定义属性保存重开，390/1280px公式栏无溢出"
+  ],
+  "errors": [],
+  "scheme": "http"
+}

@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "group": "editor",
+  "errors": [],
+  "checks": [
+    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+    "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开"
+  ],
+  "diagnostic": {
+    "body": "动态数组生产验收.xlsx\n开始\n插入\n页面布局\n公式\n数据\n审阅\n视图\n打开\n保存\n另存为\n打印当前工作表\n文件\n粘贴\n剪贴板\n撤销\n宋体\n字体颜色\n填充颜色\n边框\n字体\n对齐方式\n常规\n数字\n自动求和\n清除内容\n升序\n降序\n自适应列宽\n编辑\nfx\nExcel 兼容\nWPS 兼容\nA\nB\nC\nD\nE\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n10\n11\n10\n12\n12\n13\n11\n13\n14\n15\n1\n0\n2\n3\n动态数组\nData\n计数：1\n·\n求和：10\n·\n平均值：10\n150%\n首页\n未命名文档.sldoc\n修订生产验收.docx\n动态数组生产验收.xlsx\n首页\n云盘\n服务\n模板\n我的\n文件已保存",
+    "ready": "complete",
+    "api": true,
+    "url": "http://127.0.0.1:6323/"
+  },
+  "error": "Error: TypeError: Cannot read properties of null (reading 'textContent')\n    at eval (eval at <anonymous> (:1:44), <anonymous>:1:41)\n    at eval (<anonymous>)\n    at <anonymous>:1:44\n    at <anonymous>:1:163\n    at evaluate (E:\\seal-office\\mobile\\tests\\extended-browser.cjs:48:226)\n    at async spillBrowserActions (E:\\seal-office\\mobile\\tests\\spill-browser-actions.cjs:11:18)\n    at async E:\\seal-office\\mobile\\tests\\extended-browser.cjs:62:100"
+}

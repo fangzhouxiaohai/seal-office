@@ -6,7 +6,7 @@ export function 自适应列宽(sheet: Sheet, measure?: Measure): Sheet {
   if (sheet.保护) throw new Error('工作表已保护，无法调整列宽')
   const context = measure ? null : document.createElement('canvas').getContext('2d')
   const widthOf: Measure = measure ?? ((text, format) => {
-    const size = format.字号 ?? 14
+    const size = format.字号 === undefined ? 14 : format.字号 * 4 / 3
     if (!context) return [...text].reduce((sum, char) => sum + (char.codePointAt(0)! > 255 ? size : size * 0.6), 0)
     context.font = `${format.斜体 ? 'italic ' : ''}${format.加粗 ? '600 ' : ''}${size}px ${format.字体 ? JSON.stringify(format.字体) + ',' : ''}"Microsoft YaHei", sans-serif`
     return context.measureText(text).width

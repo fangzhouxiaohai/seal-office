@@ -18,7 +18,7 @@ export default function AssistantSurface({ mobile, open, onClose, title, childre
   return <Modal className="assistant-mobile-modal" wrapClassName="assistant-mobile-modal-wrap" title={title}
     open={open} onCancel={onClose} footer={null} width="min(720px, calc(100vw - 24px))"
     style={{ top: `calc(${top}px + env(safe-area-inset-top, 0px) + 8px)` }}
-    closeIcon={<span aria-label="关闭智能助手">×</span>} maskClosable={false} destroyOnClose={false}>
+    closable={false} maskClosable={false} destroyOnClose={false}>
     {children}
   </Modal>
 }

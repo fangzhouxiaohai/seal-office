@@ -8,11 +8,17 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面与移动源码版本为 **2.2.1**，移动构建号 **20201**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.2.2**，移动构建号 **20202**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
-## 2.2.1 DOCX 与 WPS 版式兼容
+## 2.2.2 表格兼容、性能与助手界面
+
+本次针对标准工作簿直接打开和已有海豹表格的交互卡顿，处理整列默认格式被误作数据边界、全表遍历和合并区域逐格展开的问题，并还原来源 70% 缩放与缩小字体设置。数据范围与整列布局分开保存，保留真实远端内容；旧专属格式通过可见区域渲染改善交互，不靠裁剪数据缩小工作表。保存时只为实际单元格创建记录，旧版大范围模型的空白占位不再写成百万级空值。
+
+真实浏览器验收中，本机只读来源可直接打开，编辑模型为 44 行、21 列，保留来源 70% 缩放；标准格式与海豹格式各连续保存重开 3 轮，范围不再增长，保存副本为 15,140 字节、622 个实际单元格。合成旧版 16384 列模型支持最远列导航，初始仅挂载 875 个单元格，只导出真实单元格时约 6 KB。智能助手对话面板同步整理为品牌标题栏、直接排版的正文和单一圆角输入卡片，1280 与 390 像素视口的设计审计均为零违规，浅色、深色、空状态和移动布局见[助手界面验收](docs/verification/v2.2.2/助手界面验收.md)。字体快捷键现在能打开真实的字体选择菜单，字体目录未加载或不可用时显示常用字体候选，不再出现空下拉。验收证据与各平台发行状态见[2.2.2 修复说明](docs/v2.2.2-表格兼容与性能修复.md)。用户原始业务文件不进入仓库、外部服务或宣传素材。
+
+## 2.2.1 DOCX 与 WPS 版式兼容（历史记录）
 
 平台导出的自评估报告 DOCX 带有固定的 6 列表格、竖排表头和多节页面设置。原解析器把 `w:line="185" w:lineRule="auto"` 写成 0.77 倍行距，又忽略 `tblGrid` 与 `textDirection`，导致正文重叠、列宽错乱；同时无效外部超链接使文件被判定为“需要转换后打开”。
 
@@ -25,11 +31,11 @@
 - 移动端全屏阅读改为双行顶部栏：第一行仅文件名，第二行图标工具；底部翻页工具同步改为图标，释放正文高度。
 - Android SAF 保存的 Kotlin 编译错误改为 `ByteArray` 复制缓冲区，云打包通过。
 
-Windows 2.2.1 绿色包：[seal-office-2.2.1-portable.zip](release/v2.2.1/seal-office-2.2.1-portable.zip)（解压后运行“海豹办公.exe”）。Android APK：[seal-office-2.2.1-android.apk](release/v2.2.1/seal-office-2.2.1-android.apk)；HarmonyOS App Pack：[seal-office-2.2.1-harmony.app](release/v2.2.1/seal-office-2.2.1-harmony.app)；完整桌面、Ubuntu、Web 与源码包见 [2.2.1 发行目录](release/v2.2.1/README.txt)。
+2.2.1 的本机发行目录随新版归档清理，不再作为首页下载入口。历史成品请查阅 [GitHub 发行列表](https://github.com/fangzhouxiaohai/seal-office/releases)或 [GitCode 发行列表](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases)，以对应版本实际附件为准。
 
 WPS 为闭源商业软件，本次没有复制其代码；上述是本样本所需的 DOCX 行为兼容。XLSX、PPTX、PDF 的完整 WPS 兼容仍需按失败样本逐项对照，不能宣称已经一比一复刻全部文件引擎。
 
-## 2.2.0 字体适配与自定义字体
+## 2.2.0 字体适配与自定义字体（历史记录）
 
 本版处理“系统已安装字体读不到、公文字体包装不进海豹办公、换设备字体丢失”的问题：
 
@@ -50,9 +56,9 @@ WPS 为闭源商业软件，本次没有复制其代码；上述是本样本所�
 | Android 云打包源码 | `seal-office-2.2.0-android-cloud-source.zip` |
 | HarmonyOS 云打包源码 | `seal-office-2.2.0-harmony-cloud-source.zip` |
 
-HarmonyOS 已签名 App Pack 已用最新源码重新构建并在本机模拟器验证（`seal-office-2.2.0-harmony.app`）；Android APK 正在 HBuilderX 云打包队列。旧包不包含本次修复，已移到本机私有归档，不随仓库发布。鸿蒙原生请求改走 `@ohos.net.http` 的说明见 [鸿蒙登录网络错误修复](docs/verification/v2.2.0/harmony-network-fix.md)；Android 保存改用系统 SAF、HarmonyOS 编辑区连续点击的 React #185 修复见 [移动端保存与渲染修复](docs/verification/v2.2.0/mobile-save-and-render-fixes.md)。
+2.2.0 当时的 HarmonyOS 签名成品与移动修复范围保留在历史验收记录中，不代表 2.2.2 的成品或设备验收状态。鸿蒙原生请求改走 `@ohos.net.http` 的说明见 [鸿蒙登录网络错误修复](docs/verification/v2.2.0/harmony-network-fix.md)；Android 保存改用系统 SAF、HarmonyOS 编辑区连续点击的 React #185 修复见 [移动端保存与渲染修复](docs/verification/v2.2.0/mobile-save-and-render-fixes.md)。
 
-Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。HarmonyOS 新主体证书/Profile 的配置与核对见 [签名配置切换](docs/verification/v2.2.0/harmony-signing-config.md)。
+Android / HarmonyOS 历史云源码请从对应远端发行获取；本机交付只保留当前验收通过的版本。源码不是 APK/HAP，仍需 HBuilderX 使用原应用身份和签名提交云打包并单独验签、真机验收。HarmonyOS 新主体证书/Profile 的配置与核对见 [签名配置切换](docs/verification/v2.2.0/harmony-signing-config.md)。
 
 ### AppGallery 审核素材（2.2.0）
 
@@ -63,7 +69,7 @@ Android / HarmonyOS 云源码解压项目在 `release/v2.2.0/mobile-web/`；源�
 
 ## 2.1.2 移动端与网页版同步修复
 
-最新云源码：[GitCode 移动/Web 发行](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-web) · [GitHub 移动/Web 发行](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-web) · [在线使用](https://seal.xingmasoft.com/office/)。应用版本仍为 **2.1.2 / 20102**。
+历史云源码：[GitCode 移动/Web 发行](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.1.2-mobile-web) · [GitHub 移动/Web 发行](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-web)。该次历史修订版本为 **2.1.2 / 20102**。
 
 Android、HarmonyOS 和 Web 已同步富文本、字体字符集、自定义页边距、自适应列宽及文字图片粘贴/拖入修复。旧 XLS 在有可用云空间或自建转换服务时，经确认使用完整转换引擎；取消/失败直接停止，无服务的离线兼容路径继续明确提示格式限制。移动悬浮助手、文件选择和对话/工作模式保留。
 
@@ -190,38 +196,17 @@ WPS Android 参考分析使用用户提供的 26.10.0 APK，包含实际安装�
 
 Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。
 
-## Windows 下载
+## 下载与平台交付
 
-源码与本次本地交付版本为 **2.0.0**，重打产物位于 `release/v2.0.0/`，最终校验清单见 `docs/verification/v2.0.0-third-pass/`。下表为仍保留的 **1.9.15 历史公开下载**；2.0.0 未通过本任务发布至 GitHub Releases。1.9.15 改动见[发布说明](docs/v1.9.15-发布与移动平台上架说明.md)，读写能力见[文档格式支持](docs/文档格式支持.md)。
+当前源码为 **2.2.2 / 20202**。本次各平台产物、签名及交互验收状态见[2.2.2 修复说明](docs/v2.2.2-表格兼容与性能修复.md)，尚未完成的成品不列为可下载附件。正式下载以 [GitHub 发行列表](https://github.com/fangzhouxiaohai/seal-office/releases)和 [GitCode 发行列表](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases)中的实际版本、文件和校验清单为准。
 
-| 版本 | 下载与使用 |
-| --- | --- |
-| 便携版 | [海豹办公1.9.15 便携版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Windows-x64-portable.exe)，下载后直接运行。 |
-| 安装版 | [海豹办公1.9.15 安装版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Windows-x64-setup.exe)，安装向导可选择目录、创建快捷方式并注册右键新建菜单。 |
-| 微软商店包 | [SealOffice 1.9.15 MSIX](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-MicrosoftStore-x64.msix)，用于合作伙伴中心上传，由商店签名后分发。 |
-| 发布说明 | [v1.9.15 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)及[发布与移动平台上架说明](docs/v1.9.15-发布与移动平台上架说明.md)。 |
+新发行统一使用 `seal-office` 文件名前缀；Windows 安装版、便携版、商店包及 Ubuntu、Web、移动云源码集中放入 `release/v2.2.2/`。Android 与 HarmonyOS 云源码分别归档，源码快照需要继续提交原生云打包，不能作为已生成或已验收的安装包。Windows 安装、Ubuntu 图形界面及移动真机结果分别记录，不能用静态验包代替。
 
-如旧版无法保存带图片或段落排版的文档，可先导出 HTML 保留编辑内容，再在当前版本中打开并另存为 DOCX。安装包目前未签名。
-
-## Ubuntu 下载
-
-[海豹办公 Ubuntu 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Ubuntu-amd64.deb) 为 x86_64 / amd64 安装包，包含本版中英文界面与文档兼容性更新，安装依赖后可离线转换旧办公格式。本包已完成 Debian 包结构、桌面入口、主程序、MIME 关联和 `app.asar` 静态核验；公开部署前仍建议在 Ubuntu 22.04 / 24.04 真机执行安装与 GUI 验收。安装命令、源码构建和验证范围见 [Ubuntu 版说明](docs/Ubuntu版安装与发布.md)。
-
-## Android 下载
-
-[海豹办公 Android 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-Android.apk) 为 HBuilderX 云打包正式 APK；包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`，最低 Android 9、目标 Android 16，包含 ARM 32/64 位架构。v3 发布签名、ZIP 对齐、全部 64 位原生库 16 KiB ELF 对齐和包内编辑器与当前源码的一致性均已核验，实际范围见 [APP 备案包信息](docs/v1.9.15-APP备案包信息.md)。
-
-## HarmonyOS 下载
-
-[海豹办公 HarmonyOS 1.9.15](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.15/SealOffice-1.9.15-HarmonyOS.app.zip) 为 HBuilderX 生成并使用华为发布证书和 AppGallery Release Profile 签名的正式 App Pack；因 GitHub 不接受直接上传 `.app` 扩展名，下载附件为 ZIP，解压后即得到原始正式签名 `.app`。包名 `com.sealoffice.mobile`，版本 `1.9.15 / 10915`。SDK 已确认发布证书链、Profile、包摘要和权限声明有效，提交审核前仍需完成 HarmonyOS 真机安装、启动、导入导出和中英文切换验收。
-
-[1.9.12 完整源码包](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOffice1.9.12-Source.zip)包括桌面、移动项目、管理后台、转换服务及当前 Android 内置编辑器资源；云打包 APK 也已核验并发布。源码主分支同步至 GitHub 和 GitCode。
-
-当前 [1.9.15 GitHub 发布页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v1.9.15)集中提供 Windows、Ubuntu、Android 和 HarmonyOS 正式成品，[1.9.15 GitCode 发布页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v1.9.15)同步相同文件。GitHub 右侧 Packages 提供 [Windows](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-windows)、[Android](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-android)、[Linux](https://github.com/users/fangzhouxiaohai/packages/container/package/seal-office-linux) 三个安装文件制品；ORAS 下载方式及发布校验见 [Packages 说明](docs/GitHub-Packages发布.md)。
+历史下载与设备核验保留在对应发行及报告中：[1.9.15 发布说明](docs/v1.9.15-发布与移动平台上架说明.md)、[Android 备案包信息](docs/v1.9.15-APP备案包信息.md)、[Ubuntu 版说明](docs/Ubuntu版安装与发布.md)、[Packages 说明](docs/GitHub-Packages发布.md)。历史成品的签名和平台状态不代表当前版本。
 
 ### 最新版介绍视频
 
-[PC 横版介绍 · 1920×1080](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-pc-intro-1080p.mp4) · [Android 竖版介绍 · 1080×1920](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-intro-1080p.mp4)。采用 2.1.0 生产界面素材、普通话配音与中文字幕，PC 为响应式网页版画面，Android 为生产 IIFE 移动布局演示；不是 APK 真机录像。当前讲解稿见[最新分镜](docs/promo/current-storyboard.json)，制作入口为 `npm run promo:build`。旧版介绍视频已移出当前交付。
+2.2.2 的 PC 横版 1920×1080 与 Android 竖版 1080×1920 操作视频均待录制和验收，正式文件归入 `release/promo/`。当前讲解稿见[最新分镜](docs/promo/current-storyboard.json)，制作入口为 `npm run promo:build`；沿用用户确认的晓晓配音参数，展示真实点击、逐字输入和执行结果。浏览器录制的移动布局须标明来源，不能称为 APK 真机录像。视频发布后再补充本版直达链接。
 
 ### 右键新建与默认程序
 
@@ -424,9 +409,9 @@ PDF 正文居中显示，右侧工具栏默认收起为图标，支持展开页�
 
 ![帮助手册的主题导航与操作说明](docs/screenshots/v1.6.7/07-help.png)
 
-## 宣传视频制作
+## 历史宣传视频制作
 
-基于 **1.9.8** 重新制作 3 分钟[横版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoLandscape1080p.mp4)与[竖版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoPortrait1080p.mp4)，包含最新版操作画面、模板市场、新版助手、知识库与云空间入口。两版配有普通话女声、中文字幕、轻柔伴奏和下载二维码；[分镜与制作说明](docs/promo/README.md)可复现制作过程。本地成片位于 `release/promo/`。
+**1.9.8 历史版**的 3 分钟[横版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoLandscape1080p.mp4)与[竖版宣传片](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoPortrait1080p.mp4)展示当时的操作画面、模板市场、助手、知识库与云空间入口。历史[分镜与制作说明](docs/promo/README.md)保留原记录；当前视频改用上方“最新版介绍视频”的入口和验收流程。
 
 [![海豹办公 1.9.8 横版宣传片封面](docs/promo/assets/cover-landscape.jpg)](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.8/SealOffice1.9.8-PromoLandscape1080p.mp4)
 
@@ -516,9 +501,9 @@ renderer/src/
 
 ## 版本
 
-当前开发版本：1.9.15。升级内容见上方“1.9.15 本次升级”；以下为仓库保留的历史版本记录。
+当前源码版本：2.2.2，移动构建号 20202。升级内容与待验状态见上方“2.2.2 表格兼容与性能修复”；以下为仓库保留的历史版本记录。
 
-### v1.9.15（当前开发版）
+### v1.9.15（历史记录）
 
 - 首页新建弹窗增加 PDF 与 Access，新建 Access 默认生成 `.accdb`。
 - 新增 Windows Access 2003 MDB / Access 2007 至今 ACCDB 数据库工作区。

@@ -1,0 +1,11 @@
+{
+  "version": "2.2.2",
+  "platform": "web",
+  "archive": "release/v2.2.2/seal-office-2.2.2-web.zip",
+  "bytes": 38391823,
+  "sha256": "4cc3b4633d9da2a8948b2f396e2d84d911e4ce59b15b78f1903458e42a7f5c3b",
+  "files": 38,
+  "crcAndAllPayloadHashesVerified": true,
+  "bundleSha256": "f20b25536c7e80367ed2014b32dd1b0fe16245ddf205b834e433db2e33d4554c",
+  "browserReport": "docs/verification/v2.2.2/mobile-web/web/result.json"
+}

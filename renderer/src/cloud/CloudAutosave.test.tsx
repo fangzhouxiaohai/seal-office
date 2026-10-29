@@ -10,7 +10,8 @@ const require=createRequire(import.meta.url),native=require('../../../main/offic
 const fixture=vi.hoisted(()=>({store:{} as any,state:{} as any,call:vi.fn(),refresh:vi.fn(async()=>{})}))
 vi.mock('../store',()=>({useAppStore:()=>fixture.store}))
 vi.mock('./CloudProvider',()=>({useCloud:()=>({state:fixture.state,refresh:fixture.refresh,configure:vi.fn()}),cloudCall:fixture.call}))
-vi.mock('../ipc/bridge',()=>({桥接:{presentationResources:{export:vi.fn(async()=>({成功:true,条目:[]}))},office:{writeDocx:vi.fn(async()=>({成功:true,数据:'UEs='})),writeSeal:vi.fn(async(type:string,model:unknown)=>{const {createRequire}=await import('node:module');const codec=createRequire(import.meta.url)('../../../main/office/sealFormat.js');return {成功:true,数据:(await codec.writeSeal(type,model)).toString('base64')}})}}}))
+// 文件绑定导入时会注册字体增强；此处只隔离桥接注册，专属格式仍用真实编解码器验收。
+vi.mock('../ipc/bridge',()=>({注册海豹格式增强:vi.fn(),桥接:{presentationResources:{export:vi.fn(async()=>({成功:true,条目:[]}))},office:{writeDocx:vi.fn(async()=>({成功:true,数据:'UEs='})),writeSeal:vi.fn(async(type:string,model:unknown)=>{const {createRequire}=await import('node:module');const codec=createRequire(import.meta.url)('../../../main/office/sealFormat.js');return {成功:true,数据:(await codec.writeSeal(type,model)).toString('base64')}})}}}))
 beforeEach(()=>{
   vi.useFakeTimers();fixture.call.mockReset();fixture.call.mockImplementation(async(action,input)=>action==='save'?{id:input.linkId,statuses:{[input.linkId]:'离线待同步'}}:{})
   fixture.state={account:{id:'user',enabled:true,autosave:true},unlocked:true,statuses:{}}

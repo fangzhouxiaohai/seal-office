@@ -68,10 +68,10 @@ def main():
     for v in report['videos']:
         mobile=v['platform']=='android';prefix=v['file'].removesuffix('.mp4');source=read(WORK/(v['platform']+'-recording.json'))
         chapters='\n'.join(f'{int(s["start"])//60:02d}:{int(s["start"])%60:02d} {s["title"]}' for s in source['steps'])
-        title='海豹办公 2.1.2 安卓操作教程：全屏阅读、海豹助手、表格公式与脑图' if mobile else '海豹办公 2.1.2 电脑操作教程：新建保存、表格公式、演示模板和脑图'
-        description=('海豹办公 2.1.2 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n'+chapters+'\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2-mobile-logo\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.1.2\n\n'+('画面为生产构建的移动浏览器布局及触摸输入演示，并非 APK 真机录屏。' if mobile else '画面为当前生产构建的 PC 网页布局，使用隔离的演示文件。')+'配音为经用户试听确认的合成语音。')
+        title=f'海豹办公 {VERSION} 安卓操作教程：全屏阅读、海豹助手、表格公式与脑图' if mobile else f'海豹办公 {VERSION} 电脑操作教程：新建保存、表格公式、演示模板和脑图'
+        description=(f'海豹办公 {VERSION} 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n'+chapters+f'\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v{VERSION}\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v{VERSION}\n\n'+('画面为生产构建的移动浏览器布局及触摸输入演示，并非 APK 真机录屏。' if mobile else '画面为当前生产构建的 PC 网页布局，使用隔离的演示文件。')+'配音为经用户试听确认的合成语音。')
         submissions.append({'title':title,'video':str(OUT/v['file']),'videoSha256':v['sha256'],'cover':str(OUT/(prefix+'-cover.jpg')),'subtitles':str(OUT/(prefix+'.srt')),'description':description,'tags':['海豹办公','办公软件','使用教程','效率工具','安卓应用' if mobile else '电脑软件'],'published':False,'url':None})
-    bili={'version':VERSION,'status':'awaiting-browser-connection','published':False,'reason':'Current task exposes only Codex MCP Apps; direct Edge and Chrome connections unavailable. No Bilibili upload or submission has occurred.','submissions':submissions}
+    bili={'version':VERSION,'status':'not-requested','published':False,'reason':'本次未要求上传或投稿；仅生成本机成片、字幕、封面与投稿文案，未执行 B 站投稿。','submissions':submissions}
     write(OUT/f'seal-office-{VERSION}-bilibili-submissions.json',bili);write(DOC/'bilibili-submissions.json',bili)
     names=[]
     for p in ['pc','android']:
@@ -92,7 +92,7 @@ def main():
 - 画面是生产 Web / Android 布局的浏览器实录，移动触摸由 Chromium 输入驱动；不称为 APK 真机录像。配音采用专用新文案，不复用原样音业务内容或原波形。
 - 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不会修改安装包或平台源码。
 
-B 站尚未投稿：当前任务只暴露 Codex MCP Apps，无法接入 Edge / Chrome。已备好逐条投稿文案和素材路径，见 bilibili-submissions.json。
+B 站尚未投稿：本次未要求上传或投稿。已备好逐条投稿文案和素材路径，见 bilibili-submissions.json。
 ''',encoding='utf-8')
     cleanup=[]
     if args.clean:

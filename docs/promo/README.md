@@ -6,6 +6,8 @@
 
 当前下载：[PC 横版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-pc-intro-1080p.mp4) · [Android 竖版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-intro-1080p.mp4)。
 
+2.1.2 另有一条 36 秒横版功能短片（1920×1080、30 fps、7 段字幕），使用用户指定试听样音的同一晓晓声线重录文案，制作与核验记录见 [short-promo-2.1.2.md](short-promo-2.1.2.md)。它不替代每版常规的双画幅介绍片。
+
 ## 1.9.8 历史制作记录（旧视频已移出当前交付）
 
 以下固定版本的脚本、链接和参数仅供查阅历史，不作为当前版本制作入口。

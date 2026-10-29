@@ -48,7 +48,7 @@ describe('表格网格', () => {
     const 单元 = container.querySelector('[data-地址="A1"]') as HTMLElement
     expect(单元.style.fontFamily).toContain('"宋体"')
     expect(单元.style.fontFamily).toContain('"Noto Serif CJK SC"')
-    expect(单元.style.fontSize).toBe('16px')
+    expect(单元.style.fontSize).toBe('16pt')
     expect(单元.style.justifyContent).toBe('flex-end')
     expect(单元.style.alignItems).toBe('flex-start')
   })

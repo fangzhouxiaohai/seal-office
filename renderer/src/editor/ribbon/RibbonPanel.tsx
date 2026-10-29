@@ -53,6 +53,8 @@ const RibbonPanel = ({
             ? React.createElement(FontPicker, {
                 key: `${组.name}-${项.commandId}`,
                 label: 项.label,
+                commandId: 项.commandId,
+                fallbackOptions: 项.options as Array<string | { label: string; value: string }> | undefined,
                 currentValue: 获取当前值?.(项.commandId) ?? 项.currentValue,
                 禁用: 获取禁用态 ? 获取禁用态(项.commandId) : false,
                 onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),

@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "group": "diagram",
+  "errors": [],
+  "checks": [
+    "首次脑图/流程图导航显示独立空项目列表与可操作新建入口，未自动创建共享画布",
+    "脑图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "流程图多项目列表：v1原图/原始备份迁移，UI新建A/B与独立正文，重命名/复制深隔离/搜索/删除回收站恢复，独立撤销重做，360/390/820px",
+    "脑图/流程图真实页面重载后默认列表，A/B/副本三项目ID、正文、备注独立持久化，两类型互不串图"
+  ],
+  "diagnostic": {
+    "body": "办公服务\n导入文件\n返回全部服务\n本机项目\n云端与协作\n返回项目列表\n验收脑图A-1793268741095\n\n脑图 · 自动保存到本机。Tab 添加分支，Enter 添加同级，方向键移动；可导出可编辑数据、SVG 和原生演示。\n\n已保存到本机\n新建项目\n导入数据\n导出数据\n转为演示\n导出图片\n添加节点\n撤销\n重做\n自动布局\n−\n43%\n＋\n适配画布\n审核通过\n生产主题\n生产判断\n●\n新分支\n新分支\n节点与连线编辑\n节点编辑\n文字\n节点备注\n保存文字\n节点形状\n矩形\n圆角矩形\n椭圆\n菱形\n海蓝\n青绿\n暖橙\n紫色\n横向位置\n纵向位置\n连接到\n选择目标节点\n生产判断\n新分支\n新分支\n添加连线\n删除节点\n连线\n生产主题 至 生产判断\n删除\n生产判断 至 新分支\n删除\n生产判断 至 新分支\n删除\n首页\n云盘\n服务\n模板\n我的",
+    "ready": "complete",
+    "api": true,
+    "url": "http://127.0.0.1:4196/"
+  },
+  "error": "AssertionError [ERR_ASSERTION]: 缩放后横向拖动坐标{\"drag\":{\"id\":\"production-root\",\"x\":60.73749923706055,\"y\":579.8699951171875,\"zoom\":0.43375},\"before\":{\"id\":\"production-root\",\"文本\":\"生产主题\",\"x\":80,\"y\":132,\"形状\":\"圆角矩形\"},\"after\":{\"id\":\"production-root\",\"文本\":\"生产主题\",\"x\":80,\"y\":132,\"形状\":\"圆角矩形\"},\"events\":[{\"type\":\"pointermove\",\"x\":61,\"y\":580,\"button\":-1,\"buttons\":0,\"tag\":\"DIV\",\"cls\":\"ant-modal-wrap\",\"pointer\":2},{\"type\":\"pointerdown\",\"x\":61,\"y\":580,\"button\":0,\"buttons\":1,\"tag\":\"DIV\",\"cls\":\"ant-modal-wrap\",\"pointer\":2},{\"type\":\"pointermove\",\"x\":101,\"y\":604,\"button\":-1,\"buttons\":1,\"tag\":\"DIV\",\"cls\":\"diagram-board\",\"pointer\":2},{\"type\":\"pointerup\",\"x\":101,\"y\":604,\"button\":0,\"buttons\":0,\"tag\":\"DIV\",\"cls\":\"diagram-board\",\"pointer\":2}]}\n    at diagramActions (E:\\seal-office\\mobile\\tests\\diagram-browser-actions.cjs:69:1147)\n    at async E:\\seal-office\\mobile\\tests\\extended-browser.cjs:65:30"
+}

@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "group": "editor",
+  "errors": [],
+  "checks": [
+    "Word 图片：八个尺寸手柄、触摸缩放与取消、手柄旋转、布局、预览、翻转、真实像素裁剪、撤销重做、正文触摸移动、删除及撤销、缩放选框与移动工具条、工作区恢复",
+    "修订：生产WebView真实插删/格式历史、作者时间、markup/final/original无损切换、CtrlHome排除源包、360/390/820px面板及实际DOCX保存重开"
+  ],
+  "diagnostic": {
+    "body": "动态数组生产验收.xlsx\n开启云文档自动保存，在不同设备继续编辑；文件加密上传，由你决定是否开启。\n开启云端能力\n关闭\n开始\n插入\n页面布局\n公式\n数据\n审阅\n视图\n打开\n保存\n另存为\n打印当前工作表\n文件\n粘贴\n剪贴板\n撤销\n宋体\n字体颜色\n填充颜色\n边框\n字体\n对齐方式\n常规\n数字\n自动求和\n清除内容\n升序\n降序\n自适应列宽\n编辑\nfx\nExcel 兼容\nWPS 兼容\nA\nB\nC\nD\nE\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n20\n21\n20\n22\n22\n23\n21\n23\n24\n25\n26\n27\n1\n2\n3\n动态数组\nData\n计数：1\n·\n求和：2\n·\n平均值：2\n150%\n首页\n未命名文档.sldoc\n修订生产验收.docx\n动态数组生产验收.xlsx\n首页\n云盘\n服务\n模板\n我的",
+    "ready": "complete",
+    "api": true,
+    "url": "http://127.0.0.1:8079/"
+  },
+  "error": "Error: 名称框未定位到单元格 H1\n    at until (E:\\seal-office\\mobile\\tests\\spill-browser-actions.cjs:7:139)\n    at async locate (E:\\seal-office\\mobile\\tests\\spill-browser-actions.cjs:13:5)\n    at async cellText (E:\\seal-office\\mobile\\tests\\spill-browser-actions.cjs:15:39)\n    at async spillBrowserActions (E:\\seal-office\\mobile\\tests\\spill-browser-actions.cjs:42:18)\n    at async E:\\seal-office\\mobile\\tests\\extended-browser.cjs:62:100"
+}

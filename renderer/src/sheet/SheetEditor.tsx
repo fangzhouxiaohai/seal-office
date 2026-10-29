@@ -133,10 +133,25 @@ const SheetEditor = () => {
   const [图表打开, set图表打开] = useState(false)
   useEffect(() => set图表打开(false), [activeDocumentId, 当前索引])
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
-  const [缩放, set缩放] = useState(默认文件缩放)
-  useEffect(() => { set缩放(默认文件缩放) }, [activeDocumentId])
+  const 视图工作表 = 工作表列表[有效当前索引]
+  const 视图键 = `${activeDocumentId ?? '独立'}:${视图工作表.id}`
+  const [只读视图, set只读视图] = useState<Record<string, NonNullable<Sheet['视图']>>>({})
+  const 来源视图 = 实时协作.readOnly ? 只读视图[视图键] ?? 视图工作表.视图 : 视图工作表.视图
+  const 缩放 = 来源视图?.缩放 !== undefined && Number.isFinite(来源视图.缩放) && 来源视图.缩放 > 0 ? 来源视图.缩放 / 100 : 默认文件缩放
+  const 更新当前视图 = (更新: NonNullable<Sheet['视图']>) => {
+    if (实时协作.readOnly) {
+      set只读视图(当前 => ({ ...当前, [视图键]: { ...来源视图, ...更新 } }))
+      return
+    }
+    set工作表列表(当前 => 当前.map(项 => 项.id === 视图工作表.id ? { ...项, 视图: { ...项.视图, ...更新 } } : 项))
+  }
+  const set缩放: React.Dispatch<React.SetStateAction<number>> = 更新 => {
+    const 目标 = typeof 更新 === 'function' ? 更新(缩放) : 更新
+    if (Number.isFinite(目标) && 目标 > 0 && 目标 !== 缩放) 更新当前视图({ 缩放: 目标 * 100 })
+  }
   const [当前视图, set当前视图] = useState<'普通' | '页面布局'>('普通')
-  const [显示网格线, set显示网格线] = useState(true)
+  const 显示网格线 = 来源视图?.显示网格线 ?? true
+  const set显示网格线 = (显示: boolean) => 更新当前视图({ 显示网格线: 显示 })
   const [拆分映射, set拆分映射] = useState<Record<string, boolean>>({})
   const [活动窗格, set活动窗格] = useState(0)
   const 图片输入引用 = useRef<HTMLInputElement>(null)
@@ -1192,6 +1207,7 @@ const SheetEditor = () => {
         scale: 缩放,
         冻结,
         隐藏行,
+        跟随选区: 窗格 === 活动窗格,
         on选中: (位置: 单元格位置, 扩展选区: boolean) => {
           set活动窗格(窗格)
           if (扩展选区) {

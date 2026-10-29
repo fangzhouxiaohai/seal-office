@@ -66,7 +66,7 @@ const 开始标签: RibbonTabSpec = {
     {
       name: '字体',
       items: [
-        下拉('text.font', '字体', 'doc-word', [], '微软雅黑'),
+        下拉('text.font', '字体', 'doc-word', ['微软雅黑', '思源宋体', '等线', '宋体', '黑体', '楷体', '仿宋'], '微软雅黑'),
         小('text.bold', '加粗', 'bold'),
         小('text.italic', '斜体', 'italic'),
         小('text.underline', '下划线', 'underline'),

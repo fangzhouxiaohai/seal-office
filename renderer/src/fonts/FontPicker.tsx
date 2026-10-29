@@ -7,7 +7,10 @@ import './fonts.css'
 
 interface Props {
   label?: string
+  commandId?: string
   currentValue?: string
+  /** 字体目录尚未加载时使用的静态候选，避免打开空菜单。 */
+  fallbackOptions?: Array<string | { label: string; value: string }>
   禁用?: boolean
   onSelect?: (名称: string) => void
   onDropdownOpen?: (beforeFocus?: boolean) => void
@@ -23,7 +26,7 @@ const 分组顺序: Array<{ 来源: 字体族['来源']; 标题: string; 说明:
 
 const 预览文字 = '公文排版 海豹办公 Aa 123'
 
-export default function FontPicker({ label = '字体', currentValue, 禁用, onSelect, onDropdownOpen }: Props) {
+export default function FontPicker({ label = '字体', commandId, currentValue, fallbackOptions, 禁用, onSelect, onDropdownOpen }: Props) {
   const { message } = AntdApp.useApp()
   const catalog = useFontCatalog()
   const [打开, set打开] = useState(false)
@@ -61,6 +64,12 @@ export default function FontPicker({ label = '字体', currentValue, 禁用, onS
     字体: 过滤后.filter((项) => 项.来源 === 组.来源),
   })).filter((组) => 组.字体.length > 0)
 
+  const 回退候选 = useMemo(() => (fallbackOptions ?? []).map((项) => typeof 项 === 'string' ? { label: 项, value: 项 } : 项), [fallbackOptions])
+  const 选择回退 = (值: string) => {
+    onSelect?.(值)
+    set打开(false)
+  }
+
   const 选择 = async (项: 字体族) => {
     const 家族 = 项.记录[0]?.家族 ?? 项.名称
     try {
@@ -91,7 +100,15 @@ export default function FontPicker({ label = '字体', currentValue, 禁用, onS
         {catalog.状态 === '加载中' || catalog.刷新中 ? <span className="seal-font-menu__loading">正在读取系统字体…</span> : null}
       </div>
       <div className="seal-font-menu__list">
-        {分组.length === 0 ? <div className="seal-font-menu__empty">{catalog.状态 === '加载中' ? '正在读取字体目录' : '没有匹配的字体'}</div> : null}
+        {分组.length === 0 && 回退候选.length > 0 ? <section className="seal-font-menu__group" aria-label="常用字体">
+          <header><span>常用字体</span><small>{回退候选.length}</small></header>
+          {回退候选.filter((项) => !查询.trim() || 项.label.toLowerCase().includes(查询.trim().toLowerCase())).map((项) => (
+            <button key={`fallback:${项.value}`} type="button" className={`seal-font-menu__item${项.value === 当前 ? ' is-current' : ''}`} onClick={() => 选择回退(项.value)} title={`常用字体：${项.label}`}>
+              <span className="seal-font-menu__name" style={{ fontFamily: 字体回退Css(项.value) }}>{项.label}</span>
+            </button>
+          ))}
+        </section> : null}
+        {分组.length === 0 && 回退候选.length === 0 ? <div className="seal-font-menu__empty">{catalog.状态 === '加载中' ? '正在读取字体目录' : '没有匹配的字体'}</div> : null}
         {分组.map((组) => {
           const 显示 = 查询.trim() || 展开 ? 组.字体 : 组.字体.slice(0, 24)
           return (
@@ -125,7 +142,7 @@ export default function FontPicker({ label = '字体', currentValue, 禁用, onS
 
   return (
     <Popover content={内容} trigger="click" open={打开} onOpenChange={(值) => { set打开(值); if (值) onDropdownOpen?.(true) }} placement="bottomLeft" overlayClassName="seal-font-popover">
-      <button type="button" className="wps-ribbon-button wps-ribbon-button--large seal-font-trigger" aria-label={label} title={禁用 ? '当前文档只读' : `字体：${当前}`} disabled={禁用} onMouseDown={(事件) => 事件.preventDefault()} onClick={() => onDropdownOpen?.(true)}>
+      <button type="button" className="wps-ribbon-button wps-ribbon-button--large seal-font-trigger" aria-label={label} data-seal-command-menu={commandId} title={禁用 ? '当前文档只读' : `字体：${当前}`} disabled={禁用} onMouseDown={(事件) => 事件.preventDefault()} onClick={() => onDropdownOpen?.(true)}>
         <Icon name="doc-word" size={20} />
         <span className="wps-ribbon-button__value">{当前显示}</span>
         <span className="wps-ribbon-button__caret" />

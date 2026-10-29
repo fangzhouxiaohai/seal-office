@@ -1,0 +1,28 @@
+{
+  "原件未修改": true,
+  "原件SHA256": "60223d5ccd7a813d4d988af60d5979b218ec23bb367f6bcc0c4c592fcf9d3e2c",
+  "临时副本清理完成": true,
+  "清理时间": "2026-10-29T21:10:00+08:00",
+  "清理范围": [
+    ".upgrade-private/sheet-layout",
+    ".upgrade-private/sheet-packaged-codecs",
+    ".upgrade-private/sheet-packaged-codecs-final",
+    ".upgrade-private/sheet-installer-payload",
+    ".upgrade-private/assistant-preview",
+    ".upgrade-private/mobile-verification",
+    "E:/Temp/seal-windows-release-5fef6849a207456fa58272e6e764932b",
+    "E:/Temp/seal-windows-release-77dea7cd772d491594fd84be4f8a2c58",
+    "E:/Temp/seal-windows-release-93c20085785a48e5b19e1c21bdf3c99b",
+    "E:/Temp/seal-windows-release-95cdd33e7fd64237a27e8f70f0ba1c5d",
+    "E:/Temp/seal-windows-release-aaf0b05a9513477a9227f1158d25c853",
+    "E:/Temp/seal-windows-release-ba84c93ea85e453aa50f9a78b4bcca0e",
+    "E:/Temp/seal-windows-release-d175ba696d3b4be8af6249f33a82709f",
+    "E:/Temp/seal-windows-release-d1fc8103d7e24783943b1d767b564125",
+    "E:/Temp/seal-windows-release-f182a5f7d90d4af6abf698c49584db28",
+    "E:/Temp/seal-windows-release-f981ef97fb6a4c16b9ecd614e94c2d40"
+  ],
+  "说明": "含原始业务数据的隔离保存副本、桌面验收临时用户目录和浏览器验收配置已删除；仓库仅保留结构、计数、摘要和匿名截图。原件前后 SHA-256 一致，未被编辑、保存或覆盖。",
+  "归档报告不含业务内容": true,
+  "临时副本不列入发行附件": true,
+  "历史原生成品备份保留": true
+}

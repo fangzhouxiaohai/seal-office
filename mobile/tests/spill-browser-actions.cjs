@@ -5,18 +5,28 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 module.exports = async function spillBrowserActions({ win, evaluate, output, checks = [] }) {
   const pause = () => new Promise(resolve => setTimeout(resolve, 100))
   const until = async (code, label) => { for (let attempt=0;attempt<120;attempt++) { if(await evaluate(code)) return;await pause() }throw new Error(label) }
+  // 视口渲染不会挂载屏幕外单元格，先用真实名称框导航再检查显示。
+  const locate = async address => {
+    await evaluate(`(()=>{const input=document.querySelector('[aria-label="名称框"]');input.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(address)});input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+    await pause()
+    await evaluate(`document.querySelector('[aria-label="名称框"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))`)
+    await until(`!!document.querySelector('[data-地址="${address}"]')`, '名称框未定位到单元格 '+address)
+  }
+  const cellText = async address => { await locate(address);return evaluate(`document.querySelector('[data-地址="${address}"]').textContent`) }
   const filename = await evaluate(`(async()=>{const api=window.electronAPI;window.__spillBrowserProbe={open:api.showOpenDialog,save:api.saveToFile,saved:[],blurred:0};api.saveToFile=async(...args)=>{const result=await window.__spillBrowserProbe.save.apply(api,args);window.__spillBrowserProbe.saved.push({path:args[0],success:result.成功});return result};const model={工作表:[{名称:'动态数组',数据:[[{公式:'SEQUENCE(3,2,10)',结果:9999,动态数组:true,数组范围:'A1:B3'},9999,'',{公式:'TRANSPOSE(A1#)',结果:9999,动态数组:true,数组范围:'D1:F2'},9999,9999,'',{公式:'LEN("😀")',结果:9999}],[9999,9999,'',9999,9999,9999,'',{文字:[{文本:'5'}],数据验证:{类型:'整数',最小值:1,最大值:10,允许空白:false}}],[9999,9999],[],[],[{公式:'Data!A1:B2',结果:9999,动态数组:true,数组范围:'A6:B7'},9999],[9999,9999]]},{名称:'Data',数据:[[1,''],[2,3]]}]};const bytes=await api.office.writeXlsx(model);if(!bytes.成功)throw new Error(bytes.错误);const file=await api.showSaveDialog('动态数组生产验收.xlsx','table');const saved=await api.saveToFile(file,bytes.数据,'二进制');if(!saved.成功)throw new Error(saved.错误);window.__spillBrowserProbe.saved=[];api.showOpenDialog=async()=>file;(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})();return file})()`)
   try {
     await until(`document.querySelector('[data-地址="B3"]')?.textContent==='15'`, '真实XLSX动态数组必须在编辑器重新计算，不能沿用故意错误9999缓存')
-    assert.equal(await evaluate(`document.querySelector('[data-地址="F2"]').textContent`),'15')
-    assert.equal(await evaluate(`document.querySelector('[data-地址="H1"]').textContent`),'1')
-    assert.equal(await evaluate(`document.querySelector('[data-地址="B6"]').textContent`),'0')
-    await evaluate(`document.querySelector('[data-地址="B2"]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}))`);await pause()
+    assert.equal(await cellText('F2'),'15')
+    assert.equal(await cellText('H1'),'1')
+    assert.equal(await cellText('B6'),'0')
+    await locate('B2')
+    await evaluate(`document.querySelector('[data-地址="B2"]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));document.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,button:0}))`);await pause()
     assert.ok(await evaluate(`document.querySelector('[aria-label="公式栏"]').readOnly`))
     assert.match(await evaluate(`document.querySelector('[role="status"]').textContent`),/^动态数组结果来自 A1，请在锚点编辑公式；结果区域不能单独修改。$/)
     await evaluate(`document.querySelector('[data-地址="B2"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));document.querySelector('.wps-sheet').dispatchEvent(new KeyboardEvent('keydown',{key:'Delete',bubbles:true,cancelable:true}))`)
     assert.equal(await evaluate(`!!document.querySelector('.wps-sheet__editor')`),false)
     assert.equal(await evaluate(`document.querySelector('[data-地址="B2"]').textContent`),'13')
+    await locate('A1')
     await evaluate(`document.querySelector('[data-地址="A1"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);await pause()
     await evaluate(`(()=>{const input=document.querySelector('.wps-sheet__editor');window.__spillBrowserProbe.blurInput=input;window.__spillBrowserProbe.blurListener=()=>window.__spillBrowserProbe.blurred++;input.addEventListener('blur',window.__spillBrowserProbe.blurListener);input.focus();input.select();})()`)
     await win.webContents.insertText('=SEQUENCE(4,2,20)');await pause()
@@ -29,15 +39,16 @@ module.exports = async function spillBrowserActions({ win, evaluate, output, che
     assert.equal(origin.D1.数组范围,'D1:G2');assert.equal(origin.D1.数组缓存.G2,27);assert.match(origin.D1.原始值,/ANCHORARRAY/)
     assert.ok(await evaluate(`document.activeElement.classList.contains('wps-sheet__editor')`),'保存不能通过blur偷偷提交')
     await evaluate(`(()=>{const select=document.querySelector('[aria-label="公式兼容模式"]');select.value='WPS';select.dispatchEvent(new Event('change',{bubbles:true}))})()`);await pause()
-    assert.equal(await evaluate(`document.querySelector('[data-地址="H1"]').textContent`),'2')
-    assert.equal(await evaluate(`document.querySelector('[data-地址="B6"]').textContent`),'')
+    assert.equal(await cellText('H1'),'2')
+    assert.equal(await cellText('B6'),'')
     await evaluate(`window.__spillBrowserProbe.saved=[];document.querySelector('.wps-sheet').dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`)
     await until(`window.__spillBrowserProbe.saved.length>0`,'WPS兼容模式必须可实际保存')
     const compatibility=await evaluate(`(async()=>{const api=window.electronAPI,file=await api.readFile(${JSON.stringify(filename)});return api.office.readXlsx(file.内容)})()`)
     assert.equal(compatibility.工作表列表[0].元数据.公式兼容模式,'WPS');assert.equal(compatibility.工作表列表[0].元数据.公式来源.H1.结果,2)
     for(const width of[390,1280]){win.setContentSize(width,844);await pause();assert.ok(await evaluate(`document.querySelector('.wps-sheet-toolbar').scrollWidth<=document.querySelector('.wps-sheet-toolbar').clientWidth+1`));if(output)await win.capturePage().then(image=>fs.writeFileSync(path.join(output,'spill-'+width+'.png'),image.toPNG()))}
     await evaluate(`(()=>{const select=document.querySelector('[aria-label="公式兼容模式"]');select.value='Excel';select.dispatchEvent(new Event('change',{bubbles:true}))})()`);await pause()
-    assert.equal(await evaluate(`document.querySelector('[data-地址="H1"]').textContent`),'1')
+    assert.equal(await cellText('H1'),'1')
+    await locate('H2')
     await evaluate(`document.querySelector('[data-地址="H2"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);await pause()
     await evaluate(`(()=>{const input=document.querySelector('.wps-sheet__editor');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'999');input.dispatchEvent(new Event('input',{bubbles:true}));window.__spillBrowserProbe.saved=[]})()`);await pause()
     await evaluate(`document.querySelector('.wps-sheet__editor').dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`)

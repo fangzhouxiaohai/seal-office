@@ -1,0 +1,83 @@
+{
+  "version": "2.2.2",
+  "passed": true,
+  "checks": [
+    "完整性清单：142 个文件",
+    "SLDOC/SLXLS/SLPPT/SPDF：成品编解码、两轮磁盘保存重开、Unicode/图片/修订/公式缓存/PDF字节与字体资源保留",
+    "DOCX：正文图片、页眉与页脚保存重开",
+    "DOCX：包内真实插入/删除/移动修订、作者时间与源包历史重开",
+    "XLSX：多表、公式及图片导入",
+    "XLSX：绝对引用及未知函数公式原文、false与空字符串来源缓存保留",
+    "XLSX：动态数组元数据、未来函数存储名、1904合法布尔及日期/前导零原始数字格式",
+    "XLSX：字号、字体、颜色、填充、边框、对齐、行列尺寸、冻结、公式及图片连续三次保存重开",
+    "PPTX：三页文字与图片导入",
+    "PPTX：三页文字字号、字体格式、颜色、对齐、图片及备注连续三次保存重开",
+    "PDF：文字编辑、旋转、插入及删除页面保存重开",
+    "打印预览：成品模块生成真实 PDF"
+  ],
+  "nativeFormats": {
+    "passed": true,
+    "formats": [
+      {
+        "extension": "sldoc",
+        "type": "word",
+        "cycles": 2,
+        "bytes": 1213,
+        "sha256": "fecc15af621f81a571f157c9b57ea7701c8c34de8a53f2e3cafc677bb073c57b",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "slxls",
+        "type": "table",
+        "cycles": 2,
+        "bytes": 1670,
+        "sha256": "11e383f056e1fea135e6dcc065c24bfc162621fc74e770051b60cc83f9492e27",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "slppt",
+        "type": "ppt",
+        "cycles": 2,
+        "bytes": 1202,
+        "sha256": "6923787fc835d9cd6a04ff49fb2b82bc4a5a43fb8802af5654fe15d8c5405a7f",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": true
+      },
+      {
+        "extension": "spdf",
+        "type": "pdf",
+        "cycles": 2,
+        "bytes": 51337,
+        "sha256": "a964ceeab2259ca002a360527dff82d1dde2243734a1105f32aa63c7fa2dc4ac",
+        "unicodeAndResourcesPreserved": true,
+        "legacyAliasReadable": false
+      }
+    ],
+    "fonts": [
+      {
+        "name": "NotoSansSC.ttf",
+        "bytes": 17772300,
+        "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+      },
+      {
+        "name": "NotoSerifCJKsc-Regular.otf",
+        "bytes": 24543080,
+        "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+      },
+      {
+        "name": "OFL.txt",
+        "bytes": 4387,
+        "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+      },
+      {
+        "name": "NotoSerif-LICENSE.txt",
+        "bytes": 4301,
+        "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+      }
+    ],
+    "modifiesUserDefaults": false,
+    "installsApplication": false
+  }
+}

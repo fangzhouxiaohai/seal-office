@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "group": "workspace",
+  "platform": "web",
+  "version": "2.2.2",
+  "checks": [
+    "多维表格真实表单→看板→原生XLSX（零预算/Unicode）；笔记自动保存/预览/JSON恢复；设计真实画布→SLPPT/PPTX保存文件重开保留尺寸和对象；360/390/820/1280px布局"
+  ],
+  "errors": [],
+  "scheme": "http"
+}

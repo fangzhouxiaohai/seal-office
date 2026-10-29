@@ -5,7 +5,16 @@ import { transform } from 'esbuild'
 
 test('鸿蒙另存为仅在系统目标写入后返回成功，取消不会报告保存成功', async () => {
   const source = await fs.readFile(new URL('../native/export.uts', import.meta.url), 'utf8')
-  const harmony = source.replace(/\/\/ #ifndef APP-HARMONY[\s\S]*?\/\/ #endif/g,'').replace(/^import .*$/gm,'')
+  // 条件编译块可以嵌套，不能用非贪婪正则在第一个结束标记截断外层块。
+  const 启用 = new Set(['APP', 'APP-HARMONY']), 栈 = [true]
+  const harmony = source.split('\n').filter(行 => {
+    const 标记 = 行.match(/^\s*\/\/ #(ifdef|ifndef|endif)(?:\s+([A-Z-]+))?/)
+    if (!标记) return 栈.at(-1)
+    if (标记[1] === 'endif') 栈.pop()
+    else 栈.push(栈.at(-1) && (标记[1] === 'ifdef' ? 启用.has(标记[2]) : !启用.has(标记[2])))
+    return false
+  }).join('\n').replace(/^import .*$/gm, '')
+  assert.doesNotMatch(harmony, /shareExport\(/)
   const compiled = await transform(harmony, { loader: 'ts', format: 'esm' })
   const previous = { picker: globalThis.picker, fileIo: globalThis.fileIo, print: globalThis.print, UTSHarmony: globalThis.UTSHarmony }
   let select, copied = false, closed = false

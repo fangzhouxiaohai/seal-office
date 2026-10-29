@@ -15,20 +15,23 @@ app.whenReady().then(async () => {
     const entry = `
       import React from 'react';import {createRoot} from 'react-dom/client';import {flushSync} from 'react-dom';
       import {App as AntdApp,ConfigProvider} from 'antd';import {AppProvider,useAppStore} from './renderer/src/store';
+      import {CloudProvider} from './renderer/src/cloud/CloudProvider';
       import Assistant from './renderer/src/assistant/AiAssistant';import {交给助手,通用AI指令} from './renderer/src/assistant/quickActions';
       import {应用主题} from './renderer/src/styles/themes';
       const mount=createRoot(document.getElementById('root'));let store,stream,releaseConfig,releaseSession,finish;
       window.start=(kind,theme)=>{
         flushSync(()=>mount.render(null));应用主题(theme);window.calls=[];window.configReads=0;window.guides=[];
         const config=new Promise(r=>releaseConfig=r),session=new Promise(r=>releaseSession=r);
-        window.electronAPI={backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),ai:{
+        window.electronAPI={backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),
+          cloud:{invoke:async(action)=>action==='status'?{成功:true,数据:{account:{id:'verify',phone:'13800000000',enabled:true,autosave:false,used:0,quota:300000000,identityVerified:true},unlocked:true,statuses:{},pending:0}}:action==='requireAIIdentity'?{成功:true,数据:{accountId:'verify',verified:true,method:'phone'}}:{成功:true,数据:null}},
+          ai:{
           getConfig:()=>{window.configReads++;return config},getSession:()=>session,
           onToolCall:()=>()=>{},onStream:fn=>{stream=fn;return()=>{}},
           chat:payload=>{window.calls.push(payload);return new Promise(r=>finish=r)},
           guide:async(id,text)=>{window.guides.push({id,text});return{成功:true}},cancel:async()=>({成功:true})
         }};
         const Harness=()=>{store=useAppStore();return <Assistant/>};
-        flushSync(()=>mount.render(<ConfigProvider button={{autoInsertSpace:false}}><AntdApp><AppProvider><Harness/></AppProvider></AntdApp></ConfigProvider>));
+        flushSync(()=>mount.render(<ConfigProvider button={{autoInsertSpace:false}}><AntdApp><CloudProvider><AppProvider><Harness/></AppProvider></CloudProvider></AntdApp></ConfigProvider>));
         flushSync(()=>store.createDoc(kind,kind==='word'?'<p>第一季度销售工作计划</p>':kind==='pdf'?'测试PDF数据':undefined,{名称:'销售计划.'+({word:'docx',table:'xlsx',ppt:'pptx',pdf:'pdf'}[kind])}));
         window.ask('分析销售目标，整理关键步骤');
       };
@@ -46,6 +49,7 @@ app.whenReady().then(async () => {
         })});
     `
     await require('esbuild').build({ stdin: { contents: entry, resolveDir: root, loader: 'tsx' }, bundle: true, platform: 'browser',
+      loader: { '.png': 'dataurl', '.svg': 'dataurl' },
       define: { 'process.env.NODE_ENV': '"production"', __APP_VERSION__: '"verification"' }, outfile: path.join(output, 'assistant.js') })
     const styles = fs.readFileSync(path.join(root, 'renderer/src/styles.css'), 'utf8')
     fs.writeFileSync(path.join(output, 'assistant.html'), `<!doctype html><meta charset="utf-8"><style>${styles}</style><link rel="stylesheet" href="assistant.css"><div id="root"></div><script src="assistant.js"></script>`)

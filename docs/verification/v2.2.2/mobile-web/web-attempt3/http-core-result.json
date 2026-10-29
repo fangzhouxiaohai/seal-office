@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "version": "2.2.2",
+  "platform": "web",
+  "checks": [
+    "生产构建可在无 Electron preload 的浏览器环境启动",
+    "DOCX/XLSX/PPTX 中文往返、文件持久保存、来源指纹冲突保护、模型安全配置",
+    "生产浏览器 XLSX 公式文本与缓存值往返保留，未知扩展函数不清空",
+    "原生保存只写本地文档空间；显式导出才调用系统分享",
+    "中文 PDF 生成与页面旋转",
+    "Word 旋转和翻转转为真实图片像素后写入 PDF，导出尺寸保持方向",
+    "页面重载后恢复本地文件与加密模型配置",
+    "无效工作区备份被阻止且允许保留后继续",
+    "手机菜单新建文字文档并进入真实编辑器",
+    "390px 文字正文重排、输入事件与编辑区域可见",
+    "真实工作区备份恢复未保存正文与文字编辑页面",
+    "手机阅读：导入默认只读、16–32 阅读字号、360/390/820px 重排、真实输入及格式快捷键保护、只读查找、恢复编辑保留原始 HTML",
+    "手机文件入口打开 PDF 并通过本地 Worker 绘制页面",
+    "390px 手机布局、底部触控导航、知识库与服务入口",
+    "五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏",
+    "table新建、页面及工具栏 7 个选项卡；公式栏写入单元格",
+    "ppt新建、页面及工具栏 9 个选项卡；触屏文本框拖动",
+    "pdf新建、页面及工具栏 0 个选项卡；PDF 工具入口",
+    "360/390/820/1280px 窄屏、平板与 PC 布局"
+  ],
+  "pptxAliasShape": {
+    "passed": true,
+    "strict": true,
+    "namespacePrefixes": [
+      "slides",
+      "draw",
+      "relation"
+    ],
+    "nativeShapesPreserved": 1,
+    "preservedText": "引号、Tab、换行、中文及 &<>"
+  },
+  "pptEditingSave": {
+    "passed": true,
+    "shortcut": "Ctrl+S",
+    "textareaFocusedBeforeShortcut": true,
+    "blurredBeforeShortcut": false,
+    "actualSavedFileReopened": true,
+    "latestDraftPreserved": true,
+    "unicodePreserved": true,
+    "charactersVerified": "😀𠀀👩🏽‍💻é"
+  },
+  "errors": [],
+  "scheme": "http"
+}

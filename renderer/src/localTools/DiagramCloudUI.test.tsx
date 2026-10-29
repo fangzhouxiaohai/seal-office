@@ -37,7 +37,13 @@ async function wire(actor: any, binding: any, source: DiagramCloudModel) { const
 async function teamEntry(type: '脑图' | '流程图', role = 'editor') { const source = model(type), team = await fixture.a.teamCreate({ name: '图形团队' }), invite = await fixture.a.teamInvite({ id: team.id, recipientPhone: '13800111002', role }); await fixture.b.teamAccept({ credential: invite.credential }); const saved = await fixture.a.teamSave({ id: team.id, name: source.title, filename: source.title + (type === '脑图' ? '.sealmind' : '.sealflow'), data: encodeDiagramFile(source) }); return { source, entry: { type: diagramType(type), title: source.title, name: source.title + (type === '脑图' ? '.sealmind' : '.sealflow'), binding: { kind: 'team', id: team.id, nodeId: saved.id, name: source.title, version: 1, editable: role !== 'viewer', accountId: fixture.b.status().account.id } } as DiagramCloudEntry } }
 const cachedModel = (binding: any) => { const state = fixture.b.realtimeRestore({ binding })?.state; if (!state) return null; const doc = new Y.Doc(); try { Y.applyUpdate(doc, Uint8Array.from(Buffer.from(state, 'base64'))); return decodeModel(doc.getMap('document').get('model')) } finally { doc.destroy() } }
 const online = () => waitFor(() => expect(document.querySelector('.diagram-cloud-status')).toHaveTextContent('实时共同编辑已连接'))
-const synchronize = async () => { await waitFor(() => expect(screen.getByRole('button', { name: '立即同步' })).toBeEnabled()); await userEvent.click(screen.getByRole('button', { name: '立即同步' })); await waitFor(() => expect(screen.getByRole('button', { name: '立即同步' })).toBeEnabled()) }
+const synchronize = async () => {
+  // 轮询只读取当前按钮状态，避免反复遍历可访问性树阻塞本地协作请求。
+  const button = screen.getByRole('button', { name: '立即同步' })
+  await waitFor(() => expect(button).toBeEnabled())
+  await userEvent.click(button)
+  await waitFor(() => expect(button).toBeEnabled())
+}
 
 it('真实UI把本机图同步到个人云，输入写入加密实时队列，断网重开恢复，重新联网同步', async () => {
   const local = createDiagramProject('脑图', '原本机项目', model().graph); new DiagramProjectStore('脑图').write(local, null)
