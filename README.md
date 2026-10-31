@@ -8,11 +8,19 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.2.2**，移动构建号 **20202**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [uni-app x 移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.3.0**，移动构建号 **20300**。共用编辑器与服务，原生端采用 UTS 外壳加载本地编辑器。2.1.1 已提供独立 Android/Harmony 云打包源码及用户云打包后验签的 Android APK、Harmony App Pack；设备验收范围及 Android 描述性构建元数据例外见[移动成品核验记录](docs/verification/v2.1.1/mobile-native-packages.json)。源码 ZIP 与原生安装成品明确区分。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。**默认 `pack` / `dist` 只打包 Android**，Windows 全套安装包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
-## 2.2.2 表格兼容、性能与助手界面
+## 2.3.0 界面焕新、打印修复与 Office 兼容
+
+- **打印空白修复**：PDF 预览不再直接交给隐藏窗口里的内置查看器打印（Electron 只会打印外层空页面），改为用 pdf.js 逐页渲染成图片 HTML 后交给系统打印，纵横混排页保持原始纸张尺寸。
+- **Office / WPS 兼容**：新建 DOCX 写入 Word 2013+ 兼容模式（compatibilityMode=15）与中文主题语言，Word 不再以“兼容模式”打开；PPTX、XLSX、DOCX 的文件属性不再出现 “PptxGenJS”“Un-named” 等占位值，PPTX 文本标记为简体中文。
+- **Vivid 界面**：紫罗兰主色与渐变主按钮，侧栏、图标栏、应用中心按入口分色，卡片、Ribbon、弹窗和菜单统一圆润造型，深色模式同步更新。
+
+详情与验收结果见[2.3.0 界面焕新与打印修复](docs/v2.3.0-界面焕新与打印修复.md)。
+
+## 2.2.2 表格兼容、性能与助手界面（历史记录）
 
 本次针对标准工作簿直接打开和已有海豹表格的交互卡顿，处理整列默认格式被误作数据边界、全表遍历和合并区域逐格展开的问题，并还原来源 70% 缩放与缩小字体设置。数据范围与整列布局分开保存，保留真实远端内容；旧专属格式通过可见区域渲染改善交互，不靠裁剪数据缩小工作表。保存时只为实际单元格创建记录，旧版大范围模型的空白占位不再写成百万级空值。
 
@@ -198,7 +206,7 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 ## 下载与平台交付
 
-当前源码为 **2.2.2 / 20202**。本次各平台产物、签名及交互验收状态见[2.2.2 修复说明](docs/v2.2.2-表格兼容与性能修复.md)，尚未完成的成品不列为可下载附件。正式下载以 [GitHub 发行列表](https://github.com/fangzhouxiaohai/seal-office/releases)和 [GitCode 发行列表](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases)中的实际版本、文件和校验清单为准。
+当前源码为 **2.3.0 / 20300**。本次各平台产物、签名及交互验收状态见[2.3.0 打包状态](docs/verification/v2.3.0/打包状态.md)，尚未完成的成品不列为可下载附件。正式下载以 [GitHub 发行列表](https://github.com/fangzhouxiaohai/seal-office/releases)和 [GitCode 发行列表](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases)中的实际版本、文件和校验清单为准。
 
 新发行统一使用 `seal-office` 文件名前缀；Windows 安装版、便携版、商店包及 Ubuntu、Web、移动云源码集中放入 `release/v2.2.2/`。Android 与 HarmonyOS 云源码分别归档，源码快照需要继续提交原生云打包，不能作为已生成或已验收的安装包。Windows 安装、Ubuntu 图形界面及移动真机结果分别记录，不能用静态验包代替。
 
@@ -501,7 +509,7 @@ renderer/src/
 
 ## 版本
 
-当前源码版本：2.2.2，移动构建号 20202。升级内容与待验状态见上方“2.2.2 表格兼容与性能修复”；以下为仓库保留的历史版本记录。
+当前源码版本：2.3.0，移动构建号 20300。升级内容与待验状态见上方“2.3.0 界面焕新、打印修复与 Office 兼容”；以下为仓库保留的历史版本记录。
 
 ### v1.9.15（历史记录）
 
