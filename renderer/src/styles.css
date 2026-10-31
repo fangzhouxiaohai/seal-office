@@ -1,8 +1,8 @@
 /* 设计令牌：浅色基调，与设计规格文档第二章一一对应 */
 :root {
-  --brand: #2b6cf6;
-  --brand-hover: #1e5ae0;
-  --brand-soft: #ebf1fe;
+  --brand: #6a5cf5;
+  --brand-hover: #5848e8;
+  --brand-soft: #efedff;
   --bg-app: #f5f7fa;
   --bg-card: #ffffff;
   --bg-hover: #f2f5fa;

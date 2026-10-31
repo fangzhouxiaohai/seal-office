@@ -41,18 +41,39 @@ import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
 import './fonts/fonts.css'
 
 /** 动态 Ant Design 主题配置 */
-const 主题配置 = ({ 深色, 移动 }: { 深色: boolean; 移动: boolean }) => ({
+const 主题配置 = ({ 深色 }: { 深色: boolean; 移动: boolean }) => ({
   algorithm: 深色 ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
-    colorPrimary: 深色 ? '#4A90E2' : '#2B6CF6',
-    colorText: 深色 ? '#E8EAED' : '#1A1D24',
-    colorTextSecondary: 深色 ? '#9AA0A6' : '#5C6472',
-    colorBgContainer: 深色 ? '#252A33' : '#FFFFFF',
-    colorBgElevated: 深色 ? '#2D333F' : '#FFFFFF',
-    borderRadius: 移动 ? 6 : 4,
-    boxShadow: 移动 ? '0 6px 16px rgba(0,0,0,.08)' : '0 3px 12px rgba(30,38,50,.08)',
-    boxShadowSecondary: '0 4px 16px rgba(30,38,50,.09)',
-    fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    colorPrimary: 深色 ? '#8D80FF' : '#6A5CF5',
+    colorInfo: 深色 ? '#8D80FF' : '#6A5CF5',
+    colorSuccess: '#16B378',
+    colorWarning: '#F59E0B',
+    colorError: '#F04461',
+    colorLink: 深色 ? '#A196FF' : '#5848E8',
+    colorText: 深色 ? '#ECEDF5' : '#1B1D2B',
+    colorTextSecondary: 深色 ? '#A3A7BC' : '#5A6075',
+    colorBorder: 深色 ? '#30334A' : '#E2E4EF',
+    colorBorderSecondary: 深色 ? '#282B3D' : '#ECEDF5',
+    colorBgContainer: 深色 ? '#1F2130' : '#FFFFFF',
+    colorBgElevated: 深色 ? '#252838' : '#FFFFFF',
+    colorBgLayout: 深色 ? '#14151F' : '#F4F5FB',
+    borderRadius: 10,
+    borderRadiusLG: 16,
+    borderRadiusSM: 8,
+    borderRadiusXS: 6,
+    controlHeight: 34,
+    boxShadow: '0 10px 30px rgba(54, 45, 140, .10), 0 2px 6px rgba(27, 29, 43, .05)',
+    boxShadowSecondary: '0 14px 40px rgba(54, 45, 140, .14), 0 3px 10px rgba(27, 29, 43, .06)',
+    fontFamily: '"HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif',
+    motionDurationMid: '0.18s',
+  },
+  components: {
+    Button: { primaryShadow: '0 6px 16px rgba(106, 92, 245, .28)', fontWeight: 500 },
+    Modal: { borderRadiusLG: 20 },
+    Tabs: { itemSelectedColor: 深色 ? '#A196FF' : '#5848E8', inkBarColor: 深色 ? '#8D80FF' : '#6A5CF5' },
+    Segmented: { itemSelectedBg: 深色 ? '#2C2950' : '#FFFFFF' },
+    Tooltip: { colorBgSpotlight: 'rgba(24, 24, 40, .92)' },
+    Menu: { itemBorderRadius: 10 },
   },
 })
 

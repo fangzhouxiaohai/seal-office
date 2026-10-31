@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { App as AntdApp, Button, Modal, Spin } from 'antd'
 import { 桥接 } from '../ipc/bridge'
 import PdfViewer from '../pdf/PdfViewer'
+import { 生成打印页面HTML } from './printPages'
 
 interface Props {
   内容: string
@@ -18,6 +19,7 @@ export default function PrintPreview({ 内容, 格式, 标题, onClose }: Props)
   const [进度, set进度] = useState('正在生成预览…')
   const [重试次数, set重试次数] = useState(0)
   const [打印中, set打印中] = useState(false)
+  const [打印进度, set打印进度] = useState('')
 
   useEffect(() => {
     let 取消 = false
@@ -48,18 +50,22 @@ export default function PrintPreview({ 内容, 格式, 标题, onClose }: Props)
     if (!数据) return
     set打印中(true)
     try {
-      const 结果 = await 桥接.printDocument(数据, 'pdf')
+      // 直接打印 PDF 会被内置查看器吞掉内容，先按页渲染成图片 HTML，再交给系统打印。
+      const html = await 生成打印页面HTML(数据, 标题, { on进度: (当前, 总数) => set打印进度(`正在准备第 ${当前} / ${总数} 页…`) })
+      set打印进度('正在打开系统打印…')
+      const 结果 = await 桥接.printDocument(html, 'html')
       if (!结果.成功 && !结果.已取消) message.error(结果.错误 || '打印失败')
       if (结果.成功) onClose()
     } catch (原因) {
       message.error(原因 instanceof Error ? 原因.message : '打印失败')
     } finally {
       set打印中(false)
+      set打印进度('')
     }
   }
 
   return <Modal open title={`打印预览 · ${标题}`} width={900} onCancel={onClose} destroyOnClose
-    className="seal-print-preview" footer={<><Button onClick={onClose}>关闭</Button><Button type="primary" loading={打印中} disabled={!数据} onClick={() => void 打印()}>打印</Button></>}>
+    className="seal-print-preview" footer={<>{打印进度 && <span className="seal-print-preview__progress" role="status">{打印进度}</span>}<Button onClick={onClose}>关闭</Button><Button type="primary" loading={打印中} disabled={!数据} onClick={() => void 打印()}>打印</Button></>}>
     {错误 ? <div className="seal-print-preview__error" role="alert">{错误}<Button onClick={() => set重试次数((次数) => 次数 + 1)}>重试预览</Button></div> : 数据
       ? <PdfViewer 数据={数据} 文件名={标题} />
       : <div className="seal-print-preview__loading" role="status"><Spin /> {进度}</div>}

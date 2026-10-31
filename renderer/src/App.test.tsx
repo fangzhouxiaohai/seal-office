@@ -450,10 +450,10 @@ describe('应用外壳（WPS 版式首页）', () => {
     }
     render(<SettingsProvider><动态主题容器><令牌探针 /></动态主题容器></SettingsProvider>)
     const 浅色令牌 = screen.getByTestId('组件主题令牌').textContent
-    expect(浅色令牌).toMatch(/#2b6cf6\|#ffffff/i)
+    expect(浅色令牌).toMatch(/#6a5cf5\|#ffffff/i)
     await userEvent.click(screen.getByRole('button', { name: '切换主题令牌' }))
     const 深色令牌 = screen.getByTestId('组件主题令牌').textContent
-    expect(深色令牌).toMatch(/\|#252a33$/i)
+    expect(深色令牌).toMatch(/\|#1f2130$/i)
     expect(深色令牌).not.toBe(浅色令牌)
     localStorage.removeItem('seal-theme')
   })

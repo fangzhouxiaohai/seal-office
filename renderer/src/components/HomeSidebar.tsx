@@ -3,6 +3,12 @@ import React, { useState } from 'react'
 import { Button, Modal } from 'antd'
 import Icon from './Icon'
 import { navigationAvailable } from '../navConfig'
+import { 取色调 } from './navTones'
+
+/** 图标放在固定色调的圆角底块里，侧栏一眼可分辨各入口。 */
+const 色块图标 = (键: string, 图标: string) =>
+  React.createElement('span', { className: 'seal-tone-chip', 'data-tone': 取色调(键), 'aria-hidden': true },
+    React.createElement(Icon, { name: 图标, size: 15, variant: 'outline' }))
 
 interface Props {
   /** 当前导航键（recent / star / shared） */
@@ -55,6 +61,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         key: 项.key,
         type: 'button',
         className: `wps-homenav__item${navKey === 项.key ? ' wps-homenav__item--active' : ''}`,
+        'data-tone': 取色调(项.key),
         title: 占位 ? '暂未开放' : undefined,
         onClick: () => {
           if (占位) {
@@ -64,7 +71,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
           onNavigate(项.key)
         },
       },
-      React.createElement(Icon, { name: 项.icon, size: 16 }),
+      色块图标(项.key, 项.icon),
       React.createElement('span', null, 项.label)
     )
 
@@ -121,9 +128,10 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         {
           type: 'button',
           className: 'wps-homenav__item',
+          'data-tone': 取色调('browse'),
           onClick: onOpenFile,
         },
-        React.createElement(Icon, { name: 'globe', size: 16 }),
+        色块图标('browse', 'globe'),
         React.createElement('span', null, '浏览')
       )
     ),
@@ -137,9 +145,10 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         {
           type: 'button',
           className: 'wps-homenav__item',
+          'data-tone': 取色调('pdf'),
           onClick: onOpenPdf,
         },
-        React.createElement(Icon, { name: 'pdf', size: 16 }),
+        色块图标('pdf', 'pdf'),
         React.createElement('span', null, 'PDF 工具')
       ),
       渲染导航项({ key: 'mindmap', label: '脑图', icon: 'mindmap' }, false),
@@ -154,9 +163,10 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         {
           type: 'button',
           className: 'wps-homenav__item',
+          'data-tone': 取色调('help'),
           onClick: onOpenHelp,
         },
-        React.createElement(Icon, { name: 'help', size: 16 }),
+        色块图标('help', 'help'),
         React.createElement('span', null, '帮助手册')
       )
     ),
@@ -174,7 +184,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
       destroyOnHidden: true,
     }, React.createElement('div', { className: 'wps-newdoc-options' },
       ...新建选项.map((选项) => React.createElement('button', {
-        key: 选项.类型, type: 'button', className: 'wps-newdoc-option',
+        key: 选项.类型, type: 'button', className: 'wps-newdoc-option', 'data-tone': 取色调(选项.类型 === 'access' ? 'database' : 选项.类型),
         onClick: () => {
           设新建弹窗打开(false)
           if (选项.类型 === 'access') onNewAccess()
@@ -195,7 +205,7 @@ const HomeSidebar = ({ navKey, onNavigate, onNewDoc, onNewAccess, onOpenTemplate
         { key: 'design', label: '设计', icon: 'edit' },
         { key: 'knowledge', label: '知识库', icon: 'knowledge' },
         { key: 'notes', label: '笔记', icon: 'doc-word' },
-      ].map(item => React.createElement('button', { key: item.key, type: 'button', 'data-new-service': item.key,
+      ].map(item => React.createElement('button', { key: item.key, type: 'button', 'data-new-service': item.key, 'data-tone': 取色调(item.key),
         onClick: () => { 设新建弹窗打开(false); onNavigate(item.key) },
       }, React.createElement(Icon, { name: item.icon, size: 24 }), React.createElement('span', null, item.label)))
     ))

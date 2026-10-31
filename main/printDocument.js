@@ -14,13 +14,21 @@ async function 打印文档(内容, 格式 = 'html', 窗口类型 = BrowserWindo
     临时目录 = await fs.mkdtemp(path.join(os.tmpdir(), 'seal-print-'))
     const 路径 = path.join(临时目录, 格式 === 'pdf' ? 'document.pdf' : 'document.html')
     await fs.writeFile(路径, 格式 === 'pdf' ? Buffer.from(内容, 'base64') : 内容)
-    窗口 = new 窗口类型({ show: false, webPreferences: {
+    // 隐藏窗口也要保持绘制，Windows 上未绘制的隐藏窗口打印会得到空白页。
+    窗口 = new 窗口类型({ show: false, paintWhenInitiallyHidden: true, width: 900, height: 1200, webPreferences: {
+      backgroundThrottling: false,
       nodeIntegration: false, contextIsolation: true, sandbox: true, plugins: 格式 === 'pdf',
     } })
     await 窗口.loadFile(路径)
-    if (格式 === 'html') await 窗口.webContents.executeJavaScript('document.fonts.ready.then(() => true)')
+    if (格式 === 'html') {
+      // 等字体和所有页面图片解码完成，否则系统打印会抓到尚未绘制的空白页。
+      await 窗口.webContents.executeJavaScript(`Promise.all([
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        ...Array.from(document.images).map((图) => (图.decode ? 图.decode() : Promise.resolve()).catch(() => undefined)),
+      ]).then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true)))))`)
+    }
     const 结果 = await new Promise((resolve) => {
-      窗口.webContents.print({ silent: false, printBackground: true }, (成功, 原因) => {
+      窗口.webContents.print({ silent: false, printBackground: true, margins: { marginType: 'none' } }, (成功, 原因) => {
         resolve(成功 ? { 成功: true } : 原因 === 'Print job canceled' || 原因 === 'cancelled'
           ? { 成功: false, 已取消: true } : { 成功: false, 错误: 原因 || '打印失败' })
       })

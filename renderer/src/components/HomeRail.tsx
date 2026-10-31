@@ -3,6 +3,7 @@ import React from 'react'
 import { Tooltip } from 'antd'
 import Icon from './Icon'
 import { 桥接 } from '../ipc/bridge'
+import { 取色调 } from './navTones'
 
 interface 栏目项 {
   key: string
@@ -39,6 +40,7 @@ const HomeRail = ({ onNotify, onNavigate, activeKey = 'home' }: Props) =>
           'button',
           {
             type: 'button',
+            'data-tone': 取色调(项.key),
             className: `wps-homerail__item${(项.key === 'doc' ? ['home', 'recent', 'star', 'shared'].includes(activeKey) : 项.key === activeKey) ? ' wps-homerail__item--active' : ''}`,
             onClick: () => {
               if (项.key === 'ai' || 项.key === 'aippt') {
@@ -56,7 +58,8 @@ const HomeRail = ({ onNotify, onNavigate, activeKey = 'home' }: Props) =>
               onNotify(`「${项.label}」功能即将开放`)
             },
           },
-          React.createElement(Icon, { name: 项.icon, size: 20 }),
+          React.createElement('span', { className: 'seal-tone-chip seal-tone-chip--rail', 'data-tone': 取色调(项.key), 'aria-hidden': true },
+            React.createElement(Icon, { name: 项.icon, size: 18, variant: 'outline' })),
           React.createElement('span', { className: 'wps-homerail__label' }, 项.label)
         )
       )
@@ -68,10 +71,12 @@ const HomeRail = ({ onNotify, onNavigate, activeKey = 'home' }: Props) =>
         'button',
         {
           type: 'button',
+          'data-tone': 'green',
           className: `wps-homerail__item wps-homerail__item--365${activeKey === 'team' ? ' wps-homerail__item--active' : ''}`,
           onClick: () => onNavigate('team'),
         },
-        React.createElement(Icon, { name: 'users', size: 20 }),
+        React.createElement('span', { className: 'seal-tone-chip seal-tone-chip--rail', 'data-tone': 'green', 'aria-hidden': true },
+          React.createElement(Icon, { name: 'users', size: 18, variant: 'outline' })),
         React.createElement('span', { className: 'wps-homerail__label' }, '团队空间')
       )
     )

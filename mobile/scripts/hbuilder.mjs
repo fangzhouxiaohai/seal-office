@@ -18,6 +18,6 @@ export function runHBuilder(executable, args) {
     child.stdout.on('data', (chunk) => { output += chunk.toString(); process.stdout.write(chunk) })
     child.stderr.on('data', (chunk) => { output += chunk.toString(); process.stderr.write(chunk) })
     child.on('error', reject)
-    child.on('exit', (code) => { if (code !== 0 || /未检测到已打开|未登录|打包失败|发行失败|编译失败|Error:/i.test(output)) reject(new Error('HBuilderX 未完成命令，请查看上面的诊断；必要时在 HBuilderX 中重新打开项目')); else resolve(output) })
+    child.on('exit', (code) => { if (code !== 0 || /未检测到已打开|未登录|需要先登录|请先登录|打包失败|发行失败|编译失败|Error:/i.test(output)) reject(new Error('HBuilderX 未完成命令，请查看上面的诊断；必要时在 HBuilderX 中重新打开项目')); else resolve(output) })
   })
 }

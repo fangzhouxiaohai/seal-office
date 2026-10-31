@@ -771,6 +771,9 @@ function 转单元格值(值) {
 
 async function 写入xlsx(模型) {
   const 工作簿 = new ExcelJS.Workbook()
+  工作簿.creator = '海豹办公'
+  工作簿.lastModifiedBy = '海豹办公'
+  工作簿.created = 工作簿.modified = new Date()
   // 让 Excel/WPS 对未由本机计算的函数及数组公式重新计算，缓存仅作为打开时的预览。
   工作簿.calcProperties.fullCalcOnLoad = true
   const 图片状态 = { 总字节: 0 }

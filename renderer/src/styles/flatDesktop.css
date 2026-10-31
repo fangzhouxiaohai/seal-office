@@ -1,74 +1,430 @@
-/* Approved PC style: neutral surfaces, fine borders and compact controls.
-   Only application chrome is targeted; document/slide objects keep their styles. */
-:root:not([data-seal-ui="mobile"]) {
-  --radius-card: 6px;
-  --radius-control: 4px;
-  --shadow-card: 0 1px 4px rgba(30, 38, 50, .06);
+/* ==========================================================================
+   海豹办公 · Vivid 设计语言（沿用 flatDesktop.css 文件名，桌面、Web 与移动端共用入口）
+   多色彩分组 + 圆润组件 + 轻量层次阴影。只作用于应用外壳与控件，
+   文档纸张、幻灯片对象、表格单元格和打印输出不受影响。
+   ========================================================================== */
+
+:root {
+  --brand: #6a5cf5;
+  --brand-hover: #5848e8;
+  --brand-soft: #efedff;
+  --brand-gradient: linear-gradient(135deg, #7b6bff 0%, #6a5cf5 45%, #5b7cfa 100%);
+  --brand-glow: 0 8px 20px rgba(106, 92, 245, .28);
+  --bg-app: #f4f5fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f3f2ff;
+  --bg-subtle: #f8f8fd;
+  --border: #e7e8f2;
+  --border-subtle: #f0f1f7;
+  --text-1: #1b1d2b;
+  --text-2: #5a6075;
+  --text-3: #6b7186;
+  --ink-strong: #15172a;
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(27, 29, 43, .04), 0 6px 18px rgba(54, 45, 140, .06);
+  --shadow-hover: 0 2px 4px rgba(27, 29, 43, .04), 0 14px 32px rgba(54, 45, 140, .12);
+  --shadow-pop: 0 18px 48px rgba(36, 30, 100, .16), 0 3px 10px rgba(27, 29, 43, .06);
+  --font-body: "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+  --font-heading: "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+  --ease-out: cubic-bezier(.22, .8, .32, 1);
 }
-:root:not([data-seal-ui="mobile"]):not([data-theme="dark"]) {
-  --bg-app: #f4f5f7;
-  --bg-hover: #f5f6f8;
-  --border: #e0e4ea;
-  --border-subtle: #eef0f3;
-  --text-1: #252830;
-  --text-2: #656d79;
+
+[data-theme="dark"] {
+  --brand-gradient: linear-gradient(135deg, #9a8fff 0%, #7d6dff 50%, #6b8bff 100%);
+  --brand-glow: 0 8px 22px rgba(125, 109, 255, .32);
+  --bg-subtle: #1a1c28;
+  --border-subtle: #262939;
+  --ink-strong: #f5f6fb;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .22);
+  --shadow-hover: 0 2px 4px rgba(0, 0, 0, .3), 0 14px 32px rgba(0, 0, 0, .35);
+  --shadow-pop: 0 18px 48px rgba(0, 0, 0, .45);
 }
-:root:not([data-seal-ui="mobile"]) :is(.wps-titlebar,.wps-sidebar,.wps-homesidebar,.wps-homerail,.wps-ribbon,.wps-toolbar,.wps-footer,.wps-global-tabs) {
-  box-shadow: none;
-  background: var(--bg-card);
+
+/* ---------- 色调体系：每个入口固定一种颜色 ---------- */
+[data-tone] { --tone: #6a5cf5; --tone-2: #8b7dff; }
+[data-tone="violet"] { --tone: #6a5cf5; --tone-2: #9c8cff; }
+[data-tone="indigo"] { --tone: #4f63f0; --tone-2: #7b8cff; }
+[data-tone="blue"]   { --tone: #2f7cf6; --tone-2: #5ea8ff; }
+[data-tone="sky"]    { --tone: #0b9fe0; --tone-2: #45c6f5; }
+[data-tone="teal"]   { --tone: #0fa69a; --tone-2: #34d1bf; }
+[data-tone="green"]  { --tone: #17a865; --tone-2: #3fd18a; }
+[data-tone="lime"]   { --tone: #5aa312; --tone-2: #8ad13a; }
+[data-tone="amber"]  { --tone: #e09b06; --tone-2: #fbc23b; }
+[data-tone="orange"] { --tone: #f2711c; --tone-2: #ff9f4d; }
+[data-tone="red"]    { --tone: #ef4056; --tone-2: #ff7586; }
+[data-tone="pink"]   { --tone: #e2468f; --tone-2: #ff7cb9; }
+[data-tone="purple"] { --tone: #9b4fe8; --tone-2: #c084fc; }
+[data-tone="slate"]  { --tone: #5e6782; --tone-2: #8d96b0; }
+
+.seal-tone-chip {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 13%, var(--bg-card));
+  transition: background .18s var(--ease-out), color .18s var(--ease-out), box-shadow .18s var(--ease-out), transform .18s var(--ease-out);
 }
-:root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button) {
-  background: var(--bg-card);
-  border-color: var(--border);
-  border-radius: 6px;
-  box-shadow: none;
-  transform: none;
-  transition: border-color .15s, background-color .15s;
+.seal-tone-chip--rail { width: 36px; height: 36px; border-radius: 12px; }
+.seal-tone-chip--lg { width: 44px; height: 44px; border-radius: 14px; }
+.seal-tone-chip .seal-icon { color: inherit; }
+
+/* ---------- 全局基础 ---------- */
+body { background: var(--bg-app); letter-spacing: .01em; }
+::selection { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+:where(button,[role=button],label.ant-btn,a):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-3) 35%, transparent) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-3) 30%, transparent); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--text-3) 50%, transparent); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Ant Design 控件 ---------- */
+.ant-btn { font-weight: 500; }
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):not(.ant-btn-background-ghost) {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  box-shadow: var(--brand-glow);
 }
-:root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button):hover {
-  background: var(--bg-hover);
-  border-color: var(--brand);
-  box-shadow: none;
-  transform: none;
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):not(.ant-btn-background-ghost):hover {
+  background: var(--brand-gradient);
+  filter: brightness(1.06) saturate(1.05);
+  box-shadow: 0 10px 24px rgba(106, 92, 245, .34);
 }
-:root:not([data-seal-ui="mobile"]) :is(.wps-doc-card,.seal-market-cover,.seal-market-favorite,.wps-newdoc-option,.settings-wps-card) {
-  border-radius: 6px;
-  box-shadow: none;
-}
-:root:not([data-seal-ui="mobile"]) :is(.wps-doc-card:hover,.seal-market-cover:hover,.seal-market-tools button:hover) { box-shadow: none; }
-:root:not([data-seal-ui="mobile"]) :is(.wps-recommend__cell-icon,.wps-recommend__row-icon,.seal-market-tools .seal-tool-icon) {
-  background: transparent;
-  border-radius: 0;
-}
-:root:not([data-seal-ui="mobile"]) .ant-btn-default:not(:disabled):not(.ant-btn-dangerous) {
+.ant-btn-default:not(:disabled):not(.ant-btn-dangerous) {
   color: var(--text-1);
   background: var(--bg-card);
   border-color: var(--border);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(27, 29, 43, .04);
 }
-:root:not([data-seal-ui="mobile"]) .ant-btn-default:not(:disabled):not(.ant-btn-dangerous):hover {
+.ant-btn-default:not(:disabled):not(.ant-btn-dangerous):hover {
   color: var(--brand);
   background: var(--brand-soft);
-  border-color: var(--brand);
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--border));
 }
-:root:not([data-seal-ui="mobile"]) :is(.ant-btn-primary,.template-library__filters .ant-btn-primary,.ant-input,.ant-input-affix-wrapper,.ant-select-selector) { box-shadow: none; }
-:root:not([data-seal-ui="mobile"]) .ant-btn-primary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-:root:not([data-seal-ui="mobile"]) :is(.wps-ribbon-button,.wps-nav-item,.wps-icon-button,.wps-context-menu__item,.wps-float-panel__item) { border-radius: 4px; }
-/* Compact controls must reserve the declared SVG size rather than inherit
-   the generic button padding and squeeze their icons into a few pixels. */
-:root:not([data-seal-ui="mobile"]) :is(.wps-ribbon-button--small,.wps-icon-button,.wps-titlebar__avatar) {
-  padding: 0;
-  flex-shrink: 0;
+.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-input-number, .ant-picker {
+  border-radius: var(--radius-control) !important;
 }
-:root:not([data-seal-ui="mobile"]) .seal-icon { flex: 0 0 auto; }
-:root:not([data-seal-ui="mobile"]) :is(.wps-context-menu,.wps-float-panel,.seal-image-toolbar,.assistant-drawer__composer) {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 3px 12px rgba(30,38,50,.08);
+.ant-input-affix-wrapper:focus-within, .ant-input:focus, .ant-select-focused .ant-select-selector {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent) !important;
 }
-:root:not([data-seal-ui="mobile"]) .wps-doc-row { border-bottom: 1px solid var(--border-subtle); }
-:root:not([data-seal-ui="mobile"]) .wps-nav-item--active .seal-icon,
-:root:not([data-seal-ui="mobile"]) .wps-homenav__item--active .seal-icon { color: var(--brand); }
-@media(prefers-reduced-motion:reduce) {
-  :root:not([data-seal-ui="mobile"]) :is(.wps-new-card,.wps-recommend__cell,.template-library__card,.seal-cloud-card,.seal-market-tools button) { transition: none; }
+.ant-modal .ant-modal-content { border-radius: 20px; box-shadow: var(--shadow-pop); padding: 22px 24px 20px; }
+.ant-modal .ant-modal-header { margin-bottom: 14px; }
+.ant-modal .ant-modal-title { font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+.ant-modal .ant-modal-close { top: 18px; inset-inline-end: 18px; border-radius: 10px; }
+.ant-modal-mask { backdrop-filter: blur(3px); background: rgba(20, 20, 40, .32) !important; }
+.ant-dropdown .ant-dropdown-menu, .ant-select-dropdown, .ant-popover .ant-popover-inner {
+  border-radius: 14px;
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
 }
+.ant-dropdown .ant-dropdown-menu-item { border-radius: 9px !important; }
+.ant-tooltip .ant-tooltip-inner { border-radius: 9px; padding: 6px 10px; font-size: 12px; }
+.ant-tag { border-radius: 999px; padding-inline: 9px; }
+.ant-message .ant-message-notice-content { border-radius: 14px; box-shadow: var(--shadow-pop); padding: 10px 16px; }
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab { border-radius: 10px 10px 0 0 !important; }
+.ant-switch.ant-switch-checked { background: var(--brand-gradient); }
+.ant-card { border-radius: var(--radius-card); }
+
+/* ---------- 顶栏 ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-titlebar {
+  height: 52px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: none;
+}
+.wps-titlebar__search--home,
+.wps-titlebar__search .ant-input-affix-wrapper,
+.wps-titlebar__search.ant-input-affix-wrapper {
+  border-radius: 999px !important;
+  background: var(--bg-app);
+  border-color: transparent;
+}
+.wps-titlebar__search--home:hover,
+.wps-titlebar__search--home:focus-within { background: var(--bg-card); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.wps-titlebar__avatar { border-radius: 12px !important; }
+.wps-avatar { background: var(--brand-gradient); color: #fff; border-radius: 12px; }
+
+/* ---------- 最左图标栏 ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-homerail {
+  width: 76px;
+  flex-basis: 76px;
+  gap: 6px;
+  padding: 14px 0;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-subtle);
+}
+.wps-homerail__item {
+  width: 70px;
+  height: 62px;
+  gap: 5px;
+  border-radius: 14px;
+  color: var(--text-2);
+  font-size: 11px;
+  transition: background .18s var(--ease-out), color .18s var(--ease-out);
+}
+.wps-homerail__label { white-space: nowrap; letter-spacing: 0; }
+.wps-homerail__item:hover { background: var(--bg-subtle); color: var(--text-1); }
+.wps-homerail__item:hover .seal-tone-chip { transform: translateY(-1px); }
+.wps-homerail__item--active { color: var(--ink-strong); font-weight: 600; background: transparent; }
+.wps-homerail__item--active .seal-tone-chip {
+  color: #fff;
+  background: linear-gradient(135deg, var(--tone-2), var(--tone));
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--tone) 38%, transparent);
+}
+
+/* ---------- 第二列导航 ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-homesidebar {
+  width: 232px;
+  flex-basis: 232px;
+  padding: 16px 12px;
+  gap: 6px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-subtle);
+}
+.wps-homesidebar__actions { gap: 10px; margin-bottom: 10px; }
+.wps-homesidebar__actions .ant-btn-lg { height: 42px; border-radius: 14px; font-size: 15px; }
+.wps-homenav { gap: 2px; }
+.wps-homenav__group {
+  padding: 14px 10px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: color-mix(in srgb, var(--text-3) 85%, transparent);
+}
+.wps-homenav__item {
+  height: 38px;
+  gap: 10px;
+  padding: 0 10px 0 6px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: var(--text-1);
+  transition: background .15s var(--ease-out), color .15s var(--ease-out);
+}
+.wps-homenav__item:hover { background: var(--bg-subtle); }
+.wps-homenav__item:hover .seal-tone-chip { background: color-mix(in srgb, var(--tone) 20%, var(--bg-card)); }
+.wps-homenav__item--active {
+  background: color-mix(in srgb, var(--tone, var(--brand)) 10%, var(--bg-card));
+  color: color-mix(in srgb, var(--tone, var(--brand)) 80%, var(--ink-strong));
+  font-weight: 600;
+}
+.wps-homenav__item--active .seal-tone-chip {
+  color: #fff;
+  background: linear-gradient(135deg, var(--tone-2), var(--tone));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--tone) 30%, transparent);
+}
+.wps-homesidebar__local-note {
+  border: 0;
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, #6a5cf5 10%, var(--bg-card)), color-mix(in srgb, #0b9fe0 10%, var(--bg-card)));
+}
+
+/* ---------- 旧版侧栏 ---------- */
+.wps-sidebar { border-right-color: var(--border-subtle); }
+.wps-nav-item { border-radius: 12px; }
+.wps-nav-item--active::before { display: none; }
+
+/* ---------- 主区与区块 ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-main { padding: 28px 32px; }
+:root:not([data-seal-ui="mobile"]) .wps-main--editor,
+:root:not([data-seal-ui="mobile"]) .wps-main--help,
+:root:not([data-seal-ui="mobile"]) .wps-main--pdf { padding: 0; }
+.wps-home__title, .local-page__header h1 { font-size: 24px; font-weight: 700; letter-spacing: .01em; color: var(--ink-strong); }
+.local-page__header p { color: var(--text-3); }
+.wps-section__title { font-size: 16px; font-weight: 650; }
+
+.wps-segmented {
+  padding: 3px;
+  gap: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-3) 10%, var(--bg-card));
+}
+.wps-segmented__item { border-radius: 999px; width: 32px; height: 28px; }
+.wps-segmented__item--active { background: var(--bg-card); color: var(--brand); box-shadow: 0 2px 6px rgba(27, 29, 43, .1); }
+.wps-text-button { border-radius: 999px; padding: 6px 14px; background: var(--bg-card); box-shadow: 0 1px 2px rgba(27, 29, 43, .04); }
+.wps-text-button:hover { background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.wps-home__type-filter { border-radius: 999px; padding: 5px 12px; background: var(--bg-card); box-shadow: 0 1px 2px rgba(27, 29, 43, .05); }
+.wps-home__refresh { border-radius: 10px; }
+
+/* ---------- 文档卡片 ---------- */
+.wps-doc-grid { gap: 18px; }
+.wps-doc-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.wps-doc-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--brand) 22%, var(--border));
+  box-shadow: var(--shadow-hover);
+}
+.wps-doc-card--active { border-color: var(--brand); background: var(--bg-card); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent), var(--shadow-card); }
+.wps-doc-card__thumb {
+  height: 112px;
+  margin: 8px 8px 0;
+  border: 0;
+  border-radius: 13px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 60%),
+    radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, #0b9fe0 8%, transparent), transparent 60%),
+    var(--bg-subtle);
+}
+.wps-doc-card__badge { left: 10px; top: 10px; padding: 1px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; box-shadow: 0 3px 8px rgba(27, 29, 43, .12); }
+.wps-doc-card__more, .wps-doc-card__star { border-radius: 9px; box-shadow: 0 2px 6px rgba(27, 29, 43, .1); }
+.wps-doc-card__info { padding: 12px 14px 14px; gap: 5px; }
+.wps-doc-card__name { font-weight: 600; font-size: 13.5px; }
+.wps-doc-list { border-radius: 18px; border-color: var(--border-subtle); box-shadow: var(--shadow-card); }
+.wps-doc-list__head { background: var(--bg-subtle); }
+.wps-doc-row { transition: background .15s var(--ease-out); }
+.wps-doc-row:hover { background: var(--bg-hover); }
+
+/* ---------- 新建 / 推荐 / 模板卡片 ---------- */
+.wps-new-card, .wps-recommend__cell, .template-library__card {
+  border-radius: 16px;
+  border-color: var(--border-subtle);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.wps-new-card:hover, .wps-recommend__cell:hover, .template-library__card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background: var(--bg-card);
+  border-color: color-mix(in srgb, var(--action-accent, var(--brand)) 40%, var(--border));
+}
+.wps-new-card:nth-child(1), .wps-recommend__cell:nth-child(1), .template-library__card:nth-child(4n+1) { --action-accent: #2f7cf6; }
+.wps-recommend__cell-icon, .wps-recommend__row-icon { border-radius: 11px; }
+
+/* 新建对话框：彩色大卡片 */
+.wps-newdoc-option[data-tone] {
+  border-radius: 18px !important;
+  border: 1px solid var(--border-subtle) !important;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 9%, var(--bg-card)), var(--bg-card) 70%) !important;
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.wps-newdoc-option[data-tone]:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tone) 45%, var(--border)) !important;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+.wps-newdoc-services button[data-tone] { border-radius: 14px !important; }
+.wps-newdoc-services button[data-tone] .seal-icon { color: var(--tone); }
+.wps-newdoc-services button[data-tone]:hover { background: color-mix(in srgb, var(--tone) 10%, var(--bg-card)) !important; border-color: color-mix(in srgb, var(--tone) 40%, var(--border)) !important; }
+
+/* ---------- 应用中心 ---------- */
+.apps-section h2 { font-size: 13px; letter-spacing: .06em; color: var(--text-3); text-transform: none; }
+.apps-grid { gap: 16px; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); }
+.apps-entry {
+  position: relative;
+  min-height: 84px;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.apps-entry::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tone, var(--brand)) 16%, transparent), transparent 70%);
+  pointer-events: none;
+  transition: transform .3s var(--ease-out);
+}
+.apps-entry:hover {
+  transform: translateY(-2px);
+  background: var(--bg-card);
+  border-color: color-mix(in srgb, var(--tone, var(--brand)) 35%, var(--border));
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--tone, var(--brand)) 16%, transparent), 0 2px 4px rgba(27, 29, 43, .04);
+}
+.apps-entry:hover::after { transform: scale(1.35); }
+.apps-entry:hover .seal-tone-chip { color: #fff; background: linear-gradient(135deg, var(--tone-2), var(--tone)); box-shadow: 0 6px 14px color-mix(in srgb, var(--tone) 34%, transparent); }
+.apps-entry strong { font-size: 14.5px; font-weight: 650; }
+.apps-entry small { color: var(--text-3); }
+
+/* ---------- 文档标签与底栏 ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-doc-tabs { height: 38px; padding: 0 10px; gap: 4px; border-bottom-color: var(--border-subtle); }
+.wps-doc-tab { height: 28px; border-radius: 10px; padding: 0 8px 0 12px; background: transparent; }
+.wps-doc-tab:hover { background: var(--bg-subtle); }
+.wps-doc-tab--active { background: var(--brand-soft); color: var(--brand); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 20%, transparent); }
+.wps-doc-tab__close { border-radius: 6px; }
+.wps-doc-tabs__create { border-radius: 9px; width: 26px; height: 26px; }
+:root:not([data-seal-ui="mobile"]) .wps-footer { height: 30px; border-top-color: var(--border-subtle); }
+
+/* ---------- Ribbon ---------- */
+:root:not([data-seal-ui="mobile"]) .wps-ribbon-tabs { height: 42px; align-items: center; gap: 4px; padding: 0 12px; border-bottom: 0; }
+.wps-ribbon-tab {
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 13.5px;
+  transition: background .15s var(--ease-out), color .15s var(--ease-out);
+}
+.wps-ribbon-tab:hover { background: var(--bg-subtle); color: var(--text-1); }
+.wps-ribbon-tab--active {
+  color: #fff;
+  background: var(--ink-strong);
+  border-bottom-color: transparent;
+  box-shadow: 0 4px 12px rgba(21, 23, 42, .18);
+}
+[data-theme="dark"] .wps-ribbon-tab--active { color: #15172a; }
+:root:not([data-seal-ui="mobile"]) .wps-ribbon-panel {
+  margin: 0 10px 8px;
+  padding: 8px 8px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.wps-ribbon-group + .wps-ribbon-group { border-left: 1px dashed color-mix(in srgb, var(--text-3) 22%, transparent); }
+.wps-ribbon-group__name { font-size: 11.5px; color: color-mix(in srgb, var(--text-3) 90%, transparent); }
+.wps-ribbon-button { border-radius: 10px; }
+.wps-ribbon-button--large { padding: 7px 9px; }
+.wps-ribbon-button--small { border-radius: 8px; }
+.wps-ribbon-button:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
+.wps-ribbon-button--active { background: color-mix(in srgb, var(--brand) 14%, var(--bg-card)); color: var(--brand); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 25%, transparent); }
+
+/* 编辑区底色：柔和的灰紫，纸张保持纯白 */
+:root:not([data-theme="dark"]) .wps-editor-stage { background: #eef0f7; }
+:root:not([data-theme="dark"]) .wps-ppt-stage { background: #eceef6; }
+
+/* ---------- 浮层菜单与面板 ---------- */
+.wps-context-menu, .wps-float-panel, .seal-image-toolbar, .assistant-drawer__composer {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-pop);
+}
+.wps-context-menu__item, .wps-float-panel__item { border-radius: 9px; }
+.wps-icon-button { border-radius: 10px; }
+
+/* 打印预览 */
+.seal-print-preview .ant-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.seal-print-preview__progress { margin-right: auto; color: var(--text-2); font-size: 12.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wps-doc-card, .apps-entry, .wps-new-card, .wps-recommend__cell, .template-library__card, .wps-newdoc-option[data-tone], .seal-tone-chip { transition: none; }
+  .wps-doc-card:hover, .apps-entry:hover, .wps-new-card:hover, .wps-recommend__cell:hover, .template-library__card:hover, .wps-newdoc-option[data-tone]:hover { transform: none; }
+}
+
+/* Ribbon 横向溢出时只保留细滚动条，不遮挡分组名称 */
+.wps-ribbon-panel { scrollbar-width: thin; }
+.wps-ribbon-panel::-webkit-scrollbar { height: 6px; }
+.wps-ribbon-panel::-webkit-scrollbar-thumb { border: 0; background: color-mix(in srgb, var(--text-3) 28%, transparent); }

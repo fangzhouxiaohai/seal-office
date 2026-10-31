@@ -36,6 +36,7 @@ const { 修正图片媒体 } = require('./docxImages')
 const { NoteReferenceRun, prepareNotes, splitEndnotes } = require('./docxNotes')
 const { 原生修订, 原生格式修订, 规范修订Xml } = require('./docxRevisions')
 const { 标记来源, 合并源包 } = require('./docxSource')
+const { 补齐Word兼容设置 } = require('./docxCompat')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 页边距 = {
@@ -506,6 +507,9 @@ exports.生成docx = async (文档模型) => {
   }
 
   const 文档 = new Document({
+    // docx 库默认作者为 "Un-named"，Word/WPS 文件信息会显示该占位值。
+    creator: '海豹办公',
+    lastModifiedBy: '海豹办公',
     ...(注释配置.entries.length ? { footnotes: Object.fromEntries(注释配置.entries.map(note => [note.nativeId, { children: 构建页眉页脚(note.段落) }])) } : {}),
     styles: { default: 标题默认样式, paragraphStyles: [{ id: 'SealOfficeTableSeparator', name: 'SealOffice table separator',
       paragraph: { spacing: { before: 0, after: 0, line: 1, lineRule: 'exact' } }, run: { size: 2, vanish: true } }] },
@@ -527,5 +531,7 @@ exports.生成docx = async (文档模型) => {
     const original = await part.async('string'), normalized = 规范修订Xml(original)
     if (normalized !== original) { 包.file(part.name, normalized); changed = true }
   }
-  return 合并源包(changed ? await 包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }) : 数据, 文档模型)
+  const 结果 = await 合并源包(changed ? await 包.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }) : 数据, 文档模型)
+  // 打开的原文件保留自身 settings.xml（旧版兼容模式会影响排版），只给新建文档补齐 Word 2013+ 兼容设置。
+  return 文档模型?.源包 ? 结果 : 补齐Word兼容设置(结果)
 }

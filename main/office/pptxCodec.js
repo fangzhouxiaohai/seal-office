@@ -516,6 +516,11 @@ const 对齐映射 = (algn) => {
 
 async function 写入pptx(模型) {
   const 文稿 = new pptxgen()
+  // pptxgenjs 默认把作者、公司和标题写成 "PptxGenJS"，PowerPoint/WPS 的“文件信息”会显示这些占位值。
+  文稿.author = '海豹办公'
+  文稿.company = '海豹办公'
+  文稿.title = typeof 模型?.标题 === 'string' && 模型.标题.trim() ? 模型.标题.trim() : '演示文稿'
+  文稿.subject = ''
   // 富格式契约：{ 幻灯片: [{ 背景色, 文本框: [{ x, y, width, height, text, 字号, 加粗, 斜体, 颜色, 对齐, 片段 }] }] }
   // 旧契约 { 幻灯片: [{ 文本 }] } 与 { 幻灯片列表: [{ 标题, 内容 }] } 仍兼容。
   let 幻灯片列表 = []
@@ -590,6 +595,8 @@ async function 写入pptx(模型) {
           fontFace: typeof 框.字体 === 'string' && 框.字体.trim() ? 框.字体 : 'Microsoft YaHei',
           underline: 框.下划线 === true ? { style: 'sng' } : undefined,
           valign: 'top',
+          // 文本语言标记为简体中文：PowerPoint 校对与 WPS 东亚断行都依据 a:rPr/@lang。
+          lang: 'zh-CN',
         }
         if (Array.isArray(框.片段) && 框.片段.length > 0) {
           const 运行列表 = 框.片段
@@ -628,11 +635,11 @@ async function 写入pptx(模型) {
     }
     const 行列表 = 文本内容.split('\n')
     if (行列表.length === 0) {
-      页面.addText('', { x: 0.5, y: 0.5, w: 10, h: 0.5, fontFace: 'Microsoft YaHei', fontSize: 24 })
+      页面.addText('', { x: 0.5, y: 0.5, w: 10, h: 0.5, fontFace: 'Microsoft YaHei', fontSize: 24, lang: 'zh-CN' })
     } else {
       const 段落列表 = 行列表.map((行) => ({
         text: 行,
-        options: { fontFace: 'Microsoft YaHei', fontSize: 24, color: '1A1D24', breakLine: true },
+        options: { fontFace: 'Microsoft YaHei', fontSize: 24, color: '1A1D24', breakLine: true, lang: 'zh-CN' },
       }))
       if (段落列表.length > 0) 段落列表[段落列表.length - 1].options.breakLine = false
       页面.addText(段落列表, { x: 0.5, y: 0.5, w: 11, h: 7 })

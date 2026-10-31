@@ -12,34 +12,40 @@ export interface 主题样式 {
   悬停背景: string
   工具栏背景: string
   选中背景: string
+  主色悬停: string
+  主色浅底: string
 }
 
 export const 浅色主题: 主题样式 = {
-  背景: '#F5F7FA',
+  背景: '#F4F5FB',
   侧栏背景: '#FFFFFF',
   内容背景: '#FFFFFF',
-  文字颜色: '#1A1D24',
-  次要文字: '#5C6472',
-  弱化文字: '#667085',
-  边框颜色: '#E8EBF0',
-  主色: '#2B6CF6',
-  悬停背景: '#F0F5FF',
-  工具栏背景: '#FAFBFC',
-  选中背景: '#E8F3FF',
+  文字颜色: '#1B1D2B',
+  次要文字: '#5A6075',
+  弱化文字: '#6B7186',
+  边框颜色: '#E7E8F2',
+  主色: '#6A5CF5',
+  悬停背景: '#F3F2FF',
+  工具栏背景: '#FBFBFE',
+  选中背景: '#ECEAFF',
+  主色悬停: '#5848E8',
+  主色浅底: '#EFEDFF',
 }
 
 export const 深色主题: 主题样式 = {
-  背景: '#1A1D24',
-  侧栏背景: '#252A33',
-  内容背景: '#2D333F',
-  文字颜色: '#E8EAED',
-  次要文字: '#9AA0A6',
-  弱化文字: '#9AA0A6',
-  边框颜色: '#3C4043',
-  主色: '#4A90E2',
-  悬停背景: '#353B47',
-  工具栏背景: '#2D333F',
-  选中背景: '#3B4A63',
+  背景: '#14151F',
+  侧栏背景: '#1B1D29',
+  内容背景: '#1F2130',
+  文字颜色: '#ECEDF5',
+  次要文字: '#A3A7BC',
+  弱化文字: '#9095AC',
+  边框颜色: '#30334A',
+  主色: '#8D80FF',
+  悬停背景: '#282B3D',
+  工具栏背景: '#1F2130',
+  选中背景: '#332F5E',
+  主色悬停: '#A196FF',
+  主色浅底: '#2C2950',
 }
 
 export type 主题名 = '浅色' | '深色'
@@ -73,8 +79,8 @@ export function 应用主题(主题: 主题名) {
   
   // 同时更新基础CSS变量，确保深浅模式全局生效
   root.style.setProperty('--brand', 样式.主色)
-  root.style.setProperty('--brand-hover', 样式.主色 === '#2B6CF6' ? '#1e5ae0' : '#3A7BC8')
-  root.style.setProperty('--brand-soft', 样式.主色 === '#2B6CF6' ? '#ebf1fe' : '#2A3A5A')
+  root.style.setProperty('--brand-hover', 样式.主色悬停)
+  root.style.setProperty('--brand-soft', 样式.主色浅底)
   root.style.setProperty('--bg-app', 样式.背景)
   root.style.setProperty('--bg-card', 样式.内容背景)
   root.style.setProperty('--bg-hover', 样式.悬停背景)
