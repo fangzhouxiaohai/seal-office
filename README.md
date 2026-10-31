@@ -18,7 +18,7 @@
 - **Office / WPS 兼容**：新建 DOCX 写入 Word 2013+ 兼容模式（compatibilityMode=15）与中文主题语言，Word 不再以“兼容模式”打开；PPTX、XLSX、DOCX 的文件属性不再出现 “PptxGenJS”“Un-named” 等占位值，PPTX 文本标记为简体中文。
 - **Vivid 界面**：紫罗兰主色与渐变主按钮，侧栏、图标栏、应用中心按入口分色，卡片、Ribbon、弹窗和菜单统一圆润造型，深色模式同步更新。
 
-详情与验收结果见[2.3.0 界面焕新与打印修复](docs/v2.3.0-界面焕新与打印修复.md)。
+详情与验收结果见[2.3.0 界面焕新与打印修复](docs/v2.3.0-界面焕新与打印修复.md)；Windows、Ubuntu、Android、HarmonyOS 安装包见 [GitHub](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.3.0) / [GitCode](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.3.0) 发行页。
 
 ## 2.2.2 表格兼容、性能与助手界面（历史记录）
 
