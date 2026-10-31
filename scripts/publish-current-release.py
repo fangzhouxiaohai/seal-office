@@ -30,6 +30,7 @@ CANDIDATES = [
     f'seal-office-{VERSION}-microsoft-store-x64.msix',
     f'seal-office-{VERSION}-amd64.deb',
     f'seal-office-{VERSION}-android.apk',
+    f'seal-office-{VERSION}-harmony.hap',
     f'seal-office-{VERSION}-harmony.app.zip',
     f'seal-office-{VERSION}-android-cloud-source.zip',
     f'seal-office-{VERSION}-harmony-cloud-source.zip',

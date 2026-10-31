@@ -6,6 +6,7 @@
 - Android 云打包源码 ZIP 和解压后的文件总大小均不得超过 60,000,000 字节。分别构建、检查、冻结 Android / HarmonyOS 源码后使用 `mobile/scripts/archive-source.mjs` 归档，拒绝混用平台资源；源码 ZIP 使用 `seal-office-${version}-android-cloud-source.zip` / `seal-office-${version}-harmony-cloud-source.zip`。
 - 本机云打包交付只保留最新验收通过的 Android / HarmonyOS 各一个 ZIP 和解压项目。当前 2.2.0 的唯一入口为 `release/v2.2.0/mobile-web/android-cloud-source/`、`release/v2.2.0/mobile-web/harmony-cloud-source/` 及同级对应 ZIP；新源码逐文件验收后，清理旧试包、旧解压项目和 `mobile/unpackage/cloud-ready/` 中的历史及重复交付快照。历史报告和远端历史发行保留，更新版本目录的 `README.txt`，禁止继续指向已过期的 `verified/`。解压项目不加入说明附件或编译缓存；额外说明放在项目目录外，确保交付目录与 ZIP 文件清单和字节完全一致。
 - 工作过程中生成的临时脚本、测试目录、源码暂存、解包副本和编译缓存，应在完成核验及正式归档后及时删除。只保留正式交付物、必要验收记录和用户原始文件；临时目录不得留作额外打包入口，不删除应用数据、签名凭据或用户未授权清理的文件。助手悬浮球在 Android / HarmonyOS 与桌面均使用海豹办公 Logo，移动端不能回退到通用星光图标。
+- 自 2.3.0 起，HarmonyOS 每次同时交付已签名 App Pack（`seal-office-${version}-harmony.app`，AppGallery 上架）和已签名 HAP（`seal-office-${version}-harmony.hap`，用于直接安装），由 `npm --prefix mobile run pack:harmony` 本机打包并用 DevEco Studio 的 hap-sign-tool 分别验签；只有 Release Profile 时须注明 HAP 只能经 AppGallery（含测试渠道）安装，直接 hdc 安装需含设备 UDID 的调试 Profile。
 - HarmonyOS 已签名 App Pack 使用 `seal-office-${version}-harmony.app`；仓库发行附件封装为 `seal-office-${version}-harmony.app.zip`。外层 App Pack 签名与内层 HAP 签名分别验证，不能把未独立签名的内层 HAP 当作可安装发行包发布。
 - 程序界面、`productName`、Windows 内部主程序、安装目录与桌面快捷方式继续使用中文名“海豹办公”；Linux 原有 `sealoffice` 启动命令与应用身份保持不变。英文发行文件名不扩散到界面显示名。
 - 微软商店 MSIX 清单中的 `Package/Properties/DisplayName` 和 `Application/VisualElements/DisplayName` 必须使用已保留的商店名 `seal-office`，商店身份及签名不变。

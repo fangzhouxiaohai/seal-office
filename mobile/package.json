@@ -13,6 +13,7 @@
     "build:harmony": "node scripts/build.mjs harmony",
     "pack": "node scripts/pack.mjs",
     "pack:android": "node scripts/pack.mjs",
+    "pack:harmony": "node scripts/pack-harmony.mjs",
     "check": "node scripts/check.mjs",
     "typecheck": "node ../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "check:android": "node scripts/native-check.mjs",
