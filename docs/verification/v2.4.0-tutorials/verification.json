@@ -1,0 +1,325 @@
+{
+  "passed": true,
+  "version": "2.4.0",
+  "kind": "hands-on-tutorial",
+  "videos": [
+    {
+      "platform": "android",
+      "file": "seal-office-2.4.0-android-intro-1080p.mp4",
+      "bytes": 16169928,
+      "sha256": "d21fe525763a7d23ddce1e87821b337dfbf28d287ec3d6331f62614a320ce104",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "durationSeconds": 210.96666666666667,
+      "videoAndAudioFullyDecoded": true,
+      "integratedLufs": -16.06,
+      "truePeakDb": -1.37,
+      "narrationVoice": "zh-CN-XiaoxiaoNeural",
+      "voiceRate": "+5%",
+      "voicePitch": "+4Hz",
+      "voiceConfirmedByUser": true,
+      "sourceReferenceSha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+      "steps": 17,
+      "actions": 123,
+      "functionalAssertions": 16,
+      "nativeDeviceRecording": false,
+      "sourceDisclosure": "Actual production Web/Android-layout interactions in isolated Electron browser windows, with recording-only pointer, click and purple target overlays. Mobile touch gestures use Chromium touch input; not a native APK physical-device recording.",
+      "sourceBundleSha256": "36204cce38239018861da4865d204371f863d835cd7dfba3d31a586a043ea353",
+      "subtitles": 21,
+      "subtitleTiming": "Sentence-length proportional timing inside each narrated step; not word-level alignment.",
+      "purpleOutlineFrameChecks": [
+        {
+          "step": "navigation",
+          "seconds": 3.25,
+          "purplePixels": 12248
+        },
+        {
+          "step": "skins",
+          "seconds": 13.55,
+          "purplePixels": 9098
+        },
+        {
+          "step": "new-word",
+          "seconds": 27.25,
+          "purplePixels": 8959
+        },
+        {
+          "step": "word-body",
+          "seconds": 39.65,
+          "purplePixels": 16222
+        },
+        {
+          "step": "word-save",
+          "seconds": 51.7,
+          "purplePixels": 8625
+        },
+        {
+          "step": "reading-enter",
+          "seconds": 63.45,
+          "purplePixels": 8084
+        },
+        {
+          "step": "reading-swipe",
+          "seconds": 74.35,
+          "purplePixels": 4969
+        },
+        {
+          "step": "reading-controls",
+          "seconds": 85.2,
+          "purplePixels": 6835
+        },
+        {
+          "step": "reading-zoom",
+          "seconds": 97.2,
+          "purplePixels": 4630
+        },
+        {
+          "step": "assistant-drag",
+          "seconds": 109.3,
+          "purplePixels": 5138
+        },
+        {
+          "step": "assistant-modes",
+          "seconds": 119.05,
+          "purplePixels": 13921
+        },
+        {
+          "step": "sheet-open",
+          "seconds": 137.7,
+          "purplePixels": 6830
+        },
+        {
+          "step": "sheet-formula",
+          "seconds": 149.65,
+          "purplePixels": 11273
+        },
+        {
+          "step": "assistant-target",
+          "seconds": 160.65,
+          "purplePixels": 3919
+        },
+        {
+          "step": "templates",
+          "seconds": 172.05,
+          "purplePixels": 9309
+        },
+        {
+          "step": "projects",
+          "seconds": 189.75,
+          "purplePixels": 9245
+        },
+        {
+          "step": "outro",
+          "seconds": 199.85,
+          "purplePixels": 7768
+        }
+      ],
+      "typingFrameChanges": [
+        {
+          "step": "word-body",
+          "label": "填写计划正文",
+          "meanPixelChange": 3.8037
+        },
+        {
+          "step": "sheet-formula",
+          "label": "输入求和公式",
+          "meanPixelChange": 0.1712
+        },
+        {
+          "step": "projects",
+          "label": "项目名称",
+          "meanPixelChange": 0.1719
+        },
+        {
+          "step": "projects",
+          "label": "项目名称",
+          "meanPixelChange": 0.1787
+        }
+      ],
+      "preview": "seal-office-2.4.0-android-intro-1080p-preview.mp4",
+      "previewSha256": "a35ee97e7b6383b8893ae4ceeb39f9430f36bd2da84bd6708cd6e1d96ee48f23",
+      "sourceManifest": "android-recording.json",
+      "visualReview": {
+        "passed": true,
+        "reviewer": "Claude",
+        "method": "Both full contact sheets and full-size operation detail frames inspected; paragraph glow checked at 150% document zoom."
+      }
+    },
+    {
+      "platform": "pc",
+      "file": "seal-office-2.4.0-pc-intro-1080p.mp4",
+      "bytes": 11797011,
+      "sha256": "2f5034418909273dfe5c478dbbbe257a9a0c8b5b43f0211664e522385ce9eac0",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "durationSeconds": 231.6,
+      "videoAndAudioFullyDecoded": true,
+      "integratedLufs": -15.97,
+      "truePeakDb": -1.48,
+      "narrationVoice": "zh-CN-XiaoxiaoNeural",
+      "voiceRate": "+5%",
+      "voicePitch": "+4Hz",
+      "voiceConfirmedByUser": true,
+      "sourceReferenceSha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+      "steps": 19,
+      "actions": 132,
+      "functionalAssertions": 16,
+      "nativeDeviceRecording": false,
+      "sourceDisclosure": "Actual production Web/Android-layout interactions in isolated Electron browser windows, with recording-only pointer, click and purple target overlays. Mobile touch gestures use Chromium touch input; not a native APK physical-device recording.",
+      "sourceBundleSha256": "debd87830a2086e02bae3ce38e313407f0af35496b99eae15e817519ed6767e6",
+      "subtitles": 22,
+      "subtitleTiming": "Sentence-length proportional timing inside each narrated step; not word-level alignment.",
+      "purpleOutlineFrameChecks": [
+        {
+          "step": "skins-open",
+          "seconds": 1.15,
+          "purplePixels": 6210
+        },
+        {
+          "step": "skins-apply",
+          "seconds": 16.4,
+          "purplePixels": 5861
+        },
+        {
+          "step": "skins-rules",
+          "seconds": 27.05,
+          "purplePixels": 5846
+        },
+        {
+          "step": "new-word",
+          "seconds": 43.15,
+          "purplePixels": 6232
+        },
+        {
+          "step": "word-title",
+          "seconds": 55.25,
+          "purplePixels": 14117
+        },
+        {
+          "step": "word-body",
+          "seconds": 67.05,
+          "purplePixels": 14130
+        },
+        {
+          "step": "word-paste",
+          "seconds": 77.6,
+          "purplePixels": 9470
+        },
+        {
+          "step": "word-save",
+          "seconds": 88.7,
+          "purplePixels": 6758
+        },
+        {
+          "step": "word-reopen",
+          "seconds": 101.2,
+          "purplePixels": 5572
+        },
+        {
+          "step": "sheet-open",
+          "seconds": 113.15,
+          "purplePixels": 5628
+        },
+        {
+          "step": "sheet-formula",
+          "seconds": 125.2,
+          "purplePixels": 11670
+        },
+        {
+          "step": "sheet-save",
+          "seconds": 138.2,
+          "purplePixels": 6368
+        },
+        {
+          "step": "template-open",
+          "seconds": 149.7,
+          "purplePixels": 5640
+        },
+        {
+          "step": "template-use",
+          "seconds": 161.4,
+          "purplePixels": 5475
+        },
+        {
+          "step": "mindmap-create",
+          "seconds": 177.6,
+          "purplePixels": 7030
+        },
+        {
+          "step": "mindmap-edit",
+          "seconds": 185.85,
+          "purplePixels": 7939
+        },
+        {
+          "step": "mindmap-list",
+          "seconds": 199.95,
+          "purplePixels": 3657
+        },
+        {
+          "step": "flow",
+          "seconds": 213.75,
+          "purplePixels": 6254
+        },
+        {
+          "step": "outro",
+          "seconds": 221.6,
+          "purplePixels": 5796
+        }
+      ],
+      "typingFrameChanges": [
+        {
+          "step": "word-title",
+          "label": "输入标题",
+          "meanPixelChange": 0.0791
+        },
+        {
+          "step": "word-body",
+          "label": "填写计划正文",
+          "meanPixelChange": 1.7948
+        },
+        {
+          "step": "sheet-formula",
+          "label": "输入求和公式",
+          "meanPixelChange": 0.0284
+        },
+        {
+          "step": "mindmap-create",
+          "label": "项目名称",
+          "meanPixelChange": 0.0361
+        },
+        {
+          "step": "mindmap-edit",
+          "label": "填写分支文字",
+          "meanPixelChange": 0.0517
+        },
+        {
+          "step": "mindmap-list",
+          "label": "项目名称",
+          "meanPixelChange": 0.0361
+        },
+        {
+          "step": "flow",
+          "label": "项目名称",
+          "meanPixelChange": 0.0465
+        }
+      ],
+      "preview": "seal-office-2.4.0-pc-intro-1080p-preview.mp4",
+      "previewSha256": "4eb79ea7a9934cdf68b353f9db44701bb2b08e492859774c6dc6bedb86a5ae54",
+      "sourceManifest": "pc-recording.json",
+      "visualReview": {
+        "passed": true,
+        "reviewer": "Claude",
+        "method": "Both full contact sheets and full-size operation detail frames inspected; paragraph glow checked at 150% document zoom."
+      }
+    }
+  ],
+  "runtimeChanges": false,
+  "visualReview": {
+    "passed": true,
+    "reviewer": "Claude",
+    "userVoicePreviewConfirmed": true
+  },
+  "recordedAt": "2026-11-01T14:39:53.017744+00:00"
+}

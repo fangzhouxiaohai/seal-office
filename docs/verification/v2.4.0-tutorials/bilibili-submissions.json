@@ -1,0 +1,42 @@
+{
+  "version": "2.4.0",
+  "status": "not-requested",
+  "published": false,
+  "reason": "本次未要求上传或投稿；仅生成本机成片、字幕、封面与投稿文案，未执行 B 站投稿。",
+  "submissions": [
+    {
+      "title": "海豹办公 2.4.0 安卓操作教程：皮肤市场、全屏阅读、海豹助手与表格公式",
+      "video": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-android-intro-1080p.mp4",
+      "videoSha256": "d21fe525763a7d23ddce1e87821b337dfbf28d287ec3d6331f62614a320ce104",
+      "cover": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-android-intro-1080p-cover.jpg",
+      "subtitles": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-android-intro-1080p.srt",
+      "description": "海豹办公 2.4.0 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n00:00 从服务页找到工具\n00:12 手机上切换皮肤\n00:26 新建文字文档\n00:37 逐字填写工作计划\n00:50 保存海豹文字文件\n01:02 进入隐藏工具栏的阅读模式\n01:13 左右滑动翻页\n01:23 双击唤出，三秒后收起\n01:34 双指缩放阅读内容\n01:45 拖动海豹 Logo 悬浮球\n01:57 区分对话和工作模式\n02:16 打开项目预算表\n02:27 在手机上输入公式\n02:39 切换助手的目标文件\n02:50 从完整模板开始演示\n03:03 创建多个脑图项目\n03:18 随身阅读，继续编辑\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.4.0\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.4.0\n\n画面为生产构建的移动浏览器布局及触摸输入演示，并非 APK 真机录屏。配音为经用户试听确认的合成语音。",
+      "tags": [
+        "海豹办公",
+        "办公软件",
+        "使用教程",
+        "效率工具",
+        "安卓应用"
+      ],
+      "published": false,
+      "url": null
+    },
+    {
+      "title": "海豹办公 2.4.0 电脑操作教程：皮肤市场、截图粘贴、表格公式与演示模板",
+      "video": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-pc-intro-1080p.mp4",
+      "videoSha256": "2f5034418909273dfe5c478dbbbe257a9a0c8b5b43f0211664e522385ce9eac0",
+      "cover": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-pc-intro-1080p-cover.jpg",
+      "subtitles": "E:\\seal-office\\release\\promo\\seal-office-2.4.0-pc-intro-1080p.srt",
+      "description": "海豹办公 2.4.0 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n00:00 打开新增的皮肤市场\n00:13 预览并应用深海蓝\n00:25 查看皮肤开发规则\n00:42 新建一份工作计划\n00:52 输入标题\n01:04 填写计划内容\n01:16 截图直接粘贴\n01:27 保存为 SLDOC\n01:40 关闭后重新打开\n01:52 打开项目预算表\n02:02 输入求和公式\n02:17 自适应列宽并另存\n02:28 预览完整演示模板\n02:40 创建可编辑的演示副本\n02:51 创建独立脑图项目\n03:03 修改主题并增加分支\n03:15 多个项目分别管理\n03:28 流程图也有独立项目列表\n03:40 从一份文件，到一组项目\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.4.0\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.4.0\n\n画面为当前生产构建的 PC 网页布局，使用隔离的演示文件。配音为经用户试听确认的合成语音。",
+      "tags": [
+        "海豹办公",
+        "办公软件",
+        "使用教程",
+        "效率工具",
+        "电脑软件"
+      ],
+      "published": false,
+      "url": null
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": "2.4.0",
+  "files": [
+    {
+      "name": "seal-office-2.4.0-pc-intro-1080p.mp4",
+      "bytes": 11797011,
+      "sha256": "2f5034418909273dfe5c478dbbbe257a9a0c8b5b43f0211664e522385ce9eac0"
+    },
+    {
+      "name": "seal-office-2.4.0-pc-intro-1080p.srt",
+      "bytes": 3524,
+      "sha256": "b5e6e84525fd7a8bfe5a6d5a61b2f42771e4dfc5a5d0324c2c83918f87ce9837"
+    },
+    {
+      "name": "seal-office-2.4.0-pc-intro-1080p-cover.jpg",
+      "bytes": 307498,
+      "sha256": "71ffed94d6a93fa2a84923c5d5394d9f23fcab5aa8d5325947c3d3f25a27b42a"
+    },
+    {
+      "name": "seal-office-2.4.0-pc-intro-1080p-contact.jpg",
+      "bytes": 477670,
+      "sha256": "71876f2f0e2eb1fb6b47282eecd8b7e00e89982f42cfcc4480bfcf7994bde6b5"
+    },
+    {
+      "name": "seal-office-2.4.0-pc-intro-1080p-preview.mp4",
+      "bytes": 1264280,
+      "sha256": "4eb79ea7a9934cdf68b353f9db44701bb2b08e492859774c6dc6bedb86a5ae54"
+    },
+    {
+      "name": "seal-office-2.4.0-android-intro-1080p.mp4",
+      "bytes": 16169928,
+      "sha256": "d21fe525763a7d23ddce1e87821b337dfbf28d287ec3d6331f62614a320ce104"
+    },
+    {
+      "name": "seal-office-2.4.0-android-intro-1080p.srt",
+      "bytes": 3184,
+      "sha256": "91db5154088a38dad6ff7a8c08e832d3d0c743d7e679f564da11266d70915e1f"
+    },
+    {
+      "name": "seal-office-2.4.0-android-intro-1080p-cover.jpg",
+      "bytes": 229603,
+      "sha256": "541d076de113ba44964e600a6c09d0822784bb0b4ee80e5faf44e4a7e2b2b11d"
+    },
+    {
+      "name": "seal-office-2.4.0-android-intro-1080p-contact.jpg",
+      "bytes": 528424,
+      "sha256": "383d70bc4488eceedfa3db4871a410783bf0a6f717a78e9b66120ab95d888b55"
+    },
+    {
+      "name": "seal-office-2.4.0-android-intro-1080p-preview.mp4",
+      "bytes": 1862669,
+      "sha256": "a35ee97e7b6383b8893ae4ceeb39f9430f36bd2da84bd6708cd6e1d96ee48f23"
+    },
+    {
+      "name": "verification.json",
+      "bytes": 9614,
+      "sha256": "202006b0fba6aada963a6f1a9d02242ac7cfde7c14fa769c7bdbb531a307c072"
+    },
+    {
+      "name": "seal-office-2.4.0-bilibili-submissions.json",
+      "bytes": 3796,
+      "sha256": "963a80b1c4cb0ce6bec8ef5562ce69155b2b48f708bc53711464b067da66f359"
+    }
+  ]
+}

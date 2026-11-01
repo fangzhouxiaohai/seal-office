@@ -52,13 +52,13 @@ def main():
     DOC.mkdir(parents=True,exist_ok=True)
     for v in report['videos']:
         assert sha(OUT/v['file'])==v['sha256']
-        v['visualReview']={'passed':True,'reviewer':'Codex','method':'Both full contact sheets and full-size operation detail frames inspected; paragraph glow checked at 150% document zoom.'}
+        v['visualReview']={'passed':True,'reviewer':'Claude','method':'Both full contact sheets and full-size operation detail frames inspected; paragraph glow checked at 150% document zoom.'}
         source=read(WORK/(v['platform']+'-recording.json'));assert not source['errors']
         shutil.copy2(WORK/(v['platform']+'-recording.json'),DOC/(v['platform']+'-recording.json'))
         shutil.copy2(OUT/v['file'].replace('.mp4','-contact.jpg'),DOC/(v['platform']+'-contact.jpg'))
         chosen=next(s for s in source['steps'] if s['id']==('reading-zoom' if v['platform']=='android' else 'word-body'))
         frame(OUT/v['file'],chosen['start']+min(4.1,(chosen['end']-chosen['start'])/2),DOC/(v['platform']+'-operation-detail.png'))
-    report['visualReview']={'passed':True,'reviewer':'Codex','userVoicePreviewConfirmed':True}
+    report['visualReview']={'passed':True,'reviewer':'Claude','userVoicePreviewConfirmed':True}
     report['recordedAt']=datetime.now(timezone.utc).isoformat()
     write(OUT/'verification.json',report);write(DOC/'verification.json',report)
     reference=read(WORK/'voice.json')['reference'];write(DOC/'voice-reference.json',reference)
@@ -68,7 +68,7 @@ def main():
     for v in report['videos']:
         mobile=v['platform']=='android';prefix=v['file'].removesuffix('.mp4');source=read(WORK/(v['platform']+'-recording.json'))
         chapters='\n'.join(f'{int(s["start"])//60:02d}:{int(s["start"])%60:02d} {s["title"]}' for s in source['steps'])
-        title=f'海豹办公 {VERSION} 安卓操作教程：全屏阅读、海豹助手、表格公式与脑图' if mobile else f'海豹办公 {VERSION} 电脑操作教程：新建保存、表格公式、演示模板和脑图'
+        title=f'海豹办公 {VERSION} 安卓操作教程：皮肤市场、全屏阅读、海豹助手与表格公式' if mobile else f'海豹办公 {VERSION} 电脑操作教程：皮肤市场、截图粘贴、表格公式与演示模板'
         description=(f'海豹办公 {VERSION} 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n'+chapters+f'\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v{VERSION}\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v{VERSION}\n\n'+('画面为生产构建的移动浏览器布局及触摸输入演示，并非 APK 真机录屏。' if mobile else '画面为当前生产构建的 PC 网页布局，使用隔离的演示文件。')+'配音为经用户试听确认的合成语音。')
         submissions.append({'title':title,'video':str(OUT/v['file']),'videoSha256':v['sha256'],'cover':str(OUT/(prefix+'-cover.jpg')),'subtitles':str(OUT/(prefix+'.srt')),'description':description,'tags':['海豹办公','办公软件','使用教程','效率工具','安卓应用' if mobile else '电脑软件'],'published':False,'url':None})
     bili={'version':VERSION,'status':'not-requested','published':False,'reason':'本次未要求上传或投稿；仅生成本机成片、字幕、封面与投稿文案，未执行 B 站投稿。','submissions':submissions}
@@ -80,19 +80,22 @@ def main():
     names+=['verification.json',f'seal-office-{VERSION}-bilibili-submissions.json']
     (OUT/'SHA256SUMS.txt').write_text(''.join(sha(OUT/n)+'  '+n+'\n' for n in names),encoding='utf-8')
     write(DOC/'delivery-files.json',{'version':VERSION,'files':[{'name':n,'bytes':(OUT/n).stat().st_size,'sha256':sha(OUT/n)} for n in names]})
+    counts={v['platform']:(v['steps'],v['functionalAssertions']) for v in report['videos']}
+    titles={p:'、'.join(s['title'] for s in read(WORK/(p+'-recording.json'))['steps']) for p in ['pc','android']}
     (DOC/'README.md').write_text(f'''# 海豹办公 {VERSION} 操作教程验收
 
-本次重制 PC 横版与 Android 竖版操作教程。音色使用用户在 2026-10-23 听取 12 秒试听后明确确认的晓晓女声，语速 +5%、音调 +4 Hz；未使用旧版 SAPI 配音。
+本次重制 PC 横版与 Android 竖版操作教程。音色使用用户在 2026-10-23 听取试听后明确确认的晓晓女声（参考样音 `D:/yewu/女声配音试听.mp3`，SHA-256 见 voice-reference.json），语速 +5%、音调 +4 Hz；配音为专用新文案，不复用样音内容或波形。
 
-- PC：15 个步骤，包含新建文字、逐字输入、专属格式保存和关闭重开、输入求和公式得到 2360、自适应列宽、另存 SLXLS、使用演示模板并切换第二页、多个脑图项目与流程图节点。
-- Android：16 个步骤，包含服务搜索、文字输入与保存、实际 Chromium 触摸翻页、双击显示和三秒自动隐藏工具栏、双指放大、海豹 Logo 助手拖动、目标文件与模式切换、公式计算、演示模板及两份独立脑图项目。
-- 两端共 24 项实际结果断言；动作、输入内容、帧时间线与生产构建指纹见两个 recording.json。只使用隔离演示状态，无真实账号、云文件修改或模型请求。
-- 紫色光晕直接附着当前控件；文字输入时跟随实际段落，避免 150% 文档缩放造成坐标偏移。鼠标指针、点击圆环及触摸点为录像标注，输入和执行结果来自真实应用。
+- PC：{counts['pc'][0]} 个步骤、{counts['pc'][1]} 项实际结果断言：{titles['pc']}。
+- Android：{counts['android'][0]} 个步骤、{counts['android'][1]} 项实际结果断言：{titles['android']}。
+- 本版新增画面：皮肤市场预览与应用（断言 `--brand` 实际变色后再切回默认海豹紫）、开发规则；文字中按 Ctrl+V 粘贴界面截图，保存为 SLDOC 后关闭重开仍保留图片。截图由录制程序截取应用画面后放入系统剪贴板，粘贴由真实快捷键完成。
+- 助手模式文案按当前行为更新：工作模式默认直接写入编辑区，可在助手设置中改为手动确认。
+- 只使用隔离演示状态，无真实账号、云文件修改或模型请求。紫色光晕附着当前控件；鼠标指针、点击圆环和触摸点为录像标注，输入与执行结果来自真实应用。
 - 成片 1920×1080 / 1080×1920、30 fps，完整音视频解码、响度、字幕、紫色画面与逐字输入变化检查通过。详细参数及 SHA-256 见 verification.json。
-- 画面是生产 Web / Android 布局的浏览器实录，移动触摸由 Chromium 输入驱动；不称为 APK 真机录像。配音采用专用新文案，不复用原样音业务内容或原波形。
-- 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不会修改安装包或平台源码。
+- PC 画面为生产 Web 构建；Android 画面为与已发布 APK 同一份冻结源码（`mobile/unpackage/cloud-ready/{VERSION}/android`）的浏览器实录，移动触摸由 Chromium 输入驱动，不称为 APK 真机录像。
+- 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不修改安装包或平台源码。
 
-B 站尚未投稿：本次未要求上传或投稿。已备好逐条投稿文案和素材路径，见 bilibili-submissions.json。
+B 站尚未投稿：本次未要求上传或投稿。已备好投稿文案和素材路径，见 bilibili-submissions.json。
 ''',encoding='utf-8')
     cleanup=[]
     if args.clean:

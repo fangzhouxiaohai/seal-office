@@ -1,0 +1,1943 @@
+{
+  "passed": true,
+  "version": "2.4.0",
+  "platform": "pc",
+  "build": {
+    "platform": "web",
+    "desktopVersion": "2.4.0",
+    "builtAt": "2026-11-01T14:13:09.365Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "bundleSha256": "debd87830a2086e02bae3ce38e313407f0af35496b99eae15e817519ed6767e6",
+  "width": 1600,
+  "height": 820,
+  "fps": 20,
+  "frames": 4632,
+  "durationSeconds": 231.6,
+  "source": "Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.",
+  "nativeDeviceRecording": false,
+  "filePickerFixture": true,
+  "realFileSave": true,
+  "savedWordReopened": true,
+  "productionAccountsUsed": 0,
+  "modelRequests": 0,
+  "errors": [],
+  "assertions": [
+    {
+      "step": "skins-apply",
+      "label": "skin brand colour #6A5CF5",
+      "passed": true,
+      "frame": 314
+    },
+    {
+      "step": "skins-apply",
+      "label": "skin brand colour #2563EB",
+      "passed": true,
+      "frame": 331
+    },
+    {
+      "step": "skins-rules",
+      "label": "skin brand colour #6A5CF5",
+      "passed": true,
+      "frame": 621
+    },
+    {
+      "step": "word-title",
+      "label": "title entered",
+      "passed": true,
+      "frame": 1099
+    },
+    {
+      "step": "word-body",
+      "label": "body entered in separate paragraphs",
+      "passed": true,
+      "frame": 1383
+    },
+    {
+      "step": "word-paste",
+      "label": "pasted screenshot decoded",
+      "passed": true,
+      "frame": 1560
+    },
+    {
+      "step": "word-save",
+      "label": "native format save succeeded",
+      "passed": true,
+      "path": "/seal/documents/83b1a61c-467a-4679-aa6c-360cc1d6d951/每周工作计划.sldoc"
+    },
+    {
+      "step": "word-save",
+      "label": "saved SLDOC tab clean",
+      "passed": true,
+      "frame": 1784
+    },
+    {
+      "step": "word-reopen",
+      "label": "saved content reopened",
+      "passed": true,
+      "frame": 2074
+    },
+    {
+      "step": "word-reopen",
+      "label": "pasted screenshot reopened",
+      "passed": true,
+      "frame": 2074
+    },
+    {
+      "step": "sheet-formula",
+      "label": "formula computed 2360",
+      "passed": true,
+      "frame": 2542
+    },
+    {
+      "step": "sheet-save",
+      "label": "native format save succeeded",
+      "passed": true,
+      "path": "/seal/documents/1ce74ac9-5cc9-4029-9f5e-d65f1a065043/项目预算.slxls"
+    },
+    {
+      "step": "template-use",
+      "label": "selected template second slide",
+      "passed": true,
+      "frame": 3249
+    },
+    {
+      "step": "mindmap-edit",
+      "label": "diagram branch updated",
+      "passed": true,
+      "frame": 3809
+    },
+    {
+      "step": "mindmap-list",
+      "label": "two independent mindmap projects",
+      "passed": true,
+      "frame": 4026
+    },
+    {
+      "step": "flow",
+      "label": "flow node added",
+      "passed": true,
+      "frame": 4319
+    }
+  ],
+  "actions": [
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 8,
+      "seconds": 0.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "skins-open",
+      "type": "click",
+      "frame": 20,
+      "seconds": 1,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 30,
+      "seconds": 1.5,
+      "label": "皮肤市场",
+      "rect": {
+        "x": 86,
+        "y": 460.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 481.0625
+      }
+    },
+    {
+      "step": "skins-open",
+      "type": "click",
+      "frame": 42,
+      "seconds": 2.1,
+      "label": "皮肤市场",
+      "x": 186.5,
+      "y": 481.0625
+    },
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 53,
+      "seconds": 2.65,
+      "label": "内置皮肤",
+      "rect": {
+        "x": 386,
+        "y": 49.5625,
+        "width": 862,
+        "height": 770.4375,
+        "cx": 817,
+        "cy": 434.78125
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 272,
+      "seconds": 13.6,
+      "label": "临时预览深海蓝",
+      "rect": {
+        "x": 760.328125,
+        "y": 271.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 792.328125,
+        "cy": 290.96875
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "hover",
+      "frame": 280,
+      "seconds": 14,
+      "label": "临时预览深海蓝",
+      "x": 792.328125,
+      "y": 290.96875
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 314,
+      "seconds": 15.7,
+      "label": "应用 深海蓝",
+      "rect": {
+        "x": 692.328125,
+        "y": 270.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 724.328125,
+        "cy": 289.96875
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "click",
+      "frame": 325,
+      "seconds": 16.25,
+      "label": "应用 深海蓝",
+      "x": 724.328125,
+      "y": 289.96875
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 331,
+      "seconds": 16.55,
+      "label": "当前使用深海蓝",
+      "rect": {
+        "x": 677.328125,
+        "y": 48.5625,
+        "width": 279.328125,
+        "height": 275.40625,
+        "cx": 816.9921875,
+        "cy": 186.265625
+      }
+    },
+    {
+      "step": "skins-rules",
+      "type": "highlight",
+      "frame": 526,
+      "seconds": 26.3,
+      "label": "开发规则",
+      "rect": {
+        "x": 623.6875,
+        "y": 49.5625,
+        "width": 82.5625,
+        "height": 34,
+        "cx": 664.96875,
+        "cy": 66.5625
+      }
+    },
+    {
+      "step": "skins-rules",
+      "type": "click",
+      "frame": 538,
+      "seconds": 26.9,
+      "label": "开发规则",
+      "x": 664.96875,
+      "y": 66.5625
+    },
+    {
+      "step": "skins-rules",
+      "type": "highlight",
+      "frame": 544,
+      "seconds": 27.2,
+      "label": "皮肤格式与可读性规则",
+      "rect": {
+        "x": 411,
+        "y": 295.265625,
+        "width": 812,
+        "height": 306.03125,
+        "cx": 817,
+        "cy": 448.28125
+      }
+    },
+    {
+      "step": "skins-rules",
+      "type": "highlight",
+      "frame": 586,
+      "seconds": 29.3,
+      "label": "内置皮肤",
+      "rect": {
+        "x": 388,
+        "y": 187.5625,
+        "width": 82.5625,
+        "height": 34,
+        "cx": 429.28125,
+        "cy": 204.5625
+      }
+    },
+    {
+      "step": "skins-rules",
+      "type": "click",
+      "frame": 598,
+      "seconds": 29.9,
+      "label": "内置皮肤",
+      "x": 429.28125,
+      "y": 204.5625
+    },
+    {
+      "step": "skins-rules",
+      "type": "highlight",
+      "frame": 604,
+      "seconds": 30.2,
+      "label": "应用 海豹紫",
+      "rect": {
+        "x": 401,
+        "y": 457.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 433,
+        "cy": 476.96875
+      }
+    },
+    {
+      "step": "skins-rules",
+      "type": "click",
+      "frame": 615,
+      "seconds": 30.75,
+      "label": "应用 海豹紫",
+      "x": 433,
+      "y": 476.96875
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 848,
+      "seconds": 42.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 860,
+      "seconds": 43,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 870,
+      "seconds": 43.5,
+      "label": "新建",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 89
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 883,
+      "seconds": 44.15,
+      "label": "新建",
+      "x": 186.5,
+      "y": 89
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 888,
+      "seconds": 44.4,
+      "label": "文字文档",
+      "rect": {
+        "x": 497.5715026855469,
+        "y": 135.83929443359375,
+        "width": 283.1518859863281,
+        "height": 143.57595825195312,
+        "cx": 639.1474456787109,
+        "cy": 207.6272735595703
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 901,
+      "seconds": 45.05,
+      "label": "文字文档",
+      "x": 639.1474456787109,
+      "y": 207.6272735595703
+    },
+    {
+      "step": "word-title",
+      "type": "highlight",
+      "frame": 1064,
+      "seconds": 53.2,
+      "label": "输入标题",
+      "rect": {
+        "x": 221,
+        "y": 186.1666717529297,
+        "width": 618,
+        "height": 633.8333282470703,
+        "cx": 530,
+        "cy": 503.08333587646484
+      }
+    },
+    {
+      "step": "word-title",
+      "type": "click",
+      "frame": 1076,
+      "seconds": 53.8,
+      "label": "输入标题",
+      "x": 530,
+      "y": 503.08333587646484
+    },
+    {
+      "step": "word-title",
+      "type": "typing-start",
+      "frame": 1083,
+      "seconds": 54.15,
+      "label": "输入标题",
+      "text": "每周工作计划"
+    },
+    {
+      "step": "word-title",
+      "type": "typing",
+      "frame": 1092,
+      "seconds": 54.6,
+      "label": "输入标题",
+      "text": "每周工作计划"
+    },
+    {
+      "step": "word-body",
+      "type": "highlight",
+      "frame": 1300,
+      "seconds": 65,
+      "label": "填写计划正文",
+      "rect": {
+        "x": 221,
+        "y": 186.1666717529297,
+        "width": 618,
+        "height": 633.8333282470703,
+        "cx": 530,
+        "cy": 503.08333587646484
+      }
+    },
+    {
+      "step": "word-body",
+      "type": "click",
+      "frame": 1312,
+      "seconds": 65.6,
+      "label": "填写计划正文",
+      "x": 530,
+      "y": 503.08333587646484
+    },
+    {
+      "step": "word-body",
+      "type": "typing-start",
+      "frame": 1319,
+      "seconds": 65.95,
+      "label": "填写计划正文",
+      "text": "本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。"
+    },
+    {
+      "step": "word-body",
+      "type": "typing",
+      "frame": 1378,
+      "seconds": 68.9,
+      "label": "填写计划正文",
+      "text": "本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。"
+    },
+    {
+      "step": "word-paste",
+      "type": "highlight",
+      "frame": 1538,
+      "seconds": 76.9,
+      "label": "正文光标位置",
+      "rect": {
+        "x": 221,
+        "y": 186.1666717529297,
+        "width": 618,
+        "height": 633.8333282470703,
+        "cx": 530,
+        "cy": 503.08333587646484
+      }
+    },
+    {
+      "step": "word-paste",
+      "type": "click",
+      "frame": 1549,
+      "seconds": 77.45,
+      "label": "正文光标位置",
+      "x": 530,
+      "y": 503.08333587646484
+    },
+    {
+      "step": "word-paste",
+      "type": "shortcut",
+      "frame": 1557,
+      "seconds": 77.85,
+      "label": "Ctrl+V 粘贴截图"
+    },
+    {
+      "step": "word-paste",
+      "type": "highlight",
+      "frame": 1560,
+      "seconds": 78,
+      "label": "粘贴进文档的截图",
+      "rect": {
+        "x": 221,
+        "y": 239.6666717529297,
+        "width": 618,
+        "height": 246,
+        "cx": 530,
+        "cy": 362.6666717529297
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "highlight",
+      "frame": 1759,
+      "seconds": 87.95,
+      "label": "保存",
+      "rect": {
+        "x": 85,
+        "y": 155.140625,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 115,
+        "cy": 183.3359375
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "click",
+      "frame": 1771,
+      "seconds": 88.55,
+      "label": "保存",
+      "x": 115,
+      "y": 183.3359375
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 2009,
+      "seconds": 100.45,
+      "label": "关闭已保存文档",
+      "rect": {
+        "x": 260,
+        "y": 758.5,
+        "width": 28,
+        "height": 28,
+        "cx": 274,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 2021,
+      "seconds": 101.05,
+      "label": "关闭已保存文档",
+      "x": 274,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 2027,
+      "seconds": 101.35,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 2039,
+      "seconds": 101.95,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 2049,
+      "seconds": 102.45,
+      "label": "打开 word",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 2062,
+      "seconds": 103.1,
+      "label": "打开 word",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 2248,
+      "seconds": 112.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 2260,
+      "seconds": 113,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 2271,
+      "seconds": 113.55,
+      "label": "打开 sheet",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 2283,
+      "seconds": 114.15,
+      "label": "打开 sheet",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 2460,
+      "seconds": 123,
+      "label": "名称框选择 D5",
+      "rect": {
+        "x": 6,
+        "y": 198.5625,
+        "width": 114,
+        "height": 26,
+        "cx": 63,
+        "cy": 211.5625
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 2472,
+      "seconds": 123.6,
+      "label": "名称框选择 D5",
+      "x": 63,
+      "y": 211.5625
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 2482,
+      "seconds": 124.1,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 2485,
+      "seconds": 124.25,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 2492,
+      "seconds": 124.6,
+      "label": "输入求和公式",
+      "rect": {
+        "x": 142.640625,
+        "y": 198.5625,
+        "width": 1333.359375,
+        "height": 26,
+        "cx": 809.3203125,
+        "cy": 211.5625
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 2504,
+      "seconds": 125.2,
+      "label": "输入求和公式",
+      "x": 809.3203125,
+      "y": 211.5625
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 2514,
+      "seconds": 125.7,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 2535,
+      "seconds": 126.75,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 2542,
+      "seconds": 127.1,
+      "label": "查看合计 2360",
+      "rect": {
+        "x": 308,
+        "y": 279.7083435058594,
+        "width": 92,
+        "height": 24,
+        "cx": 354,
+        "cy": 291.7083435058594
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "highlight",
+      "frame": 2750,
+      "seconds": 137.5,
+      "label": "自适应列宽",
+      "rect": {
+        "x": 1481,
+        "y": 146.296875,
+        "width": 82,
+        "height": 56.390625,
+        "cx": 1522,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "click",
+      "frame": 2761,
+      "seconds": 138.05,
+      "label": "自适应列宽",
+      "x": 1522,
+      "y": 174.4921875
+    },
+    {
+      "step": "sheet-save",
+      "type": "highlight",
+      "frame": 2768,
+      "seconds": 138.4,
+      "label": "另存为",
+      "rect": {
+        "x": 143,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 173,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "click",
+      "frame": 2780,
+      "seconds": 139,
+      "label": "另存为",
+      "x": 173,
+      "y": 174.4921875
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 2978,
+      "seconds": 148.9,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 2991,
+      "seconds": 149.55,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 3001,
+      "seconds": 150.05,
+      "label": "演示模板市场",
+      "rect": {
+        "x": 86,
+        "y": 420.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 441.0625
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 3012,
+      "seconds": 150.6,
+      "label": "演示模板市场",
+      "x": 186.5,
+      "y": 441.0625
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 3018,
+      "seconds": 150.9,
+      "label": "精选推荐",
+      "rect": {
+        "x": 386,
+        "y": 475.171875,
+        "width": 92,
+        "height": 38,
+        "cx": 432,
+        "cy": 494.171875
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 3030,
+      "seconds": 151.5,
+      "label": "精选推荐",
+      "x": 432,
+      "y": 494.171875
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 3036,
+      "seconds": 151.8,
+      "label": "预览演示模板",
+      "rect": {
+        "x": 386,
+        "y": 535.171875,
+        "width": 274,
+        "height": 155.875,
+        "cx": 523,
+        "cy": 613.109375
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 3048,
+      "seconds": 152.4,
+      "label": "预览演示模板",
+      "x": 523,
+      "y": 613.109375
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 3213,
+      "seconds": 160.65,
+      "label": "使用并编辑副本",
+      "rect": {
+        "x": 1163,
+        "y": 783.734375,
+        "width": 134,
+        "height": 36.265625,
+        "cx": 1230,
+        "cy": 801.8671875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 3225,
+      "seconds": 161.25,
+      "label": "使用并编辑副本",
+      "x": 1230,
+      "y": 801.8671875
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 3231,
+      "seconds": 161.55,
+      "label": "可编辑的演示画布",
+      "rect": {
+        "x": 161,
+        "y": 282.40625,
+        "width": 1439,
+        "height": 537.59375,
+        "cx": 880.5,
+        "cy": 551.203125
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 3231,
+      "seconds": 161.55,
+      "label": "查看第二张幻灯片",
+      "rect": {
+        "x": 6,
+        "y": 403.25,
+        "width": 153,
+        "height": 108.84375,
+        "cx": 82.5,
+        "cy": 457.671875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 3243,
+      "seconds": 162.15,
+      "label": "查看第二张幻灯片",
+      "x": 82.5,
+      "y": 457.671875
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 3445,
+      "seconds": 172.25,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 3457,
+      "seconds": 172.85,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 3468,
+      "seconds": 173.4,
+      "label": "脑图",
+      "rect": {
+        "x": 86,
+        "y": 714.1875,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 735.1875
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 3480,
+      "seconds": 174,
+      "label": "脑图",
+      "x": 186.5,
+      "y": 735.1875
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 3490,
+      "seconds": 174.5,
+      "label": "新建脑图项目",
+      "rect": {
+        "x": 1038,
+        "y": 140,
+        "width": 120,
+        "height": 38,
+        "cx": 1098,
+        "cy": 159
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 3502,
+      "seconds": 175.1,
+      "label": "新建脑图项目",
+      "x": 1098,
+      "y": 159
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 3509,
+      "seconds": 175.45,
+      "label": "项目名称",
+      "rect": {
+        "x": 569.1712036132812,
+        "y": 392.9239196777344,
+        "width": 468.55828857421875,
+        "height": 39.969268798828125,
+        "cx": 803.4503479003906,
+        "cy": 412.90855407714844
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 3521,
+      "seconds": 176.05,
+      "label": "项目名称",
+      "x": 803.4503479003906,
+      "y": 412.90855407714844
+    },
+    {
+      "step": "mindmap-create",
+      "type": "typing-start",
+      "frame": 3530,
+      "seconds": 176.5,
+      "label": "项目名称",
+      "text": "新品发布计划"
+    },
+    {
+      "step": "mindmap-create",
+      "type": "typing",
+      "frame": 3538,
+      "seconds": 176.9,
+      "label": "项目名称",
+      "text": "新品发布计划"
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 3543,
+      "seconds": 177.15,
+      "label": "创建项目",
+      "rect": {
+        "x": 945,
+        "y": 473.078125,
+        "width": 92,
+        "height": 38,
+        "cx": 991,
+        "cy": 492.078125
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 3555,
+      "seconds": 177.75,
+      "label": "创建项目",
+      "x": 991,
+      "y": 492.078125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3673,
+      "seconds": 183.65,
+      "label": "修改中心主题",
+      "rect": {
+        "x": 1025,
+        "y": 411.828125,
+        "width": 230,
+        "height": 36,
+        "cx": 1140,
+        "cy": 429.828125
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3685,
+      "seconds": 184.25,
+      "label": "修改中心主题",
+      "x": 1140,
+      "y": 429.828125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing-start",
+      "frame": 3695,
+      "seconds": 184.75,
+      "label": "修改中心主题",
+      "text": "新品发布"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing",
+      "frame": 3700,
+      "seconds": 185,
+      "label": "修改中心主题",
+      "text": "新品发布"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3705,
+      "seconds": 185.25,
+      "label": "保存文字",
+      "rect": {
+        "x": 1025,
+        "y": 568.671875,
+        "width": 230,
+        "height": 38,
+        "cx": 1140,
+        "cy": 587.671875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3717,
+      "seconds": 185.85,
+      "label": "保存文字",
+      "x": 1140,
+      "y": 587.671875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3723,
+      "seconds": 186.15,
+      "label": "添加节点",
+      "rect": {
+        "x": 375,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 417,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3735,
+      "seconds": 186.75,
+      "label": "添加节点",
+      "x": 417,
+      "y": 333.1875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3740,
+      "seconds": 187,
+      "label": "填写分支文字",
+      "rect": {
+        "x": 1025,
+        "y": 411.828125,
+        "width": 230,
+        "height": 36,
+        "cx": 1140,
+        "cy": 429.828125
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3752,
+      "seconds": 187.6,
+      "label": "填写分支文字",
+      "x": 1140,
+      "y": 429.828125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing-start",
+      "frame": 3762,
+      "seconds": 188.1,
+      "label": "填写分支文字",
+      "text": "产品资料"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing",
+      "frame": 3768,
+      "seconds": 188.4,
+      "label": "填写分支文字",
+      "text": "产品资料"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3773,
+      "seconds": 188.65,
+      "label": "保存文字",
+      "rect": {
+        "x": 1025,
+        "y": 568.671875,
+        "width": 230,
+        "height": 38,
+        "cx": 1140,
+        "cy": 587.671875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3785,
+      "seconds": 189.25,
+      "label": "保存文字",
+      "x": 1140,
+      "y": 587.671875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 3790,
+      "seconds": 189.5,
+      "label": "适配画布",
+      "rect": {
+        "x": 815.90625,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 857.90625,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 3803,
+      "seconds": 190.15,
+      "label": "适配画布",
+      "x": 857.90625,
+      "y": 333.1875
+    },
+    {
+      "step": "mindmap-list",
+      "type": "highlight",
+      "frame": 3921,
+      "seconds": 196.05,
+      "label": "返回项目列表",
+      "rect": {
+        "x": 362,
+        "y": 140,
+        "width": 120,
+        "height": 38,
+        "cx": 422,
+        "cy": 159
+      }
+    },
+    {
+      "step": "mindmap-list",
+      "type": "click",
+      "frame": 3933,
+      "seconds": 196.65,
+      "label": "返回项目列表",
+      "x": 422,
+      "y": 159
+    },
+    {
+      "step": "mindmap-list",
+      "type": "highlight",
+      "frame": 3939,
+      "seconds": 196.95,
+      "label": "新建脑图项目",
+      "rect": {
+        "x": 1028,
+        "y": 140,
+        "width": 120,
+        "height": 38,
+        "cx": 1088,
+        "cy": 159
+      }
+    },
+    {
+      "step": "mindmap-list",
+      "type": "click",
+      "frame": 3951,
+      "seconds": 197.55,
+      "label": "新建脑图项目",
+      "x": 1088,
+      "y": 159
+    },
+    {
+      "step": "mindmap-list",
+      "type": "highlight",
+      "frame": 3956,
+      "seconds": 197.8,
+      "label": "项目名称",
+      "rect": {
+        "x": 571.9285888671875,
+        "y": 391.6126403808594,
+        "width": 465.9761962890625,
+        "height": 39.769378662109375,
+        "cx": 804.9166870117188,
+        "cy": 411.49732971191406
+      }
+    },
+    {
+      "step": "mindmap-list",
+      "type": "click",
+      "frame": 3968,
+      "seconds": 198.4,
+      "label": "项目名称",
+      "x": 804.9166870117188,
+      "y": 411.49732971191406
+    },
+    {
+      "step": "mindmap-list",
+      "type": "typing-start",
+      "frame": 3977,
+      "seconds": 198.85,
+      "label": "项目名称",
+      "text": "团队工作分解"
+    },
+    {
+      "step": "mindmap-list",
+      "type": "typing",
+      "frame": 3985,
+      "seconds": 199.25,
+      "label": "项目名称",
+      "text": "团队工作分解"
+    },
+    {
+      "step": "mindmap-list",
+      "type": "highlight",
+      "frame": 3990,
+      "seconds": 199.5,
+      "label": "创建项目",
+      "rect": {
+        "x": 945,
+        "y": 473.078125,
+        "width": 92,
+        "height": 38,
+        "cx": 991,
+        "cy": 492.078125
+      }
+    },
+    {
+      "step": "mindmap-list",
+      "type": "click",
+      "frame": 4002,
+      "seconds": 200.1,
+      "label": "创建项目",
+      "x": 991,
+      "y": 492.078125
+    },
+    {
+      "step": "mindmap-list",
+      "type": "highlight",
+      "frame": 4008,
+      "seconds": 200.4,
+      "label": "返回项目列表",
+      "rect": {
+        "x": 362,
+        "y": 140,
+        "width": 120,
+        "height": 38,
+        "cx": 422,
+        "cy": 159
+      }
+    },
+    {
+      "step": "mindmap-list",
+      "type": "click",
+      "frame": 4020,
+      "seconds": 201,
+      "label": "返回项目列表",
+      "x": 422,
+      "y": 159
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4169,
+      "seconds": 208.45,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4181,
+      "seconds": 209.05,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4191,
+      "seconds": 209.55,
+      "label": "流程图",
+      "rect": {
+        "x": 86,
+        "y": 714.1875,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 735.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4204,
+      "seconds": 210.2,
+      "label": "流程图",
+      "x": 186.5,
+      "y": 735.1875
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4214,
+      "seconds": 210.7,
+      "label": "新建流程图项目",
+      "rect": {
+        "x": 1024,
+        "y": 140,
+        "width": 134,
+        "height": 38,
+        "cx": 1091,
+        "cy": 159
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4225,
+      "seconds": 211.25,
+      "label": "新建流程图项目",
+      "x": 1091,
+      "y": 159
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4231,
+      "seconds": 211.55,
+      "label": "项目名称",
+      "rect": {
+        "x": 569.0902709960938,
+        "y": 392.9238586425781,
+        "width": 468.55816650390625,
+        "height": 39.969268798828125,
+        "cx": 803.3693542480469,
+        "cy": 412.9084930419922
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4243,
+      "seconds": 212.15,
+      "label": "项目名称",
+      "x": 803.3693542480469,
+      "y": 412.9084930419922
+    },
+    {
+      "step": "flow",
+      "type": "typing-start",
+      "frame": 4253,
+      "seconds": 212.65,
+      "label": "项目名称",
+      "text": "资料审核流程"
+    },
+    {
+      "step": "flow",
+      "type": "typing",
+      "frame": 4260,
+      "seconds": 213,
+      "label": "项目名称",
+      "text": "资料审核流程"
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4265,
+      "seconds": 213.25,
+      "label": "创建项目",
+      "rect": {
+        "x": 945,
+        "y": 473.078125,
+        "width": 92,
+        "height": 38,
+        "cx": 991,
+        "cy": 492.078125
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4277,
+      "seconds": 213.85,
+      "label": "创建项目",
+      "x": 991,
+      "y": 492.078125
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4282,
+      "seconds": 214.1,
+      "label": "添加节点",
+      "rect": {
+        "x": 375,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 417,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4295,
+      "seconds": 214.75,
+      "label": "添加节点",
+      "x": 417,
+      "y": 333.1875
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 4301,
+      "seconds": 215.05,
+      "label": "适配画布",
+      "rect": {
+        "x": 815.90625,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 857.90625,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 4313,
+      "seconds": 215.65,
+      "label": "适配画布",
+      "x": 857.90625,
+      "y": 333.1875
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 4417,
+      "seconds": 220.85,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "outro",
+      "type": "click",
+      "frame": 4429,
+      "seconds": 221.45,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 4440,
+      "seconds": 222,
+      "label": "已打开文件与项目",
+      "rect": {
+        "x": 0,
+        "y": 752,
+        "width": 1600,
+        "height": 40,
+        "cx": 800,
+        "cy": 772
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "skins-open",
+      "index": 0,
+      "title": "打开新增的皮肤市场",
+      "chapter": "01 皮肤市场",
+      "narration": "海豹办公二点四新增皮肤市场。从首页左侧进入皮肤市场，内置十套皮肤，每张卡片同时展示浅色和深色两种效果。",
+      "startFrame": 0,
+      "endFrame": 264,
+      "start": 0,
+      "end": 13.2,
+      "audio": "pc-skins-open.mp3",
+      "audioSeconds": 11.472,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-skins-open-verified.png",
+      "endScreenshotSha256": "fb7497bab436e598049745f8b4222dd6cad18e279e3e053e45b577fe8e31d438"
+    },
+    {
+      "id": "skins-apply",
+      "index": 1,
+      "title": "预览并应用深海蓝",
+      "chapter": "01 皮肤市场",
+      "narration": "把鼠标停在预览按钮上，界面临时换上这套配色，移开后自动还原。点击应用深海蓝，整个界面立即换成新的主色。",
+      "startFrame": 264,
+      "endFrame": 518,
+      "start": 13.2,
+      "end": 25.9,
+      "audio": "pc-skins-apply.mp3",
+      "audioSeconds": 10.992,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-skins-apply-verified.png",
+      "endScreenshotSha256": "5dd89d430d23f8f57c586ffb70861d9994d7fbe50b597dcb3b1f53d909ebbee1"
+    },
+    {
+      "id": "skins-rules",
+      "index": 2,
+      "title": "查看皮肤开发规则",
+      "chapter": "01 皮肤市场",
+      "narration": "开发规则列出了皮肤文件格式和可读性要求，可以下载模板自己制作。导入的皮肤只在本机生效，公开给所有人需要管理员审核。最后切回默认的海豹紫。",
+      "startFrame": 518,
+      "endFrame": 840,
+      "start": 25.9,
+      "end": 42,
+      "audio": "pc-skins-rules.mp3",
+      "audioSeconds": 14.4,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-skins-rules-verified.png",
+      "endScreenshotSha256": "97f6d2c47d6e0f94a520fc3f027dcf62489525ac125817dd4da4efe01fde2d77"
+    },
+    {
+      "id": "new-word",
+      "index": 3,
+      "title": "新建一份工作计划",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "先从首页点击新建，选择文字文档。下面从一份空白文档开始，完成输入、保存和重新打开。",
+      "startFrame": 840,
+      "endFrame": 1056,
+      "start": 42,
+      "end": 52.8,
+      "audio": "pc-new-word.mp3",
+      "audioSeconds": 9.072,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-new-word-verified.png",
+      "endScreenshotSha256": "7467b3bc21b930252b3717f4f9cf4f82f55f45f88e3a50172a606da9b84c4c34"
+    },
+    {
+      "id": "word-title",
+      "index": 4,
+      "title": "输入标题",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "点击正文，输入每周工作计划，按回车开始下一段。输入位置会显示紫色轮廓，鼠标点击也有圆环提示。",
+      "startFrame": 1056,
+      "endFrame": 1292,
+      "start": 52.8,
+      "end": 64.6,
+      "audio": "pc-word-title.mp3",
+      "audioSeconds": 10.08,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-word-title-verified.png",
+      "endScreenshotSha256": "663f567986ed88389cba68b4377bbcab8275d54874a5ed5590e31ad2a4dfa233"
+    },
+    {
+      "id": "word-body",
+      "index": 5,
+      "title": "填写计划内容",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "继续输入本周目标和具体安排。文字会随着输入逐字出现；需要修改时，把光标放回正文即可继续编辑。",
+      "startFrame": 1292,
+      "endFrame": 1529,
+      "start": 64.6,
+      "end": 76.45,
+      "audio": "pc-word-body.mp3",
+      "audioSeconds": 10.104,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-word-body-verified.png",
+      "endScreenshotSha256": "2d43bdd3795447949049b5cb7bbaa29890af762801bf344975c440f12e48d995"
+    },
+    {
+      "id": "word-paste",
+      "index": 6,
+      "title": "截图直接粘贴",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "复制一张截图后，在正文中按 Ctrl 加 V，图片直接插入到光标位置，不需要先把截图另存为图片文件。",
+      "startFrame": 1529,
+      "endFrame": 1751,
+      "start": 76.45,
+      "end": 87.55,
+      "audio": "pc-word-paste.mp3",
+      "audioSeconds": 9.384,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-word-paste-verified.png",
+      "endScreenshotSha256": "4b8449ac158fbef4027cacba27fb1cd2c9303d9591e220fffaa47408c174df7c"
+    },
+    {
+      "id": "word-save",
+      "index": 7,
+      "title": "保存为 SLDOC",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "点击保存，使用海豹文字格式保存当前内容。文件标签会显示 S L D O C 后缀，保存完成后修改标记消失。",
+      "startFrame": 1751,
+      "endFrame": 2001,
+      "start": 87.55,
+      "end": 100.05,
+      "audio": "pc-word-save.mp3",
+      "audioSeconds": 10.752,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-word-save-verified.png",
+      "endScreenshotSha256": "a239e8bf2be0f1492004387498138433846defd695ea6096b055652e2689e3f1"
+    },
+    {
+      "id": "word-reopen",
+      "index": 8,
+      "title": "关闭后重新打开",
+      "chapter": "02 文字与截图粘贴",
+      "narration": "关闭已经保存的文件，再从首页打开同一份文档。标题、正文和刚粘贴的截图都完整保留，可以继续编辑。",
+      "startFrame": 2001,
+      "endFrame": 2240,
+      "start": 100.05,
+      "end": 112,
+      "audio": "pc-word-reopen.mp3",
+      "audioSeconds": 10.248,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-word-reopen-verified.png",
+      "endScreenshotSha256": "f87869d3cbf5dc708a50fd05e93da5160bd6b6b94d73bf767b515c9a9271b608"
+    },
+    {
+      "id": "sheet-open",
+      "index": 9,
+      "title": "打开项目预算表",
+      "chapter": "03 表格与计算",
+      "narration": "回到首页，点击打开，选择准备好的项目预算表。先看项目、数量、单价和预算四列数据。",
+      "startFrame": 2240,
+      "endFrame": 2452,
+      "start": 112,
+      "end": 122.6,
+      "audio": "pc-sheet-open.mp3",
+      "audioSeconds": 8.856,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-sheet-open-verified.png",
+      "endScreenshotSha256": "ab62f91b7958776d41beaf7296781f2c78a692086c60f2cf79b555fb2a1b43dc"
+    },
+    {
+      "id": "sheet-formula",
+      "index": 10,
+      "title": "输入求和公式",
+      "chapter": "03 表格与计算",
+      "narration": "在名称框输入 D 五，选中合计单元格。点击公式栏，输入等于 S U M，括号内填写 D 二冒号 D 四，按回车，合计得到两千三百六十。",
+      "startFrame": 2452,
+      "endFrame": 2742,
+      "start": 122.6,
+      "end": 137.1,
+      "audio": "pc-sheet-formula.mp3",
+      "audioSeconds": 12.768,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-sheet-formula-verified.png",
+      "endScreenshotSha256": "139dec550d1ae11209285d38ab80143fa2fd6b265fc82eaeff111a094eb4833e"
+    },
+    {
+      "id": "sheet-save",
+      "index": 11,
+      "title": "自适应列宽并另存",
+      "chapter": "03 表格与计算",
+      "narration": "点击自适应列宽，按当前内容调整工作表。再点击另存为，把可编辑的预算表保存为海豹表格格式。",
+      "startFrame": 2742,
+      "endFrame": 2970,
+      "start": 137.1,
+      "end": 148.5,
+      "audio": "pc-sheet-save.mp3",
+      "audioSeconds": 9.696,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-sheet-save-verified.png",
+      "endScreenshotSha256": "ea21e100874529c4ef59bd45b61983f640a2db6282ad2ba8989d92591ec9ded6"
+    },
+    {
+      "id": "template-open",
+      "index": 12,
+      "title": "预览完整演示模板",
+      "chapter": "04 演示模板",
+      "narration": "在首页进入演示模板市场，选择精选推荐。点击模板封面查看完整页面，确认主题配图和内容布局。",
+      "startFrame": 2970,
+      "endFrame": 3205,
+      "start": 148.5,
+      "end": 160.25,
+      "audio": "pc-template-open.mp3",
+      "audioSeconds": 10.008,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-template-open-verified.png",
+      "endScreenshotSha256": "4e85bd57708d8e10aac798eb5140a8c865d2fad64153daec4bac204ab11da430"
+    },
+    {
+      "id": "template-use",
+      "index": 13,
+      "title": "创建可编辑的演示副本",
+      "chapter": "04 演示模板",
+      "narration": "点击使用并编辑副本，进入演示编辑器。点击左侧第二页查看内容，各页保留独立的文本、图形和图片。",
+      "startFrame": 3205,
+      "endFrame": 3437,
+      "start": 160.25,
+      "end": 171.85,
+      "audio": "pc-template-use.mp3",
+      "audioSeconds": 9.888,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-template-use-verified.png",
+      "endScreenshotSha256": "0d7f19554e5701cd8ba4c78c951032145f3059983d948bc426d85dcfd6371c81"
+    },
+    {
+      "id": "mindmap-create",
+      "index": 14,
+      "title": "创建独立脑图项目",
+      "chapter": "05 脑图与流程图",
+      "narration": "回到首页打开脑图，点击新建脑图项目，输入新品发布计划，再点击创建项目。每个项目分别保存。",
+      "startFrame": 3437,
+      "endFrame": 3665,
+      "start": 171.85,
+      "end": 183.25,
+      "audio": "pc-mindmap-create.mp3",
+      "audioSeconds": 9.456,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-mindmap-create-verified.png",
+      "endScreenshotSha256": "091ceaab40c7e0e99eacfc2c1526c6396a918c4c4179bd3bbb0ac8d608366f42"
+    },
+    {
+      "id": "mindmap-edit",
+      "index": 15,
+      "title": "修改主题并增加分支",
+      "chapter": "05 脑图与流程图",
+      "narration": "在节点编辑区修改主题文字，再添加一个分支，填写产品资料。画布和本机保存状态会随实际编辑更新。",
+      "startFrame": 3665,
+      "endFrame": 3913,
+      "start": 183.25,
+      "end": 195.65,
+      "audio": "pc-mindmap-edit.mp3",
+      "audioSeconds": 10.152,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-mindmap-edit-verified.png",
+      "endScreenshotSha256": "ad3724411a37a263f0989bf200efc17b8be3d4e4b48149831ef76c6015d71a4c"
+    },
+    {
+      "id": "mindmap-list",
+      "index": 16,
+      "title": "多个项目分别管理",
+      "chapter": "05 脑图与流程图",
+      "narration": "返回项目列表，再创建团队工作分解。返回后可以看到两份独立项目，点击任一封面就能继续编辑。",
+      "startFrame": 3913,
+      "endFrame": 4161,
+      "start": 195.65,
+      "end": 208.05,
+      "audio": "pc-mindmap-list.mp3",
+      "audioSeconds": 9.504,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-mindmap-list-verified.png",
+      "endScreenshotSha256": "949c9b3670376c8ce998e9b4caa472bb64aec6fcfaee7aaf4d2d5601bb7bf9c3"
+    },
+    {
+      "id": "flow",
+      "index": 17,
+      "title": "流程图也有独立项目列表",
+      "chapter": "05 脑图与流程图",
+      "narration": "流程图同样从项目列表开始。创建资料审核流程，进入画布后增加节点，按业务步骤整理流程。",
+      "startFrame": 4161,
+      "endFrame": 4409,
+      "start": 208.05,
+      "end": 220.45,
+      "audio": "pc-flow.mp3",
+      "audioSeconds": 9.36,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-flow-verified.png",
+      "endScreenshotSha256": "ed1253c84f056403cc84226a88681279cbd82f4027a51d87bf7d16d3eeb77569"
+    },
+    {
+      "id": "outro",
+      "index": 18,
+      "title": "从一份文件，到一组项目",
+      "chapter": "海豹办公 2.4.0",
+      "narration": "以上是海豹办公二点四点零的实际操作演示。可以访问网页版，或在项目发行页下载适合设备的版本。",
+      "startFrame": 4409,
+      "endFrame": 4632,
+      "start": 220.45,
+      "end": 231.6,
+      "audio": "pc-outro.mp3",
+      "audioSeconds": 9.408,
+      "endScreenshot": "release/promo/work-2.4.0-tutorial/pc-outro-verified.png",
+      "endScreenshotSha256": "5b2f5b9413ba3497fe2f77e9c8032c12ce2f41c0e02acefd7cbd119c0cf9c902"
+    }
+  ],
+  "recording": "release/promo/work-2.4.0-tutorial/pc-operations.mp4",
+  "recordingSha256": "ef169df243298117e5affc373dffe0d4c2c9e2aae1a2a7cfe453b2aaa69c7b83"
+}
