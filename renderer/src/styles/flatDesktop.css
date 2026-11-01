@@ -428,3 +428,15 @@ body { background: var(--bg-app); letter-spacing: .01em; }
 .wps-ribbon-panel { scrollbar-width: thin; }
 .wps-ribbon-panel::-webkit-scrollbar { height: 6px; }
 .wps-ribbon-panel::-webkit-scrollbar-thumb { border: 0; background: color-mix(in srgb, var(--text-3) 28%, transparent); }
+
+/* 皮肤背景图：位于界面内容之下，只在外壳留白处可见，不影响文档纸张与打印。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--seal-skin-bg, none) center / cover no-repeat;
+  opacity: var(--seal-skin-bg-opacity, 0);
+}
+@media print { body::before { display: none; } }

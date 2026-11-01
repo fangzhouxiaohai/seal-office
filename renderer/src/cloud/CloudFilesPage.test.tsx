@@ -68,3 +68,24 @@ describe('云空间网盘浏览与真实操作',()=>{
     expect(fixture.call).not.toHaveBeenCalledWith('remove',{id:'trash',destroy:true})
   })
 })
+describe('云空间加载与预览',()=>{
+  it('读取文件列表期间显示统一加载动画',async()=>{
+    let finish:(v:any)=>void=()=>{}
+    fixture.call.mockImplementation((action)=>action==='list'?new Promise(resolve=>{finish=resolve}):Promise.resolve([]))
+    render(<AntdApp><CloudFilesPage/></AntdApp>)
+    expect(screen.getByRole('status').textContent).toContain('正在读取云空间文件')
+    finish(nodes)
+    expect(await screen.findByRole('button',{name:'长文件名工作汇报.docx'})).toBeInTheDocument()
+    expect(screen.queryByText('正在读取云空间文件…')).not.toBeInTheDocument()
+  })
+  it('点击图片文件进入预览，菜单提供预览入口',async()=>{
+    const withImage=[...nodes,{id:'photo',parent:null,kind:'file',deleted:0,version:1,meta:{name:'现场照片.png'},updated:50}]
+    ;(URL as any).createObjectURL=vi.fn(()=>'blob:x');(URL as any).revokeObjectURL=vi.fn()
+    fixture.call.mockImplementation(async(action)=>action==='list'?withImage:action==='pending'?[]:action==='rawDownload'?{name:'现场照片.png',data:btoa('png')}:{})
+    render(<AntdApp><CloudFilesPage/></AntdApp>)
+    fireEvent.click(await screen.findByRole('button',{name:'现场照片.png'}))
+    expect(await screen.findByRole('img',{name:'现场照片.png'})).toBeInTheDocument()
+    expect(fixture.call).toHaveBeenCalledWith('rawDownload',{id:'photo',version:undefined})
+    expect(fixture.call).not.toHaveBeenCalledWith('download',expect.anything())
+  })
+})

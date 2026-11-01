@@ -5,6 +5,7 @@ const { randomUUID, randomBytes, randomInt, createHash, createHmac, timingSafeEq
 const { openStore } = require('./store.cjs')
 const { createSms } = require('./sms.cjs')
 const {validateIsolated:validatePublic}=require('./validateIsolated.cjs')
+const {validateSkinCover}=require('./publicValidation.cjs')
 const { createConverterAdmin } = require('./converterAdmin.cjs')
 const { createCollaboration } = require('./collaboration.cjs')
 const { createAccountConversion } = require('./accountConversion.cjs')
@@ -280,13 +281,13 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       }
       if(route==='/v1/publications'&&method==='GET')return reply({items:db.query('SELECT id,node_id,kind,title,description,cover,category,status,created FROM publications WHERE user_id=?',[user.id])})
       if(route==='/v1/publications'&&method==='POST'){
-        const input=await json(32*CHUNK);nodeFor(input.nodeId,user.id);if(input.consent!==true||!['knowledge','template'].includes(input.kind)||typeof input.title!=='string'||input.title.length>120||typeof input.data!=='string')fail(400,'请确认公开授权并填写有效信息')
+        const input=await json(32*CHUNK);nodeFor(input.nodeId,user.id);if(input.consent!==true||!['knowledge','template','skin'].includes(input.kind)||typeof input.title!=='string'||input.title.length>120||typeof input.data!=='string')fail(400,'请确认公开授权并填写有效信息')
         const raw=Buffer.from(input.data,'base64');ensureDisk(raw.length);const publicMetaBytes=[input.text,input.cover,input.title,input.description,input.category,input.name].reduce((n,v)=>n+bytes(v),0);if(raw.length>10*1024*1024||raw.toString('base64')!==input.data)fail(413,'公开文件上限为 10 MiB');if(usage(user.id)+reservation(user.id)+raw.length+publicMetaBytes>quota)fail(413,'云空间不足')
-        try{await validatePublic(raw,input.name||input.title,input.kind)}catch(error){fail(400,error.message)}
+        try{await validatePublic(raw,input.name||input.title,input.kind);if(input.kind==='skin')validateSkinCover(input.cover||'')}catch(error){fail(400,error.message)}
         if(!db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled)fail(403,'云空间已停用');nodeFor(input.nodeId,user.id)
         if(usage(user.id)+reservation(user.id)+raw.length+publicMetaBytes>quota)fail(413,'云空间不足')
         if(bytes(input.text)>16*CHUNK||bytes(input.cover)>CHUNK)fail(413,'公开预览或文本过大')
-        if(input.cover&&!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(input.cover))fail(400,'封面仅支持静态图片')
+        if(input.kind!=='skin'&&input.cover&&!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(input.cover))fail(400,'封面仅支持静态图片')
         const id=randomUUID();fs.writeFileSync(path.join(objects,id),raw,{mode:0o600});try{db.transaction(()=>{db.run('INSERT INTO publications(id,user_id,node_id,kind,title,description,cover,category,blob,bytes,text,status,created,name) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[id,user.id,input.nodeId,input.kind,input.title,input.description||'',input.cover||'',input.category||'',id,raw.length,input.text||'','pending',clock(),input.name||input.title]);audit(user.id,'publish-request',id)})}catch(error){unlink(path.join(objects,id));throw error}
         return reply({id,status:'pending'})
       }

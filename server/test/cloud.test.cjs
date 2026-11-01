@@ -174,3 +174,23 @@ test('隔离备份恢复后账号、密钥封装及历史密文可用，管理�
   assert.equal(fs.readFileSync(path.join(restore,'seal.sqlite')).includes(Buffer.from('机密备份')),false)
   for(const name of fs.readdirSync(path.join(restore,'objects')))assert.equal(fs.readFileSync(path.join(restore,'objects',name)).includes(Buffer.from('私有正文')),false)
 })
+test('皮肤保存云端后申请公开，审核通过才进入公开列表，非法皮肤被拒绝',async t=>{
+  const f=await fixture(t),safeStorage={isEncryptionAvailable:()=>true,encryptString:s=>seal(Buffer.alloc(32,1),Buffer.from(s),'test-safe'),decryptString:b=>unseal(Buffer.alloc(32,1),b,'test-safe').toString()}
+  const local=fs.mkdtempSync(path.join(os.tmpdir(),'seal-client-'));t.after(()=>fs.rmSync(local,{recursive:true,force:true}))
+  const client=createService({directory:local,safeStorage});await client.setServer(f.url);await client.sendCode('13800000021');await client.login('13800000021',f.codes.get('13800000021'))
+  await client.enable(true)
+  const skin={...require('../../main/skins/builtinSkins.json')[2],id:'user.forest',name:'我的森林'}
+  const cover='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="8" height="8" fill="#15803D"/></svg>').toString('base64')
+  const saved=await client.save({linkId:'skin',name:'我的森林',filename:'我的森林.sealskin',data:Buffer.from(JSON.stringify(skin)).toString('base64'),skin:true,cover,category:'绿色'})
+  const item=await client.publish(saved.id,'skin',true);assert.equal(item.status,'pending')
+  assert.equal((await f.request('/v1/public/')).body.items.filter(p=>p.kind==='skin').length,0)
+  const admin=(await f.request('/v1/admin/login',{username:'admin',password:'admin-secret'})).body.token
+  assert.ok((await f.request('/v1/admin/overview',null,admin)).body.publications.some(p=>p.id===item.id&&p.kind==='skin'))
+  await f.request('/v1/admin/publications/'+item.id,{status:'approved'},admin,'PATCH')
+  const listed=(await f.request('/v1/public/')).body.items.find(p=>p.id===item.id);assert.equal(listed.kind,'skin');assert.equal(listed.cover,cover)
+  const res=await fetch(f.url+'/v1/public/'+item.id+'/download');assert.equal(JSON.parse(Buffer.from(await res.arrayBuffer()).toString()).id,'user.forest')
+  const bad=await client.save({linkId:'bad',name:'坏皮肤',filename:'坏皮肤.sealskin',data:Buffer.from(JSON.stringify({...skin,light:{...skin.light,text:'#EEEEEE'}})).toString('base64')})
+  await assert.rejects(client.publish(bad.id,'skin',true),/对比度/)
+  const badCover=await client.save({linkId:'bad-cover',name:'坏封面',filename:'坏封面.sealskin',data:Buffer.from(JSON.stringify(skin)).toString('base64'),cover:'data:image/svg+xml;base64,'+Buffer.from('<svg onload="x()"/>').toString('base64')})
+  await assert.rejects(client.publish(badCover.id,'skin',true),/皮肤封面/)
+})

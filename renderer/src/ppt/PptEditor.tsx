@@ -1,6 +1,8 @@
 import AnimationPanel from './panels/AnimationPanel'
 import { useShortcuts } from '../shortcuts/useShortcuts'
 import { useRealtimePresentation } from '../collaboration/useRealtimePresentation'
+import { 粘贴图片文件, 读取系统剪贴板, writeClipboardText } from '../editor/clipboard'
+
 import { copySlideSelection, pasteSlideSelection, deleteSlideSelection, nudgeSlideSelection } from './objectClipboard'
 import { withShortcutLabels } from '../shortcuts/shortcutMenu'
 import FormulaPanel from './panels/FormulaPanel'
@@ -87,6 +89,10 @@ import { 解码图片文件 } from './model/imageImport'
 import { 创建媒体对象, 创建墨迹对象, 校验音效数据 } from './model/mediaObjects'
 import { 读取媒体文件 } from './model/mediaImport'
 import { 使用放映状态 } from './presentationState'
+
+/** 内部复制写入系统剪贴板的标记文本，以及粘贴命令内部转发参数 */
+const 演示内部剪贴板标记 = '［海豹办公演示对象］'
+const 内部粘贴参数 = '__internal_paste__'
 
 /** 取路径中的文件名，供最近文档记录使用 */
 const 基准名 = (路径: string): string => {
@@ -749,16 +755,47 @@ const PptEditor = () => {
   }
 
   const 图片粘贴引用 = useRef(插入图片); 图片粘贴引用.current = 插入图片
+  const 粘贴命令引用 = useRef<(标识: string, 参数?: string) => void>(() => {})
+  /** 内部复制对象或文本框时向系统剪贴板写入标记，粘贴时据此区分“刚复制的演示对象”和“之后的截图 / 外部文字”。 */
+  const 内部剪贴板 = useRef({ 有效: false, 已写入标记: false })
+  const 标记内部复制 = () => {
+    内部剪贴板.current = { 有效: true, 已写入标记: false }
+    writeClipboardText(演示内部剪贴板标记).then(() => { 内部剪贴板.current.已写入标记 = true }, () => { /* 写入失败时下次粘贴优先使用内部对象 */ })
+  }
   useEffect(() => {
+    // 浏览器只在可编辑区域派发 paste 事件；画布上的 Ctrl+V 由粘贴命令读取剪贴板。
+    // 此监听处理其余来源的粘贴事件中的图片（如按钮获得焦点时）。
     const 粘贴 = (事件: ClipboardEvent) => {
       const 目标 = 事件.target instanceof Element ? 事件.target : null
       if (目标?.closest('input,textarea,[contenteditable="true"],[role="textbox"]') || 插图状态.current.只读 || 插图状态.current.禁止插图) return
-      const 文件 = Array.from(事件.clipboardData?.files ?? [])
+      const 文件 = 事件.clipboardData ? 粘贴图片文件(事件.clipboardData) : []
       if (文件.length) { 事件.preventDefault(); void 图片粘贴引用.current(文件) }
     }
     document.addEventListener('paste', 粘贴)
     return () => document.removeEventListener('paste', 粘贴)
   }, [])
+
+  /** Ctrl+V 与右键“粘贴”：截图等图片插入当前页；刚在本文稿复制的对象按原样粘贴；外部文字新建文本框。 */
+  const 系统粘贴 = async () => {
+    if (只读) return
+    const 系统剪贴板 = await 读取系统剪贴板().catch(() => null)
+    if (系统剪贴板?.图片.length) {
+      if (插图状态.current.禁止插图) { 显示文件错误('无法粘贴图片', '当前状态不能插入图片，请退出放映或预览后重试'); return }
+      内部剪贴板.current.有效 = false
+      await 图片粘贴引用.current(系统剪贴板.图片)
+      return
+    }
+    const 文本 = 系统剪贴板?.文本 ?? ''
+    const 内部 = 内部剪贴板.current
+    if (文本 === 演示内部剪贴板标记 || (内部.有效 && (!文本 || !内部.已写入标记))) { 粘贴命令引用.current('clipboard.paste', 内部粘贴参数); return }
+    if (文本.trim() && 当前幻灯片) {
+      const 新框 = 创建文本框(80, 220, 800, 200, 文本.trim(), 18)
+      更新文稿(更新幻灯片(文稿, 当前幻灯片.id, { 文本框列表: [...当前幻灯片.文本框列表, 新框] }))
+      set选中框标识(新框.id); set选中对象([])
+      return
+    }
+    粘贴命令引用.current('clipboard.paste', 内部粘贴参数)
+  }
 
   const 粘贴系统图片 = async () => {
     try {
@@ -886,6 +923,10 @@ const PptEditor = () => {
 
   const 执行命令 = (标识: string, 参数?: string) => {
     if (文字草稿.current?.组合中 && /^(file\.|export\.)/.test(标识)) { message.info('请先完成输入法候选字，再保存'); return }
+    // 粘贴先读取系统剪贴板（截图只有图片数据），再决定插入图片、粘贴内部对象或新建文本框。
+    if ((标识 === 'clipboard.paste' || 标识 === 'edit.paste') && 参数 !== 内部粘贴参数) { void 系统粘贴(); return }
+    if (参数 === 内部粘贴参数) 参数 = undefined
+    if (['clipboard.copy', 'clipboard.cut', 'edit.copy', 'edit.cut'].includes(标识)) queueMicrotask(标记内部复制)
     const 目标对象 = 选中对象.length ? 选中对象 : 选中框标识 ? [选中框标识] : []
     if (标识 === 'edit.selectAll') {
       if (!当前幻灯片) return
@@ -1160,6 +1201,7 @@ const PptEditor = () => {
       显示文件错误('演示操作失败', 错误 instanceof Error ? 错误.message : '请检查所选内容后重试')
     }
   }
+  粘贴命令引用.current = (标识, 参数) => 执行命令(标识, 参数)
 
   const 提交编辑 = () => {
     if (文字草稿.current?.组合中) return

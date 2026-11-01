@@ -44,8 +44,8 @@ export function 构建文字浮窗按钮(依赖: 文字浮窗依赖): 浮窗按�
     { id: 'font.underline', 标签: 格式.下划线 ? '取消下划线' : '下划线', 图标: 'underline', 分组: 10, 执行: () => 依赖.执行格式化('underline') },
     { id: 'font.strike', 标签: 格式.删除线 ? '取消删除线' : '删除线', 图标: 'strike', 分组: 10, 执行: () => 依赖.执行格式化('strikeThrough') },
     // 面板只放最常用的一种，完整调色板在右键菜单与功能区
-    { id: 'font.highlight', 标签: '突出显示（黄色）', 图标: 'highlight', 分组: 20, 执行: () => 依赖.执行格式化('hiliteColor', 突出显示颜色[0].值) },
-    { id: 'font.color', 标签: '字体颜色（红色）', 图标: 'color', 分组: 20, 执行: () => 依赖.执行格式化('foreColor', 字体颜色[1].值) },
+    { id: 'font.highlight', 标签: '突出显示（黄色）', 图标: 'highlight', 色块: 突出显示颜色[0].值, 分组: 20, 执行: () => 依赖.执行格式化('hiliteColor', 突出显示颜色[0].值) },
+    { id: 'font.color', 标签: '字体颜色（红色）', 图标: 'color', 色块: 字体颜色[1].值, 分组: 20, 执行: () => 依赖.执行格式化('foreColor', 字体颜色[1].值) },
     { id: 'font.clear', 标签: '清除格式', 图标: 'clear', 分组: 20, 执行: () => 依赖.执行格式化('removeFormat') },
     { id: 'para.bullet', 标签: '项目符号', 图标: 'list', 分组: 30, 执行: () => 依赖.执行命令('para.bullet') },
     { id: 'para.number', 标签: '编号', 图标: 'number-list', 分组: 30, 执行: () => 依赖.执行命令('para.number') },

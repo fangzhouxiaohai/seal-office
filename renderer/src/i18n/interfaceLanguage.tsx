@@ -64,6 +64,7 @@ const 英文界面: Record<string, string> = {
   '我的云空间': 'My cloud space',
   '知识库': 'Knowledge base',
   '演示模板市场': 'Presentation templates',
+  '皮肤市场': 'Skin market',
   '我的设备': 'My devices',
   '标签': 'Tags',
   '回收站': 'Recycle bin',

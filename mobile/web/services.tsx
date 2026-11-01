@@ -18,7 +18,7 @@ export default function MobileServices(){
     }catch(error){message.error(error instanceof Error?error.message:'海豹格式导出失败')}finally{setExporting(false)}
   }
   const open=(key:string)=>{if(key==='settings')store.showSettings();else if(key==='help')store.showHelp();else if(key==='pdf')store.createDoc('pdf');else store.handleNav(key,text=>message.info(text))}
-  const groups=[{title:'常用工具',keys:['pdf','mindmap','flow','multitable','design','notes','calendar','database']},{title:'协作与资料',keys:['my-cloud','shared','team','knowledge','tag','device','trash','market']},{title:'应用与设置',keys:['document','settings','help']}]
+  const groups=[{title:'常用工具',keys:['pdf','mindmap','flow','multitable','design','notes','calendar','database']},{title:'协作与资料',keys:['my-cloud','shared','team','knowledge','tag','device','trash','market','skins']},{title:'应用与设置',keys:['document','settings','help']}]
   const items=NAV_GROUPS.flat().filter(item=>item.implemented&&navigationAvailable(item.key))
   const createEntries=([{key:'word',label:'文字',icon:'doc-word',aliases:'Word 文档'},{key:'table',label:'表格',icon:'doc-table',aliases:'Excel 工作簿'},{key:'ppt',label:'演示',icon:'doc-ppt',aliases:'PPT 幻灯片'},{key:'pdf',label:'PDF',icon:'doc-pdf',aliases:'PDF 阅读'}] as const).filter(item=>(item.label+' '+item.aliases).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
   const nativeMatch=!query||/海豹|专属|格式/.test(query),assistantMatch=!query||/助手|智能|\bai\b/i.test(query)

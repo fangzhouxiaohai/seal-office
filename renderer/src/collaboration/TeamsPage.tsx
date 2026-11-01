@@ -4,7 +4,7 @@ import { cloudCall } from '../cloud/CloudProvider'
 import CloudFileBrowser, { isFolder } from '../cloud/CloudFileBrowser'
 import FileUploadButton from '../components/FileUploadButton'
 import { readUpload } from '../cloud/fileData'
-import { CloudGate, CredentialDialog, dateText, useCloudWorkspace, validPhone, WorkspaceError } from './common'
+import { CloudGate, CredentialDialog, dateText, useCloudWorkspace, WorkspaceLoading, validPhone, WorkspaceError } from './common'
 import { useCollaborationFiles } from './fileAccess'
 import { canEditTeam, canManageMember, roleNames, type CollaborationDownload, type CredentialResult, type TaggedNode, type TeamEntry, type TeamInvite, type TeamMember, type TeamRole } from './types'
 import { readCredential } from './credentialLinks'
@@ -35,6 +35,7 @@ export default function TeamsPage() {
     window.addEventListener('seal-before-native-back', back); return () => window.removeEventListener('seal-before-native-back', back)
   }, [parent, data.nodes])
   if (!workspace.enabled) return <CloudGate title="团队空间" />
+  if (workspace.initialLoading) return <WorkspaceLoading title="团队空间" />
   const descendants = (nodeId: string, ancestor: string) => { const seen = new Set<string>(); let cursor: string | null = nodeId; while (cursor && !seen.has(cursor)) { if (cursor === ancestor) return true; seen.add(cursor); cursor = data.nodes.find(item => item.id === cursor)?.parent ?? null } return false }
   const download = (node: TaggedNode) => () => cloudCall<CollaborationDownload>('teamDownload', { id: teamId, nodeId: node.id })
   const open = (node: TaggedNode) => { if (isFolder(node)) { setParent(node.id); setSelected([]) } else void execute(() => files.open(download(node), { kind: 'team', id: teamId, nodeId: node.id, editable })) }

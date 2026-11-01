@@ -38,3 +38,22 @@ test('原生 HTML、SVG、链接和保留的 OOXML 包不能夹带活动内容',
   const source=(await zip.generateAsync({type:'nodebuffer'})).toString('base64')
   for(const attr of [`"${source}"`,source])await assert.rejects(validatePublic(await writeSeal('word',{html:`<div data-seal-docx-package=${attr}></div>`}),'unsafe.sldoc','knowledge'),/宏或可执行/)
 })
+
+test('皮肤公开只接受通过格式与对比度校验的 .sealskin',async()=>{
+  const skin=require('../../main/skins/builtinSkins.json')[1]
+  const raw=Buffer.from(JSON.stringify({...skin,id:'user.ocean'}))
+  await validatePublic(raw,'深海蓝.sealskin','skin')
+  await assert.rejects(validatePublic(raw,'深海蓝.json','skin'),/皮肤须为 \.sealskin/)
+  await assert.rejects(validatePublic(raw,'深海蓝.sealskin','knowledge'),/公开文件仅接受/)
+  await assert.rejects(validatePublic(Buffer.from(JSON.stringify({...skin,css:'body{}'})),'x.sealskin','skin'),/未知字段/)
+  await assert.rejects(validatePublic(Buffer.from(JSON.stringify({...skin,light:{...skin.light,text:'#EEEEEE'}})),'x.sealskin','skin'),/对比度/)
+  await assert.rejects(validatePublic(Buffer.from([0xff,0xfe,0x00]),'x.sealskin','skin'),/UTF-8|JSON/)
+})
+
+test('皮肤封面只接受 SVG 色板数据',async()=>{
+  const {validateSkinCover}=require('../publicValidation.cjs')
+  validateSkinCover('data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4" fill="#123456"/></svg>').toString('base64'))
+  validateSkinCover('')
+  assert.throws(()=>validateSkinCover('data:image/svg+xml;base64,'+Buffer.from('<svg onload="alert(1)"/>').toString('base64')),/活动脚本/)
+  assert.throws(()=>validateSkinCover('https://example.com/a.png'),/皮肤封面/)
+})

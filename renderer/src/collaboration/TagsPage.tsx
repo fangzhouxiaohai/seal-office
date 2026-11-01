@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Empty, Input, Modal, Select } from 'antd'
 import { cloudCall } from '../cloud/CloudProvider'
 import CloudFileBrowser, { isFolder } from '../cloud/CloudFileBrowser'
-import { cloudNodeList, CloudGate, useCloudWorkspace, WorkspaceError } from './common'
+import { cloudNodeList, CloudGate, useCloudWorkspace, WorkspaceLoading, WorkspaceError } from './common'
 import { useCollaborationFiles, type SharedFileBinding } from './fileAccess'
 import type { CloudTag, CollaborationDownload, TaggedNode } from './types'
 
@@ -18,6 +18,7 @@ export default function TagsPage() {
   const [editing, setEditing] = useState<CloudTag | 'new' | null>(null), [name, setName] = useState(''), [color, setColor] = useState(colors[0]), [deleting, setDeleting] = useState<CloudTag | null>(null)
   const [assignment, setAssignment] = useState(false), [fileId, setFileId] = useState(''), [tagIds, setTagIds] = useState<string[]>([])
   if (!workspace.enabled) return <CloudGate title="标签" />
+  if (workspace.initialLoading) return <WorkspaceLoading title="标签" />
   const chooseFile = (id: string) => { setFileId(id); setTagIds(data.files.find(file => file.id === id)?.tagIds ?? []) }
   const open = (node: TaggedNode) => { if (isFolder(node)) { setParent(node.id); setSelected([]) } else void execute(async () => { const binding = await cloudCall<SharedFileBinding | null>('realtimeNodeBinding', { id: node.id }); return fileAccess.open(() => cloudCall<CollaborationDownload>(binding ? 'realtimeDownload' : 'download', { id: node.id }), binding || undefined) }) }
   return <section className="seal-cloud-page seal-drive ds-page-shell"><header className="seal-collaboration-header"><h1>标签</h1><div className="seal-collaboration-toolbar"><Button type="primary" disabled={busy} onClick={() => { setEditing('new'); setName(''); setColor(colors[0]) }}>新建标签</Button><Button disabled={busy || !data.files.length} onClick={() => { setAssignment(true); setFileId(''); setTagIds([]) }}>设置文件标签</Button><Button disabled={busy} onClick={() => void workspace.refresh()}>刷新标签</Button></div></header><WorkspaceError error={error} />

@@ -3,6 +3,7 @@ import { Alert, App, Button, Input, Modal } from 'antd'
 import { cloudCall, useCloud } from '../cloud/CloudProvider'
 import { writeClipboardText } from '../editor/clipboard'
 import Icon from '../components/Icon'
+import LoadingState from '../components/LoadingState'
 import '../cloud/drive.css'
 import './collaboration.css'
 import { credentialLink } from './credentialLinks'
@@ -43,12 +44,17 @@ export function useCloudWorkspace<T>(initial: T, loader: () => Promise<T>, scope
       return false
     } finally { pending.current = false; setBusy(false) }
   }
-  return { cloud, data, busy: busy || enabled && (loading || loadedKey !== key), error, enabled, refresh, execute }
+  return { cloud, data, busy: busy || enabled && (loading || loadedKey !== key), initialLoading: enabled && loadedKey !== key, error, enabled, refresh, execute }
 }
 
 export function CloudGate({ title }: { title: string }) {
   const cloud = useCloud()
   return <section className="seal-drive seal-drive-welcome"><Icon name="cloud" size={54} /><h1>{title}</h1><p>登录并解锁加密云空间后使用此功能</p><Button type="primary" onClick={cloud.configure}>{cloud.state.account?.enabled ? '解锁云空间' : '登录并开通云空间'}</Button></section>
+}
+
+/** 首次读取云端数据时的统一加载界面，保留页面标题，避免空列表闪烁。 */
+export function WorkspaceLoading({ title }: { title: string }) {
+  return <section className="seal-cloud-page seal-drive ds-page-shell"><header className="seal-collaboration-header"><h1>{title}</h1></header><LoadingState 文字={`正在读取${title}…`} /></section>
 }
 
 export function WorkspaceError({ error }: { error: string }) { return error ? <Alert role="alert" type="error" showIcon message="操作未完成" description={error} /> : null }

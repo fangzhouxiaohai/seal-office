@@ -37,11 +37,15 @@ import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
 import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
+import { 默认皮肤标识, 皮肤主题令牌, type 皮肤定义 } from './styles/themes'
 import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
 import './fonts/fonts.css'
 
 /** 动态 Ant Design 主题配置 */
-const 主题配置 = ({ 深色 }: { 深色: boolean; 移动: boolean }) => ({
+const 主题配置 = ({ 深色, 皮肤 }: { 深色: boolean; 移动: boolean; 皮肤: 皮肤定义 }) => {
+  // 默认皮肤沿用 2.3.0 原有组件令牌；其他皮肤由皮肤颜色覆盖主色、文字、边框与背景。
+  const 换肤 = 皮肤.id !== 默认皮肤标识, 色 = 深色 ? 皮肤.dark : 皮肤.light
+  return {
   algorithm: 深色 ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: 深色 ? '#8D80FF' : '#6A5CF5',
@@ -66,16 +70,18 @@ const 主题配置 = ({ 深色 }: { 深色: boolean; 移动: boolean }) => ({
     boxShadowSecondary: '0 14px 40px rgba(54, 45, 140, .14), 0 3px 10px rgba(27, 29, 43, .06)',
     fontFamily: '"HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif',
     motionDurationMid: '0.18s',
+    ...(换肤 ? 皮肤主题令牌(皮肤, 深色) : {}),
   },
   components: {
-    Button: { primaryShadow: '0 6px 16px rgba(106, 92, 245, .28)', fontWeight: 500 },
+    Button: { primaryShadow: 换肤 ? `0 6px 16px ${色.brand}47` : '0 6px 16px rgba(106, 92, 245, .28)', fontWeight: 500 },
     Modal: { borderRadiusLG: 20 },
-    Tabs: { itemSelectedColor: 深色 ? '#A196FF' : '#5848E8', inkBarColor: 深色 ? '#8D80FF' : '#6A5CF5' },
-    Segmented: { itemSelectedBg: 深色 ? '#2C2950' : '#FFFFFF' },
+    Tabs: 换肤 ? { itemSelectedColor: 色.brandHover, inkBarColor: 色.brand } : { itemSelectedColor: 深色 ? '#A196FF' : '#5848E8', inkBarColor: 深色 ? '#8D80FF' : '#6A5CF5' },
+    Segmented: { itemSelectedBg: 换肤 ? (深色 ? 色.brandSoft : 色.card) : 深色 ? '#2C2950' : '#FFFFFF' },
     Tooltip: { colorBgSpotlight: 'rgba(24, 24, 40, .92)' },
     Menu: { itemBorderRadius: 10 },
   },
-})
+  }
+}
 
 const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children:React.ReactNode}> }) => {
   // 使用 App 上下文中的 message，使提示能沿用 ConfigProvider 的中文语言包与主题
@@ -529,10 +535,10 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
 
 /** 在当前主题下创建组件库上下文，使弹窗和表单也随主题切换。 */
 export const 动态主题容器 = ({ children }: { children: React.ReactNode }) => {
-  const { 主题, 语言 } = useSettings()
+  const { 主题, 语言, 皮肤 } = useSettings()
   return React.createElement(ConfigProvider, {
     locale: 语言 === 'en-US' ? enUS : zhCN,
-    theme: 主题配置({ 深色: 主题 === '深色', 移动: useIconPlatform() === 'mobile' }),
+    theme: 主题配置({ 深色: 主题 === '深色', 移动: useIconPlatform() === 'mobile', 皮肤 }),
     button: { autoInsertSpace: false },
   }, children)
 }

@@ -11,15 +11,18 @@ import {useSettings} from '../store/settingsStore'
 import {useCollaborationFiles, type SharedFileBinding} from '../collaboration/fileAccess'
 import {materializeRealtime} from '../collaboration/materializeRealtime'
 import {diagramFileType} from '../localTools/diagramCloud'
+import CloudPreview from './preview/CloudPreview'
+import {当前预览引擎,默认打开方式} from './preview/previewFormats'
+import LoadingState from '../components/LoadingState'
 import './drive.css'
 export default function CloudFilesPage({trash=false}:{trash?:boolean}){
-  const cloud=useCloud(),store=useAppStore(),{modal,message}=App.useApp(),[nodes,setNodes]=useState<Node[]>([]),[parent,setParent]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[versions,setVersions]=useState<{node:Node;items:any[]}|null>(null),[pending,setPending]=useState<any[]>([])
+  const cloud=useCloud(),store=useAppStore(),{modal,message}=App.useApp(),[nodes,setNodes]=useState<Node[]>([]),[parent,setParent]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[versions,setVersions]=useState<{node:Node;items:any[]}|null>(null),[pending,setPending]=useState<any[]>([]),[previewing,setPreviewing]=useState<Node|null>(null),[loaded,setLoaded]=useState(false)
   const {语言}=useSettings(),en=语言==='en-US',t=(zh:string,english:string)=>en?english:zh
   const collaborationFiles=useCollaborationFiles(cloud.state.account?.id||'')
   const [selected,setSelected]=useState<string[]>([]),[sort,setSort]=useState('updated')
   const context=useRef('');context.current=JSON.stringify([cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
-  const load=async()=>{const key=context.current;try{const items=await cloudCall('list'),queue=await cloudCall('pending');if(key!==context.current)return;setNodes(items);setPending(queue);setError('');await cloud.refresh()}catch(e){if(key===context.current)setError(e instanceof Error?e.message:'读取失败')}}
-  useEffect(()=>{setNodes([]);setPending([]);setVersions(null);setParent(null);if(cloud.state.account?.enabled&&cloud.state.unlocked)void load()},[cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
+  const load=async()=>{const key=context.current;try{const items=await cloudCall('list'),queue=await cloudCall('pending');if(key!==context.current)return;setNodes(items);setPending(queue);setError('');await cloud.refresh()}catch(e){if(key===context.current)setError(e instanceof Error?e.message:'读取失败')}finally{if(key===context.current)setLoaded(true)}}
+  useEffect(()=>{setNodes([]);setPending([]);setVersions(null);setParent(null);setLoaded(false);setPreviewing(null);if(cloud.state.account?.enabled&&cloud.state.unlocked)void load()},[cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
   useEffect(()=>{setSelected([])},[parent,search,trash,cloud.state.account?.id])
   useEffect(()=>{setSelected(previous=>previous.filter(id=>nodes.some(node=>node.id===id&&Boolean(node.deleted)===trash)))},[nodes,trash])
   useEffect(()=>{
@@ -64,6 +67,7 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
   ]:[
     {key:'open',label:isFolder(node)?t('打开文件夹','Open folder'):t('打开','Open'),onClick:()=>isFolder(node)?setParent(node.id):void download(node,true)},
     ...(!isFolder(node)?[
+      {key:'preview',label:t('预览','Preview'),onClick:()=>setPreviewing(node)},
       {key:'download',label:t('下载','Download'),onClick:()=>void download(node)},
       {key:'versions',label:t('历史版本','Version history'),onClick:()=>void run(async()=>setVersions({node,items:(await cloudCall('versions',{id:node.id})).items}))},
       {key:'copy',label:t('复制','Copy'),onClick:()=>void copy(node)}
@@ -83,7 +87,8 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     {selected.length?<div className="seal-drive-selection"><span>{t(`已选择 ${selected.length} 项`,`${selected.length} selected`)}</span>{trash?<Button disabled={busy} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('restore',{id:n.id});setSelected([])})}>{t('恢复','Restore')}</Button>:<Button disabled={busy||!selection.length||selection.some(isFolder)} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('download',{id:n.id})})}>{t('下载','Download')}</Button>}<Button danger disabled={busy} onClick={()=>remove(selection,trash)}>{trash?t('彻底删除','Delete permanently'):t('删除','Delete')}</Button><Button type="text" onClick={()=>setSelected([])}>{t('取消选择','Clear selection')}</Button></div>:null}
     {error?<p className="seal-cloud-error">{error}</p>:null}
     {pending.length?<div className="seal-cloud-card"><h2>待同步文件（已在本机加密保留）</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>重试同步</Button>{pending.map(p=><p key={p.id}>{p.name} · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>导出本机副本</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>保留为冲突副本</Button>:null}<Button danger onClick={()=>modal.confirm({title:'清除这条待同步记录？',content:'此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。',onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>清除记录</Button></p>)}</div>:null}
-    <CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):void download(node,true)} actions={actions}/>
+    {!loaded&&!error?<LoadingState 文字={t('正在读取云空间文件…','Loading cloud files…')}/>:<CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):默认打开方式(node.meta.filename||node.meta.name)==='preview'?setPreviewing(node):void download(node,true)} actions={actions}/>}
+    {previewing?<CloudPreview 节点={{id:previewing.id,name:previewing.meta.filename||previewing.meta.name}} 大小={typeof previewing.meta.size==='number'?previewing.meta.size:undefined} 引擎={当前预览引擎} onClose={()=>setPreviewing(null)} on下载={()=>void download(previewing)} on用编辑器打开={()=>{const node=previewing;setPreviewing(null);void download(node,true)}}/>:null}
     <Modal open={Boolean(versions)} centered title={t('历史版本','Version history')} footer={null} onCancel={()=>setVersions(null)}>
       {versions?.items.map(v=><p key={v.id}>
         版本 {v.version} · {new Date(v.created).toLocaleString()} · {(v.bytes/1000).toFixed(1)} KB

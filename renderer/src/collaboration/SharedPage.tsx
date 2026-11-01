@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Empty, Input, Modal, Select, Tag } from 'antd'
 import { cloudCall } from '../cloud/CloudProvider'
-import { cloudNodeList, CloudGate, CredentialDialog, dateText, useCloudWorkspace, validPhone, WorkspaceError } from './common'
+import { cloudNodeList, CloudGate, CredentialDialog, dateText, useCloudWorkspace, WorkspaceLoading, validPhone, WorkspaceError } from './common'
 import { useCollaborationFiles } from './fileAccess'
 import type { CollaborationDownload, CredentialResult, ShareEntry, TaggedNode } from './types'
 import { readCredential } from './credentialLinks'
@@ -18,6 +18,7 @@ export default function SharedPage() {
   const [nodeId, setNodeId] = useState(''), [phone, setPhone] = useState(''), [permission, setPermission] = useState<'read' | 'edit'>('read'), [days, setDays] = useState(7), [credential, setCredential] = useState('')
   const [generated, setGenerated] = useState<{ title: string; credential: string } | null>(null), [revoke, setRevoke] = useState<ShareEntry | null>(null)
   if (!workspace.enabled) return <CloudGate title="共享文档" />
+  if (workspace.initialLoading) return <WorkspaceLoading title="共享文档" />
   const get = (share: ShareEntry) => () => cloudCall<CollaborationDownload>('shareDownload', { id: share.id })
   return <section className="seal-cloud-page seal-drive ds-page-shell">
     <header className="seal-collaboration-header"><h1>共享文档</h1><div className="seal-collaboration-toolbar">

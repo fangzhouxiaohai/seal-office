@@ -3791,3 +3791,10 @@ button {
 @media (max-width: 820px), (pointer: coarse) {
   .wps-context-menu__item, .wps-float-panel__item, .wps-float-panel__close { min-height: 44px; }
 }
+
+/* 右键菜单图标位：颜色项为实心色块，AI 项为多彩星星，其余为功能彩色图标 */
+.wps-context-menu__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 16px; width: 16px; height: 16px; margin-right: 10px; }
+.wps-context-menu__icon svg { display: block; }
+.wps-context-menu__swatch { display: block; width: 14px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+.wps-context-menu__item-label { flex: 1 1 auto; min-width: 0; }
+.wps-float-panel__swatch { display: inline-block; width: 14px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }

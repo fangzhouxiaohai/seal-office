@@ -1,4 +1,5 @@
 // 表格命令注册表：Ribbon 按钮只派发命令标识，行为集中在此文件。
+import { 读取系统剪贴板 } from '../editor/clipboard'
 import { 生成地址, 生成区域地址, 展开区域, type 单元格位置 } from './address'
 import {
   读取单元格,
@@ -45,6 +46,8 @@ export interface 表格命令上下文 {
   切换保护?: () => void
   检查拼写?: () => void
   选择图片?: () => void
+  /** 粘贴系统剪贴板中的图片（截图等），由容器插入到选区起点 */
+  粘贴图片?: (文件: File) => void
   插入图表?: () => void
 }
 
@@ -245,6 +248,38 @@ function 选区剪贴板内容(上下文: 表格命令上下文): { 地址列表
   return { 地址列表, 文本: 各行.map((行) => 行.join('\t')).join('\n') }
 }
 
+/** 把制表符分隔的文本按行列写入选区起点；系统粘贴与粘贴命令共用。 */
+export function 粘贴文本到表格(上下文: 表格命令上下文, 文本: string): void {
+  if (文本.length === 0) {
+    上下文.notify('剪贴板为空')
+    return
+  }
+  const 行数据 = 文本.replace(/\r\n?/g, '\n').split('\n')
+  if (行数据[行数据.length - 1] === '') 行数据.pop()
+  const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.split('\t').length), 0)
+  const 目标地址: string[] = []
+  const 值列表: string[] = []
+  const 起点 = 展开区域(选区区域(上下文))[0]
+  if (!起点) {
+    上下文.notify('粘贴位置无效')
+    return
+  }
+  for (let 行 = 起点.行; 行 < 起点.行 + 行数据.length && 行 < 上下文.工作表.行数; 行 += 1) {
+    const 列数据 = 行数据[行 - 起点.行].split('\t')
+    for (let 列 = 起点.列; 列 < 起点.列 + 列数 && 列 < 上下文.工作表.列数; 列 += 1) {
+      const 值 = 列数据[列 - 起点.列] ?? ''
+      目标地址.push(生成地址(行, 列))
+      值列表.push(值)
+    }
+  }
+  if (目标地址.length > 0) {
+    try {
+      上下文.更新工作表(批量写入单元格(上下文.工作表, Object.fromEntries(目标地址.map((地址, 下标) => [地址, 值列表[下标] ?? '']))))
+      上下文.notify(`已粘贴 ${目标地址.length} 个单元格`)
+    } catch (error) { 上下文.notify(error instanceof Error ? error.message : '无法粘贴到当前区域') }
+  }
+}
+
 const 命令列表: 表格命令[] = [
   {
     id: 'sheet.autoFitColumns', label: '自适应列宽',
@@ -305,41 +340,12 @@ const 命令列表: 表格命令[] = [
     id: 'clipboard.paste',
     label: '粘贴',
     run: (上下文) => {
-      if (!navigator.clipboard || !navigator.clipboard.readText) {
-        上下文.notify('当前环境不支持读取剪贴板')
-        return
-      }
-      navigator.clipboard.readText().then((文本) => {
-        if (文本.length === 0) {
-          上下文.notify('剪贴板为空')
-          return
-        }
-        const 行数据 = 文本.replace(/\r\n?/g, '\n').split('\n')
-        if (行数据[行数据.length - 1] === '') 行数据.pop()
-        const 列数 = 行数据.reduce((最大, 行) => Math.max(最大, 行.split('\t').length), 0)
-        const 目标地址: string[] = []
-        const 值列表: string[] = []
-        const 起点 = 展开区域(选区区域(上下文))[0]
-        if (!起点) {
-          上下文.notify('粘贴位置无效')
-          return
-        }
-        for (let 行 = 起点.行; 行 < 起点.行 + 行数据.length && 行 < 上下文.工作表.行数; 行 += 1) {
-          const 列数据 = 行数据[行 - 起点.行].split('\t')
-          for (let 列 = 起点.列; 列 < 起点.列 + 列数 && 列 < 上下文.工作表.列数; 列 += 1) {
-            const 值 = 列数据[列 - 起点.列] ?? ''
-            目标地址.push(生成地址(行, 列))
-            值列表.push(值)
-          }
-        }
-        if (目标地址.length > 0) {
-          try {
-            上下文.更新工作表(批量写入单元格(上下文.工作表, Object.fromEntries(目标地址.map((地址, 下标) => [地址, 值列表[下标] ?? '']))))
-            上下文.notify(`已粘贴 ${目标地址.length} 个单元格`)
-          } catch (error) { 上下文.notify(error instanceof Error ? error.message : '无法粘贴到当前区域') }
-        }
-      }).catch(() => {
-        上下文.notify('读取剪贴板失败，请检查权限设置')
+      // 截图类剪贴板只有图片：先取图片插入，没有图片再按制表符文本写入单元格。
+      读取系统剪贴板().then(({ 图片, 文本 }) => {
+        if (图片.length && 上下文.粘贴图片) { 上下文.粘贴图片(图片[0]); return }
+        粘贴文本到表格(上下文, 文本)
+      }).catch((error) => {
+        上下文.notify(error instanceof Error ? error.message : '读取剪贴板失败，请检查权限设置')
       })
     },
   },

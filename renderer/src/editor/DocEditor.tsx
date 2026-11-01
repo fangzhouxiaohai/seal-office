@@ -4,7 +4,7 @@ import { installImageTransfer } from './imageTransfer'
 import React, { useEffect, useRef, useState } from 'react'
 import { App as AntdApp, Input } from 'antd'
 import { applyListStyle } from './listStyle'
-import { clipboardTextHtml, copyEditorSelection, readEditorClipboard } from './clipboard'
+import { clipboardTextHtml, copyEditorSelection, readEditorClipboard, 粘贴数据HTML, 读取系统剪贴板 } from './clipboard'
 import { insertDocumentNote } from './notes'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
@@ -470,6 +470,11 @@ const DocEditor = () => {
             await copyEditorSelection(元素)
             if (指令 === 'copy') return
           }
+          if (指令 === 'paste') {
+            // 功能区或右键“粘贴”：截图类剪贴板只有图片，先按图片插入；读取不到图片时继续走文字粘贴。
+            const 系统剪贴板 = await 读取系统剪贴板().catch(() => null)
+            if (系统剪贴板?.图片.length) { await 图片文件引用.current(系统剪贴板.图片, range); return }
+          }
           let html = 指令 === 'cut' ? '' : await readEditorClipboard()
           if (html === null) {
             html = await new Promise<string | null>(resolve => {
@@ -572,6 +577,22 @@ const DocEditor = () => {
     const root = 编辑区引用.current
     if (!root) return
     return installImageTransfer(root, (files, range) => { void 图片文件引用.current(files, range) })
+  }, [文档标识])
+  // Ctrl+V 产生的原生粘贴：图片已在捕获阶段由图片传输处理，修订模式由修订编辑处理，
+  // 这里接管普通文字粘贴，沿用编辑器的纯文本转义与本会话复制格式，避免外部样式混入。
+  useEffect(() => {
+    const root = 编辑区引用.current
+    if (!root) return
+    const 粘贴 = (事件: ClipboardEvent) => {
+      if (事件.defaultPrevented || 修订输入配置.current.enabled || !事件.clipboardData) return
+      事件.preventDefault()
+      if (只读引用.current) { message.info(只读提示); return }
+      const html = 粘贴数据HTML(事件.clipboardData)
+      if (html === null) { message.info('剪贴板中没有可粘贴的文字或图片'); return }
+      图片插入引用.current(html)
+    }
+    root.addEventListener('paste', 粘贴)
+    return () => root.removeEventListener('paste', 粘贴)
   }, [文档标识])
 
   const 选择图片 = (): void => {

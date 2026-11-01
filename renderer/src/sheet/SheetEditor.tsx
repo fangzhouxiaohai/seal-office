@@ -353,7 +353,16 @@ const SheetEditor = () => {
   const 处理图片选择 = async (事件: React.ChangeEvent<HTMLInputElement>) => {
     const 文件 = 事件.currentTarget.files?.[0]
     事件.currentTarget.value = ''
-    if (!文件) return
+    if (文件) await 插入表格图片(文件)
+  }
+
+  /** 截图等剪贴板图片插入到选区起点；粘贴命令读取到图片时调用。 */
+  const 粘贴表格图片 = (文件: File) => {
+    if (工作表.保护) { modal.warning({ title: '工作表已保护', content: '请先解除保护，再粘贴图片。' }); return }
+    void 插入表格图片(文件)
+  }
+
+  const 插入表格图片 = async (文件: File) => {
     const 文档标识 = activeDocumentId
     const 工作表标识 = 工作表.id
     const 锚点 = { ...选区.起点 }
@@ -496,6 +505,7 @@ const SheetEditor = () => {
       if (工作表.保护) { message.warning('请先解除工作表保护'); return }
       set图表打开(true)
     },
+    粘贴图片: 粘贴表格图片,
     选择图片: () => {
       if (工作表.保护) {
         modal.warning({ title: '工作表已保护', content: '请先解除保护，再插入图片。' })

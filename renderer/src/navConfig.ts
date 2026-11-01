@@ -42,6 +42,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'team', label: '团队空间', icon: 'users', implemented: true },
     { key: 'knowledge', label: '知识库', icon: 'knowledge', implemented: true },
     { key: 'market', label: '演示模板市场', icon: 'doc-ppt', implemented: true },
+    { key: 'skins', label: '皮肤市场', icon: 'page-color', implemented: true },
     { key: 'trash', label: '云空间回收站', icon: 'trash', implemented: true },
     { key: 'pdf', label: 'PDF 工具', icon: 'pdf', implemented: true },
     { key: 'database', label: 'Access 数据库', icon: 'doc-table', implemented: true },

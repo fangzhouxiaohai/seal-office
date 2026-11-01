@@ -2,6 +2,7 @@
 // 经 portal 挂到 body 并用 fixed 定位：视口坐标不受任何定位祖先/transform 影响，菜单始终贴着光标。
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { 菜单图标, 菜单图标元素 } from './menuIcons'
 import { 合并矩形, 读取可见矩形, 读取范围可见矩形, use边缘浮层, type 边界矩形, type 浮层边缘 } from './overlayPlacement'
 
 export interface 菜单分割线 {
@@ -149,6 +150,7 @@ const ContextMenu = ({ open, x, y, items, onCommand, 取锚点, 取避让, 优�
           }
         },
       },
+      React.createElement(菜单图标元素, { 描述: 菜单图标(节点) }),
       React.createElement('span', { className: 'wps-context-menu__item-label' }, 节点.label),
       节点.shortcut
         ? React.createElement('span', { className: 'wps-context-menu__item-shortcut', 'aria-hidden': true }, 节点.shortcut)

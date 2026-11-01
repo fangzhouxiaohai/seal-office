@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from './Icon'
+import AiStarIcon from './AiStarIcon'
 import { 计算边缘位置, 读取可见矩形, 读取范围可见矩形, use边缘浮层 } from './overlayPlacement'
 
 export interface 浮窗按钮 {
@@ -10,6 +11,8 @@ export interface 浮窗按钮 {
   /** 可读名称，同时作为无障碍名称 */
   标签: string
   图标?: string
+  /** 颜色类按钮显示对应颜色的实心色块 */
+  色块?: string
   /** 分组序号：不同序号之间画分割线 */
   分组?: number
   禁用?: boolean
@@ -146,7 +149,9 @@ export const SelectionFloatPanel = ({ 打开, 位置, 按钮, on关闭, 名称 }
               disabled={项.禁用 === true}
               onClick={() => 项.执行()}
             >
-              {项.图标 || 项.id.startsWith('ai.') ? <Icon className="wps-float-panel__icon" name={图标映射[项.图标 ?? ''] ?? 项.图标 ?? 'ai'} size={14} /> : null}
+              {项.id.startsWith('ai.') ? <AiStarIcon className="wps-float-panel__icon" size={14} />
+                : 项.色块 ? <span className="wps-float-panel__icon wps-float-panel__swatch" aria-hidden="true" style={{ background: 项.色块 }} />
+                : 项.图标 ? <Icon className="wps-float-panel__icon" name={图标映射[项.图标] ?? 项.图标} size={14} /> : null}
               <span className="wps-float-panel__label">{项.标签}</span>
             </button>
           </React.Fragment>

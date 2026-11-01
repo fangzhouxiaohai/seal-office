@@ -32,6 +32,7 @@ const 云盘项 = [
   { key: 'my-cloud', label: '我的云空间', icon: 'folder' },
   { key: 'knowledge', label: '知识库', icon: 'knowledge' },
   { key: 'market', label: '演示模板市场', icon: 'doc-ppt' },
+  { key: 'skins', label: '皮肤市场', icon: 'page-color' },
   { key: 'device', label: '我的设备', icon: 'device' },
   { key: 'tag', label: '标签', icon: 'tag' },
   { key: 'team', label: '团队空间', icon: 'users' },

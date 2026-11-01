@@ -45,3 +45,13 @@ describe('知识库权限与来源',()=>{
     fireEvent.click(within(dialog).getByRole('button',{name:/^取\s*消$/}));expect(cloud.call.mock.calls.some(([action])=>action==='question')).toBe(false)
   })
 })
+describe('知识库加载状态',()=>{
+  it('读取云端知识期间在列表区域显示统一加载动画',async()=>{
+    let finish:(value:any)=>void=()=>{}
+    cloud.call.mockImplementation(async action=>action==='list'?new Promise(resolve=>{finish=resolve}):{items:[]})
+    render(<AntdApp><KnowledgePage/></AntdApp>)
+    expect(await screen.findByText('正在读取知识库…')).toBeInTheDocument()
+    finish([])
+    await waitFor(()=>expect(screen.queryByText('正在读取知识库…')).not.toBeInTheDocument())
+  })
+})

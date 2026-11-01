@@ -43,3 +43,12 @@ describe('市场预览到编辑链路',()=>{
     const objects=deck.幻灯片列表.flatMap((p:any)=>p.对象列表);expect(objects.some((o:any)=>o.类型==='图表')).toBe(true);expect(objects.some((o:any)=>o.类型==='表格')).toBe(true)
   })
 })
+describe('模板市场加载状态',()=>{
+  it('切换到公开模板时显示统一加载动画',async()=>{
+    fixture.call.mockImplementationOnce((()=>new Promise(()=>{})) as any)
+    render(<AntdApp><PresentationMarketPage/></AntdApp>)
+    fireEvent.mouseDown(screen.getByRole('combobox',{name:'模板来源'}))
+    fireEvent.click(await screen.findByText('公开模板市场'))
+    expect(await screen.findByText('正在读取在线模板…')).toBeInTheDocument()
+  })
+})

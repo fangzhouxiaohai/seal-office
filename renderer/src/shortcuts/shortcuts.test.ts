@@ -125,3 +125,29 @@ describe('统一快捷键配置与调度', () => {
     expect(dispatchShortcut(key('Tab'),'slideshow',execute)).toBe(false)
   })
 })
+
+describe('系统粘贴键', () => {
+  it('文字正文中 Ctrl+V 与 Shift+Insert 不消费按键，截图等图片数据通过原生 paste 事件到达编辑器', () => {
+    document.body.innerHTML = '<div class="wps-editor-canvas__content"><div contenteditable="true" id="正文">正文</div></div>'
+    const 正文 = document.getElementById('正文')!, execute = vi.fn()
+    for (const event of [key('v', { ctrlKey: true }), key('Insert', { shiftKey: true })]) {
+      正文.dispatchEvent(event)
+      expect(dispatchShortcut(event, 'word', execute)).toBe(false)
+      expect(event.defaultPrevented).toBe(false)
+    }
+    expect(execute).not.toHaveBeenCalled()
+  })
+  it('焦点不在文字正文时，以及表格、演示中，Ctrl+V 执行编辑器粘贴命令（命令自行读取图片与文字）', () => {
+    for (const scope of ['word', 'sheet', 'ppt'] as const) {
+      const execute = vi.fn(), event = key('v', { ctrlKey: true })
+      expect(dispatchShortcut(event, scope, execute)).toBe(true)
+      expect(execute).toHaveBeenCalledWith('clipboard.paste')
+    }
+  })
+  it('改绑到其他按键的粘贴仍执行编辑器粘贴命令', () => {
+    saveShortcutOverrides({ 'word:clipboard.paste': ['Ctrl+Alt+V'] })
+    const execute = vi.fn(), event = key('v', { ctrlKey: true, altKey: true })
+    expect(dispatchShortcut(event, 'word', execute)).toBe(true)
+    expect(execute).toHaveBeenCalledWith('clipboard.paste')
+  })
+})

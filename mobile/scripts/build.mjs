@@ -33,6 +33,11 @@ export async function buildPlatform(platform = 'android') {
     for (const item of await fs.readdir(assets, { withFileTypes: true })) {
       if (item.isFile() && /\.(?:m?js|map)$/.test(item.name)) await fs.unlink(path.join(assets, item.name))
     }
+    // 编译期剔除的桌面预览渲染器仍会留下 WASM 等资源；脚本、页面与样式都不引用的文件不进入 60 MB 云打包源码。
+    const remaining = (await fs.readdir(assets, { withFileTypes: true })).filter(item => item.isFile()).map(item => item.name)
+    const references = (await Promise.all([path.join(output, 'office.js'), htmlFile, ...remaining.filter(name => name.endsWith('.css')).map(name => path.join(assets, name))]
+      .map(file => fs.readFile(file, 'utf8')))).join('\n')
+    for (const name of remaining) if (!name.endsWith('.css') && !references.includes(name)) await fs.unlink(path.join(assets, name))
     await fs.writeFile(path.join(output, '.gitkeep'), '')
   }
   await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({ platform, desktopVersion: desktop.version, builtAt: new Date().toISOString(), architecture: 'uni-app-x-local-webview', defaultPackagePlatform: 'android' }, null, 2) + '\n')

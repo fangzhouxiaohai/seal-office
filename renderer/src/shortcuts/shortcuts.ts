@@ -208,6 +208,8 @@ export function resetShortcutOverrides(): void {
   window.dispatchEvent(new Event(SHORTCUT_CHANGED_EVENT))
 }
 
+const 系统粘贴键 = ['Ctrl+V', 'Shift+Insert']
+
 /** 返回 true 才消费按键。输入法、弹窗、控件原生编辑、已被局部消费的事件均优先。 */
 export function dispatchShortcut(event: ShortcutKeyboardEvent, scope: ShortcutScope, execute: (command: string, argument?: string) => boolean | void, overrides?: ShortcutOverrides): boolean {
   if (event.defaultPrevented) return false
@@ -224,6 +226,9 @@ export function dispatchShortcut(event: ShortcutKeyboardEvent, scope: ShortcutSc
   if (!candidate) return false
   const input = target?.closest('input, textarea, select, [role="textbox"], [contenteditable="true"], [contenteditable=""]')
   const documentEditor = input?.closest('.wps-editor-canvas__content')
+  // 文字正文中的系统粘贴键交给原生 paste 事件：截图等纯图片剪贴板随事件送达正文的粘贴监听。
+  // 不可编辑区域（表格网格、演示画布）浏览器不派发 paste 事件，仍执行粘贴命令读取剪贴板。
+  if (documentEditor && definition?.command === 'clipboard.paste' && 系统粘贴键.includes(shortcut)) return false
   const slideTextEditor = scope === 'ppt' && input?.matches('[data-seal-shortcut-editor="ppt"]') && /^(text\.|para\.)/.test(candidate.command)
   if (input && !documentEditor && !slideTextEditor && !candidate.allowInInput) return false
   // 改绑/禁用后同时挡住 contenteditable 的原生 Ctrl+B / Ctrl+Z 等回退行为。

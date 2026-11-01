@@ -31,6 +31,7 @@ import TeamsPage from '../collaboration/TeamsPage'
 // Keep the library mounted after its first use so closing it retains filters.
 const TemplateLibrary = React.lazy(() => import('../components/TemplateLibrary'))
 const PresentationMarketPage = React.lazy(() => import('../cloud/PresentationMarketPage'))
+const SkinMarketPage = React.lazy(() => import('../skins/SkinMarketPage'))
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -214,6 +215,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
     : navKey === 'trash' ? React.createElement(CloudFilesPage, {trash:true})
     : navKey === 'knowledge' ? React.createElement(KnowledgePage)
     : navKey === 'market' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载模板市场…') }, React.createElement(PresentationMarketPage)))
+    : navKey === 'skins' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载皮肤市场…') }, React.createElement(SkinMarketPage)))
     : navKey === 'calendar' ? React.createElement(CalendarPage)
     : navKey === 'database' && navigationAvailable('database') ? React.createElement(DatabasePage, {
         初始新建请求: 新建Access请求 || undefined,

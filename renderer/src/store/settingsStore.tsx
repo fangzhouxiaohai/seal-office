@@ -2,7 +2,8 @@
 
 import { useState, createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
 import { App as AntdApp } from 'antd'
-import { 主题名, 应用主题 } from '../styles/themes'
+import { 主题名, 应用主题, 内置皮肤列表, 默认皮肤, 默认皮肤标识, type 皮肤定义 } from '../styles/themes'
+import { 校验皮肤 } from '../../../main/skins/skinFormat'
 
 export type 界面语言 = 'zh-CN' | 'en-US'
 
@@ -12,6 +13,16 @@ export interface SettingsState {
   恢复默认主题: () => void
   语言: 界面语言
   设置语言: (语言: 界面语言) => void
+  /** 当前皮肤（预览期间仍为已保存的皮肤） */
+  皮肤: 皮肤定义
+  /** 本机导入或从皮肤市场安装的皮肤，不含内置皮肤 */
+  已安装皮肤: 皮肤定义[]
+  设置皮肤: (标识: string) => void
+  /** 安装后立即应用；同标识的皮肤会被新版本替换 */
+  安装皮肤: (皮肤: 皮肤定义) => void
+  卸载皮肤: (标识: string) => void
+  /** 临时套用皮肤查看效果，传 null 恢复当前皮肤，不写入设置 */
+  预览皮肤: (皮肤: 皮肤定义 | null) => void
   /** 每次启动检查默认程序：打开时启动即校验，不是默认程序就静默设为默认 */
   启动时检查默认程序: boolean
   设置启动时检查默认程序: (开启: boolean) => void
@@ -62,6 +73,60 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (初始语言.错误) set错误({ 标题: '读取语言设置失败', 内容: 初始语言.错误 })
   }, [初始语言.错误])
 
+  const [初始皮肤] = useState<{ 已安装: 皮肤定义[]; 标识: string; 错误: string | null }>(() => {
+    let 已安装: 皮肤定义[] = [], 错误: string | null = null, 标识 = 默认皮肤标识
+    try {
+      const 原始 = localStorage.getItem('seal-skins-installed')
+      if (原始) {
+        const 列表 = JSON.parse(原始)
+        if (!Array.isArray(列表)) throw new Error('记录格式不是皮肤列表')
+        for (const 项 of 列表) {
+          try { 已安装.push(校验皮肤(项) as 皮肤定义) }
+          catch (原因) { 错误 = `已跳过无效皮肤“${项?.name || 项?.id || '未命名'}”：${原因 instanceof Error ? 原因.message : '格式错误'}` }
+        }
+      }
+      标识 = localStorage.getItem('seal-skin') || 默认皮肤标识
+    } catch (原因) {
+      已安装 = []
+      错误 = 原因 instanceof Error ? 原因.message : '无法读取本机皮肤记录'
+    }
+    return { 已安装, 标识, 错误 }
+  })
+  const [已安装皮肤, set已安装皮肤] = useState<皮肤定义[]>(初始皮肤.已安装)
+  const [皮肤标识, set皮肤标识] = useState(初始皮肤.标识)
+  const [预览, set预览] = useState<皮肤定义 | null>(null)
+  useEffect(() => {
+    if (初始皮肤.错误) set错误({ 标题: '已安装皮肤读取失败', 内容: `${初始皮肤.错误}。已改用可用的皮肤，可在皮肤市场重新导入。` })
+  }, [初始皮肤.错误])
+  const 皮肤 = [...内置皮肤列表, ...已安装皮肤].find(项 => 项.id === 皮肤标识) ?? 默认皮肤
+
+  const 保存皮肤记录 = (列表: 皮肤定义[], 标识: string) => {
+    try {
+      localStorage.setItem('seal-skins-installed', JSON.stringify(列表))
+      localStorage.setItem('seal-skin', 标识)
+    } catch (原因) {
+      set错误({ 标题: '保存皮肤失败', 内容: 原因 instanceof Error ? `本机存储空间不足或不可写：${原因.message}` : '无法写入本机皮肤记录' })
+      return false
+    }
+    set已安装皮肤(列表); set皮肤标识(标识); set预览(null)
+    return true
+  }
+  const 设置皮肤 = (标识: string) => {
+    if (![...内置皮肤列表, ...已安装皮肤].some(项 => 项.id === 标识)) {
+      set错误({ 标题: '应用皮肤失败', 内容: '没有找到这套皮肤，请重新安装后再应用' })
+      return
+    }
+    保存皮肤记录(已安装皮肤, 标识)
+  }
+  const 安装皮肤 = (新皮肤: 皮肤定义) => {
+    if (内置皮肤列表.some(项 => 项.id === 新皮肤.id)) {
+      set错误({ 标题: '安装皮肤失败', 内容: `皮肤标识 ${新皮肤.id} 与内置皮肤重复，请修改 id 后再导入` })
+      return
+    }
+    保存皮肤记录([...已安装皮肤.filter(项 => 项.id !== 新皮肤.id), 新皮肤], 新皮肤.id)
+  }
+  const 卸载皮肤 = (标识: string) => 保存皮肤记录(已安装皮肤.filter(项 => 项.id !== 标识), 皮肤标识 === 标识 ? 默认皮肤标识 : 皮肤标识)
+
   // 默认打开：启动时检查文件关联，发现不是默认程序时提示用户确认
   const [启动时检查默认程序, set启动时检查默认程序] = useState<boolean>(() => {
     try { return localStorage.getItem('seal-default-app-auto') !== '关闭' }
@@ -79,7 +144,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     set主题(新主题)
   }
 
-  const 恢复默认主题 = () => set主题('浅色')
+  const 恢复默认主题 = () => { set主题('浅色'); set皮肤标识(默认皮肤标识); set预览(null) }
 
   const 设置语言 = (新语言: 界面语言) => {
     try {
@@ -97,8 +162,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // 初始应用主题
   useEffect(() => {
-    应用主题(主题)
-  }, [主题])
+    应用主题(主题, 预览 ?? 皮肤)
+  }, [主题, 皮肤, 预览])
 
   const 保存启动检查 = (开启: boolean) => {
     try {
@@ -112,7 +177,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   return (
     <设置错误上下文.Provider value={{ 错误, 清除错误: () => set错误(null) }}>
-      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查 }}>
+      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 皮肤, 已安装皮肤, 设置皮肤, 安装皮肤, 卸载皮肤, 预览皮肤: set预览, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查 }}>
         {children}
       </SettingsContext.Provider>
     </设置错误上下文.Provider>

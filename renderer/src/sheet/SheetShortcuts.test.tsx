@@ -7,7 +7,7 @@ import SheetEditor from './SheetEditor'
 import GridView from './GridView'
 import { 创建工作表, 设置数据验证 } from './model'
 
-afterEach(() => localStorage.removeItem(SHORTCUT_STORAGE_KEY))
+afterEach(() => { localStorage.removeItem(SHORTCUT_STORAGE_KEY); vi.unstubAllGlobals() })
 const openSheet = () => render(<AntdApp><AppProvider><SheetEditor /></AppProvider></AntdApp>)
 
 describe('表格可配置快捷键集成', () => {
@@ -80,5 +80,28 @@ describe('表格可配置快捷键集成', () => {
     fireEvent.keyDown(formula, { key: 'Enter', keyCode: 13 })
     expect(container.querySelector('[data-地址="A1"]')?.textContent).toBe('中文公式栏')
     expect(getByLabelText('名称框')).toHaveValue('A2')
+  })
+})
+
+describe('表格系统粘贴', () => {
+  // 网格不可编辑，浏览器不会派发 paste 事件；Ctrl+V 由粘贴命令主动读取系统剪贴板。
+  const 模拟剪贴板 = (条目: { types: string[]; getType: (类型: string) => Promise<Blob> }[]) =>
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { read: async () => 条目, readText: async () => '', writeText: async () => {} } })
+  it('Ctrl+V 把制表符文本写入选中单元格', async () => {
+    模拟剪贴板([{ types: ['text/plain'], getType: async () => new Blob(['甲\t乙\n丙\t丁'], { type: 'text/plain' }) }])
+    const { container, findByText } = openSheet()
+    fireEvent.keyDown(container.querySelector('.wps-sheet')!, { key: 'v', ctrlKey: true })
+    expect(await findByText('丁')).toBeTruthy()
+  })
+  it('截图（剪贴板只有图片）按 Ctrl+V 插入为工作表图片', async () => {
+    const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), c => c.charCodeAt(0))
+    const 图 = new Blob([png], { type: 'image/png' })
+    Object.defineProperty(图, 'arrayBuffer', { value: async () => png.buffer })
+    模拟剪贴板([{ types: ['image/png'], getType: async () => 图 }])
+    // jsdom 不解码图片：用最小替身模拟浏览器解码完成后的尺寸。
+    vi.stubGlobal('Image', class { naturalWidth = 1; naturalHeight = 1; onload: (() => void) | null = null; onerror: (() => void) | null = null; set src(_值: string) { queueMicrotask(() => this.onload?.()) } })
+    const { container, findByText } = openSheet()
+    fireEvent.keyDown(container.querySelector('.wps-sheet')!, { key: 'v', ctrlKey: true })
+    expect(await findByText('图片已插入')).toBeTruthy()
   })
 })
