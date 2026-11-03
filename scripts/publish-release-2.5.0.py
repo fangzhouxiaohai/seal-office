@@ -40,8 +40,10 @@ def main():
     head = git('rev-parse', 'HEAD')
     if git('rev-parse', f'{TAG}^{{commit}}') != head:
         raise SystemExit('标签必须指向当前 HEAD')
-    if git('status', '--porcelain'):
-        raise SystemExit('发布前必须提交所有改动')
+    # 只拦已跟踪文件的未提交修改；开发者本机自带的未跟踪素材与构建产物不影响发行，
+    # 也不应由发布脚本越权提交。
+    if git('status', '--porcelain', '--untracked-files=no'):
+        raise SystemExit('发布前必须提交已跟踪文件的改动')
 
     release_dir = ROOT / 'release' / TAG
     sums = {}
