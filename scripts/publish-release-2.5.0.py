@@ -50,21 +50,11 @@ def main():
             parts = line.split()
             sums[parts[1] if len(parts) > 1 else parts[0]] = parts[0].lower()
 
-    payload = sorted(p for p in release_dir.iterdir() if p.suffix in ('.exe', '.deb', '.zip', '.hap', '.app', '.apk'))
+    # 鸿蒙 .app 是 AppGallery 上架专用的商店容器，终端用户无法直接安装，不进入发行页；
+    # 详见 AGENTS.md。发行附件只放可安装的 .hap。
+    payload = sorted(p for p in release_dir.iterdir() if p.suffix in ('.exe', '.deb', '.zip', '.hap', '.apk'))
     if not payload:
         raise SystemExit('发布目录没有安装包')
-    # GitHub Releases 不接受 .app 扩展名，且 AGENTS.md 规定鸿蒙 App Pack 以 .app.zip 作为发行附件。
-    app_pack = next((p for p in payload if p.suffix == '.app'), None)
-    wrapped = None
-    if app_pack is not None:
-        import zipfile
-        wrapped = app_pack.with_name(app_pack.name + '.zip')
-        payload = [p for p in payload if p is not app_pack]
-        if not wrapped.exists() or wrapped.stat().st_mtime < app_pack.stat().st_mtime:
-            with zipfile.ZipFile(wrapped, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
-                zf.write(app_pack, app_pack.name)
-        payload.append(wrapped)
-        payload.sort()
     files = payload + [release_dir / 'SHA256SUMS.txt', ROOT / 'docs' / f'{TAG}-修复与验收.md']
     expected = {}
     for f in files:
