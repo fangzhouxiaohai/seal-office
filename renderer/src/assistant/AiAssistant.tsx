@@ -735,8 +735,9 @@ export default function AiAssistant() {
             {可选文件.length ? 可选文件.map(文件 => <option key={文件.id} value={文件.id}>{文件.name}{文件.id === activeWorkspaceTabId ? '（当前）' : ''}</option>) : <option value="">未打开文件 · 一般问答</option>}
           </select></label>
           <div className="assistant-mobile-modes" role="group" aria-label="助手模式">
-            <button type="button" aria-label="对话模式" title="对话模式" aria-pressed={只读对话} disabled={发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('chat')}><Icon name="ai" size={18} /></button>
-            <button type="button" aria-label="工作模式" title="工作模式" aria-pressed={!只读对话} disabled={!当前文档 || 发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('work')}><Icon name="textbox" size={18} /></button>
+            {/* 选中态是实心高饱和渐变底 + 白色图标；未选中态的高饱和色由 CSS 指定。 */}
+            <button type="button" aria-label="对话模式" title="对话模式" aria-pressed={只读对话} disabled={发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('chat')}><Icon name="ai" size={18} color={只读对话 ? '#fff' : '#6366F1'} /></button>
+            <button type="button" aria-label="工作模式" title="工作模式" aria-pressed={!只读对话} disabled={!当前文档 || 发送中 || 队列.some(项 => 项.状态 === '等待')} onClick={() => set移动模式('work')}><Icon name="textbox" size={18} color={只读对话 ? '#0EA5E9' : '#fff'} /></button>
           </div>
           <p className="assistant-mobile-mode-hint" role="status">{!当前文件 ? '打开文件后可使用工作模式。' : 当前PDF ? 'PDF 可就选中文字问答，正文修改请使用 PDF 编辑功能。' : 只读对话 ? '结合所选文件回答问题，不操作文件。' : 自动确认修改 ? '为所选文件生成修改并自动应用。' : '为所选文件生成修改预览，确认后应用。'}</p>
         </div> : null}
@@ -759,7 +760,7 @@ export default function AiAssistant() {
           }} /></div> : null}
           {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty assistant-empty">
-            <span className="assistant-empty__icon" aria-hidden="true"><Icon name="ai" size={22} /></span>
+            <span className="assistant-empty__icon" aria-hidden="true"><Icon name="ai" size={26} color="#fff" /></span>
             <strong>{只读对话 ? 当前文件 ? '围绕当前文件提问' : '开始一段对话' : '从当前文件开始'}</strong>
             <p>{只读对话 ? 当前文件 ? '可以提问、总结或讨论所选文件的内容。回答会保留在该文件的对话中。' : '可以直接提问。打开文件后，也可以选择文件内容进行对话。' : 自动确认修改 ? '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改会直接进入编辑区，可在助手设置中改为手动确认。' : '可以新建文字、表格和演示，改写内容、插入段落、更新单元格或设置演示动画。修改先预览，确认后进入编辑区。'}</p>
           </div> : null}
@@ -801,7 +802,8 @@ export default function AiAssistant() {
               </div>
               <div className="assistant-composer__actions">
                 {发送中 ? <Button className="assistant-stop assistant-icon-button" type="text" size="small" icon={<Icon name="close" size={15} />} aria-label="停止生成" title="停止生成" onClick={() => void 停止任务()} disabled={进行中.current?.已停止} /> : null}
-                <Button className="assistant-send assistant-icon-button" type="primary" icon={<Icon name="send" size={15} />} aria-label={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} title={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()} />
+                {/* 实心主按钮上的图标必须显式给白色：移动端图标库里描边色是固定的品牌紫，不随按钮文字色变化。 */}
+                <Button className="assistant-send assistant-icon-button" type="primary" icon={<Icon name="send" size={15} color="#fff" />} aria-label={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} title={发送中 || 队列.some((项) => 项.状态 === '等待') || (!只读对话 && 当前待确认) ? '加入队列' : '发送'} disabled={!输入.trim() || 清除中 || !配置} onClick={() => void 发送()} />
               </div>
             </div>
           </div>

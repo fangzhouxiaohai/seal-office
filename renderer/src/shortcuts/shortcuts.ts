@@ -74,6 +74,7 @@ const defaultDefinitions: ShortcutDefinition[] = [
     ['view.zoomIn', '放大', ['Ctrl+=', 'Ctrl+Shift+='], true], ['view.zoomOut', '缩小', ['Ctrl+-'], true], ['view.zoomReset', '恢复默认缩放', []],
     ['view.actualSize', '实际大小', ['Ctrl+1']], ['view.fitWidth', '适应页宽', ['Ctrl+2']], ['view.fitPage', '适应整页', ['Ctrl+0']],
     ['view.gotoPage', '跳转页码', []], ['edit.copyPage', '复制本页文字', []], ['edit.copyAll', '复制全文文字', []],
+    ['edit.find', '查找关键词', ['Ctrl+F']], ['edit.findNext', '下一个匹配', ['F3', 'Enter']], ['edit.findPrevious', '上一个匹配', ['Shift+F3']],
     ['tools.rotate', '旋转页面', ['Ctrl+Shift+R']], ['tools.extract', '提取页面', []], ['tools.merge', '合并 PDF', []], ['tools.delete', '删除页面', []], ['tools.insertBlank', '插入空白页', []], ['tools.insertPages', '插入 PDF 页面', []],
   ]),
   ...commands('slideshow',[

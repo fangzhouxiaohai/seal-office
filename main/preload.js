@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   cloud: { invoke: (action, input) => ipcRenderer.invoke('cloud.invoke', action, input) },
+  zotero: { invoke: (动作, 输入) => ipcRenderer.invoke('zotero.invoke', 动作, 输入) },
   database: {
     status: () => ipcRenderer.invoke('database.status'),
     pick: () => ipcRenderer.invoke('database.pick'),

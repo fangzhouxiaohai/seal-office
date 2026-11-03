@@ -57,15 +57,6 @@ export interface 表格命令 {
   run: (上下文: 表格命令上下文, 参数?: string) => void
 }
 
-/** 尚未实现的功能：按钮就位，点击给出中文提示 */
-export function 未实现表格命令(id: string, label: string): 表格命令 {
-  return {
-    id,
-    label,
-    run: (上下文) => 上下文.notify('该功能开发中'),
-  }
-}
-
 /** 需要高级功能、给出明确中文指引的命令：按钮就位，点击提示后续支持计划 */
 export function 指引命令(id: string, label: string, 提示: string): 表格命令 {
   return {
@@ -738,12 +729,6 @@ export const 表格命令表: Record<string, 表格命令> = 命令列表.reduce
   {}
 )
 
-/** 尚未实现的表格命令，按钮仍会渲染并给出中文提示 */
-export const 表格未实现清单: Array<[string, string]> = []
-
-表格未实现清单.forEach(([id, label]) => {
-  表格命令表[id] = 未实现表格命令(id, label)
-})
 
 export const 表格命令标识列表: string[] = Object.keys(表格命令表)
 

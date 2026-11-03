@@ -11,8 +11,8 @@ interface IconProps { name: string; size?: number; color?: string; className?: s
 export default function Icon({ name, size = 16, color, className, variant = 'auto' }: IconProps) {
   const platform = useIconPlatform()
   const effective = variant === 'mobile' ? 'mobile' : variant === 'pc' || variant === 'outline' ? 'pc' : platform
-  // AI 功能统一使用多彩星星；调用方显式指定颜色时（如主按钮上的白色图标）保持单色。
-  if (name === 'ai' && !color) return <AiStarIcon size={size} className={className} />
+  // AI 功能默认用多彩星星；调用方显式指定颜色时（如彩色实心底上的白色图标）改用纯白单色。
+  if (name === 'ai') return <AiStarIcon size={size} className={className} monochrome={Boolean(color)} />
   if (files[name]) return <FileTypeIcon type={files[name]} size={size} color={color} className={className} variant={effective}/>
   const resolved = icons[name] ? name : 'doc-empty'
   return <IconGraphic graphic={icons[resolved][effective]} name={resolved} size={size} color={color} className={className} outline={variant === 'outline'}/>

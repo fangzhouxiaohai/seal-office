@@ -455,13 +455,34 @@ function 解析段落属性(pPr, 编号映射) {
     来源排版: 有扩展 ? JSON.stringify({ ...格式, 样式 }) : null }
 }
 
-/** 当前版本能写回 DOCX 的域：页码与总页数。其余域代码仍按未导入如实提示。 */
+/** 当前版本能写回的域：页码、总页数，以及 Zotero 的引文域与参考文献表域。 */
 const 支持的域 = new Set(['PAGE', 'NUMPAGES'])
+
+/** 引文域与参考文献表域的前缀判定，与 docxCitationFields.js 保持一致 */
+const 引文域前缀 = /^ITEM\s+CSL_CITATION\b/
+const 书目域前缀 = /^BIBL\b/
+const 引文域代码上限 = 200000
 
 /** 取域指令的关键字（PAGE、NUMPAGES、DATE 等），忽略 \* MERGEFORMAT 之类的开关 */
 function 域名称(指令) {
   const 首个 = String(指令 ?? '').trim().split(/\s+/)[0]
   return 首个 === '' ? '' : 首个.toUpperCase()
+}
+
+/** 判断域指令是不是 Zotero 引文域或参考文献表域 */
+function 是引文域(指令) {
+  const 规范 = String(指令 ?? '').trim()
+  return 引文域前缀.test(规范) || (书目域前缀.test(规范) && /CSL_BIBLIOGRAPHY\s*$/.test(规范))
+}
+
+/** 把域指令重新拼成完整的域代码，供编辑器还原引文与书目。
+ *  只做首尾去空白：题录字符串里可能有连续空格，不能压缩。 */
+function 规范引文域代码(指令) {
+  const 规范 = String(指令 ?? '').trim()
+  if (规范.length === 0 || 规范.length > 引文域代码上限) return null
+  if (!/{[\s\S]*}/.test(规范)) return null
+  if (!是引文域(规范)) return null
+  return 规范
 }
 
 /**
@@ -496,7 +517,7 @@ function 存在未保留的域或制表符(内容, 检查制表符 = true) {
     if (类型 === 'begin') 栈.push({ 指令: '' })
     else if (类型 === 'end') {
       const 域 = 栈.pop()
-      if (!域 || !支持的域.has(域名称(域.指令))) return true
+      if (!域 || (!支持的域.has(域名称(域.指令)) && !是引文域(域.指令))) return true
     } else if (类型 !== 'separate' || !栈.length) return true
   }
   return 栈.length > 0
@@ -548,6 +569,23 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
     const 域 = 域栈.pop()
     if (!域) return
     const 名称 = 域名称(域.指令)
+    // Zotero 引文域：保留域代码与缓存内容，编辑器据此重新排版与刷新
+    if (是引文域(域.指令)) {
+      const 代码 = 规范引文域代码(域.指令)
+      if (代码 === null) {
+        样式定义?.警告?.push('引文域代码无效，未能保留为可刷新的域')
+        输出片段(域.缓存片段.join(''), 域.缓存.join(''))
+        return
+      }
+      const 是书目 = 书目域前缀.test(代码)
+      const 属性 = 是书目
+        ? `data-seal-bibliography="1" data-seal-bibliography-code="${转义(代码)}"`
+        : `data-seal-citation="cluster" data-seal-citation-code="${转义(代码)}"`
+      const 类名 = 是书目 ? 'seal-bibliography-field' : 'seal-citation-field'
+      const 内容 = 是书目 ? 域.缓存片段.join('') : `<span>${域.缓存片段.join('')}</span>`
+      输出片段(`<span class="${类名}" contenteditable="false" ${属性}>${内容}</span>`, 域.缓存.join(''))
+      return
+    }
     输出片段(支持的域.has(名称)
       ? `<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`
       : 域.缓存片段.join(''), 域.缓存.join(''))

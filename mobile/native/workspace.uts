@@ -31,20 +31,3 @@ export function onUIThread(task: () => void) {
   task()
   // #endif
 }
-
-/**
- * 按头名逐个复制请求头。名称列表、PATCH 覆盖头与真实传输方法都由 TypeScript 侧
- * （mobile/web/native.ts）决定，UTS 只做纯索引访问。
- *
- * 不在 UTS 里遍历 UTSJSONObject：toMap().forEach 与 for...in 编译到 Kotlin 时会生成
- * Function1<Map.Entry, Unit> 或不同 JVM 签名，云端 Kotlin 编译直接失败，
- * 报 “Argument type mismatch”（.uniappx/android/src/index.kt 编译错误）。
- */
-export function copyHeaders(headers: UTSJSONObject, names: string[]): UTSJSONObject {
-  const result = {} as UTSJSONObject
-  for (let index = 0; index < names.length; index++) {
-    const key = names[index]
-    if (headers[key] != null) result[key] = headers[key] as any
-  }
-  return result
-}

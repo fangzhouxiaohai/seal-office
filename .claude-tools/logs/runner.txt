@@ -1,0 +1,31 @@
+started 周日 2026/11/01  1:30:04.27 
+周日 2026/11/01  1:30:04.27 start 001-probe.bat 
+周日 2026/11/01  1:30:04.27 end 001-probe.bat exit=!errorlevel! 
+周日 2026/11/01  1:30:43.11 start 002-android-pack.bat 
+周日 2026/11/01  1:30:43.11 end 002-android-pack.bat exit=!errorlevel! 
+周日 2026/11/01  1:39:07.19 start 003-harmony.bat 
+周日 2026/11/01  1:39:07.19 end 003-harmony.bat exit=!errorlevel! 
+周日 2026/11/01  1:39:07.19 start 004-linux.bat 
+周日 2026/11/01  1:39:07.19 end 004-linux.bat exit=!errorlevel! 
+周日 2026/11/01  1:43:07.13 start 0035-android-apk.bat 
+周日 2026/11/01  1:43:07.13 end 0035-android-apk.bat exit=!errorlevel! 
+周日 2026/11/01  1:43:07.13 start 0036-harmony-verify.bat 
+周日 2026/11/01  1:43:07.13 end 0036-harmony-verify.bat exit=!errorlevel! 
+周日 2026/11/01  1:45:13.18 start 005-apk-sign.bat 
+周日 2026/11/01  1:45:13.18 end 005-apk-sign.bat exit=!errorlevel! 
+周日 2026/11/01  1:47:24.17 start 006-verify-sums.bat 
+周日 2026/11/01  1:47:24.17 end 006-verify-sums.bat exit=!errorlevel! 
+周日 2026/11/01  1:49:21.15 start 007-merge-push-publish.bat 
+周日 2026/11/01  1:49:21.15 end 007-merge-push-publish.bat exit=!errorlevel! 
+周日 2026/11/01  1:50:46.18 start 008-pick-push-publish.bat 
+周日 2026/11/01  1:50:46.18 end 008-pick-push-publish.bat exit=!errorlevel! 
+周日 2026/11/01  2:07:44.20 start 009-hap.bat 
+周日 2026/11/01  2:07:44.20 end 009-hap.bat exit=!errorlevel! 
+周日 2026/11/01  2:11:18.11 start 010-hap-release.bat 
+周日 2026/11/01  2:11:18.11 end 010-hap-release.bat exit=!errorlevel! 
+周日 2026/11/01  2:13:42.19 start 011-gc-fix.bat 
+周日 2026/11/01  2:13:42.19 end 011-gc-fix.bat exit=!errorlevel! 
+周日 2026/11/01  2:14:56.12 start 012-gc-fix2.bat 
+周日 2026/11/01  2:14:56.12 end 012-gc-fix2.bat exit=!errorlevel! 
+周日 2026/11/01  2:16:04.14 start 013-final.bat 
+周日 2026/11/01  2:16:04.14 end 013-final.bat exit=!errorlevel! 

@@ -245,6 +245,7 @@ export interface 电子接口 {
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
   cloud?: { invoke: (action: string, input?: unknown) => Promise<云端响应<any>> }
+  zotero?: { invoke: (动作: string, 输入?: unknown) => Promise<云端响应<any>> }
   ai: {
     getConfig: () => Promise<助手结果<助手配置>>
     saveConfig: (配置: 助手配置输入) => Promise<助手结果<助手配置>>
@@ -488,6 +489,11 @@ export const 桥接 = {
       remove: (标识: string) => 取后端()?.presentationGeneration?.assets.remove(标识) ?? 失败('当前环境不支持素材删除'),
       semanticSearch: (输入: Parameters<演示生成接口['assets']['semanticSearch']>[0]) => 取后端()?.presentationGeneration?.assets.semanticSearch(输入) ?? 失败('当前环境不支持素材智能检索'),
     },
+  },
+  zotero: {
+    /** 探测本机 Zotero 是否可用；不可用时返回中文原因，不抛异常 */
+    invoke: <T = unknown>(动作: '探测' | '列条目' | '列集合', 输入?: unknown): Promise<云端响应<T>> =>
+      取后端()?.zotero?.invoke?.(动作, 输入) ?? 失败('当前环境不支持连接本机 Zotero'),
   },
   office: {
     readSeal: async (扩展:string,数据:string) => {

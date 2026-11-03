@@ -11,12 +11,21 @@ import { writeClipboardText } from '../editor/clipboard'
 import { useShortcuts } from '../shortcuts/useShortcuts'
 import { useReadingFullscreen, useReadingPinch } from '../editor/readingInteractions'
 import { useReadingChrome } from '../editor/useReadingChrome'
+import PdfFindBar from './PdfFindBar'
+import { 查找文档, 下一个命中下标, type 查找命中, type 搜索文字项 } from './pdfSearch'
+import { 换算PDF坐标 } from './pdfEditCoords'
 import '../editor/reading.css'
 
 interface Props {
   数据?: string
   文件名?: string
   onError?: (文本: string) => void
+  /**
+   * 编辑模式：在页面上点选后，把该点的 PDF 用户坐标（左下角为原点）
+   * 与页面尺寸回传给工作台，用作编辑参数的默认位置。
+   */
+  编辑模式?: boolean
+  on页面点选?: (位置: { 页码: number; x: number; y: number; 页宽: number; 页高: number }) => void
 }
 
 type 阅读状态 = '空白' | '加载中' | '就绪' | '失败'
@@ -25,17 +34,24 @@ interface PDF页面尺寸 { 宽: number; 高: number }
 const 短文档完整渲染页数 = 8
 
 /** 只在页面进入阅读区附近时创建画布；离开后释放画布内存。 */
-function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError }: {
+function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError, 命中标记 = [], 编辑模式 = false, on页面点选 }: {
   文档: PDFDocumentProxy
   页码: number
   缩放: number
   可用宽度: number | null
   on尺寸: (页码: number, 尺寸: PDF页面尺寸) => void
   onError: (页码: number, 错误: unknown) => void
+  /** 本页的查找命中框（百分比坐标） */
+  命中标记?: Array<{ 左: number; 上: number; 宽: number; 高: number; 当前: boolean }>
+  /** 编辑模式下点击页面，回报 PDF 用户坐标 */
+  编辑模式?: boolean
+  on页面点选?: (位置: { 页码: number; x: number; y: number; 页宽: number; 页高: number }) => void
 }) {
   const 画布 = useRef<HTMLCanvasElement | null>(null)
   const [文字项, set文字项] = useState<页面文字项[]>([])
   const [错误, set错误] = useState(false)
+  /** 本页的原始尺寸（PDF pt），点选换算与编辑定位都用它 */
+  const 原始尺寸 = useRef<PDF页面尺寸 | null>(null)
 
   useEffect(() => {
     let 已取消 = false
@@ -49,6 +65,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
         const 视口 = 页面.getViewport({ scale: 缩放 })
         const 原始宽度 = 视口.width / 缩放
         const 原始高度 = 视口.height / 缩放
+        原始尺寸.current = { 宽: 原始宽度, 高: 原始高度 }
         on尺寸(页码, { 宽: 原始宽度, 高: 原始高度 })
         const 默认适配宽度 = Math.min(原始宽度 * 默认文件缩放, 可用宽度 ?? Infinity)
         const 显示宽度 = 默认适配宽度 * 缩放 / 默认文件缩放
@@ -99,11 +116,43 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
     <div className="pdf-viewer__text-layer" aria-label={`第 ${页码} 页可选择的 PDF 文字`}>
       {文字项.map((项, 索引) => <span key={索引} style={{ left: 项.x, top: 项.y, minWidth: 项.宽, height: 项.高, fontSize: 项.高 }}>{项.文本}</span>)}
     </div>
+    {命中标记.length > 0 && (
+      <div className="pdf-viewer__hits" aria-hidden="true">
+        {命中标记.map((标记, 索引) => (
+          <span
+            key={索引}
+            className={`pdf-viewer__hit${标记.当前 ? ' pdf-viewer__hit--current' : ''}`}
+            style={{ left: `${标记.左}%`, top: `${标记.上}%`, width: `${标记.宽}%`, height: `${标记.高}%` }}
+          />
+        ))}
+      </div>
+    )}
+    {编辑模式 && on页面点选 && (
+      <button
+        type="button"
+        className="pdf-viewer__edit-layer"
+        aria-label={`在第 ${页码} 页点选编辑位置`}
+        title="点选要添加内容的位置"
+        onClick={(事件) => {
+          const 矩形 = 事件.currentTarget.getBoundingClientRect()
+          const 尺寸 = 原始尺寸.current ?? { 宽: 矩形.width, 高: 矩形.height }
+          const 坐标 = 换算PDF坐标({
+            偏移X: 事件.clientX - 矩形.left,
+            偏移Y: 事件.clientY - 矩形.top,
+            显示宽: 矩形.width,
+            显示高: 矩形.height,
+            页宽: 尺寸.宽,
+            页高: 尺寸.高,
+          })
+          on页面点选({ 页码, x: 坐标.x, y: 坐标.y, 页宽: 尺寸.宽, 页高: 尺寸.高 })
+        }}
+      />
+    )}
     {错误 && <span className="pdf-viewer__page-error" role="status">第 {页码} 页无法显示</span>}
   </>
 }
 
-const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
+const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = false, on页面点选 }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
@@ -115,6 +164,14 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
   const [活跃页, set活跃页] = useState<Set<number>>(() => new Set([1]))
   const [复制状态, set复制状态] = useState('')
   const [分页模式,set分页模式] = useState(false),[全屏,set全屏] = useState(false)
+  // 查找：关键词由外部受控，命中列表在文字层就绪后算一次，变化时重算
+  const [查找打开, set查找打开] = useState(false)
+  const [查找词, set查找词] = useState('')
+  const [命中列表, set命中列表] = useState<查找命中[]>([])
+  const [命中序号, set命中序号] = useState(-1)
+  const [查找提示, set查找提示] = useState('')
+  /** 全部页的文字项与尺寸快照，供查找与跳转使用 */
+  const 文字层缓存 = useRef<Array<{ 页码: number; 项列表: 搜索文字项[]; 尺寸?: PDF页面尺寸 }>>([])
   const 全屏根 = useRef<HTMLElement>(null)
   const 进入前 = useRef<{mode:boolean;zoom:number;page:number;left:number;top:number}|null>(null)
   const 待恢复 = useRef(false)
@@ -333,6 +390,94 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
     }
   }
   const 翻页 = (差值: number) => 跳转到页(Math.min(总页数, Math.max(1, 当前页 + 差值)))
+
+  /**
+   * 把整份 PDF 的文字项与页面尺寸收进缓存，供查找使用。
+   * 只在需要时（查找打开、文档变化）扫一次，避免每次输入关键词都读一遍全部页。
+   */
+  const 刷新文字层缓存 = useCallback(async () => {
+    if (!文档) return
+    const 结果: Array<{ 页码: number; 项列表: 搜索文字项[]; 尺寸?: PDF页面尺寸 }> = []
+    for (let 页码 = 1; 页码 <= 文档.numPages; 页码 += 1) {
+      try {
+        const 页 = await 文档.getPage(页码)
+        const 内容 = await 页.getTextContent()
+        const 项列表: 搜索文字项[] = []
+        // 与 PdfPageCanvas 用同一套换算（convertToViewportPoint），
+        // 这样页面带旋转时命中位置也不会偏。
+        const 视口 = 页.getViewport({ scale: 1 })
+        for (const 原项 of 内容.items) {
+          const 项 = 原项 as unknown as { str?: string; transform?: number[]; width?: number; height?: number }
+          if (!项.str || !项.transform || 项.transform.length < 6) continue
+          const [x, y] = 视口.convertToViewportPoint(项.transform[4], 项.transform[5])
+          const 高 = Math.max(1, 项.height || Math.hypot(项.transform[2], 项.transform[3]))
+          项列表.push({
+            文本: 项.str,
+            x,
+            y: y - 高,
+            宽: Math.max(1, 项.width || 1),
+            高,
+          })
+        }
+        const 尺寸 = 页面尺寸引用.current[页码]
+        结果.push({ 页码, 项列表, 尺寸 })
+      } catch { /* 单页读不到不影响其余页 */ }
+    }
+    文字层缓存.current = 结果
+  }, [文档])
+
+  // 文档变化或打开查找时刷新文字层
+  useEffect(() => {
+    if (!查找打开 || 状态 !== '就绪') return
+    if (文字层缓存.current.length === 0) void 刷新文字层缓存()
+  }, [查找打开, 状态, 刷新文字层缓存])
+
+  // 关键词变化时重新计算命中；没有文字层就提示而不是显示 0
+  useEffect(() => {
+    if (!查找打开 || 查找词.trim() === '') { set命中列表([]); set命中序号(-1); return }
+    const 各页 = 文字层缓存.current
+    if (各页.length === 0) { set命中列表([]); set命中序号(-1); set查找提示('正在读取文字层…'); return }
+    const 无文字页 = 各页.filter((页) => 页.项列表.length > 0).length
+    if (无文字页 === 0) { set命中列表([]); set命中序号(-1); set查找提示('这份 PDF 没有可检索的文字层（可能为扫描件）'); return }
+    const 命中 = 查找文档(各页, 查找词)
+    set查找提示('')
+    set命中列表(命中)
+    set命中序号(命中.length > 0 ? 0 : -1)
+  }, [查找打开, 查找词, 文档])
+
+  /** 跳到指定命中：先切页，再滚动到命中位置 */
+  const 跳到命中 = (序号: number) => {
+    const 命中 = 命中列表[序号]
+    if (!命中) return
+    set命中序号(序号)
+    跳转到页(命中.页码)
+    // 分页模式下直接按水平位置对齐，连续阅读时垂直滚动
+    requestAnimationFrame(() => {
+      const 舞台 = 阅读区.current
+      const 节点 = 页节点.current[命中.页码 - 1]
+      if (!舞台 || !节点) return
+      const 矩形 = 节点.getBoundingClientRect()
+      if (分页模式) 舞台.scrollLeft = (命中.页码 - 1) * (可用宽度 ?? 舞台.clientWidth)
+      else 舞台.scrollTop += 矩形.top - 舞台.getBoundingClientRect().top + 矩形.height * 命中.上 / 100 - 40
+    })
+  }
+
+  const 查找下一个 = () => {
+    const 下标 = 下一个命中下标(命中序号, 命中列表.length, '下一个')
+    if (下标 >= 0) 跳到命中(下标)
+  }
+  const 查找上一个 = () => {
+    const 下标 = 下一个命中下标(命中序号, 命中列表.length, '上一个')
+    if (下标 >= 0) 跳到命中(下标)
+  }
+  /** 取某一页的全部命中框，并标出哪个是当前选中项 */
+  const 本页命中 = (页码: number) =>
+    命中列表
+      .map((命中, 索引) => ({ 命中, 索引 }))
+      .filter((项) => 项.命中.页码 === 页码)
+      .map(({ 命中, 索引 }) => ({
+        左: 命中.左, 上: 命中.上, 宽: 命中.宽, 高: 命中.高, 当前: 索引 === 命中序号,
+      }))
   const 调整缩放 = (方向: '放大' | '缩小') => set缩放((当前) => {
     const 下一个 = 方向 === '放大' ? 放大一档(当前) : 缩小一档(当前)
     return 下一个 ?? 当前
@@ -364,6 +509,13 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
       case 'view.gotoPage': 页码输入.current?.focus(); 页码输入.current?.select(); break
       case 'edit.copyPage': void 复制本页(); break
       case 'edit.copyAll': void 复制全文(); break
+      case 'edit.find':
+        // 有选中文字时直接拿它当关键词，与浏览器查找行为一致
+        set查找打开(true)
+        if (取选中文字().trim()) set查找词(取选中文字().trim())
+        break
+      case 'edit.findNext': 查找下一个(); break
+      case 'edit.findPrevious': 查找上一个(); break
       default: return false // 打印由容器处理，避免同一按键重复执行。
     }
   }, 状态 === '就绪')
@@ -416,7 +568,19 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
           <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 放大一档(缩放) === null} onClick={() => 调整缩放('放大')}><Icon name="zoom-in" size={15} /></button>
           <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={状态 !== '就绪'} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
           <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
+          <button type="button" aria-label="查找" title="查找（Ctrl+F）" aria-pressed={查找打开} disabled={状态 !== '就绪'} onClick={() => set查找打开((值) => !值)}><Icon name="search" size={15} /></button>
         </div>
+        <PdfFindBar
+          打开={查找打开}
+          总数={命中列表.length}
+          当前序号={命中序号 + 1}
+          关键词={查找词}
+          提示={查找提示}
+          on关键词变更={set查找词}
+          on下一个={查找下一个}
+          on上一个={查找上一个}
+          on关闭={() => { set查找打开(false); set查找词('') }}
+        />
       </div>
       {复制状态 && <span className="pdf-viewer__copy-status" role="status">{复制状态}</span>}
       <div
@@ -453,7 +617,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError }: Props) => {
               aria-label={`第 ${页码} 页`}
               style={{ width: 宽, height: 高 }}
             >
-              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} />}
+              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} 命中标记={本页命中(页码)} 编辑模式={编辑模式} on页面点选={on页面点选} />}
             </div>
             return 分页模式?<div key={页码} className="pdf-viewer__slide" data-pdf-slide={页码} style={{width:可用宽度??'100vw',height:阅读区.current?.clientHeight||'100%'}}>{页面}</div>:页面
           })}

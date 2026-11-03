@@ -1,0 +1,23 @@
+海豹办公 第三方许可声明
+========================
+
+本程序包含以下第三方作品：
+
+1. citeproc-js (citeproc@2.4.63)
+   许可：CPAL-1.0 OR AGPL-1.0（本项目采用 CPAL-1.0）
+   用途：CSL 引文与参考文献表排版。未修改源代码。
+   完整许可原文见 citeproc 软件包内的 LICENSE 文件。
+
+2. CSL 引文样式（GB/T 7714-2015 顺序编码制与著者-出版年制、APA 第 7 版、IEEE、Nature、
+   Elsevier NLM/Vancouver）
+   来源：zotero-chinese/styles 与 citation-style-language/styles
+   许可：CC BY-SA 3.0
+
+3. CSL 语言包（zh-CN、en-US）
+   来源：citation-style-language/locales
+   许可：CC BY-SA 3.0
+
+以上资源均未修改，按原样分发。详细说明见仓库 docs/第三方许可声明.md。
+
+本程序不分发 Zotero 客户端。与 Zotero 的数据交换格式依据其公开开发者文档实现。
+Zotero 是 Corporation for Digital Scholarship 的商标，本程序与 Zotero 项目无隶属关系。

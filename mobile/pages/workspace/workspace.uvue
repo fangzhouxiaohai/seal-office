@@ -24,6 +24,10 @@ export default {
       alive: true,
       token: Date.now().toString() + '-' + Math.random().toString() + '-' + Math.random().toString(),
       atHome: true,
+      // 网页层给出的返回键去向：true 表示当前是一级页面，应当回桌面。
+      // 过去用 workspaceReady 猜，与「底部 tab 是否可见」不是一回事，
+      // 已改为由网页层计算后随 state 消息下传。
+      backToDesktop: true,
       workspaceReady: false,
       loadErrorSerial: 0,
       unsaved: 0,
@@ -54,8 +58,18 @@ export default {
   },
   onBackPress(): boolean {
     this.persistWorkspace()
-    if (this.errorText.length > 0 || !this.workspaceReady) this.moveToBackground()
-    else this.evaluate("window.dispatchEvent(new Event('seal-native-back',{cancelable:true}))")
+    // 加载失败时无法询问网页层，直接退到桌面；否则一律交给网页层决定。
+    if (this.errorText.length > 0) {
+      this.moveToBackground()
+      return true
+    }
+    // 网页层已经算好「一级页面 → 回桌面，二级页面 → 返回上一页」，
+    // 原生层不再自己判断层级，避免两套规则不一致。
+    if (this.workspaceReady && this.backToDesktop) {
+      this.moveToBackground()
+      return true
+    }
+    this.evaluate("window.dispatchEvent(new Event('seal-native-back',{cancelable:true}))")
     // Do not let ArkWeb navigate the local HTML history or terminate the ability.
     // The web layer acknowledges root Back after closing overlays and saving state.
     return true
@@ -121,7 +135,13 @@ export default {
       event.detail.data.forEach((message: UTSJSONObject) => {
         if (message == null || messageString(message, 'token') != this.token) return
         const action = messageString(message, 'action')
-        if (action == 'state') { this.workspaceReady = true; this.atHome = messageBoolean(message, 'atHome'); this.unsaved = messageNumber(message, 'unsaved'); return }
+        if (action == 'state') {
+          this.workspaceReady = true
+          this.atHome = messageBoolean(message, 'atHome')
+          this.unsaved = messageNumber(message, 'unsaved')
+          this.backToDesktop = messageBoolean(message, 'backToDesktop')
+          return
+        }
         if (action == 'healthy') { this.loadErrorSerial++; return }
         if (action == 'back-root') { this.moveToBackground(); return }
         const id = messageString(message, 'id')

@@ -38,6 +38,10 @@ export interface 文字片段 {
   图片?: 文档图片
   /** 页码类域：保存时写回域代码，而不是固定文字 */
   域?: 'PAGE' | 'NUMPAGES'
+  /** 引文域或参考文献表域的完整域代码；保存时写成 Word 域，读取时原样还原 */
+  引文域代码?: string
+  /** 域的缓存显示内容：保留引文上下标、书目条目的加粗等内部格式 */
+  引文域缓存?: 文字片段[]
   /** 外部链接使用原始目标；文档内链接以 #书签名 表示。 */
   链接?: string
   /** 文档内跳转目标；使用零宽标记保留 DOCX 书签的位置与原名。 */
@@ -426,12 +430,37 @@ function 建片段(文本: string, 格式: 格式状态): 文字片段 {
 /** 页码类域在编辑区里的标记属性，与主进程读取端保持一致 */
 const 域标记属性 = 'data-seal-field'
 const 支持的域 = new Set(['PAGE', 'NUMPAGES'])
+/** 引文域与参考文献表域在编辑区里的标记属性，与 citation/documentModel.ts 一致 */
+const 引文域标记 = 'data-seal-citation'
+const 引文域代码标记 = 'data-seal-citation-code'
+const 书目域标记 = 'data-seal-bibliography'
+const 书目域代码标记 = 'data-seal-bibliography-code'
+/** 域代码长度上限，与主进程 docxCitationFields 的校验保持一致 */
+const 域代码最大长度 = 200000
+
+/** 读取引文域占位元素；返回 null 表示该元素不是引文域标记 */
+function 读取引文域片段(元素: HTMLElement, 格式: 格式状态, 未覆盖: Set<string>): 文字片段 | null {
+  const 是引文域 = 元素.hasAttribute(引文域标记)
+  const 是书目域 = 元素.hasAttribute(书目域标记)
+  if (!是引文域 && !是书目域) return null
+  const 代码 = (元素.getAttribute(是引文域 ? 引文域代码标记 : 书目域代码标记) ?? '').trim()
+  if (代码.length === 0 || 代码.length > 域代码最大长度) {
+    未覆盖.add('引文域代码无效')
+    return null
+  }
+  const 片段格式 = 叠加格式(元素, 格式)
+  // 缓存内容按原格式逐段解析，引文的上标与书目条目的加粗因此能原样进 docx
+  const 缓存 = 收集片段(元素, 片段格式, 未覆盖)
+  return { ...建片段(元素.textContent ?? '', 片段格式), 引文域代码: 代码, 引文域缓存: 缓存 }
+}
 
 /**
  * 读取页码域占位元素；返回 null 表示该元素不是域标记。
  * 未知域无法写回，记入未覆盖清单以便保存前如实告知。
  */
 function 读取域片段(元素: HTMLElement, 格式: 格式状态, 未覆盖: Set<string>): 文字片段 | null {
+  const 引文域 = 读取引文域片段(元素, 格式, 未覆盖)
+  if (引文域 !== null) return 引文域
   const 域名称 = (元素.getAttribute(域标记属性) ?? '').toUpperCase()
   if (域名称 === '') {
     return null

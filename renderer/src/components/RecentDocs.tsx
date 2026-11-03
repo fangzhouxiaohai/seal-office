@@ -155,7 +155,7 @@ const RecentDocs = ({
         },
         React.createElement(
           'button',
-          { type: 'button', className: 'wps-text-button', 'aria-label': `排序方式：${排序文案[sortKey]}`, title: `排序方式：${排序文案[sortKey]}` },
+          { type: 'button', className: 'wps-text-button', 'aria-label': '排序方式', title: `排序方式：${排序文案[sortKey]}` },
           React.createElement(Icon, { name: 'sort', size: 16 }),
           窄屏图标 ? null : React.createElement('span', null, 排序文案[sortKey])
         )

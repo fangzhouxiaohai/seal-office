@@ -1,11 +1,12 @@
 import { installImageTransfer } from './imageTransfer'
 // 编辑器容器：装配文档标签栏、Ribbon、标尺、编辑区、查找面板与状态栏。
 // 全部编辑行为通过 commands.ts 的命令注册表派发，此文件只负责上下文实现与区域编排。
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { App as AntdApp, Input } from 'antd'
 import { applyListStyle } from './listStyle'
 import { clipboardTextHtml, copyEditorSelection, readEditorClipboard, 粘贴数据HTML, 读取系统剪贴板 } from './clipboard'
-import { insertDocumentNote } from './notes'
+import { insertDocumentNote, 注释锚点, 注释锚点范围 } from './notes'
+import { insertBookmark, insertField, insertHyperlink } from './inserts'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
 import { 可直开保存风险警告 } from '../fileWarnings'
@@ -26,12 +27,15 @@ import { 检查文本 } from './spellCheck'
 import { 提取大纲 } from './toc'
 import NavigationPane from './NavigationPane'
 import TableGridPicker from './TableGridPicker'
-import SourceManager from './SourceManager'
 import CompareDialog from './CompareDialog'
 import TranslateDialog from './TranslateDialog'
 import MailMergeDialog from './MailMergeDialog'
 import { 比较文本, 抽取文本, 生成修订Html, 统计差异 } from './compare'
-import type { 文献 } from './citation'
+import type { Csl条目, 引文偏好 } from '../citation/types'
+import { 默认样式标识, 默认语言 } from '../citation/styles'
+import 文献库面板 from '../citation/文献库面板'
+import { 插入引文, 插入书目, 刷新域, 执行取消链接 } from '../citation/commands'
+import { 读取引文簇 } from '../citation/documentModel'
 import RibbonTabs from './ribbon/RibbonTabs'
 import { 保存选区, 恢复选区, 选区覆盖的段落 } from './selection'
 import RibbonPanel from './ribbon/RibbonPanel'
@@ -132,10 +136,12 @@ const DocEditor = () => {
   const [导航打开, set导航打开] = useState(false)
   const [网格打开, set网格打开] = useState(false)
   const [文献面板打开, set文献面板打开] = useState(false)
+  const [引文偏好, set引文偏好] = useState<引文偏好>({ 样式标识: 默认样式标识, 语言: 默认语言 })
+  const [引文清单版本, set引文清单版本] = useState(0)
   const [比较面板打开, set比较面板打开] = useState(false)
   const [翻译面板打开, set翻译面板打开] = useState(false)
   const [邮件合并面板打开, set邮件合并面板打开] = useState(false)
-  const [文献列表, set文献列表] = useState<文献[]>([])
+  const [文献列表, set文献列表] = useState<Csl条目[]>([])
   const [内容版本, set内容版本] = useState(0)
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
   const [页数, set页数] = useState(1)
@@ -671,10 +677,11 @@ const DocEditor = () => {
         选择图片()
         break
       case '形状':
-        仅供网页或Pdf('形状', () => 插入内容('<div style="width:160px;height:80px;border:1.6px solid #2B6CF6;border-radius:6px"></div><p><br></p>'))
+        // 用段落边框表达，DOCX 可完整写回；不再阻断保存。
+        插入内容('<div style="border:1.6px solid #2B6CF6;border-radius:6px;padding:10px 12px;min-height:44px"><p><br></p></div><p><br></p>')
         break
       case '文本框':
-        仅供网页或Pdf('文本框', () => 插入内容('<div style="border:1px solid #E8EBF0;padding:8px 10px;border-radius:6px">文本框内容</div><p><br></p>'))
+        插入内容('<div style="border:1px solid #E8EBF0;padding:8px 10px;border-radius:6px"><p>文本框内容</p></div><p><br></p>')
         break
       case '艺术字':
         插入内容('<p style="font-size:28px;font-weight:700;color:#2B6CF6">艺术字</p>')
@@ -688,27 +695,105 @@ const DocEditor = () => {
       case '符号':
         插入内容('※')
         break
-      case '超链接':
-        提示不可用插入项('超链接')
+      case '超链接': {
+        const root = 编辑区引用.current
+        if (!root) break
+        // 选区必须在弹窗之前取快照，否则焦点被输入框抢走后无法定位
+        const range = 选区快照.current ?? 保存选区(root)
+        const 选中文字 = range && !range.collapsed ? range.toString() : ''
+        let 地址 = '', 文字 = 选中文字
+        modal.confirm({
+          title: '插入超链接',
+          content: React.createElement('div', { className: 'local-form' },
+            React.createElement(Input, {
+              'aria-label': '链接地址', placeholder: 'https://example.com 或 #书签名', autoFocus: true,
+              onChange: (event: React.ChangeEvent<HTMLInputElement>) => { 地址 = event.target.value },
+            }),
+            React.createElement(Input, {
+              'aria-label': '显示文字', placeholder: '显示文字（留空则用地址）', defaultValue: 选中文字,
+              onChange: (event: React.ChangeEvent<HTMLInputElement>) => { 文字 = event.target.value },
+            })),
+          okText: '插入', cancelText: '取消',
+          onOk: () => {
+            const 目标 = 地址.trim()
+            if (!目标) { message.warning('请输入链接地址'); return Promise.reject(new Error('缺少地址')) }
+            // 只放行 http(s)、mailto、tel 与文档内锚点，其余（javascript: 等）直接拒绝
+            if (!/^(https?:\/\/|mailto:|tel:|#)/i.test(目标)) { message.error('链接需以 http(s)://、mailto:、tel: 或 # 开头'); return Promise.reject(new Error('协议不支持')) }
+            if (!root.isConnected) { message.error('文档已关闭，请重新打开后再插入'); return Promise.reject(new Error('已关闭')) }
+            记录历史()
+            try { insertHyperlink(root, 目标, 文字, range) }
+            catch (error) { message.error(error instanceof Error ? error.message : '超链接插入失败'); return Promise.reject(error) }
+            选区快照.current = null
+            同步内容(); 记录历史()
+          },
+        })
         break
-      case '书签':
-        提示不可用插入项('书签')
+      }
+      case '书签': {
+        const root = 编辑区引用.current
+        if (!root) break
+        const range = 选区快照.current ?? 保存选区(root)
+        let 名称 = ''
+        modal.confirm({
+          title: '插入书签',
+          content: React.createElement(Input, {
+            'aria-label': '书签名称', placeholder: '书签名称，如 第一章', autoFocus: true,
+            onChange: (event: React.ChangeEvent<HTMLInputElement>) => { 名称 = event.target.value },
+          }),
+          okText: '插入', cancelText: '取消',
+          onOk: () => {
+            if (!名称.trim()) { message.warning('请输入书签名称'); return Promise.reject(new Error('缺少名称')) }
+            if (!root.isConnected) { message.error('文档已关闭，请重新打开后再插入'); return Promise.reject(new Error('已关闭')) }
+            记录历史()
+            try { insertBookmark(root, 名称, range) }
+            catch (error) { message.error(error instanceof Error ? error.message : '书签插入失败'); return Promise.reject(error) }
+            选区快照.current = null
+            同步内容(); 记录历史()
+          },
+        })
         break
+      }
+      case '页码': {
+        const root = 编辑区引用.current
+        if (!root) break
+        const range = 选区快照.current ?? 保存选区(root)
+        记录历史()
+        try { insertField(root, 'PAGE', '1', range) }
+        catch (error) { message.error(error instanceof Error ? error.message : '页码插入失败'); break }
+        选区快照.current = null
+        同步内容(); 记录历史()
+        break
+      }
       case '脚注':
       case '尾注': {
         const root = 编辑区引用.current, docId = 文档标识
         if (!root) break
-        const range = 选区快照.current ?? 保存选区(root), before = root.innerHTML
+        // 弹窗打开会把焦点移到输入框并折叠编辑区选区，所以必须在弹窗之前
+        // 就把光标位置存成快照；同时改为记录段落锚点，即使 DOM 有轻微
+        // 变动（如撤销历史重绘）也能定位回原段落。
+        const range = 选区快照.current ?? 保存选区(root)
+        const 锚点 = 注释锚点(root, range)
+        const before = root.innerHTML
         let text = ''
-        modal.confirm({ title: `插入${类型}`, content: React.createElement(Input.TextArea, { autoFocus: true, rows: 4, placeholder: `${类型}内容`, onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => { text = event.target.value } }), okText: '插入', cancelText: '取消', onOk: () => {
-          if (!text.trim()) { message.warning('请输入注释内容'); return Promise.reject(new Error('请输入注释内容')) }
-          if (当前文档标识引用.current !== docId || !root.isConnected || root.innerHTML !== before) { message.error('文档已改变，请重新插入注释'); return }
-          记录历史()
-          try { insertDocumentNote(root, 类型 === '脚注' ? 'footnote' : 'endnote', text, range) }
-          catch (error) { message.error(error instanceof Error ? error.message : '注释插入失败'); return Promise.reject(error) }
-          选区快照.current = null
-          同步内容(); 记录历史()
-        } })
+        modal.confirm({
+          title: `插入${类型}`,
+          content: React.createElement(Input.TextArea, {
+            autoFocus: true, rows: 4, placeholder: `${类型}内容`,
+            onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => { text = event.target.value },
+          }),
+          okText: '插入', cancelText: '取消',
+          onOk: () => {
+            if (!text.trim()) { message.warning('请输入注释内容'); return Promise.reject(new Error('请输入注释内容')) }
+            if (当前文档标识引用.current !== docId || !root.isConnected) { message.error('文档已切换，请重新插入注释'); return }
+            // 内容被外部改动时用锚点重新定位，而不是直接失败
+            const 位置 = root.innerHTML === before ? range : 注释锚点范围(root, 锚点)
+            记录历史()
+            try { insertDocumentNote(root, 类型 === '脚注' ? 'footnote' : 'endnote', text, 位置) }
+            catch (error) { message.error(error instanceof Error ? error.message : '注释插入失败'); return Promise.reject(error) }
+            选区快照.current = null
+            同步内容(); 记录历史()
+          },
+        })
         break
       }
       default:
@@ -868,6 +953,76 @@ const DocEditor = () => {
     记录历史()
   }
 
+  /**
+   * 引文域操作。
+   * 根元素每帧可能重建，所以每次调用都重新取当前编辑区，不缓存 DOM。
+   * 所有失败都换成中文提示，不把 citeproc 的英文异常抛给用户。
+   */
+  const 引文操作 = {
+    取上下文: (): Parameters<typeof 插入引文>[0] => {
+      const 根 = 编辑区引用.current
+      if (根 === null) throw new Error('编辑区尚未就绪，请稍后重试')
+      return {
+        根,
+        条目: Object.fromEntries(文献列表.map((项) => [项.id, 项])),
+        偏好: 引文偏好,
+        插入内容: (html: string) => 插入内容(html),
+        notify: (文本: string) => message.info(文本),
+      }
+    },
+    插入: (ids: string[]) => {
+      try {
+        插入引文(引文操作.取上下文(), ids)
+        记录历史()
+        set引文清单版本((值) => 值 + 1)
+      } catch (错误) {
+        modal.error({ title: '插入引文失败', content: 错误 instanceof Error ? 错误.message : '请稍后重试' })
+      }
+    },
+    书目: () => {
+      try {
+        插入书目(引文操作.取上下文())
+        记录历史()
+        set引文清单版本((值) => 值 + 1)
+      } catch (错误) {
+        modal.error({ title: '生成参考文献表失败', content: 错误 instanceof Error ? 错误.message : '请稍后重试' })
+      }
+    },
+    刷新: () => {
+      try {
+        刷新域(引文操作.取上下文())
+        记录历史()
+        set引文清单版本((值) => 值 + 1)
+      } catch (错误) {
+        modal.error({ title: '刷新引文失败', content: 错误 instanceof Error ? 错误.message : '请稍后重试' })
+      }
+    },
+    取消链接: () => {
+      try {
+        执行取消链接(引文操作.取上下文())
+        记录历史()
+        set引文清单版本((值) => 值 + 1)
+      } catch (错误) {
+        modal.error({ title: '取消链接失败', content: 错误 instanceof Error ? 错误.message : '请稍后重试' })
+      }
+    },
+  }
+
+  /** 当前文档全部引文，供侧栏「引文」页签与计数展示 */
+  const 引文列表 = useMemo(() => {
+    const 根 = 编辑区引用.current
+    if (根 === null) return []
+    return 读取引文簇(根).簇.map((簇) => ({
+      标识: 簇.citationID,
+      文字: 簇.citationItems
+        .map((项) => 文献列表.find((文献项) => 文献项.id === 项.id)?.title ?? 项.id)
+        .join('、'),
+      条目: 簇.citationItems.map((项) => 项.id),
+    }))
+    // 内容版本与清单版本变化时都要重算，否则插入后侧栏不更新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [内容版本, 引文清单版本, 文献列表, 文档标识])
+
   const 上下文: CommandContext = {
     root: 编辑区引用.current ?? document.createElement('div'),
     history: 取历史(),
@@ -988,6 +1143,10 @@ const DocEditor = () => {
     },
     打开表格网格: () => set网格打开(true),
     打开文献管理: () => set文献面板打开(true),
+    插入引文: (ids: string[]) => 引文操作.插入(ids),
+    插入书目: () => 引文操作.书目(),
+    刷新引文域: () => 引文操作.刷新(),
+    取消引文链接: () => 引文操作.取消链接(),
     打开比较面板: () => set比较面板打开(true),
     打开翻译面板: () => set翻译面板打开(true),
     打开邮件合并面板: () => set邮件合并面板打开(true),
@@ -1279,11 +1438,18 @@ const DocEditor = () => {
         message.success(`已插入 ${行数} 行 ${列数} 列的表格`)
       },
     }),
-    React.createElement(SourceManager, {
+    React.createElement(文献库面板, {
       open: 文献面板打开,
-      sources: 文献列表,
       onClose: () => set文献面板打开(false),
+      条目: 文献列表,
       onChange: set文献列表,
+      偏好: 引文偏好,
+      on偏好变更: set引文偏好,
+      on插入引文: (ids: string[]) => 引文操作.插入(ids),
+      on插入书目: () => 引文操作.书目(),
+      on刷新: () => 引文操作.刷新(),
+      on取消链接: () => 引文操作.取消链接(),
+      引文列表,
     }),
     React.createElement(CompareDialog, {
       open: 比较面板打开,

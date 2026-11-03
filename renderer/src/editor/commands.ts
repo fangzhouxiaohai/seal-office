@@ -16,7 +16,7 @@ import {
   type SmartArt类型,
   type 图表类型,
 } from './graphics'
-import { 提取引文序号, 生成书目Html, 生成引文标记, type 文献 } from './citation'
+import { type Csl条目 } from '../citation/types'
 import { 解析字号, 字号列表 } from './fontOptions'
 import { 解析文档, type 文档模型, type 文字页面设置 } from '../office/docModel'
 import { 桥接 } from '../ipc/bridge'
@@ -142,6 +142,14 @@ export interface CommandContext {
   打开表格网格: () => void
   /** 打开文献管理面板 */
   打开文献管理: () => void
+  /** 插入引文：由编辑器把选题文献写成域并刷新全文档 */
+  插入引文: (条目id: string[]) => void
+  /** 插入或重新生成参考文献表 */
+  插入书目: () => void
+  /** 按当前样式刷新全部引文域 */
+  刷新引文域: () => void
+  /** 取消引文链，全部变纯文本 */
+  取消引文链接: () => void
   /** 打开文档比较面板 */
   打开比较面板: () => void
   /** 打开文字翻译面板 */
@@ -150,8 +158,8 @@ export interface CommandContext {
   打开邮件合并面板: () => void
   /** 显示或收起文档标题导航 */
   切换导航窗格: () => void
-  /** 当前会话维护的文献列表 */
-  文献列表: 文献[]
+  /** 当前文档文献库中的条目，用于判断是否已录入文献 */
+  文献列表: Csl条目[]
 }
 
 export interface EditorCommand {
@@ -160,17 +168,6 @@ export interface EditorCommand {
   run: (上下文: CommandContext, 参数?: string) => void
   enabled?: (上下文: CommandContext) => boolean
   active?: (上下文: CommandContext) => boolean
-}
-
-/** 尚未实现的功能：按钮就位，点击给出中文提示，不伪造行为 */
-export function 未实现命令(id: string, label: string): EditorCommand {
-  return {
-    id,
-    label,
-    run: (上下文) => {
-      上下文.notify('该功能开发中')
-    },
-  }
 }
 
 /** 记录历史后执行格式化指令，用于纯格式化类命令 */
@@ -216,7 +213,6 @@ const 格式化命令定义: Array<[string, string, string]> = [
   ['para.alignJustify', '两端对齐', 'justifyFull'],
 ]
 
-const 未实现命令定义: Array<[string, string]> = []
 
 /** 带参数或需要读取当前状态的字体命令 */
 const 字体命令: EditorCommand[] = [
@@ -514,21 +510,33 @@ const 引用命令: EditorCommand[] = [
   }),
   生成回调命令('citation.insert', '插入引文', (上下文) => {
     if (上下文.文献列表.length === 0) {
-      上下文.notify('尚未添加文献，请先在「管理源」中录入')
+      上下文.notify('尚未添加文献，请先在「文献库」中录入或从本机 Zotero 导入')
       return
     }
-    const 序号 = 提取引文序号(上下文.读取内容()).length + 1
-    上下文.插入内容(生成引文标记(序号))
-    上下文.notify(`已插入引文 [${序号}]`)
+    // 真正要插哪几条由文献库面板选择；这里在没有选择时打开面板让用户挑，不猜默认条目
+    上下文.打开文献管理()
   }),
   生成回调命令('citation.manageSource', '管理源', (上下文) => 上下文.打开文献管理()),
   生成回调命令('bibliography.insert', '书目', (上下文) => {
-    if (上下文.文献列表.length === 0) {
-      上下文.notify('尚未添加文献，请先在「管理源」中录入')
-      return
+    try {
+      上下文.插入书目()
+    } catch (错误) {
+      上下文.notify(错误 instanceof Error ? 错误.message : '生成参考文献表失败')
     }
-    上下文.插入内容(`${生成书目Html(上下文.文献列表)}<p><br></p>`)
-    上下文.notify(`已插入参考文献列表，共 ${上下文.文献列表.length} 条`)
+  }),
+  生成回调命令('citation.refresh', '刷新引文', (上下文) => {
+    try {
+      上下文.刷新引文域()
+    } catch (错误) {
+      上下文.notify(错误 instanceof Error ? 错误.message : '刷新引文失败')
+    }
+  }),
+  生成回调命令('citation.unlink', '取消链接', (上下文) => {
+    try {
+      上下文.取消引文链接()
+    } catch (错误) {
+      上下文.notify(错误 instanceof Error ? 错误.message : '取消链接失败')
+    }
   }),
 ]
 
@@ -980,7 +988,6 @@ export const 命令表 = [
   ...审阅命令,
   ...视图命令,
   ...导出命令,
-  ...未实现命令定义.map(([id, label]) => 未实现命令(id, label)),
 ].reduce<Record<string, EditorCommand>>((累计, 命令) => {
   累计[命令.id] = 命令
   return 累计

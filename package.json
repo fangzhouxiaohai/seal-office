@@ -1,6 +1,6 @@
 {
   "name": "seal-office",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "海豹办公 Seal Office",
   "homepage": "https://github.com/fangzhouxiaohai/seal-office",
   "main": "main/main.js",
@@ -41,6 +41,7 @@
     "@pdf-lib/fontkit": "^1.1.1",
     "@ycsx/ofdjs": "1.0.6",
     "antd": "^5.0.0",
+    "citeproc": "2.4.63",
     "docx": "^8.5.0",
     "dompurify": "^3.4.16",
     "exceljs": "^4.4.0",
@@ -158,6 +159,14 @@
       {
         "from": "build/office-runtime-notice.txt",
         "to": "office-runtime-notice.txt"
+      },
+      {
+        "from": "build/third-party-notice.txt",
+        "to": "third-party-notice.txt"
+      },
+      {
+        "from": "node_modules/citeproc/LICENSE",
+        "to": "licenses/citeproc-LICENSE.txt"
       },
       {
         "from": ".upgrade-private/office-runtime",

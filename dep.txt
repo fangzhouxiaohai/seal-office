@@ -1,0 +1,28 @@
+鏈嶅姟鍣? root@192.140.178.117:22
+绔欑偣    /www/wwwroot/seal.xingmasoft.com
+鐗堟湰    2.5.1
+妯″紡    dry-run
+
+鏈湴寰呴儴缃?21 涓枃浠讹紝require 閾惧叡 17 椤癸紝鍧囧凡瑙ｆ瀽
+灏嗘墽琛岋細涓婁紶 鈫?瑙ｅ帇鍒?releases/2.5.1-backend-20261103121301 鈫?闅旂绔彛 8791 楠岃瘉 鈫?鍒囨崲 current 鈫?閲嶅惎
+  accountConversion.cjs
+  accountErasure.cjs
+  collaboration.cjs
+  converter
+  converterAdmin.cjs
+  documentFormats.json
+  eraseBackups.cjs
+  eraseRecords.cjs
+  formats.cjs
+  index.cjs
+  nativeCodec.cjs
+  nativeSealFormat.cjs
+  package.json
+  passwords.cjs
+  publicValidation.cjs
+  realtime.cjs
+  shareLinks.cjs
+  skinFormat.cjs
+  sms.cjs
+  store.cjs
+  validateIsolated.cjs

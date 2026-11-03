@@ -275,7 +275,28 @@
 .assistant-message__disclaimer { margin-top: 8px; color: var(--text-2); font-size: 11px; line-height: 1.5; }
 .assistant-drawer__empty { color: var(--text-2); line-height: 1.65; }
 .assistant-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 360px; padding: 36px 8px 24px; }
-.assistant-empty__icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 4px; border-radius: 14px; background: var(--brand-soft); color: var(--brand); }
+/* 空状态图标：高饱和度渐变底 + 白色星形，浅色界面上也能一眼认出 */
+.assistant-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6366F1 0%, #A855F7 52%, #EC4899 100%);
+  color: #fff;
+  box-shadow: 0 6px 16px rgb(99 102 241 / 32%);
+}
+
+.assistant-empty__icon .seal-icon { color: #fff; }
+
+/* 移动端模式按钮：选中态用实心高饱和度渐变底，图标白色 */
+.assistant-mobile-modes button[aria-pressed='true'] {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+  box-shadow: 0 4px 12px rgb(99 102 241 / 30%);
+}
 .assistant-empty strong { color: var(--text-1); font-size: 16px; font-weight: 600; line-height: 1.45; }
 .assistant-empty p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.7; }
 .assistant-drawer__composer { display: block; padding: 0 16px 16px; border-top: 0; background: var(--bg-card); box-shadow: none; }

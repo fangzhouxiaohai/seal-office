@@ -1,0 +1,47 @@
+{
+	"summary": {
+		"app": {
+			"bundleName": "com.sealoffice.mobile",
+			"bundleType": "app",
+			"version": {
+				"code": 20300,
+				"name": "2.3.0"
+			}
+		},
+		"modules": [
+			{
+				"mainAbility": "EntryAbility",
+				"deviceType": [
+					"phone"
+				],
+				"abilities": [
+					{
+						"name": "EntryAbility",
+						"label": "$string:EntryAbility_label"
+					}
+				],
+				"distro": {
+					"moduleType": "entry",
+					"installationFree": false,
+					"deliveryWithInstall": true,
+					"moduleName": "entry"
+				},
+				"apiVersion": {
+					"compatible": 13,
+					"releaseType": "Release",
+					"target": 26
+				}
+			}
+		]
+	},
+	"packages": [
+		{
+			"deviceType": [
+				"phone"
+			],
+			"moduleType": "entry",
+			"deliveryWithInstall": true,
+			"name": "entry-default"
+		}
+	]
+}

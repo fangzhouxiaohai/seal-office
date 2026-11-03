@@ -377,6 +377,72 @@
 .pdf-viewer__text-layer span::selection { background: rgba(61, 124, 220, .35); }
 .pdf-viewer__copy-status { font-size: 12px; padding: 2px 16px; color: var(--brand); }
 
+/* 查找命中高亮层：不参与选中与点击，只做视觉标记 */
+.pdf-viewer__hits { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.pdf-viewer__hit {
+  position: absolute;
+  border-radius: 2px;
+  background: rgba(255, 196, 0, .38);
+  box-shadow: inset 0 0 0 1px rgba(190, 138, 0, .55);
+}
+.pdf-viewer__hit--current {
+  background: rgba(255, 140, 0, .55);
+  box-shadow: inset 0 0 0 2px rgba(200, 96, 0, .9);
+}
+
+/* 查找条：跟在工具条右侧，允许在窄屏换行 */
+.pdf-viewer__find {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 6px 0 0;
+  border-top: 1px solid var(--line-1);
+  margin-top: 6px;
+}
+.pdf-viewer__find input {
+  flex: 1 1 200px;
+  min-width: 140px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line-1);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-1);
+  font-size: 13px;
+}
+.pdf-viewer__find input:focus { outline: 2px solid var(--brand-weak); outline-offset: 1px; }
+.pdf-viewer__find-count { font-size: 12px; color: var(--text-2); min-width: 64px; text-align: center; }
+.pdf-viewer__find-hint { font-size: 12px; color: var(--text-2); flex: 1 1 100%; }
+.pdf-viewer__find button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line-1);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.pdf-viewer__find button:hover:not(:disabled) { color: var(--brand); border-color: var(--brand-weak); }
+.pdf-viewer__find button:disabled { opacity: .45; cursor: default; }
+.pdf-find__prev { transform: rotate(-90deg); }
+.pdf-find__next { transform: rotate(90deg); }
+
+/* 编辑模式的点选层：盖在文字层之上，不拦截文字选择以外的交互 */
+.pdf-viewer__edit-layer {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: crosshair;
+}
+.pdf-viewer__edit-layer:hover { background: rgba(61, 124, 220, .06); }
+.pdf-viewer__edit-layer:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
 .pdf-viewer__canvas[hidden] {
   display: none;
 }

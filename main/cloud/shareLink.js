@@ -44,7 +44,8 @@ function createShareLinkService(service) {
     const code = typeof input.code === 'string' && input.code.length ? input.code : null
     if (code !== null && !/^\d{4,8}$/.test(code)) throw new Error('访问码须为 4–8 位数字')
 
-    const access = b64url(randomBytes(32)), fileKey = await keyFor(node.id)
+    // keyFor 接收节点对象（需要 meta.key），不是节点标识；它本身是同步解封。
+    const access = b64url(randomBytes(32)), fileKey = keyFor(node)
     // 有访问码时用「包裹密钥 = PBKDF2(访问码, 链接标识)」加密文件密钥，落地页配对解开。
     const key = code ? seal(clientWrapKey(code, input.id), fileKey, `seal-share-link:${input.id}`) : fileKey
     if (key.length !== (code ? SEALED_KEY_BYTES : RAW_KEY_BYTES)) throw new Error('分享密钥长度异常，已中止')

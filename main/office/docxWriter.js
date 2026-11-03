@@ -37,6 +37,7 @@ const { NoteReferenceRun, prepareNotes, splitEndnotes } = require('./docxNotes')
 const { 原生修订, 原生格式修订, 规范修订Xml } = require('./docxRevisions')
 const { 标记来源, 合并源包 } = require('./docxSource')
 const { 补齐Word兼容设置 } = require('./docxCompat')
+const { 建域节点, 校验域代码 } = require('./docxCitationFields')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 页边距 = {
@@ -171,6 +172,20 @@ function 校验书签名称(名称, 错误消息 = '书签名称无效，无法�
   return 名称
 }
 
+/** 引文域片段展开成多个 run：域代码必须拆成 begin/instrText/separate/结果/end。 */
+function 建引文域(片段, 图片预算) {
+  const 代码 = 校验域代码(片段.引文域代码)
+  const 缓存 = (片段.引文域缓存 ?? []).map((项) => 建文字(项, 图片预算))
+  if (缓存.length === 0) throw new Error('引文域缺少显示内容，无法保存')
+  return 建域节点(代码, 缓存)
+}
+
+/** 把片段转为段落子节点数组；引文域会展开成多个节点，其余保持一对一。 */
+function 建文字组(片段, 图片预算) {
+  if (片段.引文域代码 !== undefined) return 建引文域(片段, 图片预算)
+  return [建文字(片段, 图片预算)]
+}
+
 /** 把一个文字片段转为 docx 的段落子节点。 */
 function 建文字(片段, 图片预算) {
   if (片段.修订 !== undefined) {
@@ -264,7 +279,7 @@ function 建段落(段, 原生排版列表, 图片预算) {
   const 原生排版 = 验证段落属性(段)
   原生排版列表.push(原生排版)
   const 配置 = {
-    children: (段.文字 || []).map((片段) => 建文字(片段, 图片预算)),
+    children: (段.文字 || []).flatMap((片段) => 建文字组(片段, 图片预算)),
     alignment: 对齐映射[段.对齐] || AlignmentType.LEFT,
   }
   const 验证尺寸 = (值, 名称, 最小值) => {

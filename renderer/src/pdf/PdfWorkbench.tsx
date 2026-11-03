@@ -87,6 +87,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const [编辑字号, set编辑字号] = useState('12')
   const [编辑颜色, set编辑颜色] = useState('#111111')
   const [编辑图片, set编辑图片] = useState('')
+  /** 编辑模式：开启后在页面上点选，直接把坐标填进编辑参数 */
+  const [编辑模式, set编辑模式] = useState(false)
   const [正在读取, set正在读取] = useState(false)
   const [正在处理, set正在处理] = useState(false)
   const [正在保存, set正在保存] = useState(false)
@@ -318,7 +320,19 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
 
   return (
     <section className={`pdf-workbench${工具展开 ? '' : ' pdf-workbench--collapsed'}`}>
-      <PdfViewer 数据={当前文件?.数据} 文件名={当前文件?.名称} onError={(文本) => 显示错误('PDF 预览失败', 文本)} />
+      <PdfViewer
+        数据={当前文件?.数据}
+        文件名={当前文件?.名称}
+        onError={(文本) => 显示错误('PDF 预览失败', 文本)}
+        编辑模式={编辑模式 && 当前文件 !== null}
+        on页面点选={({ 页码, x, y }) => {
+          // 点选只负责定位，不自动提交，避免误点就改写文档
+          set编辑页码(String(页码))
+          set编辑横坐标(String(x))
+          set编辑纵坐标(String(y))
+          set工具展开(true)
+        }}
+      />
       <aside className="pdf-workbench__panel">
         <input
           ref={文件选择器}
@@ -393,7 +407,10 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         </div>
         <div className="pdf-workbench__operation">
           <h2>编辑内容</h2>
-          <p>坐标从页面左上角起，单位为点。处理结果可保存为海豹 PDF 或 PDF。</p>
+          <p>坐标从页面左上角起、向下为正，单位为点。开启「点选定位」后直接在页面上点击即可填入坐标。</p>
+          <Button block type={编辑模式 ? 'primary' : 'default'} aria-pressed={编辑模式} onClick={() => set编辑模式((当前) => !当前)} disabled={!当前文件}>
+            {编辑模式 ? '点选定位：开（点页面取坐标）' : '点选定位：关'}
+          </Button>
           <label htmlFor="pdf-edit-type">编辑操作</label>
           <Select id="pdf-edit-type" aria-label="编辑操作" value={编辑类型} onChange={set编辑类型} options={[{ value: 'text', label: '添加文字' }, { value: 'replace', label: '可见文字替换' }, { value: 'note', label: '添加可见批注' }, { value: 'image', label: '插入图片' }, { value: 'cover', label: '遮盖区域' }]} />
           <label htmlFor="pdf-edit-page">页码</label><Input id="pdf-edit-page" aria-label="编辑页码" type="number" min={1} value={编辑页码} onChange={(事件) => set编辑页码(事件.target.value)} />

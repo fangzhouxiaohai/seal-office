@@ -1,0 +1,114 @@
+// 文献与引文侧栏的样式。
+// 只作用于面板内部，不影响编辑器正文与既有主题令牌。
+.seal-citation-library {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seal-citation-library__bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.seal-citation-library__bar > .ant-input-affix-wrapper,
+.seal-citation-library__bar > .ant-input-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.seal-citation-library__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--seal-border, #e8ebf0);
+  border-radius: 8px;
+}
+
+.seal-citation-library__list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--seal-border, #e8ebf0);
+}
+
+.seal-citation-library__list > li:last-child {
+  border-bottom: none;
+}
+
+.seal-citation-library__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+  flex: 1;
+}
+
+.seal-citation-library__title {
+  font-size: 13px;
+  color: var(--seal-text, #1c1f23);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.seal-citation-library__meta {
+  font-size: 12px;
+  color: var(--seal-text-secondary, #6b7280);
+  flex: 0 0 auto;
+}
+
+.seal-citation-library__error {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 77, 79, 0.08);
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.seal-citation-library__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--seal-text-secondary, #6b7280);
+  line-height: 1.6;
+}
+
+/* 正文里的引文域与参考文献表域：只读原子节点，点击不进入编辑 */
+.seal-citation-field,
+.seal-bibliography-field {
+  user-select: text;
+}
+
+.seal-citation-field {
+  white-space: nowrap;
+}
+
+.seal-bibliography-field {
+  display: block;
+  margin: 12px 0;
+}
+
+.seal-bibliography-field .seal-bibliography-title {
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.seal-bibliography-field .seal-bibliography-entry {
+  margin: 0 0 4px;
+  text-indent: 0;
+}
+
+.seal-bibliography-field .seal-bibliography-number {
+  margin-right: 6px;
+}

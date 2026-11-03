@@ -91,15 +91,6 @@ export interface 演示命令 {
   run: (上下文: 演示命令上下文, 参数?: string) => void
 }
 
-/** 尚未实现的功能：按钮就位，点击给出中文提示 */
-export function 未实现演示命令(id: string, label: string): 演示命令 {
-  return {
-    id,
-    label,
-    run: (上下文) => 上下文.notify('该功能开发中'),
-  }
-}
-
 /** 读取当前选中的文本框；未选中时回退到最近选中的文本框 */
 export function 取选中框(上下文: 演示命令上下文): 文本框 | null {
   const 当前 = 读取当前幻灯片(上下文.文稿)
@@ -690,12 +681,6 @@ export const 演示命令表: Record<string, 演示命令> = 命令列表.reduce
 设计命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 工具命令.forEach(命令 => { 演示命令表[命令.id] = 命令 })
 
-/** 尚未实现的演示命令：当前全部命令均已接入，或在命令注册表中给出明确中文指引 */
-export const 演示未实现清单: Array<[string, string]> = []
-
-演示未实现清单.forEach(([id, label]) => {
-  演示命令表[id] = 未实现演示命令(id, label)
-})
 
 export const 演示命令标识列表: string[] = Object.keys(演示命令表)
 

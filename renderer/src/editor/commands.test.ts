@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { 命令表, 查找命令, 未实现命令, 命令标识列表, htmlToDocxModel, type CommandContext } from './commands'
+import { 命令表, 查找命令, 命令标识列表, htmlToDocxModel, type CommandContext } from './commands'
 
 it('保存模型包含已导入的页眉页脚与水平线', () => {
   const 模型 = htmlToDocxModel('<p>正文</p><hr>', {
@@ -145,17 +145,22 @@ describe('命令注册表', () => {
     expect(设置).not.toHaveBeenCalled()
     expect(提示).toHaveBeenCalledWith('水印暂不可用', expect.stringContaining('DOCX'))
   })
-  it('未实现命令执行后给出中文提示', () => {
-    const 提示 = vi.fn()
-    const 命令 = 未实现命令('chart.insert', '图表')
-    命令.run(构造上下文({ notify: 提示 }))
-    expect(提示).toHaveBeenCalledWith('该功能开发中')
-  })
-
-  it('未实现命令保留传入的标识与名称', () => {
-    const 命令 = 未实现命令('formula.insert', '公式')
-    expect(命令.id).toBe('formula.insert')
-    expect(命令.label).toBe('公式')
+  it('命令表中不再有「开发中」占位项', () => {
+    // 用户要求不遗留待开发功能：任何命令执行都不应只回复「该功能开发中」。
+    // 部分命令缺上下文会抛错，与占位无关，单独忽略。
+    const 占位: string[] = []
+    const 异常: string[] = []
+    for (const [标识, 命令] of Object.entries(命令表)) {
+      const 提示 = vi.fn()
+      try {
+        命令.run(构造上下文({ notify: 提示 }))
+      } catch {
+        异常.push(标识)
+        continue
+      }
+      if (提示.mock.calls.some((参数) => 参数[0] === '该功能开发中')) 占位.push(标识)
+    }
+    expect(占位).toEqual([])
   })
 
   it('命令表内标识唯一', () => {

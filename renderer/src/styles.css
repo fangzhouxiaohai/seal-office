@@ -3643,6 +3643,33 @@ button {
   margin-left: auto;
 }
 
+/* 窄屏：全选/已选/说明与操作按钮分两行，不要全部挤在一行里 */
+@media (max-width: 768px) {
+  .wps-batch-bar {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+  .wps-batch-bar__hint {
+    order: 3;
+    flex: 1 1 100%;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .wps-batch-bar__actions {
+    order: 4;
+    flex: 1 1 100%;
+    margin-left: 0;
+    gap: 10px;
+  }
+  .wps-batch-bar__actions > button {
+    flex: 1 1 0;
+    min-height: 40px;
+    text-align: center;
+  }
+  .wps-batch-bar__count { margin-left: auto; }
+}
+
 .wps-batch-bar__danger,
 .wps-batch-bar__done {
   padding: 5px 12px;
