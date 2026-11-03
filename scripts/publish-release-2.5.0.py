@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 from urllib.parse import quote
 import requests
 
@@ -101,6 +102,29 @@ def main():
                                                    'draft': True, 'prerelease': False, 'make_latest': 'true'})
     upload = found['upload_url'].split('{', 1)[0]
 
+    def chunks(path, step=8 * 1024 * 1024):
+        """分块读取：让 requests 以流式发送，持续有数据写入，避免大文件因传输不活跃被判 408。"""
+        with path.open('rb') as src:
+            while True:
+                block = src.read(step)
+                if not block:
+                    return
+                yield block
+
+    def upload_asset(path, name, size):
+        last = None
+        for attempt in range(1, 4):
+            try:
+                print(json.dumps({'phase': '上传', 'name': name, 'bytes': size, 'attempt': attempt}, ensure_ascii=False), flush=True)
+                return call('POST', upload, params={'name': name}, data=chunks(path),
+                            headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(size)},
+                            timeout=(60, 3600))
+            except SystemExit as error:
+                last = error
+                print(json.dumps({'phase': '重试', 'name': name, 'attempt': attempt, 'error': str(error)[:160]}, ensure_ascii=False), flush=True)
+                time.sleep(5 * attempt)
+        raise last
+
     done = []
     for f in files:
         digest, size = expected[f.name]
@@ -108,11 +132,7 @@ def main():
         assets = call('GET', f"{API}/releases/{found['id']}/assets", params={'per_page': 100})
         asset = next((a for a in assets if a['name'] == name), None)
         if asset is None:
-            print(json.dumps({'phase': '上传', 'name': name, 'bytes': size}, ensure_ascii=False), flush=True)
-            with f.open('rb') as src:
-                asset = call('POST', upload, params={'name': name}, data=src,
-                             headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(size)},
-                             timeout=1800)
+            asset = upload_asset(f, name, size)
         if asset['size'] != size or asset.get('state') != 'uploaded' or asset.get('digest') != f'sha256:{digest}':
             raise SystemExit(f'远端文件不一致或上传未完成：{name}；已保留现有数据')
         done.append({'name': name, 'bytes': size, 'sha256': digest, 'url': asset['browser_download_url']})
