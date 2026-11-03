@@ -394,6 +394,30 @@ button {
   text-decoration: underline;
 }
 
+/* 窄屏用图标替代「查看全部」，方向与前导箭头相反以表示“进入”。 */
+.wps-link-button--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-2);
+}
+
+.wps-link-button--icon:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+  text-decoration: none;
+}
+
+.wps-link-button__flip {
+  transform: rotate(180deg);
+}
+
 /* 新建四宫格 */
 .wps-new-grid {
   display: grid;

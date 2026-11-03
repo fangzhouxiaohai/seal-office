@@ -20,3 +20,6 @@ cer/
 .publish-profile/
 __pycache__/
 *.py[cod]
+out-*.txt
+
+pub.txt

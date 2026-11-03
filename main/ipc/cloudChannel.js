@@ -1,10 +1,26 @@
 const path=require('path'),fs=require('fs'),{randomUUID}=require('crypto')
 const {app,safeStorage,dialog,nativeImage}=require('electron')
 const {createService}=require('../cloud/service')
+const {createShareLinkService}=require('../cloud/shareLink')
+const {createZoteroDocs}=require('../cloud/zoteroDocs')
 const {创建实名助手服务,校验实名AI访问,AI失败结果}=require('../ai/identityGate')
 function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity}={}){
-  let instance=cloudService
+  let instance=cloudService, shareLinkInstance, zoteroInstance
+  // 只用全局 fetch 取资料，避免把 node:https 等内置模块打进移动端产物；
+  // 移动端会在 bridge 里把 fetch 换成原生请求，因此同样能绕过 CORS。
+  const fetchText=async url=>{
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000)
+    let response
+    try{response=await fetch(url,{signal:controller.signal,headers:{'User-Agent':'SealOffice/2.5 (+docs)',Accept:'text/plain,text/markdown,*/*'}})}
+    catch(error){throw Object.assign(new Error(controller.signal.aborted?'资料站点响应超时':'无法连接资料站点'),{status:controller.signal.aborted?504:502,cause:error})}
+    finally{clearTimeout(timer)}
+    if(!response.ok)throw Object.assign(new Error('资料站点暂时不可用'),{status:response.status})
+    return response.text()
+  }
+  const zotero=()=>zoteroInstance||(zoteroInstance=createZoteroDocs({cacheDirectory:path.join(app.getPath('userData'),'zotero-docs'),fetchText}))
   const service=()=>instance||(instance=createService({directory:app.getPath('userData'),safeStorage}))
+  // 分享链接复用同一份云端会话与根密钥；服务自身已提供全部依赖。
+  const shareLinkService=()=>{const current=service();return shareLinkInstance||(shareLinkInstance=createShareLinkService(current))}
   const identityCheck=requireAIIdentity||(()=>service().requireAIIdentity())
   if(助手服务)助手服务=创建实名助手服务(助手服务,identityCheck)
   const privateCopy=async operation=>{const file=await operation,folder=path.join(app.getPath('temp'),'seal-office-collaboration',randomUUID());fs.mkdirSync(folder,{recursive:true,mode:0o700});const base=path.basename(file.name||'协作文件').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_'),name=/^\.{1,2}$/.test(base)?'协作文件':base,filename=path.join(folder,name);fs.writeFileSync(filename,Buffer.from(file.data,'base64'),{mode:0o600});return {...file,path:filename}}
@@ -14,6 +30,9 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     realtimeDownload:i=>privateCopy(service().download(i.id)),
     ...Object.fromEntries(['shareList','shareCreate','shareAccept','shareRevoke','shareSave','deviceRegister','deviceList','deviceRename','deviceRevoke','tagList','tagCreate','tagUpdate','tagDelete','tagAssign','tagFilter','teamList','teamCreate','teamUpdate','teamMembers','teamInvite','teamAccept','teamRevokeInvite','teamUpdateMember','teamRemoveMember','teamNodes','teamFolder','teamSave','teamUpdateNode','teamRemoveNode','teamDelete'].map(action=>[action,input=>service()[action](input)])),
     shareDownload:i=>privateCopy(service().shareDownload(i)),teamDownload:i=>privateCopy(service().teamDownload(i)),
+    shareLinkCreate:i=>shareLinkService().shareLinkCreate(i),shareLinkList:()=>shareLinkService().shareLinkList(),shareLinkRevoke:i=>shareLinkService().shareLinkRevoke(i),
+    // Zotero 中文社区资料：站点无 CORS 头，必须由主进程代理后才能在各端使用。
+    zoteroIndex:()=>zotero().index(),zoteroRead:i=>zotero().read(i),
     conversionCapabilities:()=>service().conversionCapabilities(),convertDocument:i=>service().convertDocument(i),
     status:()=>service().status(),refresh:()=>service().refresh(),
     code:i=>service().sendCode(i.phone,i.purpose),login:i=>service().login(i.phone,i.code),logout:()=>service().logout(),
