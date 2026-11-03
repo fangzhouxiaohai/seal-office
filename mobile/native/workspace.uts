@@ -33,20 +33,18 @@ export function onUIThread(task: () => void) {
 }
 
 /**
- * Android 的 uni.request 与鸿蒙的 @ohos.net.http 都没有 PATCH 常量。
- * 把 PATCH 落成原生可用的 POST，并附带方法覆盖头，由服务端还原真实语义；
- * 这样重命名、移动、标签改名等写操作才不会被降级成读取请求。
+ * 按头名逐个复制请求头。名称列表、PATCH 覆盖头与真实传输方法都由 TypeScript 侧
+ * （mobile/web/native.ts）决定，UTS 只做纯索引访问。
+ *
+ * 不在 UTS 里遍历 UTSJSONObject：toMap().forEach 与 for...in 编译到 Kotlin 时会生成
+ * Function1<Map.Entry, Unit> 或不同 JVM 签名，云端 Kotlin 编译直接失败，
+ * 报 “Argument type mismatch”（.uniappx/android/src/index.kt 编译错误）。
  */
-export function transportMethod(method: string): string {
-  return method == 'PATCH' ? 'POST' : method
-}
-
-/** 在已有请求头上补充方法覆盖头，不修改调用方传入的对象。 */
-export function methodOverrideHeaders(headers: UTSJSONObject, original: string): UTSJSONObject {
+export function copyHeaders(headers: UTSJSONObject, names: string[]): UTSJSONObject {
   const result = {} as UTSJSONObject
-  headers.toMap().forEach((value: any, key: string) => {
-    if (key.toLowerCase() != 'x-seal-method-override') result[key] = value
-  })
-  if (original == 'PATCH') result['X-Seal-Method-Override'] = 'PATCH'
+  for (let index = 0; index < names.length; index++) {
+    const key = names[index]
+    if (headers[key] != null) result[key] = headers[key] as any
+  }
   return result
 }

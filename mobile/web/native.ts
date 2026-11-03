@@ -53,7 +53,16 @@ export function listNativeSystemFonts(): Promise<Array<Record<string, unknown>>>
 export function nativeFetch(url: string, options: RequestInit = {}): Promise<Response> {
   return new Promise((resolve, reject) => {
     if (options.signal?.aborted) { reject(new DOMException('已停止', 'AbortError')); return }
-    const id = crypto.randomUUID(), headers = Object.fromEntries(new Headers(options.headers)), chunks: Uint8Array[] = []
+    // PATCH 在传输层改发 POST，并用覆盖头保留语义：Android 的 uni.request 与
+    // 鸿蒙的 @ohos.net.http 都没有 PATCH 常量，直接降级成 GET 会让重命名、移动、
+    // 标签改名等写操作变成读取，服务端匹配不到路由后返回「接口不存在」。
+    // 在这里把方法与头一次定好；原生宿主只需「按名字取值」，不做任何集合遍历——
+    // UTS 编译到 Kotlin 时遍历 UTSJSONObject 会产生签名不匹配的编译错误。
+    const requestedMethod = options.method ?? 'GET'
+    const id = crypto.randomUUID(), outHeaders: Record<string, string> = {};
+    for (const [key, value] of new Headers(options.headers)) outHeaders[key] = value
+    if (requestedMethod === 'PATCH') outHeaders['X-Seal-Method-Override'] = 'PATCH'
+    const headers = outHeaders, requestMethod = requestedMethod === 'PATCH' ? 'POST' : requestedMethod, headerNames = Object.keys(headers), chunks: Uint8Array[] = []
     let controller: ReadableStreamDefaultController<Uint8Array>, delivered = false, started = false, finished = false, streaming = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const cleanup = () => { clearTimeout(timer); pending.delete(id); options.signal?.removeEventListener('abort', abort) }
@@ -118,7 +127,7 @@ export function nativeFetch(url: string, options: RequestInit = {}): Promise<Res
       let stream = new Headers(options.headers).get('accept')?.includes('event-stream') ?? false
       if (body) { try { stream ||= JSON.parse(body.toString()).stream === true } catch { /* 二进制与表单请求不使用 SSE */ } }
       streaming = stream; resetTimeout()
-      send({ id, action: 'request', url, method: options.method ?? 'GET', headers, body: body?.toString('base64'), bodyText, stream })
+      send({ id, action: 'request', url, method: requestMethod, headers, headerNames, body: body?.toString('base64'), bodyText, stream })
     } catch (error) { fail(error) }
   })
 }

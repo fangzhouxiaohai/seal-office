@@ -11,7 +11,7 @@
 
 <script lang="uts">
 import { exportDocument, printDocument } from '../../native/export.uts'
-import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber, transportMethod, methodOverrideHeaders } from '../../native/workspace.uts'
+import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber, copyHeaders } from '../../native/workspace.uts'
 // #ifdef APP-HARMONY
 import systemFont from '@ohos.font'
 import http from '@ohos.net.http'
@@ -164,12 +164,11 @@ export default {
       const bodyText = message['bodyText'] == null ? '' : messageString(message, 'bodyText')
       const originalHeaders = (message['headers'] as UTSJSONObject | null) ?? {} as UTSJSONObject
       const stream = messageBoolean(message, 'stream')
-      const method = messageString(message, 'method', 'GET')
-      // Android 的 uni.request 与鸿蒙的 @ohos.net.http 均未提供 PATCH 常量。
-      // 直接把 PATCH 落成 GET 会让重命名、移动、标签改名等请求变成无内容读取，
-      // 服务端匹配不到路由后返回「接口不存在」。统一改为 POST 加方法覆盖头。
-      const actualMethod = transportMethod(method)
-      const headers = methodOverrideHeaders(originalHeaders, method)
+      // 方法与头已由 TypeScript 侧定好：PATCH 已改发 POST 并附带覆盖头，
+      // 这里只按传进来的头名原样复制，不做任何集合遍历。
+      const actualMethod = messageString(message, 'method', 'GET')
+      const headerNames = (message['headerNames'] as Array<string> | null) ?? [] as Array<string>
+      const headers = copyHeaders(originalHeaders, headerNames)
       // #ifdef APP-HARMONY
       // uni.request on Harmony may report statusCode 0 for a failed native
       // exchange. Use the Harmony HTTP stack directly so status, headers and
