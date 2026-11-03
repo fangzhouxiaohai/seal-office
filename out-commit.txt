@@ -1,2 +1,0 @@
-fatal: could not read log file '.git-commit-msg.txt': No such file or directory
-EXIT=128
