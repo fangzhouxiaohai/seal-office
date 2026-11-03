@@ -1,5 +1,5 @@
-// 文献与引文侧栏的样式。
-// 只作用于面板内部，不影响编辑器正文与既有主题令牌。
+/* 文献与引文侧栏的样式。 */
+/* 只作用于面板内部，不影响编辑器正文与既有主题令牌。 */
 .seal-citation-library {
   display: flex;
   flex-direction: column;
