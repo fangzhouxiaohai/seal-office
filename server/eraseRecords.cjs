@@ -18,6 +18,7 @@ function eraseRecords(db, userId, secret) {
   }
   if(tables.has('sessions'))run('realtime_presence','DELETE FROM realtime_presence WHERE session_hash IN (SELECT hash FROM sessions WHERE user_id=?)')
   run('shares','DELETE FROM shares WHERE owner_id=? OR recipient_id=?',[userId,userId])
+  run('share_links','DELETE FROM share_links WHERE user_id=?')
   run('team_invites','DELETE FROM team_invites WHERE inviter_id=? OR recipient_id=?',[userId,userId])
   // Documents owned by other teams remain theirs; remove the deleted account's cleartext attribution.
   for(const table of ['team_versions','realtime_updates'])run(table,`UPDATE ${table} SET actor_id='deleted-account' WHERE actor_id=?`)

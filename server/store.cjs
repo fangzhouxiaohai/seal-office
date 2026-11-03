@@ -27,6 +27,8 @@ async function openStore(directory) {
     CREATE TABLE IF NOT EXISTS shares(id TEXT PRIMARY KEY,node_id TEXT NOT NULL,owner_id TEXT NOT NULL,recipient_id TEXT NOT NULL,permission TEXT NOT NULL,access_hash TEXT NOT NULL,envelope TEXT NOT NULL,expires INTEGER NOT NULL,revoked INTEGER DEFAULT 0,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS tags(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,meta TEXT NOT NULL,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS node_tags(user_id TEXT NOT NULL,node_id TEXT NOT NULL,tag_id TEXT NOT NULL,PRIMARY KEY(node_id,tag_id));
+    CREATE TABLE IF NOT EXISTS share_links(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,node_id TEXT NOT NULL,access_hash TEXT NOT NULL,code_salt TEXT,code_digest TEXT,expires INTEGER,downloads INTEGER DEFAULT 0,revoked INTEGER DEFAULT 0,created INTEGER NOT NULL);
+    CREATE INDEX IF NOT EXISTS share_links_owner ON share_links(user_id);
     CREATE TABLE IF NOT EXISTS teams(id TEXT PRIMARY KEY,owner_id TEXT NOT NULL,meta TEXT NOT NULL,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS team_members(team_id TEXT NOT NULL,user_id TEXT NOT NULL,role TEXT NOT NULL,envelope TEXT NOT NULL,joined INTEGER NOT NULL,PRIMARY KEY(team_id,user_id));
     CREATE TABLE IF NOT EXISTS team_invites(id TEXT PRIMARY KEY,team_id TEXT NOT NULL,inviter_id TEXT NOT NULL,recipient_id TEXT NOT NULL,role TEXT NOT NULL,access_hash TEXT NOT NULL,envelope TEXT NOT NULL,expires INTEGER NOT NULL,revoked INTEGER DEFAULT 0,accepted INTEGER DEFAULT 0,created INTEGER NOT NULL);

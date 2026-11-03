@@ -12,6 +12,7 @@ const { createAccountConversion } = require('./accountConversion.cjs')
 const { createRealtime } = require('./realtime.cjs')
 const { createPasswords } = require('./passwords.cjs')
 const { createAccountErasure } = require('./accountErasure.cjs')
+const { createShareLinks } = require('./shareLinks.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -20,6 +21,16 @@ const uuid = value => typeof value === 'string' && /^[0-9a-f-]{36}$/.test(value)
 const safeEqual = (a, b) => typeof a === 'string' && typeof b === 'string' && a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
 const bytes = value => Buffer.byteLength(value || '')
 const maskPhone = value => String(value || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
+// Android 的 uni.request 与鸿蒙的 @ohos.net.http 都没有 PATCH 常量。客户端改用
+// POST 并附带 X-Seal-Method-Override，这里还原真实方法，保证重命名、移动等写操作
+// 不会再因为方法被降级而落入 404「接口不存在」。
+const allowedOverride = new Set(['PATCH'])
+const effectiveMethod = req => {
+  const raw = req.headers['x-seal-method-override']
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const override = typeof value === 'string' ? value.toUpperCase() : ''
+  return allowedOverride.has(override) ? override : req.method
+}
 
 async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now,conversionTimeout=100000 } = {}) {
   const root = directory || env.SEAL_DATA_DIR || path.join(__dirname, 'data')
@@ -106,6 +117,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     return Buffer.concat(chunks)
   }
   const collaboration = createCollaboration({ db, clock, objects, teamObjects, usage, reservation, quota, ensureDisk, nodeFor, streamObject, audit })
+  const shareLinks = createShareLinks({ db, clock, objects, nodeFor, streamObject, audit, usage, quota })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const issueSession = (row, input, action = 'login') => {
     const token = randomBytes(32).toString('base64url')
@@ -124,7 +136,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Content-Security-Policy', "default-src 'none'")
     try {
-      const url = new URL(req.url, 'http://localhost'), route = url.pathname, method = req.method
+      const url = new URL(req.url, 'http://localhost'), route = url.pathname, method = effectiveMethod(req)
       const json = async limit => { const raw = await body(req, limit); if (!route.startsWith('/v1/admin/') && !route.startsWith('/v1/auth/') && !route.startsWith('/v1/devices') && !route.endsWith('/report') && route !== '/v1/space/enable' && user && !db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled) fail(403,'云空间已停用'); try { return JSON.parse(raw.toString('utf8')) } catch { fail(400, '请求数据无效') } }
       const reply = value => { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify(value)) }
       if(route==='/v1/admin/login'&&method==='POST'){
@@ -152,7 +164,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
-      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
+      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, shareLink:1, methodOverride:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
       const user = session && db.one('SELECT * FROM users WHERE id=?', [session.user_id])
@@ -177,6 +189,8 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         })
         return reply(issueSession(u, input))
       }
+      // 分享链接的匿名落地页与下载必须在登录校验前处理，否则“无需登录”无法成立。
+      if (route.startsWith('/v1/share-links/') && await shareLinks.handle({ route, method, json, reply, user, req, res, body })) return
       if (await passwords.handle({ route, method, json, reply, user, session, ip: clientIp(req) })) return
       if (await erasure.handle({ route, method, json, reply, user, session })) return
       if (route.startsWith('/v1/public/') && method === 'GET') {
@@ -214,12 +228,13 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         return reply(account(db.one('SELECT * FROM users WHERE id=?',[user.id])))
       }
       if (!user.enabled) fail(403, '请先开通云空间')
+      if (route === '/v1/share-links' || route.startsWith('/v1/share-links')) { if (await shareLinks.handle({ route, method, json, reply, user, req, res, body })) return }
       if(route==='/v1/space/counts'&&method==='GET')return reply({files:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('file','knowledge')",[user.id]).n,folders:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('folder','library')",[user.id]).n,versions:db.one('SELECT COUNT(*) n FROM versions WHERE user_id=?',[user.id]).n,trash:db.one('SELECT COUNT(*) n FROM nodes WHERE user_id=? AND deleted=1',[user.id]).n,publications:db.one('SELECT COUNT(*) n FROM publications WHERE user_id=?',[user.id]).n,used:usage(user.id)})
       if (route === '/v1/space/autosave' && method === 'POST') { const input=await json(); if(typeof input.enabled!=='boolean') fail(400,'开关值无效');db.transaction(()=>db.run('UPDATE users SET autosave=? WHERE id=?',[input.enabled?1:0,user.id]));return reply({autosave:input.enabled}) }
       if (route === '/v1/space/purge' && method === 'POST') {
         const input=await json(); if(input.confirm!=='清空并停用云空间') fail(400,'请确认清空操作');verifyCode(user.phone,'purge',input.code)
         const blobs=db.query('SELECT blob FROM versions WHERE user_id=? UNION SELECT blob FROM publications WHERE user_id=?',[user.id,user.id]), pending=db.query('SELECT id FROM uploads WHERE user_id=?',[user.id])
-        db.transaction(()=>{realtime.purgeUser(user.id);blobs.push(...collaboration.purgeUser(user.id));for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL WHERE id=?',[user.id]);audit(user.id,'purge-space')})
+        db.transaction(()=>{realtime.purgeUser(user.id);blobs.push(...collaboration.purgeUser(user.id));shareLinks.purgeUser(user.id);for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL WHERE id=?',[user.id]);audit(user.id,'purge-space')})
         for(const b of blobs)unlink(path.join(b.team?teamObjects:objects,b.blob));for(const u of pending)unlink(path.join(incoming,u.id))
         return reply({enabled:false,autosave:false,deleted:true,backupRetentionDays:7})
       }
@@ -237,6 +252,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(nmatch[2]==='restore'&&method==='POST'){parentFor(n.parent,user.id);db.transaction(()=>trashTree(n.id,user.id,0));return reply({restored:true})}
         if(nmatch[2]==='destroy'&&method==='DELETE'){
           if(!n.deleted)fail(400,'请先移入回收站');const tree=db.transaction(()=>trashTree(n.id,user.id,1)), doomed=[]
+          for(const item of tree)shareLinks.purgeNode(item.id)
           db.transaction(()=>{for(const item of tree){doomed.push(...db.query('SELECT blob FROM versions WHERE node_id=? UNION SELECT blob FROM publications WHERE node_id=?',[item.id,item.id]));for(const u of db.query('SELECT id FROM uploads WHERE node_id=?',[item.id]))unlink(path.join(incoming,u.id));db.run('DELETE FROM uploads WHERE node_id=?',[item.id]);for(const table of ['versions','publications'])db.run(`DELETE FROM ${table} WHERE node_id=?`,[item.id]);db.run('DELETE FROM nodes WHERE id=?',[item.id])}})
           for(const b of doomed)unlink(path.join(objects,b.blob));return reply({deleted:true})
         }
@@ -299,7 +315,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试',...(error.code==='AI_IDENTITY_REQUIRED'?{code:error.code}:{})}))}else res.destroy() }
   })
   server.requestTimeout=30000;server.headersTimeout=15000
-  return { server, db, root, usage, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }
+  return { server, db, root, usage, shareLinks, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }
 }
 
 function clientIp(req){const remote=req.socket.remoteAddress;if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote)&&require('node:net').isIP(req.headers['x-real-ip']||''))return req.headers['x-real-ip'];return remote}

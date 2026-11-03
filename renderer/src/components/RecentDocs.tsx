@@ -1,6 +1,7 @@
 // 最近文档区块：标题行（视图切换、排序、批量管理、查看全部）与文档展示容器。
 import React, { useEffect, useState } from 'react'
 import { Dropdown, Tooltip } from 'antd'
+import { useIconPlatform } from './IconPlatform'
 import type { DocItem, SortKey } from '../mock/recentDocs'
 import type { ViewMode } from '../store'
 import DocCard from './DocCard'
@@ -56,6 +57,9 @@ const RecentDocs = ({
   const [批量管理, set批量管理] = useState(false)
   const [已选, set已选] = useState<string[]>([])
   const [移除中, set移除中] = useState(false)
+  // 手机屏幕放不下「批量管理 / 排序方式 / 查看全部」这类长文字，
+  // 窄屏统一收成图标按钮，保留 aria-label 与 Tooltip，功能不变。
+  const 窄屏图标 = useIconPlatform() === 'mobile'
 
   // 列表变化（筛选、移除、刷新）后只保留仍在显示的选中项；列表清空时退出批量管理
   useEffect(() => {
@@ -102,9 +106,9 @@ const RecentDocs = ({
       可批量 && !批量管理
         ? React.createElement(
             'button',
-            { type: 'button', className: 'wps-text-button', 'aria-label': '批量管理', onClick: () => set批量管理(true) },
+            { type: 'button', className: 'wps-text-button', 'aria-label': '批量管理', title: '批量管理', onClick: () => set批量管理(true) },
             React.createElement(Icon, { name: 'sliders', size: 16 }),
-            React.createElement('span', null, '批量管理')
+            窄屏图标 ? null : React.createElement('span', null, '批量管理')
           )
         : null,
       React.createElement(
@@ -151,16 +155,22 @@ const RecentDocs = ({
         },
         React.createElement(
           'button',
-          { type: 'button', className: 'wps-text-button', 'aria-label': '排序方式' },
+          { type: 'button', className: 'wps-text-button', 'aria-label': `排序方式：${排序文案[sortKey]}`, title: `排序方式：${排序文案[sortKey]}` },
           React.createElement(Icon, { name: 'sort', size: 16 }),
-          React.createElement('span', null, 排序文案[sortKey])
+          窄屏图标 ? null : React.createElement('span', null, 排序文案[sortKey])
         )
       ),
-      React.createElement(
-        'button',
-        { type: 'button', className: 'wps-link-button', onClick: onViewAll },
-        '查看全部'
-      )
+      窄屏图标
+        ? React.createElement(
+            'button',
+            { type: 'button', className: 'wps-link-button wps-link-button--icon', 'aria-label': '查看全部文档', title: '查看全部', onClick: onViewAll },
+            React.createElement(Icon, { name: 'arrow-left', size: 16, className: 'wps-link-button__flip' })
+          )
+        : React.createElement(
+            'button',
+            { type: 'button', className: 'wps-link-button', onClick: onViewAll },
+            '查看全部'
+          )
     )
   )
 

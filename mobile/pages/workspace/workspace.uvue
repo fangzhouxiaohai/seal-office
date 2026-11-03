@@ -11,7 +11,7 @@
 
 <script lang="uts">
 import { exportDocument, printDocument } from '../../native/export.uts'
-import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber } from '../../native/workspace.uts'
+import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber, transportMethod, methodOverrideHeaders } from '../../native/workspace.uts'
 // #ifdef APP-HARMONY
 import systemFont from '@ohos.font'
 import http from '@ohos.net.http'
@@ -162,21 +162,26 @@ export default {
       if (!url.startsWith('https://') && !url.startsWith('http://127.0.0.1:') && !url.startsWith('http://localhost:')) { this.reply({ id: id, type: 'error', error: '联网地址须使用 HTTPS' }); return }
       const body = message['body'] == null ? null : messageString(message, 'body')
       const bodyText = message['bodyText'] == null ? '' : messageString(message, 'bodyText')
-      const headers = (message['headers'] as UTSJSONObject | null) ?? {} as UTSJSONObject
+      const originalHeaders = (message['headers'] as UTSJSONObject | null) ?? {} as UTSJSONObject
       const stream = messageBoolean(message, 'stream')
       const method = messageString(message, 'method', 'GET')
+      // Android 的 uni.request 与鸿蒙的 @ohos.net.http 均未提供 PATCH 常量。
+      // 直接把 PATCH 落成 GET 会让重命名、移动、标签改名等请求变成无内容读取，
+      // 服务端匹配不到路由后返回「接口不存在」。统一改为 POST 加方法覆盖头。
+      const actualMethod = transportMethod(method)
+      const headers = methodOverrideHeaders(originalHeaders, method)
       // #ifdef APP-HARMONY
       // uni.request on Harmony may report statusCode 0 for a failed native
       // exchange. Use the Harmony HTTP stack directly so status, headers and
       // errors come from the same source that Android uses.
-      this.requestHarmony(id, url, method, headers, body, bodyText, stream)
+      this.requestHarmony(id, url, actualMethod, headers, body, bodyText, stream)
       return
       // #endif
       // #ifndef APP-HARMONY
       const data = body == null ? null : uni.base64ToArrayBuffer(body)
       const task = uni.request<ArrayBuffer>({
         url: url,
-        method: method,
+        method: actualMethod,
         header: headers,
         data: data,
         responseType: 'arraybuffer',
@@ -199,6 +204,7 @@ export default {
       if (method == 'POST') requestMethod = http.RequestMethod.POST
       else if (method == 'PUT') requestMethod = http.RequestMethod.PUT
       else if (method == 'DELETE') requestMethod = http.RequestMethod.DELETE
+      else if (method == 'PATCH') requestMethod = http.RequestMethod.POST
       let payload: string | ArrayBuffer | null = null
       if (bodyText.length > 0) payload = bodyText
       else if (body != null && body.length > 0) payload = uni.base64ToArrayBuffer(body)

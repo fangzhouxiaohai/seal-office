@@ -14,9 +14,10 @@ import {diagramFileType} from '../localTools/diagramCloud'
 import CloudPreview from './preview/CloudPreview'
 import {当前预览引擎,默认打开方式} from './preview/previewFormats'
 import LoadingState from '../components/LoadingState'
+import ShareLinkDialog from './ShareLinkDialog'
 import './drive.css'
 export default function CloudFilesPage({trash=false}:{trash?:boolean}){
-  const cloud=useCloud(),store=useAppStore(),{modal,message}=App.useApp(),[nodes,setNodes]=useState<Node[]>([]),[parent,setParent]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[versions,setVersions]=useState<{node:Node;items:any[]}|null>(null),[pending,setPending]=useState<any[]>([]),[previewing,setPreviewing]=useState<Node|null>(null),[loaded,setLoaded]=useState(false)
+  const cloud=useCloud(),store=useAppStore(),{modal,message}=App.useApp(),[nodes,setNodes]=useState<Node[]>([]),[parent,setParent]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[versions,setVersions]=useState<{node:Node;items:any[]}|null>(null),[pending,setPending]=useState<any[]>([]),[previewing,setPreviewing]=useState<Node|null>(null),[loaded,setLoaded]=useState(false),[sharing,setSharing]=useState<Node|null>(null)
   const {语言}=useSettings(),en=语言==='en-US',t=(zh:string,english:string)=>en?english:zh
   const collaborationFiles=useCollaborationFiles(cloud.state.account?.id||'')
   const [selected,setSelected]=useState<string[]>([]),[sort,setSort]=useState('updated')
@@ -70,7 +71,9 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
       {key:'preview',label:t('预览','Preview'),onClick:()=>setPreviewing(node)},
       {key:'download',label:t('下载','Download'),onClick:()=>void download(node)},
       {key:'versions',label:t('历史版本','Version history'),onClick:()=>void run(async()=>setVersions({node,items:(await cloudCall('versions',{id:node.id})).items}))},
-      {key:'copy',label:t('复制','Copy'),onClick:()=>void copy(node)}
+      {key:'copy',label:t('复制','Copy'),onClick:()=>void copy(node)},
+      // 分享链接与「文档共享」是两条独立通道：接收人无需注册，浏览器直接下载。
+      {key:'shareLink',label:t('生成分享链接','Create share link'),onClick:()=>setSharing(node)}
     ]:[]),
     {type:'divider'},
     {key:'rename',label:t('重命名','Rename'),onClick:()=>nameDialog(t('重命名','Rename'),node.meta.name,name=>cloudCall('update',{id:node.id,changes:{name}}))},
@@ -88,6 +91,7 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     {error?<p className="seal-cloud-error">{error}</p>:null}
     {pending.length?<div className="seal-cloud-card"><h2>待同步文件（已在本机加密保留）</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>重试同步</Button>{pending.map(p=><p key={p.id}>{p.name} · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>导出本机副本</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>保留为冲突副本</Button>:null}<Button danger onClick={()=>modal.confirm({title:'清除这条待同步记录？',content:'此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。',onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>清除记录</Button></p>)}</div>:null}
     {!loaded&&!error?<LoadingState 文字={t('正在读取云空间文件…','Loading cloud files…')}/>:<CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):默认打开方式(node.meta.filename||node.meta.name)==='preview'?setPreviewing(node):void download(node,true)} actions={actions}/>}
+    {sharing?<ShareLinkDialog 文件={{id:sharing.id,name:sharing.meta.name}} onClose={()=>setSharing(null)}/>:null}
     {previewing?<CloudPreview 节点={{id:previewing.id,name:previewing.meta.filename||previewing.meta.name}} 大小={typeof previewing.meta.size==='number'?previewing.meta.size:undefined} 引擎={当前预览引擎} onClose={()=>setPreviewing(null)} on下载={()=>void download(previewing)} on用编辑器打开={()=>{const node=previewing;setPreviewing(null);void download(node,true)}}/>:null}
     <Modal open={Boolean(versions)} centered title={t('历史版本','Version history')} footer={null} onCancel={()=>setVersions(null)}>
       {versions?.items.map(v=><p key={v.id}>

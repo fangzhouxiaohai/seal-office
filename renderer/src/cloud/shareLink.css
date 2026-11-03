@@ -1,0 +1,24 @@
+/* 分享链接弹窗：沿用云空间既有令牌，不引入新配色体系。 */
+.seal-share-link { display: grid; gap: 14px; color: var(--text-1); }
+.seal-share-link__file { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0; padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-app); font-size: 13px; font-weight: 600; }
+.seal-share-link__file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seal-share-link__file svg { flex: none; color: var(--text-2); }
+.seal-share-link__hint { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-2); }
+.seal-share-link__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 13px; font-weight: 600; }
+.seal-share-link__code.ant-input-number { width: 100%; letter-spacing: 2px; }
+.seal-share-link__notice.ant-checkbox-wrapper { font-size: 12px; color: var(--text-2); }
+.seal-share-link__result { display: grid; gap: 10px; }
+.seal-share-link__result .ant-btn { justify-self: start; }
+.seal-share-link__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.seal-share-link__warn { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--brand-soft); color: var(--text-1); font-size: 12px; line-height: 1.7; }
+.seal-share-link__footer { display: flex; justify-content: flex-end; gap: 8px; }
+/* 移动端：按钮撑满并保证可点面积，链接文本换行而不横向溢出。 */
+@media (max-width: 820px), (pointer: coarse) and (max-width: 1024px) {
+  .seal-share-link__row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .seal-share-link__row .ant-select,
+  .seal-share-link__row .ant-switch { align-self: flex-start; }
+  .seal-share-link__row .ant-select { width: 100%; min-width: 0; }
+  .seal-share-link__result .ant-btn { justify-self: stretch; width: 100%; min-height: 44px; }
+  .seal-share-link__footer { flex-direction: column-reverse; }
+  .seal-share-link__footer .ant-btn { width: 100%; min-height: 44px; }
+}

@@ -31,3 +31,22 @@ export function onUIThread(task: () => void) {
   task()
   // #endif
 }
+
+/**
+ * Android 的 uni.request 与鸿蒙的 @ohos.net.http 都没有 PATCH 常量。
+ * 把 PATCH 落成原生可用的 POST，并附带方法覆盖头，由服务端还原真实语义；
+ * 这样重命名、移动、标签改名等写操作才不会被降级成读取请求。
+ */
+export function transportMethod(method: string): string {
+  return method == 'PATCH' ? 'POST' : method
+}
+
+/** 在已有请求头上补充方法覆盖头，不修改调用方传入的对象。 */
+export function methodOverrideHeaders(headers: UTSJSONObject, original: string): UTSJSONObject {
+  const result = {} as UTSJSONObject
+  headers.toMap().forEach((value: any, key: string) => {
+    if (key.toLowerCase() != 'x-seal-method-override') result[key] = value
+  })
+  if (original == 'PATCH') result['X-Seal-Method-Override'] = 'PATCH'
+  return result
+}
