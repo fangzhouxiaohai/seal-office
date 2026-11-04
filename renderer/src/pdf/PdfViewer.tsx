@@ -182,6 +182,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
   const 右键页码 = useRef(1)
   const 报错回调 = useRef(onError)
   报错回调.current = onError
+  const 文件名引用 = useRef(文件名)
+  文件名引用.current = 文件名
   const 退出全屏 = () => {const before=进入前.current;待恢复.current=true;set全屏(false);if(before){set分页模式(before.mode);set缩放(before.zoom)}}
   const 切换分页 = () => {待切换页.current=当前页;set分页模式(value=>!value)}
   const 系统全屏 = useReadingFullscreen(全屏根,全屏,退出全屏,()=>全屏根.current?.querySelector<HTMLElement>('[aria-label="全屏左右翻页阅读"]'))
@@ -299,13 +301,13 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
     }).catch((错误: unknown) => {
       if (已取消) return
       set状态('失败')
-      报错回调.current?.(`无法打开「${文件名}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)
+      报错回调.current?.(`无法打开「${文件名引用.current}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)
     })
     return () => {
       已取消 = true
       关闭文档?.()
     }
-  }, [数据, 文件名])
+  }, [数据])
 
   const 总页数 = 文档?.numPages ?? 0
   const 页面可用宽度 = 可用宽度===null?null:Math.max(1,可用宽度-(分页模式?24:0))
@@ -314,8 +316,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
     set页面尺寸((旧值) => 旧值[页码]?.宽 === 尺寸.宽 && 旧值[页码]?.高 === 尺寸.高 ? 旧值 : { ...旧值, [页码]: 尺寸 })
   }, [])
   const 报告页面错误 = useCallback((页码: number, 错误: unknown) => {
-    报错回调.current?.(`无法显示「${文件名}」第 ${页码} 页：${错误 instanceof Error ? 错误.message : '页面渲染失败'}`)
-  }, [文件名])
+    报错回调.current?.(`无法显示「${文件名引用.current}」第 ${页码} 页：${错误 instanceof Error ? 错误.message : '页面渲染失败'}`)
+  }, [])
 
   /** 二分查找视口附近的页，只保留附近页画布，同时让页码随滚动更新。 */
   const 更新可视页 = () => {

@@ -1,12 +1,16 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { App as AntdApp } from 'antd'
 import { describe, expect, it, vi } from 'vitest'
+import { useState } from 'react'
 import PdfWorkbench from './PdfWorkbench'
 import { 桥接 } from '../ipc/bridge'
 
+const 预览实例 = vi.hoisted(() => ({ 次数: 0 }))
 vi.mock('./PdfViewer', () => ({
-  default: ({ 数据, 文件名 }: { 数据?: string; 文件名?: string }) =>
-    <div data-testid="pdf-preview">{数据 ? `${文件名} 已进入预览` : '等待选择文件'}</div>,
+  default: ({ 数据, 文件名 }: { 数据?: string; 文件名?: string }) => {
+    const [实例] = useState(() => ++预览实例.次数)
+    return <div data-testid="pdf-preview" data-instance={实例}>{数据 ? `${文件名} 已进入预览` : '等待选择文件'}</div>
+  },
 }))
 
 describe('PDF 工作台', () => {
@@ -17,8 +21,10 @@ describe('PDF 工作台', () => {
     const 编辑=vi.fn(),已保存=vi.fn()
     try{
       render(<AntdApp><PdfWorkbench 初始文件={{路径:'D:/原件.pdf',名称:'原件.pdf',数据:'JVBERi0='}} onEdited={编辑} onSaved={已保存}/></AntdApp>)
+      const 初始预览实例 = screen.getByTestId('pdf-preview').getAttribute('data-instance')
       fireEvent.click(screen.getByRole('button',{name:'展开 PDF 工具'}));fireEvent.click(screen.getByRole('button',{name:'执行并保存'}))
       await waitFor(()=>expect(编辑).toHaveBeenCalledWith('JVBERi1lZGl0', 'path:D:/原件.pdf'))
+      await waitFor(()=>expect(screen.getByTestId('pdf-preview').getAttribute('data-instance')).not.toBe(初始预览实例))
       expect(保存).not.toHaveBeenCalled();expect(已保存).not.toHaveBeenCalled()
     }finally{提取.mockRestore();路径.mockRestore();保存.mockRestore()}
   })

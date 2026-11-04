@@ -72,6 +72,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const { message, modal } = AntdApp.useApp()
   const [文件列表, set文件列表] = useState<本地PDF文件[]>([])
   const [预览标识, set预览标识] = useState<string | null>(null)
+  const [预览代次, set预览代次] = useState(0)
   const [页码, set页码] = useState('1')
   const [命令, set命令] = useState<PDF命令>('extract')
   const [角度, set角度] = useState(90)
@@ -253,6 +254,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const 保存结果 = async (数据: string, 默认名称: string, 警告 = 当前文件?.警告) => {
     if (!当前文件) return
     const 文件 = { ...当前文件, 数据, ...(警告?.length ? { 警告 } : {}) }
+    // 新字节独立挂载阅读器，先释放旧 PDF 任务，再渲染新文件的页面。
+    set预览代次((旧值) => 旧值 + 1)
     set文件列表(当前 => 当前.map(f => f.标识 === 文件.标识 ? { ...f, 数据, ...(警告?.length ? { 警告 } : {}) } : f))
     if (警告?.length) onEdited?.(数据, 文件.标识, 警告); else onEdited?.(数据, 文件.标识)
     await 写入PDF文件(文件, true, 默认名称)
@@ -321,6 +324,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   return (
     <section className={`pdf-workbench${工具展开 ? '' : ' pdf-workbench--collapsed'}`}>
       <PdfViewer
+        key={`${当前文件?.标识 ?? 'empty'}:${预览代次}`}
         数据={当前文件?.数据}
         文件名={当前文件?.名称}
         onError={(文本) => 显示错误('PDF 预览失败', 文本)}

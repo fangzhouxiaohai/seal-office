@@ -170,6 +170,50 @@ describe('PDF 阅读预览', () => {
     expect(screen.getByText('无法预览这份 PDF 文件')).toBeInTheDocument()
   })
 
+  it('替换已编辑的 PDF 时忽略旧文档销毁产生的页面错误', async () => {
+    let 旧页读取次数 = 0
+    const 页面 = () => ({
+      getViewport: () => ({ width: 600, height: 800, convertToViewportPoint: () => [10, 30] }),
+      render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+      getTextContent: async () => ({ items: [] }),
+    })
+    const 旧文档 = {
+      numPages: 2,
+      getPage: vi.fn((页码: number) => {
+        if (页码 === 2 && ++旧页读取次数 > 1) return Promise.reject(new Error('Transport destroyed'))
+        return Promise.resolve(页面())
+      }),
+    }
+    const 新文档 = { numPages: 2, getPage: vi.fn(async () => 页面()) }
+    PDF模拟.取文档
+      .mockReturnValueOnce({ promise: Promise.resolve(旧文档), destroy: vi.fn() })
+      .mockReturnValueOnce({ promise: Promise.resolve(新文档), destroy: vi.fn() })
+    const 报错 = vi.fn()
+    const view = render(<PdfViewer 数据={btoa('old')} 文件名="旧文件.pdf" onError={报错} />)
+    await waitFor(() => expect(旧文档.getPage).toHaveBeenCalledWith(2))
+    view.rerender(<PdfViewer 数据={btoa('new')} 文件名="新文件.pdf" onError={报错} />)
+    await waitFor(() => expect(PDF模拟.取文档).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(新文档.getPage).toHaveBeenCalledWith(2))
+    expect(报错).not.toHaveBeenCalled()
+  })
+
+  it('另存后只更新文件名时复用已打开的 PDF 文档', async () => {
+    const 取页面 = vi.fn(async () => ({
+      getViewport: () => ({ width: 600, height: 800, convertToViewportPoint: () => [10, 30] }),
+      render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+      getTextContent: async () => ({ items: [] }),
+    }))
+    PDF模拟.取文档.mockReturnValue({ promise: Promise.resolve({ numPages: 2, getPage: 取页面 }), destroy: vi.fn() })
+    const 数据 = btoa('%PDF-1.7')
+    const view = render(<PdfViewer 数据={数据} 文件名="原件.pdf" onError={vi.fn()} />)
+    await waitFor(() => expect(取页面).toHaveBeenCalledWith(2))
+    const 初始读取次数 = 取页面.mock.calls.length
+    view.rerender(<PdfViewer 数据={数据} 文件名="编辑后的原件.pdf" onError={vi.fn()} />)
+    await act(async () => { await Promise.resolve() })
+    expect(PDF模拟.取文档).toHaveBeenCalledTimes(1)
+    expect(取页面).toHaveBeenCalledTimes(初始读取次数)
+  })
+
   it('可复制本页和全文的可选中文字', async () => {
     const 写入 = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: 写入 } })

@@ -24,7 +24,7 @@ async def generate(text,path):
         except Exception as exc: errors.append(type(exc).__name__)
     raise RuntimeError('Reference voice synthesis unavailable: '+','.join(errors))
 async def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--pc-current',action='store_true');args=parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True);WORK.mkdir(parents=True,exist_ok=True)
     reference={'originalPath':str(REFERENCE),'bytes':REFERENCE.stat().st_size,'sha256':sha(REFERENCE),
         'voiceSettings':VOICE,'identificationSource':'Existing project reference-voice settings; user listened to the 12-second tutorial preview and explicitly confirmed this voice on 2026-10-23.',
@@ -37,9 +37,10 @@ async def main():
         reference.update({'previewFile':file.name,'previewText':text,'previewSha256':sha(file),'previewSeconds':duration(file)})
         (WORK/'reference-voice.json').write_text(json.dumps(reference,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         print(json.dumps(reference,ensure_ascii=False),flush=True);return
-    plan=json.loads((ROOT/'docs/promo/current-storyboard.json').read_text(encoding='utf-8'))
+    storyboard='pc-current-storyboard.json' if args.pc_current else 'current-storyboard.json'
+    plan=json.loads((ROOT/'docs/promo'/storyboard).read_text(encoding='utf-8'))
     allclips=[]
-    for platform in ['pc','android']:
+    for platform in (['pc'] if args.pc_current else ['pc','android']):
         for step in plan[platform]:
             file=WORK/(platform+'-'+step['id']+'.mp3');stamp=file.with_suffix('.source.json')
             expected={'voice':VOICE,'text':step['narration']}

@@ -1,11 +1,16 @@
 // Record actual production UI input into isolated demonstration storage.
 // Only file-picker selection and a denied fullscreen host are fixtures; codecs,
 // editing, formula evaluation, save/reopen, reading and diagram models are real.
-const {app,BrowserWindow,net}=require('electron')
+const {app,BrowserWindow,net,clipboard}=require('electron')
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict')
 const {spawn,spawnSync}=require('node:child_process')
+const {createZoteroLocalApi}=require('../../main/zotero/localApi')
+const {createLocalCollaborationFixture}=require('../../server/test/collaborationFixture.cjs')
+const {createShareLinkService}=require('../../main/cloud/shareLink')
+const {randomUUID}=require('node:crypto')
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version
-const plan=require('../../docs/promo/current-storyboard.json'),out=path.join(root,'release/promo'),work=path.join(out,'work-'+version+'-tutorial')
+const pcCurrent=process.argv.includes('--pc-current')
+const plan=pcCurrent?require('../../docs/promo/pc-current-storyboard.json'):require('../../docs/promo/current-storyboard.json'),out=path.join(root,'release/promo'),work=path.join(out,'work-'+version+'-tutorial')
 const voices=JSON.parse(fs.readFileSync(path.join(work,'voice.json'),'utf8')).clips
 const requested=process.argv.find(a=>a.startsWith('--platform='))?.split('=')[1]
 const probe=process.argv.find(a=>a.startsWith('--probe='))?.split('=')[1]
@@ -14,23 +19,27 @@ assert(fs.existsSync(ffmpeg),'FFmpeg runtime missing')
 app.setPath('userData',path.join(work,'profile-'+process.pid));app.disableHardwareAcceleration();app.commandLine.appendSwitch('force-device-scale-factor','1')
 if(!global.fetch)global.fetch=net.fetch.bind(net)
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=p=>require('node:crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex')
-const mobileRoot=fs.realpathSync(process.env.SEAL_PROMO_ANDROID_ROOT||path.join(root,'release/v'+version+'/mobile-web/android-cloud-source/static/office'))
-const webRoot=path.join(root,'mobile/unpackage/web'),snapshot=JSON.parse(fs.readFileSync(path.resolve(mobileRoot,'../../snapshot-info.json'),'utf8'))
-assert.equal(snapshot.platform,'android');assert.equal(snapshot.version,version)
-assert.equal(sha(path.join(mobileRoot,'office.js')),snapshot.files.find(f=>f.path==='static/office/office.js').sha256)
+const mobileRoot=pcCurrent?null:fs.realpathSync(process.env.SEAL_PROMO_ANDROID_ROOT||path.join(root,'release/v'+version+'/mobile-web/android-cloud-source/static/office'))
+const webRoot=path.join(root,'mobile/unpackage/web'),snapshot=mobileRoot?JSON.parse(fs.readFileSync(path.resolve(mobileRoot,'../../snapshot-info.json'),'utf8')):null
+if(!pcCurrent){assert.equal(snapshot.platform,'android');assert.equal(snapshot.version,version)
+assert.equal(sha(path.join(mobileRoot,'office.js')),snapshot.files.find(f=>f.path==='static/office/office.js').sha256)}
 const visible="e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&!e.closest('[hidden]')&&!e.closest('.ant-modal-wrap[style*=\"display: none\"]')"
 const sel=s=>`[...document.querySelectorAll(${JSON.stringify(s)})].filter(${visible})[0]`
 const btn=(label,scope='document')=>`[...${scope}.querySelectorAll('button,[role="tab"]')].filter(${visible}).find(e=>e.getAttribute('aria-label')===${JSON.stringify(label)}||e.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g,''))})`
 app.on('window-all-closed',()=>{})
-app.whenReady().then(async()=>{let server,win,recording,loop,encoder
+app.whenReady().then(async()=>{let server,win,recording,loop,encoder,cloudFixture,cloudClient,shareLinks,originalClipboard
 try{
  fs.mkdirSync(work,{recursive:true})
- server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
+ if(pcCurrent)originalClipboard={text:clipboard.readText(),image:clipboard.readImage()}
+ if(pcCurrent){cloudFixture=await createLocalCollaborationFixture(null,{clients:false});cloudClient=await cloudFixture.client('13800111001');shareLinks=createShareLinkService(cloudClient);const saved=await cloudClient.save({linkId:randomUUID(),name:'项目计划-分享演示.txt',data:Buffer.from('项目计划分享链接演示资料。此文件仅用于本地隔离录制。').toString('base64')});assert.equal(saved.statuses[saved.id],'云端已保存')}
+ const zotero=createZoteroLocalApi()
+ server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(u.pathname==='/api/clipboard'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy()});req.on('end',()=>{try{const value=JSON.parse(body).text;if(typeof value!=='string')throw Error('复制文字无效');clipboard.writeText(value);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true}))}catch(error){res.writeHead(400);res.end(error.message)}});return}if(u.pathname==='/api/cloud'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>body+=chunk);req.on('end',async()=>{try{const {action,input}=JSON.parse(body);const allowed={status:()=>cloudClient.status(),list:()=>cloudClient.list(),pending:()=>cloudClient.pending(),shareLinkCreate:()=>shareLinks.shareLinkCreate(input),shareLinkList:()=>shareLinks.shareLinkList()};if(!allowed[action])throw Error('录制环境不支持此云操作');const data=await allowed[action]();res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}catch(error){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))}});return}if(u.pathname==='/api/zotero'){if(!pcCurrent){res.writeHead(404);res.end();return}zotero.列条目({关键词:'海豹办公二点六演示文献',上限:5}).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}).catch(error=>{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))});return}if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
   const base=u.pathname.startsWith('/android/')?mobileRoot:webRoot,file=path.resolve(base,'.'+decodeURIComponent(u.pathname).replace(/^\/(?:pc|android)\//,'/').replace(/\/$/,'/index.html'))
   if(!file.startsWith(base+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
+  if(pcCurrent&&path.basename(file)==='index.html'){const inject=`<script>Object.defineProperty(window,'electronAPI',{configurable:true,get(){return this.__tutorialBridge},set(api){api.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};api.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};this.__tutorialBridge=api}})</script>`;res.writeHead(200,{'Content-Type':'text/html'});res.end(fs.readFileSync(file,'utf8').replace('<script type="module"',inject+'<script type="module"'));return}
   res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ttf':'font/ttf'})[path.extname(file)]||'application/octet-stream'});fs.createReadStream(file).pipe(res)
  });await new Promise(r=>server.listen(0,'127.0.0.1',r))
- for(const platform of requested?[requested]:['pc','android']){
+ for(const platform of requested?[requested]:(pcCurrent?['pc']:['pc','android'])){
   assert(['pc','android'].includes(platform));const mobile=platform==='android',width=mobile?432:1600,height=mobile?708:820,base=mobile?mobileRoot:webRoot
   const build=JSON.parse(fs.readFileSync(base+'/build-info.json','utf8'));assert.equal(build.desktopVersion,version)
   const entry=mobile?'office.js':fs.readFileSync(base+'/index.html','utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1]
@@ -39,6 +48,7 @@ try{
   wc.setFrameRate(30);wc.on('paint',(_event,_dirty,image)=>{const size=image.getSize();if(size.width===width&&size.height===height)frame=image.toBitmap()})
   let captureBusy=false;const captureTimer=mobile?setInterval(async()=>{if(captureBusy||!win||win.isDestroyed())return;captureBusy=true;try{const image=await win.capturePage(),size=image.getSize();if(size.width===width&&size.height===height)frame=image.toBitmap()}catch{}finally{captureBusy=false}},50):null
   wc.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message)})
+  if(pcCurrent){wc.session.setPermissionCheckHandler((_contents,permission)=>['clipboard-read','clipboard-sanitized-write'].includes(permission));wc.session.setPermissionRequestHandler((_contents,permission,callback)=>callback(['clipboard-read','clipboard-sanitized-write'].includes(permission)))}
   wc.on('will-prevent-unload',e=>e.preventDefault());wc.session.on('will-download',(_e,item)=>item.cancel())
   const ev=async code=>{const value=await wc.executeJavaScript(`(async()=>{try{return{value:await(${code})}}catch(e){return{error:e.stack}}})()`,true);if(value.error)throw Error(value.error+'\n'+code.slice(0,180));return value.value}
   const until=async(code,label,timeout=20000)=>{const begin=Date.now();while(Date.now()-begin<timeout){if(await ev(code))return;await pause(100)}throw Error('UI condition: '+label)}
@@ -64,6 +74,9 @@ try{
     document.addEventListener('input',event=>{if(!(event.target instanceof Element)||!event.target.closest('.wps-editor-canvas__content'))return;const node=getSelection()?.anchorNode,element=node instanceof Element?node:node?.parentElement;window.__tutorialMark(element?.closest('p,h1,h2,h3,h4,li')||event.target)},true);
     window.__tutorialTouches=(points)=>{overlay.querySelectorAll('.tutorial-touch').forEach(n=>n.remove());for(const p of points){const n=document.createElement('i');n.className='tutorial-touch';n.style.left=p.x+'px';n.style.top=p.y+'px';overlay.append(n)}};
     window.__tutorialSaveCalls=[];const a=window.electronAPI,save=a.saveToFile.bind(a),dialog=a.showSaveDialog.bind(a);
+    ${pcCurrent?"a.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};":''}
+    ${pcCurrent?"a.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};":''}
+    ${pcCurrent?"Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:async text=>{const r=await fetch('/api/clipboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});if(!r.ok)throw Error('剪贴板写入失败')}});":''}
     a.showSaveDialog=async(...args)=>dialog(window.__tutorialSaveName||args[0],...args.slice(1));
     a.saveToFile=async(...args)=>{const r=await save(...args);window.__tutorialSaveCalls.push({path:args[0],success:r.成功});return r};
     return true
@@ -80,7 +93,7 @@ try{
   const type=async(expr,text,label,replace=false)=>{await tap(expr,label);if(replace){await key('A',['control']);await key('Backspace')}else if(await ev(`Boolean((${expr}).isContentEditable)`))await key('End',['control']);log('typing-start',{label,text});for(const c of text){if(c==='\n')await key('Enter');else{await wc.insertText(c);await pause(/[\u4e00-\u9fff]/.test(c)?65:90)}}log('typing',{label,text});await pause(280)}
   const home=async()=>{await tap(sel(mobile?'.seal-mobile-nav [aria-label="返回首页"]':'.wps-global-tabs__home'),'返回首页');await pause(250)}
   const newWord=async()=>{await home();if(mobile){await click('服务');await tap(sel('[data-document-type="word"]'),'新建文字文档')}else{await tap(sel('.wps-homesidebar__actions button:first-child'),'新建');await tap(`[...document.querySelectorAll('.wps-newdoc-option')].find(e=>e.querySelector('strong')?.textContent==='文字文档')`,'文字文档')};await until(`!!document.querySelector('.wps-editor-canvas__content')`,'new word')}
-  const openFile=async(pathname,kind)=>{await home();await ev(`(()=>{window.electronAPI.showOpenDialog=async()=>${JSON.stringify(pathname)};return true})()`);await tap(mobile?btn('导入文件'):sel('.wps-homesidebar__actions button:nth-child(2)'),'打开 '+kind);await until(kind==='sheet'?`!!document.querySelector('[aria-label="公式栏"]')`:`!!document.querySelector('.wps-editor-canvas__content')`,'open '+kind);await pause(350);if(await ev(`!!(${btn('我知道了')})`))await click('我知道了')}
+  const openFile=async(pathname,kind)=>{await home();await ev(`(()=>{window.electronAPI.showOpenDialog=async()=>${JSON.stringify(pathname)};return true})()`);await tap(mobile?btn('导入文件'):sel('.wps-homesidebar__actions button:nth-child(2)'),'打开 '+kind);await until(kind==='sheet'?`!!document.querySelector('[aria-label="公式栏"]')`:kind==='pdf'?`!!document.querySelector('.pdf-viewer__stage')`:`!!document.querySelector('.wps-editor-canvas__content')`,'open '+kind);await pause(350);if(await ev(`!!(${btn('我知道了')})`))await click('我知道了')}
   const save=async(name,saveAs=false)=>{const prior=await ev(`window.__tutorialSaveCalls.length`);await ev(`window.__tutorialSaveName=${JSON.stringify(name)}`);await click(saveAs?'另存为':'保存');await until(`window.__tutorialSaveCalls.length>${prior}&&window.__tutorialSaveCalls.at(-1).success`,'actual save succeeded');await pause(400);const value=await ev(`window.__tutorialSaveCalls.at(-1)`);assertions.push({step:activeStep,label:'native format save succeeded',passed:true,path:value.path});return value.path}
   const nav=async(keyName,label)=>{await home();if(mobile){await click('服务');await tap(sel('[data-nav-key="'+keyName+'"]'),label)}else await click(label);await pause(250)}
   const createProject=async(name,kind='脑图')=>{await click('新建'+kind+'项目');await until(`!!document.querySelector('#diagram-project-name')`,'project name');await type(sel('#diagram-project-name'),name,'项目名称',true);await click('创建项目');await until(`!!document.querySelector('[data-diagram-editor]')`,'project editor')}
@@ -128,6 +141,41 @@ try{
     'projects':async()=>{await nav('mindmap','脑图');await createProject('新品发布计划');await click('返回项目列表');await createProject('团队工作分解');await click('返回项目列表');await check(`document.querySelectorAll('.diagram-project-card').length===2`,'two independent mobile projects')},
     'outro':async()=>{await home();await focus(sel('.wps-global-tabs'),'已打开文件与项目');await pause(1800)}
   }
+  if(pcCurrent){
+    const pdfSource=path.join(work,'项目计划-演示.pdf')
+    const applySkin=operations['skins-apply']
+    assert(fs.existsSync(pdfSource),'隔离 PDF 演示资料不存在')
+    const pdfPath=await ev(`(async()=>{const a=window.electronAPI,p=await a.showSaveDialog('项目计划-演示.pdf'),r=await a.saveToFile(p,${JSON.stringify(fs.readFileSync(pdfSource).toString('base64'))},'二进制');if(!r.成功)throw Error(r.错误);return p})()`)
+    Object.assign(operations,{
+      'home':async()=>{await home();await focus(sel('.wps-homesidebar__actions'),'新建与打开入口');await pause(1200)},
+      'skins-apply':async()=>{await applySkin();await click('应用 海豹紫');await brand('#6A5CF5')},
+      'new-word':newWord,
+      'word-body':async()=>{await type(sel('.wps-editor-canvas__content'),'项目计划与资料复核\n相关说明请访问海豹办公项目页。\n以下内容用于演示文献、链接与页面编辑。','逐字输入项目说明');await check(`document.querySelector('.wps-editor-canvas__content').textContent.includes('项目计划与资料复核')`,'演示正文已写入')},
+      'word-link':async()=>{await click('插入');await click('超链接');await until(`!!document.querySelector('[aria-label="链接地址"]')`,'超链接弹窗');await type(sel('[aria-label="链接地址"]'),'https://github.com/fangzhouxiaohai/seal-office','输入链接目标',true);await type(sel('[aria-label="显示文字"]'),'项目发行页','输入显示文字',true);await tap(btn('插入','document.querySelector(".ant-modal")'),'确认插入超链接');await check(`document.querySelector('.wps-editor-canvas__content a[data-seal-link="https://github.com/fangzhouxiaohai/seal-office"]')?.textContent==='项目发行页'`,'真实超链接已插入')},
+      'word-bookmark':async()=>{await click('书签');await until(`!!document.querySelector('[aria-label="书签名称"]')`,'书签弹窗');await type(sel('[aria-label="书签名称"]'),'项目说明','输入书签名称',true);await tap(btn('插入','document.querySelector(".ant-modal")'),'确认插入书签');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-bookmark="项目说明"]')`,'书签标记已插入')},
+      'word-page':async()=>{await click('页码');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-field="PAGE"]')`,'页码域已插入');await focus(sel('.wps-editor-canvas__content [data-seal-field="PAGE"]'),'可更新页码域')},
+      'citation-open':async()=>{await click('引用');await click('管理源');await until(`document.querySelector('.ant-modal')?.textContent.includes('文献与引文')`,'文献与引文面板');await focus(sel('.ant-modal'),'文献与引文管理')},
+      'citation-zotero':async()=>{await tap(btn('Zotero 文库'),'Zotero 文库');await type(sel('[aria-label="搜索 Zotero 文献"]'),'海豹办公二点六演示文献','只检索隔离演示文献',true);await click('读取文库');await until(`document.querySelector('[aria-label="Zotero 文库"]')?.textContent.includes('海豹办公二点六演示文献')`,'本机 Zotero 返回演示文献');await check(`document.querySelectorAll('[aria-label="Zotero 文库"] li').length===1`,'仅显示一条演示文献');await focus(sel('[aria-label="Zotero 文库"] li'),'Zotero 文献结果')},
+      'citation-insert':async()=>{await tap(btn('加入','document.querySelector("[aria-label=\\"Zotero 文库\\"]")'),'将文献加入当前文档');await tap(btn('文献库'),'文献库');await until(`document.querySelector('[aria-label="文档文献库"]')?.textContent.includes('海豹办公二点六演示文献')`,'演示文献已加入');await tap(sel('[aria-label="文档文献库"] input[type="checkbox"]'),'勾选演示文献');await tap(btn('插入引文','document.querySelector(".ant-modal")'),'插入文献引文');await until(`!!document.querySelector('.wps-editor-canvas__content [data-seal-citation]')`,'引文域已插入正文');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-citation]')`,'引文域已插入正文')},
+      'citation-bibliography':async()=>{await tap(`[...document.querySelectorAll('.ant-tabs-tab')].find(e=>e.textContent.includes('引文（'))`,'当前文档引文');await click('插入参考文献表');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-bibliography]')`,'参考文献表已生成');await click('刷新全部域')},
+      'citation-style':async()=>{await tap(btn('样式'),'引文样式');await tap(sel('[aria-label="引文样式"]'),'内置样式列表');await until(`document.querySelectorAll('.ant-select-item-option').length>=6`,'六套内置样式');await check(`document.querySelectorAll('.ant-select-item-option').length>=6`,'六套内置样式可选');await key('Escape')},
+      'word-save':async()=>{await tap(sel('.ant-modal-close'),'关闭文献面板');await click('开始');wordPath=await save('项目计划与资料复核.sldoc');await check(`!!document.querySelector('.wps-editor-canvas__content a[data-seal-link]')&&!!document.querySelector('.wps-editor-canvas__content [data-seal-bookmark]')&&!!document.querySelector('.wps-editor-canvas__content [data-seal-field="PAGE"]')`,'链接书签页码保存后仍可见')},
+      'word-reopen':async()=>{await tap(sel('.wps-global-tab--active .wps-global-tab__close'),'关闭已保存文字文档');await openFile(wordPath,'word');await check(`!!document.querySelector('.wps-editor-canvas__content a[data-seal-link="https://github.com/fangzhouxiaohai/seal-office"]')`,'超链接关闭重开后保留');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-bookmark="项目说明"]')`,'书签关闭重开后保留');await check(`!!document.querySelector('.wps-editor-canvas__content [data-seal-field="PAGE"]')`,'页码域关闭重开后保留')},
+      'cloud-open':async()=>{await nav('my-cloud','我的云空间');await until(`document.querySelector('.seal-drive-file-name')?.textContent.includes('项目计划-分享演示')`,'隔离云文件已同步');await focus(sel('.seal-drive-file'),'隔离演示云文件')},
+      'cloud-share':async()=>{await tap(sel('.seal-drive-file-more'),'演示文件更多操作');await tap(`[...document.querySelectorAll('.ant-dropdown-menu-item')].find(e=>e.textContent.includes('生成分享链接'))`,'生成分享链接');await until(`!!document.querySelector('[aria-label="分享链接有效期"]')`,'分享链接设置');await focus(sel('.seal-share-link'),'有效期与访问码设置')},
+      'cloud-link':async()=>{await click('生成链接');await until(`document.querySelector('[aria-label="分享链接"]')?.value.includes('/share/#/s/')`,'真实分享链接已生成',30000);await check(`document.querySelector('.seal-share-link__tags')?.textContent.includes('无需访问码')`,'默认七天无需访问码');const url=await ev(`document.querySelector('[aria-label="分享链接"]').value`),id=url.match(/\/s\/([0-9a-f-]{36})/)?.[1];assert(id,'分享链接缺少标识');const publicInfo=await cloudFixture.request('/v1/share-links/'+id);assert.equal(publicInfo.status,200,'匿名分享信息可访问');await click('复制链接');await until(`document.body.textContent.includes('链接已复制')`,'分享链接已复制');assert.equal(clipboard.readText(),url,'分享链接已写入剪贴板');await focus(sel('[aria-label="分享链接"]'),'已复制的分享链接')},
+      'assistant-open':async()=>{await click('打开智能助手');await until(`!!document.querySelector('.assistant-drawer__scope')`,'海豹助手已打开');await check(`document.querySelector('.assistant-scope__name')?.textContent.includes('商务演示')`,'助手目标为当前演示文稿');await focus(sel('.assistant-drawer__scope'),'当前文件范围');await type(sel('[aria-label="发送给智能助手的消息"]'),'请为当前演示文稿列出三点修改建议','输入演示文稿任务',true);await check(`document.querySelector('[aria-label="发送给智能助手的消息"]')?.value.includes('三点修改建议')`,'任务草稿已输入');await click('收起智能助手')},
+      'pdf-open':async()=>{await openFile(pdfPath,'pdf');await until(`document.querySelector('.pdf-viewer__counter')?.textContent.includes('共 2 页')`,'两页 PDF 已打开');await until(`document.querySelector('[aria-label="第 2 页可选择的 PDF 文字"]')?.textContent.includes('项目计划')`,'第二页已经完成预览');await focus(sel('.pdf-viewer__stage'),'两页项目计划演示资料')},
+      'pdf-copy':async()=>{await click('关闭查找');await click('复制本页文字');await until(`document.querySelector('.pdf-viewer__copy-status')?.textContent.includes('已复制本页文字')`,'PDF 本页文字已复制');await focus(sel('.pdf-viewer__copy-status'),'复制结果提示');await click('复制全文文字');await until(`document.querySelector('.pdf-viewer__copy-status')?.textContent.includes('已复制全文')`,'PDF 全文已复制');await key('F',['control']);await until(`!!document.querySelector('[aria-label="查找关键词"]')`,'恢复查找栏供下步关闭')},
+      'pdf-find':async()=>{await focus(sel('.pdf-viewer__stage'),'PDF 阅读区');await key('F',['control']);await until(`!!document.querySelector('[aria-label="查找关键词"]')`,'PDF 查找栏');await type(sel('[aria-label="查找关键词"]'),'项目计划','逐字输入查找关键词',true);await until(`document.querySelector('.pdf-viewer__find-count')?.textContent.includes('1 / 4')`,'四个跨页命中');await check(`document.querySelectorAll('.pdf-viewer__hit').length>=2`,'当前页查找结果已高亮')},
+      'pdf-next':async()=>{await click('下一个匹配');await until(`document.querySelector('.pdf-viewer__find-count')?.textContent.includes('2 / 4')`,'跳到第二处');await click('下一个匹配');await until(`document.querySelector('.pdf-viewer__find-count')?.textContent.includes('3 / 4')`,'跳到第三处');await check(`document.querySelector('.pdf-viewer__counter')?.textContent.includes('第 2 页')`,'跨页跳转到第二页');await click('上一个匹配');await until(`document.querySelector('.pdf-viewer__find-count')?.textContent.includes('2 / 4')`,'返回第二处');await check(`document.querySelector('.pdf-viewer__counter')?.textContent.includes('第 1 页')`,'返回第一页')},
+      'pdf-locate':async()=>{await click('关闭查找');await click('展开 PDF 工具');await click('点选定位：关');await until(`!!${btn('点选定位：开（点页面取坐标）')}`,'点选定位已开启');await tap(sel('[aria-label="在第 1 页点选编辑位置"]'),'点击 PDF 第一页目标位置');await check(`Number(document.querySelector('[aria-label="横坐标 X"]')?.value)>100&&Number(document.querySelector('[aria-label="纵坐标 Y"]')?.value)>100`,'页码与坐标按点击位置回填')},
+      'pdf-edit':async()=>{await tap(sel('[aria-label="编辑操作"]'),'选择 PDF 编辑操作');await tap(`[...document.querySelectorAll('.ant-select-item-option')].find(e=>e.textContent.trim()==='添加可见批注')`,'添加可见批注');await type(sel('[aria-label="文字内容"]'),'演示批注：项目计划已复核','输入可见批注',true);const prior=await ev(`window.__tutorialSaveCalls.length`);await ev(`window.__tutorialSaveName='编辑后的项目计划.pdf'`);await click('编辑并另存');await until(`window.__tutorialSaveCalls.length>${prior}&&window.__tutorialSaveCalls.at(-1).success`,'PDF 编辑另存成功',30000);await until(`document.querySelector('.pdf-viewer__counter')?.textContent.includes('共 2 页')&&document.querySelector('.pdf-viewer__text-layer')?.textContent.includes('演示批注')&&document.querySelector('[aria-label="第 2 页可选择的 PDF 文字"]')?.textContent.includes('项目计划')`,'编辑后的 PDF 两页均已完成预览',30000);await pause(700);await check(`document.querySelector('.pdf-viewer__text-layer')?.textContent.includes('演示批注')`,'可见批注已显示在 PDF 页面');await check(`!document.body.textContent.includes('PDF 预览失败')`,'编辑后无 PDF 预览错误')},
+      'outro':async()=>{await check(`!document.body.textContent.includes('PDF 预览失败')`,'片尾无 PDF 预览错误');await focus(sel('.pdf-viewer__page'),'已保存的 PDF 页面');await pause(1700)},
+    })
+    const 打开工作簿 = operations['sheet-open']
+    operations['sheet-open'] = async () => { await click('完成'); await 打开工作簿() }
+  }
   // Mobile sheet starts after the assistant demonstration; close only its modal.
   if(mobile){const original=operations['sheet-open'];operations['sheet-open']=async()=>{if(await ev(`!!(${btn('收起智能助手')})`))await tap(btn('收起智能助手'),'关闭助手');await original()}}
   await pause(450);await until(`document.fonts.status==='loaded'`,'fonts loaded');await pause(500)
@@ -135,7 +183,7 @@ try{
   const finished=new Promise((resolve,reject)=>encoder.on('exit',code=>code===0?resolve():reject(Error('Recording encoder '+code+': '+encoderErrors))));finished.catch(()=>{})
   running=true;loop=(async()=>{while(running){const tick=Date.now();if(frame){if(!encoder.stdin.write(frame))await new Promise(r=>encoder.stdin.once('drain',r));frames++}await pause(Math.max(1,50-(Date.now()-tick)))}})()
   const waitFrames=async target=>{while(frames<target)await pause(35)}
-  const scenes=probe==='reading'?plan[platform].filter(s=>s.id.startsWith('reading-')):probe==='word'?plan[platform].filter(s=>['new-word','word-title','word-body'].includes(s.id)):plan[platform]
+  const scenes=probe==='reading'?plan[platform].filter(s=>s.id.startsWith('reading-')):probe==='word'?plan[platform].filter(s=>['new-word','word-title','word-body'].includes(s.id)):probe==='cloud'?plan[platform].filter(s=>s.id.startsWith('cloud-')):probe==='pdf'?plan[platform].filter(s=>s.id.startsWith('pdf-')||s.id==='outro'):probe==='after-cloud'?plan[platform].slice(plan[platform].findIndex(s=>s.id==='sheet-open')):plan[platform]
   for(const [index,scene]of scenes.entries()){
     activeStep=scene.id;const startFrame=frames,voice=voices.find(v=>v.platform===platform&&v.id===scene.id);assert(voice)
     if(index>0)await ev(`window.__tutorialMark(null)`)
@@ -152,4 +200,4 @@ try{
  }
  app.exit(0)
 }catch(e){console.error(e.stack);if(win&&!win.isDestroyed()){try{fs.writeFileSync(path.join(work,'failure.png'),(await win.capturePage()).toPNG());fs.writeFileSync(path.join(work,'failure-dom.txt'),await win.webContents.executeJavaScript('document.body.innerText'))}catch{}}encoder?.kill();app.exit(1)
-}finally{server?.closeAllConnections?.();server?.close()}})
+}finally{server?.closeAllConnections?.();server?.close();await cloudFixture?.cleanup?.();if(originalClipboard){if(!originalClipboard.image.isEmpty())clipboard.writeImage(originalClipboard.image);else clipboard.writeText(originalClipboard.text)}}})

@@ -1,0 +1,3498 @@
+{
+  "passed": true,
+  "version": "2.6.0",
+  "platform": "pc",
+  "build": {
+    "platform": "web",
+    "desktopVersion": "2.6.0",
+    "builtAt": "2026-11-04T18:31:06.793Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "bundleSha256": "b7e7e520f8f226acb34fc600fba7e589865bde44b33930299d5d7fea703830d6",
+  "width": 1600,
+  "height": 820,
+  "fps": 20,
+  "frames": 7930,
+  "durationSeconds": 396.5,
+  "source": "Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.",
+  "nativeDeviceRecording": false,
+  "filePickerFixture": true,
+  "realFileSave": true,
+  "savedWordReopened": true,
+  "productionAccountsUsed": 0,
+  "modelRequests": 0,
+  "errors": [],
+  "assertions": [
+    {
+      "step": "skins-apply",
+      "label": "skin brand colour #6A5CF5",
+      "passed": true,
+      "frame": 526
+    },
+    {
+      "step": "skins-apply",
+      "label": "skin brand colour #2563EB",
+      "passed": true,
+      "frame": 545
+    },
+    {
+      "step": "skins-apply",
+      "label": "skin brand colour #6A5CF5",
+      "passed": true,
+      "frame": 563
+    },
+    {
+      "step": "word-body",
+      "label": "演示正文已写入",
+      "passed": true,
+      "frame": 1008
+    },
+    {
+      "step": "word-link",
+      "label": "真实超链接已插入",
+      "passed": true,
+      "frame": 1351
+    },
+    {
+      "step": "word-bookmark",
+      "label": "书签标记已插入",
+      "passed": true,
+      "frame": 1448
+    },
+    {
+      "step": "word-page",
+      "label": "页码域已插入",
+      "passed": true,
+      "frame": 1600
+    },
+    {
+      "step": "citation-zotero",
+      "label": "仅显示一条演示文献",
+      "passed": true,
+      "frame": 2059
+    },
+    {
+      "step": "citation-insert",
+      "label": "引文域已插入正文",
+      "passed": true,
+      "frame": 2318
+    },
+    {
+      "step": "citation-bibliography",
+      "label": "参考文献表已生成",
+      "passed": true,
+      "frame": 2531
+    },
+    {
+      "step": "citation-style",
+      "label": "六套内置样式可选",
+      "passed": true,
+      "frame": 2769
+    },
+    {
+      "step": "word-save",
+      "label": "native format save succeeded",
+      "passed": true,
+      "path": "/seal/documents/7d77a4e6-1623-48a6-8831-ec61bf6927d2/项目计划与资料复核.sldoc"
+    },
+    {
+      "step": "word-save",
+      "label": "链接书签页码保存后仍可见",
+      "passed": true,
+      "frame": 3058
+    },
+    {
+      "step": "word-reopen",
+      "label": "超链接关闭重开后保留",
+      "passed": true,
+      "frame": 3274
+    },
+    {
+      "step": "word-reopen",
+      "label": "书签关闭重开后保留",
+      "passed": true,
+      "frame": 3274
+    },
+    {
+      "step": "word-reopen",
+      "label": "页码域关闭重开后保留",
+      "passed": true,
+      "frame": 3274
+    },
+    {
+      "step": "cloud-link",
+      "label": "默认七天无需访问码",
+      "passed": true,
+      "frame": 3993
+    },
+    {
+      "step": "sheet-formula",
+      "label": "formula computed 2360",
+      "passed": true,
+      "frame": 4566
+    },
+    {
+      "step": "sheet-save",
+      "label": "native format save succeeded",
+      "passed": true,
+      "path": "/seal/documents/d7dd6f4b-af43-4643-8bce-8a1f0d48b6bf/项目预算.slxls"
+    },
+    {
+      "step": "template-use",
+      "label": "selected template second slide",
+      "passed": true,
+      "frame": 5180
+    },
+    {
+      "step": "assistant-open",
+      "label": "助手目标为当前演示文稿",
+      "passed": true,
+      "frame": 5397
+    },
+    {
+      "step": "assistant-open",
+      "label": "任务草稿已输入",
+      "passed": true,
+      "frame": 5444
+    },
+    {
+      "step": "mindmap-edit",
+      "label": "diagram branch updated",
+      "passed": true,
+      "frame": 6084
+    },
+    {
+      "step": "flow",
+      "label": "flow node added",
+      "passed": true,
+      "frame": 6308
+    },
+    {
+      "step": "pdf-find",
+      "label": "当前页查找结果已高亮",
+      "passed": true,
+      "frame": 6619
+    },
+    {
+      "step": "pdf-next",
+      "label": "跨页跳转到第二页",
+      "passed": true,
+      "frame": 6828
+    },
+    {
+      "step": "pdf-next",
+      "label": "返回第一页",
+      "passed": true,
+      "frame": 6846
+    },
+    {
+      "step": "pdf-locate",
+      "label": "页码与坐标按点击位置回填",
+      "passed": true,
+      "frame": 7317
+    },
+    {
+      "step": "pdf-edit",
+      "label": "可见批注已显示在 PDF 页面",
+      "passed": true,
+      "frame": 7609
+    },
+    {
+      "step": "pdf-edit",
+      "label": "编辑后无 PDF 预览错误",
+      "passed": true,
+      "frame": 7609
+    },
+    {
+      "step": "outro",
+      "label": "片尾无 PDF 预览错误",
+      "passed": true,
+      "frame": 7696
+    }
+  ],
+  "actions": [
+    {
+      "step": "home",
+      "type": "highlight",
+      "frame": 8,
+      "seconds": 0.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "home",
+      "type": "click",
+      "frame": 19,
+      "seconds": 0.95,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "home",
+      "type": "highlight",
+      "frame": 30,
+      "seconds": 1.5,
+      "label": "新建与打开入口",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 98,
+        "cx": 186.5,
+        "cy": 115
+      }
+    },
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 261,
+      "seconds": 13.05,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "skins-open",
+      "type": "click",
+      "frame": 273,
+      "seconds": 13.65,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 284,
+      "seconds": 14.2,
+      "label": "皮肤市场",
+      "rect": {
+        "x": 86,
+        "y": 460.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 481.0625
+      }
+    },
+    {
+      "step": "skins-open",
+      "type": "click",
+      "frame": 296,
+      "seconds": 14.8,
+      "label": "皮肤市场",
+      "x": 186.5,
+      "y": 481.0625
+    },
+    {
+      "step": "skins-open",
+      "type": "highlight",
+      "frame": 306,
+      "seconds": 15.3,
+      "label": "内置皮肤",
+      "rect": {
+        "x": 386,
+        "y": 49.5625,
+        "width": 862,
+        "height": 770.4375,
+        "cx": 817,
+        "cy": 434.78125
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 483,
+      "seconds": 24.15,
+      "label": "临时预览深海蓝",
+      "rect": {
+        "x": 760.328125,
+        "y": 271.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 792.328125,
+        "cy": 290.96875
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "hover",
+      "frame": 490,
+      "seconds": 24.5,
+      "label": "临时预览深海蓝",
+      "x": 792.328125,
+      "y": 290.96875
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 526,
+      "seconds": 26.3,
+      "label": "应用 深海蓝",
+      "rect": {
+        "x": 692.328125,
+        "y": 270.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 724.328125,
+        "cy": 289.96875
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "click",
+      "frame": 538,
+      "seconds": 26.9,
+      "label": "应用 深海蓝",
+      "x": 724.328125,
+      "y": 289.96875
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 545,
+      "seconds": 27.25,
+      "label": "当前使用深海蓝",
+      "rect": {
+        "x": 677.328125,
+        "y": 48.5625,
+        "width": 279.328125,
+        "height": 275.40625,
+        "cx": 816.9921875,
+        "cy": 186.265625
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "highlight",
+      "frame": 545,
+      "seconds": 27.25,
+      "label": "应用 海豹紫",
+      "rect": {
+        "x": 401,
+        "y": 271.96875,
+        "width": 64,
+        "height": 38,
+        "cx": 433,
+        "cy": 290.96875
+      }
+    },
+    {
+      "step": "skins-apply",
+      "type": "click",
+      "frame": 557,
+      "seconds": 27.85,
+      "label": "应用 海豹紫",
+      "x": 433,
+      "y": 290.96875
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 707,
+      "seconds": 35.35,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 719,
+      "seconds": 35.95,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 730,
+      "seconds": 36.5,
+      "label": "新建",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 89
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 743,
+      "seconds": 37.15,
+      "label": "新建",
+      "x": 186.5,
+      "y": 89
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 748,
+      "seconds": 37.4,
+      "label": "文字文档",
+      "rect": {
+        "x": 495.2790222167969,
+        "y": 135.48109436035156,
+        "width": 281.1045227050781,
+        "height": 142.55226135253906,
+        "cx": 635.8312835693359,
+        "cy": 206.7572250366211
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 760,
+      "seconds": 38,
+      "label": "文字文档",
+      "x": 635.8312835693359,
+      "y": 206.7572250366211
+    },
+    {
+      "step": "word-body",
+      "type": "highlight",
+      "frame": 915,
+      "seconds": 45.75,
+      "label": "逐字输入项目说明",
+      "rect": {
+        "x": 221,
+        "y": 186.1666717529297,
+        "width": 618,
+        "height": 633.8333282470703,
+        "cx": 530,
+        "cy": 503.08333587646484
+      }
+    },
+    {
+      "step": "word-body",
+      "type": "click",
+      "frame": 927,
+      "seconds": 46.35,
+      "label": "逐字输入项目说明",
+      "x": 530,
+      "y": 503.08333587646484
+    },
+    {
+      "step": "word-body",
+      "type": "typing-start",
+      "frame": 935,
+      "seconds": 46.75,
+      "label": "逐字输入项目说明",
+      "text": "项目计划与资料复核\n相关说明请访问海豹办公项目页。\n以下内容用于演示文献、链接与页面编辑。"
+    },
+    {
+      "step": "word-body",
+      "type": "typing",
+      "frame": 1003,
+      "seconds": 50.15,
+      "label": "逐字输入项目说明",
+      "text": "项目计划与资料复核\n相关说明请访问海豹办公项目页。\n以下内容用于演示文献、链接与页面编辑。"
+    },
+    {
+      "step": "word-link",
+      "type": "highlight",
+      "frame": 1160,
+      "seconds": 58,
+      "label": "插入",
+      "rect": {
+        "x": 69,
+        "y": 96.5,
+        "width": 59,
+        "height": 34,
+        "cx": 98.5,
+        "cy": 113.5
+      }
+    },
+    {
+      "step": "word-link",
+      "type": "click",
+      "frame": 1172,
+      "seconds": 58.6,
+      "label": "插入",
+      "x": 98.5,
+      "y": 113.5
+    },
+    {
+      "step": "word-link",
+      "type": "highlight",
+      "frame": 1178,
+      "seconds": 58.9,
+      "label": "超链接",
+      "rect": {
+        "x": 1262,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 1292,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "word-link",
+      "type": "click",
+      "frame": 1189,
+      "seconds": 59.45,
+      "label": "超链接",
+      "x": 1292,
+      "y": 174.4921875
+    },
+    {
+      "step": "word-link",
+      "type": "highlight",
+      "frame": 1194,
+      "seconds": 59.7,
+      "label": "输入链接目标",
+      "rect": {
+        "x": 659.942626953125,
+        "y": 343.21392822265625,
+        "width": 330.3323974609375,
+        "height": 37.4195556640625,
+        "cx": 825.1088256835938,
+        "cy": 361.9237060546875
+      }
+    },
+    {
+      "step": "word-link",
+      "type": "click",
+      "frame": 1206,
+      "seconds": 60.3,
+      "label": "输入链接目标",
+      "x": 825.1088256835938,
+      "y": 361.9237060546875
+    },
+    {
+      "step": "word-link",
+      "type": "typing-start",
+      "frame": 1215,
+      "seconds": 60.75,
+      "label": "输入链接目标",
+      "text": "https://github.com/fangzhouxiaohai/seal-office"
+    },
+    {
+      "step": "word-link",
+      "type": "typing",
+      "frame": 1293,
+      "seconds": 64.65,
+      "label": "输入链接目标",
+      "text": "https://github.com/fangzhouxiaohai/seal-office"
+    },
+    {
+      "step": "word-link",
+      "type": "highlight",
+      "frame": 1298,
+      "seconds": 64.9,
+      "label": "输入显示文字",
+      "rect": {
+        "x": 649,
+        "y": 392.1875,
+        "width": 336,
+        "height": 38,
+        "cx": 817,
+        "cy": 411.1875
+      }
+    },
+    {
+      "step": "word-link",
+      "type": "click",
+      "frame": 1311,
+      "seconds": 65.55,
+      "label": "输入显示文字",
+      "x": 817,
+      "y": 411.1875
+    },
+    {
+      "step": "word-link",
+      "type": "typing-start",
+      "frame": 1320,
+      "seconds": 66,
+      "label": "输入显示文字",
+      "text": "项目发行页"
+    },
+    {
+      "step": "word-link",
+      "type": "typing",
+      "frame": 1328,
+      "seconds": 66.4,
+      "label": "输入显示文字",
+      "text": "项目发行页"
+    },
+    {
+      "step": "word-link",
+      "type": "highlight",
+      "frame": 1333,
+      "seconds": 66.65,
+      "label": "确认插入超链接",
+      "rect": {
+        "x": 901,
+        "y": 467.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 943,
+        "cy": 486.1875
+      }
+    },
+    {
+      "step": "word-link",
+      "type": "click",
+      "frame": 1345,
+      "seconds": 67.25,
+      "label": "确认插入超链接",
+      "x": 943,
+      "y": 486.1875
+    },
+    {
+      "step": "word-bookmark",
+      "type": "highlight",
+      "frame": 1380,
+      "seconds": 69,
+      "label": "书签",
+      "rect": {
+        "x": 1320,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 1350,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "word-bookmark",
+      "type": "click",
+      "frame": 1392,
+      "seconds": 69.6,
+      "label": "书签",
+      "x": 1350,
+      "y": 174.4921875
+    },
+    {
+      "step": "word-bookmark",
+      "type": "highlight",
+      "frame": 1398,
+      "seconds": 69.9,
+      "label": "输入书签名称",
+      "rect": {
+        "x": 660.9332275390625,
+        "y": 365.82110595703125,
+        "width": 330.3321533203125,
+        "height": 37.4195556640625,
+        "cx": 826.0993041992188,
+        "cy": 384.5308837890625
+      }
+    },
+    {
+      "step": "word-bookmark",
+      "type": "click",
+      "frame": 1409,
+      "seconds": 70.45,
+      "label": "输入书签名称",
+      "x": 826.0993041992188,
+      "y": 384.5308837890625
+    },
+    {
+      "step": "word-bookmark",
+      "type": "typing-start",
+      "frame": 1419,
+      "seconds": 70.95,
+      "label": "输入书签名称",
+      "text": "项目说明"
+    },
+    {
+      "step": "word-bookmark",
+      "type": "typing",
+      "frame": 1425,
+      "seconds": 71.25,
+      "label": "输入书签名称",
+      "text": "项目说明"
+    },
+    {
+      "step": "word-bookmark",
+      "type": "highlight",
+      "frame": 1430,
+      "seconds": 71.5,
+      "label": "确认插入书签",
+      "rect": {
+        "x": 901,
+        "y": 444.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 943,
+        "cy": 463.1875
+      }
+    },
+    {
+      "step": "word-bookmark",
+      "type": "click",
+      "frame": 1441,
+      "seconds": 72.05,
+      "label": "确认插入书签",
+      "x": 943,
+      "y": 463.1875
+    },
+    {
+      "step": "word-page",
+      "type": "highlight",
+      "frame": 1583,
+      "seconds": 79.15,
+      "label": "页码",
+      "rect": {
+        "x": 802,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 832,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "word-page",
+      "type": "click",
+      "frame": 1594,
+      "seconds": 79.7,
+      "label": "页码",
+      "x": 832,
+      "y": 174.4921875
+    },
+    {
+      "step": "word-page",
+      "type": "highlight",
+      "frame": 1600,
+      "seconds": 80,
+      "label": "可更新页码域",
+      "rect": {
+        "x": 559.25,
+        "y": 352.04168701171875,
+        "width": 12.3125,
+        "height": 21.33333396911621,
+        "cx": 565.40625,
+        "cy": 362.70835399627686
+      }
+    },
+    {
+      "step": "citation-open",
+      "type": "highlight",
+      "frame": 1771,
+      "seconds": 88.55,
+      "label": "引用",
+      "rect": {
+        "x": 214,
+        "y": 96.5,
+        "width": 59,
+        "height": 34,
+        "cx": 243.5,
+        "cy": 113.5
+      }
+    },
+    {
+      "step": "citation-open",
+      "type": "click",
+      "frame": 1783,
+      "seconds": 89.15,
+      "label": "引用",
+      "x": 243.5,
+      "y": 113.5
+    },
+    {
+      "step": "citation-open",
+      "type": "highlight",
+      "frame": 1789,
+      "seconds": 89.45,
+      "label": "管理源",
+      "rect": {
+        "x": 646,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 676,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "citation-open",
+      "type": "click",
+      "frame": 1801,
+      "seconds": 90.05,
+      "label": "管理源",
+      "x": 676,
+      "y": 174.4921875
+    },
+    {
+      "step": "citation-open",
+      "type": "highlight",
+      "frame": 1807,
+      "seconds": 90.35,
+      "label": "文献与引文管理",
+      "rect": {
+        "x": 397.6301574707031,
+        "y": 230.62893676757812,
+        "width": 796.38916015625,
+        "height": 342.8338928222656,
+        "cx": 795.8247375488281,
+        "cy": 402.04588317871094
+      }
+    },
+    {
+      "step": "citation-zotero",
+      "type": "highlight",
+      "frame": 1982,
+      "seconds": 99.1,
+      "label": "Zotero 文库",
+      "rect": {
+        "x": 487.421875,
+        "y": 326.0625,
+        "width": 82.078125,
+        "height": 26,
+        "cx": 528.4609375,
+        "cy": 339.0625
+      }
+    },
+    {
+      "step": "citation-zotero",
+      "type": "click",
+      "frame": 1993,
+      "seconds": 99.65,
+      "label": "Zotero 文库",
+      "x": 528.4609375,
+      "y": 339.0625
+    },
+    {
+      "step": "citation-zotero",
+      "type": "highlight",
+      "frame": 1999,
+      "seconds": 99.95,
+      "label": "只检索隔离演示文献",
+      "rect": {
+        "x": 445,
+        "y": 375.0625,
+        "width": 522,
+        "height": 26,
+        "cx": 706,
+        "cy": 388.0625
+      }
+    },
+    {
+      "step": "citation-zotero",
+      "type": "click",
+      "frame": 2011,
+      "seconds": 100.55,
+      "label": "只检索隔离演示文献",
+      "x": 706,
+      "y": 388.0625
+    },
+    {
+      "step": "citation-zotero",
+      "type": "typing-start",
+      "frame": 2021,
+      "seconds": 101.05,
+      "label": "只检索隔离演示文献",
+      "text": "海豹办公二点六演示文献"
+    },
+    {
+      "step": "citation-zotero",
+      "type": "typing",
+      "frame": 2036,
+      "seconds": 101.8,
+      "label": "只检索隔离演示文献",
+      "text": "海豹办公二点六演示文献"
+    },
+    {
+      "step": "citation-zotero",
+      "type": "highlight",
+      "frame": 2041,
+      "seconds": 102.05,
+      "label": "读取文库",
+      "rect": {
+        "x": 999,
+        "y": 369.0625,
+        "width": 92,
+        "height": 38,
+        "cx": 1045,
+        "cy": 388.0625
+      }
+    },
+    {
+      "step": "citation-zotero",
+      "type": "click",
+      "frame": 2053,
+      "seconds": 102.65,
+      "label": "读取文库",
+      "x": 1045,
+      "y": 388.0625
+    },
+    {
+      "step": "citation-zotero",
+      "type": "highlight",
+      "frame": 2059,
+      "seconds": 102.95,
+      "label": "Zotero 文献结果",
+      "rect": {
+        "x": 414,
+        "y": 469.4375,
+        "width": 772,
+        "height": 45.5,
+        "cx": 800,
+        "cy": 492.1875
+      }
+    },
+    {
+      "step": "citation-insert",
+      "type": "highlight",
+      "frame": 2247,
+      "seconds": 112.35,
+      "label": "将文献加入当前文档",
+      "rect": {
+        "x": 1126,
+        "y": 477.4375,
+        "width": 48,
+        "height": 29.5,
+        "cx": 1150,
+        "cy": 492.1875
+      }
+    },
+    {
+      "step": "citation-insert",
+      "type": "click",
+      "frame": 2259,
+      "seconds": 112.95,
+      "label": "将文献加入当前文档",
+      "x": 1150,
+      "y": 492.1875
+    },
+    {
+      "step": "citation-insert",
+      "type": "highlight",
+      "frame": 2264,
+      "seconds": 113.2,
+      "label": "文献库",
+      "rect": {
+        "x": 413,
+        "y": 372.4375,
+        "width": 46.421875,
+        "height": 26,
+        "cx": 436.2109375,
+        "cy": 385.4375
+      }
+    },
+    {
+      "step": "citation-insert",
+      "type": "click",
+      "frame": 2277,
+      "seconds": 113.85,
+      "label": "文献库",
+      "x": 436.2109375,
+      "y": 385.4375
+    },
+    {
+      "step": "citation-insert",
+      "type": "highlight",
+      "frame": 2282,
+      "seconds": 114.1,
+      "label": "勾选演示文献",
+      "rect": {
+        "x": 430,
+        "y": 483.6875,
+        "width": 17,
+        "height": 17,
+        "cx": 438.5,
+        "cy": 492.1875
+      }
+    },
+    {
+      "step": "citation-insert",
+      "type": "click",
+      "frame": 2295,
+      "seconds": 114.75,
+      "label": "勾选演示文献",
+      "x": 438.5,
+      "y": 492.1875
+    },
+    {
+      "step": "citation-insert",
+      "type": "highlight",
+      "frame": 2300,
+      "seconds": 115,
+      "label": "插入文献引文",
+      "rect": {
+        "x": 1071,
+        "y": 422.4375,
+        "width": 116,
+        "height": 38,
+        "cx": 1129,
+        "cy": 441.4375
+      }
+    },
+    {
+      "step": "citation-insert",
+      "type": "click",
+      "frame": 2312,
+      "seconds": 115.6,
+      "label": "插入文献引文",
+      "x": 1129,
+      "y": 441.4375
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "highlight",
+      "frame": 2495,
+      "seconds": 124.75,
+      "label": "当前文档引文",
+      "rect": {
+        "x": 597.5,
+        "y": 360.4375,
+        "width": 68.921875,
+        "height": 50,
+        "cx": 631.9609375,
+        "cy": 385.4375
+      }
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "click",
+      "frame": 2507,
+      "seconds": 125.35,
+      "label": "当前文档引文",
+      "x": 631.9609375,
+      "y": 385.4375
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "highlight",
+      "frame": 2513,
+      "seconds": 125.65,
+      "label": "插入参考文献表",
+      "rect": {
+        "x": 413,
+        "y": 475.40625,
+        "width": 134,
+        "height": 38,
+        "cx": 480,
+        "cy": 494.40625
+      }
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "click",
+      "frame": 2525,
+      "seconds": 126.25,
+      "label": "插入参考文献表",
+      "x": 480,
+      "y": 494.40625
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "highlight",
+      "frame": 2531,
+      "seconds": 126.55,
+      "label": "刷新全部域",
+      "rect": {
+        "x": 551,
+        "y": 475.40625,
+        "width": 106,
+        "height": 38,
+        "cx": 604,
+        "cy": 494.40625
+      }
+    },
+    {
+      "step": "citation-bibliography",
+      "type": "click",
+      "frame": 2543,
+      "seconds": 127.15,
+      "label": "刷新全部域",
+      "x": 604,
+      "y": 494.40625
+    },
+    {
+      "step": "citation-style",
+      "type": "highlight",
+      "frame": 2734,
+      "seconds": 136.7,
+      "label": "引文样式",
+      "rect": {
+        "x": 694.421875,
+        "y": 374.984375,
+        "width": 32.28125,
+        "height": 26,
+        "cx": 710.5625,
+        "cy": 387.984375
+      }
+    },
+    {
+      "step": "citation-style",
+      "type": "click",
+      "frame": 2746,
+      "seconds": 137.3,
+      "label": "引文样式",
+      "x": 710.5625,
+      "y": 387.984375
+    },
+    {
+      "step": "citation-style",
+      "type": "highlight",
+      "frame": 2751,
+      "seconds": 137.55,
+      "label": "内置样式列表",
+      "rect": {
+        "x": 413,
+        "y": 450.1875,
+        "width": 774,
+        "height": 38,
+        "cx": 800,
+        "cy": 469.1875
+      }
+    },
+    {
+      "step": "citation-style",
+      "type": "click",
+      "frame": 2764,
+      "seconds": 138.2,
+      "label": "内置样式列表",
+      "x": 800,
+      "y": 469.1875
+    },
+    {
+      "step": "word-save",
+      "type": "highlight",
+      "frame": 2998,
+      "seconds": 149.9,
+      "label": "关闭文献面板",
+      "rect": {
+        "x": 1155,
+        "y": 294.609375,
+        "width": 38,
+        "height": 38,
+        "cx": 1174,
+        "cy": 313.609375
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "click",
+      "frame": 3011,
+      "seconds": 150.55,
+      "label": "关闭文献面板",
+      "x": 1174,
+      "y": 313.609375
+    },
+    {
+      "step": "word-save",
+      "type": "highlight",
+      "frame": 3017,
+      "seconds": 150.85,
+      "label": "开始",
+      "rect": {
+        "x": 10,
+        "y": 96.5,
+        "width": 59,
+        "height": 34,
+        "cx": 39.5,
+        "cy": 113.5
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "click",
+      "frame": 3028,
+      "seconds": 151.4,
+      "label": "开始",
+      "x": 39.5,
+      "y": 113.5
+    },
+    {
+      "step": "word-save",
+      "type": "highlight",
+      "frame": 3034,
+      "seconds": 151.7,
+      "label": "保存",
+      "rect": {
+        "x": 85,
+        "y": 155.140625,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 115,
+        "cy": 183.3359375
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "click",
+      "frame": 3045,
+      "seconds": 152.25,
+      "label": "保存",
+      "x": 115,
+      "y": 183.3359375
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 3211,
+      "seconds": 160.55,
+      "label": "关闭已保存文字文档",
+      "rect": {
+        "x": 260,
+        "y": 758.5,
+        "width": 28,
+        "height": 28,
+        "cx": 274,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 3222,
+      "seconds": 161.1,
+      "label": "关闭已保存文字文档",
+      "x": 274,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 3228,
+      "seconds": 161.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 3240,
+      "seconds": 162,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 3250,
+      "seconds": 162.5,
+      "label": "打开 word",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 3262,
+      "seconds": 163.1,
+      "label": "打开 word",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "cloud-open",
+      "type": "highlight",
+      "frame": 3464,
+      "seconds": 173.2,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "cloud-open",
+      "type": "click",
+      "frame": 3476,
+      "seconds": 173.8,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "cloud-open",
+      "type": "highlight",
+      "frame": 3486,
+      "seconds": 174.3,
+      "label": "我的云空间",
+      "rect": {
+        "x": 86,
+        "y": 340.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 361.0625
+      }
+    },
+    {
+      "step": "cloud-open",
+      "type": "click",
+      "frame": 3499,
+      "seconds": 174.95,
+      "label": "我的云空间",
+      "x": 186.5,
+      "y": 361.0625
+    },
+    {
+      "step": "cloud-open",
+      "type": "highlight",
+      "frame": 3510,
+      "seconds": 175.5,
+      "label": "隔离演示云文件",
+      "rect": {
+        "x": 386,
+        "y": 331,
+        "width": 138.65625,
+        "height": 158.28125,
+        "cx": 455.328125,
+        "cy": 410.140625
+      }
+    },
+    {
+      "step": "cloud-share",
+      "type": "highlight",
+      "frame": 3721,
+      "seconds": 186.05,
+      "label": "演示文件更多操作",
+      "rect": {
+        "x": 486.65625,
+        "y": 335,
+        "width": 32,
+        "height": 32,
+        "cx": 502.65625,
+        "cy": 351
+      }
+    },
+    {
+      "step": "cloud-share",
+      "type": "click",
+      "frame": 3733,
+      "seconds": 186.65,
+      "label": "演示文件更多操作",
+      "x": 502.65625,
+      "y": 351
+    },
+    {
+      "step": "cloud-share",
+      "type": "highlight",
+      "frame": 3739,
+      "seconds": 186.95,
+      "label": "生成分享链接",
+      "rect": {
+        "x": 492,
+        "y": 543,
+        "width": 112.84375,
+        "height": 38,
+        "cx": 548.421875,
+        "cy": 562
+      }
+    },
+    {
+      "step": "cloud-share",
+      "type": "click",
+      "frame": 3751,
+      "seconds": 187.55,
+      "label": "生成分享链接",
+      "x": 548.421875,
+      "y": 562
+    },
+    {
+      "step": "cloud-share",
+      "type": "highlight",
+      "frame": 3756,
+      "seconds": 187.8,
+      "label": "有效期与访问码设置",
+      "rect": {
+        "x": 582.1015625,
+        "y": 298.0042724609375,
+        "width": 423.55908203125,
+        "height": 213.2154541015625,
+        "cx": 793.881103515625,
+        "cy": 404.61199951171875
+      }
+    },
+    {
+      "step": "cloud-link",
+      "type": "highlight",
+      "frame": 3975,
+      "seconds": 198.75,
+      "label": "生成链接",
+      "rect": {
+        "x": 925,
+        "y": 546.90625,
+        "width": 92,
+        "height": 38,
+        "cx": 971,
+        "cy": 565.90625
+      }
+    },
+    {
+      "step": "cloud-link",
+      "type": "click",
+      "frame": 3988,
+      "seconds": 199.4,
+      "label": "生成链接",
+      "x": 971,
+      "y": 565.90625
+    },
+    {
+      "step": "cloud-link",
+      "type": "highlight",
+      "frame": 3994,
+      "seconds": 199.7,
+      "label": "复制链接",
+      "rect": {
+        "x": 583,
+        "y": 475.28125,
+        "width": 116,
+        "height": 38,
+        "cx": 641,
+        "cy": 494.28125
+      }
+    },
+    {
+      "step": "cloud-link",
+      "type": "click",
+      "frame": 4005,
+      "seconds": 200.25,
+      "label": "复制链接",
+      "x": 641,
+      "y": 494.28125
+    },
+    {
+      "step": "cloud-link",
+      "type": "highlight",
+      "frame": 4011,
+      "seconds": 200.55,
+      "label": "已复制的分享链接",
+      "rect": {
+        "x": 583,
+        "y": 343.28125,
+        "width": 434,
+        "height": 126,
+        "cx": 800,
+        "cy": 406.28125
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 4250,
+      "seconds": 212.5,
+      "label": "完成",
+      "rect": {
+        "x": 933,
+        "y": 586.28125,
+        "width": 84,
+        "height": 38,
+        "cx": 975,
+        "cy": 605.28125
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 4263,
+      "seconds": 213.15,
+      "label": "完成",
+      "x": 975,
+      "y": 605.28125
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 4269,
+      "seconds": 213.45,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 4281,
+      "seconds": 214.05,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 4292,
+      "seconds": 214.6,
+      "label": "打开 sheet",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 4303,
+      "seconds": 215.15,
+      "label": "打开 sheet",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 4483,
+      "seconds": 224.15,
+      "label": "名称框选择 D5",
+      "rect": {
+        "x": 6,
+        "y": 198.5625,
+        "width": 114,
+        "height": 26,
+        "cx": 63,
+        "cy": 211.5625
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 4496,
+      "seconds": 224.8,
+      "label": "名称框选择 D5",
+      "x": 63,
+      "y": 211.5625
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 4506,
+      "seconds": 225.3,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 4510,
+      "seconds": 225.5,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 4517,
+      "seconds": 225.85,
+      "label": "输入求和公式",
+      "rect": {
+        "x": 142.640625,
+        "y": 198.5625,
+        "width": 1333.359375,
+        "height": 26,
+        "cx": 809.3203125,
+        "cy": 211.5625
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 4529,
+      "seconds": 226.45,
+      "label": "输入求和公式",
+      "x": 809.3203125,
+      "y": 211.5625
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 4539,
+      "seconds": 226.95,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 4559,
+      "seconds": 227.95,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 4566,
+      "seconds": 228.3,
+      "label": "查看合计 2360",
+      "rect": {
+        "x": 308,
+        "y": 279.7083435058594,
+        "width": 92,
+        "height": 24,
+        "cx": 354,
+        "cy": 291.7083435058594
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "highlight",
+      "frame": 4731,
+      "seconds": 236.55,
+      "label": "自适应列宽",
+      "rect": {
+        "x": 1481,
+        "y": 146.296875,
+        "width": 82,
+        "height": 56.390625,
+        "cx": 1522,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "click",
+      "frame": 4743,
+      "seconds": 237.15,
+      "label": "自适应列宽",
+      "x": 1522,
+      "y": 174.4921875
+    },
+    {
+      "step": "sheet-save",
+      "type": "highlight",
+      "frame": 4749,
+      "seconds": 237.45,
+      "label": "另存为",
+      "rect": {
+        "x": 143,
+        "y": 146.296875,
+        "width": 60,
+        "height": 56.390625,
+        "cx": 173,
+        "cy": 174.4921875
+      }
+    },
+    {
+      "step": "sheet-save",
+      "type": "click",
+      "frame": 4761,
+      "seconds": 238.05,
+      "label": "另存为",
+      "x": 173,
+      "y": 174.4921875
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 4920,
+      "seconds": 246,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 4932,
+      "seconds": 246.6,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 4943,
+      "seconds": 247.15,
+      "label": "演示模板市场",
+      "rect": {
+        "x": 86,
+        "y": 420.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 441.0625
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 4954,
+      "seconds": 247.7,
+      "label": "演示模板市场",
+      "x": 186.5,
+      "y": 441.0625
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 4960,
+      "seconds": 248,
+      "label": "精选推荐",
+      "rect": {
+        "x": 386,
+        "y": 475.171875,
+        "width": 92,
+        "height": 38,
+        "cx": 432,
+        "cy": 494.171875
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 4971,
+      "seconds": 248.55,
+      "label": "精选推荐",
+      "x": 432,
+      "y": 494.171875
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 4978,
+      "seconds": 248.9,
+      "label": "预览演示模板",
+      "rect": {
+        "x": 386,
+        "y": 535.171875,
+        "width": 274,
+        "height": 155.875,
+        "cx": 523,
+        "cy": 613.109375
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 4989,
+      "seconds": 249.45,
+      "label": "预览演示模板",
+      "x": 523,
+      "y": 613.109375
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 5144,
+      "seconds": 257.2,
+      "label": "使用并编辑副本",
+      "rect": {
+        "x": 1163,
+        "y": 783.734375,
+        "width": 134,
+        "height": 36.265625,
+        "cx": 1230,
+        "cy": 801.8671875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 5156,
+      "seconds": 257.8,
+      "label": "使用并编辑副本",
+      "x": 1230,
+      "y": 801.8671875
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 5162,
+      "seconds": 258.1,
+      "label": "可编辑的演示画布",
+      "rect": {
+        "x": 161,
+        "y": 282.40625,
+        "width": 1439,
+        "height": 537.59375,
+        "cx": 880.5,
+        "cy": 551.203125
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 5162,
+      "seconds": 258.1,
+      "label": "查看第二张幻灯片",
+      "rect": {
+        "x": 6,
+        "y": 403.25,
+        "width": 153,
+        "height": 108.84375,
+        "cx": 82.5,
+        "cy": 457.671875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 5174,
+      "seconds": 258.7,
+      "label": "查看第二张幻灯片",
+      "x": 82.5,
+      "y": 457.671875
+    },
+    {
+      "step": "assistant-open",
+      "type": "highlight",
+      "frame": 5379,
+      "seconds": 268.95,
+      "label": "打开智能助手",
+      "rect": {
+        "x": 1530,
+        "y": 650,
+        "width": 60,
+        "height": 60,
+        "cx": 1560,
+        "cy": 680
+      }
+    },
+    {
+      "step": "assistant-open",
+      "type": "click",
+      "frame": 5391,
+      "seconds": 269.55,
+      "label": "打开智能助手",
+      "x": 1560,
+      "y": 680
+    },
+    {
+      "step": "assistant-open",
+      "type": "highlight",
+      "frame": 5397,
+      "seconds": 269.85,
+      "label": "当前文件范围",
+      "rect": {
+        "x": 1145.604736328125,
+        "y": 55,
+        "width": 454.395263671875,
+        "height": 34.59375,
+        "cx": 1372.8023681640625,
+        "cy": 72.296875
+      }
+    },
+    {
+      "step": "assistant-open",
+      "type": "highlight",
+      "frame": 5397,
+      "seconds": 269.85,
+      "label": "输入演示文稿任务",
+      "rect": {
+        "x": 1163.604736328125,
+        "y": 670.828125,
+        "width": 428,
+        "height": 87.171875,
+        "cx": 1377.604736328125,
+        "cy": 714.4140625
+      }
+    },
+    {
+      "step": "assistant-open",
+      "type": "click",
+      "frame": 5408,
+      "seconds": 270.4,
+      "label": "输入演示文稿任务",
+      "x": 1377.604736328125,
+      "y": 714.4140625
+    },
+    {
+      "step": "assistant-open",
+      "type": "typing-start",
+      "frame": 5419,
+      "seconds": 270.95,
+      "label": "输入演示文稿任务",
+      "text": "请为当前演示文稿列出三点修改建议"
+    },
+    {
+      "step": "assistant-open",
+      "type": "typing",
+      "frame": 5439,
+      "seconds": 271.95,
+      "label": "输入演示文稿任务",
+      "text": "请为当前演示文稿列出三点修改建议"
+    },
+    {
+      "step": "assistant-open",
+      "type": "highlight",
+      "frame": 5444,
+      "seconds": 272.2,
+      "label": "收起智能助手",
+      "rect": {
+        "x": 1550,
+        "y": 10,
+        "width": 36,
+        "height": 36,
+        "cx": 1568,
+        "cy": 28
+      }
+    },
+    {
+      "step": "assistant-open",
+      "type": "click",
+      "frame": 5457,
+      "seconds": 272.85,
+      "label": "收起智能助手",
+      "x": 1568,
+      "y": 28
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 5720,
+      "seconds": 286,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 5732,
+      "seconds": 286.6,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 5742,
+      "seconds": 287.1,
+      "label": "脑图",
+      "rect": {
+        "x": 86,
+        "y": 714.1875,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 735.1875
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 5754,
+      "seconds": 287.7,
+      "label": "脑图",
+      "x": 186.5,
+      "y": 735.1875
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 5765,
+      "seconds": 288.25,
+      "label": "新建脑图项目",
+      "rect": {
+        "x": 1038,
+        "y": 140,
+        "width": 120,
+        "height": 38,
+        "cx": 1098,
+        "cy": 159
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 5777,
+      "seconds": 288.85,
+      "label": "新建脑图项目",
+      "x": 1098,
+      "y": 159
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 5783,
+      "seconds": 289.15,
+      "label": "项目名称",
+      "rect": {
+        "x": 569.1710205078125,
+        "y": 392.92401123046875,
+        "width": 468.558349609375,
+        "height": 39.96929931640625,
+        "cx": 803.4501953125,
+        "cy": 412.9086608886719
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 5795,
+      "seconds": 289.75,
+      "label": "项目名称",
+      "x": 803.4501953125,
+      "y": 412.9086608886719
+    },
+    {
+      "step": "mindmap-create",
+      "type": "typing-start",
+      "frame": 5805,
+      "seconds": 290.25,
+      "label": "项目名称",
+      "text": "新品发布计划"
+    },
+    {
+      "step": "mindmap-create",
+      "type": "typing",
+      "frame": 5812,
+      "seconds": 290.6,
+      "label": "项目名称",
+      "text": "新品发布计划"
+    },
+    {
+      "step": "mindmap-create",
+      "type": "highlight",
+      "frame": 5818,
+      "seconds": 290.9,
+      "label": "创建项目",
+      "rect": {
+        "x": 945,
+        "y": 473.078125,
+        "width": 92,
+        "height": 38,
+        "cx": 991,
+        "cy": 492.078125
+      }
+    },
+    {
+      "step": "mindmap-create",
+      "type": "click",
+      "frame": 5829,
+      "seconds": 291.45,
+      "label": "创建项目",
+      "x": 991,
+      "y": 492.078125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 5946,
+      "seconds": 297.3,
+      "label": "修改中心主题",
+      "rect": {
+        "x": 1025,
+        "y": 411.828125,
+        "width": 230,
+        "height": 36,
+        "cx": 1140,
+        "cy": 429.828125
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 5957,
+      "seconds": 297.85,
+      "label": "修改中心主题",
+      "x": 1140,
+      "y": 429.828125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing-start",
+      "frame": 5967,
+      "seconds": 298.35,
+      "label": "修改中心主题",
+      "text": "新品发布"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing",
+      "frame": 5973,
+      "seconds": 298.65,
+      "label": "修改中心主题",
+      "text": "新品发布"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 5978,
+      "seconds": 298.9,
+      "label": "保存文字",
+      "rect": {
+        "x": 1025,
+        "y": 568.671875,
+        "width": 230,
+        "height": 38,
+        "cx": 1140,
+        "cy": 587.671875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 5990,
+      "seconds": 299.5,
+      "label": "保存文字",
+      "x": 1140,
+      "y": 587.671875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 5997,
+      "seconds": 299.85,
+      "label": "添加节点",
+      "rect": {
+        "x": 375,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 417,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 6009,
+      "seconds": 300.45,
+      "label": "添加节点",
+      "x": 417,
+      "y": 333.1875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 6015,
+      "seconds": 300.75,
+      "label": "填写分支文字",
+      "rect": {
+        "x": 1025,
+        "y": 411.828125,
+        "width": 230,
+        "height": 36,
+        "cx": 1140,
+        "cy": 429.828125
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 6027,
+      "seconds": 301.35,
+      "label": "填写分支文字",
+      "x": 1140,
+      "y": 429.828125
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing-start",
+      "frame": 6037,
+      "seconds": 301.85,
+      "label": "填写分支文字",
+      "text": "产品资料"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "typing",
+      "frame": 6043,
+      "seconds": 302.15,
+      "label": "填写分支文字",
+      "text": "产品资料"
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 6048,
+      "seconds": 302.4,
+      "label": "保存文字",
+      "rect": {
+        "x": 1025,
+        "y": 568.671875,
+        "width": 230,
+        "height": 38,
+        "cx": 1140,
+        "cy": 587.671875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 6060,
+      "seconds": 303,
+      "label": "保存文字",
+      "x": 1140,
+      "y": 587.671875
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "highlight",
+      "frame": 6066,
+      "seconds": 303.3,
+      "label": "适配画布",
+      "rect": {
+        "x": 815.90625,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 857.90625,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "mindmap-edit",
+      "type": "click",
+      "frame": 6078,
+      "seconds": 303.9,
+      "label": "适配画布",
+      "x": 857.90625,
+      "y": 333.1875
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6157,
+      "seconds": 307.85,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6168,
+      "seconds": 308.4,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6179,
+      "seconds": 308.95,
+      "label": "流程图",
+      "rect": {
+        "x": 86,
+        "y": 714.1875,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 735.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6190,
+      "seconds": 309.5,
+      "label": "流程图",
+      "x": 186.5,
+      "y": 735.1875
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6201,
+      "seconds": 310.05,
+      "label": "新建流程图项目",
+      "rect": {
+        "x": 1024,
+        "y": 140,
+        "width": 134,
+        "height": 38,
+        "cx": 1091,
+        "cy": 159
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6213,
+      "seconds": 310.65,
+      "label": "新建流程图项目",
+      "x": 1091,
+      "y": 159
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6219,
+      "seconds": 310.95,
+      "label": "项目名称",
+      "rect": {
+        "x": 571.979248046875,
+        "y": 391.6129150390625,
+        "width": 465.9766845703125,
+        "height": 39.7694091796875,
+        "cx": 804.9675903320312,
+        "cy": 411.49761962890625
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6231,
+      "seconds": 311.55,
+      "label": "项目名称",
+      "x": 804.9675903320312,
+      "y": 411.49761962890625
+    },
+    {
+      "step": "flow",
+      "type": "typing-start",
+      "frame": 6241,
+      "seconds": 312.05,
+      "label": "项目名称",
+      "text": "资料审核流程"
+    },
+    {
+      "step": "flow",
+      "type": "typing",
+      "frame": 6249,
+      "seconds": 312.45,
+      "label": "项目名称",
+      "text": "资料审核流程"
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6254,
+      "seconds": 312.7,
+      "label": "创建项目",
+      "rect": {
+        "x": 945,
+        "y": 473.078125,
+        "width": 92,
+        "height": 38,
+        "cx": 991,
+        "cy": 492.078125
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6266,
+      "seconds": 313.3,
+      "label": "创建项目",
+      "x": 991,
+      "y": 492.078125
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6272,
+      "seconds": 313.6,
+      "label": "添加节点",
+      "rect": {
+        "x": 375,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 417,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6284,
+      "seconds": 314.2,
+      "label": "添加节点",
+      "x": 417,
+      "y": 333.1875
+    },
+    {
+      "step": "flow",
+      "type": "highlight",
+      "frame": 6290,
+      "seconds": 314.5,
+      "label": "适配画布",
+      "rect": {
+        "x": 815.90625,
+        "y": 314.1875,
+        "width": 84,
+        "height": 38,
+        "cx": 857.90625,
+        "cy": 333.1875
+      }
+    },
+    {
+      "step": "flow",
+      "type": "click",
+      "frame": 6302,
+      "seconds": 315.1,
+      "label": "适配画布",
+      "x": 857.90625,
+      "y": 333.1875
+    },
+    {
+      "step": "pdf-open",
+      "type": "highlight",
+      "frame": 6368,
+      "seconds": 318.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "pdf-open",
+      "type": "click",
+      "frame": 6381,
+      "seconds": 319.05,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "pdf-open",
+      "type": "highlight",
+      "frame": 6391,
+      "seconds": 319.55,
+      "label": "打开 pdf",
+      "rect": {
+        "x": 86,
+        "y": 50,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 73
+      }
+    },
+    {
+      "step": "pdf-open",
+      "type": "click",
+      "frame": 6403,
+      "seconds": 320.15,
+      "label": "打开 pdf",
+      "x": 186.5,
+      "y": 73
+    },
+    {
+      "step": "pdf-open",
+      "type": "highlight",
+      "frame": 6420,
+      "seconds": 321,
+      "label": "两页项目计划演示资料",
+      "rect": {
+        "x": 0,
+        "y": 107,
+        "width": 1549,
+        "height": 648,
+        "cx": 774.5,
+        "cy": 431
+      }
+    },
+    {
+      "step": "pdf-find",
+      "type": "highlight",
+      "frame": 6585,
+      "seconds": 329.25,
+      "label": "PDF 阅读区",
+      "rect": {
+        "x": 0,
+        "y": 107,
+        "width": 1549,
+        "height": 648,
+        "cx": 774.5,
+        "cy": 431
+      }
+    },
+    {
+      "step": "pdf-find",
+      "type": "highlight",
+      "frame": 6588,
+      "seconds": 329.4,
+      "label": "逐字输入查找关键词",
+      "rect": {
+        "x": 751,
+        "y": 70.5,
+        "width": 607.15625,
+        "height": 32,
+        "cx": 1054.578125,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-find",
+      "type": "click",
+      "frame": 6599,
+      "seconds": 329.95,
+      "label": "逐字输入查找关键词",
+      "x": 1054.578125,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-find",
+      "type": "typing-start",
+      "frame": 6608,
+      "seconds": 330.4,
+      "label": "逐字输入查找关键词",
+      "text": "项目计划"
+    },
+    {
+      "step": "pdf-find",
+      "type": "typing",
+      "frame": 6614,
+      "seconds": 330.7,
+      "label": "逐字输入查找关键词",
+      "text": "项目计划"
+    },
+    {
+      "step": "pdf-next",
+      "type": "highlight",
+      "frame": 6793,
+      "seconds": 339.65,
+      "label": "下一个匹配",
+      "rect": {
+        "x": 1471,
+        "y": 71.5,
+        "width": 30,
+        "height": 30,
+        "cx": 1486,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-next",
+      "type": "click",
+      "frame": 6805,
+      "seconds": 340.25,
+      "label": "下一个匹配",
+      "x": 1486,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-next",
+      "type": "highlight",
+      "frame": 6810,
+      "seconds": 340.5,
+      "label": "下一个匹配",
+      "rect": {
+        "x": 1471,
+        "y": 71.5,
+        "width": 30,
+        "height": 30,
+        "cx": 1486,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-next",
+      "type": "click",
+      "frame": 6822,
+      "seconds": 341.1,
+      "label": "下一个匹配",
+      "x": 1486,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-next",
+      "type": "highlight",
+      "frame": 6828,
+      "seconds": 341.4,
+      "label": "上一个匹配",
+      "rect": {
+        "x": 1439,
+        "y": 71.5,
+        "width": 30,
+        "height": 30,
+        "cx": 1454,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-next",
+      "type": "click",
+      "frame": 6840,
+      "seconds": 342,
+      "label": "上一个匹配",
+      "x": 1454,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-copy",
+      "type": "highlight",
+      "frame": 7001,
+      "seconds": 350.05,
+      "label": "关闭查找",
+      "rect": {
+        "x": 1503,
+        "y": 71.5,
+        "width": 30,
+        "height": 30,
+        "cx": 1518,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-copy",
+      "type": "click",
+      "frame": 7013,
+      "seconds": 350.65,
+      "label": "关闭查找",
+      "x": 1518,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-copy",
+      "type": "highlight",
+      "frame": 7019,
+      "seconds": 350.95,
+      "label": "复制本页文字",
+      "rect": {
+        "x": 1417,
+        "y": 62.5,
+        "width": 36,
+        "height": 36,
+        "cx": 1435,
+        "cy": 80.5
+      }
+    },
+    {
+      "step": "pdf-copy",
+      "type": "click",
+      "frame": 7031,
+      "seconds": 351.55,
+      "label": "复制本页文字",
+      "x": 1435,
+      "y": 80.5
+    },
+    {
+      "step": "pdf-copy",
+      "type": "highlight",
+      "frame": 7037,
+      "seconds": 351.85,
+      "label": "复制结果提示",
+      "rect": {
+        "x": 0,
+        "y": 107,
+        "width": 1549,
+        "height": 26.84375,
+        "cx": 774.5,
+        "cy": 120.421875
+      }
+    },
+    {
+      "step": "pdf-copy",
+      "type": "highlight",
+      "frame": 7037,
+      "seconds": 351.85,
+      "label": "复制全文文字",
+      "rect": {
+        "x": 1457,
+        "y": 62.5,
+        "width": 36,
+        "height": 36,
+        "cx": 1475,
+        "cy": 80.5
+      }
+    },
+    {
+      "step": "pdf-copy",
+      "type": "click",
+      "frame": 7050,
+      "seconds": 352.5,
+      "label": "复制全文文字",
+      "x": 1475,
+      "y": 80.5
+    },
+    {
+      "step": "pdf-locate",
+      "type": "highlight",
+      "frame": 7246,
+      "seconds": 362.3,
+      "label": "关闭查找",
+      "rect": {
+        "x": 1503,
+        "y": 71.5,
+        "width": 30,
+        "height": 30,
+        "cx": 1518,
+        "cy": 86.5
+      }
+    },
+    {
+      "step": "pdf-locate",
+      "type": "click",
+      "frame": 7258,
+      "seconds": 362.9,
+      "label": "关闭查找",
+      "x": 1518,
+      "y": 86.5
+    },
+    {
+      "step": "pdf-locate",
+      "type": "highlight",
+      "frame": 7264,
+      "seconds": 363.2,
+      "label": "展开 PDF 工具",
+      "rect": {
+        "x": 1554.5,
+        "y": 63,
+        "width": 40,
+        "height": 40,
+        "cx": 1574.5,
+        "cy": 83
+      }
+    },
+    {
+      "step": "pdf-locate",
+      "type": "click",
+      "frame": 7275,
+      "seconds": 363.75,
+      "label": "展开 PDF 工具",
+      "x": 1574.5,
+      "y": 83
+    },
+    {
+      "step": "pdf-locate",
+      "type": "highlight",
+      "frame": 7281,
+      "seconds": 364.05,
+      "label": "点选定位：关",
+      "rect": {
+        "x": 1302,
+        "y": 717.25,
+        "width": 221,
+        "height": 38,
+        "cx": 1412.5,
+        "cy": 736.25
+      }
+    },
+    {
+      "step": "pdf-locate",
+      "type": "click",
+      "frame": 7292,
+      "seconds": 364.6,
+      "label": "点选定位：关",
+      "x": 1412.5,
+      "y": 736.25
+    },
+    {
+      "step": "pdf-locate",
+      "type": "highlight",
+      "frame": 7298,
+      "seconds": 364.9,
+      "label": "点击 PDF 第一页目标位置",
+      "rect": {
+        "x": 190.75,
+        "y": 0,
+        "width": 896.5,
+        "height": 820,
+        "cx": 639,
+        "cy": 410
+      }
+    },
+    {
+      "step": "pdf-locate",
+      "type": "click",
+      "frame": 7310,
+      "seconds": 365.5,
+      "label": "点击 PDF 第一页目标位置",
+      "x": 639,
+      "y": 410
+    },
+    {
+      "step": "pdf-edit",
+      "type": "highlight",
+      "frame": 7468,
+      "seconds": 373.4,
+      "label": "选择 PDF 编辑操作",
+      "rect": {
+        "x": 1302,
+        "y": 717.09375,
+        "width": 232,
+        "height": 38,
+        "cx": 1418,
+        "cy": 736.09375
+      }
+    },
+    {
+      "step": "pdf-edit",
+      "type": "click",
+      "frame": 7480,
+      "seconds": 374,
+      "label": "选择 PDF 编辑操作",
+      "x": 1418,
+      "y": 736.09375
+    },
+    {
+      "step": "pdf-edit",
+      "type": "highlight",
+      "frame": 7486,
+      "seconds": 374.3,
+      "label": "添加可见批注",
+      "rect": {
+        "x": 1308,
+        "y": 606,
+        "width": 220,
+        "height": 38,
+        "cx": 1418,
+        "cy": 625
+      }
+    },
+    {
+      "step": "pdf-edit",
+      "type": "click",
+      "frame": 7497,
+      "seconds": 374.85,
+      "label": "添加可见批注",
+      "x": 1418,
+      "y": 625
+    },
+    {
+      "step": "pdf-edit",
+      "type": "highlight",
+      "frame": 7503,
+      "seconds": 375.15,
+      "label": "输入可见批注",
+      "rect": {
+        "x": 1302,
+        "y": 696.46875,
+        "width": 232,
+        "height": 60,
+        "cx": 1418,
+        "cy": 726.46875
+      }
+    },
+    {
+      "step": "pdf-edit",
+      "type": "click",
+      "frame": 7515,
+      "seconds": 375.75,
+      "label": "输入可见批注",
+      "x": 1418,
+      "y": 726.46875
+    },
+    {
+      "step": "pdf-edit",
+      "type": "typing-start",
+      "frame": 7525,
+      "seconds": 376.25,
+      "label": "输入可见批注",
+      "text": "演示批注：项目计划已复核"
+    },
+    {
+      "step": "pdf-edit",
+      "type": "typing",
+      "frame": 7542,
+      "seconds": 377.1,
+      "label": "输入可见批注",
+      "text": "演示批注：项目计划已复核"
+    },
+    {
+      "step": "pdf-edit",
+      "type": "highlight",
+      "frame": 7547,
+      "seconds": 377.35,
+      "label": "编辑并另存",
+      "rect": {
+        "x": 1302,
+        "y": 717.15625,
+        "width": 232,
+        "height": 38,
+        "cx": 1418,
+        "cy": 736.15625
+      }
+    },
+    {
+      "step": "pdf-edit",
+      "type": "click",
+      "frame": 7559,
+      "seconds": 377.95,
+      "label": "编辑并另存",
+      "x": 1418,
+      "y": 736.15625
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 7696,
+      "seconds": 384.8,
+      "label": "已保存的 PDF 页面",
+      "rect": {
+        "x": 190.75,
+        "y": 107,
+        "width": 896.5,
+        "height": 713,
+        "cx": 639,
+        "cy": 463.5
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "home",
+      "index": 0,
+      "title": "从首页开始",
+      "chapter": "01 版本概览",
+      "narration": "海豹办公二点六点零，把文献引文、文字插入与 PDF 阅读编辑串成一套完整工作流程。下面用电脑界面实际操作。",
+      "startFrame": 0,
+      "endFrame": 253,
+      "start": 0,
+      "end": 12.65,
+      "audio": "pc-home.mp3",
+      "audioSeconds": 10.944,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-home-verified.png",
+      "endScreenshotSha256": "1c4412760a21382bb83d3b96a5327a83d96ca798ca858830be7e098123d1057a"
+    },
+    {
+      "id": "skins-open",
+      "index": 1,
+      "title": "选择界面皮肤",
+      "chapter": "01 界面与工作区",
+      "narration": "首页的皮肤市场提供多套浅色与深色方案。长期处理文档时，可以先预览，再按个人习惯应用配色。",
+      "startFrame": 253,
+      "endFrame": 475,
+      "start": 12.65,
+      "end": 23.75,
+      "audio": "pc-skins-open.mp3",
+      "audioSeconds": 9.384,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-skins-open-verified.png",
+      "endScreenshotSha256": "57582423f722b95d814970996c09fa90b977a766e314156454dc12c253ce7d5e"
+    },
+    {
+      "id": "skins-apply",
+      "index": 2,
+      "title": "预览并应用配色",
+      "chapter": "01 界面与工作区",
+      "narration": "将鼠标移到预览按钮，可以临时查看效果；点击应用后，界面主色立即变化。随后切回默认海豹紫。",
+      "startFrame": 475,
+      "endFrame": 699,
+      "start": 23.75,
+      "end": 34.95,
+      "audio": "pc-skins-apply.mp3",
+      "audioSeconds": 9.456,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-skins-apply-verified.png",
+      "endScreenshotSha256": "0e0e96790c665c6d82b2fd2da3a6374676b27d857364b8bc52a8c815e829b7ea"
+    },
+    {
+      "id": "new-word",
+      "index": 3,
+      "title": "新建文档",
+      "chapter": "02 文字文档",
+      "narration": "先从首页点击新建，选择文字文档。用一份隔离的演示资料，逐步展示本版新增的插入能力。",
+      "startFrame": 699,
+      "endFrame": 907,
+      "start": 34.95,
+      "end": 45.35,
+      "audio": "pc-new-word.mp3",
+      "audioSeconds": 8.688,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-new-word-verified.png",
+      "endScreenshotSha256": "453d172adb10b26cf85e702c0d74b69216bdb450bf474a2d60d0147f882aecff"
+    },
+    {
+      "id": "word-body",
+      "index": 4,
+      "title": "逐字输入内容",
+      "chapter": "02 文字文档",
+      "narration": "在正文中逐字输入项目说明和访问地址。所有文字都写进当前文档，后面的链接和书签也会保存在同一份文件里。",
+      "startFrame": 907,
+      "endFrame": 1152,
+      "start": 45.35,
+      "end": 57.6,
+      "audio": "pc-word-body.mp3",
+      "audioSeconds": 10.512,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-body-verified.png",
+      "endScreenshotSha256": "8055de68996a4862e8fb44c0170f9b97da41c14a2f1a9d6754733043bdb8e31b"
+    },
+    {
+      "id": "word-link",
+      "index": 5,
+      "title": "插入超链接",
+      "chapter": "02 文字文档",
+      "narration": "打开插入选项，点击超链接，填写目标地址和显示文字。插入后，正文保留真实的可跳转链接。",
+      "startFrame": 1152,
+      "endFrame": 1372,
+      "start": 57.6,
+      "end": 68.6,
+      "audio": "pc-word-link.mp3",
+      "audioSeconds": 9.288,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-link-verified.png",
+      "endScreenshotSha256": "bbd862356c9f61c22a0852413ee377aa23da68c4947ad63acccfe42b25027ec6"
+    },
+    {
+      "id": "word-bookmark",
+      "index": 6,
+      "title": "插入书签",
+      "chapter": "02 文字文档",
+      "narration": "再选择书签，输入章节名称。书签作为文档内的定位标记保存，方便以后建立内部跳转。",
+      "startFrame": 1372,
+      "endFrame": 1575,
+      "start": 68.6,
+      "end": 78.75,
+      "audio": "pc-word-bookmark.mp3",
+      "audioSeconds": 8.448,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-bookmark-verified.png",
+      "endScreenshotSha256": "8ef13bc3f41333ecd33429493e51c5aaf5c4760e12741dd553ca7b2b4b06eb23"
+    },
+    {
+      "id": "word-page",
+      "index": 7,
+      "title": "插入页码域",
+      "chapter": "02 文字文档",
+      "narration": "点击页码，插入可更新的页码域。它保存的是域标记，不是手写的固定数字。",
+      "startFrame": 1575,
+      "endFrame": 1763,
+      "start": 78.75,
+      "end": 88.15,
+      "audio": "pc-word-page.mp3",
+      "audioSeconds": 7.128,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-page-verified.png",
+      "endScreenshotSha256": "ffcc3890ee6d265faf46145338eb277779c5e072acddac4ec2b05119149d425b"
+    },
+    {
+      "id": "citation-open",
+      "index": 8,
+      "title": "查看引文入口",
+      "chapter": "03 文献与引文",
+      "narration": "在引用选项卡打开管理源。文献库、Zotero 文库、当前文档引文和样式集中在同一个面板。",
+      "startFrame": 1763,
+      "endFrame": 1973,
+      "start": 88.15,
+      "end": 98.65,
+      "audio": "pc-citation-open.mp3",
+      "audioSeconds": 8.76,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-citation-open-verified.png",
+      "endScreenshotSha256": "f925887218cc560e74c06f78a951337fb8be02f5db11dfeee4306371660c087f"
+    },
+    {
+      "id": "citation-zotero",
+      "index": 9,
+      "title": "读取本机 Zotero 文献",
+      "chapter": "03 文献与引文",
+      "narration": "在 Zotero 文库输入演示文献标题，点击读取文库。海豹办公直接连接这台电脑上的 Zotero，筛选后只显示这一条演示文献。",
+      "startFrame": 1974,
+      "endFrame": 2238,
+      "start": 98.7,
+      "end": 111.9,
+      "audio": "pc-citation-zotero.mp3",
+      "audioSeconds": 11.496,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-citation-zotero-verified.png",
+      "endScreenshotSha256": "8eef9db69a41a820da6d1c382d15c3b1a7a5c15ac7719b0c4c20047f03677b7c"
+    },
+    {
+      "id": "citation-insert",
+      "index": 10,
+      "title": "加入并插入引文",
+      "chapter": "03 文献与引文",
+      "narration": "点击加入，把 Zotero 条目纳入当前文档。切回文献库勾选这条文献，再点插入引文，正文就出现可刷新的引文域。",
+      "startFrame": 2239,
+      "endFrame": 2487,
+      "start": 111.95,
+      "end": 124.35,
+      "audio": "pc-citation-insert.mp3",
+      "audioSeconds": 10.68,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-citation-insert-verified.png",
+      "endScreenshotSha256": "b13099ee3ce0974ad2e2d962cf658884d3c38f75e7f842a4ac0b737ad17491a5"
+    },
+    {
+      "id": "citation-bibliography",
+      "index": 11,
+      "title": "生成参考文献表",
+      "chapter": "03 文献与引文",
+      "narration": "转到引文页，插入参考文献表，再刷新全部域。引文和书目由同一条 Zotero 文献生成，适合论文与项目报告。",
+      "startFrame": 2487,
+      "endFrame": 2726,
+      "start": 124.35,
+      "end": 136.3,
+      "audio": "pc-citation-bibliography.mp3",
+      "audioSeconds": 10.224,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-citation-bibliography-verified.png",
+      "endScreenshotSha256": "a0afafe058403922122e3bf181ebbb95324d75765e1838cf35536c8800826c7e"
+    },
+    {
+      "id": "citation-style",
+      "index": 12,
+      "title": "查看内置引文样式",
+      "chapter": "03 文献与引文",
+      "narration": "样式页提供国标顺序编码、著者出版年和其他常用格式。写作规范改变时，可以切换样式并重新排版当前文档的引文。",
+      "startFrame": 2726,
+      "endFrame": 2989,
+      "start": 136.3,
+      "end": 149.45,
+      "audio": "pc-citation-style.mp3",
+      "audioSeconds": 11.424,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-citation-style-verified.png",
+      "endScreenshotSha256": "b124ad87e6504a70a066cfc9eaee41e59ee455ba49156c1ceb2b1890f895270b"
+    },
+    {
+      "id": "word-save",
+      "index": 13,
+      "title": "保存文字文档",
+      "chapter": "02 文字文档",
+      "narration": "关闭文献面板并保存。现在重新检查正文，超链接、书签和页码域均保留在演示文档中。",
+      "startFrame": 2990,
+      "endFrame": 3203,
+      "start": 149.5,
+      "end": 160.15,
+      "audio": "pc-word-save.mp3",
+      "audioSeconds": 8.904,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-save-verified.png",
+      "endScreenshotSha256": "b39804da1e17d54e899b9bb04b612a236cb6c9696355d994fdba8e7ccb224648"
+    },
+    {
+      "id": "word-reopen",
+      "index": 14,
+      "title": "关闭并重新打开",
+      "chapter": "02 文字文档",
+      "narration": "关闭已保存的文件，再从首页打开同一份文档。正文、真实超链接、书签和页码域都应继续保留，方便后续编辑。",
+      "startFrame": 3203,
+      "endFrame": 3456,
+      "start": 160.15,
+      "end": 172.8,
+      "audio": "pc-word-reopen.mp3",
+      "audioSeconds": 10.944,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-word-reopen-verified.png",
+      "endScreenshotSha256": "588873e2a55a7fb2c5413a342f02181a6525c7b5182677b678ee6c3e77bda1a0"
+    },
+    {
+      "id": "cloud-open",
+      "index": 15,
+      "title": "查看云端演示文件",
+      "chapter": "04 云空间",
+      "narration": "切换到隔离演示云空间，查看已经加密上传并同步完成的项目计划文件。云端资料可按文件名搜索，适合跨设备取用。",
+      "startFrame": 3456,
+      "endFrame": 3713,
+      "start": 172.8,
+      "end": 185.65,
+      "audio": "pc-cloud-open.mp3",
+      "audioSeconds": 11.136,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-cloud-open-verified.png",
+      "endScreenshotSha256": "b0a3c4cbe997ca8d404ca07141064146bbb82c04699c4bfa64295b0e3d38ef80"
+    },
+    {
+      "id": "cloud-share",
+      "index": 16,
+      "title": "设置分享链接",
+      "chapter": "04 云空间",
+      "narration": "打开演示文件的更多操作，选择生成分享链接。这里可设置有效期，也可开启访问码，按资料敏感程度控制使用方式。",
+      "startFrame": 3713,
+      "endFrame": 3966,
+      "start": 185.65,
+      "end": 198.3,
+      "audio": "pc-cloud-share.mp3",
+      "audioSeconds": 10.92,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-cloud-share-verified.png",
+      "endScreenshotSha256": "211a061d555512e79211cc8b9c4e2637eacf632929283534b83cbbe3eff69395"
+    },
+    {
+      "id": "cloud-link",
+      "index": 17,
+      "title": "生成并复制链接",
+      "chapter": "04 云空间",
+      "narration": "点击生成后得到分享链接，再点击复制链接。接收人无需登录即可下载。画面使用本机隔离演示服务，不公开您的真实云文件。",
+      "startFrame": 3967,
+      "endFrame": 4241,
+      "start": 198.35,
+      "end": 212.05,
+      "audio": "pc-cloud-link.mp3",
+      "audioSeconds": 12,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-cloud-link-verified.png",
+      "endScreenshotSha256": "2301fe9b4df393685d0b7d16f12be29cd10202e34c36299a1ff9c55fe555edeb"
+    },
+    {
+      "id": "sheet-open",
+      "index": 18,
+      "title": "打开预算工作簿",
+      "chapter": "04 电子表格",
+      "narration": "项目预算适合用电子表格整理。打开示例工作簿，数量、单价和分项金额分别位于可编辑的单元格中。",
+      "startFrame": 4242,
+      "endFrame": 4475,
+      "start": 212.1,
+      "end": 223.75,
+      "audio": "pc-sheet-open.mp3",
+      "audioSeconds": 9.936,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-sheet-open-verified.png",
+      "endScreenshotSha256": "4a3444c7ef1c8a4de3a0f5f18b6f349583fa1e888baa90cd85de327a3d7523d3"
+    },
+    {
+      "id": "sheet-formula",
+      "index": 19,
+      "title": "输入求和公式",
+      "chapter": "04 电子表格",
+      "narration": "在名称框定位到 D 五，在公式栏逐字输入求和公式并回车。合计即时显示两千三百六十，减少手工算错。",
+      "startFrame": 4475,
+      "endFrame": 4723,
+      "start": 223.75,
+      "end": 236.15,
+      "audio": "pc-sheet-formula.mp3",
+      "audioSeconds": 10.392,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-sheet-formula-verified.png",
+      "endScreenshotSha256": "aed3554b54d0f61d137e2a0df427e2205343875480c0d687a357249ecd88918b"
+    },
+    {
+      "id": "sheet-save",
+      "index": 20,
+      "title": "调整列宽并另存",
+      "chapter": "04 电子表格",
+      "narration": "点击自适应列宽，让项目名称和数字完整显示，再另存为可继续编辑的海豹表格。",
+      "startFrame": 4723,
+      "endFrame": 4912,
+      "start": 236.15,
+      "end": 245.6,
+      "audio": "pc-sheet-save.mp3",
+      "audioSeconds": 7.728,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-sheet-save-verified.png",
+      "endScreenshotSha256": "0a340ac12dfcab4274a05e1d29075847a56c054a790129fa2e8296ebdc7ae631"
+    },
+    {
+      "id": "template-open",
+      "index": 21,
+      "title": "预览演示模板",
+      "chapter": "05 演示文稿",
+      "narration": "准备会议汇报时，可以从演示模板市场开始。先按类别筛选，打开模板预览完整页面和主题配图。",
+      "startFrame": 4912,
+      "endFrame": 5135,
+      "start": 245.6,
+      "end": 256.75,
+      "audio": "pc-template-open.mp3",
+      "audioSeconds": 9.432,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-template-open-verified.png",
+      "endScreenshotSha256": "03ccfe76c9d6691c1f51fc692017e8a2fdb328dff800c3681140d17ebb7eb75f"
+    },
+    {
+      "id": "template-use",
+      "index": 22,
+      "title": "创建可编辑副本",
+      "chapter": "05 演示文稿",
+      "narration": "点击使用并编辑副本，模板会进入演示编辑器。切到第二页，可继续修改独立的文字、图形与图片对象。",
+      "startFrame": 5136,
+      "endFrame": 5371,
+      "start": 256.8,
+      "end": 268.55,
+      "audio": "pc-template-use.mp3",
+      "audioSeconds": 10.032,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-template-use-verified.png",
+      "endScreenshotSha256": "92bc79722e92a4fe537a5dd5405086fc08355a55a0621daca04d8046e51e544b"
+    },
+    {
+      "id": "assistant-open",
+      "index": 23,
+      "title": "围绕当前文件输入任务",
+      "chapter": "06 智能助手",
+      "narration": "海豹助手会显示当前演示文稿作为任务范围。输入希望它完成的修改建议；发送前需要使用已完成短信验证的账号。本次仅演示操作入口，不展示虚构的生成结果。",
+      "startFrame": 5371,
+      "endFrame": 5712,
+      "start": 268.55,
+      "end": 285.6,
+      "audio": "pc-assistant-open.mp3",
+      "audioSeconds": 15.312,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-assistant-open-verified.png",
+      "endScreenshotSha256": "aab7a48a2ddfdde4727355bdaf724deb2472c65dba173bfa7a279cf5aff564f3"
+    },
+    {
+      "id": "mindmap-create",
+      "index": 24,
+      "title": "建立脑图项目",
+      "chapter": "07 脑图与流程图",
+      "narration": "规划任务结构时，从首页进入脑图，创建新品发布计划。每个项目独立保存，适合分开管理不同工作。",
+      "startFrame": 5712,
+      "endFrame": 5938,
+      "start": 285.6,
+      "end": 296.9,
+      "audio": "pc-mindmap-create.mp3",
+      "audioSeconds": 9.6,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-mindmap-create-verified.png",
+      "endScreenshotSha256": "833950be8baa7440b5bb1d45d0004db8f182a83bd645ef897113acf8de9fea16"
+    },
+    {
+      "id": "mindmap-edit",
+      "index": 25,
+      "title": "编辑主题和分支",
+      "chapter": "07 脑图与流程图",
+      "narration": "修改中心主题，再添加产品资料分支。文字会实际写到节点上，画布立即显示新的任务结构。",
+      "startFrame": 5938,
+      "endFrame": 6149,
+      "start": 296.9,
+      "end": 307.45,
+      "audio": "pc-mindmap-edit.mp3",
+      "audioSeconds": 8.808,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-mindmap-edit-verified.png",
+      "endScreenshotSha256": "fa7f016ae5de122935ea55b4d8d3ddeb70e0d4a19f060e2383b2e04fceb00f36"
+    },
+    {
+      "id": "flow",
+      "index": 26,
+      "title": "建立流程图",
+      "chapter": "07 脑图与流程图",
+      "narration": "审批步骤更适合流程图。从项目列表新建资料审核流程，添加节点，再按业务顺序整理。",
+      "startFrame": 6149,
+      "endFrame": 6360,
+      "start": 307.45,
+      "end": 318,
+      "audio": "pc-flow.mp3",
+      "audioSeconds": 8.808,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-flow-verified.png",
+      "endScreenshotSha256": "40b07e8bd1324554d0504e765618777789f4744709fb5df485f55a8c54e3e34d"
+    },
+    {
+      "id": "pdf-open",
+      "index": 27,
+      "title": "打开演示 PDF",
+      "chapter": "08 PDF 阅读",
+      "narration": "接着打开两页的演示 PDF。资料中重复出现项目计划，便于检查跨页查找与跳转的实际效果。",
+      "startFrame": 6360,
+      "endFrame": 6577,
+      "start": 318,
+      "end": 328.85,
+      "audio": "pc-pdf-open.mp3",
+      "audioSeconds": 9.144,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-open-verified.png",
+      "endScreenshotSha256": "5fb2f42a3898d78ba007108319cde37aaf27fbdedd42f73c35ee8e39beb70136"
+    },
+    {
+      "id": "pdf-find",
+      "index": 28,
+      "title": "输入关键词",
+      "chapter": "08 PDF 阅读",
+      "narration": "按下 Ctrl 加 F，输入项目计划。查找栏显示命中总数，页面同时高亮匹配位置。",
+      "startFrame": 6577,
+      "endFrame": 6785,
+      "start": 328.85,
+      "end": 339.25,
+      "audio": "pc-pdf-find.mp3",
+      "audioSeconds": 8.28,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-find-verified.png",
+      "endScreenshotSha256": "a2eb63795efb26482c3bd3c561c6dcb540cd1385a6f5339b11ee1e4a7622953d"
+    },
+    {
+      "id": "pdf-next",
+      "index": 29,
+      "title": "逐条跳转",
+      "chapter": "08 PDF 阅读",
+      "narration": "点击下一处，跨页定位到后续命中；再点击上一处返回。查找栏中的当前位置也随之变化。",
+      "startFrame": 6785,
+      "endFrame": 6993,
+      "start": 339.25,
+      "end": 349.65,
+      "audio": "pc-pdf-next.mp3",
+      "audioSeconds": 8.664,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-next-verified.png",
+      "endScreenshotSha256": "78b131dfce2d33849d25c4050f915a271863ccce0cb0ca84ffce1e1c60debc70"
+    },
+    {
+      "id": "pdf-copy",
+      "index": 30,
+      "title": "复制页面与全文文字",
+      "chapter": "08 PDF 阅读",
+      "narration": "可选中文字的 PDF 还能一键复制本页或全文。点击复制按钮后，界面会提示结果，方便整理摘录与会议资料。",
+      "startFrame": 6993,
+      "endFrame": 7237,
+      "start": 349.65,
+      "end": 361.85,
+      "audio": "pc-pdf-copy.mp3",
+      "audioSeconds": 10.488,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-copy-verified.png",
+      "endScreenshotSha256": "ccac3b8d60f87380bb563390fe4c27c547d186afa527ee3db693760a6196b3ee"
+    },
+    {
+      "id": "pdf-locate",
+      "index": 31,
+      "title": "点选页面定位",
+      "chapter": "09 PDF 页面编辑",
+      "narration": "展开 PDF 工具，打开点选定位。在页面目标位置单击，页码与坐标会自动填入编辑参数区。",
+      "startFrame": 7238,
+      "endFrame": 7460,
+      "start": 361.9,
+      "end": 373,
+      "audio": "pc-pdf-locate.mp3",
+      "audioSeconds": 9.36,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-locate-verified.png",
+      "endScreenshotSha256": "61f9a09fa28ff06ce0f8ed7c274a86dbfc5a36cf5441a8cdacc59712190a1b41"
+    },
+    {
+      "id": "pdf-edit",
+      "index": 32,
+      "title": "添加批注并另存",
+      "chapter": "09 PDF 页面编辑",
+      "narration": "选择添加可见批注，输入演示文字，点击编辑并另存。保存成功后，页面上能看到新增的内容。",
+      "startFrame": 7460,
+      "endFrame": 7688,
+      "start": 373,
+      "end": 384.4,
+      "audio": "pc-pdf-edit.mp3",
+      "audioSeconds": 9.264,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-pdf-edit-verified.png",
+      "endScreenshotSha256": "c46aba7449e929d6d6e1e67f0591fbef3ae0214edeb84efabc26b0c508447af4"
+    },
+    {
+      "id": "outro",
+      "index": 33,
+      "title": "完成实际操作",
+      "chapter": "海豹办公 2.6.0",
+      "narration": "以上操作来自海豹办公二点六点零生产构建，使用隔离演示文件。下载电脑版本后，可以按照画面步骤自己操作。",
+      "startFrame": 7688,
+      "endFrame": 7930,
+      "start": 384.4,
+      "end": 396.5,
+      "audio": "pc-outro.mp3",
+      "audioSeconds": 10.368,
+      "endScreenshot": "release/promo/work-2.6.0-tutorial/pc-outro-verified.png",
+      "endScreenshotSha256": "4df6fa108fdbe549f2c02b44b2422706b66979f7f718535afbebf434b26840ba"
+    }
+  ],
+  "recording": "release/promo/work-2.6.0-tutorial/pc-operations.mp4",
+  "recordingSha256": "23119fde70820e86ca6b63727d23433ea717830f2ddf54ee4c39804ba66e20ce"
+}

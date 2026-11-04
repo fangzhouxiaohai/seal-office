@@ -95,10 +95,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 def frame_at(file,seconds):
     reader=cv2.VideoCapture(str(file));reader.set(cv2.CAP_PROP_POS_MSEC,seconds*1000);ok,frame=reader.read();reader.release();assert ok,(file,seconds);return frame
 def main():
+    pc_current='--pc-current' in sys.argv
     requested=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--platform=')),None)
+    if pc_current:requested='pc'
     assert requested in [None,'pc','android']
     allresults=[]
-    if requested and (OUT/'verification.json').exists():
+    if requested and not pc_current and (OUT/'verification.json').exists():
         existing=json.loads((OUT/'verification.json').read_text(encoding='utf-8'))
         if existing.get('kind')=='hands-on-tutorial':
             allresults=[v for v in existing['videos'] if v['platform']!=requested and (OUT/v['file']).exists() and sha(OUT/v['file'])==v['sha256']]
@@ -106,7 +108,8 @@ def main():
     for p in [FONT,BOLD]:shutil.copy2(p,fonts/p.name)
     for platform in ([requested] if requested else ['pc','android']):
         source=json.loads((WORK/(platform+'-recording.json')).read_text(encoding='utf-8'));assert source['passed'] and not source['errors']
-        expected=json.loads((ROOT/'docs/promo/current-storyboard.json').read_text(encoding='utf-8'))[platform]
+        storyboard='pc-current-storyboard.json' if pc_current else 'current-storyboard.json'
+        expected=json.loads((ROOT/'docs/promo'/storyboard).read_text(encoding='utf-8'))[platform]
         assert [s['id'] for s in source['steps']]==[s['id'] for s in expected]
         assert sha(ROOT/source['recording'])==source['recordingSha256']
         for step in source['steps']:assert sha(ROOT/step['endScreenshot'])==step['endScreenshotSha256']
@@ -141,18 +144,18 @@ def main():
         for i,(step,shot) in enumerate(chosen):
             image=Image.fromarray(cv2.cvtColor(shot,cv2.COLOR_BGR2RGB));image.thumbnail((thumbw,thumbh));contact.paste(image,(i%columns*thumbw,i//columns*thumbh))
         contact.save(OUT/(name+'-contact.jpg'),quality=93)
-        coverstep=next(s for s in source['steps'] if s['id']==('assistant-modes' if mobile else 'template-use'))
+        coverstep=next(s for s in source['steps'] if s['id']==('assistant-modes' if mobile else 'pdf-edit' if pc_current else 'template-use'))
         cover=Image.fromarray(cv2.cvtColor(frame_at(file,coverstep['end']-1.2),cv2.COLOR_BGR2RGB));cover.save(OUT/(name+'-cover.jpg'),quality=95)
         preview=OUT/(name+'-preview.mp4');start=source['steps'][1]['start'];seconds=min(23,source['durationSeconds']-start)
         run(['-y','-ss',str(start),'-i',str(file),'-t',str(seconds),'-c:v','libx264','-preset','fast','-crf','20','-c:a','aac','-b:a','160k','-movflags','+faststart',str(preview)])
         result={'platform':platform,'file':file.name,'bytes':file.stat().st_size,'sha256':sha(file),'width':w,'height':h,'fps':fps,'durationSeconds':count/fps,'videoAndAudioFullyDecoded':True,
             'integratedLufs':float(levels['input_i']),'truePeakDb':float(levels['input_tp']),'narrationVoice':'zh-CN-XiaoxiaoNeural','voiceRate':'+5%','voicePitch':'+4Hz','voiceConfirmedByUser':True,
             'sourceReferenceSha256':'a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b','steps':len(source['steps']),'actions':len(source['actions']),'functionalAssertions':len(source['assertions']),
-            'nativeDeviceRecording':False,'sourceDisclosure':'Actual production Web/Android-layout interactions in isolated Electron browser windows, with recording-only pointer, click and purple target overlays. Mobile touch gestures use Chromium touch input; not a native APK physical-device recording.',
+            'nativeDeviceRecording':False,'sourceDisclosure':'海豹办公 2.6.0 生产 Web 界面在隔离 Electron 窗口中录制。本机 Zotero 接口只读取单独导入的演示文献；云分享使用本机隔离云服务及演示账号，未使用用户现有云账号。录制专用剪贴板桥接提供系统剪贴板能力。鼠标、点击圆环和紫色光晕仅用于录制标注。' if pc_current else 'Actual production Web/Android-layout interactions in isolated Electron browser windows, with recording-only pointer, click and purple target overlays. Mobile touch gestures use Chromium touch input; not a native APK physical-device recording.',
             'sourceBundleSha256':source['bundleSha256'],'subtitles':len(cues),'subtitleTiming':'Sentence-length proportional timing inside each narrated step; not word-level alignment.',
             'purpleOutlineFrameChecks':purple,'typingFrameChanges':movement,'preview':preview.name,'previewSha256':sha(preview),'sourceManifest':platform+'-recording.json','visualReview':'pending'}
         allresults.append(result);print(json.dumps({'rendered':platform,'seconds':result['durationSeconds'],'steps':result['steps'],'actions':result['actions'],'sha256':result['sha256']}),flush=True)
-    report={'passed':len(allresults)==2,'version':VERSION,'kind':'hands-on-tutorial','videos':sorted(allresults,key=lambda v:v['platform']),'runtimeChanges':False,'visualReview':'pending'}
+    report={'passed':len(allresults)==(1 if pc_current else 2),'version':VERSION,'kind':'hands-on-tutorial','videos':sorted(allresults,key=lambda v:v['platform']),'runtimeChanges':False,'visualReview':'pending'}
     (OUT/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 if __name__=='__main__':
     sys.stdout.reconfigure(encoding='utf-8');main()
