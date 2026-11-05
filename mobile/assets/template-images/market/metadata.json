@@ -1,47 +1,47 @@
 {
   "work": {
-    "id": "ea34c85d2ce6cfbadff54defd1c5da7b2561b4c993f79d7a1b1dbdd8b60a15d9",
-    "bytes": 166462,
+    "id": "e5fe7d37976bd14471b4e8e931e0470c564835e4ebc05327d19a7be67b629fc4",
+    "bytes": 93739,
     "type": "image/png",
     "width": 1254,
     "height": 1254,
     "file": "work.png"
   },
   "business": {
-    "id": "e501cf9643ab875f8bb88ed365ab388e358e387e333f72f9605c011efb1b47e1",
-    "bytes": 143318,
+    "id": "c318447927313e69d96ce4d637b8be0fd4ffa6e138c079868a5667ef5e431e4d",
+    "bytes": 78904,
     "type": "image/png",
     "width": 1254,
     "height": 1254,
     "file": "business.png"
   },
   "education": {
-    "id": "b78104a4218e0f27725095639bb8617fbca663b2f51fe2750bf31c7decf9e590",
-    "bytes": 149976,
+    "id": "7393cc14a3806b8f31a7b9e1879a0b3c5ed5e6de8de6c48bf25d77598b99da7e",
+    "bytes": 91103,
     "type": "image/png",
     "width": 1254,
     "height": 1254,
     "file": "education.png"
   },
   "technology": {
-    "id": "c5b57d59c1b89e9714ff606f9d865a50efdea9949c63848ced914778b1a0e430",
-    "bytes": 149356,
+    "id": "5215e603a062ae424be292c3832b21f90d792e4c1f2727cc06f4e2e851ce8102",
+    "bytes": 86411,
     "type": "image/png",
     "width": 1254,
     "height": 1254,
     "file": "technology.png"
   },
   "people": {
-    "id": "df9ff406cbe9c62a309f972ad7d6153035e191030f301e08636f053e2b9eb888",
-    "bytes": 165287,
+    "id": "4a66ae1fe2d3100f9d4d932269cad97aa4b74d09b1c327ab3a5c8ffbbfb9b916",
+    "bytes": 103092,
     "type": "image/png",
     "width": 1254,
     "height": 1254,
     "file": "people.png"
   },
   "industry": {
-    "id": "5bbab49d24d24cd8ed824eae206a8a7f5a275aa9f5cc27eb6fdec84ba8770977",
-    "bytes": 192886,
+    "id": "665d7dc4392e2394903cd48f992591a71c74a81258ba18229f56c343389f7d40",
+    "bytes": 116903,
     "type": "image/png",
     "width": 1254,
     "height": 1254,

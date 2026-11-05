@@ -2,6 +2,7 @@
 import React from 'react'
 import { Dropdown } from 'antd'
 import Icon from '../../components/Icon'
+import type { 色调 } from '../../components/navTones'
 
 export interface 下拉选项 {
   label: string
@@ -11,6 +12,7 @@ export interface 下拉选项 {
 interface Props {
   commandId?: string
   icon: string
+  tone?: 色调
   label: string
   size?: 'large' | 'small'
   active?: boolean
@@ -46,6 +48,7 @@ function 规范化选项(选项列表: Array<string | 下拉选项>): 下拉选�
 const RibbonButton = ({
   commandId,
   icon,
+  tone,
   label,
   size = 'large',
   active = false,
@@ -65,6 +68,14 @@ const RibbonButton = ({
   ]
     .filter((项) => 项.length > 0)
     .join(' ')
+
+  const 渲染图标 = (图标尺寸: number) => tone
+    ? React.createElement(
+        'span',
+        { className: 'wps-ribbon-button__icon', 'data-tone': disabled ? undefined : tone, 'aria-hidden': 'true' },
+        React.createElement(Icon, { name: icon, size: 图标尺寸, color: 'currentColor', variant: 'outline' })
+      )
+    : React.createElement(Icon, { name: icon, size: 图标尺寸 })
 
   if (options !== undefined && options.length > 0) {
     const 规范化后 = 规范化选项(options)
@@ -89,7 +100,7 @@ const RibbonButton = ({
       React.createElement(
         'button',
         { type: 'button', className: 类名, 'aria-label': label, 'data-seal-command-menu': commandId, title: disabledReason ?? label, disabled, onPointerDown: () => onDropdownOpen?.(true), onClick: () => onDropdownOpen?.(true), onMouseDown: 保持选区 },
-        React.createElement(Icon, { name: icon, size: 16 }),
+        渲染图标(16),
         React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
         React.createElement('span', { className: 'wps-ribbon-button__caret' })
       )
@@ -108,7 +119,7 @@ const RibbonButton = ({
       onPointerDown: () => onDropdownOpen?.(true),
       onClick: disabled ? undefined : onClick,
     },
-    React.createElement(Icon, { name: icon, size: size === 'large' ? 20 : 16 }),
+    渲染图标(size === 'large' ? 20 : 16),
     size === 'large' ? React.createElement('span', { className: 'wps-ribbon-button__label' }, label) : null
   )
 }

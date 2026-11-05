@@ -30,6 +30,7 @@ VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['versi
 PRIVATE = ROOT / '.upgrade-private/web-deployment'
 SITE = '/www/wwwroot/seal.xingmasoft.com'
 CONF = '/www/server/panel/vhost/nginx/seal.xingmasoft.com.conf'
+EXTENSION_CONF = '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/seal-office-app.conf'
 FINGERPRINT = 'SHA256:E5r0/n8PRbe7VLprGOWW7Y/E3ZpnLVaVo53q+5r4xPw'
 BEGIN = '# BEGIN SEAL OFFICE WEB MANAGED'
 END = '# END SEAL OFFICE WEB MANAGED'
@@ -39,7 +40,15 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def patch_nginx(original, example):
+def patch_nginx(original, example, extension=None):
+    if extension is not None:
+        route = 'location ^~ /office/ {'
+        alias = 'alias ' + SITE + '/webcurrent/;'
+        if extension.count(route) != 1 or extension.count(alias) != 1 or 'try_files $uri $uri/ /office/index.html;' not in extension:
+            raise ValueError('现有 Web 扩展配置不符合发行路径，拒绝切换')
+        if BEGIN in original or END in original or re.search(r'location\s+[^\n{]*/office/?(?:\s|\{)', original):
+            raise ValueError('主配置与扩展配置同时声明 Web 路由')
+        return original
     block = BEGIN + '\n' + example.replace('/var/www/seal-office-web/', SITE + '/webcurrent/') + '\n' + END + '\n'
     if BEGIN in original or END in original:
         if original.count(BEGIN) != 1 or original.count(END) != 1:
@@ -86,7 +95,7 @@ def private_state(release):
 
 COMMON = r"""
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),{execFileSync}=require('child_process');
-const base='/www/wwwroot/seal.xingmasoft.com',conf='/www/server/panel/vhost/nginx/seal.xingmasoft.com.conf',nginx='/www/server/nginx/sbin/nginx';
+const base='/www/wwwroot/seal.xingmasoft.com',conf='/www/server/panel/vhost/nginx/seal.xingmasoft.com.conf',extension='/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/seal-office-app.conf',nginx='/www/server/nginx/sbin/nginx';
 const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
 const target=name=>{try{return fs.realpathSync(name)}catch{return null}};
 const call=(name,args)=>execFileSync(name,args,{timeout:45000,stdio:['ignore','pipe','pipe']});
@@ -109,7 +118,7 @@ const release=RELEASE,backup='/root/seal-web-deploy/'+release,dir=base+'/web-rel
 if(fs.existsSync(backup)||fs.existsSync(dir))throw new Error('Staging path already exists');
 call(nginx,['-t']);fs.mkdirSync(backup,{recursive:true,mode:0o700});fs.chmodSync('/root/seal-web-deploy',0o700);fs.chmodSync(backup,0o700);fs.copyFileSync(conf,backup+'/nginx.conf');fs.chmodSync(backup+'/nginx.conf',0o600);
 fs.mkdirSync(base+'/web-releases',{recursive:true,mode:0o755});
-const state={release,backup,directory:dir,nginxHash:digest(fs.readFileSync(conf)),nginxMode:fs.statSync(conf).mode&0o777,backendCurrent:target(base+'/current'),admin:target(base+'/admin'),adminHash:digest(fs.readFileSync(base+'/admin/index.html')),previousWeb:target(base+'/webcurrent'),preparedAt:new Date().toISOString()};
+const state={release,backup,directory:dir,nginxHash:digest(fs.readFileSync(conf)),extensionHash:fs.existsSync(extension)?digest(fs.readFileSync(extension)):null,nginxMode:fs.statSync(conf).mode&0o777,backendCurrent:target(base+'/current'),admin:target(base+'/admin'),adminHash:digest(fs.readFileSync(base+'/admin/index.html')),previousWeb:target(base+'/webcurrent'),preparedAt:new Date().toISOString()};
 fs.writeFileSync(stateFile(backup),JSON.stringify(state),{mode:0o600});console.log(JSON.stringify(state));
 """.replace('RELEASE', json.dumps(release)), 'prepare')
     private_state(release).write_text(json.dumps(state, indent=2), encoding='utf-8')
@@ -164,7 +173,10 @@ def plan(client, release):
         with sftp.open(CONF, 'rb') as file: original = file.read()
         if sha(original) != state['nginxHash']:
             raise ValueError('NGINX changed since preparation')
-        candidate = patch_nginx(original.decode(), (ROOT / 'mobile/deploy/nginx.conf.example').read_text(encoding='utf-8'))
+        extension = sftp.open(EXTENSION_CONF, 'rb').read() if state.get('extensionHash') else None
+        if extension is not None and sha(extension) != state['extensionHash']:
+            raise ValueError('Web 扩展配置已改变')
+        candidate = patch_nginx(original.decode(), (ROOT / 'mobile/deploy/nginx.conf.example').read_text(encoding='utf-8'), extension.decode() if extension is not None else None)
         with sftp.open(state['backup'] + '/nginx-next.conf', 'wb') as file: file.write(candidate.encode())
         sftp.chmod(state['backup'] + '/nginx-next.conf', 0o600)
         isolated = 'events {}\nhttp {\ninclude /www/server/nginx/conf/mime.types;\ninclude ' + state['backup'] + '/nginx-next.conf;\n}\n'
@@ -173,7 +185,7 @@ def plan(client, release):
     finally:
         sftp.close()
     return remote(client, COMMON + r"""
-const state=JSON.parse(fs.readFileSync(STATE));call(nginx,['-t','-c',state.backup+'/nginx-isolated-test.conf','-p','/www/server/nginx']);if(digest(fs.readFileSync(conf))!==state.nginxHash||target(base+'/current')!==state.backendCurrent)throw new Error('Production changed unexpectedly');console.log(JSON.stringify({passed:true,activeConfigUnchanged:true,backendPointerUnchanged:true,nginxCandidateSyntax:true,privateBackupMode:fs.statSync(state.backup).mode&0o777}));
+const state=JSON.parse(fs.readFileSync(STATE));if(state.extensionHash)call(nginx,['-t']);else call(nginx,['-t','-c',state.backup+'/nginx-isolated-test.conf','-p','/www/server/nginx']);if(digest(fs.readFileSync(conf))!==state.nginxHash||(state.extensionHash&&digest(fs.readFileSync(extension))!==state.extensionHash)||target(base+'/current')!==state.backendCurrent)throw new Error('Production changed unexpectedly');console.log(JSON.stringify({passed:true,activeConfigUnchanged:true,backendPointerUnchanged:true,nginxCandidateSyntax:true,privateBackupMode:fs.statSync(state.backup).mode&0o777}));
 """.replace('STATE', json.dumps(state['backup'] + '/state.json')), 'plan')
 
 
@@ -185,7 +197,10 @@ def stage(client, release, expected_sha, qa_report):
         original = file.read()
     if sha(original) != state['nginxHash']:
         raise ValueError('NGINX changed since preparation')
-    patched = patch_nginx(original.decode(), (ROOT / 'mobile/deploy/nginx.conf.example').read_text(encoding='utf-8'))
+    extension = sftp.open(EXTENSION_CONF, 'rb').read() if state.get('extensionHash') else None
+    if extension is not None and sha(extension) != state['extensionHash']:
+        raise ValueError('Web 扩展配置已改变')
+    patched = patch_nginx(original.decode(), (ROOT / 'mobile/deploy/nginx.conf.example').read_text(encoding='utf-8'), extension.decode() if extension is not None else None)
     candidate = PRIVATE / (release + '-nginx.conf'); candidate.write_text(patched, encoding='utf-8')
     manifest_file = PRIVATE / (release + '-manifest.json'); manifest_file.write_text(json.dumps(manifest), encoding='utf-8')
     for local, name in [(archive, 'web.tar.gz'), (candidate, 'nginx-next.conf'), (manifest_file, 'manifest.json')]:
@@ -193,7 +208,7 @@ def stage(client, release, expected_sha, qa_report):
     sftp.close()
     result = remote(client, COMMON + r"""
 const state=JSON.parse(fs.readFileSync(STATE)),manifest=JSON.parse(fs.readFileSync(state.backup+'/manifest.json'));
-if(target(base+'/current')!==state.backendCurrent||digest(fs.readFileSync(conf))!==state.nginxHash||target(base+'/admin')!==state.admin)throw new Error('Production baseline changed');
+if(target(base+'/current')!==state.backendCurrent||digest(fs.readFileSync(conf))!==state.nginxHash||(state.extensionHash&&digest(fs.readFileSync(extension))!==state.extensionHash)||target(base+'/admin')!==state.admin)throw new Error('Production baseline changed');
 if(fs.existsSync(state.directory))throw new Error('Release directory already exists');fs.mkdirSync(state.directory,{mode:0o755});call('tar',['-xzf',state.backup+'/web.tar.gz','-C',state.directory,'--no-same-owner','--no-same-permissions']);
 for(const [name,entry] of Object.entries(manifest)){const file=path.resolve(state.directory,name);if(!file.startsWith(state.directory+'/')||!fs.lstatSync(file).isFile()||digest(fs.readFileSync(file))!==entry.sha256)throw new Error('Artifact manifest mismatch');fs.chmodSync(file,0o644)}
 const chmod=folder=>{fs.chmodSync(folder,0o755);for(const dirent of fs.readdirSync(folder,{withFileTypes:true}))if(dirent.isDirectory())chmod(path.join(folder,dirent.name))};chmod(state.directory);
@@ -217,7 +232,7 @@ def retain_sessions(client, release):
         sftp.close()
     result = remote(client, COMMON + r"""
 const state=JSON.parse(fs.readFileSync(STATE));
-if(target(base+'/current')!==state.backendCurrent||target(base+'/admin')!==state.admin||![state.previousWeb,state.directory].includes(target(base+'/webcurrent'))||![state.nginxHash,state.newNginxHash].includes(digest(fs.readFileSync(conf))))throw new Error('Release baseline changed before immutable asset retention');
+if(target(base+'/current')!==state.backendCurrent||target(base+'/admin')!==state.admin||(state.extensionHash&&digest(fs.readFileSync(extension))!==state.extensionHash)||![state.previousWeb,state.directory].includes(target(base+'/webcurrent'))||![state.nginxHash,state.newNginxHash].includes(digest(fs.readFileSync(conf))))throw new Error('Release baseline changed before immutable asset retention');
 const retain=require(state.backup+'/retain-web-session-assets.cjs').retainHashedAssets,root=base+'/web-releases';
 const histories=fs.readdirSync(root,{withFileTypes:true}).filter(item=>item.isDirectory()&&/^\d+\.\d+\.\d+-web-\d{8}-\d{6}$/.test(item.name)).map(item=>path.join(root,item.name)).filter(item=>item!==state.directory).sort();
 const result={passed:true,previous:state.previousWeb,directory:state.directory,retained:[],reused:0,bytes:0,sources:[]};
@@ -234,7 +249,7 @@ def publish(client, release):
     return remote(client, COMMON + r"""
 const state=JSON.parse(fs.readFileSync(STATE)),manifest=JSON.parse(fs.readFileSync(state.backup+'/manifest.json'));
 const save=result=>{fs.writeFileSync(state.backup+'/deployment.json',JSON.stringify(result),{mode:0o600});console.log(JSON.stringify(result))};
-(async()=>{if(!state.stagedAt||digest(fs.readFileSync(conf))!==state.nginxHash||target(base+'/current')!==state.backendCurrent||target(base+'/webcurrent')!==state.previousWeb)throw new Error('Prepared baseline changed');
+(async()=>{if(!state.stagedAt||digest(fs.readFileSync(conf))!==state.nginxHash||(state.extensionHash&&digest(fs.readFileSync(extension))!==state.extensionHash)||target(base+'/current')!==state.backendCurrent||target(base+'/webcurrent')!==state.previousWeb)throw new Error('Prepared baseline changed');
 let changed=false;try{swap(base+'/webcurrent',state.directory);changed=true;atomicFile(conf,fs.readFileSync(state.backup+'/nginx-next.conf'),state.nginxMode);call(nginx,['-t']);call(nginx,['-s','reload']);
 let last;for(let i=0;i<20;i++){try{const response=await fetch('https://seal.xingmasoft.com/office/',{signal:AbortSignal.timeout(5000)});if(response.status!==200||digest(Buffer.from(await response.arrayBuffer()))!==manifest['index.html'].sha256)throw new Error('Public index mismatch');last=null;break}catch(error){last=error;await new Promise(resolve=>setTimeout(resolve,250))}}if(last)throw last;
 const checks=[];for(const [name,entry] of Object.entries(manifest)){const response=await fetch('https://seal.xingmasoft.com/office/'+name.split('/').map(encodeURIComponent).join('/'),{signal:AbortSignal.timeout(15000)});if(response.status!==200||digest(Buffer.from(await response.arrayBuffer()))!==entry.sha256)throw new Error('Public asset mismatch: '+name);checks.push(name)}

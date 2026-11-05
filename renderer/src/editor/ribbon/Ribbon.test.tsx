@@ -6,6 +6,8 @@ import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
 import RibbonPanel from './RibbonPanel'
 import { RIBBON_TABS } from './tabSpecs'
+import { 表格标签 } from '../../sheet/ribbonSpecs'
+import { 演示标签 } from '../../ppt/ribbonSpecs'
 
 describe('Ribbon 标签行', () => {
   it('渲染六个标签', () => {
@@ -98,5 +100,40 @@ describe('Ribbon 功能区', () => {
     const { container } = render(<RibbonPanel activeKey="insert" />)
     expect(container.querySelectorAll('.wps-ribbon-group').length).toBeGreaterThan(0)
     expect(screen.queryByText('剪贴板')).toBeNull()
+  })
+
+  it.each(RIBBON_TABS)('文字 $label 标签的图标按命令取得稳定色调', (标签) => {
+    const { container } = render(<RibbonPanel activeKey={标签.key} />)
+    const 按钮 = Array.from(container.querySelectorAll<HTMLButtonElement>('.wps-ribbon-button:not(.seal-font-trigger)'))
+    expect(按钮.length).toBeGreaterThan(0)
+    for (const 项 of 按钮) {
+      expect(项.querySelector('.wps-ribbon-button__icon[data-tone]')).not.toBeNull()
+      expect(项.querySelector('.wps-ribbon-button__icon svg')).toHaveAttribute('color', 'currentColor')
+      expect(项).toHaveAccessibleName()
+    }
+  })
+
+  it('同一命令跨标签同色，文件与危险动作按语义区分', () => {
+    const 首页 = render(<RibbonPanel activeKey="start" />)
+    const 色调 = (名称: string) => 首页.getByRole('button', { name: 名称 }).querySelector('.wps-ribbon-button__icon')?.getAttribute('data-tone')
+    expect(色调('打开')).toBe('amber')
+    expect(色调('保存')).toBe('blue')
+    expect(色调('导出为 PDF')).toBe('purple')
+    首页.rerender(<RibbonPanel activeKey="insert" />)
+    const 插入脚注色调 = 色调('脚注')
+    首页.rerender(<RibbonPanel activeKey="reference" />)
+    expect(色调('插入脚注')).toBe(插入脚注色调)
+    首页.rerender(<RibbonPanel activeKey="review" />)
+    expect(色调('删除批注')).toBe('red')
+  })
+
+  it('禁用图标回落中性灰，表格与演示功能区不套用文字配色', () => {
+    const { container, rerender } = render(<RibbonPanel activeKey="start" 获取禁用态={(标识) => 标识 === 'file.save'} />)
+    expect(screen.getByRole('button', { name: '保存' }).querySelector('.wps-ribbon-button__icon')).not.toHaveAttribute('data-tone')
+    expect(screen.getByRole('button', { name: '打开' }).querySelector('.wps-ribbon-button__icon')).toHaveAttribute('data-tone', 'amber')
+    for (const 标签 of [表格标签[0], 演示标签[0]]) {
+      rerender(<RibbonPanel activeKey={标签.key} tabs={标签 === 表格标签[0] ? 表格标签 : 演示标签} />)
+      expect(container.querySelector('.wps-ribbon-button__icon[data-tone]')).toBeNull()
+    }
   })
 })

@@ -1,0 +1,30 @@
+import hashlib
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+import importlib.util
+
+
+SPEC = importlib.util.spec_from_file_location('publish_current_release', Path(__file__).with_name('publish-current-release.py'))
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class ReleaseAssetsTest(unittest.TestCase):
+    def test_reads_web_and_mobile_archives_from_mobile_web(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            web = root / 'mobile-web' / 'seal-office-2.7.0-web.zip'
+            web.parent.mkdir()
+            web.write_bytes(b'web release')
+            digest = hashlib.sha256(web.read_bytes()).hexdigest()
+            (root / 'SHA256SUMS.txt').write_text(f'{digest}  mobile-web/{web.name}\n', encoding='utf-8')
+            with patch.object(MODULE, 'DIRECTORY', root), patch.object(MODULE, 'CANDIDATES', [web.name]):
+                rows = MODULE.assets()
+            self.assertEqual(rows[0]['name'], web.name)
+            self.assertEqual(rows[0]['path'], f'mobile-web/{web.name}')
+
+
+if __name__ == '__main__':
+    unittest.main()

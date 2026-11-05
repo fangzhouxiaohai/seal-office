@@ -9,7 +9,7 @@ import { insertDocumentNote, 注释锚点, 注释锚点范围 } from './notes'
 import { insertBookmark, insertField, insertHyperlink } from './inserts'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
-import { 可直开保存风险警告 } from '../fileWarnings'
+import { 可直开保存风险警告, 处于受保护查看 } from '../fileWarnings'
 import { htmlToDocxModel, 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { 桥接 } from '../ipc/bridge'
 import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
@@ -226,6 +226,7 @@ const DocEditor = () => {
 
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId) ?? null
   const 文档标识 = 当前文档?.id ?? ''
+  const 保护查看 = 处于受保护查看(当前文档?.来源路径, 文档路径[文档标识], 当前文档?.警告)
   const 阅读 = useMobileReading(文档标识, Boolean(当前文档?.来源路径))
   const [全屏阅读,set全屏阅读] = useState(false)
   const 全屏阅读状态=useRef(new Map<string,import('./WordReadingView').WordReadingState>())
@@ -244,11 +245,11 @@ const DocEditor = () => {
       set视图(页面视图引用.current); 更新文字页面设置(文档标识, model.页面设置)
     }
   }
-  const 协作 = useRealtimeDocument<CollaborativeWord>({ documentId: 当前文档?.id ?? null, type: 'word', model: splitWordModel(当前文档?.html ?? '', 当前文档?.页面设置), onRemote: 远端应用, readOnly: 视图.文档保护 || 阅读.阅读模式, validate: validateWordModel })
-  const 只读 = 视图.文档保护 || 阅读.阅读模式 || 协作.readOnly || 修订视图 === 'original'
+  const 协作 = useRealtimeDocument<CollaborativeWord>({ documentId: 当前文档?.id ?? null, type: 'word', model: splitWordModel(当前文档?.html ?? '', 当前文档?.页面设置), onRemote: 远端应用, readOnly: 视图.文档保护 || 阅读.阅读模式 || 保护查看, validate: validateWordModel })
+  const 只读 = 视图.文档保护 || 阅读.阅读模式 || 协作.readOnly || 保护查看 || 修订视图 === 'original'
   const 只读引用 = useRef(只读)
   只读引用.current = 只读
-  const 只读提示 = 协作.readOnly ? '当前共享权限为只读' : 修订视图 === 'original' ? '原始正文视图为只读，请切回全部标记后编辑' : 阅读.阅读模式 ? '当前为阅读模式，请先切换到编辑' : '文档已保护，请先解除保护'
+  const 只读提示 = 保护查看 ? '当前处于受保护查看，请先另存为副本再编辑' : 协作.readOnly ? '当前共享权限为只读' : 修订视图 === 'original' ? '原始正文视图为只读，请切回全部标记后编辑' : 阅读.阅读模式 ? '当前为阅读模式，请先切换到编辑' : '文档已保护，请先解除保护'
   页面设置引用.current = 当前文档?.页面设置
   const 当前文档标识引用 = useRef(文档标识)
   当前文档标识引用.current = 文档标识
@@ -1321,6 +1322,9 @@ const DocEditor = () => {
       查找: () => set查找打开(当前 => !当前),
       目录: () => set导航打开(当前 => !当前),
     }) : null,
+    保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
+      `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
+    ) : null,
     !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
     修订面板 && React.createElement(RevisionPanel, { html: 当前文档?.html ?? '', author: 修订作者, setAuthor: set修订作者, view: 修订视图, setView: set修订视图, busy: 修订处理中, readOnly: 只读, resolve: (action, id, part) => void 处理修订(action, id, part) }),
     !阅读.阅读模式 && React.createElement(RibbonPanel, {

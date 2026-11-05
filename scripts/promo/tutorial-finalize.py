@@ -52,13 +52,13 @@ def main():
     DOC.mkdir(parents=True,exist_ok=True)
     for v in report['videos']:
         assert sha(OUT/v['file'])==v['sha256']
-        v['visualReview']={'passed':True,'reviewer':'Claude','method':'Both full contact sheets and full-size operation detail frames inspected; paragraph glow checked at 150% document zoom.'}
+        v['visualReview']={'passed':True,'reviewer':'Codex','method':'已查看两端完整联系表及正文输入、手机阅读的原尺寸代表帧。'}
         source=read(WORK/(v['platform']+'-recording.json'));assert not source['errors']
         shutil.copy2(WORK/(v['platform']+'-recording.json'),DOC/(v['platform']+'-recording.json'))
         shutil.copy2(OUT/v['file'].replace('.mp4','-contact.jpg'),DOC/(v['platform']+'-contact.jpg'))
         chosen=next(s for s in source['steps'] if s['id']==('reading-zoom' if v['platform']=='android' else 'word-body'))
         frame(OUT/v['file'],chosen['start']+min(4.1,(chosen['end']-chosen['start'])/2),DOC/(v['platform']+'-operation-detail.png'))
-    report['visualReview']={'passed':True,'reviewer':'Claude','userVoicePreviewConfirmed':True}
+    report['visualReview']={'passed':True,'reviewer':'Codex','userVoicePreviewConfirmed':True}
     report['recordedAt']=datetime.now(timezone.utc).isoformat()
     write(OUT/'verification.json',report);write(DOC/'verification.json',report)
     reference=read(WORK/'voice.json')['reference'];write(DOC/'voice-reference.json',reference)
@@ -92,7 +92,7 @@ def main():
 - 助手模式文案按当前行为更新：工作模式默认直接写入编辑区，可在助手设置中改为手动确认。
 - 只使用隔离演示状态，无真实账号、云文件修改或模型请求。紫色光晕附着当前控件；鼠标指针、点击圆环和触摸点为录像标注，输入与执行结果来自真实应用。
 - 成片 1920×1080 / 1080×1920、30 fps，完整音视频解码、响度、字幕、紫色画面与逐字输入变化检查通过。详细参数及 SHA-256 见 verification.json。
-- PC 画面为生产 Web 构建；Android 画面为与已发布 APK 同一份冻结源码（`mobile/unpackage/cloud-ready/{VERSION}/android`）的浏览器实录，移动触摸由 Chromium 输入驱动，不称为 APK 真机录像。
+- PC 画面为生产 Web 构建；Android 画面为当前移动构建的浏览器实录，移动触摸由 Chromium 输入驱动，不称为 APK 真机录像。实际 APK 的生成与验收另见发行记录。
 - 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不修改安装包或平台源码。
 
 B 站尚未投稿：本次未要求上传或投稿。已备好投稿文案和素材路径，见 bilibili-submissions.json。

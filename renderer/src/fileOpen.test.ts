@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal } from 'antd'
-import { 读取本地文件内容, 注册最近文档错误弹窗, 注册导入确认弹窗, 记录最近文档, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
+import { 读取本地文件内容, 准备打开本地文件, 注册最近文档错误弹窗, 注册导入确认弹窗, 记录最近文档, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 保存为纯文本 } from './editor/exportDoc'
 import { 创建工作表, 写入单元格 } from './sheet/model'
 import { 创建演示文稿 } from './ppt/deck'
@@ -11,6 +11,60 @@ afterEach(() => {
 })
 
 describe('本地文件打开', () => {
+  it('网页型 XLS 按实际内容导入，保留文本编号且不调用旧版转换器', async () => {
+    const 网页 = '\uFEFF<html><body><table><tr><th>编号</th><th>名称</th></tr><tr><td style="mso-number-format:\\@;">00123456789012345678</td><td>甲&amp;乙</td></tr></table></body></html>'
+    const 旧版转换 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 网页, 二进制: false, 实际格式: 'html-table-xls', 扩展名: '.xls', 文件指纹: '来源指纹' }),
+      office: { readCompatible: 旧版转换 },
+    } })
+    const 结果 = await 读取本地文件内容('C:\\资料\\报表.xls')
+    expect(结果.类型).toBe('table')
+    expect(结果.文件指纹).toBe('来源指纹')
+    expect(结果.警告?.join('')).toContain('网页表格')
+    const 表 = 结果.工作表列表?.[0]
+    expect(表 && '单元格' in 表 ? 表.单元格.A2.原始值 : '').toBe('00123456789012345678')
+    expect(旧版转换).not.toHaveBeenCalled()
+  })
+
+  it('网页型 XLS 无表格时拒绝，真正二进制 XLS 仍交给旧版转换器', async () => {
+    const 转换 = vi.fn().mockResolvedValue({ 成功: true, 类型: 'table', html: '<table><tr><td>原工作簿</td></tr></table>' })
+    const 读取 = vi.fn().mockResolvedValueOnce({ 成功: true, 内容: '<html><body>无表格</body></html>', 二进制: false, 实际格式: 'html-table-xls', 扩展名: '.xls' })
+      .mockResolvedValueOnce({ 成功: true, 内容: '0M8R4KGxGuE=', 二进制: true, 扩展名: '.xls' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { readFile: 读取, office: { readCompatible: 转换 } } })
+    await expect(读取本地文件内容('C:\\资料\\坏报表.xls')).rejects.toThrow('没有可识别的表格')
+    await expect(读取本地文件内容('C:\\资料\\旧工作簿.xls')).resolves.toMatchObject({ 类型: 'table' })
+    expect(转换).toHaveBeenCalledTimes(1)
+  })
+
+  it('移动或浏览器读取边界返回二进制网页型 XLS 时同样按实际内容导入', async () => {
+    const 网页 = '<html><body><table><tr><td>0007</td></tr></table></body></html>'
+    const 转换 = vi.fn()
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: Buffer.from(网页).toString('base64'), 二进制: true, 扩展名: '.xls' }),
+      office: { readCompatible: 转换 },
+    } })
+    const 结果 = await 读取本地文件内容('/seal/documents/报表.xls')
+    const 表 = 结果.工作表列表?.[0]
+    expect(表 && '单元格' in 表 ? 表.单元格.A1.原始值 : '').toBe('0007')
+    expect(转换).not.toHaveBeenCalled()
+  })
+
+  it('有损导入可选择查看已识别内容，保留风险警告与原路径', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'AA==', 二进制: true, 扩展名: '.xlsx' }),
+      office: { readXlsx: vi.fn().mockResolvedValue({ 成功: true, html: '<table><tr><td>正文</td></tr></table>', 警告: ['命名区域未导入', '部分边框样式未导入'] }) },
+    } })
+    const 确认 = vi.fn(选项 => 选项.onOk?.())
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      const 结果 = await 准备打开本地文件('C:\\资料\\有损表格.xlsx')
+      expect(结果?.类型).toBe('table')
+      expect(结果?.打开路径).toBeUndefined()
+      expect(结果?.警告).toEqual(['命名区域未导入', '部分边框样式未导入'])
+      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ okText: '查看已识别内容' }))
+    } finally { 取消注册() }
+  })
   it('零字节办公文件说明缺少结构，不生成空白文档掩盖错误', async () => {
     const 解析 = vi.fn()
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
@@ -282,7 +336,7 @@ describe('本地文件打开', () => {
   })
 
 
-  it('从系统对话框打开不完整文档前要求转换，取消时不创建编辑标签', async () => {
+  it('从系统对话框查看不完整文档前提示风险，取消时不创建编辑标签', async () => {
     const 路径 = 'C:\\资料\\报告.docx'
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
@@ -298,7 +352,7 @@ describe('本地文件打开', () => {
     const 取消注册 = 注册导入确认弹窗(确认)
     try {
       expect(await 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)).toBe(false)
-      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ title: '此文件需要转换后打开', cancelText: '取消打开' }))
+      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ title: '此文件仅能查看已识别内容', cancelText: '取消打开' }))
       expect(打开).not.toHaveBeenCalled()
     } finally { 取消注册() }
   })

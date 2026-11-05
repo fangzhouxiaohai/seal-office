@@ -18,6 +18,7 @@ import { 生成文字上下文 } from './wordBlocks'
 import {requireAIIdentity} from '../cloud/aiIdentity'
 import {useCloud} from '../cloud/CloudProvider'
 import { 提取流式正文 } from './reasoning'
+import { 处于受保护查看 } from '../fileWarnings'
 import './assistant.css'
 
 type 会话消息 = { 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 请求标识?: string; 状态?: '执行中' | '完成' | '已停止' | '失败'; 阶段?: string; 执行记录?: 助手执行记录[] }
@@ -182,8 +183,8 @@ export default function AiAssistant() {
   const 绑定中 = Object.values(绑定中范围).some(Boolean)
   const 正在绑定 = useRef(new Set<string>())
   const 绑定失败 = useRef(new Set<string>())
-  const 最新文件 = useRef({ documents, pdfDocuments, 表格文档模型, 演示文档模型 })
-  最新文件.current = { documents, pdfDocuments, 表格文档模型, 演示文档模型 }
+  const 最新文件 = useRef({ documents, pdfDocuments, 文档路径, 表格文档模型, 演示文档模型 })
+  最新文件.current = { documents, pdfDocuments, 文档路径, 表格文档模型, 演示文档模型 }
   const 新版可用 = typeof window.electronAPI?.ai?.onToolCall === 'function'
   const 交互禁用 = 发送中 || 恢复中 || 清除中 || 绑定中 || 处理候选中
 
@@ -232,6 +233,7 @@ export default function AiAssistant() {
         文件.forEach((项) => createDoc(项.类型, 项.内容, { 名称: 项.名称 }))
       } else {
         if (!文档) throw new Error('当前文件已关闭，无法应用修改')
+        if (处于受保护查看(文档.来源路径, 文档路径[文档.id], 文档.警告)) throw new Error('当前文件处于受保护查看，请先另存为副本再让助手修改')
         if (当前文档?.id !== 待确认.标识) {
           // 自动确认只在目标文件仍是当前文件时直接写入，否则退回预览，避免在后台误改文件。
           if (自动) return false
@@ -284,6 +286,7 @@ export default function AiAssistant() {
       if (!文档) throw new Error('当前没有打开的可编辑文件，请使用创建文件指令')
       const 现文档 = 最新文件.current.documents.find((项) => 项.id === 文档.id)
       if (!现文档) throw new Error('原文件已关闭，无法生成修改候选')
+      if (处于受保护查看(现文档.来源路径, 最新文件.current.文档路径[现文档.id], 现文档.警告)) throw new Error('当前文件处于受保护查看，请先另存为副本再让助手修改')
       if (原始快照(现文档, 最新文件.current.表格文档模型, 最新文件.current.演示文档模型) !== 任务.原内容) throw new Error('文件内容已变化，请重新向助手发送请求')
       let 候选: string | Sheet[] | 演示文稿
       if (文档.type === 'table') {
@@ -342,9 +345,11 @@ export default function AiAssistant() {
           if (调用.工具 !== 'propose_changes') throw new Error('不支持的助手工具，未执行任何操作')
           const 回复 = 解析助手回复(JSON.stringify(调用.参数))
           if (!回复.修改.length) throw new Error('修改候选不能为空')
-          const 已自动应用 = 生成候选(任务, 回复.修改)
-          合并任务消息(任务, { 阶段: 已自动应用 ? '修改已自动应用' : '修改已校验，等待确认' }, true)
-          const 结果 = await 桥接.ai.submitToolResult({ 请求标识: 调用.请求标识, 调用标识: 调用.调用标识, 成功: true, 数据: { 候选已生成: true, 已自动应用, 修改数量: 回复.修改.length } })
+          // 工具回调在面板初次挂载时注册，可能先于文件打开。此处只校验候选；
+          // 最终回复会汇总全部工具修改，再由当前渲染状态一次性自动应用。
+          生成候选(任务, 回复.修改, false)
+          合并任务消息(任务, { 阶段: '修改已校验，等待确认' }, true)
+          const 结果 = await 桥接.ai.submitToolResult({ 请求标识: 调用.请求标识, 调用标识: 调用.调用标识, 成功: true, 数据: { 候选已生成: true, 已自动应用: false, 修改数量: 回复.修改.length } })
           if (!结果.成功) throw new Error(结果.错误 || '无法回传修改候选结果')
         } catch (错误) {
           const 原因 = 错误 instanceof Error ? 错误.message : '生成修改候选失败'
@@ -766,7 +771,10 @@ export default function AiAssistant() {
           </div> : null}
           {会话.map((项, 索引) => <div className={`assistant-message${项.角色 === 'user' ? ' assistant-message--user' : ''}`} key={`${索引}-${项.角色}`}>
             {项.角色 === 'assistant' ? <span className="assistant-message__role"><span className="assistant-message__avatar" aria-hidden="true"><Icon name="ai" size={12} /></span>智能助手</span> : null}
-            {项.执行记录?.length ? <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true">{记录.状态 === '完成' ? '✓' : 记录.状态 === '失败' ? '!' : 记录.状态 === '已停止' ? '■' : ''}</span><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol> : null}
+            {项.执行记录?.length ? <details className="assistant-process" open={项.状态 === '执行中' ? true : undefined}>
+              <summary>执行过程 · {项.执行记录.every(记录 => 记录.状态 === '完成') ? `${项.执行记录.length} 项已完成` : `已完成 ${项.执行记录.filter(记录 => 记录.状态 === '完成').length}/${项.执行记录.length} 项`}</summary>
+              <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true" /><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol>
+            </details> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
             {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className="assistant-message__answer"><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div><div className="assistant-message__disclaimer">本内容由 AI 生成</div></div> : null}
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}

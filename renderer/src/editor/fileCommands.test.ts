@@ -1,6 +1,5 @@
 // 文件命令测试：打开、保存、导出
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createRequire } from 'node:module'
 import { createHash } from 'node:crypto'
 import { createElement } from 'react'
 import { App as AntdApp, Modal } from 'antd'
@@ -10,8 +9,6 @@ import { 命令表 } from './commands'
 import { 读取本地文件内容 } from '../fileOpen'
 import { 净化富文本 } from './sanitizeHtml'
 import { AppProvider, useAppStore, type AppState } from '../store'
-
-const 原生编解码器 = createRequire(import.meta.url)('../../../main/office/sealFormat.js')
 
 const 页面视图 = {
   纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无',
@@ -34,9 +31,8 @@ describe('文件命令', () => {
       expect(命令表['file.open'].label).toBe('打开文件')
     })
 
-    it.each([false, true])('从工具栏打开带警告文字文件先确认转换或取消，不覆盖当前未保存正文（转换=%s）', async 转换 => {
+    it.each([false, true])('从工具栏打开带警告文字文件先确认查看或取消，不覆盖当前未保存正文（查看=%s）', async 查看 => {
       const 路径 = 'C:\\资料\\第二份.docx'
-      const 副本路径 = 'C:\\资料\\第二份.sldoc'
       const 原件字节 = Buffer.from('原DOCX测试字节，不可改写')
       const 文件 = new Map<string, Buffer>([[路径, 原件字节]])
       const 指纹 = (数据: Buffer) => createHash('sha256').update(数据).digest('hex')
@@ -46,23 +42,17 @@ describe('文件命令', () => {
       })
       const 应用内容 = vi.fn()
       const 设置文档路径 = vi.fn()
-      const 另存位置 = vi.fn().mockResolvedValue(副本路径)
-      const 保存 = vi.fn(async (目标: string, 数据: string, 格式: string) => {
-        expect(目标).toBe(副本路径); expect(格式).toBe('二进制')
-        文件.set(目标, Buffer.from(数据, 'base64'))
-        return { 成功: true, 文件指纹: 指纹(文件.get(目标)!) }
-      })
+      const 另存位置 = vi.fn()
+      const 保存 = vi.fn()
       const 读取 = vi.fn(async (目标: string) => {
         const 数据 = 文件.get(目标)
         if (!数据) return { 成功: false, 错误: '文件尚未写出，不能打开内存副本' }
-        return { 成功: true, 二进制: true, 内容: 数据.toString('base64'), 扩展名: 目标 === 路径 ? '.docx' : '.sldoc', 文件指纹: 指纹(数据) }
+        return { 成功: true, 二进制: true, 内容: 数据.toString('base64'), 扩展名: '.docx', 文件指纹: 指纹(数据) }
       })
-      const 编码 = vi.fn(async (类型: string, 数据: unknown) => ({ 成功: true, 数据: (await 原生编解码器.writeSeal(类型, 数据)).toString('base64') }))
-      const 解码 = vi.fn(async (扩展: string, 数据: string) => ({ 成功: true, ...await 原生编解码器.readSeal(扩展, Buffer.from(数据, 'base64')) }))
       ;(window as any).electronAPI = {
         showOpenDialog: vi.fn().mockResolvedValue(路径),
         showSaveDialog: 另存位置, saveToFile: 保存, readFile: 读取,
-        office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] }), writeSeal: 编码, readSeal: 解码 },
+        office: { readDocx: vi.fn().mockResolvedValue({ 成功: true, html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] }) },
         recentAdd: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }), recentList: vi.fn().mockResolvedValue({ 成功: true, 数据: [] }),
         backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }), backupClear: vi.fn().mockResolvedValue({ 成功: true }),
       }
@@ -81,25 +71,22 @@ describe('文件命令', () => {
         notify: vi.fn(),
         history: { record: vi.fn() },
       } as any)
-      const 对话框 = await screen.findByRole('dialog', { name: '此文件需要转换后打开' })
+      const 对话框 = await screen.findByRole('dialog', { name: '此文件仅能查看已识别内容' })
       expect(within(对话框).getByText('图片尚未导入')).toBeInTheDocument()
       expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
-      await userEvent.click(within(对话框).getByRole('button', { name: 转换 ? '转换为海豹格式' : '取消打开' }))
-      if (转换) {
-        await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 副本路径, ['图片尚未导入'], undefined, 指纹(文件.get(副本路径)!)))
-        expect(另存位置).toHaveBeenCalledWith('第二份.sldoc', 'word')
-        expect(保存).toHaveBeenCalledOnce(); expect(编码).toHaveBeenCalledOnce(); expect(解码).toHaveBeenCalledOnce()
-        expect(读取.mock.calls.map(([目标]) => 目标)).toEqual([路径, 副本路径])
-        expect(await 原生编解码器.readSeal('sldoc', 文件.get(副本路径))).toMatchObject({ 类型: 'word', html: '<p>第二份正文</p>', 警告: ['图片尚未导入'] })
+      await userEvent.click(within(对话框).getByRole('button', { name: 查看 ? '查看已识别内容' : '取消打开' }))
+      if (查看) {
+        await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入'], undefined, 指纹(原件字节)))
+        expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
+        expect(读取.mock.calls.map(([目标]) => 目标)).toEqual([路径])
         expect(状态.documents).toHaveLength(2)
         const 第二份 = 状态.documents.find(项 => 项.id !== 第一份标识)!
-        expect(第二份).toMatchObject({ name: '第二份.sldoc', html: '<p>第二份正文</p>', 来源路径: 副本路径, 警告: ['图片尚未导入'], 文件指纹: 指纹(文件.get(副本路径)!) })
-        expect(状态.文档路径[第二份.id]).toBe(副本路径)
+        expect(第二份).toMatchObject({ name: '第二份.docx', html: '<p>第二份正文</p>', 来源路径: 路径, 警告: ['图片尚未导入'], 文件指纹: 指纹(原件字节) })
+        expect(状态.文档路径[第二份.id]).toBe(路径)
         expect(状态.workspaceTabs.find(项 => 项.id === 第二份.id)?.dirty).toBe(false)
       } else {
-        await vi.waitFor(() => expect(screen.queryByRole('dialog', { name: '此文件需要转换后打开' })).toBeNull())
+        await vi.waitFor(() => expect(screen.queryByRole('dialog', { name: '此文件仅能查看已识别内容' })).toBeNull())
         expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
-        expect(编码).not.toHaveBeenCalled(); expect(解码).not.toHaveBeenCalled()
         expect(状态.documents).toHaveLength(1); expect(状态.activeDocumentId).toBe(第一份标识)
       }
       expect(应用内容).not.toHaveBeenCalled()

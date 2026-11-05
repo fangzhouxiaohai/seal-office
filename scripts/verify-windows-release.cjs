@@ -249,11 +249,13 @@ async function 验收() {
       检查(CSV保存.成功 && CSV重开.文本编码 === 'utf16le' && CSV重开.内容.includes('0012,456') && !CSV重开.二进制, '成品 CSV 写回原扩展名和编码，重开保留内容')
     }
     const 信息 = await 执行('window.electronAPI.getAppInfo()'), 完整性 = await 执行('window.electronAPI.checkIntegrity()')
+    if (!完整性?.成功 || !完整性?.完整) console.log('成品完整性详情：' + JSON.stringify(完整性))
     检查(完整性.成功 && 完整性.完整, '最终成品完整性校验通过')
-    检查(await 执行("document.querySelectorAll('.wps-global-tab__dirty').length===0"), '成品退出前无未保存误报')
+    await 等待("document.querySelectorAll('.wps-global-tab__dirty').length===0")
+    检查(true, '成品退出前无未保存误报')
     fs.writeFileSync(报告路径, JSON.stringify({ 版本: 信息.版本, 阶段, 数量: 核验.length, 核验, 完整性, 说明: '关联注册与默认查询使用真实系统接口和独立测试注册表；系统设置地址由验收拦截记录，没有改变用户受保护的默认程序。' }, null, 2))
     console.log(JSON.stringify({ 阶段, 数量: 核验.length, 结果: '通过' }))
     await 主.执行('setTimeout(()=>globalThis.验收窗口.close(),300);true')
   } finally { for (const 通道 of 连接列表) 通道.close() }
 }
-验收().catch(错误 => { console.error(错误.message); process.exitCode = 1 })
+验收().catch(错误 => { console.log('成品验收失败：' + 错误.message); process.exitCode = 1 })

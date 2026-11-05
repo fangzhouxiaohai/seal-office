@@ -36,6 +36,20 @@ describe('文件通道的数据完整性', () => {
     目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-file-channel-'))
   })
 
+  it('按实际内容读取网页型 XLS，传统二进制 XLS 保持原路径且不改写来源', async () => {
+    const 网页路径 = path.join(目录, '网页报表.xls')
+    const 原文 = '\uFEFF<html><body><table><tr><td>0012</td></tr></table></body></html>'
+    const 原字节 = Buffer.from(原文)
+    fs.writeFileSync(网页路径, 原字节)
+    const 二进制路径 = path.join(目录, '旧工作簿.xls')
+    const 复合文档头 = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])
+    fs.writeFileSync(二进制路径, 复合文档头)
+    const 调用 = 创建通道(目录)
+    expect(await 调用('file.readFile', 网页路径)).toMatchObject({ 成功: true, 二进制: false, 实际格式: 'html-table-xls', 内容: 原文 })
+    expect(await 调用('file.readFile', 二进制路径)).toMatchObject({ 成功: true, 二进制: true, 内容: 复合文档头.toString('base64') })
+    expect(fs.readFileSync(网页路径)).toEqual(原字节)
+  })
+
   it('本机文件夹只列出可打开的办公文件并按修改时间排序', async () => {
     fs.writeFileSync(path.join(目录, '较早.docx'), '甲')
     fs.writeFileSync(path.join(目录, '较新.pdf'), '乙')

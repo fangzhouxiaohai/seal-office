@@ -1,7 +1,7 @@
 import {认证AI调用} from '../cloud/aiIdentity'
 import type { 字体目录结果, 字体读取结果, 字体导入结果 } from '../fonts/types'
 export type 文本编码 = 'utf8' | 'utf16le' | 'utf16be' | 'gb18030'
-export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
+export interface 文件读取结果 { 成功: boolean; 内容?: string; 二进制?: boolean; 实际格式?: 'html-table-xls'; 文本编码?: 文本编码; 扩展名?: string; 文件指纹?: string; 错误?: string }
 export interface 文件保存结果 { 成功: boolean; 路径?: string; 文件指纹?: string; 错误?: string; 已取消?: boolean }
 export interface 文件重命名结果 { 成功: boolean; 路径?: string; 名称?: string; 文件指纹?: string; 错误?: string }
 export interface 完整性检查结果 { 成功: boolean; 完整?: boolean; 检查文件数?: number; 异常?: Array<{ 路径: string; 原因: string }>; 错误?: string }

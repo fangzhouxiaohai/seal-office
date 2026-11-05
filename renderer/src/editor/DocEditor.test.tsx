@@ -41,6 +41,20 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
+  it('有损来源处于受保护查看，另存副本后恢复编辑', async () => {
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 创建入口 = () => {
+      状态 = useAppStore()
+      return <button onClick={() => 状态!.createDoc('word', '<p>已识别正文</p>', { 路径: 'C:\\资料\\报告.docx', 警告: ['图片尚未导入'] })}>打开有损文档</button>
+    }
+    const { container } = render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开有损文档' }))
+    const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
+    expect(编辑区.getAttribute('contenteditable')).toBe('false')
+    expect(screen.getByRole('status')).toHaveTextContent('图片尚未导入')
+    act(() => 状态!.set文档路径(状态!.activeDocumentId!, 'C:\\资料\\报告.sldoc'))
+    await waitFor(() => expect(编辑区.getAttribute('contenteditable')).toBe('true'))
+  })
   it('查找逐项框选、反向循环，替换当前项并能撤销，搜索不改动正文', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()

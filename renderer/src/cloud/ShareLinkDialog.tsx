@@ -64,6 +64,7 @@ export default function ShareLinkDialog({ 文件, onClose }: Props) {
         id: 分享链接标识(), nodeId: 文件.id, expiryDays: 有效期,
         code: 启用访问码 ? 访问码 : undefined,
       })
+      if (typeof 链接?.url !== 'string' || !/^https?:\/\/[^/]+\/share\/#\/s\//.test(链接.url)) throw new Error(t('分享记录已创建，但返回的链接地址无效。请在“我的分享”中取消该记录后重试。', 'The share was created, but its URL is invalid. Revoke it in My shares and try again.'))
       设结果(链接)
       message.success(t('分享链接已生成，拿到链接的人无需登录即可下载', 'Share link created; anyone with the link can download without signing in'))
     } catch (错误) {

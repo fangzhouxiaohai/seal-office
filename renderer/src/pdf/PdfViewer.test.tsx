@@ -170,6 +170,67 @@ describe('PDF 阅读预览', () => {
     expect(screen.getByText('无法预览这份 PDF 文件')).toBeInTheDocument()
   })
 
+  it('单页首次无法取得画布上下文时自动换新画布重试，其余页保持可读', async () => {
+    const 渲染页码: number[] = []
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({
+        numPages: 3,
+        getPage: vi.fn(async (页码: number) => ({
+          getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
+          render: () => { 渲染页码.push(页码); return { promise: Promise.resolve(), cancel: vi.fn() } },
+          getTextContent: async () => ({ items: [] }),
+        })),
+      }),
+      destroy: vi.fn(),
+    })
+    const 原方法 = HTMLCanvasElement.prototype.getContext
+    let 第三页首次失败 = true
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+      if (this.getAttribute('aria-label') === '第 3 页' && 第三页首次失败) {
+        第三页首次失败 = false
+        return null
+      }
+      return 原方法.call(this, '2d')
+    })
+    const 报错 = vi.fn()
+    const { container } = render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={报错} />)
+    await waitFor(() => expect(渲染页码).toContain(3))
+    expect(渲染页码).toContain(1)
+    expect(渲染页码).toContain(2)
+    expect(container.querySelector('[aria-label="第 3 页"].pdf-viewer__canvas')).not.toBeNull()
+    expect(报错).not.toHaveBeenCalled()
+  })
+
+  it('单页画布持续失败时可手动重试，不中断其他页', async () => {
+    const 渲染页码: number[] = []
+    PDF模拟.取文档.mockReturnValue({
+      promise: Promise.resolve({
+        numPages: 3,
+        getPage: vi.fn(async (页码: number) => ({
+          getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
+          render: () => { 渲染页码.push(页码); return { promise: Promise.resolve(), cancel: vi.fn() } },
+          getTextContent: async () => ({ items: [] }),
+        })),
+      }),
+      destroy: vi.fn(),
+    })
+    const 原方法 = HTMLCanvasElement.prototype.getContext
+    let 第三页持续失败 = true
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+      return this.getAttribute('aria-label') === '第 3 页' && 第三页持续失败 ? null : 原方法.call(this, '2d')
+    })
+    const 报错 = vi.fn()
+    render(<PdfViewer 数据={btoa('%PDF-1.7')} 文件名="样本.pdf" onError={报错} />)
+    const 重试 = await screen.findByRole('button', { name: '重试第 3 页' })
+    expect(渲染页码).toContain(1)
+    expect(渲染页码).toContain(2)
+    expect(报错).toHaveBeenCalledWith(expect.stringContaining('第 3 页'))
+    第三页持续失败 = false
+    fireEvent.click(重试)
+    await waitFor(() => expect(渲染页码).toContain(3))
+    expect(screen.queryByRole('button', { name: '重试第 3 页' })).toBeNull()
+  })
+
   it('替换已编辑的 PDF 时忽略旧文档销毁产生的页面错误', async () => {
     let 旧页读取次数 = 0
     const 页面 = () => ({

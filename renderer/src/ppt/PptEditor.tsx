@@ -53,6 +53,7 @@ import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档, 准备打开本地文件 } from '../fileOpen'
+import { 处于受保护查看 } from '../fileWarnings'
 import { 构建演示保存模型 } from './saveModel'
 import { 合并文字草稿 } from './textDraft'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
@@ -162,8 +163,9 @@ const PptEditor = () => {
   const [显示标尺, set显示标尺] = useState(false)
   const [吸附, set吸附] = useState(true)
   const [手动只读, set只读] = useState(false)
+  const 保护查看 = 处于受保护查看(当前文档?.来源路径, 已知文档路径[activeDocumentId ?? ''], 当前文档?.警告)
   /** 定稿为可恢复的只读标记：与手动只读一起决定编辑权限，不代表加密保护。 */
-  const 只读 = 手动只读 || Boolean(文稿.定稿) || 实时协作.readOnly
+  const 只读 = 手动只读 || Boolean(文稿.定稿) || 实时协作.readOnly || 保护查看
   const [显示批注, set显示批注] = useState(true)
   const [审阅区域, set审阅区域] = useState<'检查' | '批注' | '转换' | '定稿' | '比对' | '翻译'>('检查')
   /** 智能面板：讲稿与讲解音频、生成与美化、素材库；翻译与校对复用审阅面板视图。 */
@@ -1325,6 +1327,9 @@ const PptEditor = () => {
     React.createElement('input', { ref: 附件输入, type: 'file', hidden: true, 'aria-label': '选择附件文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { const 文件 = 事件.target.files?.[0]; if (文件) void 插入附件(文件); 事件.target.value = '' } }),
     React.createElement('input', { ref: 媒体输入, type: 'file', accept: 媒体选择类型, hidden: true, 'aria-label': '选择音频或视频文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入媒体(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     React.createElement('input', { ref: 音效输入, type: 'file', accept: 音频选择类型, hidden: true, 'aria-label': '选择切换音效文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 更换音效(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
+    保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
+      `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
+    ) : null,
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       缩放,

@@ -29,7 +29,7 @@ it.each(['paste','drop'])('正文 %s 图片更新文档模型，可以撤销重�
   send(new File([png],'图片.png',{type:'image/png'}))
   await waitFor(()=>expect(root.querySelector('img')).not.toBeNull())
   expect(root.textContent).toBe('正文')
-  expect(store!.documents.find(d=>d.type==='word')?.html).toContain('data:image/png;base64,')
+  await waitFor(()=>expect(store!.documents.find(d=>d.type==='word')?.html).toContain('data:image/png;base64,'))
   await act(async()=>{ await new Promise(resolve=>setTimeout(resolve,30)) })
   fireEvent.click(screen.getByRole('button',{name:'撤销'}))
   await waitFor(()=>expect(root.querySelector('img')).toBeNull())

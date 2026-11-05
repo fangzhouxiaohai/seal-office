@@ -30,6 +30,14 @@ export const commandCatalog = {
       "管理源"
     ],
     [
+      "citation.refresh",
+      "刷新引文"
+    ],
+    [
+      "citation.unlink",
+      "取消链接"
+    ],
+    [
       "clipboard.copy",
       "复制"
     ],
@@ -540,10 +548,6 @@ export const commandCatalog = {
       "降序"
     ],
     [
-      "sheet.autoFitColumns",
-      "自适应列宽"
-    ],
-    [
       "data.textToColumns",
       "分列"
     ],
@@ -642,6 +646,10 @@ export const commandCatalog = {
     [
       "row.insert",
       "插入行"
+    ],
+    [
+      "sheet.autoFitColumns",
+      "自适应列宽"
     ],
     [
       "spell.check",

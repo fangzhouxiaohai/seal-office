@@ -68,7 +68,27 @@ function createShareLinkService(service) {
     return request(`/v1/share-links/${input.id}`, { method: 'DELETE' })
   }
 
-  return { shareLinkCreate, shareLinkList, shareLinkRevoke }
+  async function mySharesList({ page = 1, limit = 50, status = 'all', kind = 'all', name = '' } = {}) {
+    const nodes = await list()
+    const term = String(name).trim().toLocaleLowerCase()
+    const result = term
+      ? await request('/v1/my-shares/query', { method: 'POST', data: { page, limit, status, kind, nodeIds: nodes.filter(node => !node.deleted && String(node.meta?.filename || node.meta?.name || '').toLocaleLowerCase().includes(term)).map(node => node.id) } })
+      : await request(`/v1/my-shares?page=${encodeURIComponent(page)}&limit=${encodeURIComponent(limit)}&status=${encodeURIComponent(status)}&kind=${encodeURIComponent(kind)}`)
+    const names = new Map(nodes.filter(node => !node.deleted).map(node => [node.id, node.meta?.filename || node.meta?.name]))
+    return { ...result, items: result.items.map(item => ({ ...item, name: item.status === 'sourceRemoved' ? '来源文件已移除' : names.get(item.nodeId) || '加密云文件' })) }
+  }
+
+  async function mySharesBatch(input) {
+    await list()
+    return request('/v1/my-shares/batch', { method: 'POST', data: input })
+  }
+
+  async function mySharesCleanupPreview() {
+    await list()
+    return request('/v1/my-shares/cleanup-preview')
+  }
+
+  return { shareLinkCreate, shareLinkList, shareLinkRevoke, mySharesList, mySharesBatch, mySharesCleanupPreview }
 }
 
 /**

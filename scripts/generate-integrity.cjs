@@ -4,6 +4,8 @@ const crypto = require('crypto')
 
 function 是构建文件(相对路径) {
   if (相对路径 === 'main/integrity-manifest.json') return false
+  // electron-builder 默认不打包类型声明；清单不能要求成品中存在这些构建辅助文件。
+  if (/\.d\.ts$/.test(相对路径)) return false
   if (!相对路径.startsWith('main/')) return true
   const 主进程路径 = 相对路径.slice('main/'.length)
   const 路径段 = 主进程路径.split('/')

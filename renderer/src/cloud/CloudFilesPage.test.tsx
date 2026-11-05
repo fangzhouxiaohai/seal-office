@@ -16,6 +16,18 @@ const nodes=[
 ]
 beforeEach(()=>{localStorage.clear();fixture.enabled=true;fixture.locale='zh-CN';fixture.call.mockReset();fixture.call.mockImplementation(async(action)=>action==='list'?nodes:action==='pending'?[]:{});fixture.configure.mockClear()})
 describe('云空间网盘浏览与真实操作',()=>{
+  it('我的分享入口打开记录页，返回后保留原文件夹位置，回收站不显示入口',async()=>{
+    fixture.call.mockImplementation(async(action)=>action==='list'?nodes:action==='pending'?[]:action==='mySharesList'?{items:[],page:1,limit:50,total:0}:{})
+    const view=render(<AntdApp><CloudFilesPage/></AntdApp>)
+    fireEvent.click(await screen.findByRole('button',{name:'测试文件夹'}))
+    fireEvent.click(screen.getByRole('button',{name:'我的分享'}))
+    expect(await screen.findByRole('heading',{name:'我的分享'})).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:'返回云空间'}))
+    expect(screen.getByRole('button',{name:'内部资料.pdf'})).toBeInTheDocument()
+    view.unmount()
+    render(<AntdApp><CloudFilesPage trash/></AntdApp>)
+    expect(screen.queryByRole('button',{name:'我的分享'})).not.toBeInTheDocument()
+  })
   it('进入文件夹、面包屑返回、搜索与网格/列表切换保留数据',async()=>{
     render(<AntdApp><CloudFilesPage/></AntdApp>)
     fireEvent.click(await screen.findByRole('button',{name:'测试文件夹'}))

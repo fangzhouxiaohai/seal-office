@@ -1,0 +1,39 @@
+{
+  "version": "2.7.0",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "c91d090e959e0737005e27ef70a81a4fc203b565863234ff35e26f035590cdc9"
+    },
+    {
+      "path": "docs/打包规范.md",
+      "sha256": "9eec92a4470f0646383f68415ab3421364811c662eb0e34196276de4c3374b03"
+    },
+    {
+      "path": "docs/promo/current-storyboard.json",
+      "sha256": "f8f8e0982b66b62a5102e5d6a4894739fe075e97034fa4f8e0b313eefe18d641"
+    },
+    {
+      "path": "scripts/promo/build-current.cjs",
+      "sha256": "9e791039af5db039ec853ea6d21ddd895878967b264d139a494f4b8119eeac30"
+    },
+    {
+      "path": "scripts/promo/tutorial-record.cjs",
+      "sha256": "ca37006313d274ac35aefab1e2baec2079e99ba474b5de43d7498f50491723d2"
+    },
+    {
+      "path": "scripts/promo/tutorial-voice.py",
+      "sha256": "77bf4beb5d7bfeed46545d20b635de1c92a9a6303a46167fe637ab3614eb8a69"
+    },
+    {
+      "path": "scripts/promo/tutorial-render.py",
+      "sha256": "b320fb83e1efe9eb39b9b212ae180e78b58e97647093402578778c3bccf31c62"
+    },
+    {
+      "path": "scripts/promo/tutorial-finalize.py",
+      "sha256": "06120a7c35f15017f0dd63ff913f28f44e5519557765cb80bc32e321e83ce12e"
+    }
+  ],
+  "runtimeChanged": false,
+  "sampleAudioPublished": false
+}

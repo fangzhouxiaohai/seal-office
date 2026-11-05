@@ -52,6 +52,13 @@ server {
             with self.assertRaises(ValueError):
                 module.patch_nginx(value, self.example)
 
+    def test_existing_extension_route_keeps_main_nginx_config_unchanged(self):
+        main = 'server {\n  listen 443 ssl;\n  include /www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/*.conf;\n}\n'
+        extension = 'location = /office { return 301 /office/; }\nlocation ^~ /office/ {\n  alias /www/wwwroot/seal.xingmasoft.com/webcurrent/;\n  try_files $uri $uri/ /office/index.html;\n}\n'
+        self.assertEqual(module.patch_nginx(main, self.example, extension), main)
+        with self.assertRaises(ValueError):
+            module.patch_nginx(main, self.example, extension.replace('/webcurrent/', '/wrong/'))
+
     def test_public_zip_name_is_english_and_deployments_keep_separate_archives(self):
         first = module.web_archive_path('2.0.0-web-20261018-010101')
         second = module.web_archive_path('2.0.0-web-20261018-020202')

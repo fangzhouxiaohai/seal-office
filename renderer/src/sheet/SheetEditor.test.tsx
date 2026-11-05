@@ -24,6 +24,23 @@ const 渲染表格 = () =>
   )
 
 describe('表格编辑器容器', () => {
+  it('有损来源查看时单元格只读，另存副本路径后恢复编辑', async () => {
+    let 状态: ReturnType<typeof useAppStore> | null = null
+    const 容器 = () => {
+      状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态!.createDoc('table', '<table><tr><td>0012</td></tr></table>', { 路径: 'C:\\资料\\报表.xls', 警告: ['网页样式未导入'] })}>打开有损表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    const { container } = render(<AntdApp><AppProvider><容器 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开有损表格' }))
+    const 单元格 = container.querySelector('[data-地址="A1"]') as HTMLElement
+    expect(单元格.getAttribute('aria-readonly')).toBe('true')
+    expect(screen.getByRole('status')).toHaveTextContent('网页样式未导入')
+    act(() => 状态!.set文档路径(状态!.activeDocumentId!, 'C:\\资料\\报表.slxls'))
+    await waitFor(() => expect(单元格.getAttribute('aria-readonly')).toBeNull())
+  })
   it('数据验证弹窗设置列表后拒绝公式栏非法输入，撤销可移除规则', async () => {
     let 状态: ReturnType<typeof useAppStore> | null = null
     const 容器 = () => {

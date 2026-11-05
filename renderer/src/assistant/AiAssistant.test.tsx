@@ -18,6 +18,27 @@ const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手对话修改链路', () => {
+  it('已完成回复收起执行过程，保留可展开的逐项状态与回答', async () => {
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
+      getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }),
+      chat: vi.fn(),
+      onToolCall: () => () => {},
+      getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '# 排版方案\n\n正文', 状态: '完成', 执行记录: [
+        { id: '检查', 标题: '读取当前文件', 状态: '完成' }, { id: '修改', 标题: '校验修改候选', 状态: '完成' },
+      ] }, { 角色: 'assistant', 内容: '', 状态: '执行中', 执行记录: [{ id: '同步', 标题: '读取下一页', 状态: '执行中' }] }], 摘要: '', 压缩次数: 0, 计划: [] } }),
+    }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
+    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    await waitFor(() => expect(screen.getByRole('button', { name: '打开智能助手' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+    const 摘要 = await screen.findByText('执行过程 · 2 项已完成')
+    const 过程 = 摘要.closest('details') as HTMLDetailsElement
+    expect(过程.open).toBe(false)
+    expect(screen.getByRole('heading', { name: '排版方案' })).toBeInTheDocument()
+    expect(screen.getByText('执行过程 · 已完成 0/1 项').closest('details')).toHaveAttribute('open')
+    await userEvent.click(摘要)
+    expect(过程.open).toBe(true)
+    expect(过程.querySelectorAll('li[data-status="完成"]')).toHaveLength(2)
+  })
   it('恢复的计划仅有执行中步骤时仍可继续执行任务', async () => {
     const 计划 = [{ id: '继续读取', title: '继续核对当前文件', status: 'in_progress' }]
     const 对话 = vi.fn().mockResolvedValue({ 成功: true, 数据: { 内容: '已继续完成核对。', 计划: [{ ...计划[0], status: 'completed' }] } })
@@ -684,6 +705,34 @@ describe('智能助手对话修改链路', () => {
 describe('助手自动确认与发送快捷键', () => {
   const 修改回复 = { 成功: true, 数据: { 内容: JSON.stringify({ 回复: '已修改标题。', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '自动标题' }] }) } }
 
+  it('助手先挂载再打开文件时，工具阶段不会误报文件已关闭，最终只应用一次', async () => {
+    localStorage.setItem('seal.assistant.auto-confirm', '开启')
+    let 调用工具: (输入: { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }) => void = () => {}
+    let 完成!: (结果: unknown) => void
+    const 对话 = vi.fn(() => new Promise(resolve => { 完成 = resolve }))
+    const 回传 = vi.fn().mockResolvedValue({ 成功: true })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
+      getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }),
+      chat: 对话, onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传,
+    }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
+    const 修改 = [{ 种类: '文字替换', 查找: '原始标题', 替换为: '新标题' }]
+    const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文字</button><output data-testid="工具自动正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
+    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
+    await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+    await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '修改标题')
+    await userEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(对话).toHaveBeenCalled())
+    const 标识 = (对话.mock.calls[0] as unknown as [{ 请求标识: string }])[0].请求标识
+    act(() => 调用工具({ 请求标识: 标识, 调用标识: '修改工具', 工具: 'propose_changes', 参数: { 回复: '已生成候选', 修改 } }))
+    await waitFor(() => expect(回传).toHaveBeenCalledWith(expect.objectContaining({ 调用标识: '修改工具', 成功: true })))
+    await act(async () => { await new Promise(完成 => setTimeout(完成, 30)) })
+    expect(screen.queryByText('当前文件已关闭，无法应用修改')).not.toBeInTheDocument()
+    await act(async () => { 完成({ 成功: true, 数据: { 内容: JSON.stringify({ 回复: '已修改标题。', 修改 }) } }) })
+    await waitFor(() => expect(screen.getByTestId('工具自动正文')).toHaveTextContent('新标题'))
+    expect(screen.queryByText('当前文件已关闭，无法应用修改')).not.toBeInTheDocument()
+  })
+
   it('默认自动确认修改直接写入，不出现待确认预览', async () => {
     localStorage.removeItem('seal.assistant.auto-confirm')
     const 对话 = vi.fn().mockResolvedValue(修改回复)
@@ -698,6 +747,23 @@ describe('助手自动确认与发送快捷键', () => {
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
     await waitFor(() => expect(screen.getByTestId('自动确认正文')).toHaveTextContent('自动标题'))
     expect(screen.queryByText('待确认修改，共 1 处')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '应用修改' })).not.toBeInTheDocument()
+  })
+
+  it('有损导入的来源文件仍处于受保护查看时，助手不能写入原件', async () => {
+    const 对话 = vi.fn().mockResolvedValue(修改回复)
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
+      getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
+    }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
+    const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>', { 路径: 'C:\\资料\\有损.docx', 警告: ['图片尚未导入'] })}>打开有损文件</button><output data-testid="受保护正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
+    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    await userEvent.click(screen.getByRole('button', { name: '打开有损文件' }))
+    await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
+    await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '把标题改一下')
+    await userEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(对话).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getAllByText(/受保护查看.*另存为副本/).length).toBeGreaterThan(0))
+    expect(screen.getByTestId('受保护正文')).toHaveTextContent('原始标题')
     expect(screen.queryByRole('button', { name: '应用修改' })).not.toBeInTheDocument()
   })
 

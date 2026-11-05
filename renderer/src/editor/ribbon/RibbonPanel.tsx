@@ -6,6 +6,7 @@ import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
 import FontPicker from '../../fonts/FontPicker'
 import { 缩放百分比文本 } from '../wheelZoom'
+import { 取文字功能区色调 } from './iconTones'
 
 interface Props {
   activeKey: string
@@ -43,7 +44,7 @@ const RibbonPanel = ({
 
   return React.createElement(
     'div',
-    { className: 'wps-ribbon-panel' },
+    { className: tabs === RIBBON_TABS ? 'wps-ribbon-panel wps-ribbon-panel--document' : 'wps-ribbon-panel' },
     标签.groups.map((组) =>
       React.createElement(
         RibbonGroup,
@@ -64,6 +65,7 @@ const RibbonPanel = ({
                 key: `${组.name}-${项.commandId}-${项.label}`,
                 commandId: 项.commandId,
                 icon: 项.icon,
+                tone: tabs === RIBBON_TABS ? 取文字功能区色调(项.commandId) : undefined,
                 label: 项.commandId === 'view.zoomReset' && 缩放 !== undefined ? 缩放百分比文本(缩放) : 项.label,
                 size: 项.kind === 'small' ? 'small' : 'large',
                 active: 获取激活态 ? 获取激活态(项.commandId) : false,

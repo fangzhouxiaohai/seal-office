@@ -378,14 +378,28 @@ body { background: var(--bg-app); letter-spacing: .01em; }
   font-size: 13.5px;
   transition: background .15s var(--ease-out), color .15s var(--ease-out);
 }
-.wps-ribbon-tab:hover { background: var(--bg-subtle); color: var(--text-1); }
+.wps-ribbon-tab:not(.wps-ribbon-tab--active):hover { background: var(--brand-soft); color: var(--brand); }
 .wps-ribbon-tab--active {
   color: #fff;
-  background: var(--ink-strong);
+  background: var(--brand);
   border-bottom-color: transparent;
-  box-shadow: 0 4px 12px rgba(21, 23, 42, .18);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 24%, transparent);
 }
-[data-theme="dark"] .wps-ribbon-tab--active { color: #15172a; }
+.wps-ribbon-tab--active:hover { color: #fff; background: var(--brand-hover); }
+[data-theme="dark"] .wps-ribbon-tab--active {
+  color: var(--text-1);
+  background: var(--brand-soft);
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+[data-theme="dark"] .wps-ribbon-tab--active:hover {
+  color: var(--text-1);
+  background: color-mix(in srgb, var(--brand) 18%, var(--brand-soft));
+}
+.wps-ribbon-tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wps-ribbon-tab:disabled { color: var(--text-3); background: transparent; box-shadow: none; cursor: not-allowed; }
+@media (forced-colors: active) {
+  .wps-ribbon-tab--active { outline: 2px solid Highlight; outline-offset: -2px; }
+}
 :root:not([data-seal-ui="mobile"]) .wps-ribbon-panel {
   margin: 0 10px 8px;
   padding: 8px 8px 0;
@@ -401,6 +415,36 @@ body { background: var(--bg-app); letter-spacing: .01em; }
 .wps-ribbon-button--small { border-radius: 8px; }
 .wps-ribbon-button:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
 .wps-ribbon-button--active { background: color-mix(in srgb, var(--brand) 14%, var(--bg-card)); color: var(--brand); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 25%, transparent); }
+
+/* 文字编辑器功能区共用首页色调，色彩仅落在图标上，标签和命令状态保持原样。 */
+.wps-ribbon-panel--document .wps-ribbon-button__icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--text-3);
+}
+.wps-ribbon-panel--document .wps-ribbon-button__icon[data-tone] { color: var(--tone); }
+.wps-ribbon-panel--document .wps-ribbon-button--large .wps-ribbon-button__icon[data-tone] {
+  width: 26px;
+  height: 26px;
+  margin-block: -3px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tone) 13%, var(--bg-card));
+}
+.wps-ribbon-panel--document .wps-ribbon-button:disabled .wps-ribbon-button__icon {
+  color: var(--text-3);
+  background: transparent;
+  filter: grayscale(1);
+  opacity: .68;
+}
+.wps-ribbon-panel--document .seal-font-trigger:disabled svg { filter: grayscale(1); opacity: .68; }
+@media (forced-colors: active) {
+  .wps-ribbon-panel--document .wps-ribbon-button__icon[data-tone] { color: ButtonText; }
+  .wps-ribbon-panel--document .wps-ribbon-button--large .wps-ribbon-button__icon[data-tone] { background: transparent; }
+  .wps-ribbon-panel--document .wps-ribbon-button:disabled .wps-ribbon-button__icon { color: GrayText; opacity: 1; }
+}
 
 /* 编辑区底色：柔和的灰紫，纸张保持纯白 */
 :root:not([data-theme="dark"]) .wps-editor-stage { background: #eef0f7; }

@@ -155,8 +155,8 @@ app.whenReady().then(async () => {
     await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
     const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
-    const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','shared','my-cloud','device','tag','team','knowledge','market','trash','document','settings','help']
-    assert.equal(navigation.length, 18, '服务页面可操作入口数量；首页筛选由文档页面提供')
+    const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','shared','my-cloud','device','tag','team','knowledge','market','skins','trash','document','settings','help']
+    assert.equal(navigation.length, expectedNavigation.length, '服务页面可操作入口数量：' + navigation.map(item => item.key).join('、'))
     assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '服务页须完整呈现全部工具、协作和设置入口')
     assert.equal(navigation.some(item=>item.key==='database'), false, '移动端不提供依赖桌面数据库引擎的 Access 入口')
     for (const item of navigation) {
@@ -184,7 +184,7 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`document.querySelector('.seal-mobile-nav [aria-label=${JSON.stringify(label)}]').getAttribute('aria-current')`),'page',label+'必须切换完整页面')
       if(label==='我的')assert.ok(await evaluate(`!!document.querySelector('[aria-label="我的账号与应用"]')`))
     }
-    checks.push('五个底部功能页面、服务页18个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏')
+    checks.push('五个底部功能页面、服务页19个入口逐一点击、协作账号门槛及手机视口检查；Access 按能力隐藏')
     for (const item of [{key:'table',selector:'.wps-sheet-toolbar'}, {key:'ppt',selector:'.wps-ppt-canvas'}, {key:'pdf',selector:'.wps-main--pdf'}]) {
       await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
       await new Promise(resolve => setTimeout(resolve, 350))

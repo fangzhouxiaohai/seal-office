@@ -69,7 +69,7 @@ function 引用参数(值) {
 /** stdio 传输：子进程标准输入输出逐行传递 JSON-RPC 消息，标准错误只用于诊断。 */
 function 创建Stdio传输(配置, { spawn }) {
   if (typeof spawn !== 'function') throw new Error('当前平台不支持启动本机 MCP 命令，请改用 HTTP 服务')
-  let 进程 = null, 缓冲 = '', 错误输出 = '', 接收 = () => {}, 断开 = () => {}
+  let 进程 = null, 缓冲 = '', 错误输出 = '', 收到协议消息 = false, 接收 = () => {}, 断开 = () => {}
   return {
     async 启动(处理消息, 处理断开) {
       接收 = 处理消息; 断开 = 处理断开
@@ -90,12 +90,15 @@ function 创建Stdio传输(配置, { spawn }) {
         while ((位置 = 缓冲.indexOf('\n')) >= 0) {
           const 行 = 缓冲.slice(0, 位置).trim(); 缓冲 = 缓冲.slice(位置 + 1)
           if (!行) continue
-          try { 接收(JSON.parse(行)) } catch { /* 规范要求 stdout 只输出协议消息；非 JSON 行忽略 */ }
+          try { const 消息 = JSON.parse(行); 收到协议消息 = true; 接收(消息) } catch { /* 规范要求 stdout 只输出协议消息；非 JSON 行忽略 */ }
         }
       })
       进程.stderr.setEncoding('utf8')
       进程.stderr.on('data', (块) => { 错误输出 = (错误输出 + 块).slice(-2000) })
-      进程.once('exit', (代码) => 断开(new Error(`MCP 服务进程已退出（代码 ${代码 ?? '未知'}）${错误输出.trim() ? `：${错误输出.trim().split('\n').slice(-3).join(' ')}` : ''}`)))
+      进程.once('exit', (代码) => {
+        const 原因 = `进程已退出（代码 ${代码 ?? '未知'}）`
+        断开(new Error(收到协议消息 ? `MCP 服务${原因}` : `无法启动 MCP 服务：${原因}，请检查启动命令和参数`))
+      })
     },
     async 发送(消息) {
       if (!进程 || 进程.exitCode !== null || !进程.stdin.writable) throw new Error('MCP 服务进程未运行')

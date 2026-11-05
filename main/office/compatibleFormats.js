@@ -6,6 +6,7 @@ const { 生成docx } = require('./docxWriter')
 const { 读取xlsx, 写入xlsx } = require('./xlsxCodec')
 const { 读取pptx, 写入pptx } = require('./pptxCodec')
 const { 解码文本, 编码文本 } = require('../textCodec')
+const { 识别网页型旧版表格 } = require('../ipc/htmlXls')
 
 const 标准扩展 = { word: 'docx', table: 'xlsx', ppt: 'pptx' }
 const 读取器 = { word: 读取docx, table: 读取xlsx, ppt: 读取pptx }
@@ -29,6 +30,7 @@ async function 标准化OOXML(字节, 类型) {
 async function 读取兼容文档(扩展, 字节) {
   const 格式 = 格式列表.find(项 => 项.extension === 扩展 && 项.conversion)
   if (!格式) throw new Error('不支持的兼容文档格式')
+  if (扩展 === 'xls' && 识别网页型旧版表格(字节) !== null) throw new Error('文件实际为网页表格，请从表格打开入口读取，不能按旧版二进制工作簿转换')
   let 类型 = 格式.type
   if (扩展 === 'prn') {
     const { 内容 } = 解码文本(字节)

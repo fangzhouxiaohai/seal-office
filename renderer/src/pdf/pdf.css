@@ -371,7 +371,9 @@
   box-shadow: var(--shadow-card);
 }
 .pdf-viewer__page .pdf-viewer__canvas { display: block; margin: 0; box-shadow: none; }
-.pdf-viewer__page-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; color: var(--text-2); text-align: center; }
+.pdf-viewer__page-error { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 20px; color: var(--text-2); text-align: center; background: var(--pdf-paper); }
+.pdf-viewer__page-error button { border: 1px solid var(--border); border-radius: 6px; background: white; color: var(--text-1); padding: 6px 14px; cursor: pointer; }
+.pdf-viewer__page-error button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .pdf-viewer__text-layer { position: absolute; inset: 0; overflow: hidden; user-select: text; }
 .pdf-viewer__text-layer span { position: absolute; display: block; white-space: pre; color: transparent; line-height: 1; user-select: text; cursor: text; }
 .pdf-viewer__text-layer span::selection { background: rgba(61, 124, 220, .35); }

@@ -31,7 +31,7 @@ CANDIDATES = [
     f'seal-office-{VERSION}-amd64.deb',
     f'seal-office-{VERSION}-android.apk',
     f'seal-office-{VERSION}-harmony.hap',
-    f'seal-office-{VERSION}-harmony.app.zip',
+    f'seal-office-{VERSION}-web.zip',
     f'seal-office-{VERSION}-android-cloud-source.zip',
     f'seal-office-{VERSION}-harmony-cloud-source.zip',
 ]
@@ -86,14 +86,15 @@ def assets():
             sums[parts[1]] = parts[0].lower()
     rows = []
     for name in CANDIDATES:
-        file = DIRECTORY / name
+        relative = name if (DIRECTORY / name).is_file() else 'mobile-web/' + name
+        file = DIRECTORY / relative
         if not file.is_file():
             continue
         digest = sha(file)
-        if sums.get(name) != digest:
+        if sums.get(relative) != digest:
             raise RuntimeError('SHA256SUMS 与文件不一致：' + name)
-        rows.append({'name': name, 'bytes': file.stat().st_size, 'sha256': digest})
-    rows.append({'name': 'SHA256SUMS.txt', 'bytes': (DIRECTORY / 'SHA256SUMS.txt').stat().st_size, 'sha256': sha(DIRECTORY / 'SHA256SUMS.txt')})
+        rows.append({'name': name, 'path': relative, 'bytes': file.stat().st_size, 'sha256': digest})
+    rows.append({'name': 'SHA256SUMS.txt', 'path': 'SHA256SUMS.txt', 'bytes': (DIRECTORY / 'SHA256SUMS.txt').stat().st_size, 'sha256': sha(DIRECTORY / 'SHA256SUMS.txt')})
     return rows
 
 
@@ -113,7 +114,7 @@ def github_publish(rows, title, body):
             continue
         if remote:
             api('github', 'DELETE', f"/releases/assets/{remote['id']}")
-        with (DIRECTORY / row['name']).open('rb') as handle:
+        with (DIRECTORY / row['path']).open('rb') as handle:
             remote = api('github', 'POST', release['upload_url'].split('{')[0], params={'name': row['name']},
                          headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(row['bytes'])}, data=handle)
         if remote['size'] != row['bytes'] or remote.get('digest') not in (None, 'sha256:' + row['sha256']):
@@ -146,7 +147,7 @@ def gitcode_publish(rows, title, body):
         parsed = urlsplit(target['url'])
         if parsed.scheme != 'https':
             raise RuntimeError('GitCode 上传地址异常')
-        with (DIRECTORY / row['name']).open('rb') as handle:
+        with (DIRECTORY / row['path']).open('rb') as handle:
             response = requests.put(target['url'], headers={**target['headers'], 'Content-Length': str(row['bytes'])}, data=handle, timeout=(30, 3600))
         if not response.ok:
             raise RuntimeError(f"GitCode 存储 HTTP {response.status_code}: {row['name']}")

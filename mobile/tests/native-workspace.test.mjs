@@ -53,14 +53,20 @@ test('宿主加载错误先探测存活工作台，原生返回必须等待网�
     globalThis.setTimeout=task=>{timers.push(task);return 1}
     const host=Object.assign(options.data(),options.methods,{moveToBackground:()=>backgrounds++})
     host.workspaceReady=true
+    host.atHome=false
     host.onError({detail:{fullUrl:'file:///app/static/office/assets/image.png',src:'',errCode:-6}})
     assert.equal(timers.length,0);assert.equal(host.errorText,'')
     host.onError({detail:{fullUrl:'file:///app/static/office/index.html?native=1',src:'',errCode:-6}})
     assert.match(scripts.at(-1),/seal-native-probe/)
-    const message=action=>({action,token:host.token})
+    const message=(action,seq)=>({action,token:host.token,seq})
     host.onMessage({detail:{data:[message('healthy')]}});timers.shift()();assert.equal(host.errorText,'')
     assert.equal(options.onBackPress.call(host),true);assert.equal(backgrounds,0);assert.match(scripts.at(-1),/seal-native-back/)
-    host.onMessage({detail:{data:[message('back-root')]}});assert.equal(backgrounds,1)
+    host.onMessage({detail:{data:[message('back-root',host.backSequence)]}});assert.equal(backgrounds,0)
+    host.lastBackAt=0
+    host.atHome=true
+    assert.equal(options.onBackPress.call(host),true);assert.equal(backgrounds,0)
+    host.onMessage({detail:{data:[message('back-root',host.backSequence-1)]}});assert.equal(backgrounds,0)
+    host.onMessage({detail:{data:[message('back-root',host.backSequence)]}});assert.equal(backgrounds,1)
     host.onError({detail:{fullUrl:'resource://rawfile/app/static/office/index.html',src:'',errCode:-6}})
     timers.shift()();assert.match(host.errorText,/本地工作台加载失败/)
   }finally{Object.assign(globalThis,previous)}

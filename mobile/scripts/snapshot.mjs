@@ -28,6 +28,20 @@ await fs.mkdir(target, { recursive: false }).catch(async error => {
 for (const entry of ['App.uvue', 'main.uts', 'pages.json', 'manifest.json', 'AndroidManifest.xml', 'package.json', 'pages', 'native', 'nativeResources', 'harmony-configs', 'static']) {
   await fs.cp(path.join(project, entry), path.join(target, entry), { recursive: true })
 }
+
+// 按平台清理其他平台的图标资源。
+// 这些文件在源码仓库里必须共存（同一份工程要能打包两个平台），
+// 但云打包源码只面向单一平台，把另一平台的图标带进去只是白占体积；
+// Android 源码包有 60 MB 硬上限，冗余图标会直接导致归档失败。
+// 只删图标/启动图这类纯静态资源，不碰 pages、native 或 static/office 任何字节。
+const 其他平台图标 = {
+  android: ['static/icons/harmony', 'static/icons/ios'],
+  harmony: ['static/icons/android', 'static/icons/ios'],
+}[platform]
+for (const relative of 其他平台图标) {
+  await fs.rm(path.join(target, relative), { recursive: true, force: true })
+}
+
 const files = []
 async function inventory(directory, prefix = '') {
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {

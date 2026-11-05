@@ -19,7 +19,7 @@ export default function MobileNavigation() {
     store.setNavKey(key)
   }
   useEffect(() => {
-    const send = (action: string) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token } })
+    const send = (action: string, seq?: number) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token, seq } })
     const visible = (node: Element) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden' && getComputedStyle(node).display !== 'none' && !node.querySelector('.ant-zoom-leave,.ant-fade-leave')
     const back = (event: Event) => {
       if (event.defaultPrevented) return
@@ -35,7 +35,8 @@ export default function MobileNavigation() {
       // 先给当前模块处理内部层级，避免监听器注册顺序把子目录直接跳回首页。
       if (!window.dispatchEvent(new Event('seal-before-native-back', {cancelable:true}))) return
       if (store.module === 'home' && store.navKey === 'home') {
-        void store.刷新工作状态备份().then(result => { if (result.成功) send('back-root'); else message.error(result.错误 || '保存工作区失败，请重试') }).catch(() => message.error('保存工作区失败，请重试'))
+        const seq = (event as CustomEvent<{ seq?: number }>).detail?.seq
+        void store.刷新工作状态备份().then(result => { if (result.成功) send('back-root', seq); else message.error(result.错误 || '保存工作区失败，请重试') }).catch(() => message.error('保存工作区失败，请重试'))
         return
       }
       routes.current.pop()

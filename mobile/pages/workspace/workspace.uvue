@@ -29,6 +29,9 @@ export default {
       // 已改为由网页层计算后随 state 消息下传。
       backToDesktop: true,
       workspaceReady: false,
+      backSequence: 0,
+      backStartedAtHome: false,
+      lastBackAt: 0,
       loadErrorSerial: 0,
       unsaved: 0,
       safeTop: 0,
@@ -57,19 +60,20 @@ export default {
     // #endif
   },
   onBackPress(): boolean {
-    this.persistWorkspace()
     // 加载失败时无法询问网页层，直接退到桌面；否则一律交给网页层决定。
     if (this.errorText.length > 0) {
       this.moveToBackground()
       return true
     }
-    // 网页层已经算好「一级页面 → 回桌面，二级页面 → 返回上一页」，
-    // 原生层不再自己判断层级，避免两套规则不一致。
-    if (this.workspaceReady && this.backToDesktop) {
-      this.moveToBackground()
-      return true
-    }
-    this.evaluate("window.dispatchEvent(new Event('seal-native-back',{cancelable:true}))")
+    // 某些 Android 返回手势会在同一次操作中重复回调；只处理第一下。
+    const now = Date.now()
+    if (now - this.lastBackAt < 500) return true
+    this.lastBackAt = now
+    this.backSequence++
+    this.backStartedAtHome = this.workspaceReady && this.atHome
+    this.persistWorkspace()
+    // 网页层可能仍有待关闭的弹窗或待保存的编辑状态，每次返回均等待网页层确认。
+    this.evaluate("window.dispatchEvent(new CustomEvent('seal-native-back',{cancelable:true,detail:{seq:" + this.backSequence.toString() + "}}))")
     // Do not let ArkWeb navigate the local HTML history or terminate the ability.
     // The web layer acknowledges root Back after closing overlays and saving state.
     return true
@@ -143,7 +147,11 @@ export default {
           return
         }
         if (action == 'healthy') { this.loadErrorSerial++; return }
-        if (action == 'back-root') { this.moveToBackground(); return }
+        if (action == 'back-root') {
+          // 只接受当前返回操作、且按键时和确认时都处于首页的退桌面请求。
+          if (this.backStartedAtHome && this.atHome && messageNumber(message, 'seq') == this.backSequence) this.moveToBackground()
+          return
+        }
         const id = messageString(message, 'id')
         if (id.length == 0 || id.length > 100) return
         try {

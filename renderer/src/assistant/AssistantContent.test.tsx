@@ -11,6 +11,14 @@ function 展示(内容: string) {
 afterEach(() => { 写入.mockReset(); 写入.mockResolvedValue(undefined); Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('助手回复按类型展示与复制', () => {
+  it('普通回复与排版回复使用面向阅读的回答标题，代码仍标注语言', () => {
+    const 视图 = 展示('简短说明')
+    expect(screen.getByRole('region', { name: 'TXT内容' }).querySelector('.assistant-result__heading')).toHaveTextContent('回答')
+    视图.rerender(<AntdApp><AssistantContent 内容={'# 方案\n\n正文'} /></AntdApp>)
+    expect(screen.getByRole('region', { name: 'Markdown内容' }).querySelector('.assistant-result__heading')).toHaveTextContent('回答')
+    视图.rerender(<AntdApp><AssistantContent 内容={'```js\nconst x = 1\n```'} /></AntdApp>)
+    expect(screen.getByRole('region', { name: 'JavaScript内容' }).querySelector('.assistant-result__heading')).toHaveTextContent('JavaScript')
+  })
   it('普通文本保留换行、空格和符号，底部按钮精确复制原文', async () => {
     const 内容 = '第一行\n  第二行 <tag> & 内容\n/compact 压缩会话'
     展示(内容)

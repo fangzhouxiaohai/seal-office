@@ -60,7 +60,7 @@ const REQUIRED_FILES = [
   // 核心
   'index.cjs', 'store.cjs', 'sms.cjs', 'formats.cjs', 'passwords.cjs',
   // 云空间与分享
-  'shareLinks.cjs', 'collaboration.cjs', 'realtime.cjs',
+  'shareLinks.cjs', 'myShares.cjs', 'collaboration.cjs', 'realtime.cjs',
   // 账号与注销
   'accountConversion.cjs', 'accountErasure.cjs', 'eraseRecords.cjs', 'eraseBackups.cjs',
   // 公开内容与原生格式校验
@@ -228,7 +228,7 @@ function main() {
     log('\n--- 只读体检 ---')
     log(out.out.trim())
     log(`公网 ${SERVER.publicUrl}`)
-    log(execFileSync('curl', ['-s', '-o', '/dev/null', '-w', 'http=%{http_code}', SERVER.publicUrl], { encoding: 'utf8' }).trim())
+    log(execFileSync('curl', ['-s', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', '-w', 'http=%{http_code}', SERVER.publicUrl], { encoding: 'utf8' }).trim())
     return
   }
 

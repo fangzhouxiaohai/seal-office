@@ -13,13 +13,13 @@ for group in ['market', 'presentation-templates']:
         image = Image.open(source)
         if group == 'market':
             output = target / group / source.name
-            result = image.quantize(colors=256)
+            result = image.quantize(colors=160)
             options = dict(format='PNG', optimize=True)
         else:
             output = target / group / (source.stem + '.jpg')
             result = image.convert('RGB')
             result.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
-            options = dict(format='JPEG', quality=85, optimize=True)
+            options = dict(format='JPEG', quality=75, optimize=True)
         output.parent.mkdir(parents=True, exist_ok=True)
         result.save(output, **options)
         metadata[source.stem].update(id=hashlib.sha256(output.read_bytes()).hexdigest(), bytes=output.stat().st_size,

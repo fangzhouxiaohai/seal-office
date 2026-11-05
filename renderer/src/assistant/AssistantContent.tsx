@@ -61,7 +61,7 @@ function 复制按钮({ 内容, 名称 }: { 内容: string; 名称: string }) {
 
 function 内容面板({ 类型, 名称, 原文, children }: { 类型: string; 名称: string; 原文: string; children: ReactNode }) {
   return <section className={`assistant-result assistant-result--${类型}`} aria-label={`${名称}内容`} data-content-type={类型}>
-    <div className="assistant-result__heading"><span>{名称}</span></div>
+    <div className="assistant-result__heading"><span>{类型 === 'text' || 类型 === 'markdown' ? '回答' : 名称}</span></div>
     <div className="assistant-result__content">{children}</div>
     <footer className="assistant-result__footer"><复制按钮 内容={原文} 名称={名称 === 'TXT' ? '文本' : 名称 === 'Markdown' ? 'Markdown 原文' : 名称 === '代码' ? '代码' : `${名称}代码`} /></footer>
   </section>

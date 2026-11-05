@@ -45,6 +45,7 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 准备打开本地文件, 记录最近文档 } from '../fileOpen'
+import { 处于受保护查看 } from '../fileWarnings'
 import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import SheetChartDialog from './SheetChartDialog'
@@ -81,6 +82,7 @@ const SheetEditor = () => {
   const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
     ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
     : null
+  const 保护查看 = 处于受保护查看(当前文档?.来源路径, 已知文档路径[activeDocumentId ?? ''], 当前文档?.警告)
   const [独立工作表列表, set独立工作表列表] = useState<Sheet[]>(() => [创建工作表('Sheet1')])
   const 工作表列表 = activeDocumentId === null ? 独立工作表列表 : 表格文档模型[activeDocumentId]
   if (!工作表列表 || 工作表列表.length === 0) throw new Error('表格编辑状态缺失，已阻止覆盖文件')
@@ -94,8 +96,10 @@ const SheetEditor = () => {
   }
   const 远端接收 = useRef<(value: Sheet[]) => void>(() => {})
   const 实时协作 = useRealtimeDocument({ documentId: activeDocumentId, type: 'table', model: 提取协作工作簿(工作表列表), onRemote: value => 远端接收.current(value), validate: 校验协作工作簿 })
+  const 编辑只读 = 实时协作.readOnly || 保护查看
+  const 只读提示 = 保护查看 ? '当前处于受保护查看，请先另存为副本再编辑' : '当前共享文档为只读，可另存本机副本'
   const set工作表列表: React.Dispatch<React.SetStateAction<Sheet[]>> = (更新) => {
-    if (实时协作.readOnly) { message.warning('当前共享文档为只读，可另存本机副本'); return }
+    if (编辑只读) { message.warning(只读提示); return }
     const 当前 = 最新工作簿.current, 基线 = typeof 更新 === 'function' ? 当前 : 工作表列表, 下一个 = typeof 更新 === 'function' ? 更新(当前) : 更新
     if (实时协作.active) {
       void 实时协作.publish(提取协作工作簿(下一个), 提取协作工作簿(基线)).catch(实时协作.reportError)
@@ -136,10 +140,10 @@ const SheetEditor = () => {
   const 视图工作表 = 工作表列表[有效当前索引]
   const 视图键 = `${activeDocumentId ?? '独立'}:${视图工作表.id}`
   const [只读视图, set只读视图] = useState<Record<string, NonNullable<Sheet['视图']>>>({})
-  const 来源视图 = 实时协作.readOnly ? 只读视图[视图键] ?? 视图工作表.视图 : 视图工作表.视图
+  const 来源视图 = 编辑只读 ? 只读视图[视图键] ?? 视图工作表.视图 : 视图工作表.视图
   const 缩放 = 来源视图?.缩放 !== undefined && Number.isFinite(来源视图.缩放) && 来源视图.缩放 > 0 ? 来源视图.缩放 / 100 : 默认文件缩放
   const 更新当前视图 = (更新: NonNullable<Sheet['视图']>) => {
-    if (实时协作.readOnly) {
+    if (编辑只读) {
       set只读视图(当前 => ({ ...当前, [视图键]: { ...来源视图, ...更新 } }))
       return
     }
@@ -326,7 +330,7 @@ const SheetEditor = () => {
   const 同步草稿 = (address: string, value: string, composing = false) => {
     const draft = 开始草稿(address); draft.value = value; draft.composing = composing
     通知编辑草稿变化()
-    if (!实时协作.active || 实时协作.readOnly || composing) return { 值: value, 已发布: false }
+    if (!实时协作.active || 编辑只读 || composing) return { 值: value, 已发布: false }
     const base = 重算工作簿(draft.base), index = base.findIndex(sheet => sheet.id === draft.sheetId)
     if (index < 0) return { 值: value, 已发布: false }
     try {
@@ -448,7 +452,7 @@ const SheetEditor = () => {
   /** 应用修改前统一检查验证规则与保护状态。 */
   let 最近更新被拒绝 = false
   const 更新工作表 = (新表: Sheet, 允许解除保护 = false): boolean => {
-    if (实时协作.readOnly) { message.warning('当前共享文档为只读，可另存本机副本'); return false }
+    if (编辑只读) { message.warning(只读提示); return false }
     const 错误 = 检查工作表更新(工作表, 新表, 允许解除保护)
     if (错误) {
       最近更新被拒绝 = true
@@ -520,7 +524,7 @@ const SheetEditor = () => {
     打开查找: () => set查找可见(true),
     开始编辑公式: (模板) => {
       const 地址 = 生成地址(选区.起点.行, 选区.起点.列)
-      if (实时协作.readOnly || 提示数组子格(地址)) return
+      if (编辑只读 || 提示数组子格(地址)) return
       开始草稿(地址)
       set编辑地址(地址)
       set编辑值(模板)
@@ -969,7 +973,7 @@ const SheetEditor = () => {
     if (当前草稿.composing) { 草稿错误.current = '请先完成输入法候选字，再保存'; if (提示) message.info(草稿错误.current); return null }
     const 锚点 = 读取单元格(工作表, 当前草稿.address).溢出锚点
     if (锚点) { 草稿错误.current = `${当前草稿.address} 是动态数组结果，请编辑锚点 ${锚点}`; if (提示) message.info(草稿错误.current); return null }
-    if (实时协作.readOnly) return 最新工作簿.current
+    if (编辑只读) return 最新工作簿.current
     try {
       if (实时协作.active) 同步草稿(当前草稿.address, 当前草稿.value)
       const 当前 = 最新工作簿.current, 原表 = 当前.find(sheet => sheet.id === (草稿.current?.sheetId ?? 工作表.id))
@@ -1015,7 +1019,7 @@ const SheetEditor = () => {
     if (事件.defaultPrevented || 事件.nativeEvent.isComposing || 事件.nativeEvent.keyCode === 229) return
     const { 起点, 终点 } = 选区
     const 进入编辑 = (初始值: string) => {
-      if (实时协作.readOnly) { message.info('当前共享文档为只读'); return }
+      if (编辑只读) { message.info(只读提示); return }
       if (提示数组子格(生成地址(起点.行, 起点.列))) return
       if (工作表.保护) { modal.warning({ title: '工作表已保护', content: '请先解除保护，再编辑单元格。' }); return }
       const address = 生成地址(起点.行, 起点.列)
@@ -1111,14 +1115,14 @@ const SheetEditor = () => {
       key: `${activeDocumentId ?? '独立'}:${草稿重置版本}`,
       兼容模式: 工作表.公式兼容模式 ?? 'Excel',
       on兼容模式: (模式: 'Excel' | 'WPS') => {
-        if (实时协作.readOnly) return
+        if (编辑只读) return
         结束草稿();set编辑地址(null);set编辑值('')
         set工作表列表(当前 => 当前.map(sheet => ({...sheet,公式兼容模式:模式})))
         message.info(`已切换为 ${模式} 公式兼容模式`)
       },
       地址文本: 生成区域地址(选区.起点, 选区.终点),
       公式值: 读取单元格(工作表, 读取单元格(工作表, 取首格地址()).溢出锚点 ?? 取首格地址()).原始值,
-      只读提示: 实时协作.readOnly ? '当前共享文档为只读' : 读取单元格(工作表, 取首格地址()).溢出锚点 ? `动态数组结果，请编辑锚点 ${读取单元格(工作表, 取首格地址()).溢出锚点}` : undefined,
+      只读提示: 编辑只读 ? 只读提示 : 读取单元格(工作表, 取首格地址()).溢出锚点 ? `动态数组结果，请编辑锚点 ${读取单元格(工作表, 取首格地址()).溢出锚点}` : undefined,
       on文件按键: 处理按键,
       on取消草稿: 结束草稿,
       on草稿变化: (value: string, composing: boolean) => {
@@ -1200,6 +1204,9 @@ const SheetEditor = () => {
       工作表.保护 ? React.createElement('div', { className: 'wps-sheet-protectionbar' },
         工作表.保护 === '外部' ? '原文件受保护，当前只读' : '工作表已保护，当前只读'
       ) : null,
+      保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
+        `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
+      ) : null,
       Object.values(工作表.单元格).some(单元 => 单元.公式状态) ? React.createElement('div', { className: 'wps-sheet-filterbar', role: 'status' },
         '部分公式使用来源缓存或等待计算；缓存可能已过期，修改数据后需在支持该公式的表格软件中重新计算。公式原文将保留。'
       ) : null,
@@ -1213,7 +1220,7 @@ const SheetEditor = () => {
         选区,
         编辑地址: 窗格 === 活动窗格 ? 编辑地址 : null,
         编辑值,
-        只读: 实时协作.readOnly,
+        只读: 编辑只读,
         scale: 缩放,
         冻结,
         隐藏行,
@@ -1227,7 +1234,7 @@ const SheetEditor = () => {
           }
         },
         on双击: (地址: string) => {
-          if (实时协作.readOnly) { message.info('当前共享文档为只读'); return }
+          if (编辑只读) { message.info(只读提示); return }
           if (提示数组子格(地址)) return
           if (工作表.保护) {
             modal.warning({ title: '工作表已保护', content: '请先解除保护，再编辑单元格。' })

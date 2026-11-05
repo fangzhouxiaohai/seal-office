@@ -9,10 +9,8 @@ import { 增强字体回退Html } from './fonts/fallback'
 import { 净化富文本 } from './editor/sanitizeHtml'
 import type { 文字页面设置 } from './office/docModel'
 import type { Sheet } from './sheet/model'
-import { 文档格式, 原生文档类型, 原生默认扩展 } from './fileFormats'
-import { 从Html表格构建工作表 } from './sheet/sheetImport'
-import { 收集演示资源标识 } from './ppt/model/migrations'
-import type { 演示文稿 } from './ppt/deck'
+import { 文档格式, 原生文档类型 } from './fileFormats'
+import { 从二进制读取网页型旧版表格, 导入网页型旧版表格 } from './sheet/htmlXlsImport'
 import { 读取单文件网页 } from './office/mhtml'
 import { 需要转换确认 } from './fileWarnings'
 
@@ -184,6 +182,16 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     typeof 结果.文件指纹 === 'string' && 结果.文件指纹.length > 0
       ? { ...内容, 文件指纹: 结果.文件指纹 }
       : 内容
+  if (扩展 === 'xls') {
+    const 网页原文 = 结果.二进制
+      ? 从二进制读取网页型旧版表格(结果.内容)
+      : 结果.实际格式 === 'html-table-xls' || /^\uFEFF?\s*(?:<!doctype\s+html(?:\s|>)|<html(?:\s|>))/i.test(结果.内容)
+        ? 结果.内容 : null
+    if (网页原文 !== null) return 带文件指纹({
+      类型: 'table', 工作表列表: 导入网页型旧版表格(网页原文),
+      警告: ['文件实际为网页表格，已按表格内容读取；原始文件保持不变', '网页样式、脚本及其他非表格对象未导入，请另存副本后核对'],
+    })
+  }
   const 兼容格式 = 文档格式.find(项 => 项.extension === 扩展 && 项.conversion)
   const OfficeXML = 扩展 === 'xml' && /urn:schemas-microsoft-com:office:spreadsheet|http:\/\/schemas.microsoft.com\/office\/word\/2003\/wordml/.test(结果.内容)
   if (兼容格式 && (!['xml', 'mht', 'mhtml'].includes(扩展) || OfficeXML)) {
@@ -316,45 +324,17 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
   if (!需要转换确认(警告)) return 内容
   const 确认 = await new Promise<boolean>(完成 => {
     ;(导入确认弹窗 ?? Modal.confirm)({
-      title: '此文件需要转换后打开',
+      title: '此文件仅能查看已识别内容',
       content: createElement('div', null,
-        createElement('p', null, '当前尚不能完整识别以下内容，文件还未进入编辑器。'),
+        createElement('p', null, '当前尚不能完整识别以下内容。查看时保留原文件，保存前请另存为副本。'),
         createElement('ul', null, 警告.map((项, 索引) => createElement('li', { key: 索引 }, 项))),
-        createElement('p', null, '可将已识别的内容另存为海豹专属格式后打开。上列内容可能在副本中缺失或改变；原文件保持不变。若需要完整原貌，请取消并使用原软件处理。')),
-      okText: '转换为海豹格式', cancelText: '取消打开', maskClosable: false,
+        createElement('p', null, '已识别内容可供查看。请使用“另存为”生成副本再编辑；副本可能缺少上列内容。')),
+      okText: '查看已识别内容', cancelText: '取消打开', maskClosable: false,
       onOk: () => { 完成(true) }, onCancel: () => { 完成(false) },
     })
   })
   if (!确认) return null
-  const 扩展 = 原生默认扩展[内容.类型]
-  const 默认名称 = 基准文件名(路径).replace(/\.[^.]+$/, '') + '.' + 扩展
-  const 选择 = await 桥接.showSaveDialog(默认名称, 内容.类型)
-  if (!选择) return null
-  const 目标 = /\.[^\\/]+$/.test(选择) ? 选择 : 选择 + '.' + 扩展
-  if (原生文档类型(目标) !== 内容.类型) throw new Error(`转换副本请选择 .${扩展} 格式`)
-  if (目标.replace(/\\/g, '/').toLowerCase() === 路径.replace(/\\/g, '/').toLowerCase()) throw new Error('转换副本必须使用不同路径，原文件未修改')
-  let 模型: unknown
-  if (内容.类型 === 'word') 模型 = { html: 内容.内容 ?? '', 页面设置: 内容.页面设置, 警告 }
-  else if (内容.类型 === 'table') {
-    const 表列表 = 内容.工作表列表 ?? [{ 名称: 'Sheet1', html: 内容.内容 ?? '' }]
-    const 工作表列表 = 表列表.map(表 => 'html' in 表
-      ? 从Html表格构建工作表(表.html, 表.名称, (表 as any).页面设置, (表 as any).元数据) : 表)
-    if (!工作表列表.length || 工作表列表.some(表 => !表)) throw new Error('未得到有效工作表，转换未执行')
-    模型 = { 工作表列表, 警告 }
-  } else if (内容.类型 === 'ppt') {
-    const 文稿 = 内容.演示文稿 as 演示文稿
-    const 标识 = 收集演示资源标识(文稿)
-    const 资源 = 标识.length ? await 桥接.presentationResources.export(标识) : { 成功: true, 条目: [] }
-    if (!资源.成功 || !资源.条目) throw new Error(资源.错误 || '图片资源不可用，转换未执行')
-    模型 = { 演示文稿: 文稿, 资源条目: 资源.条目, 警告 }
-  } else 模型 = { PDF数据: 内容.内容, 警告 }
-  const 生成 = await 桥接.office.writeSeal(内容.类型, 模型)
-  if (!生成?.成功 || !生成.数据) throw new Error(生成?.错误 || '转换专属格式失败')
-  const 保存 = await 桥接.saveToFile(目标, 生成.数据, '二进制')
-  if (!保存.成功) { if (保存.已取消) return null; throw new Error(保存.错误 || '转换副本写入失败') }
-  // Read the actual saved bytes instead of opening the in-memory intermediate.
-  const 已保存 = await 读取本地文件内容(目标)
-  return { ...已保存, 打开路径: 目标 }
+  return 内容
 }
 
 /** 取路径中的文件名（兼容反斜杠与正斜杠分隔） */

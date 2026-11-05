@@ -13,6 +13,7 @@ const { createRealtime } = require('./realtime.cjs')
 const { createPasswords } = require('./passwords.cjs')
 const { createAccountErasure } = require('./accountErasure.cjs')
 const { createShareLinks } = require('./shareLinks.cjs')
+const { createMyShares } = require('./myShares.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -118,6 +119,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   }
   const collaboration = createCollaboration({ db, clock, objects, teamObjects, usage, reservation, quota, ensureDisk, nodeFor, streamObject, audit })
   const shareLinks = createShareLinks({ db, clock, objects, nodeFor, streamObject, audit, usage, quota })
+  const myShares = createMyShares({ db, clock, audit })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const issueSession = (row, input, action = 'login') => {
     const token = randomBytes(32).toString('base64url')
@@ -228,6 +230,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         return reply(account(db.one('SELECT * FROM users WHERE id=?',[user.id])))
       }
       if (!user.enabled) fail(403, '请先开通云空间')
+      if (await myShares.handle({ route, method, url, user, json, reply })) return
       if (route === '/v1/share-links' || route.startsWith('/v1/share-links')) { if (await shareLinks.handle({ route, method, json, reply, user, req, res, body })) return }
       if(route==='/v1/space/counts'&&method==='GET')return reply({files:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('file','knowledge')",[user.id]).n,folders:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('folder','library')",[user.id]).n,versions:db.one('SELECT COUNT(*) n FROM versions WHERE user_id=?',[user.id]).n,trash:db.one('SELECT COUNT(*) n FROM nodes WHERE user_id=? AND deleted=1',[user.id]).n,publications:db.one('SELECT COUNT(*) n FROM publications WHERE user_id=?',[user.id]).n,used:usage(user.id)})
       if (route === '/v1/space/autosave' && method === 'POST') { const input=await json(); if(typeof input.enabled!=='boolean') fail(400,'开关值无效');db.transaction(()=>db.run('UPDATE users SET autosave=? WHERE id=?',[input.enabled?1:0,user.id]));return reply({autosave:input.enabled}) }

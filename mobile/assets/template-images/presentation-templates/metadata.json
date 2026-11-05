@@ -1,48 +1,48 @@
 {
   "city": {
-    "id": "d17721bbb16103490302e7a363ef9b13293f37fd995896c7bec957cad121f1c6",
+    "id": "bad1c67b3a89f5561f2e29a18453ca520abed87b5a8cc013c399d01a7594674d",
     "type": "image/jpeg",
-    "bytes": 209779,
+    "bytes": 156903,
     "width": 1280,
     "height": 720,
     "file": "city.jpg"
   },
   "workshop": {
-    "id": "62a95e73dc8ef140a576b768b9d5bbe175a77650a3ccfb06eb03c2a5c80ffeb9",
+    "id": "2ad44829f30d74a6ced84f72fe54286aa3128296ce88dff1c6b22eff6be29f7a",
     "type": "image/jpeg",
-    "bytes": 153103,
+    "bytes": 114685,
     "width": 1280,
     "height": 720,
     "file": "workshop.jpg"
   },
   "product": {
-    "id": "58184dccdda931af6e5ca783d30c047b0a6ecbe1ee724e1b8095a97497a0dd7c",
+    "id": "48beb6c42531a814686ff650040724d63ef18dff927b913401527835122efe17",
     "type": "image/jpeg",
-    "bytes": 118878,
+    "bytes": 88956,
     "width": 1280,
     "height": 720,
     "file": "product.jpg"
   },
   "research": {
-    "id": "6faa881ad03dedb34ea25bb129eb1285431e371a98135388a6b1e55998fefb0c",
+    "id": "9a54200e9c08f2aa40f981a5c5a477e2917e7a1350f7ee7082366c4d54e2382a",
     "type": "image/jpeg",
-    "bytes": 136463,
+    "bytes": 104430,
     "width": 1280,
     "height": 720,
     "file": "research.jpg"
   },
   "finance": {
-    "id": "a8a86a513e3b214722c2aa4e2a22852acedb4f4a6dd4077d0577990fd2397662",
+    "id": "dce1488d367441a4471f1a08b8d215f0e009271cdf12a2446bbc7c7f400f4a17",
     "type": "image/jpeg",
-    "bytes": 144406,
+    "bytes": 108514,
     "width": 1280,
     "height": 720,
     "file": "finance.jpg"
   },
   "event": {
-    "id": "4b1422c826a9d4346dccf05d3d0ce7ef10ce0d2a261df18794ab9066521de872",
+    "id": "7404d678f9838099077d399f5fbd32f35e8d1e76dec6e8819744f22323c695bf",
     "type": "image/jpeg",
-    "bytes": 144357,
+    "bytes": 106577,
     "width": 1280,
     "height": 720,
     "file": "event.jpg"

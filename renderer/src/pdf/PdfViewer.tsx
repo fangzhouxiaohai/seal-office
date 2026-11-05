@@ -50,6 +50,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
   const 画布 = useRef<HTMLCanvasElement | null>(null)
   const [文字项, set文字项] = useState<页面文字项[]>([])
   const [错误, set错误] = useState(false)
+  const [画布尝试, set画布尝试] = useState({ 代次: 0, 自动重试次数: 0 })
   /** 本页的原始尺寸（PDF pt），点选换算与编辑定位都用它 */
   const 原始尺寸 = useRef<PDF页面尺寸 | null>(null)
 
@@ -72,7 +73,13 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
         const 显示高度 = 原始高度 * 显示宽度 / 原始宽度
         const 节点 = 画布.current
         const 画笔 = 节点?.getContext('2d')
-        if (!节点 || !画笔) throw new Error('无法创建页面画布')
+        if (!节点 || !画笔) {
+          if (画布尝试.自动重试次数 === 0) {
+            set画布尝试({ 代次: 画布尝试.代次 + 1, 自动重试次数: 1 })
+            return
+          }
+          throw new Error(节点 ? '无法获取二维绘图上下文，请重试此页' : '页面画布节点不可用，请重试此页')
+        }
         const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
         // 每页各自限制画布像素，长文档滚动时不会一次创建所有页的画布。
         const 画布像素上限 = 16_000_000
@@ -109,10 +116,10 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
       }
     })()
     return () => { 已取消 = true; 渲染任务?.cancel() }
-  }, [文档, 页码, 缩放, 可用宽度, on尺寸, onError])
+  }, [文档, 页码, 缩放, 可用宽度, on尺寸, onError, 画布尝试])
 
   return <>
-    <canvas ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${页码} 页`} />
+    <canvas key={画布尝试.代次} ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${页码} 页`} />
     <div className="pdf-viewer__text-layer" aria-label={`第 ${页码} 页可选择的 PDF 文字`}>
       {文字项.map((项, 索引) => <span key={索引} style={{ left: 项.x, top: 项.y, minWidth: 项.宽, height: 项.高, fontSize: 项.高 }}>{项.文本}</span>)}
     </div>
@@ -148,7 +155,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
         }}
       />
     )}
-    {错误 && <span className="pdf-viewer__page-error" role="status">第 {页码} 页无法显示</span>}
+    {错误 && <span className="pdf-viewer__page-error" role="status">第 {页码} 页无法显示 <button type="button" aria-label={`重试第 ${页码} 页`} onClick={() => set画布尝试((当前) => ({ 代次: 当前.代次 + 1, 自动重试次数: 0 }))}>重试此页</button></span>}
   </>
 }
 

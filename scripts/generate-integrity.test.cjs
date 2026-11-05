@@ -21,6 +21,7 @@ test('清单只记录实际打包的主进程文件与页面文件', () => {
       'main/pdf/node_modules/.vitest/cache/package.json',
       'main/office/__fixtures__/complexWord.cjs',
       'dist/index.html',
+      'dist/file-viewer/vendor/ppt/dist/core/binary.d.ts',
     ]
     for (const 相对路径 of 文件) {
       const 目标 = path.join(根目录, ...相对路径.split('/'))
@@ -68,5 +69,6 @@ test('清单排除规则与 Windows 打包配置同步', () => {
     'main/pdf/node_modules/.vitest/cache/package.json',
     'main/pdf/.vitest/cache/package.json',
     'main/office/__fixtures__/complexWord.cjs',
+    'dist/file-viewer/vendor/ppt/dist/core/binary.d.ts',
   ]) assert.equal(是构建文件(路径), false, 路径)
 })
