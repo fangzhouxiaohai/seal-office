@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import { afterEach, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -28,7 +29,7 @@ it('设置面板的思考强度用于下一次请求，历史和最终回复按�
       chat: 对话, onStream: () => () => {}, onToolCall: () => () => {}, clearSession: 清理,
     },
   } })
-  render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+  render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
   await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
   expect(document.querySelector('.assistant-drawer .ant-drawer-close')).toBeNull()
   expect(screen.getByRole('button', { name: '收起智能助手' })).toBeInTheDocument()

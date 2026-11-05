@@ -11,6 +11,10 @@ function 展示(内容: string) {
 afterEach(() => { 写入.mockReset(); 写入.mockResolvedValue(undefined); Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('助手回复按类型展示与复制', () => {
+  it('英文界面只翻译图片占位提示，不改写模型提供的图片说明', () => {
+    render(<ConfigProvider><AntdApp><AssistantContent 内容="![用户的图表](https://example.com/chart.png)" 语言="en-US" /></AntdApp></ConfigProvider>)
+    expect(screen.getByText('[Image: 用户的图表]')).toBeInTheDocument()
+  })
   it('普通回复与排版回复使用面向阅读的回答标题，代码仍标注语言', () => {
     const 视图 = 展示('简短说明')
     expect(screen.getByRole('region', { name: 'TXT内容' }).querySelector('.assistant-result__heading')).toHaveTextContent('回答')

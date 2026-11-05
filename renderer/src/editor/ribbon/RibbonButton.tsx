@@ -83,8 +83,11 @@ const RibbonButton = ({
       Dropdown,
       {
         menu: {
-          items: 规范化后.map((项) => ({ key: 项.value, label: 项.label })),
-          onClick: ({ key }: { key: string }) => onSelect && onSelect(key),
+          items: 规范化后.map((项, 索引) => ({ key: String(索引), label: 项.label })),
+          onClick: ({ key }: { key: string }) => {
+            const 选中 = 规范化后[Number(key)]
+            if (选中 && onSelect) onSelect(选中.value)
+          },
           style: { maxHeight: 'min(60vh, 420px)', overflowY: 'auto' },
         },
         trigger: ['click'],

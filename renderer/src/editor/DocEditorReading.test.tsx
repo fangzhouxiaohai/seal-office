@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import { AppProvider, useAppStore } from '../store'
 import DocEditor from './DocEditor'
+import { 底部标签栏可见 } from '../navigation/backLevel'
 import type { 文字页面设置 } from '../office/docModel'
 
 const 原文 = '<h1>阅读验证</h1><p style="font-size:12pt">正文<b>格式保留</b></p><table><tbody><tr><td>表格</td></tr></tbody></table>'
@@ -16,13 +17,31 @@ function 创建入口() {
     <output data-testid="document-state">{JSON.stringify(store.documents.find(item => item.id === store.activeDocumentId))}</output>
   </>
 }
-function 渲染(移动端 = true) {
+function 渲染(移动端 = true, 包含主导航 = false) {
   if (移动端) {
     document.documentElement.dataset.sealPlatform = 'web'
     vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: true, media: query, onchange: null, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn() }))
   }
-  return render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp></ConfigProvider>)
+  return render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider>{包含主导航 && <nav className="seal-mobile-nav" aria-label="移动工作台导航" />}<创建入口 /><DocEditor /></AppProvider></AntdApp></ConfigProvider>)
 }
+
+it('文字全屏阅读期间底部主标签虽保留布局也不允许返回桌面', async () => {
+  const { container } = 渲染(true, true)
+  const 栏 = container.querySelector('.seal-mobile-nav') as HTMLElement
+  vi.spyOn(栏, 'getClientRects').mockReturnValue([{ top: 700, bottom: 758, left: 0, right: 390 } as DOMRect] as unknown as DOMRectList)
+  try {
+    await userEvent.click(screen.getByRole('button', { name: '导入阅读文档' }))
+    expect(底部标签栏可见(document)).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: '全屏左右翻页阅读' }))
+    expect(screen.getByRole('dialog', { name: '文字全屏阅读' })).toBeInTheDocument()
+    expect(底部标签栏可见(document)).toBe(false)
+    const 返回 = new Event('seal-before-native-back', { cancelable: true })
+    fireEvent(window, 返回)
+    expect(返回.defaultPrevented).toBe(true)
+    expect(screen.queryByRole('dialog', { name: '文字全屏阅读' })).toBeNull()
+    expect(底部标签栏可见(document)).toBe(true)
+  } finally { vi.restoreAllMocks() }
+})
 afterEach(() => {
   delete document.documentElement.dataset.sealPlatform
   localStorage.removeItem('seal-office.reading-font-size')

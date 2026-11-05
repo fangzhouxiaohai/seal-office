@@ -115,10 +115,6 @@ const 插入标签: RibbonTabSpec = {
   label: '插入',
   groups: [
     {
-      name: '表格',
-      items: [大('insert.pivot', '数据透视表', 'table')],
-    },
-    {
       name: '插图',
       items: [
         大('insert.picture', '图片', 'image'),

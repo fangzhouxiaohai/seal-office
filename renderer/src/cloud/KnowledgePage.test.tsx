@@ -2,6 +2,7 @@ import {fireEvent,render,screen,waitFor,within} from '@testing-library/react'
 import {App as AntdApp} from 'antd'
 import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest'
 import KnowledgePage from './KnowledgePage'
+import {SettingsProvider} from '../store/settingsStore'
 const cloud=vi.hoisted(()=>({state:{} as any,call:vi.fn(),refresh:vi.fn(async()=>{}),configure:vi.fn()}))
 const originalAPI=Object.getOwnPropertyDescriptor(window,'electronAPI')
 beforeEach(()=>{Object.defineProperty(window,'electronAPI',{configurable:true,value:{cloud:{invoke:vi.fn(async(action:string)=>{
@@ -53,5 +54,27 @@ describe('知识库加载状态',()=>{
     expect(await screen.findByText('正在读取知识库…')).toBeInTheDocument()
     finish([])
     await waitFor(()=>expect(screen.queryByText('正在读取知识库…')).not.toBeInTheDocument())
+  })
+})
+
+describe('Zotero 百科引用',()=>{
+  it('点击引用并提问后显示选定资料和可输入的问题',async()=>{
+    cloud.call.mockImplementation(async action=>{
+      if(action==='list')return []
+      if(action==='zoteroIndex')return {items:[{title:'示例指南',route:'guide',summary:'使用方法'}]}
+      if(action==='zoteroRead')return {route:'guide',markdown:'# 示例指南\n这里是可引用的正文。',source:'https://zotero-chinese.com/guide'}
+      return {items:[]}
+    })
+    render(<SettingsProvider><AntdApp><KnowledgePage/></AntdApp></SettingsProvider>)
+    fireEvent.click(screen.getByText('Zotero 百科'))
+    fireEvent.click(await screen.findByRole('button',{name:/示例指南/}))
+    fireEvent.click(await screen.findByRole('button',{name:'引用并提问'}))
+    expect(await screen.findByRole('textbox',{name:'知识库问题'})).toBeVisible()
+    expect(screen.getByText(/这里是可引用的正文/)).toBeVisible()
+    fireEvent.change(screen.getByRole('textbox',{name:'知识库问题'}),{target:{value:'如何使用这份资料？'}})
+    fireEvent.click(screen.getByRole('button',{name:/^提\s*问$/}))
+    const dialog=await screen.findByRole('dialog',{name:'本次在线 AI 资料授权'})
+    expect(within(dialog).getByText(/这里是可引用的正文/)).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button',{name:/^取\s*消$/}))
   })
 })

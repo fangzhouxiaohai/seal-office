@@ -55,7 +55,7 @@ async function 验收() {
     const 编辑状态 = await 执行("({标题:document.querySelector('.wps-titlebar__doc')?.textContent,编辑框:document.querySelector('.wps-ppt-box__editor')?.value,焦点:document.activeElement?.className,文本框:[...document.querySelectorAll('.wps-ppt-box')].map(项=>项.textContent)})")
     throw new Error('成品未达到预期状态：' + 表达式 + '；可见弹窗：' + JSON.stringify(弹窗标题) + '；验收编辑状态：' + JSON.stringify(编辑状态))
   }
-  const 找按钮 = 名称 => `[...document.querySelectorAll('button')].find(项=>项.textContent.trim()===${JSON.stringify(名称)}||项.getAttribute('aria-label')===${JSON.stringify(名称)})`
+  const 找按钮 = 名称 => `[...document.querySelectorAll('button')].find(项=>项.getClientRects().length>0&&(项.textContent.trim()===${JSON.stringify(名称)}||项.getAttribute('aria-label')===${JSON.stringify(名称)}))`
   const 可见弹窗 = "[...document.querySelectorAll('.ant-modal')].some(项=>项.getClientRects().length>0)"
   const 点击 = async 名称 => { await 等待(`Boolean(${找按钮(名称)})&&!(${找按钮(名称)}).disabled`); await 执行(`(${找按钮(名称)}).click()`); await 等待片刻(120) }
   const 截图 = async 名称 => {

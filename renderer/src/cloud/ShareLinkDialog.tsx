@@ -3,6 +3,7 @@ import { App, Button, Checkbox, Input, InputNumber, Modal, Select, Switch, Tag }
 import { cloudCall } from './CloudProvider'
 import Icon from '../components/Icon'
 import { useSettings } from '../store/settingsStore'
+import { writeClipboardText } from '../editor/clipboard'
 import './shareLink.css'
 
 export type 分享有效期 = 1 | 3 | 7 | 30 | null
@@ -66,7 +67,13 @@ export default function ShareLinkDialog({ 文件, onClose }: Props) {
       })
       if (typeof 链接?.url !== 'string' || !/^https?:\/\/[^/]+\/share\/#\/s\//.test(链接.url)) throw new Error(t('分享记录已创建，但返回的链接地址无效。请在“我的分享”中取消该记录后重试。', 'The share was created, but its URL is invalid. Revoke it in My shares and try again.'))
       设结果(链接)
-      message.success(t('分享链接已生成，拿到链接的人无需登录即可下载', 'Share link created; anyone with the link can download without signing in'))
+      let 已复制 = false
+      try {
+        await writeClipboardText(链接.url)
+        已复制 = true
+      } catch { /* 链接仍显示在弹窗中，供手动复制。 */ }
+      if (已复制) message.success(t('分享链接已生成并自动复制', 'Share link created and copied automatically'))
+      else message.warning(t('分享链接已生成，自动复制失败，请点击“复制链接”或手动选择地址', 'Share link created, but copying failed. Select Copy link or copy the address manually.'))
     } catch (错误) {
       modal.error({ title: t('生成分享链接失败', 'Could not create share link'), content: 错误 instanceof Error ? 错误.message : t('请稍后重试', 'Please try again') })
     } finally { 设提交中(false) }
@@ -74,7 +81,7 @@ export default function ShareLinkDialog({ 文件, onClose }: Props) {
 
   const 复制 = async () => {
     if (!结果) return
-    try { await navigator.clipboard.writeText(结果.url); message.success(t('链接已复制', 'Link copied')) }
+    try { await writeClipboardText(结果.url); message.success(t('链接已复制', 'Link copied')) }
     catch { message.error(t('复制失败，请手动选择链接文本', 'Copy failed; please select the text manually')) }
   }
 

@@ -583,7 +583,10 @@ const PptEditor = () => {
   }, [])
   /** 插入已经解码好的图片（本机文件、粘贴、截屏共用同一条资源与撤销链路）。 */
   const 插入图片资源 = async (解码列表: Array<{ 数据: string; 类型: string; 宽: number; 高: number }>) => {
-    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !解码列表.length || 插入中.current) return
+    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !解码列表.length || 插入中.current) {
+      显示文件错误('图片插入失败', '当前不能插入图片，请返回可编辑的幻灯片后重试')
+      return false
+    }
     插入中.current = true
     const 临时引用: string[] = []
     try {
@@ -602,7 +605,11 @@ const PptEditor = () => {
       if (插图状态.current.文稿 !== 文稿 || !插图状态.current.文稿.幻灯片列表.some(页 => 页.id === 当前幻灯片.id)) throw new Error('图片处理期间文稿已变化，请重新插入')
       更新文稿({ ...更新幻灯片(文稿, 当前幻灯片.id, { 对象列表 }), 资源索引 })
       set选中对象(新标识); set选中框标识(null)
-    } catch (错误) { 显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败') }
+      return true
+    } catch (错误) {
+      显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败')
+      return false
+    }
     finally {
       for (const 标识 of 临时引用) {
         const 结果 = await 桥接.presentationResources.dropTemporary(标识)
@@ -738,10 +745,13 @@ const PptEditor = () => {
   }
 
   const 插入图片 = async (文件列表: File[]) => {
-    if (只读 || 插图状态.current.禁止插图 || !当前幻灯片 || !文件列表.length || 插入中.current) return
+    if (!文件列表.length) return false
     try {
-      await 插入图片资源(await Promise.all(文件列表.map(解码图片文件)))
-    } catch (错误) { 显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败') }
+      return await 插入图片资源(await Promise.all(文件列表.map(解码图片文件)))
+    } catch (错误) {
+      显示文件错误('图片插入失败', 错误 instanceof Error ? 错误.message : '图片读取失败')
+      return false
+    }
   }
 
   /** 识别文字插入为文本框，走同一撤销与保存链路。 */
@@ -935,15 +945,15 @@ const PptEditor = () => {
       const 成员 = new Set((当前幻灯片.对象列表 ?? []).flatMap(item => item.子对象标识 ?? []))
       set选中框标识(null); set选中对象([...当前幻灯片.文本框列表, ...当前幻灯片.对象列表 ?? []].filter(item => !成员.has(item.id)).map(item => item.id)); return
     }
-    if ((标识 === 'clipboard.copy' || 标识 === 'clipboard.cut' || 标识 === 'edit.duplicateContext') && 目标对象.length && 当前幻灯片) {
-      if (标识 !== 'clipboard.copy' && 只读) return
+    if (['clipboard.copy', 'clipboard.cut', 'edit.copy', 'edit.cut', 'edit.duplicateContext'].includes(标识) && 目标对象.length && 当前幻灯片) {
+      if (!['clipboard.copy', 'edit.copy'].includes(标识) && 只读) return
       const 副本 = copySlideSelection(读取当前幻灯片(读取草稿快照()) ?? 当前幻灯片, 目标对象)
       if (标识 === 'edit.duplicateContext') {
         const 结果 = pasteSlideSelection(当前幻灯片, 副本)
         更新文稿(更新幻灯片(文稿, 当前幻灯片.id, 结果.page)); set选中框标识(null); set选中对象(结果.selected)
       } else {
         对象剪贴板.current = { documentId: 文稿.id, page: 副本 }
-        if (标识 === 'clipboard.cut') {
+        if (标识 === 'clipboard.cut' || 标识 === 'edit.cut') {
           try { 更新文稿(更新幻灯片(文稿, 当前幻灯片.id, deleteSlideSelection(当前幻灯片, 目标对象))); set选中对象([]); set选中框标识(null) }
           catch (error) { 显示文件错误('无法剪切对象', error instanceof Error ? error.message : '对象已锁定') }
         }
@@ -998,7 +1008,7 @@ const PptEditor = () => {
     if (标识 === 'edit.pasteImage') { void 粘贴系统图片(); return }
     // 右键菜单的剪切/复制/粘贴命令映射到剪贴板命令，走统一命令注册表
     if (标识 === 'edit.cut' || 标识 === 'edit.copy') {
-      标识 = 'clipboard.copy'
+      标识 = 标识 === 'edit.cut' ? 'clipboard.cut' : 'clipboard.copy'
     } else if (标识 === 'edit.paste') {
       标识 = 'clipboard.paste'
     }
@@ -1285,9 +1295,19 @@ const PptEditor = () => {
       ]},
       { type: 'divider' },
       { type: 'group', 子项: [
-        { type: 'item', commandId: 'slide.layout', label: '版式' },
-        { type: 'item', commandId: 'slide.background', label: '设置背景' },
         { type: 'item', commandId: 'view.gridlines', label: 显示网格线 ? '隐藏网格线' : '显示网格线' },
+      ]},
+      { type: 'group', 标题: '版式', 子项: [
+        { type: 'item', commandId: 'slide.layout', commandParam: '标题幻灯片', label: '版式：标题幻灯片' },
+        { type: 'item', commandId: 'slide.layout', commandParam: '标题和内容', label: '版式：标题和内容' },
+        { type: 'item', commandId: 'slide.layout', commandParam: '空白', label: '版式：空白' },
+      ]},
+      { type: 'group', 标题: '背景', 子项: [
+        { type: 'item', commandId: 'slide.background', commandParam: '白色', label: '背景：白色' },
+        { type: 'item', commandId: 'slide.background', commandParam: '浅蓝', label: '背景：浅蓝' },
+        { type: 'item', commandId: 'slide.background', commandParam: '浅绿', label: '背景：浅绿' },
+        { type: 'item', commandId: 'slide.background', commandParam: '浅灰', label: '背景：浅灰' },
+        { type: 'item', commandId: 'slide.background', commandParam: '深色', label: '背景：深色' },
       ]},
       { type: 'divider' },
       { type: 'group', 子项: [
@@ -1505,13 +1525,11 @@ const PptEditor = () => {
         }) : 当前标签 === 'slideshow' && 智能面板 === '讲稿' ? React.createElement(NarrationPanel, { 文稿, 只读, on修改: 更新文稿 })
           : 智能面板 === '生成' ? React.createElement(GenerationPanel, { 文稿, 页: 当前幻灯片 ?? 文稿.幻灯片列表[0], 只读, on修改: 更新文稿 })
           : 智能面板 === '素材库' ? React.createElement(AssetLibraryPanel, {
-              文稿, 页: 当前幻灯片 ?? 文稿.幻灯片列表[0], 只读, on修改: 更新文稿,
-              on插入图片: (素材, 数据) => {
-                try {
-                  const 二进制 = atob(数据)
-                  const 字节 = Uint8Array.from(二进制, (字符) => 字符.charCodeAt(0))
-                  void 插入图片([new File([字节], 素材.名称, { type: 素材.类型 })])
-                } catch (错误) { 显示文件错误('素材插入失败', 错误 instanceof Error ? 错误.message : '无法读取素材字节') }
+              只读,
+              on插入图片: async (素材, 数据) => {
+                const 二进制 = atob(数据)
+                const 字节 = Uint8Array.from(二进制, (字符) => 字符.charCodeAt(0))
+                return 插入图片([new File([字节], 素材.名称, { type: 素材.类型 })])
               },
             })
           : 当前幻灯片 && 当前标签 === 'review'

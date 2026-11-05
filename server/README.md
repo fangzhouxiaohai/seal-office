@@ -33,13 +33,16 @@ AI 沿用用户当前配置的服务。各端实际生成前使用当前登录�
 
 `deploy/` 提供独立的 Nginx 站点、非 root API 服务、每日备份、每小时健康检查和只针对本域名的证书续签任务。按实际项目目录调整配置再安装；勿覆盖已有其他站点。站点目录结构：
 
-完整仓库直接读取 `main/documentFormats.json` 和 `main/office/sealFormat.js`。若单独部署服务目录，须将它们分别复制为服务根目录的 `documentFormats.json` 和 `nativeSealFormat.cjs`，与服务代码一起记录 SHA-256；缺少编解码器时启动失败，不能跳过原生文件校验。先发布支持 `aiIdentity: 1` 的后台，再发布要求此能力的前端。会话、数据、注销账本、环境文件和管理员页面均保留，切换前在独立端口核验匿名身份接口返回 401。
+完整仓库直接读取 `main/documentFormats.json` 和 `main/office/sealFormat.js`。若单独部署服务目录，须将它们分别复制为服务根目录的 `documentFormats.json` 和 `nativeSealFormat.cjs`，与服务代码一起记录 SHA-256；缺少编解码器时启动失败，不能跳过原生文件校验。先发布支持 `aiIdentity: 1` 的后台，再发布要求此能力的前端。会话、数据、注销账本和环境文件均保留。部署脚本在切换 `current` 前逐行执行解压、校验 `index.cjs` 指纹及 `myShares.cjs` 是否存在，避免上传后仍运行旧接口。
+
+匿名文件分享页的 `share/index.html` 与 `share/app.js` 独立部署至站点的 `share/`，Nginx 为 `/share/` 配置独立静态路由；该页面和文件下载接口不要求管理后台登录。页面脚本必须是外部文件，以满足站点的内容安全策略。部署后核验 `/share/` 与 `/share/app.js` 返回正确内容，匿名读取分享信息及下载可用，`/api/v1/my-shares` 在未登录时返回 401；分享记录操作仍要求文件拥有者登录。
 
 ```text
 /www/wwwroot/seal.xingmasoft.com/
-  releases/<发布版本>/    服务代码及 admin/dist
+  releases/<发布版本>/    服务代码
   current -> releases/<发布版本>
-  admin -> current/admin/dist
+  admin/                独立的管理后台静态页面
+  share/                匿名文件下载页面
   data/                  持久化数据，权限 0700
 ```
 

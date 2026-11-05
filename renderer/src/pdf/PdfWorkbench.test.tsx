@@ -14,6 +14,18 @@ vi.mock('./PdfViewer', () => ({
 }))
 
 describe('PDF 工作台', () => {
+  it('页码含非法段时整次操作拒绝执行，并以中文弹窗说明', async () => {
+    const 提取 = vi.spyOn(桥接.pdf, 'extract').mockResolvedValue({ 成功: true, 数据: 'JVBERi0x' })
+    try {
+      render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'D:/原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0=' }} /></AntdApp>)
+      fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
+      fireEvent.change(screen.getByRole('textbox', { name: '处理页码' }), { target: { value: '1,错误' } })
+      fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
+      const 弹窗 = await screen.findByRole('dialog', { name: '页码无效' })
+      expect(within(弹窗).getByText(/页码格式无效/)).toBeInTheDocument()
+      expect(提取).not.toHaveBeenCalled()
+    } finally { 提取.mockRestore() }
+  })
   it('取消另存路径仍保留处理后的编辑字节，原路径没有被覆盖', async () => {
     const 提取=vi.spyOn(桥接.pdf,'extract').mockResolvedValue({成功:true,数据:'JVBERi1lZGl0'})
     const 路径=vi.spyOn(桥接,'showSaveDialog').mockResolvedValue(null)

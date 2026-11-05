@@ -56,6 +56,18 @@ app.whenReady().then(async () => {
     for (let attempt = 0; attempt < 120; attempt++) { if (await evaluate(`!!document.querySelector('.wps-app')`)) break; await new Promise(resolve => setTimeout(resolve, 250)) }
     assert.ok(await evaluate(`!!document.querySelector('.wps-app')`), '应用必须实际挂载')
     checks.push('生产构建可在无 Electron preload 的浏览器环境启动')
+    const focusStyles = await evaluate(`(()=>{
+      const field=document.createElement('input');field.type='number';field.style.position='fixed';document.body.append(field);field.focus();
+      const native={outline:getComputedStyle(field).outlineStyle,shadow:getComputedStyle(field).boxShadow,border:getComputedStyle(field).borderColor};field.remove();
+      const composer=document.createElement('div');composer.className='assistant-composer';const input=document.createElement('textarea');input.className='ant-input assistant-composer__input';composer.append(input);document.body.append(composer);input.focus();
+      const assistant={outline:getComputedStyle(input).outlineStyle,shadow:getComputedStyle(composer).boxShadow,border:getComputedStyle(composer).borderColor};composer.remove();
+      return {native,assistant}
+    })()`)
+    assert.equal(focusStyles.native.outline, 'none', '原生数字输入框聚焦不能出现粗描边')
+    assert.equal(focusStyles.native.shadow, 'none', '原生数字输入框聚焦不能出现粗光晕')
+    assert.equal(focusStyles.assistant.outline, 'none', '助手输入框聚焦不能出现粗描边')
+    assert.equal(focusStyles.assistant.shadow, 'none', '助手输入框聚焦不能出现粗光晕')
+    checks.push('数字输入框与助手输入框实际聚焦无粗描边及黑色光晕，边框使用皮肤色')
     if (localFile) {
       // 字体与导出使用确定性的宿主模拟；页面和编辑器本身从 file:// 加载。
       await evaluate(`window.sealNative={token:'offline-test',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)

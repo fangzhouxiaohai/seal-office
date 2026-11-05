@@ -48,8 +48,9 @@ test('Harmony plain JSON / Android UTS 对象消息均分发；空消息、伪�
     assert.equal(actions.length, 0)
     for (const wrap of [value => JSON.parse(JSON.stringify(value)), value => new AndroidUTSObject(value)]) {
       const send = data => host.onMessage({ detail: { data: [wrap({ token: host.token, ...data })] } })
-      send({ action: 'state', atHome: false, unsaved: 3 })
-      assert.equal(host.atHome, false); assert.equal(host.unsaved, 3); assert.equal(host.workspaceReady, true)
+      host.backToDesktop = false
+      send({ action: 'state', backToDesktop: true, unsaved: 3 })
+      assert.equal(host.backToDesktop, true); assert.equal(host.unsaved, 3); assert.equal(host.workspaceReady, true)
       send({ id: 'picker', action: 'pick-files', multiple: true })
       assert.deepEqual(actions.at(-1), ['pick', 'picker', true])
       send({ id: 'save', action: 'save', name: '中文.sldoc', data: 'YQ==' })
@@ -62,8 +63,8 @@ test('Harmony plain JSON / Android UTS 对象消息均分发；空消息、伪�
       host.pickFiles = (...args) => actions.push(['pick', ...args])
       send({ id: 'unknown', action: 'unsupported' }); assert.equal(replies.at(-1).type, 'error')
     }
-    host.onMessage({ detail: { data: [{ token: host.token, action: 'state', atHome: 'yes', unsaved: '3' }] } })
-    assert.equal(host.atHome, false); assert.equal(host.unsaved, 0)
+    host.onMessage({ detail: { data: [{ token: host.token, action: 'state', backToDesktop: 'yes', unsaved: '3' }] } })
+    assert.equal(host.backToDesktop, false); assert.equal(host.unsaved, 0)
   } finally { Object.assign(globalThis, previous) }
 })
 

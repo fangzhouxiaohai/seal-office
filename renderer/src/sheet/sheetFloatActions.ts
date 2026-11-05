@@ -46,7 +46,7 @@ export function 构建表格浮窗按钮(依赖: 表格浮窗依赖): 浮窗按�
     { id: 'edit.sum', 标签: '求和', 图标: 'sum', 分组: 50, 执行: () => 依赖.执行命令('edit.sum') },
     { id: 'edit.clear', 标签: '清除内容', 图标: 'clear', 分组: 50, 执行: () => 依赖.执行命令('edit.clear') },
   ]
-  return [...本地, ...构建AI按钮(依赖.取选区文本)]
+  return [...本地, ...(依赖.选区有内容 ? 构建AI按钮(依赖.取选区文本) : [])]
 }
 
 /** 右键菜单里的填充与字体颜色分组 */
@@ -66,7 +66,7 @@ export function 构建表格颜色菜单组(): 菜单节点[] {
 }
 
 /** 右键菜单里的数据操作与 AI 快捷动作 */
-export function 构建表格数据菜单组(): 菜单节点[] {
+export function 构建表格数据菜单组(有选区内容 = true): 菜单节点[] {
   return [
     {
       type: 'group', 标题: '数据', 子项: [
@@ -79,8 +79,7 @@ export function 构建表格数据菜单组(): 菜单节点[] {
         { type: 'item', commandId: 'data.removeDuplicates', label: '删除重复项' },
       ],
     },
-    { type: 'divider' },
-    ...通用AI指令.map((指令) => ({ type: 'item' as const, commandId: `__ai__:${指令.id}`, label: `AI ${指令.标签}` })),
+    ...(有选区内容 ? [{ type: 'divider' as const }, ...通用AI指令.map((指令) => ({ type: 'item' as const, commandId: `__ai__:${指令.id}`, label: `AI ${指令.标签}` }))] : []),
   ]
 }
 

@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { App as AntdApp, ConfigProvider } from 'antd'
@@ -39,7 +40,7 @@ function 环境(类型: 'word' | 'table' | 'ppt' | 'pdf' = 'word') {
       <AiAssistant />
     </>
   }
-  render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+  render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
   const 快捷 = (文本 = '选中内容') => act(() => 交给助手(通用AI指令.find((项) => 项.id === 'ai.summarize')!, 文本))
   const 初始化 = async (历史: unknown = null) => { await act(async () => { 配置.完成({ 成功: true, 数据: 已保存配置 }); 会话.完成({ 成功: true, 数据: 历史 }) }) }
   return { ai, 配置, 会话, 回复, 快捷, 初始化, 推送: (片段: 助手流片段) => act(() => 推送(片段)) }

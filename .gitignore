@@ -4,6 +4,16 @@ dist/
 .npm-cache/
 release/
 release-final/
+/android-mobile/*
+!/android-mobile/android-studio/
+/android-mobile/android-studio/.gradle/
+/android-mobile/android-studio/app/build/
+/android-mobile/android-studio/app/.generated/
+/android-mobile/android-studio/app/src/main/assets/apps/
+/android-mobile/android-studio/build/
+/android-mobile/android-studio/app/src/main/assets/office/
+/android-mobile/android-studio/local.properties
+harmony-mobile/
 renderer/tmp-test/
 *.log
 __app_run.log

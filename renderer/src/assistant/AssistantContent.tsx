@@ -9,6 +9,7 @@ import powershell from 'highlight.js/lib/languages/powershell'
 import type { Element, RootContent } from 'hast'
 import Icon from '../components/Icon'
 import { 桥接 } from '../ipc/bridge'
+import type { 界面语言 } from '../store/settingsStore'
 
 const highlighter = createLowlight(common)
 highlighter.register({ powershell })
@@ -84,7 +85,7 @@ const 代码面板 = memo(function 代码面板({ 语言, 内容 }: { 语言: st
   return <内容面板 类型="code" 名称={名称} 原文={内容}><pre tabIndex={0} aria-label={`${名称}代码正文`}><code className="hljs">{高亮 ? 高亮.children.map(高亮节点) : 内容}</code></pre></内容面板>
 })
 
-function Markdown正文({ 内容 }: { 内容: string }) {
+function Markdown正文({ 内容, 语言 }: { 内容: string; 语言: 界面语言 }) {
   const { message } = AntdApp.useApp()
   return <div className="assistant-markdown assistant-message__body"><Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
     pre: ({ children }) => {
@@ -99,11 +100,11 @@ function Markdown正文({ 内容 }: { 内容: string }) {
       void 桥接.openExternal(href).then((结果) => { if (!结果.成功) message.error('无法打开链接，请复制地址后在浏览器打开') }).catch(() => message.error('无法打开链接，请复制地址后在浏览器打开'))
     }}>{children}</a> : <span>{children}</span>,
     // Remote images must not silently send a request when opening a saved reply.
-    img: ({ alt }) => <span className="assistant-markdown__image">[图片：{alt || '未命名图片'}]</span>,
+    img: ({ alt }) => <span className="assistant-markdown__image">{语言 === 'en-US' ? '[Image: ' : '[图片：'}{alt || (语言 === 'en-US' ? 'Untitled image' : '未命名图片')}]</span>,
   }}>{内容}</Markdown></div>
 }
 
-export default memo(function AssistantContent({ 内容 }: { 内容: string }) {
+export default memo(function AssistantContent({ 内容, 语言 = 'zh-CN' }: { 内容: string; 语言?: 界面语言 }) {
   const 代码块 = useMemo(() => 单一代码块(内容), [内容])
   const 排版 = useMemo(() => 代码块 && !排版语言.has(代码块.语言) ? false : 是Markdown(代码块?.内容 ?? 内容), [内容, 代码块])
   if (代码块 && !排版语言.has(代码块.语言)) return 文本语言.has(代码块.语言)
@@ -111,6 +112,6 @@ export default memo(function AssistantContent({ 内容 }: { 内容: string }) {
     : <代码面板 {...代码块} />
   const 正文 = 代码块?.内容 ?? 内容
   return 代码块 || 排版
-    ? <内容面板 类型="markdown" 名称="Markdown" 原文={正文}><Markdown正文 内容={正文} /></内容面板>
+    ? <内容面板 类型="markdown" 名称="Markdown" 原文={正文}><Markdown正文 内容={正文} 语言={语言} /></内容面板>
     : <内容面板 类型="text" 名称="TXT" 原文={正文}><div className="assistant-plaintext assistant-message__body">{正文}</div></内容面板>
 })

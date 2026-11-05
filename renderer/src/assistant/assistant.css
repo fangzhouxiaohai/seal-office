@@ -302,7 +302,7 @@
 .assistant-drawer__composer { display: block; padding: 0 16px 16px; border-top: 0; background: var(--bg-card); box-shadow: none; }
 .assistant-composer { display: flex; flex-direction: column; border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border)); border-radius: 14px; background: var(--bg-card); transition: border-color 150ms ease, box-shadow 150ms ease; }
 .assistant-composer:hover:not(:has(textarea:disabled)) { border-color: color-mix(in srgb, var(--brand) 58%, var(--border)); }
-.assistant-composer:focus-within:not(:has(textarea:disabled)) { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent); }
+.assistant-composer:focus-within:not(:has(textarea:disabled)) { border-color: color-mix(in srgb, var(--brand) 58%, var(--border)); box-shadow: none; }
 .assistant-composer:has(textarea:disabled) { border-color: var(--border); box-shadow: none; }
 .assistant-composer__input.ant-input { min-height: 52px; padding: 12px 16px 4px; border: 0; background: transparent; box-shadow: none; color: var(--text-1); font-size: 14px; line-height: 1.6; resize: none; }
 .assistant-composer__input.ant-input:focus { border: 0; box-shadow: none; }

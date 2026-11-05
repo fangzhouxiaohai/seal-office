@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -34,7 +35,7 @@ function 环境() {
       <AiAssistant />
     </>
   }
-  render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+  render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
   const 打开 = async (文件 = false) => {
     if (文件) await userEvent.click(screen.getByRole('button', { name: '打开甲' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))

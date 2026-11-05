@@ -110,8 +110,9 @@ body { background: var(--bg-app); letter-spacing: .01em; }
 .ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-input-number, .ant-picker {
   border-radius: var(--radius-control) !important;
 }
-.ant-input-affix-wrapper:focus-within, .ant-input:focus, .ant-select-focused .ant-select-selector {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent) !important;
+.ant-input-affix-wrapper:focus-within, .ant-input:focus, .ant-input-number-focused, .ant-select-focused .ant-select-selector, .ant-picker-focused {
+  border-color: var(--brand) !important;
+  box-shadow: none !important;
 }
 .ant-modal .ant-modal-content { border-radius: 20px; box-shadow: var(--shadow-pop); padding: 22px 24px 20px; }
 .ant-modal .ant-modal-header { margin-bottom: 14px; }

@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -17,7 +18,7 @@ function setup(extra: Record<string, unknown> = {}, identity = vi.fn().mockResol
   Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: { invoke: identity }, ai: api,
     backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
   function Harness() { store = useAppStore(); return <AiAssistant /> }
-  render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><Harness /></AppProvider></AntdApp></ConfigProvider>)
+  render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><Harness /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
   return { chat, api, identity }
 }
 async function open() {

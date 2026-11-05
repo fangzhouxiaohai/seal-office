@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import {act,fireEvent,render,screen,waitFor,within} from '@testing-library/react'
 import {App as AntdApp,ConfigProvider} from 'antd'
 import {afterEach,expect,it,vi} from 'vitest'
@@ -28,7 +29,7 @@ function environment(initialVerified=false){
   const ai={getConfig:vi.fn(async()=>({成功:true,数据:{名称:'隔离测试模型',地址:'https://fixture.invalid/v1',模型:'fixture',已配置密钥:true}})),getSession:vi.fn(async()=>({成功:true,数据:null})),clearSession:vi.fn(async()=>({成功:true})),chat:vi.fn(async(input:unknown)=>({成功:true,数据:{内容:'测试回复',input}})),onStream:()=>()=>{},onToolCall:()=>()=>{}}
   window.electronAPI={cloud:{invoke},ai,backupLoad:async()=>({成功:true,内容:null}),backupSave:async()=>({成功:true}),backupClear:async()=>({成功:true})} as any
   function Controls(){const store=useAppStore(),cloud=useCloud();const select=(name:string)=>{const tab=store.workspaceTabs.find(t=>t.name===name+'.sldoc');if(tab)store.selectWorkspaceTab(tab.id);else store.createDoc('word','<p>'+name+'</p>',{名称:name+'.sldoc'})};return <><button onClick={cloud.configure}>查看账号</button><button onClick={()=>select('文档A')}>切到A</button><button onClick={()=>select('文档B')}>切到B</button></>}
-  render(<ConfigProvider button={{autoInsertSpace:false}}><AntdApp><CloudProvider><AppProvider 初始最近文档={[]}><Controls/><AiAssistant/></AppProvider></CloudProvider></AntdApp></ConfigProvider>)
+  render(<SettingsProvider><ConfigProvider button={{autoInsertSpace:false}}><AntdApp><CloudProvider><AppProvider 初始最近文档={[]}><Controls/><AiAssistant/></AppProvider></CloudProvider></AntdApp></ConfigProvider></SettingsProvider>)
   const open=async()=>{fireEvent.click(screen.getByRole('button',{name:'打开智能助手'}));const input=await screen.findByRole('textbox',{name:'发送给智能助手的消息'});await waitFor(()=>expect(ai.getConfig).toHaveBeenCalled());return input}
   const send=async(text:string)=>{const input=screen.getByRole('textbox',{name:'发送给智能助手的消息'});fireEvent.change(input,{target:{value:text}});await waitFor(()=>expect(screen.getByRole('button',{name:'发送'})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:'发送'}));return input}
   return {invoke,ai,open,send,setVerified:(value:boolean)=>{verified=value},network:()=>{networkError=true},pause:()=>{hold=true},finish:async()=>{await act(async()=>{release?.(identity())})}}

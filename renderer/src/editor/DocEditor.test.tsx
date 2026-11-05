@@ -362,25 +362,15 @@ describe('编辑器容器', () => {
     expect(container.querySelector('.wps-editor-canvas__content')?.textContent).toContain('{{姓名}}')
   })
 
-  // 文档写入器无法保存图形，插入前先说明适用格式并要求确认。
-  it('图表插入前明确提示 DOCX 限制', async () => {
+  // 文档写入器无法完整保存的对象不应显示为可用的功能区入口。
+  it('隐藏无法完整保存为 DOCX 的图形、目录和水印入口', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    await userEvent.click(screen.getByRole('button', { name: '图表' }))
-    await userEvent.click(await screen.findByText('折线图'))
-    expect((await screen.findAllByText('图表无法保存为 DOCX')).length).toBeGreaterThan(0)
-    await userEvent.click(screen.getByRole('button', { name: '仍要插入' }))
-    expect(await screen.findByText(/已插入折线图/)).toBeInTheDocument()
-  })
-
-  it('公式插入前明确提示 DOCX 限制', async () => {
-    渲染编辑器()
-    await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    await userEvent.click(screen.getByRole('button', { name: '公式' }))
-    await userEvent.click(await screen.findByText('分数'))
-    expect((await screen.findAllByText('公式无法保存为 DOCX')).length).toBeGreaterThan(0)
-    await userEvent.click(screen.getByRole('button', { name: '仍要插入' }))
-    expect(await screen.findByText(/已插入「分数」公式/)).toBeInTheDocument()
+    for (const 名称 of ['图表', 'SmartArt', '公式', '形状', '文本框', '艺术字']) expect(screen.queryByRole('button', { name: 名称 })).toBeNull()
+    await userEvent.click(screen.getByRole('tab', { name: '页面布局' }))
+    for (const 名称 of ['水印', '首字下沉']) expect(screen.queryByRole('button', { name: 名称 })).toBeNull()
+    await userEvent.click(screen.getByRole('tab', { name: '引用' }))
+    for (const 名称 of ['目录', '更新目录']) expect(screen.queryByRole('button', { name: 名称 })).toBeNull()
   })
 
   it('脚注正文与引用一起插入，取消时不修改正文', async () => {

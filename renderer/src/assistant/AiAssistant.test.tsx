@@ -1,3 +1,4 @@
+import { SettingsProvider } from '../store/settingsStore'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -27,7 +28,7 @@ describe('智能助手对话修改链路', () => {
         { id: '检查', 标题: '读取当前文件', 状态: '完成' }, { id: '修改', 标题: '校验修改候选', 状态: '完成' },
       ] }, { 角色: 'assistant', 内容: '', 状态: '执行中', 执行记录: [{ id: '同步', 标题: '读取下一页', 状态: '执行中' }] }], 摘要: '', 压缩次数: 0, 计划: [] } }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await waitFor(() => expect(screen.getByRole('button', { name: '打开智能助手' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     const 摘要 = await screen.findByText('执行过程 · 2 项已完成')
@@ -46,7 +47,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onToolCall: () => () => {}, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '核对尚未结束。', 状态: '已停止' }], 摘要: '', 压缩次数: 0, 计划 } }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     expect(await screen.findByText('任务计划 · 0/1 已完成')).toBeInTheDocument()
     await userEvent.click(screen.getByText('任务计划 · 0/1 已完成'))
@@ -63,7 +64,7 @@ describe('智能助手对话修改链路', () => {
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p><p>原始正文</p>')}>打开文件</button><output data-testid="多批正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '分批改写标题和正文' } })
@@ -89,7 +90,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       cancel: vi.fn().mockRejectedValue(new Error('停止接口连接失败')),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '进行分析' } })
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
@@ -107,7 +108,7 @@ describe('智能助手对话修改链路', () => {
       getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '已有标题候选' }], 摘要: '', 计划: [], 压缩次数: 0, 待确认候选: { 回复: '已有标题候选', 修改: [{ 种类: '文字替换', 查找: '原始标题', 替换为: '持久标题' }], 文档上下文: '', 文件快照: '<p>原始标题</p>' } } }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文件</button><output data-testid="恢复候选正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     expect(await screen.findByText('待确认修改，共 1 处')).toBeInTheDocument()
@@ -124,7 +125,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: vi.fn(), onToolCall: () => () => {}, getSession: 读取, discardSessionProposal: 放弃,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开变动文件</button><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>', { 路径: 'C:\\资料\\候选.docx' })}>打开有效文件</button><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开变动文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     expect(await screen.findByText('已保存的修改候选已过期，请重新发送修改请求。')).toBeInTheDocument()
@@ -152,7 +153,7 @@ describe('智能助手对话修改链路', () => {
       const 状态 = useAppStore(), [显示, set显示] = useState(true)
       return <><button onClick={() => 状态.createDoc('word', '<p>草稿正文</p>')}>新建草稿</button><button onClick={() => 状态.activeDocumentId && 状态.set文档路径(状态.activeDocumentId, 'C:\\资料\\已保存.docx')}>保存草稿</button><button onClick={() => set显示((当前) => !当前)}>切换助手挂载</button>{显示 ? <AiAssistant /> : null}</>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '新建草稿' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '记住我的草稿目标' } })
@@ -175,7 +176,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
       onStream: (回调: typeof 推送) => { 推送 = 回调; return () => {} },
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '连续输出' } })
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
@@ -200,7 +201,7 @@ describe('智能助手对话修改链路', () => {
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文件</button><button onClick={() => 状态.activeDocumentId && 状态.updateEditorHtml(状态.activeDocumentId, '<p>用户手动改写</p>')}>改动原文</button><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '修改标题' } })
@@ -222,7 +223,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', `<p>${原文}</p>${'<p>批量原文</p>'.repeat(240)}`)}>打开长文件</button><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开长文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     fireEvent.change(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), { target: { value: '整体修改' } })
@@ -243,7 +244,7 @@ describe('智能助手对话修改链路', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 上下文令牌: 262144, 已配置密钥: false } }),
       chat: 对话, onToolCall: () => () => {}, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: 历史, 摘要: '已保留文件目标', 计划: [], 压缩次数: 2 } }), clearSession: 清除,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     expect(await screen.findByText('历史消息0')).toBeInTheDocument()
     expect(screen.getByText('会话记忆 · 已压缩 2 次')).toBeInTheDocument()
@@ -272,7 +273,7 @@ describe('智能助手对话修改链路', () => {
       onToolCall: (回调: typeof 调用工具) => { 调用工具 = 回调; return () => {} }, submitToolResult: 回传, updateSessionPlan: 更新计划, getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: null }),
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文件</button><output data-testid="工具原文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.click(screen.getByRole('button', { name: '模型设置' }))
@@ -304,7 +305,7 @@ describe('智能助手对话修改链路', () => {
         chat: 对话, cancel: 停止, onStream: (回调: typeof 推送) => { 推送 = 回调; return 释放 },
       }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
     } })
-    const { unmount } = render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    const { unmount } = render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '帮我分析')
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
@@ -335,7 +336,7 @@ describe('智能助手对话修改链路', () => {
       },
       backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
     } })
-    render(<AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp>)
+    render(<SettingsProvider><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '保留这条输入')
     let 释放!: () => void
@@ -368,7 +369,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    const { container } = render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    const { container } = render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '请改标题')
@@ -401,7 +402,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开 PDF' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
@@ -435,7 +436,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '请改标题')
@@ -472,7 +473,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开表格' }))
     await userEvent.click(screen.getByRole('button', { name: '保护表格' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
@@ -507,7 +508,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开甲文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '甲文件的专属问题')
@@ -551,7 +552,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开草稿' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '调整标题')
@@ -591,7 +592,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开甲' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '请修改甲文件')
@@ -620,7 +621,7 @@ describe('智能助手对话修改链路', () => {
         backupSave: vi.fn().mockResolvedValue({ 成功: true }),
       },
     })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '请帮我检查')
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
@@ -652,7 +653,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开甲' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '修改甲文件')
@@ -688,7 +689,7 @@ describe('智能助手对话修改链路', () => {
         <AiAssistant />
       </>
     }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '请修改标题')
@@ -717,7 +718,7 @@ describe('助手自动确认与发送快捷键', () => {
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 修改 = [{ 种类: '文字替换', 查找: '原始标题', 替换为: '新标题' }]
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文字</button><output data-testid="工具自动正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '修改标题')
@@ -740,7 +741,7 @@ describe('助手自动确认与发送快捷键', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文字</button><output data-testid="自动确认正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '把标题改一下')
@@ -756,7 +757,7 @@ describe('助手自动确认与发送快捷键', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>', { 路径: 'C:\\资料\\有损.docx', 警告: ['图片尚未导入'] })}>打开有损文件</button><output data-testid="受保护正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开有损文件' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '把标题改一下')
@@ -774,7 +775,7 @@ describe('助手自动确认与发送快捷键', () => {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
     const 入口 = () => { const 状态 = useAppStore(); return <><button onClick={() => 状态.createDoc('word', '<p>原始标题</p>')}>打开文字</button><output data-testid="手动确认正文">{状态.documents[0]?.html}</output><AiAssistant /></> }
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><入口 /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开文字' }))
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     await userEvent.click(screen.getByRole('button', { name: '模型设置' }))
@@ -797,7 +798,7 @@ describe('助手自动确认与发送快捷键', () => {
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
     }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), backupSave: vi.fn().mockResolvedValue({ 成功: true }) } })
-    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider>)
+    render(<SettingsProvider><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
     await userEvent.click(screen.getByRole('button', { name: '打开智能助手' }))
     const 输入 = screen.getByRole('textbox', { name: '发送给智能助手的消息' })
     await userEvent.type(输入, '回车发送测试')

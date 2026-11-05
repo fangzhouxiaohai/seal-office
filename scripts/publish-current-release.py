@@ -1,6 +1,6 @@
 """把当前版本已验收的安装包发布为 GitHub 与 GitCode 正式版（latest）。
 
-用法：python scripts/publish-current-release.py [--notes 说明文件] [--check]
+用法：python scripts/publish-current-release.py [--tag 当前版本补发标签] [--notes 说明文件] [--check]
 - 只上传 release/v<版本>/ 中实际存在且列入 SHA256SUMS.txt 的成品；缺失的平台在说明里注明，不伪造。
 - 凭据来自 git credential helper（与 git push 相同），不保存、不打印。
 - 已存在的同名附件在字节一致时跳过；不一致时替换。上传后核对大小与 SHA-256。
@@ -10,6 +10,7 @@ import concurrent.futures
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -26,16 +27,20 @@ GH = 'https://api.github.com/repos/fangzhouxiaohai/seal-office'
 GC = 'https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office'
 CANDIDATES = [
     f'seal-office-setup-{VERSION}.exe',
-    f'seal-office-{VERSION}-portable.exe',
     f'seal-office-{VERSION}-microsoft-store-x64.msix',
     f'seal-office-{VERSION}-amd64.deb',
     f'seal-office-{VERSION}-android.apk',
     f'seal-office-{VERSION}-harmony.hap',
     f'seal-office-{VERSION}-web.zip',
-    f'seal-office-{VERSION}-android-cloud-source.zip',
-    f'seal-office-{VERSION}-harmony-cloud-source.zip',
 ]
 TOKENS = {}
+
+
+def release_tag(value):
+    tag = value or 'v' + VERSION
+    if not re.fullmatch(r'v' + re.escape(VERSION) + r'(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?', tag):
+        raise ValueError('发行标签必须属于当前项目版本')
+    return tag
 
 
 def git(*args):
@@ -182,11 +187,14 @@ def gitcode_publish(rows, title, body):
 
 
 def main():
+    global TAG
     parser = argparse.ArgumentParser()
-    parser.add_argument('--notes', default=str(ROOT / 'docs' / 'release-notes' / f'{TAG}.md'))
+    parser.add_argument('--tag', help='当前版本补发标签，保留原发行标签的历史记录')
+    parser.add_argument('--notes', default=str(ROOT / 'docs' / 'release-notes' / f'v{VERSION}.md'))
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--only', choices=['github', 'gitcode'])
     args = parser.parse_args()
+    TAG = release_tag(args.tag)
     head = git('rev-parse', TAG + '^{commit}')
     for remote in ['github', 'origin']:
         if head not in git('ls-remote', remote, f'refs/tags/{TAG}', f'refs/tags/{TAG}^{{}}'):

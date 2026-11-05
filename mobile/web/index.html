@@ -9,6 +9,11 @@
     @font-face{font-family:SealOfficeCJK;src:url('/fonts/NotoSansSC.ttf') format('truetype');font-display:swap}
     @font-face{font-family:'思源黑体';src:url('/fonts/NotoSansSC.ttf') format('truetype');font-display:swap}
     @font-face{font-family:'思源宋体';src:url('/fonts/NotoSerifCJKsc-Regular.otf') format('opentype');font-display:swap}
+    body{margin:0;background:#f5f7ff}
+    .startup-screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;background:#f5f7ff}
+    .startup-screen img{display:block;width:112px;height:112px;object-fit:contain;filter:drop-shadow(0 14px 25px rgba(45,89,219,.14))}
+    .startup-screen strong{font:600 22px/1.4 system-ui,sans-serif;letter-spacing:.08em;color:#1b2034}
+    [data-seal-android-host="1"] .startup-screen{display:none}
   </style>
   <link rel="icon" type="image/png" href="./icons/icon32.png" />
   <link rel="apple-touch-icon" href="./icons/icon180.png" />
@@ -16,7 +21,7 @@
   <title>海豹办公</title>
 </head>
 <body>
-  <div id="root"><div role="status" style="padding:40px;font-family:system-ui">正在打开海豹办公…</div></div>
+  <div id="root"><div class="startup-screen" role="status" aria-label="海豹办公加载中"><img src="./icons/startup-logo.png" alt="海豹办公" width="112" height="112" /><strong>海豹办公</strong></div></div>
   <script src="./compatibility.js"></script>
   <script src="./uni.webview.js"></script>
   <script type="module" src="./main.tsx"></script>

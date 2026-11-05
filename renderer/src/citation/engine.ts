@@ -44,19 +44,28 @@ function 清理富文本(片段: string): string {
     .trim()
 }
 
-/** citeproc 的书目段落固定包一层 csl-entry，这里剥掉以复用编辑区段落 */
+/**
+ * citeproc 的书目段落固定包一层 csl-entry，这里剥掉以复用编辑区段落。
+ *
+ * 真机（Zotero 10.0.7）对照发现：citeproc 输出里 csl-entry 与 csl-left-margin
+ * 都带 `style` 属性，且正文另外包在 `<div class="csl-right-inline">` 里。
+ * 早期实现只按无属性的 `<div class="csl-entry">` 匹配，导致两处都剥不掉，
+ * 书目正文会带着块级 div 写进段落，插入后打断排版。
+ * 因此这里不以属性为准，统一按 div 标签名剥除，只保留行内标签（如 i、span）。
+ */
 function 取书目正文(条目html: string): string {
-  const 规范 = 条目html.trim()
-  const 匹配 = /^<div class="csl-entry">([\s\S]*)<\/div>$/.exec(规范)
-  const 内部 = (匹配 ? 匹配[1] : 规范)
-    .replace(/^\s*<div class="csl-left-margin">[\s\S]*?<\/div>/, '')
-  return 清理富文本(内部)
+  return 清理富文本(
+    条目html
+      .replace(/<div\b[^>]*>/gi, '')
+      .replace(/<\/div>/gi, ' '),
+  ).replace(/\s+([，。；：、）》】])/g, '$1')
 }
 
 /** 左侧编号列（如 [1]）单独取出，交给书目渲染排版 */
 function 取书目编号(条目html: string): string {
-  const 匹配 = /<div class="csl-left-margin">([\s\S]*?)<\/div>/.exec(条目html)
-  return 匹配 ? 清理富文本(匹配[1]) : ''
+  // 同样不能假设标签无属性：真实输出是 <div class="csl-left-margin" style="...">
+  const 匹配 = /<div\b[^>]*\bcsl-left-margin\b[^>]*>([\s\S]*?)<\/div>/i.exec(条目html)
+  return 匹配 ? 清理富文本(匹配[1]).replace(/<[^>]+>/g, '').trim() : ''
 }
 
 /**

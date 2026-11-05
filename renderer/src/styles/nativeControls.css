@@ -29,7 +29,17 @@
 }
 :where(input:not([class*="ant-"]), select:not([class*="ant-"]), textarea:not([class*="ant-"])):hover:not(:disabled) { border-color: var(--brand); }
 :where(input, textarea)::placeholder { color: var(--text-3); opacity: 1; }
-:where(button, input, select, textarea):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+:where(button):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--brand) !important;
+  box-shadow: none !important;
+}
+@media (forced-colors: active) {
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):focus-visible {
+    outline: 1px solid Highlight !important;
+  }
+}
 :where(button, input, select, textarea):disabled { opacity: 0.55; cursor: not-allowed; }
 :where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--brand); }
 :where(input[type="file"]) { font-size: 13px; }

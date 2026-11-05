@@ -112,6 +112,30 @@ describe('CSL 引擎排版', () => {
     expect(结果.书目[0].序号).toBe(1)
   })
 
+  // 真机（Zotero 10.0.7）对照发现的缺陷：citeproc 的 csl-right-inline 里还嵌着 div，
+  // 早期实现只剥外层与左侧编号，导致书目正文残留 <div class="csl-right-inline">，
+  // 插入文档后会被当成块级元素打断段落。
+  it('书目正文不残留 csl-right-inline 包裹标签', () => {
+    const 结果 = 引擎().渲染([簇('c1', ['a'])])
+    expect(结果.书目[0].文字).not.toContain('csl-right-inline')
+    expect(结果.书目[0].文字).not.toContain('<div')
+    expect(结果.书目[0].文字).not.toContain('</div>')
+  })
+
+  // 真机数据的另一种形态：条目缺题名时 citeproc 只输出 [M] 之类的类型标记。
+  // 这类条目仍必须得到干净正文，不能因字段缺失而漏剥标签。
+  it('缺题名的条目书目正文同样是纯文本', () => {
+    // 模拟 Zotero 中只建了条目、未填题名与作者的真实情况
+    const 残缺: Csl条目 = { id: 'x', type: 'entry-encyclopedia' }
+    const 只有类型 = 创建引文引擎({
+      样式: 取内置样式('gb-t-7714-2015-numeric'),
+      语言: 'zh-CN',
+      条目: 表(残缺),
+    }).渲染([簇('c1', ['x'])])
+    expect(只有类型.书目[0].文字).not.toContain('<div')
+    expect(只有类型.书目[0].文字).toContain('[M]')
+  })
+
   it('无引文时返回空结果，不生成书目', () => {
     expect(引擎().渲染([])).toEqual({ 引文: [], 书目: [] })
   })

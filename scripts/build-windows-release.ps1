@@ -1,4 +1,4 @@
-# Builds installer, portable app and Store MSIX from the same renderer and native payload.
+# 从同一份桌面资源生成安装程序和商店上传包，不再生成便携版。
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $taskRoot

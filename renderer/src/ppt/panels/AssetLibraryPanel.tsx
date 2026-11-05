@@ -1,22 +1,17 @@
 import React from 'react'
 import { App } from 'antd'
 import { 桥接, type 素材条目 } from '../../ipc/bridge'
-import { type 幻灯片, type 演示文稿, type 演示对象 } from '../deck'
-import { 创建图形 } from '../model/elements'
 import './review.css'
 
 interface Props {
-  文稿: 演示文稿
-  页: 幻灯片
   只读: boolean
-  on修改: (文稿: 演示文稿) => void
-  on插入图片?: (素材: 素材条目, 数据: string) => void
+  on插入图片: (素材: 素材条目, 数据: string) => Promise<boolean>
 }
 
 const 分类列表 = ['全部', '图标', '背景', '图片', '图示', '其他']
 
 /** 本地素材库：导入、分类、检索、预览、插入与删除；来源与授权随条目保存。 */
-export default function AssetLibraryPanel({ 文稿, 页, 只读, on修改, on插入图片 }: Props) {
+export default function AssetLibraryPanel({ 只读, on插入图片 }: Props) {
   const { modal, message } = App.useApp()
   const [素材列表, set素材列表] = React.useState<素材条目[]>([])
   const [分类, set分类] = React.useState('全部')
@@ -89,17 +84,9 @@ export default function AssetLibraryPanel({ 文稿, 页, 只读, on修改, on插
 
   const 插入素材 = (条目: 素材条目) => 执行('素材插入失败', async () => {
     if (只读) return
-    if (on插入图片) {
-      const 结果 = await 桥接.presentationGeneration.assets.read(条目.标识)
-      if (!结果.成功 || !结果.数据) throw new Error(结果.错误 ?? '素材读取失败')
-      on插入图片(条目, 结果.数据.数据)
-      message.success('已插入到当前页')
-      return
-    }
-    // 无图片插入链路时退化为插入带名称的图形占位，明确提示不是真实素材
-    const 对象: 演示对象 = { ...创建图形('圆角矩形', 条目.名称), x: 120, y: 120, width: 240, height: 120 }
-    on修改({ ...文稿, 幻灯片列表: 文稿.幻灯片列表.map((项) => (项.id === 页.id ? { ...项, 对象列表: [...(项.对象列表 ?? []), 对象] } : 项)) })
-    modal.warning({ title: '已插入占位图形', content: '当前入口未接通图片插入链路，已插入带名称的图形占位，请改用插入图片入口。' })
+    const 结果 = await 桥接.presentationGeneration.assets.read(条目.标识)
+    if (!结果.成功 || !结果.数据) throw new Error(结果.错误 ?? '素材读取失败')
+    if (await on插入图片(条目, 结果.数据.数据)) message.success('已插入到当前页')
   })
 
   const 删除素材 = (条目: 素材条目) => 执行('素材删除失败', async () => {

@@ -422,12 +422,13 @@ describe('表格编辑器容器', () => {
     expect(await screen.findByText('已应用加粗')).toBeInTheDocument()
   })
 
-  it('点击待实现的表格命令给出中文指引', async () => {
+  it('插入功能区只显示可执行且可保存的功能', async () => {
     渲染表格()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
-    await userEvent.click(screen.getByRole('button', { name: '数据透视表' }))
-    expect(await screen.findByText('数据透视表需要高级聚合功能，将在后续版本提供')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '数据透视表' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '图表' })).toBeInTheDocument()
   })
+
 
   it('插入符号追加到当前单元格并可撤销', async () => {
     const { container } = 渲染表格()

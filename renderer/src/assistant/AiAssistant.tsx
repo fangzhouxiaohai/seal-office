@@ -19,6 +19,8 @@ import {requireAIIdentity} from '../cloud/aiIdentity'
 import {useCloud} from '../cloud/CloudProvider'
 import { 提取流式正文 } from './reasoning'
 import { 处于受保护查看 } from '../fileWarnings'
+import { useSettings } from '../store/settingsStore'
+import { 翻译界面文本 } from '../i18n/interfaceLanguage'
 import './assistant.css'
 
 type 会话消息 = { 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 请求标识?: string; 状态?: '执行中' | '完成' | '已停止' | '失败'; 阶段?: string; 执行记录?: 助手执行记录[] }
@@ -102,6 +104,7 @@ function 保存助手开关(键: string, 开启: boolean): void {
 }
 
 export default function AiAssistant() {
+  const { 语言 } = useSettings()
   const 放映中 = 使用放映状态()
   const 移动端 = useIconPlatform() === 'mobile' || document.documentElement.dataset.sealPlatform === 'app'
   const [选择目标, set选择目标] = useState<string>()
@@ -763,7 +766,7 @@ export default function AiAssistant() {
             catch (错误) { modal.error({ title: '清除过期候选失败', content: 错误 instanceof Error ? 错误.message : '请重试' }) }
             finally { set处理候选中(false) }
           }} /></div> : null}
-          {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>会话记忆 · 已压缩 {当前记忆.压缩次数} 次</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
+          {当前记忆 && (当前记忆.摘要 || 当前记忆.压缩次数 > 0) ? <details className="assistant-context assistant-memory"><summary>{翻译界面文本(`会话记忆 · 已压缩 ${当前记忆.压缩次数} 次`, 语言)}</summary><div>{当前记忆.摘要 || '历史上下文已压缩，完整对话保存在本机。'}</div></details> : null}
           {!恢复中 && 会话.length === 0 ? <div className="assistant-drawer__empty assistant-empty">
             <span className="assistant-empty__icon" aria-hidden="true"><Icon name="ai" size={26} color="#fff" /></span>
             <strong>{只读对话 ? 当前文件 ? '围绕当前文件提问' : '开始一段对话' : '从当前文件开始'}</strong>
@@ -776,17 +779,17 @@ export default function AiAssistant() {
               <ol className="assistant-activity" aria-label="执行过程">{项.执行记录.map((记录) => <li key={记录.id} data-status={记录.状态}><span className={记录.状态 === '执行中' ? 'assistant-task__spinner' : 'assistant-activity__icon'} aria-hidden="true" /><span className="assistant-activity__title" title={记录.标题}>{记录.标题}</span><span className="assistant-activity__status">{记录.状态}</span>{记录.详情 ? <details><summary>详情</summary><div>{记录.详情}</div></details> : null}</li>)}</ol>
             </details> : null}
             {项.思考 ? <details className="assistant-thinking" open={项.状态 === '执行中' ? true : undefined}><summary>思考内容{项.状态 === '执行中' && 项.阶段 === '正在思考' ? ' · 接收中' : ''}</summary><div>{项.思考}</div></details> : null}
-            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className="assistant-message__answer"><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} /></div><div className="assistant-message__disclaimer">本内容由 AI 生成</div></div> : null}
+            {项.内容 ? 项.角色 === 'user' ? <div className="assistant-message__body">{项.内容}</div> : <div className="assistant-message__answer"><div className={项.状态 === '执行中' && 项.阶段 === '正在输出' ? 'assistant-output--streaming' : undefined}><AssistantContent 内容={项.内容} 语言={语言} /></div><div className="assistant-message__disclaimer">本内容由 AI 生成</div></div> : null}
             {项.状态 && !(项.状态 === '执行中' && 项.执行记录?.some((记录) => 记录.标题 === 项.阶段)) ? <div className="assistant-task" role="status">{项.状态 === '执行中' ? <span className="assistant-task__spinner" aria-hidden="true" /> : null}<span>{项.阶段}</span></div> : null}
           </div>)}
         </div>
         {当前待确认 && !只读对话 ? <section className="assistant-preview" aria-label="待确认修改">
-          <strong>待确认修改，共 {当前待确认.修改.length} 处</strong>
+          <strong>{翻译界面文本(`待确认修改，共 ${当前待确认.修改.length} 处`, 语言)}</strong>
           <div className="assistant-preview__list">{当前待确认.修改.slice(修改页 * 每页修改数, (修改页 + 1) * 每页修改数).map((项, 索引) => {
             const 说明 = 修改说明(项)
             return <div className="assistant-preview__item" key={修改页 * 每页修改数 + 索引}><div>{说明.位置}</div><div className="assistant-preview__old">原文：{说明.原文 || '空白'}</div><div className="assistant-preview__new">修改后：{说明.新文 || '空白'}</div></div>
           })}</div>
-          {当前待确认.修改.length > 每页修改数 ? <div className="assistant-preview__pagination"><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-left" size={15} />} aria-label="上一页修改" title="上一页修改" disabled={修改页 === 0} onClick={() => set修改页((页) => 页 - 1)} /><span>第 {修改页 + 1} / {Math.ceil(当前待确认.修改.length / 每页修改数)} 页</span><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-right" size={15} />} aria-label="下一页修改" title="下一页修改" disabled={(修改页 + 1) * 每页修改数 >= 当前待确认.修改.length} onClick={() => set修改页((页) => 页 + 1)} /></div> : null}
+          {当前待确认.修改.length > 每页修改数 ? <div className="assistant-preview__pagination"><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-left" size={15} />} aria-label="上一页修改" title="上一页修改" disabled={修改页 === 0} onClick={() => set修改页((页) => 页 - 1)} /><span>{翻译界面文本(`第 ${修改页 + 1} / ${Math.ceil(当前待确认.修改.length / 每页修改数)} 页`, 语言)}</span><Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="arrow-right" size={15} />} aria-label="下一页修改" title="下一页修改" disabled={(修改页 + 1) * 每页修改数 >= 当前待确认.修改.length} onClick={() => set修改页((页) => 页 + 1)} /></div> : null}
           <div className="assistant-preview__actions"><Button className="assistant-icon-button" type="primary" icon={<Icon name="save" size={15} />} aria-label="应用修改" title="应用修改" onClick={应用修改} disabled={交互禁用} /><Button className="assistant-icon-button" type="text" icon={<Icon name="trash" size={15} />} aria-label="放弃修改" title="放弃修改" disabled={交互禁用} onClick={() => void 放弃修改()} /></div>
         </section> : null}
         {队列.some((项) => ['等待', '执行中', '失败', '已引导'].includes(项.状态)) ? <section className="assistant-queue" aria-label="助手任务队列">

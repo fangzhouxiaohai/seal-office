@@ -476,10 +476,6 @@ export const commandCatalog = {
       "边框"
     ],
     [
-      "cell.delete",
-      "删除单元格"
-    ],
-    [
       "cell.fill",
       "填充颜色"
     ],
@@ -490,10 +486,6 @@ export const commandCatalog = {
     [
       "cell.fontColor",
       "字体颜色"
-    ],
-    [
-      "cell.insert",
-      "插入单元格"
     ],
     [
       "cell.italic",

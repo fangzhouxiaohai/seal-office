@@ -10,7 +10,6 @@ import {
   页边距列表,
   纸张列表,
   行距列表,
-  水印列表,
 } from '../fontOptions'
 
 export type RibbonItemKind = 'large' | 'small' | 'dropdown'
@@ -169,10 +168,6 @@ const 插入标签: RibbonTabSpec = {
       name: '插图',
       items: [
         大('image.insert', '图片', 'image'),
-        大('shape.insert', '形状', 'shape'),
-        下拉('chart.insert', '图表', 'chart', ['柱形图', '折线图', '饼图'], '柱形图'),
-        下拉('smartart.insert', 'SmartArt', 'flow', ['流程', '层级', '循环'], '流程'),
-        大('textbox.insert', '文本框', 'textbox'),
       ],
     },
     {
@@ -186,21 +181,6 @@ const 插入标签: RibbonTabSpec = {
     {
       name: '文本',
       items: [
-        大('wordart.insert', '艺术字', 'wordart'),
-        下拉(
-          'formula.insert',
-          '公式',
-          'formula',
-          [
-            { label: '分数', value: '分数' },
-            { label: '平方根', value: '平方根' },
-            { label: '求和', value: '求和' },
-            { label: '积分', value: '积分' },
-            { label: '上标', value: '上标' },
-            { label: '下标', value: '下标' },
-          ],
-          '公式'
-        ),
         大('datetime.insert', '日期时间', 'calendar'),
         大('symbol.insert', '符号', 'symbol'),
         大('footnote.insert', '脚注', 'footnote'),
@@ -236,7 +216,6 @@ const 布局标签: RibbonTabSpec = {
     {
       name: '页面背景',
       items: [
-        下拉('layout.watermark', '水印', 'watermark', 水印列表, '无'),
         下拉('layout.pageBorder', '页面边框', 'page-border', 页面边框列表, '无'),
         下拉('layout.pageColor', '页面颜色', 'page-color', 色板(突出显示颜色), '无'),
       ],
@@ -244,7 +223,6 @@ const 布局标签: RibbonTabSpec = {
     {
       name: '段落',
       items: [
-        大('layout.dropCap', '首字下沉', 'paragraph-mark'),
         下拉('layout.textDirection', '文字方向', 'orientation', ['横排', '竖排'], '横排'),
       ],
     },
@@ -255,10 +233,6 @@ const 引用标签: RibbonTabSpec = {
   key: 'reference',
   label: '引用',
   groups: [
-    {
-      name: '目录',
-      items: [大('toc.insert', '目录', 'toc'), 大('toc.update', '更新目录', 'retry')],
-    },
     {
       name: '脚注',
       items: [大('footnote.insert', '插入脚注', 'footnote'), 大('endnote.insert', '插入尾注', 'endnote')],

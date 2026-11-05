@@ -86,6 +86,17 @@ describe('Ribbon 按钮', () => {
     expect(screen.getByText('五号')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /字号/ }))
   })
+
+  it('相同取值的不同菜单项保留独立键并可选择', async () => {
+    const 选择 = vi.fn()
+    render(<RibbonButton icon="more" label="字体颜色" options={[{ label: '黑色', value: '#1A1D24' }, { label: '自动', value: '#1A1D24' }]} onSelect={选择} />)
+    await userEvent.click(screen.getByRole('button', { name: '字体颜色' }))
+    const 选项 = await screen.findAllByRole('menuitem')
+    expect(选项).toHaveLength(2)
+    expect(new Set(选项.map((项) => 项.getAttribute('data-menu-id'))).size).toBe(2)
+    await userEvent.click(选项[1])
+    expect(选择).toHaveBeenCalledWith('#1A1D24')
+  })
 })
 
 describe('Ribbon 功能区', () => {

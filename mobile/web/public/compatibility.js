@@ -1,5 +1,6 @@
 /* 此入口保持 ES5 语法，老系统组件也能显示更新提示，避免白屏。 */
 (function () {
+  if (window.SealHost) document.documentElement.dataset.sealAndroidHost = '1'
   var chrome = /(?:Chrome|Chromium)\/(\d+)/.exec(navigator.userAgent)
   var safari = /Version\/(\d+)(?:\.(\d+))?(?:\.\d+)*.*Safari/.exec(navigator.userAgent)
   var supported = !!(window.indexedDB && window.TextEncoder && window.ResizeObserver && window.crypto && window.crypto.getRandomValues && window.structuredClone && Array.prototype.at)

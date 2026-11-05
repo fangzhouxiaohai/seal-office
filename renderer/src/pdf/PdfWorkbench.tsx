@@ -290,7 +290,9 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       显示错误('无法合并文件', '合并至少需要两个 PDF 文件，请继续添加文件。')
       return
     }
-    const 页面 = ['merge', 'insertBlank'].includes(命令) ? [] : 解析页码(页码)
+    let 页面: number[]
+    try { 页面 = ['merge', 'insertBlank'].includes(命令) ? [] : 解析页码(页码) }
+    catch (错误) { 显示错误('页码无效', 错误 instanceof Error ? 错误.message : '请输入有效页码，例如 1,3-5。'); return }
     if (!['merge', 'insertBlank'].includes(命令) && 页面.length === 0) {
       显示错误('页码无效', '请输入有效页码，例如 1,3-5。')
       return

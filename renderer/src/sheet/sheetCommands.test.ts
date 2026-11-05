@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { 查找表格命令, type 表格命令上下文 } from './sheetCommands'
-import { 创建工作表, 写入单元格, 读取单元格, type Sheet } from './model'
+import { 创建工作表, 写入单元格, 读取单元格, 设置格式, 设置批注, type Sheet } from './model'
 import { 解析地址 } from './address'
 
 /** 构造一个 4 行 2 列、含数据的表 */
@@ -117,6 +117,28 @@ describe('表格命令：撤销与重做', () => {
 })
 
 describe('表格命令：排序', () => {
+  it('排序时图片随锚点所在行移动，合并区不被无提示破坏', () => {
+    const 初表: Sheet = { ...构造表(), 图片: [{ id: '图1', 格式: 'png', 数据: 'aGVsbG8=', 行: 0, 列: 1, 宽: 20, 高: 20 }] }
+    let 结果: Sheet = 初表
+    const 选区 = { 起点: { 行: 0, 列: 0 }, 终点: { 行: 2, 列: 1 } }
+    查找表格命令('data.sortAsc')?.run({ 工作表: 初表, 选区, 更新工作表: 更新 => { 结果 = 更新 }, notify: vi.fn(), 撤销: vi.fn(), 重做: vi.fn() })
+    expect(结果.图片?.[0].行).toBe(2)
+    const 合并表 = { ...初表, 合并区域: ['A1:B1'] }
+    const 通知 = vi.fn(), 更新 = vi.fn()
+    查找表格命令('data.sortAsc')?.run({ 工作表: 合并表, 选区, 更新工作表: 更新, notify: 通知, 撤销: vi.fn(), 重做: vi.fn() })
+    expect(更新).not.toHaveBeenCalled()
+    expect(通知).toHaveBeenCalledWith('所选区域包含合并单元格，请先取消合并后再排序')
+  })
+  it('排序时带动单元格格式与批注，空白目标不留下旧内容', () => {
+    let 表 = 构造表()
+    表 = 设置格式(表, 'B1', { 加粗: true })
+    表 = 设置批注(表, 'B1', '随丙移动')
+    const 通知 = vi.fn()
+    let 结果 = 表
+    查找表格命令('data.sortAsc')?.run({ 工作表: 表, 选区: { 起点: { 行: 0, 列: 0 }, 终点: { 行: 2, 列: 1 } }, 更新工作表: 更新 => { 结果 = 更新 }, notify: 通知, 撤销: vi.fn(), 重做: vi.fn() })
+    expect(读取单元格(结果, 'B3')).toMatchObject({ 原始值: '丙', 批注: '随丙移动', 格式: { 加粗: true } })
+    expect(读取单元格(结果, 'B1').批注).toBeUndefined()
+  })
   it('升序按首列重排整行且不丢失数据', () => {
     const { 上下文, 取最新 } = 构造上下文()
     查找表格命令('data.sortAsc')?.run(上下文)
@@ -158,6 +180,16 @@ describe('表格命令：排序', () => {
 })
 
 describe('表格命令：删除重复项', () => {
+  it('删除重复行并上移后续数据，而非只清空重复单元格', () => {
+    let 表 = 创建工作表('测试', 5, 2)
+    表 = 写入单元格(表, 'A1', '甲')
+    表 = 写入单元格(表, 'A2', '甲')
+    表 = 写入单元格(表, 'A3', '乙')
+    let 结果 = 表
+    查找表格命令('data.removeDuplicates')?.run({ 工作表: 表, 选区: { 起点: { 行: 0, 列: 0 }, 终点: { 行: 2, 列: 0 } }, 更新工作表: 更新 => { 结果 = 更新 }, notify: vi.fn(), 撤销: vi.fn(), 重做: vi.fn() })
+    expect(结果.行数).toBe(4)
+    expect(读取单元格(结果, 'A2').原始值).toBe('乙')
+  })
   it('清除完全重复的行', () => {
     let 表 = 创建工作表('测试', 4, 2)
     表 = 写入单元格(表, 'A1', '甲')
@@ -206,6 +238,19 @@ describe('表格命令：自动求和', () => {
 })
 
 describe('表格命令：格式与清除', () => {
+  it('只有一个单元格时不虚报合并成功', () => {
+    const { 上下文, 取最新, 通知 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
+    查找表格命令('cell.mergeCenter')?.run(上下文)
+    expect(取最新().合并区域).toEqual([])
+    expect(通知).toHaveBeenCalledWith('请先选择两个以上的单元格再合并')
+  })
+  it('自动换行可连续点击开与关', () => {
+    const { 上下文, 取最新 } = 构造上下文()
+    查找表格命令('cell.wrap')?.run(上下文)
+    expect(读取单元格(取最新(), 'A1').格式.自动换行).toBe(true)
+    查找表格命令('cell.wrap')?.run({ ...上下文, 工作表: 取最新() })
+    expect(读取单元格(取最新(), 'A1').格式.自动换行).toBe(false)
+  })
   it('加粗命令切换选区格式', () => {
     const { 上下文, 取最新 } = 构造上下文()
     查找表格命令('cell.bold')?.run(上下文)
@@ -354,15 +399,9 @@ describe('表格命令：插入与删除行列', () => {
     expect(读取单元格(表, 'A1').显示值).toBe('3')
   })
 
-  it('单元格插入与删除行命令等效', () => {
-    const { 上下文, 取最新 } = 构造上下文({ 起点: { 行: 0, 列: 0 }, 终点: { 行: 0, 列: 0 } })
-    查找表格命令('cell.insert')?.run(上下文)
-    expect(取最新().行数).toBe(5)
-    查找表格命令('cell.delete')?.run({
-      ...上下文,
-      工作表: 取最新(),
-    })
-    expect(取最新().行数).toBe(4)
+  it('不保留把整行操作伪装成单元格操作的命令', () => {
+    expect(查找表格命令('cell.insert')).toBeUndefined()
+    expect(查找表格命令('cell.delete')).toBeUndefined()
   })
 })
 

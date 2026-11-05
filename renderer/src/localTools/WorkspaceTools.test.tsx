@@ -2,12 +2,19 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App, ConfigProvider } from 'antd'
+import { SettingsProvider } from '../store/settingsStore'
 import MultiTablePage from './MultiTablePage'
 import NotesPage from './NotesPage'
 import { newBaseTable } from './workspaceTools'
-const show = (node: React.ReactNode) => render(<ConfigProvider button={{autoInsertSpace:false}}><App>{node}</App></ConfigProvider>)
+const show = (node: React.ReactNode) => render(<SettingsProvider><ConfigProvider button={{autoInsertSpace:false}}><App>{node}</App></ConfigProvider></SettingsProvider>)
 beforeEach(() => localStorage.clear())
 afterEach(() => { localStorage.clear(); vi.restoreAllMocks() })
+it('英文多维表格的动态计数使用英文，原有表名仍保持原文', () => {
+  localStorage.setItem('seal-language', 'en-US')
+  show(<MultiTablePage/>)
+  expect(screen.getByText('0 records · 5 fields')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: '项目任务' })).toBeInTheDocument()
+})
 it('真实多维表格表单新增、看板与搜索共用记录，重开保留零预算', async () => {
   const user = userEvent.setup(), result = show(<MultiTablePage/>)
   await user.click(screen.getByRole('button',{name:'添加记录'}))

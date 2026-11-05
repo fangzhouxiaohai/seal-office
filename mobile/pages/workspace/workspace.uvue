@@ -23,14 +23,10 @@ export default {
       errorText: '',
       alive: true,
       token: Date.now().toString() + '-' + Math.random().toString() + '-' + Math.random().toString(),
-      atHome: true,
-      // 网页层给出的返回键去向：true 表示当前是一级页面，应当回桌面。
-      // 过去用 workspaceReady 猜，与「底部 tab 是否可见」不是一回事，
-      // 已改为由网页层计算后随 state 消息下传。
+      // 网页层上报底部主导航是否可见，供原生宿主记录当前界面状态。
       backToDesktop: true,
       workspaceReady: false,
       backSequence: 0,
-      backStartedAtHome: false,
       lastBackAt: 0,
       loadErrorSerial: 0,
       unsaved: 0,
@@ -70,7 +66,6 @@ export default {
     if (now - this.lastBackAt < 500) return true
     this.lastBackAt = now
     this.backSequence++
-    this.backStartedAtHome = this.workspaceReady && this.atHome
     this.persistWorkspace()
     // 网页层可能仍有待关闭的弹窗或待保存的编辑状态，每次返回均等待网页层确认。
     this.evaluate("window.dispatchEvent(new CustomEvent('seal-native-back',{cancelable:true,detail:{seq:" + this.backSequence.toString() + "}}))")
@@ -141,15 +136,14 @@ export default {
         const action = messageString(message, 'action')
         if (action == 'state') {
           this.workspaceReady = true
-          this.atHome = messageBoolean(message, 'atHome')
           this.unsaved = messageNumber(message, 'unsaved')
           this.backToDesktop = messageBoolean(message, 'backToDesktop')
           return
         }
         if (action == 'healthy') { this.loadErrorSerial++; return }
         if (action == 'back-root') {
-          // 只接受当前返回操作、且按键时和确认时都处于首页的退桌面请求。
-          if (this.backStartedAtHome && this.atHome && messageNumber(message, 'seq') == this.backSequence) this.moveToBackground()
+          // 网页层按实际主导航可见性确认；只执行本次按键的退桌面请求。
+          if (this.workspaceReady && messageBoolean(message, 'backToDesktop') && messageNumber(message, 'seq') == this.backSequence) this.moveToBackground()
           return
         }
         const id = messageString(message, 'id')

@@ -110,8 +110,7 @@ it('文档导入展示来源、遗漏与提纲', async () => {
 
 it('素材库列出条目、展示授权、预览与删除，删除后刷新', async () => {
   const 生成 = 设置后端()
-  const 文稿 = 创建演示文稿()
-  render(<App><AssetLibraryPanel 文稿={文稿} 页={文稿.幻灯片列表[0]} 只读={false} on修改={vi.fn()} /></App>)
+  render(<App><AssetLibraryPanel 只读={false} on插入图片={vi.fn()} /></App>)
   expect(await screen.findByText('商务底图')).toBeInTheDocument()
   expect(screen.getByText('授权：自制，可商用')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: '预览' }))
@@ -123,12 +122,33 @@ it('素材库列出条目、展示授权、预览与删除，删除后刷新', a
 
 it('素材库智能检索只展示模型返回的排序与理由', async () => {
   const 生成 = 设置后端()
-  const 文稿 = 创建演示文稿()
-  render(<App><AssetLibraryPanel 文稿={文稿} 页={文稿.幻灯片列表[0]} 只读={false} on修改={vi.fn()} /></App>)
+  render(<App><AssetLibraryPanel 只读={false} on插入图片={vi.fn()} /></App>)
   await screen.findByText('商务底图')
   await userEvent.type(screen.getByLabelText('素材关键词'), '封面')
   await userEvent.click(screen.getByRole('button', { name: '智能检索' }))
   expect(await screen.findByText(/相关度 88/)).toBeInTheDocument()
   expect(screen.getByText(/与封面匹配/)).toBeInTheDocument()
   expect(生成.assets.semanticSearch).toHaveBeenCalledWith(expect.objectContaining({ 查询: '封面' }))
+})
+
+it('素材库真实图片插入完成后才提示成功，失败时不创建图形占位', async () => {
+  设置后端()
+  let 完成插入!: () => void
+  const 插入图片 = vi.fn(() => new Promise<boolean>((resolve) => { 完成插入 = () => resolve(true) }))
+  render(<App><AssetLibraryPanel 只读={false} on插入图片={插入图片} /></App>)
+  await screen.findByText('商务底图')
+  await userEvent.click(screen.getByRole('button', { name: '插入' }))
+  await waitFor(() => expect(插入图片).toHaveBeenCalledTimes(1))
+  expect(screen.queryByText('已插入到当前页')).not.toBeInTheDocument()
+  完成插入()
+  expect(await screen.findByText('已插入到当前页')).toBeInTheDocument()
+})
+
+it('素材库图片插入异常时显示原因且不报告成功', async () => {
+  设置后端()
+  render(<App><AssetLibraryPanel 只读={false} on插入图片={vi.fn().mockRejectedValue(new Error('图片资源写入失败'))} /></App>)
+  await screen.findByText('商务底图')
+  await userEvent.click(screen.getByRole('button', { name: '插入' }))
+  expect(await screen.findByText('图片资源写入失败')).toBeInTheDocument()
+  expect(screen.queryByText('已插入到当前页')).not.toBeInTheDocument()
 })

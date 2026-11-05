@@ -16,6 +16,7 @@ import {
   设置列宽,
   设置批注,
   设置数据验证,
+  设置格式,
   检查工作表更新,
   清空单元格,
   添加图片,
@@ -23,6 +24,7 @@ import {
   默认列宽,
   type Sheet,
   type 单元格数据验证,
+  type CellFormat,
 } from './model'
 import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单元格位置 } from './address'
 import { 统计选区 } from './selectionStats'
@@ -246,8 +248,6 @@ const SheetEditor = () => {
     { type: 'item', commandId: 'clipboard.copy', label: '复制', shortcut: 'Ctrl+C' },
     { type: 'divider' },
     { type: 'group', 标题: '单元格', 子项: [
-      { type: 'item', commandId: 'cell.insert', label: '插入...' },
-      { type: 'item', commandId: 'cell.delete', label: '删除...' },
       { type: 'item', commandId: 'cell.format', label: '设置单元格格式' },
       { type: 'item', commandId: 'review.comment', label: '批注' },
     ]},
@@ -271,7 +271,7 @@ const SheetEditor = () => {
     { type: 'divider' },
     ...构建表格颜色菜单组(),
     { type: 'divider' },
-    ...构建表格数据菜单组(),
+    ...构建表格数据菜单组(选区有内容),
   ]
   const 历史 = useMemo(() => new HistoryStack<Sheet[]>(), [activeDocumentId])
   /** 列宽拖动状态；拖动过程中不逐帧记录历史，只在开始时记录一次 */
@@ -505,6 +505,43 @@ const SheetEditor = () => {
     撤销,
     重做,
     更新选区: set选区,
+    编辑单元格格式: () => {
+      const 当前 = 读取单元格(工作表, 取首格地址()).格式
+      const 草稿: CellFormat = { ...当前 }
+      const 字段 = (名称: string, 控件: React.ReactNode) => React.createElement('label', { key: 名称, className: 'wps-sheet-format-field' },
+        React.createElement('span', null, 名称), 控件)
+      const 选择 = (名称: string, 值: string, 选项: Array<[string, string]>, 更新: (值: string) => void) => 字段(名称,
+        React.createElement('select', { 'aria-label': 名称, defaultValue: 值, onChange: (事件: React.ChangeEvent<HTMLSelectElement>) => 更新(事件.target.value) },
+          ...选项.map(([值, 标签]) => React.createElement('option', { key: 值, value: 值 }, 标签))))
+      modal.confirm({
+        title: '设置单元格格式',
+        width: 480,
+        content: React.createElement('div', { className: 'wps-sheet-format-dialog' },
+          字段('字体', React.createElement('input', { 'aria-label': '字体', defaultValue: 当前.字体 ?? '宋体', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { 草稿.字体 = 事件.target.value } })),
+          字段('字号', React.createElement('input', { 'aria-label': '字号', type: 'number', min: 4, max: 96, defaultValue: 当前.字号 ?? 11, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { 草稿.字号 = Number(事件.target.value) } })),
+          字段('字体颜色', React.createElement('input', { 'aria-label': '字体颜色', type: 'color', defaultValue: 当前.字体颜色 ?? '#1a1d24', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { 草稿.字体颜色 = 事件.target.value } })),
+          字段('填充颜色', React.createElement('input', { 'aria-label': '填充颜色', type: 'color', defaultValue: 当前.填充颜色 ?? '#ffffff', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { 草稿.填充颜色 = 事件.target.value } })),
+          选择('水平对齐', 当前.水平对齐 ?? 'left', [['left', '左对齐'], ['center', '居中'], ['right', '右对齐']], 值 => { 草稿.水平对齐 = 值 as CellFormat['水平对齐'] }),
+          选择('垂直对齐', 当前.垂直对齐 ?? 'middle', [['top', '顶部'], ['middle', '居中'], ['bottom', '底部']], 值 => { 草稿.垂直对齐 = 值 as CellFormat['垂直对齐'] }),
+          选择('数字格式', 当前.数字格式 ?? '常规', [['常规', '常规'], ['百分比', '百分比'], ['货币', '货币'], ['千位分隔', '千位分隔']], 值 => { 草稿.数字格式 = 值 as CellFormat['数字格式'] }),
+          ...([['加粗', '加粗'], ['斜体', '斜体'], ['下划线', '下划线'], ['自动换行', '自动换行']] as const).map(([名称, 键]) =>
+            字段(名称, React.createElement('input', { 'aria-label': 名称, type: 'checkbox', defaultChecked: 当前[键] === true, onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { 草稿[键] = 事件.target.checked } }))),
+        ),
+        okText: '应用格式', cancelText: '取消',
+        onOk: () => {
+          if (草稿.字号 !== undefined && (!Number.isFinite(草稿.字号) || 草稿.字号 < 4 || 草稿.字号 > 96)) {
+            modal.error({ title: '单元格格式无效', content: '字号须为 4 至 96 的数字。' })
+            return Promise.reject()
+          }
+          if (草稿.字体 !== undefined && !草稿.字体.trim()) {
+            modal.error({ title: '单元格格式无效', content: '字体名称不能为空。' })
+            return Promise.reject()
+          }
+          if (!更新工作表(设置格式(工作表, 生成区域地址(选区.起点, 选区.终点), 草稿))) return Promise.reject()
+          message.success('单元格格式已应用')
+        },
+      })
+    },
     插入图表: () => {
       if (工作表.保护) { message.warning('请先解除工作表保护'); return }
       set图表打开(true)

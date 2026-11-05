@@ -7,6 +7,7 @@ import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
 import formats from '../../main/documentFormats.json'
 import { installConversionService } from './conversionService'
+import { 进入移动放映全屏 } from './slideshowFullscreen'
 import { parseFontFile, extractFontFace } from '../../main/fonts/fontMeta.js'
 
 const { platform, storage, vault, crypto: cryptoCore } = core
@@ -169,7 +170,7 @@ function registerFiles() {
   handle('system.reportUnsavedCount', (count) => { unsaved = count; return success() })
   handle('system.respondCloseState', success); handle('system.respondSaveAll', success)
   handle('system.presentationSessionIdentity', () => ({ 成功: true, 窗口标识: 'web-' + cryptoCore.randomUUID() }))
-  handle('system.enterSlideshowFullscreen', async () => { if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); return { 成功: true, 会话标识: 'web-slideshow' } })
+  handle('system.enterSlideshowFullscreen', async () => { await 进入移动放映全屏(document, window.sealNative?.platform ?? 'web'); return { 成功: true, 会话标识: 'web-slideshow' } })
   handle('system.exitSlideshowFullscreen', async () => { if (document.fullscreenElement) await document.exitFullscreen(); return success() })
   handle('system.openExternal', (url) => {
     const parsed = new URL(url); if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) throw new Error('链接格式不受支持')

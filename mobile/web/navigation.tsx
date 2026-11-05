@@ -3,6 +3,7 @@ import { App } from 'antd'
 import { useAppStore } from '../../renderer/src/store'
 import Icon from '../../renderer/src/components/Icon'
 import { mobileSection } from './home'
+import { 底部标签栏可见, 计算返回去向 } from '../../renderer/src/navigation/backLevel'
 
 export default function MobileNavigation() {
   const store = useAppStore(), { message } = App.useApp()
@@ -19,7 +20,7 @@ export default function MobileNavigation() {
     store.setNavKey(key)
   }
   useEffect(() => {
-    const send = (action: string, seq?: number) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token, seq } })
+    const send = (action: string, seq?: number, backToDesktop?: boolean) => window.uni?.webView?.postMessage({ data: { action, token: window.sealNative?.token, seq, backToDesktop } })
     const visible = (node: Element) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden' && getComputedStyle(node).display !== 'none' && !node.querySelector('.ant-zoom-leave,.ant-fade-leave')
     const back = (event: Event) => {
       if (event.defaultPrevented) return
@@ -31,14 +32,14 @@ export default function MobileNavigation() {
         if (close) close.click()
         return
       }
-      // 不可关闭的恢复密钥/保存对话框仍由用户完成，不跳转到底层首页。
-      // 先给当前模块处理内部层级，避免监听器注册顺序把子目录直接跳回首页。
-      if (!window.dispatchEvent(new Event('seal-before-native-back', {cancelable:true}))) return
-      if (store.module === 'home' && store.navKey === 'home') {
+      // 底部主导航只要实际可见，本次返回就应直接交给系统退到桌面。
+      if (计算返回去向({ 浮层数: 0 }) === '回到桌面') {
         const seq = (event as CustomEvent<{ seq?: number }>).detail?.seq
-        void store.刷新工作状态备份().then(result => { if (result.成功) send('back-root', seq); else message.error(result.错误 || '保存工作区失败，请重试') }).catch(() => message.error('保存工作区失败，请重试'))
+        void store.刷新工作状态备份().then(result => { if (result.成功 && 底部标签栏可见(document)) send('back-root', seq, true); else if (!result.成功) message.error(result.错误 || '保存工作区失败，请重试') }).catch(() => message.error('保存工作区失败，请重试'))
         return
       }
+      // 不显示底部主导航的子页，先让当前模块处理其内部层级。
+      if (!window.dispatchEvent(new Event('seal-before-native-back', {cancelable:true}))) return
       routes.current.pop()
       const previous = routes.current[routes.current.length - 1]
       restoring.current = true
@@ -50,16 +51,34 @@ export default function MobileNavigation() {
     const healthy = () => send('healthy')
     window.addEventListener('seal-native-back', back); window.addEventListener('seal-persist-workspace', persist); window.addEventListener('seal-native-probe', healthy)
     let lastState = ''
+    let firstPaintDone = false
+    let paintScheduled = false
+    let active = true
+    const frames: number[] = []
     const report = () => {
-      if (!window.sealNative) return
-      const state = { action: 'state', token: window.sealNative.token, atHome: store.module === 'home' && store.navKey === 'home' && !document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open'), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
+      if (!active || !window.sealNative) return
+      // 原生启动画面要等工作台实际绘制后再退出，不能先露出网页加载占位。
+      if (!firstPaintDone) {
+        if (!paintScheduled && document.querySelector('.wps-titlebar') && document.querySelector('.seal-mobile-nav') && !document.querySelector('.startup-screen')) {
+          paintScheduled = true
+          const first = requestAnimationFrame(() => {
+            const second = requestAnimationFrame(() => { firstPaintDone = true; report() })
+            frames.push(second)
+          })
+          frames.push(first)
+        }
+        return
+      }
+      const state = { action: 'state', token: window.sealNative.token, backToDesktop: 底部标签栏可见(document), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
       const value = JSON.stringify(state)
       if (value !== lastState) { lastState = value; window.uni?.webView?.postMessage({ data: state }) }
     }
     const observer = new MutationObserver(report)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert', 'aria-hidden'] })
+    window.addEventListener('seal-native-ready', report)
+    document.addEventListener('fullscreenchange', report)
     report()
-    return () => { observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist); window.removeEventListener('seal-native-probe', healthy) }
+    return () => { active = false; frames.forEach(cancelAnimationFrame); observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist); window.removeEventListener('seal-native-probe', healthy); window.removeEventListener('seal-native-ready', report); document.removeEventListener('fullscreenchange', report) }
   }, [store, message])
   return <>
     <nav className="seal-mobile-nav" aria-label="移动工作台导航">

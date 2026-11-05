@@ -18,6 +18,7 @@
  * 或用 --ask 交互输入（脚本一律不回显、不落盘）。
  */
 const { execFileSync, spawnSync } = require('child_process')
+const { createHash } = require('node:crypto')
 const fs = require('fs')
 const path = require('path')
 
@@ -179,6 +180,10 @@ const ADMIN = {
   nginxPatch: 'server/deploy/nginx-admin-assets.conf',
   nginxTarget: '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/10-admin-assets.conf',
 }
+const SHARE_LANDING = {
+  files: ['share/index.html', 'share/app.js'],
+  target: 'share',
+}
 
 /** 校验本地后台产物存在且入口资源齐全；缺失就拒绝部署，不推半成品上去。 */
 function collectAdmin() {
@@ -212,6 +217,9 @@ function main() {
   // 0) 管理后台静态站点：与后端发布流程解耦，独立同步
   //    先做本地校验，产物不完整时不会走到后端上传，避免只部署一半。
   const adminInfo = collectAdmin()
+  for (const file of SHARE_LANDING.files) {
+    if (!fs.existsSync(path.join(ROOT, file))) fail(`匿名下载页缺少文件：${file}`)
+  }
   log(`\n管理后台 ${ADMIN.source} → ${SERVER.siteRoot}/${ADMIN.target}`)
   adminInfo.referenced.forEach(name => log('  assets/' + name))
   log(`站点    ${SERVER.siteRoot}`)
@@ -294,6 +302,23 @@ function main() {
     ].join(' && '), { password })
     log('管理后台已同步到 ' + SERVER.siteRoot + '/' + ADMIN.target)
 
+    // 匿名下载页使用独立目录；先写临时文件，再切换并启用 Nginx 路由。
+    runRemote(`mkdir -p ${SERVER.siteRoot}/${SHARE_LANDING.target}`, { password })
+    for (const file of SHARE_LANDING.files) {
+      const name = path.basename(file)
+      const uploaded = spawnSync('scp', [
+        '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password',
+        '-o', 'PubkeyAuthentication=no', '-P', String(SERVER.port),
+        path.join(ROOT, file), `${SERVER.user}@${SERVER.host}:${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}.next`,
+      ], { encoding: 'utf8', windowsHide: true, env: { ...process.env, ...installAskpass(password) } })
+      if (uploaded.status !== 0) fail(`匿名下载页上传失败：${file}：${uploaded.stderr || uploaded.stdout}`)
+    }
+    runRemote(SHARE_LANDING.files.map(file => {
+      const name = path.basename(file)
+      return `mv -f ${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}.next ${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}`
+    }).join(' && '), { password })
+    log('匿名下载页已同步到 ' + SERVER.siteRoot + '/' + SHARE_LANDING.target)
+
     // 同步 nginx 资源规则补丁并重载，避免改完产物仍因 location 缺 root 而 404
     const patchFile = path.join(ROOT, ADMIN.nginxPatch)
     if (fs.existsSync(patchFile)) {
@@ -311,17 +336,21 @@ function main() {
     }
   }
 
-  // 3) 建版本目录、解压、加载验证（不碰 current）
+  // 3) 建版本目录、解压、校验上传内容并加载验证（不碰 current）。
+  // 命令逐行执行，避免行尾注释吞掉后面的解压与验证。
+  const expectedIndexSha = createHash('sha256').update(fs.readFileSync(path.join(OUT, 'index.cjs'))).digest('hex')
   runRemote([
-    `set -e`,
+    'set -e',
     `cd ${SERVER.siteRoot}`,
     `mkdir -p ${release}`,
-    `cp -a current/. ${release}/   # 先继承旧版本的 node_modules 等运行时依赖`,
+    `cp -a current/. ${release}/`,
     `unzip -oq /tmp/deploy-server.zip -d ${release}`,
-    `cd ${release} && for f in *.cjs; do node --check "$f"; done`,
-    // 关键：真实加载一次，能捕获 MODULE_NOT_FOUND 这类语法检查发现不了的问题
-    `cd ${release} && PORT=${SERVER.verifyPort} SEAL_DATA_DIR=${SERVER.siteRoot}/data node -e "require('./index.cjs')" >/tmp/verify-load.log 2>&1 || (cat /tmp/verify-load.log; exit 1)`,
-  ].join(' && '), { password })
+    `test -f ${release}/myShares.cjs`,
+    `test "$(sha256sum ${release}/index.cjs | cut -d ' ' -f1)" = '${expectedIndexSha}'`,
+    `cd ${release}`,
+    'for f in *.cjs; do node --check "$f"; done',
+    `PORT=${SERVER.verifyPort} SEAL_DATA_DIR=${SERVER.siteRoot}/data node -e "require('./index.cjs')" >/tmp/verify-load.log 2>&1 || (cat /tmp/verify-load.log; exit 1)`,
+  ].join('\n'), { password })
   log('新版本语法检查与加载验证通过')
 
   // 4) 切换并重启
@@ -329,6 +358,7 @@ function main() {
   //    用 nginx 实际服务的地址探测，而不是只看后端进程状态。
   const adminProbe = [
     "curl -s -o /dev/null -w 'admin=%{http_code}\\n' http://127.0.0.1/",
+    "curl -s -o /dev/null -w 'share=%{http_code}\\n' http://127.0.0.1/share/",
     ...adminInfo.referenced.map((name) =>
       `curl -s -o /dev/null -w 'asset-${name}=%{http_code}\\n' http://127.0.0.1/assets/${name}`),
   ].join('; ')
