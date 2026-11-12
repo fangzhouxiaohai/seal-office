@@ -196,7 +196,9 @@ def main():
     args = parser.parse_args()
     TAG = release_tag(args.tag)
     head = git('rev-parse', TAG + '^{commit}')
-    for remote in ['github', 'origin']:
+    # 只核对本次实际发布的仓库，避免一端网络不通时阻塞另一端发布。
+    remotes = {'github': ['github'], 'gitcode': ['origin']}.get(args.only, ['github', 'origin'])
+    for remote in remotes:
         if head not in git('ls-remote', remote, f'refs/tags/{TAG}', f'refs/tags/{TAG}^{{}}'):
             raise SystemExit(f'请先把 {TAG} 推送到 {remote}')
     rows = assets()
@@ -206,7 +208,8 @@ def main():
     if args.check:
         return
     for kind, host in [('github', 'github.com'), ('gitcode', 'gitcode.com')]:
-        TOKENS[kind] = credential(host)
+        if args.only in (None, kind):
+            TOKENS[kind] = credential(host)
     result = {}
     if args.only != 'gitcode':
         result['github'] = github_publish(rows, title, notes)
