@@ -9,6 +9,7 @@ const { 解码Xml实体 } = require('./xmlEntities')
 const { 规范Office命名空间 } = require('./ooxmlNamespaces')
 const { 修订范围, 修订Html } = require('./docxRevisions')
 const { 创建源包上下文, xmlNodes, lockedBlock } = require('./docxSource')
+const { 可重写域, 域名称, 是引文域, 是可透传域, 分析域代码, 引用域缓存提示, 引文域前缀, 书目域前缀 } = require('./docxFields')
 
 const 纸张尺寸 = { A4: [11906, 16838], A5: [8391, 11906], B5: [9979, 14173], Letter: [12240, 15840] }
 const 预设边距 = { 常规: [1440, 1350], 窄: [540, 540], 适中: [1440, 1080], 宽: [1440, 2160] }
@@ -455,25 +456,9 @@ function 解析段落属性(pPr, 编号映射) {
     来源排版: 有扩展 ? JSON.stringify({ ...格式, 样式 }) : null }
 }
 
-/** 当前版本能写回的域：页码、总页数，以及 Zotero 的引文域与参考文献表域。 */
-const 支持的域 = new Set(['PAGE', 'NUMPAGES'])
-
-/** 引文域与参考文献表域的前缀判定，与 docxCitationFields.js 保持一致 */
-const 引文域前缀 = /^ITEM\s+CSL_CITATION\b/
-const 书目域前缀 = /^BIBL\b/
+// 域分类见 docxFields.js：PAGE、NUMPAGES 由编辑器重写为域占位；目录、交叉引用、
+// 超链接、日期与文档属性等域只保留缓存结果，由源包机制原样写回，不再判为未导入。
 const 引文域代码上限 = 200000
-
-/** 取域指令的关键字（PAGE、NUMPAGES、DATE 等），忽略 \* MERGEFORMAT 之类的开关 */
-function 域名称(指令) {
-  const 首个 = String(指令 ?? '').trim().split(/\s+/)[0]
-  return 首个 === '' ? '' : 首个.toUpperCase()
-}
-
-/** 判断域指令是不是 Zotero 引文域或参考文献表域 */
-function 是引文域(指令) {
-  const 规范 = String(指令 ?? '').trim()
-  return 引文域前缀.test(规范) || (书目域前缀.test(规范) && /CSL_BIBLIOGRAPHY\s*$/.test(规范))
-}
 
 /** 把域指令重新拼成完整的域代码，供编辑器还原引文与书目。
  *  只做首尾去空白：题录字符串里可能有连续空格，不能压缩。 */
@@ -517,7 +502,7 @@ function 存在未保留的域或制表符(内容, 检查制表符 = true) {
     if (类型 === 'begin') 栈.push({ 指令: '' })
     else if (类型 === 'end') {
       const 域 = 栈.pop()
-      if (!域 || (!支持的域.has(域名称(域.指令)) && !是引文域(域.指令))) return true
+      if (!域 || (!是可透传域(域.指令) && !是引文域(域.指令))) return true
     } else if (类型 !== 'separate' || !栈.length) return true
   }
   return 栈.length > 0
@@ -586,7 +571,7 @@ function 解析段落(段落Xml, 编号映射, 样式定义) {
       输出片段(`<span class="${类名}" contenteditable="false" ${属性}>${内容}</span>`, 域.缓存.join(''))
       return
     }
-    输出片段(支持的域.has(名称)
+    输出片段(可重写域.has(名称)
       ? `<span data-seal-field="${名称}"${域.样式 === '' ? '' : ` style="${域.样式}"`}>${域.缓存.join('')}</span>`
       : 域.缓存片段.join(''), 域.缓存.join(''))
   }
@@ -912,6 +897,9 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
   const 设置文件 = 压缩包.file('word/settings.xml')
   const 设置Xml = 设置文件 === null || 设置文件 === undefined ? '' : await 设置文件.async('string')
   const 关系 = await 读取关系映射(压缩包, 'word/document.xml')
+  // 有完整 OPC 清单时，页眉页脚中的目录、日期、文档属性等域由源包原样写回；
+  // 没有清单的残缺包只能按编辑模型重建，这些域会变成静态文字，必须如实提示。
+  const 可保留源包 = Boolean(压缩包.file('[Content_Types].xml'))
   const 结果 = {}
   for (const [种类, 键] of [['header', '页眉Html'], ['footer', '页脚Html']]) {
     const 引用 = [...节.matchAll(new RegExp(`<w:${种类}Reference(?=[\\s/>])[^>]*>`, 'gi'))]
@@ -954,7 +942,7 @@ async function 读取页眉页脚(压缩包, documentXml, 编号映射, 样式�
         ? 渲染Body(页眉正文, 编号映射, 局部样式) : ''
       html = html.replace(/data-seal-revision-type=/g, `data-seal-revision-part="${转义(部件)}" data-seal-revision-type=`)
       if (lockedBlock(内容) && html) html = `<div data-seal-native-protected="true" contenteditable="false" title="此页眉页脚含原生高级结构；可通过修订历史审阅，正文编辑受保护">${html}</div>`
-      if (存在未保留的域或制表符(内容)) 警告.push(`${名称}中的域或制表符未完整导入`)
+      if (存在未保留的域或制表符(内容) || (!可保留源包 && 分析域代码(内容).需原样保留)) 警告.push(`${名称}中的域或制表符未完整导入`)
       警告.push(...收集未导入警告(页眉正文, 图片读取.图片).map((项) => `${名称}：${项}`))
       候选.push({ 类型: 取属性(项[0], `w:${种类}Reference`, 'w:type') ?? 'default', html })
     }
@@ -1052,6 +1040,11 @@ async function 读取docx(数据) {
     return 渲染Body(images.正文, 编号映射, { ...样式定义, 图片: images.图片, 关系: await 读取关系映射(压缩包, part) })
   }) }
   catch (error) { 警告.push(`高级源结构无法安全保留：${error.message}；请保留原文件`) }
+  // 目录、交叉引用等透传域依赖源包原样写回；没有源包时保存会丢失域结构，仍按保真风险提示。
+  const 正文域 = 分析域代码(bodyXml)
+  if (!源包 && 正文域.需原样保留) 警告.push('域代码未完整导入，已保留可读取的缓存结果')
+  // 有源包时目录等引用域结构完整保留，只是页码缓存不重算：按保真风险提示，允许覆盖保存。
+  else if (源包 && 正文域.含引用域) 警告.push(引用域缓存提示)
   if (源包) for (let index = 警告.length - 1; index >= 0; index--) if (警告[index] === '修订信息未导入' || /^(?:移动修订未完整导入|格式修订未完整导入)/.test(警告[index])) 警告.splice(index, 1)
   const html = (源包?.html ?? 渲染Body(bodyXml, 编号映射, 样式定义)) + await 读取注释(压缩包, bodyXml, 编号映射, 样式定义, 警告)
   if (html.trim() === '') {

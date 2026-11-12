@@ -1,6 +1,7 @@
 // 表格导入：把主进程 xlsx 读取产出的 HTML 表格标记解析为工作表模型。
 // 缺少 <table> 标记时返回 null；合法空工作表仍可打开。
-import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetCell, type SheetImage, type 页面设置, type 单元格数据验证 } from './model'
+import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetCell, type SheetImage, type 页面设置, type 单元格数据验证, type 工作表筛选 } from './model'
+import { 筛选最大列 } from './sheetFilter'
 import { 展开区域, 生成地址, 解析地址 } from './address'
 import { 压缩列宽 } from './columnLayout'
 
@@ -20,7 +21,7 @@ export interface Xlsx工作表元数据 {
   默认行高?: number
   视图?: Sheet['视图']
   冻结?: { 行: number; 列: number }
-  筛选?: { 列: number; 值: string }
+  筛选?: 工作表筛选
   保护?: '本机' | '外部'
   图片?: Array<Omit<SheetImage, 'id'> & { id?: string }>
 }
@@ -58,7 +59,7 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   ].map(解析地址).filter((位置): 位置 is { 行: number; 列: number } => 位置 !== null)
   const 元数据最大行 = Math.max(-1, ...元数据地址.map((位置) => 位置.行), ...Object.keys(元数据?.行高 ?? {}).map(Number))
   // 整列宽度是布局默认值，不代表最后一列存在数据；真实内容和合并仍决定边界。
-  const 元数据最大列 = Math.max(-1, ...元数据地址.map((位置) => 位置.列), 元数据?.筛选?.列 ?? -1)
+  const 元数据最大列 = Math.max(-1, ...元数据地址.map((位置) => 位置.列), 筛选最大列(元数据?.筛选))
   const 图片最大行 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.行))
   const 图片最大列 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.列))
   // 在数据区外留出编辑余量，工作表尺寸必须覆盖全部已导入数据与布局。

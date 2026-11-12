@@ -1,8 +1,35 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render as 渲染组件, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import HelpManual from './HelpManual'
+import { SettingsProvider } from '../store/settingsStore'
+import { 英文帮助主题 } from '../i18n/helpManualEnglish'
+import { 帮助主题列表 } from './HelpManual'
 
+const render = (内容: ReactElement) => 渲染组件(<SettingsProvider>{内容}</SettingsProvider>)
 describe('帮助手册', () => {
+  it('英文帮助包含每一主题的标题、摘要、完整步骤和提示', () => {
+    for (const 原文 of 帮助主题列表) {
+      const 译文 = 英文帮助主题[原文.标识]
+      expect(译文, 原文.标识).toBeDefined()
+      expect(译文.步骤).toHaveLength(原文.步骤.length)
+      expect(译文.摘要).toBeTruthy()
+      if (原文.提醒) expect(译文.提醒).toBeTruthy()
+    }
+  })
+
+  it('英文帮助能按英文主题检索并展示步骤和提示', () => {
+    localStorage.setItem('seal-language', 'en-US')
+    try {
+      render(<HelpManual />)
+      expect(screen.getByRole('heading', { name: 'Start from Home' })).toBeInTheDocument()
+      expect(screen.getByText(/Select New to create/)).toBeInTheDocument()
+      fireEvent.change(screen.getByRole('searchbox', { name: 'Search help' }), { target: { value: 'compatibility' } })
+      expect(screen.getByRole('button', { name: 'Check format compatibility' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Check format compatibility' }))
+      expect(screen.getByText(/Save As/)).toBeInTheDocument()
+    } finally { localStorage.removeItem('seal-language') }
+  })
   it('按实际操作路径展示说明，并可切换主题', () => {
     render(<HelpManual />)
     expect(screen.getByRole('heading', { name: '从首页开始' })).toBeInTheDocument()
@@ -31,6 +58,15 @@ describe('帮助手册', () => {
     expect(screen.getByText(/只把完成该次请求所需的片段发送到你自己配置的服务地址/)).toBeInTheDocument()
     expect(screen.getByText(/%APPDATA%\\seal-office/)).toBeInTheDocument()
     expect(screen.getByText(/服务商如何留存与使用你发送的内容/)).toBeInTheDocument()
+    expect(screen.getByText(/启用云服务后/)).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('没有账号、云端同步')
+  })
+
+  it('PDF 帮助不再错误声称没有编辑或识别功能', () => {
+    render(<HelpManual />)
+    fireEvent.click(screen.getByRole('button', { name: '阅读和处理 PDF' }))
+    expect(document.body.textContent).not.toContain('当前不提供 PDF 文字编辑')
+    expect(screen.getByText(/编辑内容与识别功能/)).toBeInTheDocument()
   })
 
   it('说明默认程序的确认式自动设置与系统限制', () => {

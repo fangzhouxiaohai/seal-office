@@ -8,6 +8,14 @@ describe('云服务地址仅由主进程管理',()=>{
     expect(await invoke({},'server',{url:'https://other.example/api'})).toEqual({成功:false,错误:'云端操作不受支持'})
     expect(setServer).not.toHaveBeenCalled()
   })
+  it('网页与移动端更新查询沿用云服务地址，并完整返回下载地址',async()=>{
+    const handle=vi.fn(),request=vi.fn(async()=>({hasUpdate:true,version:'2.7.1',mandatory:false,notes:'',url:'https://appgallery.huawei.com/app/C1',sha256:null,bytes:null,publishedAt:1}))
+    注册云端通道({handle},{cloudService:{request,status:()=>({url:'https://cloud.example.test/api'})}})
+    const invoke=handle.mock.calls[0][1]
+    const result=await invoke({},'updateLatest',{platform:'harmony',version:'2.7.0',channel:'stable'})
+    expect(request).toHaveBeenCalledWith('/v1/updates/latest?platform=harmony&version=2.7.0&channel=stable')
+    expect(result).toEqual({成功:true,数据:expect.objectContaining({version:'2.7.1',url:'https://appgallery.huawei.com/app/C1'})})
+  })
   it('创建分享链接时向界面返回可复制的完整地址',async()=>{
     const handle=vi.fn(),id='11111111-1111-4111-8111-111111111111',nodeId='22222222-2222-4222-8222-222222222222'
     注册云端通道({handle},{cloudService:{
@@ -19,7 +27,11 @@ describe('云服务地址仅由主进程管理',()=>{
     const invoke=handle.mock.calls[0][1]
     const result=await invoke({},'shareLinkCreate',{id,nodeId})
     expect(result.成功).toBe(true)
-    expect(result.数据.url).toMatch(/^https:\/\/cloud\.example\.test\/share\/#\/s\/11111111-1111-4111-8111-111111111111\?a=.+&k=.+$/)
+    const 地址 = new URL(result.数据.url)
+    expect(地址.origin + 地址.pathname).toBe('https://cloud.example.test/share/')
+    expect(地址.search).toBe('?v=2')
+    expect(地址.hash).toMatch(/^#\/s\/11111111-1111-4111-8111-111111111111\?a=.+&k=.+$/)
+    expect(地址.searchParams.has('a') || 地址.searchParams.has('k')).toBe(false)
     expect(result.数据.name).toBe('测试文档.docx')
   })
 })

@@ -12,3 +12,12 @@ describe('扫描页识别授权和返回校验',()=>{
     await expect(ocrImage({data,mime:'image/png',consent:true},{assistant,nativeImage})).rejects.toThrow('有效文字')
   })
 })
+describe('单据识别的表格抄录要求',()=>{
+  it('layout 为 table 时要求按 Markdown 竖线表格逐行抄录，默认请求保持原有提示',async()=>{
+    const assistant={对话:vi.fn(async()=>({内容:'{"text":"| 品名 | 数量 |"}'}))}
+    await ocrImage({data,mime:'image/png',consent:true,layout:'table'},{assistant,nativeImage})
+    expect(assistant.对话.mock.calls[0][0].消息[0].内容).toMatch(/Markdown 竖线表格/)
+    await ocrImage({data,mime:'image/png',consent:true},{assistant,nativeImage})
+    expect(assistant.对话.mock.calls[1][0].消息[0].内容).not.toMatch(/Markdown/)
+  })
+})

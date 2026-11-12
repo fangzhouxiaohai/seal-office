@@ -56,6 +56,28 @@ const 渲染探针 = (提示文本?: (文本: string) => void) =>
   )
 
 describe('应用状态层', () => {
+  it('只为英文界面新建空白文档生成英文名称，切换语言及保存时保留已命名文件', () => {
+    const 原语言 = document.documentElement.lang
+    let 状态: AppState | null = null
+    const 读取 = () => { 状态 = useAppStore(); return null }
+    try {
+      document.documentElement.lang = 'en-US'
+      render(<AppProvider><读取 /></AppProvider>)
+      act(() => 状态!.createDoc('word'))
+      const 文字标识 = 状态!.activeDocumentId!
+      act(() => 状态!.createDoc('table'))
+      act(() => 状态!.createDoc('ppt'))
+      expect(状态!.workspaceTabs.map(项 => 项.name)).toEqual(['Untitled Document.sldoc', 'Untitled Spreadsheet.slxls', 'Untitled Presentation.slppt'])
+      expect(状态!.演示文档模型[状态!.activeDocumentId!].name).toBe('Untitled Presentation.slppt')
+      act(() => 状态!.createDoc('word', '<p>原文</p>', { 名称: '用户标题.docx' }))
+      expect(状态!.workspaceTabs[状态!.workspaceTabs.length - 1]?.name).toBe('用户标题.docx')
+      document.documentElement.lang = 'zh-CN'
+      act(() => 状态!.createDoc('word'))
+      expect(状态!.workspaceTabs.map(项 => 项.name)).toEqual(['Untitled Document.sldoc', 'Untitled Spreadsheet.slxls', 'Untitled Presentation.slppt', '用户标题.docx', '未命名文档.sldoc'])
+      act(() => { 状态!.set文档路径(文字标识, 'C:\\资料\\用户保存稿.docx'); 状态!.markDocumentSaved(文字标识, '<p><br></p>') })
+      expect(状态!.workspaceTabs.find(项 => 项.id === 文字标识)).toMatchObject({ name: '用户保存稿.docx', path: 'C:\\资料\\用户保存稿.docx', dirty: false })
+    } finally { document.documentElement.lang = 原语言 }
+  })
   it('保存路径查询识别其他已打开标签且允许当前标签原路径', async () => {
     let 状态: AppState | null = null
     const 读取 = () => { 状态 = useAppStore(); return null }

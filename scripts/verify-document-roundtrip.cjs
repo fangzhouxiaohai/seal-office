@@ -4,6 +4,9 @@ const { app, BrowserWindow } = require('electron')
 const fs = require('fs'), path = require('path'), assert = require('assert/strict')
 const project = path.resolve(__dirname, '..'), output = path.resolve(process.argv[2])
 const sample = process.argv[3], archive = process.argv[4] && path.resolve(process.argv[4])
+// 2.7.1 起目录、页码引用、超链接等域按保真风险透传（允许覆盖保存）；这两条提示不视为内容丢失。
+// 文案与 renderer/src/fileWarnings.ts、main/office/docxFields.js 保持一致。
+const 可透传域提示 = new Set(['域代码未完整导入，已保留可读取的缓存结果', '目录与交叉引用的页码沿用原文件缓存，修改后请在 Word 或 WPS 中更新域'])
 app.setPath('userData', path.join(output, 'profile'))
 app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
@@ -51,8 +54,8 @@ app.whenReady().then(async () => {
     ]
     if (sample) {
       const imported = await 读取docx(fs.readFileSync(sample))
-      // 目录/超链接/页码引用域允许直接打开，缓存结果仍会保留；保存副本只在编辑器内提示风险。
-      assert.deepEqual(imported.警告.filter(项 => 项 !== '域代码未完整导入，已保留可读取的缓存结果'), [])
+      // 目录/超链接/页码引用域允许直接打开并覆盖保存，域结构由源包原样写回；只剩保真级提示。
+      assert.deepEqual(imported.警告.filter(项 => !可透传域提示.has(项)), [])
       cases.push({ name:'user-sample',html:imported.html },{ name:'user-edited',html:imported.html,edit:true })
     }
     for (const item of cases) {
@@ -66,7 +69,7 @@ app.whenReady().then(async () => {
         const bytes = await 生成docx(model)
         fs.writeFileSync(path.join(output,`${item.name}-${cycle}.docx`),bytes)
         const reopened = await 读取docx(bytes)
-        assert.deepEqual(reopened.警告.filter(项 => 项 !== '域代码未完整导入，已保留可读取的缓存结果'), [], item.name)
+        assert.deepEqual(reopened.警告.filter(项 => !可透传域提示.has(项)), [], item.name)
         const html = item.part ? reopened.页面设置[item.part+'Html'] : reopened.html
         await win.webContents.executeJavaScript(`renderDoc(${JSON.stringify(html)},${JSON.stringify(item.part)},${JSON.stringify(item.width)},${JSON.stringify(item.settings)})`)
         const after = await win.webContents.executeJavaScript('inspectDoc()')

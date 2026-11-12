@@ -43,8 +43,10 @@ export async function prepareGeneratedHarmony() {
   const currentOffice = path.join(mobile, 'static/office')
   const info = JSON.parse(await fs.readFile(path.join(currentOffice, 'build-info.json'), 'utf8'))
   const compiledInfo = JSON.parse(await fs.readFile(path.join(compiled, 'static/office/build-info.json'), 'utf8'))
-  if (info.platform !== 'harmony' || info.desktopVersion !== '2.7.0' ||
-      JSON.stringify(info) !== JSON.stringify(compiledInfo)) throw new Error('请先生成并原生编译 2.7.0 鸿蒙专用资源')
+  // 版本号读取根目录 package.json，避免每次升级手工改写本脚本。
+  const desktopVersion = JSON.parse(await fs.readFile(path.join(mobile, '..', 'package.json'), 'utf8')).version
+  if (info.platform !== 'harmony' || info.desktopVersion !== desktopVersion ||
+      JSON.stringify(info) !== JSON.stringify(compiledInfo)) throw new Error(`请先生成并原生编译 ${desktopVersion} 鸿蒙专用资源`)
   const source = await fs.readFile(path.join(mobile, 'pages/workspace/workspace.uvue'), 'utf8')
   if (source.includes('backStartedAtHome') || !source.includes("messageBoolean(message, 'backToDesktop')")) {
     throw new Error('鸿蒙原生源码的返回键协议与已核对版本不一致')

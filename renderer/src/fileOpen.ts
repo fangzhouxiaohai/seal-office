@@ -12,7 +12,9 @@ import type { Sheet } from './sheet/model'
 import { 文档格式, 原生文档类型 } from './fileFormats'
 import { 从二进制读取网页型旧版表格, 导入网页型旧版表格 } from './sheet/htmlXlsImport'
 import { 读取单文件网页 } from './office/mhtml'
-import { 需要转换确认 } from './fileWarnings'
+import { 内容风险警告 } from './fileWarnings'
+import { 关键内容缺失, 关键内容缺失说明, 登记待另存副本, 读取打开选择, 记住打开选择, type 打开选择 } from './fileOpenChoice'
+import { 警告列表 } from './ProtectedViewBar'
 
 export type 打开类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
@@ -43,6 +45,8 @@ export interface 本地文件内容 {
   文件指纹?: string
   /** 用户确认转换后，真实写入的专属副本路径。来源文件始终保持不变。 */
   打开路径?: string
+  /** 含内容风险时用户的选择：仅查看进入受保护查看；另存副本由编辑器接着弹出另存为 */
+  打开方式?: 打开选择
 }
 
 function 转义Html(文本: string): string {
@@ -319,22 +323,39 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
     if (字体数据) await 准备打开文档字体(内容.类型, 字体数据)
   }
   const 警告 = [...new Set(内容.警告)]
-  // 目录、超链接和页码引用等域的缓存结果可直接阅读；只在保存时继续按保真风险提示，
-  // 不能再把它们等同于未识别内容阻止文件进入编辑器。
-  if (!需要转换确认(警告)) return 内容
-  const 确认 = await new Promise<boolean>(完成 => {
-    ;(导入确认弹窗 ?? Modal.confirm)({
-      title: '此文件仅能查看已识别内容',
+  // 完全支持或只有保真风险（目录域缓存、近似颜色、数字格式预览等）时直接打开，不弹窗；
+  // 保真风险只在覆盖保存来源文件时提示一次。
+  const 缺失项 = 内容风险警告(警告)
+  if (缺失项.length === 0) return 内容
+  // 已记住选择的同一文件（路径与指纹均一致）不再询问，编辑区仍显示仅查看提示条。
+  const 已记住 = 读取打开选择(路径, 内容.文件指纹)
+  const 只能查看 = 关键内容缺失(内容)
+  if (已记住 && !(只能查看 && 已记住 === '另存副本')) {
+    if (已记住 === '另存副本') 登记待另存副本(路径)
+    return { ...内容, 打开方式: 已记住 }
+  }
+  const 选择 = await new Promise<打开选择>(完成 => {
+    ;(导入确认弹窗 ?? Modal.confirm)(只能查看 ? {
+      title: '此文件只能查看',
       content: createElement('div', null,
-        createElement('p', null, '当前尚不能完整识别以下内容。查看时保留原文件，保存前请另存为副本。'),
-        createElement('ul', null, 警告.map((项, 索引) => createElement('li', { key: 索引 }, 项))),
-        createElement('p', null, '已识别内容可供查看。请使用“另存为”生成副本再编辑；副本可能缺少上列内容。')),
-      okText: '查看已识别内容', cancelText: '取消打开', maskClosable: false,
-      onOk: () => { 完成(true) }, onCancel: () => { 完成(false) },
+        createElement('p', null, '此文件包含本机暂不支持的内容：'),
+        createElement(警告列表, { 警告: 缺失项 }),
+        createElement('p', null, 关键内容缺失说明)),
+      okText: '仅查看', okCancel: false, maskClosable: false,
+      onOk: () => { 完成('仅查看') },
+    } : {
+      title: '此文件包含本机暂不支持的内容',
+      content: createElement('div', null,
+        createElement('p', null, '以下内容本机暂不支持，直接保存会丢失：'),
+        createElement(警告列表, { 警告: 缺失项 }),
+        createElement('p', null, '可以仅查看原文件；或另存一份副本后编辑，原文件保持不变，副本可能缺少上列内容。')),
+      okText: '另存副本并编辑', cancelText: '仅查看', maskClosable: false, closable: false, keyboard: false,
+      onOk: () => { 完成('另存副本') }, onCancel: () => { 完成('仅查看') },
     })
   })
-  if (!确认) return null
-  return 内容
+  记住打开选择(路径, 内容.文件指纹, 选择)
+  if (选择 === '另存副本') 登记待另存副本(路径)
+  return { ...内容, 打开方式: 选择 }
 }
 
 /** 取路径中的文件名（兼容反斜杠与正斜杠分隔） */

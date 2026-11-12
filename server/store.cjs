@@ -38,6 +38,8 @@ async function openStore(directory) {
     CREATE TABLE IF NOT EXISTS realtime_rooms(id TEXT PRIMARY KEY,owner_id TEXT NOT NULL,kind TEXT NOT NULL,scope_id TEXT NOT NULL,node_id TEXT NOT NULL,type TEXT NOT NULL,seed TEXT NOT NULL,checkpoint TEXT,checkpoint_seq INTEGER DEFAULT 0,head INTEGER DEFAULT 0,version INTEGER NOT NULL,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS realtime_updates(room_id TEXT NOT NULL,seq INTEGER NOT NULL,operation_id TEXT NOT NULL,cipher TEXT NOT NULL,bytes INTEGER NOT NULL,actor_id TEXT NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(room_id,seq),UNIQUE(room_id,operation_id));
     CREATE TABLE IF NOT EXISTS realtime_receipts(room_id TEXT NOT NULL,operation_id TEXT NOT NULL,seq INTEGER NOT NULL,digest TEXT NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(room_id,operation_id));
+    CREATE TABLE IF NOT EXISTS releases(id TEXT PRIMARY KEY,platform TEXT NOT NULL,version TEXT NOT NULL,version_code INTEGER,channel TEXT NOT NULL,mandatory INTEGER DEFAULT 0,min_version TEXT,notes TEXT,url TEXT,sha256 TEXT,bytes INTEGER,published INTEGER NOT NULL,created_by TEXT,withdrawn INTEGER DEFAULT 0,UNIQUE(platform,version,channel));
+    CREATE INDEX IF NOT EXISTS releases_platform ON releases(platform,channel);
     CREATE TABLE IF NOT EXISTS realtime_presence(room_id TEXT NOT NULL,client_id TEXT NOT NULL,session_hash TEXT NOT NULL,reference TEXT NOT NULL,cipher TEXT NOT NULL,updated INTEGER NOT NULL,PRIMARY KEY(room_id,client_id));
   `)
   const query = (sql, params = []) => {
@@ -48,6 +50,7 @@ async function openStore(directory) {
   if(!query('PRAGMA table_info(uploads)').some(c=>c.name==='automatic'))db.run('ALTER TABLE uploads ADD COLUMN automatic INTEGER DEFAULT 0')
   if(!query('PRAGMA table_info(publications)').some(c=>c.name==='name'))db.run("ALTER TABLE publications ADD COLUMN name TEXT DEFAULT ''")
   if(!query('PRAGMA table_info(versions)').some(c=>c.name==='upload_id'))db.run('ALTER TABLE versions ADD COLUMN upload_id TEXT')
+  if(!query('PRAGMA table_info(releases)').some(c=>c.name==='withdrawn'))db.run('ALTER TABLE releases ADD COLUMN withdrawn INTEGER DEFAULT 0')
   for(const session of query('SELECT s.* FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE d.session_hash IS NULL'))db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)',[session.hash,session.user_id,randomUUID(),'已登录设备',session.expires-30*86400000,session.expires-30*86400000])
   const write = () => {
     const temp = filename + '.tmp'

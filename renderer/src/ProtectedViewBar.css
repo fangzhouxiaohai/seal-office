@@ -1,0 +1,35 @@
+/* 仅查看提示条：外观沿用 wps-sheet-protectionbar（sheetFeatures.css），这里只补入口按钮与列表。
+   文字与表格、演示编辑器都会用到，故在组件内引入，避免只打开文字文档时缺少样式。 */
+.seal-protected-view-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-1);
+}
+
+.seal-protected-view-bar__action {
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.seal-protected-view-bar__action:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.seal-protected-view-bar__action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.seal-warning-list {
+  margin: var(--space-2) 0;
+  padding-left: 20px;
+}

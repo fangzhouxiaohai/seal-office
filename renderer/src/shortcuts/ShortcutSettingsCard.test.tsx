@@ -3,11 +3,23 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { App as AntdApp } from 'antd'
 import ShortcutSettingsCard from './ShortcutSettingsCard'
 import { readShortcutOverrides, saveShortcutOverrides, SHORTCUT_STORAGE_KEY } from './shortcuts'
+import { SettingsProvider } from '../store/settingsStore'
+import { InterfaceLanguageAdapter } from '../i18n/interfaceLanguage'
 
 afterEach(() => { localStorage.removeItem(SHORTCUT_STORAGE_KEY); vi.restoreAllMocks() })
 const show = () => render(<AntdApp><ShortcutSettingsCard /></AntdApp>)
 
 describe('快捷键设置卡片', () => {
+  it('英文界面能按英文命令搜索并显示对应的无障碍名称', async () => {
+    localStorage.setItem('seal-language', 'en-US')
+    try {
+      render(<SettingsProvider><InterfaceLanguageAdapter/><AntdApp><ShortcutSettingsCard /></AntdApp></SettingsProvider>)
+      fireEvent.change(await screen.findByRole('searchbox', { name: 'Search shortcuts' }), { target: { value: 'find next' } })
+      expect(await screen.findByRole('textbox', { name: 'Find next shortcut' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clear shortcut for Find next' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Restore default shortcut for Find next' })).toBeInTheDocument()
+    } finally { localStorage.removeItem('seal-language') }
+  })
   it('录入组合键，修改草稿后明确应用，关闭再打开保留改绑', () => {
     const view = show()
     const bold = screen.getByRole('textbox', { name: '加粗快捷键' })

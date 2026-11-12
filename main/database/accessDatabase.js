@@ -6,7 +6,10 @@ const { execFile } = require('child_process')
 const ACCESS_RUNTIME_URL = 'https://support.microsoft.com/zh-cn/access/download-and-install-microsoft-365-access-runtime'
 const ACCESS_EXTENSIONS = new Set(['.accdb', '.mdb'])
 const READ_ACTIONS = new Set(['inspect', 'query', 'readTable'])
-const WRITE_ACTIONS = new Set(['execute', 'insert', 'update', 'delete', 'createTable', 'dropTable', 'importRows'])
+const WRITE_ACTIONS = new Set(['execute', 'insert', 'update', 'delete', 'createTable', 'alterTable', 'dropTable', 'importRows'])
+// 建表与改表共用的类型白名单；类型文本会拼入 DDL，必须严格匹配。
+const 字段类型规则 = /^(?:TEXT\((?:[1-9]|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\)|LONGTEXT|BYTE|SHORT|INTEGER|LONG|SINGLE|DOUBLE|DECIMAL(?:\(\d{1,2},\d{1,2}\))?|CURRENCY|DATETIME|YESNO|GUID|LONGBINARY|COUNTER)$/i
+const 改表操作 = new Set(['addColumn', 'alterColumn', 'renameColumn', 'dropColumn', 'setPrimaryKey'])
 const ALL_ACTIONS = new Set(['status', 'create', ...READ_ACTIONS, ...WRITE_ACTIONS])
 const MAX_QUERY_ROWS = 5000
 const MAX_IMPORT_ROWS = 10000
@@ -98,11 +101,13 @@ function Get-ProviderList {
   return @($providers | Sort-Object -Unique)
 }
 
-function New-SealConnection($Request) {
+function New-SealConnectionString($Request) {
   $builder = New-Object System.Data.OleDb.OleDbConnectionStringBuilder
   $builder.Provider = [string]$Request.provider
   # PowerShell 的属性赋值会输出 DataSource（无空格），ACE 会把它当成未知
   # 扩展属性并报“找不到可安装的 ISAM”；必须使用标准 OLE DB 键名。
+  # 路径统一经构造器加引号转义：含分号、等号、单引号、空格或中文的路径
+  # 不会被拆成额外的连接参数（2.7.0 新建时手工拼接连接串即在此出错）。
   $builder['Data Source'] = [string]$Request.path
   if (-not [string]::IsNullOrEmpty([string]$Request.databasePassword)) {
     $builder['Jet OLEDB:Database Password'] = [string]$Request.databasePassword
@@ -110,9 +115,30 @@ function New-SealConnection($Request) {
   if (-not [string]::IsNullOrEmpty([string]$Request.userName)) { $builder['User ID'] = [string]$Request.userName }
   if (-not [string]::IsNullOrEmpty([string]$Request.userPassword)) { $builder['Password'] = [string]$Request.userPassword }
   if (-not [string]::IsNullOrEmpty([string]$Request.workgroupPath)) { $builder['Jet OLEDB:System database'] = [string]$Request.workgroupPath }
-  $connection = New-Object System.Data.OleDb.OleDbConnection($builder.ConnectionString)
+  return $builder.ConnectionString
+}
+
+function New-SealConnection($Request) {
+  $connection = New-Object System.Data.OleDb.OleDbConnection((New-SealConnectionString $Request))
   $connection.Open()
   return $connection
+}
+
+function Get-SealAutoColumns($Connection, [string]$TableName) {
+  # GetSchema('Columns') 不区分自动编号与普通长整型，需读取键信息里的 IsAutoIncrement。
+  $names = @()
+  try {
+    $command = $Connection.CreateCommand()
+    $command.CommandText = 'SELECT * FROM ' + (Quote-Ident $TableName) + ' WHERE 1 = 0'
+    $reader = $command.ExecuteReader([System.Data.CommandBehavior]::KeyInfo -bor [System.Data.CommandBehavior]::SchemaOnly)
+    try {
+      $schemaTable = $reader.GetSchemaTable()
+      foreach ($row in $schemaTable.Rows) {
+        if ($row['IsAutoIncrement'] -eq $true) { $names += [string]$row['ColumnName'] }
+      }
+    } finally { $reader.Close() }
+  } catch {}
+  return $names
 }
 
 function Get-SealSchema($Connection, $Request) {
@@ -134,6 +160,7 @@ function Get-SealSchema($Connection, $Request) {
       continue
     }
     if ($type -notmatch 'TABLE|LINK') { continue }
+    $autoColumns = @(Get-SealAutoColumns $Connection $name)
     $columns = @()
     foreach ($columnRow in $columnRows.Rows) {
       if ([string](Get-Cell $columnRow 'TABLE_NAME') -ne $name) { continue }
@@ -146,6 +173,7 @@ function Get-SealSchema($Connection, $Request) {
         maxLength = Convert-SealValue (Get-Cell $columnRow 'CHARACTER_MAXIMUM_LENGTH')
         nullable = if ($null -eq $nullable) { $true } else { [string]$nullable -notmatch '^(False|NO|0)$' }
         defaultValue = Convert-SealValue (Get-Cell $columnRow 'COLUMN_DEFAULT')
+        autoIncrement = $autoColumns -contains [string](Get-Cell $columnRow 'COLUMN_NAME')
       }
     }
     $indexes = @()
@@ -211,12 +239,27 @@ try {
     try {
       # ACCDB 由 ACE 根据 .accdb 扩展名创建；Engine Type=5 会强制生成 Jet 4.0/MDB，
       # 即使文件名写成 .accdb 也不是现代 Access 文件格式。
-      $connectionString = 'Provider=' + $request.provider + ';Data Source=' + $request.path + ';'
-      $catalog.Create($connectionString)
+      [void]$catalog.Create((New-SealConnectionString $request))
+      # 立即关闭创建时打开的连接，释放 .laccdb 锁，保证随后回读结构不被占用。
+      try { $catalog.ActiveConnection.Close() } catch {}
     } finally {
       if ($null -ne $catalog) { [void][System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($catalog) }
     }
     Write-SealResult ([ordered]@{ success = $true; data = [ordered]@{ path = $request.path; provider = $request.provider; bitness = [IntPtr]::Size * 8 } })
+    exit 0
+  }
+
+  if ($request.action -eq 'alterTable' -and $request.operation -eq 'renameColumn') {
+    # Access SQL 没有 RENAME COLUMN；改名只能经 ADOX 目录对象完成，字段数据与索引保持不变。
+    $catalog = New-Object -ComObject ADOX.Catalog
+    try {
+      $catalog.ActiveConnection = (New-SealConnectionString $request)
+      $catalog.Tables.Item([string]$request.table).Columns.Item([string]$request.column).Name = [string]$request.newName
+      try { $catalog.ActiveConnection.Close() } catch {}
+    } finally {
+      if ($null -ne $catalog) { [void][System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($catalog) }
+    }
+    Write-SealResult ([ordered]@{ success = $true; data = [ordered]@{ affectedRows = 0 }; provider = $request.provider; bitness = [IntPtr]::Size * 8 })
     exit 0
   }
 
@@ -287,6 +330,49 @@ try {
       $command = $connection.CreateCommand()
       $command.CommandText = 'CREATE TABLE ' + (Quote-Ident ([string]$request.table)) + ' (' + ($definitions -join ', ') + ')'
       $data = [ordered]@{ affectedRows = $command.ExecuteNonQuery() }
+    } elseif ($request.action -eq 'alterTable') {
+      $tableSql = Quote-Ident ([string]$request.table)
+      if ($request.operation -eq 'setPrimaryKey') {
+        # 主键变更在事务中先删除旧主键再建立新主键；新主键遇到重复值或空值时整体回滚，原主键保留。
+        $transaction = $connection.BeginTransaction()
+        try {
+          $indexRows = $connection.GetOleDbSchemaTable([System.Data.OleDb.OleDbSchemaGuid]::Indexes, $null)
+          $oldNames = @()
+          foreach ($row in $indexRows.Rows) {
+            $isPrimary = Get-Cell $row 'PRIMARY_KEY'
+            if ([string](Get-Cell $row 'TABLE_NAME') -eq [string]$request.table -and ($isPrimary -eq $true -or [string]$isPrimary -eq 'True')) {
+              $indexName = [string](Get-Cell $row 'INDEX_NAME')
+              if ($oldNames -notcontains $indexName) { $oldNames += $indexName }
+            }
+          }
+          foreach ($indexName in $oldNames) {
+            $command = $connection.CreateCommand()
+            $command.Transaction = $transaction
+            $command.CommandText = 'ALTER TABLE ' + $tableSql + ' DROP CONSTRAINT ' + (Quote-Ident $indexName)
+            [void]$command.ExecuteNonQuery()
+          }
+          if (@($request.primaryKey).Count -gt 0) {
+            $command = $connection.CreateCommand()
+            $command.Transaction = $transaction
+            $command.CommandText = 'ALTER TABLE ' + $tableSql + ' ADD CONSTRAINT [PrimaryKey] PRIMARY KEY (' + ((@($request.primaryKey) | ForEach-Object { Quote-Ident ([string]$_) }) -join ', ') + ')'
+            [void]$command.ExecuteNonQuery()
+          }
+          $transaction.Commit()
+        } catch { $transaction.Rollback(); throw }
+        $data = [ordered]@{ affectedRows = 0 }
+      } else {
+        $command = $connection.CreateCommand()
+        if ($request.operation -eq 'addColumn') {
+          $command.CommandText = 'ALTER TABLE ' + $tableSql + ' ADD COLUMN ' + (Quote-Ident ([string]$request.column)) + ' ' + [string]$request.type + $(if ($request.required -eq $true) { ' NOT NULL' } else { '' })
+        } elseif ($request.operation -eq 'alterColumn') {
+          $command.CommandText = 'ALTER TABLE ' + $tableSql + ' ALTER COLUMN ' + (Quote-Ident ([string]$request.column)) + ' ' + [string]$request.type + $(if ($request.required -eq $true) { ' NOT NULL' } else { '' })
+        } elseif ($request.operation -eq 'dropColumn') {
+          $command.CommandText = 'ALTER TABLE ' + $tableSql + ' DROP COLUMN ' + (Quote-Ident ([string]$request.column))
+        } else {
+          throw '不支持的表结构修改'
+        }
+        $data = [ordered]@{ affectedRows = $command.ExecuteNonQuery() }
+      }
     } elseif ($request.action -eq 'dropTable') {
       $command = $connection.CreateCommand()
       $command.CommandText = 'DROP TABLE ' + (Quote-Ident ([string]$request.table))
@@ -441,6 +527,54 @@ function 校验工作组文件(文件路径) {
   return path.resolve(值)
 }
 
+function 校验字段类型(字段名, 类型) {
+  const type = String(类型 || 'TEXT(255)').toUpperCase()
+  if (!字段类型规则.test(type)) throw new Error(`字段「${字段名}」的数据类型不受支持`)
+  return type
+}
+
+// PowerShell 把 .NET 异常包成“使用“0”个参数调用“Open”时发生异常:“原因”。”，只保留真正原因。
+function 提取引擎原因(文本) {
+  const 原文 = String(文本 || '').trim()
+  const 匹配 = 原文.match(/^(?:使用“\d+”个参数调用“[^”]+”时发生异常|Exception calling "[^"]+" with "\d+" argument\(s\))\s*[:：]\s*[“"](.*)[”"]\s*$/s)
+  return (匹配 ? 匹配[1] : 原文).trim()
+}
+
+const 驱动缺失规则 = /not registered|未在本地计算机上注册|Class not registered|没有注册类|找不到提供程序|provider cannot be found|0x80040154/i
+const 目录不可写规则 = /无法打开文件.*或向其写入数据|没有查看和写入其数据的权限|不是一个有效的路径|is not a valid path|cannot open the file|access (?:is )?denied|拒绝访问|read-only|只读/i
+const 文件损坏规则 = /不可识别的数据库格式|unrecognized database format|数据库已损坏|database (?:is )?corrupt|需要修复|不是数据库/i
+
+/**
+ * 把各提供者的失败记录归为：驱动未安装 / 目录不可写 / 文件损坏 / 文件已存在 / 结构冲突 / 其他。
+ * 驱动未注册的尝试只在全部失败都属此类时才视为驱动问题，否则以其余更具体的原因为准。
+ */
+function 分类Access错误(失败列表, { 动作, 扩展名 } = {}) {
+  const 原因列表 = 失败列表.map((项) => 提取引擎原因(项.错误))
+  const 具体原因 = 原因列表.filter((原因) => !驱动缺失规则.test(原因))
+  if (原因列表.length === 0 || 具体原因.length === 0) {
+    return { 错误类别: '驱动未安装', 错误: '未检测到 Access 数据库引擎，当前无法新建或打开 Access 数据库。请安装与本机 Office 位数匹配的 Microsoft 365 Access Runtime 后重试。', 详情: 原因列表[0] || '', 安装地址: ACCESS_RUNTIME_URL }
+  }
+  const 详情 = 具体原因[0]
+  if (/目标数据库文件已存在/.test(详情)) return { 错误类别: '文件已存在', 错误: '目标位置已有同名数据库文件，请换一个文件名。', 详情 }
+  if (目录不可写规则.test(详情)) {
+    return 动作 === 'create'
+      ? { 错误类别: '目录不可写', 错误: '所选目录不可写或不存在，无法在此创建数据库，请选择“文档”等有写入权限的目录。', 详情 }
+      : { 错误类别: '目录不可写', 错误: '数据库文件所在位置无权访问或文件正被其他程序独占打开，请关闭占用程序或检查文件权限后重试。', 详情 }
+  }
+  if (文件损坏规则.test(详情)) {
+    if (扩展名 === '.mdb') return { 错误类别: '文件损坏', 错误: '该 MDB 可能是 Access 2002/XP 或更早格式，也可能已经损坏或使用了当前驱动无法识别的特性。本程序不会覆盖它；请先在 Microsoft Access 中确认文件可正常打开，并另存为 Access 2003 MDB 或 ACCDB 后再试。', 详情, 需要旧版转换: true }
+    return { 错误类别: '文件损坏', 错误: '数据库文件已损坏或不是有效的 Access 文件，无法打开。', 详情 }
+  }
+  if (/password|密码|not a valid account name|workgroup|工作组/i.test(详情)) return { 错误类别: '密码错误', 错误: '数据库密码或工作组账号不正确，请核对后重试。', 详情 }
+  if (/创建重复的值|duplicate values/i.test(详情)) return { 错误类别: '结构冲突', 错误: '该字段存在重复值或空值，无法设为主键或唯一索引。请先清理数据后重试。', 详情 }
+  if (/数据类型不匹配|type mismatch/i.test(详情)) return { 错误类别: '结构冲突', 错误: '现有数据无法转换为所选类型，Access 拒绝了此次类型修改，原数据未改动。', 详情 }
+  if (/不能删除已成为索引的一部分|part of an index/i.test(详情)) return { 错误类别: '结构冲突', 错误: '该字段属于主键或索引，需先取消主键后再删除。', 详情 }
+  if (/无效的字段数据类型|invalid field data type/i.test(详情)) return { 错误类别: '结构冲突', 错误: '数据库引擎不支持此次字段类型修改。', 详情 }
+  if (/已经存在|already exists/i.test(详情)) return { 错误类别: '结构冲突', 错误: '同名的表或字段已存在，请换一个名称。', 详情 }
+  if (/数据库操作超时/.test(详情)) return { 错误类别: '其他', 错误: '数据库操作超时，请缩小查询范围后重试。', 详情 }
+  return { 错误类别: '其他', 错误: `数据库引擎返回错误：${详情}`, 详情 }
+}
+
 function 提供者顺序(扩展名, 动作) {
   if (动作 === 'create' || 扩展名 === '.accdb') return ['Microsoft.ACE.OLEDB.16.0', 'Microsoft.ACE.OLEDB.12.0']
   return ['Microsoft.ACE.OLEDB.16.0', 'Microsoft.ACE.OLEDB.12.0', 'Microsoft.Jet.OLEDB.4.0']
@@ -473,17 +607,35 @@ function 规范请求(动作, 输入 = {}) {
   if (动作 === 'delete') return { 请求: { ...基础, table: 校验标识符(输入.表名, '表名'), key: 校验值对象(输入.主键, '主键') }, 扩展名 }
   if (动作 === 'createTable') {
     if (!Array.isArray(输入.字段) || 输入.字段.length === 0 || 输入.字段.length > MAX_IMPORT_COLUMNS) throw new Error('新表字段为空或过多')
-    const 类型规则 = /^(?:TEXT\((?:[1-9]|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\)|LONGTEXT|BYTE|SHORT|INTEGER|LONG|SINGLE|DOUBLE|DECIMAL(?:\(\d{1,2},\d{1,2}\))?|CURRENCY|DATETIME|YESNO|GUID|LONGBINARY|COUNTER)$/i
     const columns = 输入.字段.map((字段) => {
       const name = 校验标识符(字段?.名称, '字段名称')
-      const type = String(字段?.类型 || 'TEXT(255)').toUpperCase()
-      if (!类型规则.test(type)) throw new Error(`字段「${name}」的数据类型不受支持`)
-      return { name, type, required: 字段?.必填 === true }
+      return { name, type: 校验字段类型(name, 字段?.类型), required: 字段?.必填 === true }
     })
     if (new Set(columns.map((项) => 项.name.toLocaleLowerCase())).size !== columns.length) throw new Error('字段名称不能重复')
     const primaryKey = Array.isArray(输入.主键) ? 输入.主键.map((名称) => 校验标识符(名称, '主键字段')) : []
     if (primaryKey.some((名称) => !columns.some((字段) => 字段.name === 名称))) throw new Error('主键必须引用新表中的字段')
     return { 请求: { ...基础, table: 校验标识符(输入.表名, '表名'), columns, primaryKey }, 扩展名 }
+  }
+  if (动作 === 'alterTable') {
+    const 表 = { ...基础, table: 校验标识符(输入.表名, '表名'), operation: 输入.操作 }
+    if (!改表操作.has(输入.操作)) throw new Error('不支持的表结构修改')
+    if (输入.操作 === 'addColumn' || 输入.操作 === 'alterColumn') {
+      const column = 校验标识符(输入.字段?.名称, '字段名称')
+      const type = 校验字段类型(column, 输入.字段?.类型)
+      // ACE 只允许在 ADD COLUMN 时声明 COUNTER；对已有字段 ALTER 为 COUNTER 会报“无效的字段数据类型”。
+      if (输入.操作 === 'alterColumn' && type === 'COUNTER') throw new Error('自动编号只能在新建字段时设置，已有字段无法改为自动编号')
+      return { 请求: { ...表, column, type, required: 输入.字段?.必填 === true }, 扩展名 }
+    }
+    if (输入.操作 === 'renameColumn') {
+      const column = 校验标识符(输入.字段名, '字段名称')
+      const newName = 校验标识符(输入.新名称, '新字段名')
+      if (column === newName) throw new Error('新字段名与原字段名相同')
+      return { 请求: { ...表, column, newName }, 扩展名 }
+    }
+    if (输入.操作 === 'dropColumn') return { 请求: { ...表, column: 校验标识符(输入.字段名, '字段名称') }, 扩展名 }
+    const primaryKey = Array.isArray(输入.主键) ? 输入.主键.map((名称) => 校验标识符(名称, '主键字段')) : []
+    if (new Set(primaryKey.map((名称) => 名称.toLocaleLowerCase())).size !== primaryKey.length) throw new Error('主键字段不能重复')
+    return { 请求: { ...表, primaryKey }, 扩展名 }
   }
   if (动作 === 'importRows') {
     if (!Array.isArray(输入.字段) || 输入.字段.length === 0 || 输入.字段.length > MAX_IMPORT_COLUMNS) throw new Error('导入字段为空或过多')
@@ -550,15 +702,11 @@ function 创建Access数据库服务(依赖 = {}) {
         if (/password|密码|not a valid account name|workgroup/i.test(String(result.error || ''))) break
       }
     }
-    const 消息 = 失败列表.map((项) => `${项.provider}（${项.位数} 位）：${项.错误}`).join('；')
-    const 需要旧版转换 = 规范.扩展名 === '.mdb' && /unrecognized database format|无法识别的数据库格式|installable isam|外部数据库驱动程序/i.test(消息)
+    const 分类 = 分类Access错误(失败列表, { 动作, 扩展名: 规范.扩展名 })
     return {
       成功: false,
-      错误: 需要旧版转换
-        ? '该 MDB 可能是 Access 2002/XP 或更早格式，也可能已经损坏或使用了当前驱动无法识别的特性。本程序不会覆盖它；请先在 Microsoft Access 中确认文件可正常打开，并另存为 Access 2003 MDB 或 ACCDB 后再试。'
-        : (消息 || '没有可用的 Access 数据库驱动，请安装 Microsoft 365 Access Runtime'),
-      需要旧版转换,
-      安装地址: ACCESS_RUNTIME_URL,
+      ...分类,
+      需要旧版转换: 分类.需要旧版转换 === true,
       尝试: 失败列表,
     }
   }
@@ -578,5 +726,7 @@ module.exports = {
   校验工作组文件,
   规范请求,
   提供者顺序,
+  分类Access错误,
+  提取引擎原因,
   创建Access数据库服务,
 }

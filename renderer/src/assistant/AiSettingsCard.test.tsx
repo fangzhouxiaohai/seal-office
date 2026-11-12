@@ -7,6 +7,28 @@ import AiSettingsCard from './AiSettingsCard'
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手设置同步', () => {
+  it('保存和清除操作显示明确文字，清除仍需确认后执行', async () => {
+    let 当前配置 = { 名称: '测试服务', 地址: 'http://localhost/chat', 模型: '测试模型', 已配置密钥: false }
+    const 清除配置 = vi.fn().mockImplementation(async () => {
+      当前配置 = { 名称: '', 地址: '', 模型: '', 已配置密钥: false }
+      return { 成功: true, 数据: 当前配置 }
+    })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {
+      getConfig: vi.fn().mockImplementation(async () => ({ 成功: true, 数据: 当前配置 })),
+      clearConfig: 清除配置, saveConfig: vi.fn(), chat: vi.fn(),
+    } } })
+    render(<ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AiSettingsCard /></AntdApp></ConfigProvider>)
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '模型服务商名称' })).toHaveValue('测试服务'))
+    const 清除按钮 = screen.getByRole('button', { name: '清除设置' })
+    const 保存按钮 = screen.getByRole('button', { name: '保存模型设置' })
+    expect(清除按钮).toHaveTextContent('清除设置')
+    expect(保存按钮).toHaveTextContent('保存设置')
+    await userEvent.click(清除按钮)
+    expect(清除配置).not.toHaveBeenCalled()
+    await userEvent.click(await screen.findByRole('button', { name: '确认清除' }))
+    await waitFor(() => expect(清除配置).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '模型服务商名称' })).toHaveValue(''))
+  })
   it('高级设置可调整上下文令牌并保存，旧配置使用默认值', async () => {
     const 保存配置 = vi.fn().mockImplementation(async (输入) => ({ 成功: true, 数据: { ...输入, 已配置密钥: false } }))
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { ai: {

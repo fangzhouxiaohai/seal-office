@@ -56,7 +56,8 @@ app.whenReady().then(async () => {
         req.pipe(upstream)
         return
       }
-      const file = req.url === '/share/' ? 'index.html' : req.url === '/share/app.js' ? 'app.js' : ''
+      const route = req.url.split('?')[0]
+      const file = route === '/share/' ? 'index.html' : route === '/share/app.js' ? 'app.js' : ''
       if (!file) { res.writeHead(404); res.end(); return }
       res.writeHead(200, { 'Content-Type': file.endsWith('.js') ? 'application/javascript' : 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'" })
       fs.createReadStream(path.join(__dirname, '../../share', file)).pipe(res)
@@ -87,6 +88,14 @@ app.whenReady().then(async () => {
     await window.loadURL(`${pageOrigin}/share/#/s/${protectedId}?a=${protectedAccess}&k=${片段({ v: 1, n: '访问码测试.txt', k: 密钥文本(wrapped), i: nodeId })}`)
     window.webContents.reload()
     await 等待(() => window.webContents.executeJavaScript('document.getElementById("fileName").textContent === "访问码测试.txt" && !document.getElementById("codeForm").hidden'))
+    await window.webContents.executeJavaScript('document.getElementById("code").value="";document.getElementById("codeForm").requestSubmit()', true)
+    await 等待(() => window.webContents.executeJavaScript('document.getElementById("status").textContent.includes("请输入 4–8 位数字访问码")'))
+    assert.equal(await window.webContents.executeJavaScript('!document.getElementById("codeForm").hidden'), true, '访问码为空时输入框必须保持显示')
+    await window.webContents.executeJavaScript('document.getElementById("code").value="1357";document.getElementById("codeForm").requestSubmit()', true)
+    await 等待(() => window.webContents.executeJavaScript('document.getElementById("status").textContent.includes("访问码不正确")'))
+    assert.equal(await window.webContents.executeJavaScript('!document.getElementById("codeForm").hidden'), true, '访问码错误后输入框必须保持显示')
+    assert.equal(await window.webContents.executeJavaScript('document.getElementById("downloadArea").hidden'), true, '访问码错误后不能显示空密码重试区')
+    assert.equal(await window.webContents.executeJavaScript('document.activeElement.id === "code"'), true, '访问码错误后应回到输入框')
     const protectedDestination = path.join(temp, 'protected-download.txt')
     const protectedDownload = new Promise((resolve, reject) => session.defaultSession.once('will-download', (_, item) => {
       item.setSavePath(protectedDestination)
@@ -98,6 +107,7 @@ app.whenReady().then(async () => {
       reject(new Error(`访问码下载未触发：${status}`))
     }, 15000))])
     assert.deepEqual(fs.readFileSync(protectedDestination), content)
+    assert.equal(await window.webContents.executeJavaScript('document.getElementById("codeForm").hidden && !document.getElementById("downloadArea").hidden'), true)
     assert.equal(errors.filter(error => /Content Security Policy|Refused to execute/.test(error)).length, 0)
     console.log('匿名分享页显示文件信息；直接下载与访问码下载均在浏览器中解密，保存内容与原文件一致')
   } catch (error) { console.error(error); exitCode = 1 }

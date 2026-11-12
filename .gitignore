@@ -5,14 +5,13 @@ dist/
 release/
 release-final/
 /android-mobile/*
-!/android-mobile/android-studio/
-/android-mobile/android-studio/.gradle/
-/android-mobile/android-studio/app/build/
-/android-mobile/android-studio/app/.generated/
-/android-mobile/android-studio/app/src/main/assets/apps/
-/android-mobile/android-studio/build/
-/android-mobile/android-studio/app/src/main/assets/office/
-/android-mobile/android-studio/local.properties
+/android-studio/.gradle/
+/android-studio/app/build/
+/android-studio/app/.generated/
+/android-studio/app/src/main/assets/apps/
+/android-studio/build/
+/android-studio/app/src/main/assets/office/
+/android-studio/local.properties
 harmony-mobile/
 renderer/tmp-test/
 *.log
@@ -33,3 +32,7 @@ __pycache__/
 out-*.txt
 
 pub.txt
+
+# 正式签名私钥只保留在本机，不得提交
+*.keystore
+*.jks

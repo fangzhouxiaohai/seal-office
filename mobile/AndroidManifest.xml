@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="com.sealoffice.mobile">
-  <!-- 当前应用只需要联网；文件通过系统选择器导入，导出先写入应用沙箱再交给系统分享。
+  <!-- 本 HBuilderX 安卓工程只需要联网；文件通过系统选择器导入，导出先写入应用沙箱再交给系统分享。
        显式移除 HBuilderX 基座可能合并进来的相机、定位和旧式外部存储权限，
-       避免商店权限声明与产品实际功能、隐私说明不一致。 -->
+       避免商店权限声明与产品实际功能、隐私说明不一致。
+       2.7.1 拍照扫描的相机权限只在安卓 Java 宿主（android-studio/）与鸿蒙 module.json5 中声明；
+       本工程不提供拍照（宿主回复“当前安装包不提供拍照”），因此继续移除 CAMERA。 -->
   <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />

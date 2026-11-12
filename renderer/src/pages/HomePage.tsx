@@ -32,6 +32,9 @@ import TeamsPage from '../collaboration/TeamsPage'
 const TemplateLibrary = React.lazy(() => import('../components/TemplateLibrary'))
 const PresentationMarketPage = React.lazy(() => import('../cloud/PresentationMarketPage'))
 const SkinMarketPage = React.lazy(() => import('../skins/SkinMarketPage'))
+// 扫描与识别、单据转表格按需加载，不增加首页首屏体积。
+const ScanPage = React.lazy(() => import('../scan/ScanPage'))
+const ReceiptPage = React.lazy(() => import('../scan/ReceiptPage'))
 
 /** 区块标题随导航筛选变化 */
 const 标题映射: Record<string, string> = {
@@ -217,6 +220,8 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
     : navKey === 'market' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载模板市场…') }, React.createElement(PresentationMarketPage)))
     : navKey === 'skins' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载皮肤市场…') }, React.createElement(SkinMarketPage)))
     : navKey === 'calendar' ? React.createElement(CalendarPage)
+    : navKey === 'scan' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载扫描与识别…') }, React.createElement(ScanPage)))
+    : navKey === 'receipt' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载单据转表格…') }, React.createElement(ReceiptPage)))
     : navKey === 'database' && navigationAvailable('database') ? React.createElement(DatabasePage, {
         初始新建请求: 新建Access请求 || undefined,
         on初始新建已处理: on新建Access已处理,

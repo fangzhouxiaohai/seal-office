@@ -87,9 +87,33 @@ export interface 页面设置 {
   /** OOXML 的 default 由打印机决定，不能在保存时擅自改成 portrait。 */
   方向: '纵向' | '横向' | '跟随打印机'
   纸张大小: 'A4' | 'A5' | 'B5' | 'Letter' | '跟随打印机'
+  /** 来自 _xlnm.Print_Area / _xlnm.Print_Titles，保存时原样写回 */
+  打印区域?: string
+  打印标题行?: string
+  打印标题列?: string
 }
 
-export const 默认页面设置: 页面设置 = { 页边距: '常规', 方向: '纵向', 纸张大小: 'A4' }
+/** 自定义筛选运算符，与 OOXML customFilter 的 operator 一致；通配符写在值中。 */
+export type 筛选运算符 = 'equal' | 'notEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'lessThan' | 'lessThanOrEqual'
+/** 单列筛选条件；列为工作表绝对列号（0 起始）。原始Xml 表示本机无法解释、按原样写回的条件。 */
+export interface 筛选列条件 {
+  列: number
+  值列表?: string[]
+  空白?: boolean
+  自定义?: { 且: boolean; 条件: Array<{ 运算符: 筛选运算符; 值: string }> }
+  原始Xml?: string
+}
+/** 多列筛选：范围为 A1 形式（不含 $），各列条件按 AND 组合。 */
+export interface 多列筛选 {
+  范围: string
+  列条件: 筛选列条件[]
+  排序状态Xml?: string
+  扩展Xml?: string
+}
+export type 旧版筛选 = { 列: number; 值: string }
+export type 工作表筛选 = 旧版筛选 | 多列筛选
+
+export const 默认页面设置: 页面设置 ={ 页边距: '常规', 方向: '纵向', 纸张大小: 'A4' }
 
 export interface Sheet {
   id: string
@@ -115,7 +139,8 @@ export interface Sheet {
   图片?: SheetImage[]
   页面设置: 页面设置
   冻结?: { 行: number; 列: number }
-  筛选?: { 列: number; 值: string }
+  /** 兼容旧版单列单值 { 列, 值 } 与 2.7.1 起的多列多条件模型 */
+  筛选?: 工作表筛选
   /** 本机保护可直接解除；外部复杂保护只读且需在来源软件解除 */
   保护?: '本机' | '外部'
   /** CSV 的空字段、空行及编码/换行信息，避免保存时截去来源数据边界。 */

@@ -9,7 +9,9 @@ import { insertDocumentNote, 注释锚点, 注释锚点范围 } from './notes'
 import { insertBookmark, insertField, insertHyperlink } from './inserts'
 import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
-import { 可直开保存风险警告, 处于受保护查看 } from '../fileWarnings'
+import { 处于受保护查看, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
+import { 领取待另存副本 } from '../fileOpenChoice'
+import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
 import { htmlToDocxModel, 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { 桥接 } from '../ipc/bridge'
 import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
@@ -210,6 +212,7 @@ const DocEditor = () => {
   const 内部写入内容 = useRef<Map<string, string>>(new Map())
   const 输入计时器 = useRef<number | null>(null)
   const 已提示导入警告 = useRef<Set<string>>(new Set())
+  const 执行命令引用 = useRef<(命令标识: string, 参数?: string) => void>(() => {})
   /** 格式刷暂存；使用稳定对象以便命令读写同一份状态 */
   const 格式刷容器 = useRef<{ 值: 选区格式 | null }>({ 值: null })
   /** 下拉浮层打开前的选区快照，供格式化命令恢复选区后再执行 */
@@ -249,7 +252,7 @@ const DocEditor = () => {
   const 只读 = 视图.文档保护 || 阅读.阅读模式 || 协作.readOnly || 保护查看 || 修订视图 === 'original'
   const 只读引用 = useRef(只读)
   只读引用.current = 只读
-  const 只读提示 = 保护查看 ? '当前处于受保护查看，请先另存为副本再编辑' : 协作.readOnly ? '当前共享权限为只读' : 修订视图 === 'original' ? '原始正文视图为只读，请切回全部标记后编辑' : 阅读.阅读模式 ? '当前为阅读模式，请先切换到编辑' : '文档已保护，请先解除保护'
+  const 只读提示 = 保护查看 ? '当前为仅查看，请先另存副本再编辑' : 协作.readOnly ? '当前共享权限为只读' : 修订视图 === 'original' ? '原始正文视图为只读，请切回全部标记后编辑' : 阅读.阅读模式 ? '当前为阅读模式，请先切换到编辑' : '文档已保护，请先解除保护'
   页面设置引用.current = 当前文档?.页面设置
   const 当前文档标识引用 = useRef(文档标识)
   当前文档标识引用.current = 文档标识
@@ -293,19 +296,39 @@ const DocEditor = () => {
       title: '文档内容可能未完整导入',
       content: React.createElement('div', null,
         React.createElement('p', null, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
-        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        React.createElement(警告列表, { 警告 })
       ),
       okText: '我知道了',
     })
   }
 
   useEffect(() => {
-    const 提示警告 = (当前文档?.警告 ?? []).filter((项) => !可直开保存风险警告.has(项))
-    if (提示警告.length && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示导入警告.current.has(当前文档!.id)) {
+    // 打开时已在询问弹窗中列出内容风险的文件（仍在来源路径上）不再重复弹出导入警告；
+    // 保真风险只在覆盖保存时提示。其余入口（如助手生成、协作恢复）仍提示内容风险。
+    const 提示警告 = 内容风险警告(当前文档?.警告)
+    if (提示警告.length && !保护查看 && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示导入警告.current.has(当前文档!.id)) {
       已提示导入警告.current.add(当前文档!.id)
       展示导入警告(提示警告)
     }
   }, [当前文档?.id, 当前文档?.警告])
+
+  // 打开时选择“另存副本并编辑”：文档就绪后直接进入现有另存为流程，原文件不改。
+  useEffect(() => {
+    if (!文档标识 || !保护查看 || !领取待另存副本(文档路径[文档标识])) return
+    const 计时 = window.setTimeout(() => 执行命令引用.current('file.saveAs'), 0)
+    return () => window.clearTimeout(计时)
+  }, [文档标识, 保护查看])
+
+  const 提示保存保真风险 = (警告: string[]) => {
+    modal.info({
+      title: '已保存，部分效果将在 Word 或 WPS 中更新',
+      content: React.createElement('div', null,
+        React.createElement('p', null, '文件已覆盖保存，正文与原有结构均已保留。以下效果沿用原文件或按近似方式处理：'),
+        React.createElement(警告列表, { 警告 })
+      ),
+      okText: '我知道了',
+    })
+  }
 
   const 当前保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
     ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
@@ -1116,8 +1139,8 @@ const DocEditor = () => {
       modal.warning({
         title: '已阻止覆盖来源文件',
         content: React.createElement('div', null,
-          React.createElement('p', null, '当前版本无法完整保留此文件的内容。请通过另存为保存到不同路径。'),
-          React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+          React.createElement('p', null, '此文件含本机暂不支持的内容，直接保存会丢失以下内容。请通过另存为保存到不同路径。'),
+          React.createElement(警告列表, { 警告 })
         ),
         okText: '我知道了',
       })
@@ -1127,7 +1150,7 @@ const DocEditor = () => {
         title: '确认保存副本',
         content: React.createElement('div', null,
           React.createElement('p', null, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
-          React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+          React.createElement(警告列表, { 警告 })
         ),
         okText: '保存副本',
         cancelText: '取消',
@@ -1139,6 +1162,9 @@ const DocEditor = () => {
       markDocumentSaved(文档标识, 已保存内容 ?? 编辑区引用.current?.innerHTML ?? '', undefined, { 页面设置: 页面设置快照 })
       if (文件指纹) 更新文件指纹(文档标识, 文件指纹)
       set文档路径(文档标识, 路径)
+      // 覆盖保存含保真风险的来源文件后提示一次（同一文档本次会话只提示一次）。
+      const 保真提示 = 应提示保存保真风险(文档标识, 当前文档?.来源路径, 路径, 当前文档?.警告)
+      if (保真提示) 提示保存保真风险(保真提示)
       // 保存成功后计入最近文档，按扩展名归类。
       记录最近文档(路径, 基准文件名(路径), 扩展转类型(路径))
     },
@@ -1205,6 +1231,10 @@ const DocEditor = () => {
     finally { close() }
   }
   const 执行命令 = (命令标识: string, 参数?: string): void => {
+    执行命令实现(命令标识, 参数)
+  }
+  执行命令引用.current = 执行命令
+  function 执行命令实现(命令标识: string, 参数?: string): void {
     if (只读引用.current && 修改正文命令(命令标识)) { message.info(只读提示); return }
     if (输入计时器.current !== null) 记录历史()
     if (协作.active && ['edit.undo', 'edit.redo'].includes(命令标识)) { if (!(命令标识 === 'edit.undo' ? 协作.undo() : 协作.redo())) message.info('没有可撤销的本机协作操作'); return }
@@ -1322,9 +1352,7 @@ const DocEditor = () => {
       查找: () => set查找打开(当前 => !当前),
       目录: () => set导航打开(当前 => !当前),
     }) : null,
-    保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
-      `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
-    ) : null,
+    保护查看 ? React.createElement(仅查看提示条, { 警告: 当前文档?.警告, 另存副本: () => 执行命令('file.saveAs') }) : null,
     !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
     修订面板 && React.createElement(RevisionPanel, { html: 当前文档?.html ?? '', author: 修订作者, setAuthor: set修订作者, view: 修订视图, setView: set修订视图, busy: 修订处理中, readOnly: 只读, resolve: (action, id, part) => void 处理修订(action, id, part) }),
     !阅读.阅读模式 && React.createElement(RibbonPanel, {

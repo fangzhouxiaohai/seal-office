@@ -898,7 +898,7 @@ describe('表格保存为 xlsx', () => {
     expect(写入).not.toHaveBeenCalled()
   })
 
-  it('导入警告弹窗说明风险，保存命令不覆盖来源文件', async () => {
+  it('内容风险表格处于仅查看并显示提示条，保存命令不覆盖来源文件', async () => {
     const 写入 = vi.fn()
     const 编码 = vi.fn()
     Object.defineProperty(window, 'electronAPI', {
@@ -912,13 +912,15 @@ describe('表格保存为 xlsx', () => {
     const 创建入口 = () => {
       const 状态 = useAppStore()
       return <>
-        <button onClick={() => 状态.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\预算.xlsx', 警告: ['单元格样式未导入'] })}>打开带警告表格</button>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\预算.xlsx', 警告: ['数据透视表未导入'] })}>打开带警告表格</button>
         {状态.module === 'table' ? <SheetEditor /> : null}
       </>
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告表格' }))
-    expect((await screen.findAllByText('表格内容可能未完整导入')).length).toBeGreaterThan(0)
+    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent('数据透视表未导入')
+    expect(screen.getByRole('button', { name: '另存副本以便编辑' })).toBeInTheDocument()
+    expect(screen.queryByText('表格内容可能未完整导入')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '保存' }))
     expect((await screen.findAllByText('已阻止覆盖来源文件')).length).toBeGreaterThan(0)
     expect(编码).not.toHaveBeenCalled()
@@ -926,7 +928,44 @@ describe('表格保存为 xlsx', () => {
     Reflect.deleteProperty(window, 'electronAPI')
   })
 
-  it('带保真风险的表格仅能确认后另存到不同路径', async () => {
+  it('仅有保真风险（近似颜色、数字格式预览）的表格直接覆盖保存，并只提示一次', async () => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '新指纹' })
+    const 编码 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' })
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        saveToFile: 写入,
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+        office: { writeXlsx: 编码 },
+      },
+    })
+    const 创建入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('table', '<table><tr><td>数据</td></tr></table>', { 路径: 'C:\\资料\\成绩.xlsx', 警告: ['部分颜色按近似值导入', '数字格式中的颜色或区域语言仅保留代码，预览可能不同'] })}>打开近似颜色表格</button>
+        {状态.module === 'table' ? <SheetEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开近似颜色表格' }))
+    expect(screen.queryByText('表格内容可能未完整导入')).toBeNull()
+    expect(screen.queryByRole('status', { name: '仅查看提示' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入.mock.calls[0]?.[0]).toBe('C:\\资料\\成绩.xlsx'))
+    expect(screen.queryByText('已阻止覆盖来源文件')).toBeNull()
+    expect((await screen.findAllByText('已保存，部分效果将在 Excel 或 WPS 中更新')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('部分颜色按近似值导入').length).toBeGreaterThan(0)
+    const 知道了 = await screen.findAllByRole('button', { name: '我知道了' })
+    await userEvent.click(知道了[知道了.length - 1])
+    await waitFor(() => expect(screen.queryByText('已保存，部分效果将在 Excel 或 WPS 中更新')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('已保存，部分效果将在 Excel 或 WPS 中更新')).toBeNull()
+    Reflect.deleteProperty(window, 'electronAPI')
+  })
+
+  it('带内容风险的表格仅能确认后另存到不同路径', async () => {
     const 写入 = vi.fn().mockResolvedValue({ 成功: true })
     const 选择路径 = vi.fn().mockResolvedValueOnce('c:/资料/预算.xlsx').mockResolvedValueOnce('C:\\资料\\预算副本.xlsx')
     Object.defineProperty(window, 'electronAPI', {
@@ -948,7 +987,7 @@ describe('表格保存为 xlsx', () => {
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告表格' }))
-    await screen.findAllByText('表格内容可能未完整导入')
+    await screen.findByRole('status', { name: '仅查看提示' })
     await userEvent.click(screen.getByRole('button', { name: '另存为' }))
     await waitFor(() => expect(选择路径).toHaveBeenCalledTimes(1))
     expect(写入).not.toHaveBeenCalled()

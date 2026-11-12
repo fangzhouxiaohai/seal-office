@@ -5,6 +5,8 @@ const { 读取pptx, 写入pptx } = require('../office/pptxCodec')
 const { 生成说明 } = require('../office/lossReport')
 const { 读取兼容文档, 写入兼容文档 } = require('../office/compatibleFormats')
 const {readSeal,writeSeal}=require('../office/sealFormat')
+const { 创建xlsx保存守护 } = require('../office/xlsxSaveGuard')
+const xlsx保存守护 = 创建xlsx保存守护()
 
 function 注册Office通道(ipcMain) {
   ipcMain.handle('office.readSeal',async(_event,扩展,数据)=>执行(()=>readSeal(扩展,Buffer.from(数据,'base64'))))
@@ -24,6 +26,11 @@ function 注册Office通道(ipcMain) {
   ipcMain.handle('office.writeXlsx', async (_event, 模型) => 执行数据(() => 写入xlsx(模型)))
   ipcMain.handle('office.readPptx', async (_event, 数据) => 执行(() => 读取pptx(Buffer.from(数据, 'base64'))))
   ipcMain.handle('office.writePptx', async (_event, 模型) => 执行数据(() => 写入pptx(模型)))
+  // 表格保存回读校验：写盘前保留原文件字节，写盘后从磁盘重新读取比对，用户选择另存副本时恢复原件。
+  ipcMain.handle('office.xlsxSaveSnapshot', async (_event, 路径) => 执行(() => xlsx保存守护.保留快照(路径)))
+  ipcMain.handle('office.xlsxVerifySaved', async (_event, 标识, 模型) => 执行(() => xlsx保存守护.校验(标识, 模型)))
+  ipcMain.handle('office.xlsxRestoreOriginal', async (_event, 标识) => 执行(() => { xlsx保存守护.恢复原文件(标识); return {} }))
+  ipcMain.handle('office.xlsxReleaseSnapshot', async (_event, 标识) => 执行(() => { xlsx保存守护.释放(标识); return {} }))
 }
 
 async function 执行(任务) {

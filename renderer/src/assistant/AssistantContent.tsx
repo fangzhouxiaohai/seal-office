@@ -44,7 +44,7 @@ function 高亮节点(节点: RootContent, 键: number): ReactNode {
   return <span key={键} className={Array.isArray(元素.properties.className) ? 元素.properties.className.join(' ') : undefined}>{元素.children.map(高亮节点)}</span>
 }
 
-function 复制按钮({ 内容, 名称 }: { 内容: string; 名称: string }) {
+function 复制按钮({ 内容, 名称, 界面语言 }: { 内容: string; 名称: string; 界面语言: 界面语言 }) {
   const { message } = AntdApp.useApp()
   const [复制中, set复制中] = useState(false)
   const 复制 = async () => {
@@ -53,22 +53,26 @@ function 复制按钮({ 内容, 名称 }: { 内容: string; 名称: string }) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('剪贴板不可用')
       await navigator.clipboard.writeText(内容)
-      message.success('已复制')
-    } catch { message.error('复制失败，请选中内容手动复制') }
+      message.success(界面语言 === 'en-US' ? 'Copied' : '已复制')
+    } catch { message.error(界面语言 === 'en-US' ? 'Could not copy. Select the content and copy it manually.' : '复制失败，请选中内容手动复制') }
     finally { set复制中(false) }
   }
-  return <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="copy" size={14} />} aria-label={`复制${名称}`} title={`复制${名称}`} loading={复制中} onClick={() => void 复制()} />
+  const 标签 = 界面语言 === 'en-US' ? `Copy ${名称}` : `复制${名称}`
+  return <Button className="assistant-icon-button" type="text" size="small" icon={<Icon name="copy" size={14} />} aria-label={标签} title={标签} loading={复制中} onClick={() => void 复制()} />
 }
 
-function 内容面板({ 类型, 名称, 原文, children }: { 类型: string; 名称: string; 原文: string; children: ReactNode }) {
-  return <section className={`assistant-result assistant-result--${类型}`} aria-label={`${名称}内容`} data-content-type={类型}>
-    <div className="assistant-result__heading"><span>{类型 === 'text' || 类型 === 'markdown' ? '回答' : 名称}</span></div>
+function 内容面板({ 类型, 名称, 原文, 界面语言, children }: { 类型: string; 名称: string; 原文: string; 界面语言: 界面语言; children: ReactNode }) {
+  const 复制名称 = 界面语言 === 'en-US'
+    ? 名称 === 'TXT' ? 'text' : 名称 === 'Markdown' ? 'Markdown source' : 名称 === '代码' ? 'code' : `${名称} code`
+    : 名称 === 'TXT' ? '文本' : 名称 === 'Markdown' ? 'Markdown 原文' : 名称 === '代码' ? '代码' : `${名称}代码`
+  return <section className={`assistant-result assistant-result--${类型}`} aria-label={界面语言 === 'en-US' ? `${名称} content` : `${名称}内容`} data-content-type={类型}>
+    <div className="assistant-result__heading"><span>{类型 === 'text' || 类型 === 'markdown' ? (界面语言 === 'en-US' ? 'Answer' : '回答') : 名称}</span></div>
     <div className="assistant-result__content">{children}</div>
-    <footer className="assistant-result__footer"><复制按钮 内容={原文} 名称={名称 === 'TXT' ? '文本' : 名称 === 'Markdown' ? 'Markdown 原文' : 名称 === '代码' ? '代码' : `${名称}代码`} /></footer>
+    <footer className="assistant-result__footer"><复制按钮 内容={原文} 名称={复制名称} 界面语言={界面语言} /></footer>
   </section>
 }
 
-const 代码面板 = memo(function 代码面板({ 语言, 内容 }: { 语言: string; 内容: string }) {
+const 代码面板 = memo(function 代码面板({ 语言, 内容, 界面语言 }: { 语言: string; 内容: string; 界面语言: 界面语言 }) {
   const 高亮 = useMemo(() => {
     // Keep large or unknown blocks readable; never execute model-provided markup/code.
     if (内容.length > 100000) return null
@@ -81,8 +85,8 @@ const 代码面板 = memo(function 代码面板({ 语言, 内容 }: { 语言: st
     } catch { /* Invalid/unfinished syntax remains plain code while streaming. */ }
     return null
   }, [语言, 内容])
-  const 名称 = 语言名称[语言 || 高亮?.data?.language || ''] || 语言 || '代码'
-  return <内容面板 类型="code" 名称={名称} 原文={内容}><pre tabIndex={0} aria-label={`${名称}代码正文`}><code className="hljs">{高亮 ? 高亮.children.map(高亮节点) : 内容}</code></pre></内容面板>
+  const 名称 = 语言名称[语言 || 高亮?.data?.language || ''] || 语言 || (界面语言 === 'en-US' ? 'Code' : '代码')
+  return <内容面板 类型="code" 名称={名称} 原文={内容} 界面语言={界面语言}><pre tabIndex={0} aria-label={界面语言 === 'en-US' ? `${名称} code` : `${名称}代码正文`}><code className="hljs">{高亮 ? 高亮.children.map(高亮节点) : 内容}</code></pre></内容面板>
 })
 
 function Markdown正文({ 内容, 语言 }: { 内容: string; 语言: 界面语言 }) {
@@ -90,14 +94,15 @@ function Markdown正文({ 内容, 语言 }: { 内容: string; 语言: 界面语�
   return <div className="assistant-markdown assistant-message__body"><Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
     pre: ({ children }) => {
       const 代码 = isValidElement<{ children?: ReactNode; className?: string }>(children) ? children.props : null
-      const 语言 = /language-(\S+)/.exec(代码?.className ?? '')?.[1]?.toLowerCase() ?? ''
+      const 代码语言 = /language-(\S+)/.exec(代码?.className ?? '')?.[1]?.toLowerCase() ?? ''
       const 原文 = String(代码?.children ?? '').replace(/\n$/, '')
-      return 文本语言.has(语言) ? <内容面板 类型="text" 名称="TXT" 原文={原文}><div className="assistant-plaintext">{原文}</div></内容面板> : <代码面板 语言={语言} 内容={原文} />
+      return 文本语言.has(代码语言) ? <内容面板 类型="text" 名称="TXT" 原文={原文} 界面语言={语言}><div className="assistant-plaintext">{原文}</div></内容面板> : <代码面板 语言={代码语言} 内容={原文} 界面语言={语言} />
     },
-    table: ({ children }) => <div className="assistant-markdown__table" tabIndex={0} aria-label="Markdown 表格"><table>{children}</table></div>,
+    table: ({ children }) => <div className="assistant-markdown__table" tabIndex={0} aria-label={语言 === 'en-US' ? 'Markdown table' : 'Markdown 表格'}><table>{children}</table></div>,
     a: ({ href, children }) => href && /^(https?:|mailto:)/i.test(href) ? <a href={href} onClick={(事件) => {
       事件.preventDefault()
-      void 桥接.openExternal(href).then((结果) => { if (!结果.成功) message.error('无法打开链接，请复制地址后在浏览器打开') }).catch(() => message.error('无法打开链接，请复制地址后在浏览器打开'))
+      const 提示 = 语言 === 'en-US' ? 'Could not open the link. Copy the address and open it in a browser.' : '无法打开链接，请复制地址后在浏览器打开'
+      void 桥接.openExternal(href).then((结果) => { if (!结果.成功) message.error(提示) }).catch(() => message.error(提示))
     }}>{children}</a> : <span>{children}</span>,
     // Remote images must not silently send a request when opening a saved reply.
     img: ({ alt }) => <span className="assistant-markdown__image">{语言 === 'en-US' ? '[Image: ' : '[图片：'}{alt || (语言 === 'en-US' ? 'Untitled image' : '未命名图片')}]</span>,
@@ -108,10 +113,10 @@ export default memo(function AssistantContent({ 内容, 语言 = 'zh-CN' }: { �
   const 代码块 = useMemo(() => 单一代码块(内容), [内容])
   const 排版 = useMemo(() => 代码块 && !排版语言.has(代码块.语言) ? false : 是Markdown(代码块?.内容 ?? 内容), [内容, 代码块])
   if (代码块 && !排版语言.has(代码块.语言)) return 文本语言.has(代码块.语言)
-    ? <内容面板 类型="text" 名称="TXT" 原文={代码块.内容}><div className="assistant-plaintext assistant-message__body">{代码块.内容}</div></内容面板>
-    : <代码面板 {...代码块} />
+    ? <内容面板 类型="text" 名称="TXT" 原文={代码块.内容} 界面语言={语言}><div className="assistant-plaintext assistant-message__body">{代码块.内容}</div></内容面板>
+    : <代码面板 {...代码块} 界面语言={语言} />
   const 正文 = 代码块?.内容 ?? 内容
   return 代码块 || 排版
-    ? <内容面板 类型="markdown" 名称="Markdown" 原文={正文}><Markdown正文 内容={正文} 语言={语言} /></内容面板>
-    : <内容面板 类型="text" 名称="TXT" 原文={正文}><div className="assistant-plaintext assistant-message__body">{正文}</div></内容面板>
+    ? <内容面板 类型="markdown" 名称="Markdown" 原文={正文} 界面语言={语言}><Markdown正文 内容={正文} 语言={语言} /></内容面板>
+    : <内容面板 类型="text" 名称="TXT" 原文={正文} 界面语言={语言}><div className="assistant-plaintext assistant-message__body">{正文}</div></内容面板>
 })

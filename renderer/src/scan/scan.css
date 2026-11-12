@@ -1,0 +1,89 @@
+/* 扫描与识别、单据转表格：沿用本地工具页（localTools.css）的卡片、间距与配色变量，不另设色板。 */
+.scan-page-root { display: flex; flex-direction: column; gap: var(--space-4); }
+.scan-page-root .local-page__header { margin-bottom: 0; }
+.scan-notice { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); color: var(--text-2); line-height: 1.6; }
+.scan-notice .ant-tag { flex: 0 0 auto; margin: 0; }
+.scan-views { align-self: flex-start; }
+.scan-card { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); color: var(--text-1); }
+.scan-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.scan-card__head h2 { margin: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.scan-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.scan-toolbar__options { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); margin-inline-start: auto; }
+.scan-import { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.scan-field { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-2); }
+.scan-field--block { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-1); }
+.scan-form { display: grid; gap: var(--space-3); }
+.scan-help { color: var(--text-2); font-size: 12px; line-height: 1.6; }
+.scan-tip { margin: 0; color: var(--warning); }
+.scan-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); min-height: 220px; padding: var(--space-6); border: 1px dashed var(--border); border-radius: var(--radius-card); background: var(--bg-card); color: var(--text-2); text-align: center; }
+.scan-empty p { margin: 0; color: var(--text-1); }
+.scan-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.scan-page { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
+.scan-page__image { display: flex; align-items: center; justify-content: center; min-height: 180px; border-radius: var(--radius-control); background: var(--bg-app); overflow: hidden; }
+.scan-page__image img { display: block; max-width: 100%; max-height: 320px; object-fit: contain; }
+.scan-page__image [role="alert"] { margin: 0; padding: var(--space-3); color: var(--danger); }
+.scan-page__placeholder { width: 160px; height: 160px; }
+.scan-page__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.scan-page__actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.scan-icon--up { transform: rotate(90deg); }
+.scan-icon--down { transform: rotate(-90deg); }
+.scan-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.scan-progress { min-width: 160px; flex: 1 1 160px; margin: 0; }
+.scan-review { display: flex; flex-direction: column; gap: var(--space-3); }
+.scan-review__issues { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.scan-review__issues li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+.scan-review__issues li[data-level="错误"] { border-inline-start: 3px solid var(--danger); }
+.scan-review__issues li[data-level="待确认"] { border-inline-start: 3px solid var(--warning); }
+.scan-review__issue-text { display: flex; flex-direction: column; flex: 1 1 220px; min-width: 0; }
+.scan-review__issue-text strong { font-weight: 500; overflow-wrap: anywhere; }
+.scan-review__issue-text small { color: var(--text-2); }
+.scan-review__failure { margin: 0 0 var(--space-2); color: var(--text-1); }
+.scan-review__fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.scan-review__fields label { display: flex; flex-direction: column; gap: var(--space-1); padding: 2px; border-radius: var(--radius-control); color: var(--text-2); font-size: 12px; }
+.scan-review__fields em { margin-inline-start: 2px; color: var(--danger); font-style: normal; }
+.scan-review__table-wrap { overflow-x: auto; }
+.scan-review__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.scan-review__table th, .scan-review__table td { padding: var(--space-1); border: 1px solid var(--border-subtle); text-align: left; vertical-align: top; }
+.scan-review__table thead th { background: var(--bg-hover); color: var(--text-2); font-weight: 600; white-space: nowrap; }
+.scan-review__table tbody th { width: 48px; color: var(--text-2); font-weight: 400; }
+.scan-review__table td { min-width: 96px; }
+/* 异常单元格高亮：错误用危险色、待确认用警告色，颜色来自主题变量，跟随深浅色。 */
+[data-level="错误"] .ant-input, .scan-review__fields label[data-level="错误"] { box-shadow: inset 0 0 0 1px var(--danger); }
+[data-level="待确认"] .ant-input, .scan-review__fields label[data-level="待确认"] { box-shadow: inset 0 0 0 1px var(--warning); }
+.scan-review__table td[data-level="错误"] { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.scan-review__table td[data-level="待确认"] { background: color-mix(in srgb, var(--warning) 12%, transparent); }
+.scan-corners { position: relative; width: 100%; max-height: 70vh; margin-top: var(--space-2); touch-action: none; user-select: none; }
+.scan-corners img { display: block; width: 100%; height: 100%; object-fit: fill; }
+.scan-corners svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.scan-corners polygon { fill: color-mix(in srgb, var(--brand) 14%, transparent); stroke: var(--brand); stroke-width: 3; vector-effect: non-scaling-stroke; }
+.scan-corners__handle { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; padding: 0; border: 2px solid var(--brand); border-radius: 50%; background: var(--bg-card); cursor: grab; touch-action: none; }
+.scan-corners__handle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.scan-preview { display: block; max-width: 100%; margin: 0 auto; }
+.scan-library { display: flex; flex-direction: column; gap: var(--space-3); }
+.scan-groups { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.scan-groups__item { display: inline-flex; align-items: center; }
+.scan-groups button[aria-pressed] { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-1); font: inherit; cursor: pointer; }
+.scan-groups button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+.scan-count { min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--bg-hover); color: var(--text-2); font-size: 12px; text-align: center; }
+.scan-search { width: min(260px, 100%); }
+.scan-batch { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-inline-start: auto; }
+.scan-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.scan-list li { display: flex; align-items: center; gap: var(--space-3); min-height: 60px; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
+.scan-list li:last-child { border-bottom: 0; }
+.scan-list__name { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.scan-list__name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.scan-list__name small { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); color: var(--text-2); }
+.scan-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.scan-thumbs li { position: relative; display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; color: var(--text-2); }
+.scan-thumbs li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scan-thumbs li > button:first-child { padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--bg-app); cursor: zoom-in; }
+.scan-thumbs img { display: block; width: 100%; height: 120px; object-fit: contain; }
+.scan-thumbs .ant-btn { position: absolute; top: 4px; right: 4px; background: var(--bg-card); }
+@media (max-width: 720px) {
+  .scan-toolbar__options { margin-inline-start: 0; }
+  .scan-toolbar .ant-select, .scan-search { width: 100% !important; }
+  .scan-field { flex: 1 1 100%; }
+  .scan-batch { margin-inline-start: 0; }
+  .scan-pages { grid-template-columns: 1fr; }
+  .scan-import .ant-btn, .scan-actions .ant-btn { min-height: 44px; }
+}

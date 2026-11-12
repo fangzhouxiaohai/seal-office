@@ -123,6 +123,37 @@ describe('预加载桥接', () => {
     }
   })
 
+  it('版本更新只经 update 通道白名单调用', async () => {
+    const 电子路径 = require.resolve('electron')
+    const 预加载路径 = require.resolve('./preload')
+    require('electron')
+    const 原电子导出 = require.cache[电子路径].exports
+    const 原预加载缓存 = require.cache[预加载路径]
+    let 对外接口
+    const 调用 = vi.fn().mockResolvedValue({ 成功: true })
+    require.cache[电子路径].exports = {
+      contextBridge: { exposeInMainWorld: (_名称, 接口) => { 对外接口 = 接口 } },
+      ipcRenderer: { invoke: 调用 },
+    }
+    delete require.cache[预加载路径]
+    try {
+      require('./preload')
+      expect(Object.keys(对外接口.update).sort()).toEqual(['check', 'info', 'install'])
+      await 对外接口.update.info()
+      expect(调用).toHaveBeenLastCalledWith('update.info')
+      await 对外接口.update.check('stable')
+      expect(调用).toHaveBeenLastCalledWith('update.check', 'stable')
+      const 发布 = { hasUpdate: true, version: '2.7.1' }
+      await 对外接口.update.install(发布)
+      expect(调用).toHaveBeenLastCalledWith('update.install', 发布)
+      expect(new Set(调用.mock.calls.map(([通道]) => 通道))).toEqual(new Set(['update.info', 'update.check', 'update.install']))
+    } finally {
+      require.cache[电子路径].exports = 原电子导出
+      if (原预加载缓存) require.cache[预加载路径] = 原预加载缓存
+      else delete require.cache[预加载路径]
+    }
+  })
+
   it('模型配置与对话只经主进程通道调用', async () => {
     const 电子路径 = require.resolve('electron')
     const 预加载路径 = require.resolve('./preload')
@@ -195,6 +226,36 @@ describe('预加载桥接', () => {
       expect(调用).toHaveBeenCalledWith('file.rename', 'C:\\原报告.docx', '新报告')
       await 对外接口.renameFile('C:\\原报告.docx', '新报告', '打开时指纹')
       expect(调用).toHaveBeenCalledWith('file.rename', 'C:\\原报告.docx', '新报告', '打开时指纹')
+    } finally {
+      require.cache[电子路径].exports = 原电子导出
+      if (原预加载缓存) require.cache[预加载路径] = 原预加载缓存
+      else delete require.cache[预加载路径]
+    }
+  })
+
+  it('暴露表格保存回读校验通道', async () => {
+    const 电子路径 = require.resolve('electron')
+    const 预加载路径 = require.resolve('./preload')
+    require('electron')
+    const 原电子导出 = require.cache[电子路径].exports
+    const 原预加载缓存 = require.cache[预加载路径]
+    let 对外接口
+    const 调用 = vi.fn().mockResolvedValue({ 成功: true })
+    require.cache[电子路径].exports = {
+      contextBridge: { exposeInMainWorld: (_名称, 接口) => { 对外接口 = 接口 } },
+      ipcRenderer: { invoke: 调用 },
+    }
+    delete require.cache[预加载路径]
+    try {
+      require('./preload')
+      await 对外接口.office.xlsxSaveSnapshot('C:\\成绩.xlsx')
+      expect(调用).toHaveBeenLastCalledWith('office.xlsxSaveSnapshot', 'C:\\成绩.xlsx')
+      await 对外接口.office.xlsxVerifySaved('快照', { 行: [] })
+      expect(调用).toHaveBeenLastCalledWith('office.xlsxVerifySaved', '快照', { 行: [] })
+      await 对外接口.office.xlsxRestoreOriginal('快照')
+      expect(调用).toHaveBeenLastCalledWith('office.xlsxRestoreOriginal', '快照')
+      await 对外接口.office.xlsxReleaseSnapshot('快照')
+      expect(调用).toHaveBeenLastCalledWith('office.xlsxReleaseSnapshot', '快照')
     } finally {
       require.cache[电子路径].exports = 原电子导出
       if (原预加载缓存) require.cache[预加载路径] = 原预加载缓存

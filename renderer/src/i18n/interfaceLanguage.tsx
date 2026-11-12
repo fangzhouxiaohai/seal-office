@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useSettings, type 界面语言 } from '../store/settingsStore'
 import { 补充英文界面 } from './surfaceEnglish'
+import { 补充英文界面二 } from './surfaceEnglishExtra'
+import { 英文界面271Compat } from './surfaceEnglish271Compat'
+import { 英文界面271Database, 动态翻译271Database } from './surfaceEnglish271Database'
+import { 英文界面271Update } from './surfaceEnglish271Update'
+import { 英文界面271Scan } from './surfaceEnglish271Scan'
 
 /**
  * UI compatibility dictionary.
@@ -968,9 +973,26 @@ const 英文界面: Record<string, string> = {
   '未命名表格.xlsx': 'Untitled spreadsheet.xlsx',
   '未命名演示.pptx': 'Untitled presentation.pptx',
   ...补充英文界面,
+  ...补充英文界面二,
+  ...英文界面271Compat,
+  ...英文界面271Database,
+  ...英文界面271Update,
+  ...英文界面271Scan,
 }
 
 const 动态翻译: Array<[RegExp, (...匹配: string[]) => string]> = [
+  [/^向(上|下|左|右)(移动|扩展选区|跳到数据边界|扩展到数据边界|微移对象|移动对象)$/, (_全部, 方向, 动作) => `${({移动:'Move',扩展选区:'Extend selection',跳到数据边界:'Go to data edge',扩展到数据边界:'Extend selection to data edge',微移对象:'Nudge object',移动对象:'Move object'} as Record<string,string>)[动作]} ${({上:'up',下:'down',左:'left',右:'right'} as Record<string,string>)[方向]}`],
+  [/^(.+)快捷键列表$/, (_全部, 分类) => `${翻译界面文本(分类, 'en-US')} shortcuts`],
+  [/^恢复(.+)默认快捷键$/, (_全部, 名称) => `Restore default shortcut for ${翻译界面文本(名称, 'en-US')}`],
+  [/^清除(.+)快捷键$/, (_全部, 名称) => 英文界面[`清除${名称}`] !== undefined ? `${英文界面[`清除${名称}`]} shortcut` : `Clear shortcut for ${翻译界面文本(名称, 'en-US')}`],
+  [/^(.+)快捷键$/, (_全部, 名称) => `${翻译界面文本(名称, 'en-US')} shortcut`],
+  [/^执行过程 · (\d+) 项已完成$/, (_全部, 数量) => `Progress · ${数量} completed`],
+  [/^执行过程 · 已完成 (\d+)\/(\d+) 项$/, (_全部, 完成, 总数) => `Progress · ${完成}/${总数} completed`],
+  [/^(\d+) 项已完成$/, (_全部, 数量) => `${数量} completed`],
+  [/^已完成 (\d+)\/(\d+) 项$/, (_全部, 完成, 总数) => `${完成}/${总数} completed`],
+  [/^(计数|求和|平均值)：(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)$/i, (_全部, 标签, 数字) => `${({计数:'Count',求和:'Sum',平均值:'Average'} as Record<string,string>)[标签]}: ${数字}`],
+  [/^文本框：(\d+)$/, (_全部, 数量) => `Text boxes: ${数量}`],
+  [/^字体：(.+)$/, (_全部, 名称) => `Font: ${名称}`],
   [/^会话记忆 · 已压缩 (\d+) 次$/, (_全部, 数量) => `Conversation memory · compressed ${数量} time${数量 === '1' ? '' : 's'}`],
   [/^待确认修改，共 (\d+) 处$/, (_全部, 数量) => `Changes to review: ${数量}`],
   [/^第 (\d+) \/ (\d+) 页$/, (_全部, 当前, 总数) => `Page ${当前} of ${总数}`],
@@ -995,6 +1017,44 @@ const 动态翻译: Array<[RegExp, (...匹配: string[]) => string]> = [
   [/^文档 (.+)，按回车打开$/, (_全部, 名称) => `Document ${名称}. Press Enter to open.`],
   [/^文档 (.+)，轻点打开$/, (_全部, 名称) => `Document ${名称}. Tap to open.`],
   [/^(选择|取消选择) (.+)$/, (_全部, 操作, 名称) => `${操作 === '选择' ? 'Select' : 'Deselect'} ${名称}`],
+  // 2.7.1 版本更新：含版本号与日期的动态文案
+  [/^已是最新版本（(.+)）$/, (_全部, 版本) => `You are on the latest version (${版本})`],
+  [/^发现新版本 (\S+)$/, (_全部, 版本) => `New version ${版本} available`],
+  [/^发布时间：(\d{4}-\d{2}-\d{2})$/, (_全部, 日期) => `Released: ${日期}`],
+  // 2.7.1 Access 数据库：含表名、字段名、路径的动态文案
+  ...动态翻译271Database,
+  // 2.7.1 表格保存回读校验差异（主进程固定前缀 + 动态内容）与筛选栏
+  [/^工作表“(.+)”(?: (.+))?：(单元格内容|公式|字体颜色|填充颜色|合并区域|筛选条件|隐藏行|打印区域|打印标题行|打印标题列|列宽|行高|工作表数量|工作表名称|文件结构)不一致（期望：(.*)；实际：(.*)）$/s, (_全部, 表, 位置, 项目, 期望, 实际) => {
+    const 项目英文 = ({ 单元格内容: 'Cell content', 公式: 'Formula', 字体颜色: 'Font color', 填充颜色: 'Fill color', 合并区域: 'Merged range', 筛选条件: 'Filter criteria', 隐藏行: 'Hidden rows', 打印区域: 'Print area', 打印标题行: 'Print title rows', 打印标题列: 'Print title columns', 列宽: 'Column width', 行高: 'Row height', 工作表数量: 'Sheet count', 工作表名称: 'Sheet name', 文件结构: 'File structure' } as Record<string, string>)[项目]
+    const 英文值 = (值: string) => 值 === '（空）' ? '(empty)' : 值.replace(/第 (\d+) 行/g, 'row $1').replace(/ 列$/, ' column').replace(/、/g, ', ')
+    return `Sheet "${表}"${位置 ? ` ${英文值(位置)}` : ''}: ${项目英文} does not match (expected: ${英文值(期望)}; actual: ${英文值(实际)})`
+  }],
+  [/^另有 (\d+) 项差异未列出$/, (_全部, 数量) => `${数量} more difference${数量 === '1' ? '' : 's'} not listed`],
+  [/^第 (\d+) 列筛选：(.*)，显示 (\d+) 行$/s, (_全部, 列, 条件, 行数) => `Column ${列} filter: ${条件 === '空白' ? 'blanks' : 条件}, showing ${行数} row${行数 === '1' ? '' : 's'}`],
+  [/^多列筛选：(.+)，显示 (\d+) 行$/, (_全部, 列表, 行数) => `Multi-column filter: ${列表.replace(/ 列/g, '').replace(/、/g, ', ')}, showing ${行数} row${行数 === '1' ? '' : 's'}`],
+  // 2.7.1 拍照扫描与单据识别：含数量、字段名、文件名的动态文案
+  [/^(\d+) 页$/, (_全部, 数量) => `${数量} page${数量 === '1' ? '' : 's'}`],
+  [/^· 第 (\d+) 行$/, (_全部, 行) => `· row ${行}`],
+  [/^已添加 (\d+) 张图片$/, (_全部, 数量) => `${数量} image${数量 === '1' ? '' : 's'} added`],
+  [/^(\d+) 项待核对$/, (_全部, 数量) => `${数量} issue${数量 === '1' ? '' : 's'} to review`],
+  [/^已忽略 (\d+) 个非图片文件$/, (_全部, 数量) => `Ignored ${数量} non-image file${数量 === '1' ? '' : 's'}`],
+  [/^一次最多识别 (\d+) 张单据，超出的 (\d+) 张未加入$/, (_全部, 上限, 超出) => `Up to ${上限} receipts can be recognized at once. ${超出} extra image${超出 === '1' ? ' was' : 's were'} not added.`],
+  [/^已导出 (.+)$/, (_全部, 名称) => `Exported ${名称}`],
+  [/^已下载 (.+)$/, (_全部, 名称) => `Downloaded ${名称}`],
+  [/^内置字体缺少 (\d+) 个字符，这些字符不可搜索：(.*)$/s, (_全部, 数量, 字符) => `The built-in font lacks ${数量} character${数量 === '1' ? '' : 's'}; these cannot be searched: ${字符}`],
+  [/^第 ([\d、]+) 页文字过多，文字层只保留了前面部分$/, (_全部, 页码) => `Page ${页码.replace(/、/g, ', ')} has too much text; only the first part was kept in the text layer`],
+  [/^第 (\d+) 页文字层写入失败$/, (_全部, 页码) => `Could not write the text layer on page ${页码}`],
+  [/^异常清单中还有 (\d+) 项未标记为已核对。仍然生成时，这些单元格会以底色高亮并附说明批注，请在表格中逐项复核。$/, (_全部, 数量) => `${数量} issue${数量 === '1' ? ' is' : 's are'} not marked as reviewed. If you create the sheet anyway, those cells are highlighted and annotated; review each one in the sheet.`],
+  [/^识别内容更像“(.+)”，可切换单据类型后重新核对。$/, (_全部, 名称) => `The content looks more like "${翻译界面文本(名称, 'en-US')}". You can switch the receipt type and review again.`],
+  [/^将删除所选的 (\d+) 份扫描件及其导出记录，已导出到设备上的文件不受影响。此操作不能撤销。$/, (_全部, 数量) => `This deletes ${数量} selected scan${数量 === '1' ? '' : 's'} and ${数量 === '1' ? 'its' : 'their'} export records. Files already exported to the device are not affected. This cannot be undone.`],
+  [/^删除分组“(.+)”后，其中的扫描件会移到“未分组”，扫描件本身不会删除。$/s, (_全部, 名称) => `After deleting the group "${名称}", its scans move to "Ungrouped". The scans themselves are not deleted.`],
+  [/^确认后将所选的 (\d+) 张图片发送给当前配置的 AI 服务识别文字，处理期间该服务可读取图片内容。识别结果可能有误，请对照原图核对。$/, (_全部, 数量) => `After you confirm, the ${数量} selected image${数量 === '1' ? '' : 's'} will be sent to your configured AI service for text recognition, and the service can read the image content while processing. Results may contain errors; check them against the original images.`],
+  [/^缺少必填字段：(.+)$/, (_全部, 字段) => `Missing required field: ${翻译界面文本(字段, 'en-US')}`],
+  [/^(.+)识别不清，请对照原图确认$/, (_全部, 字段) => `${翻译界面文本(字段, 'en-US')} is unclear. Confirm it against the original image.`],
+  [/^(.+)不是有效数字，请对照原图确认$/, (_全部, 字段) => `${翻译界面文本(字段, 'en-US')} is not a valid number. Confirm it against the original image.`],
+  [/^识别内容与所选模板“(.+)”不符，请更换单据类型后重新识别$/, (_全部, 名称) => `The recognized content does not match the selected template "${翻译界面文本(名称, 'en-US')}". Change the receipt type and recognize again.`],
+  [/^(\S+) (×|−) (\S+) = (-?[\d.]+)，与(\S+) (-?[\d.]+) 不符$/, (_全部, 甲, 运算, 乙, 结果, 丙, 实际) => `${翻译界面文本(甲, 'en-US')} ${运算 === '×' ? '×' : '−'} ${翻译界面文本(乙, 'en-US')} = ${结果}, which does not match ${翻译界面文本(丙, 'en-US')} ${实际}`],
+  [/^各行(\S+)之和为 (-?[\d.]+)，与(\S+) (-?[\d.]+) 不符$/, (_全部, 列, 和, 总, 实际) => `The sum of ${翻译界面文本(列, 'en-US')} across rows is ${和}, which does not match ${翻译界面文本(总, 'en-US')} ${实际}`],
 ]
 
 export function 翻译界面文本(原文: string, 语言: 界面语言): string {
@@ -1012,10 +1072,9 @@ export function 翻译界面文本(原文: string, 语言: 界面语言): string
   return 原文
 }
 
-const 不翻译选择器 = [
+const 不翻译属性选择器 = [
   '[data-ui-language-ignore="true"]',
   '[contenteditable="true"]',
-  'textarea',
   'pre',
   'code',
   '.wps-titlebar__doc',
@@ -1033,6 +1092,7 @@ const 不翻译选择器 = [
   '.assistant-markdown',
   '.assistant-plaintext',
 ].join(',')
+const 不翻译文本选择器 = `${不翻译属性选择器},textarea`
 
 const 本地化属性 = ['placeholder', 'title', 'aria-label'] as const
 
@@ -1050,20 +1110,22 @@ const 新建跟踪器 = (): 本地化跟踪器 => ({
   属性节点: new Set<Element>(),
 })
 
-const 应跳过 = (节点: Node): boolean => {
+const 应跳过 = (节点: Node, 属性 = false): boolean => {
   const 元素 = 节点.nodeType === Node.ELEMENT_NODE ? 节点 as Element : 节点.parentElement
-  return 元素?.closest(不翻译选择器) !== null
+  return 元素?.closest(属性 ? 不翻译属性选择器 : 不翻译文本选择器) !== null
 }
 
 function 还原界面(跟踪器: 本地化跟踪器) {
   for (const 节点 of 跟踪器.文本节点) {
     const 原文 = 跟踪器.原始文本.get(节点)
-    if (节点.isConnected && 原文 !== undefined) 节点.nodeValue = 原文
+    if (节点.isConnected && 原文 !== undefined && 节点.nodeValue === 翻译界面文本(原文, 'en-US')) 节点.nodeValue = 原文
   }
   for (const 元素 of 跟踪器.属性节点) {
     const 属性 = 跟踪器.原始属性.get(元素)
     if (!元素.isConnected || 属性 === undefined) continue
-    for (const [名称, 原文] of 属性) 元素.setAttribute(名称, 原文)
+    for (const [名称, 原文] of 属性) {
+      if (元素.getAttribute(名称) === 翻译界面文本(原文, 'en-US')) 元素.setAttribute(名称, 原文)
+    }
   }
 }
 
@@ -1099,7 +1161,7 @@ export function InterfaceLanguageAdapter() {
       节点.nodeValue = 译文
     }
     const 处理元素属性 = (元素: Element) => {
-      if (应跳过(元素)) return
+      if (应跳过(元素, true)) return
       let 原始 = 跟踪器.原始属性.get(元素)
       for (const 名称 of 本地化属性) {
         const 当前 = 元素.getAttribute(名称)
@@ -1120,7 +1182,7 @@ export function InterfaceLanguageAdapter() {
     }
     const 处理子树 = (根: Node) => {
       if (根.nodeType === Node.TEXT_NODE) { 处理文本(根 as Text); return }
-      if (根.nodeType !== Node.ELEMENT_NODE || 应跳过(根)) return
+      if (根.nodeType !== Node.ELEMENT_NODE || 应跳过(根, true)) return
       const 元素 = 根 as Element
       处理元素属性(元素)
       const 游标 = document.createTreeWalker(元素, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)

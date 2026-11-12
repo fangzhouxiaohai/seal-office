@@ -50,20 +50,101 @@ describe('本地文件打开', () => {
     expect(转换).not.toHaveBeenCalled()
   })
 
-  it('有损导入可选择查看已识别内容，保留风险警告与原路径', async () => {
-    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
-      readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'AA==', 二进制: true, 扩展名: '.xlsx' }),
-      office: { readXlsx: vi.fn().mockResolvedValue({ 成功: true, html: '<table><tr><td>正文</td></tr></table>', 警告: ['命名区域未导入', '部分边框样式未导入'] }) },
-    } })
+  const 模拟表格 = (警告: string[], html = '<table><tr><td>正文</td></tr></table>') => Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+    readFile: vi.fn().mockResolvedValue({ 成功: true, 内容: 'AA==', 二进制: true, 扩展名: '.xlsx', 文件指纹: '指纹一' }),
+    office: { readXlsx: vi.fn().mockResolvedValue({ 成功: true, html, 警告 }) },
+  } })
+
+  it('完全支持或仅有保真风险的文件直接打开，不弹询问', async () => {
+    const 确认 = vi.fn()
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      模拟表格([])
+      expect((await 准备打开本地文件('C:\\资料\\干净表格.xlsx'))?.类型).toBe('table')
+      模拟表格(['部分颜色按近似值导入', '部分工作表视图设置未导入'])
+      const 结果 = await 准备打开本地文件('C:\\资料\\近似颜色.xlsx')
+      expect(结果?.警告).toEqual(['部分颜色按近似值导入', '部分工作表视图设置未导入'])
+      expect(结果?.打开方式).toBeUndefined()
+      expect(确认).not.toHaveBeenCalled()
+    } finally { 取消注册() }
+  })
+
+  it('有内容风险时列出具体缺失项，提供“仅查看”与“另存副本并编辑”两个按钮', async () => {
+    模拟表格(['数据透视表未导入', '部分边框样式未导入'])
+    const 确认 = vi.fn(选项 => 选项.onCancel?.())
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      const 结果 = await 准备打开本地文件('C:\\资料\\透视表.xlsx')
+      expect(确认).toHaveBeenCalledTimes(1)
+      const 选项 = 确认.mock.calls[0][0]
+      expect(选项).toMatchObject({ title: '此文件包含本机暂不支持的内容', okText: '另存副本并编辑', cancelText: '仅查看' })
+      const 容器 = document.createElement('div')
+      const { createRoot } = await import('react-dom/client')
+      const { act } = await import('react')
+      const 根 = createRoot(容器)
+      await act(async () => 根.render(选项.content))
+      expect(容器.querySelectorAll('li')).toHaveLength(1)
+      expect(容器.textContent).toContain('数据透视表未导入')
+      expect(容器.textContent).not.toContain('部分边框样式未导入')
+      act(() => 根.unmount())
+      expect(结果?.打开方式).toBe('仅查看')
+      expect(结果?.打开路径).toBeUndefined()
+      expect(结果?.警告).toEqual(['数据透视表未导入', '部分边框样式未导入'])
+    } finally { 取消注册() }
+  })
+
+  it('选择“另存副本并编辑”后登记另存请求，原文件路径不变', async () => {
+    模拟表格(['数据透视表未导入'])
+    const 取消注册 = 注册导入确认弹窗(选项 => 选项.onOk?.())
+    try {
+      const 结果 = await 准备打开本地文件('C:\\资料\\另存.xlsx')
+      expect(结果?.打开方式).toBe('另存副本')
+      const { 领取待另存副本 } = await import('./fileOpenChoice')
+      expect(领取待另存副本('c:/资料/另存.xlsx')).toBe(true)
+      expect(领取待另存副本('C:\\资料\\另存.xlsx')).toBe(false)
+    } finally { 取消注册() }
+  })
+
+  it('关键内容缺失时只提供“仅查看”，并说明原因', async () => {
+    模拟表格(['图表未导入'], '<table></table>')
     const 确认 = vi.fn(选项 => 选项.onOk?.())
     const 取消注册 = 注册导入确认弹窗(确认)
     try {
-      const 结果 = await 准备打开本地文件('C:\\资料\\有损表格.xlsx')
-      expect(结果?.类型).toBe('table')
-      expect(结果?.打开路径).toBeUndefined()
-      expect(结果?.警告).toEqual(['命名区域未导入', '部分边框样式未导入'])
-      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ okText: '查看已识别内容' }))
+      const 结果 = await 准备打开本地文件('C:\\资料\\空白.xlsx')
+      const 选项 = 确认.mock.calls[0][0]
+      expect(选项).toMatchObject({ title: '此文件只能查看', okText: '仅查看', okCancel: false })
+      expect(选项.cancelText).toBeUndefined()
+      expect(结果?.打开方式).toBe('仅查看')
     } finally { 取消注册() }
+  })
+
+  it('记住选择：同一路径与指纹再次打开不再询问，文件变化后重新询问', async () => {
+    localStorage.clear()
+    模拟表格(['数据透视表未导入'])
+    const 确认 = vi.fn(选项 => 选项.onCancel?.())
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      await 准备打开本地文件('C:\\资料\\记忆.xlsx')
+      const 再次 = await 准备打开本地文件('c:/资料/记忆.xlsx')
+      expect(确认).toHaveBeenCalledTimes(1)
+      expect(再次?.打开方式).toBe('仅查看')
+      ;(window.electronAPI as any).readFile = vi.fn().mockResolvedValue({ 成功: true, 内容: 'AA==', 二进制: true, 扩展名: '.xlsx', 文件指纹: '指纹二' })
+      await 准备打开本地文件('C:\\资料\\记忆.xlsx')
+      expect(确认).toHaveBeenCalledTimes(2)
+    } finally { 取消注册(); localStorage.clear() }
+  })
+
+  it('本机存储不可用时仍可打开，只是每次询问', async () => {
+    const 读取 = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('禁用') })
+    const 写入 = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('禁用') })
+    模拟表格(['数据透视表未导入'])
+    const 确认 = vi.fn(选项 => 选项.onCancel?.())
+    const 取消注册 = 注册导入确认弹窗(确认)
+    try {
+      expect((await 准备打开本地文件('C:\\资料\\无存储.xlsx'))?.打开方式).toBe('仅查看')
+      expect((await 准备打开本地文件('C:\\资料\\无存储.xlsx'))?.打开方式).toBe('仅查看')
+      expect(确认).toHaveBeenCalledTimes(2)
+    } finally { 取消注册(); 读取.mockRestore(); 写入.mockRestore() }
   })
   it('零字节办公文件说明缺少结构，不生成空白文档掩盖错误', async () => {
     const 解析 = vi.fn()
@@ -336,7 +417,7 @@ describe('本地文件打开', () => {
   })
 
 
-  it('从系统对话框查看不完整文档前提示风险，取消时不创建编辑标签', async () => {
+  it('从系统对话框打开有内容风险的文档时先询问，选择仅查看后以原路径进入受保护查看', async () => {
     const 路径 = 'C:\\资料\\报告.docx'
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
@@ -351,9 +432,9 @@ describe('本地文件打开', () => {
     const 确认 = vi.fn(选项 => 选项.onCancel?.())
     const 取消注册 = 注册导入确认弹窗(确认)
     try {
-      expect(await 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)).toBe(false)
-      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ title: '此文件仅能查看已识别内容', cancelText: '取消打开' }))
-      expect(打开).not.toHaveBeenCalled()
+      expect(await 通过对话框打开文件({ info: vi.fn(), success: vi.fn() }, { error: vi.fn() }, 打开)).toBe(true)
+      expect(确认).toHaveBeenCalledWith(expect.objectContaining({ title: '此文件包含本机暂不支持的内容', cancelText: '仅查看' }))
+      expect(打开).toHaveBeenCalledWith('word', '<p>正文</p>', 路径, ['图片尚未导入'])
     } finally { 取消注册() }
   })
 

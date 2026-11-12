@@ -9,6 +9,7 @@ import { 命令表 } from './commands'
 import { 读取本地文件内容 } from '../fileOpen'
 import { 净化富文本 } from './sanitizeHtml'
 import { AppProvider, useAppStore, type AppState } from '../store'
+import { 领取待另存副本 } from '../fileOpenChoice'
 
 const 页面视图 = {
   纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无',
@@ -31,7 +32,8 @@ describe('文件命令', () => {
       expect(命令表['file.open'].label).toBe('打开文件')
     })
 
-    it.each([false, true])('从工具栏打开带警告文字文件先确认查看或取消，不覆盖当前未保存正文（查看=%s）', async 查看 => {
+    it.each([false, true])('从工具栏打开含内容风险的文字文件先询问仅查看或另存副本，不覆盖当前未保存正文（仅查看=%s）', async 查看 => {
+      try { localStorage.clear() } catch { /* 测试环境无存储时忽略 */ }
       const 路径 = 'C:\\资料\\第二份.docx'
       const 原件字节 = Buffer.from('原DOCX测试字节，不可改写')
       const 文件 = new Map<string, Buffer>([[路径, 原件字节]])
@@ -71,24 +73,21 @@ describe('文件命令', () => {
         notify: vi.fn(),
         history: { record: vi.fn() },
       } as any)
-      const 对话框 = await screen.findByRole('dialog', { name: '此文件仅能查看已识别内容' })
+      const 对话框 = await screen.findByRole('dialog', { name: '此文件包含本机暂不支持的内容' })
       expect(within(对话框).getByText('图片尚未导入')).toBeInTheDocument()
       expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
-      await userEvent.click(within(对话框).getByRole('button', { name: 查看 ? '查看已识别内容' : '取消打开' }))
-      if (查看) {
-        await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入'], undefined, 指纹(原件字节)))
-        expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
-        expect(读取.mock.calls.map(([目标]) => 目标)).toEqual([路径])
-        expect(状态.documents).toHaveLength(2)
-        const 第二份 = 状态.documents.find(项 => 项.id !== 第一份标识)!
-        expect(第二份).toMatchObject({ name: '第二份.docx', html: '<p>第二份正文</p>', 来源路径: 路径, 警告: ['图片尚未导入'], 文件指纹: 指纹(原件字节) })
-        expect(状态.文档路径[第二份.id]).toBe(路径)
-        expect(状态.workspaceTabs.find(项 => 项.id === 第二份.id)?.dirty).toBe(false)
-      } else {
-        await vi.waitFor(() => expect(screen.queryByRole('dialog', { name: '此文件仅能查看已识别内容' })).toBeNull())
-        expect(打开新文档).not.toHaveBeenCalled(); expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
-        expect(状态.documents).toHaveLength(1); expect(状态.activeDocumentId).toBe(第一份标识)
-      }
+      await userEvent.click(within(对话框).getByRole('button', { name: 查看 ? '仅查看' : '另存副本并编辑' }))
+      // 两种选择都以来源路径打开新标签；打开链路本身不写盘、不弹另存框。
+      // 选择另存副本时只登记待另存请求，由文字编辑器就绪后进入现有另存为流程。
+      await vi.waitFor(() => expect(打开新文档).toHaveBeenCalledWith('word', '<p>第二份正文</p>', 路径, ['图片尚未导入'], undefined, 指纹(原件字节)))
+      expect(另存位置).not.toHaveBeenCalled(); expect(保存).not.toHaveBeenCalled()
+      expect(读取.mock.calls.map(([目标]) => 目标)).toEqual([路径])
+      expect(状态.documents).toHaveLength(2)
+      const 第二份 = 状态.documents.find(项 => 项.id !== 第一份标识)!
+      expect(第二份).toMatchObject({ name: '第二份.docx', html: '<p>第二份正文</p>', 来源路径: 路径, 警告: ['图片尚未导入'], 文件指纹: 指纹(原件字节) })
+      expect(状态.文档路径[第二份.id]).toBe(路径)
+      expect(状态.workspaceTabs.find(项 => 项.id === 第二份.id)?.dirty).toBe(false)
+      expect(领取待另存副本(路径)).toBe(!查看)
       expect(应用内容).not.toHaveBeenCalled()
       expect(设置文档路径).not.toHaveBeenCalled()
       expect(状态.documents.find(项 => 项.id === 第一份标识)?.html).toBe('<p>第一份未保存正文</p>')

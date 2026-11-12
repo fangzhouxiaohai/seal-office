@@ -1,6 +1,18 @@
 const { 创建助手服务, 规范配置 } = require('./assistant')
 
 describe('智能助手模型连接', () => {
+  it('英文界面新对话默认使用英文答复但保留原始历史和文件内容', async () => {
+    const 配置 = { 名称: '测试服务', 服务商: 'custom', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '', 思考强度: 'high', 参数模式: 'none' }
+    const 请求 = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: 'Answer' }, finish_reason: 'stop' }] }), { headers: { 'Content-Type': 'application/json' } }))
+    const 服务 = 创建助手服务({ 配置路径: '测试配置', 存储: { readFile: async () => Buffer.from(JSON.stringify(配置)) }, 安全存储: { isEncryptionAvailable: () => true, decryptString: 值 => 值.toString() }, 请求 })
+    await 服务.对话({ 界面语言: 'en-US', 只读对话: true, 消息: [{ 角色: 'assistant', 内容: '之前的中文回答' }, { 角色: 'user', 内容: 'Summarize this' }], 文档上下文: '原始文档正文' })
+    const 消息 = JSON.parse(请求.mock.calls[0][1].body).messages
+    expect(消息[0].content).toMatch(/英文/)
+    expect(消息[0].content).toMatch(/用户明确要求/)
+    expect(消息[0].content).not.toMatch(/用中文正文回复/)
+    expect(消息.some(项 => 项.content === '之前的中文回答')).toBe(true)
+    expect(消息.some(项 => typeof 项.content === 'string' && 项.content.includes('原始文档正文'))).toBe(true)
+  })
   it('文档搜索使用专用只读提示，保留JSON引用结果且不开放修改工具', async () => {
     const 配置 = { 名称: '测试服务', 服务商: 'custom', 地址: 'https://example.com/v1/chat/completions', 模型: 'test', 密钥: '', 思考强度: 'high', 参数模式: 'none' }
     const 内容 = '{"结果":[{"编号":1,"原文":"原文片段","说明":"相关"}]}'

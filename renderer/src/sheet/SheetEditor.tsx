@@ -30,6 +30,7 @@ import { 生成地址, 生成区域地址, 展开区域, 解析地址, type 单�
 import { 统计选区 } from './selectionStats'
 import { 导出为Csv, 导出为Html表格, 导出为Xlsx, 生成表格文件名 } from './sheetExport'
 import { 表格文本输出, 单表数据输出 } from './sheetSave'
+import { 计算筛选隐藏行, 筛选说明 } from './sheetFilter'
 import { 可保存扩展, 原生文档类型 } from '../fileFormats'
 import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
@@ -47,7 +48,9 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import { useAppStore } from '../store'
 import { 准备打开本地文件, 记录最近文档 } from '../fileOpen'
-import { 处于受保护查看 } from '../fileWarnings'
+import { 处于受保护查看, 存在内容风险, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
+import { 领取待另存副本 } from '../fileOpenChoice'
+import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
 import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import SheetChartDialog from './SheetChartDialog'
@@ -81,8 +84,9 @@ const SheetEditor = () => {
   } = useAppStore()
   const 当前文档 = documents.find((项) => 项.id === activeDocumentId)
   const 已提示导入警告 = useRef<Set<string>>(new Set())
-  const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
-    ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
+  // 只有内容风险会阻止覆盖或要求确认副本；近似颜色、数字格式预览等保真风险允许直接覆盖保存。
+  const 保真风险 = 当前文档?.来源路径 && 存在内容风险(当前文档.警告)
+    ? { 来源路径: 当前文档.来源路径, 警告: 内容风险警告(当前文档.警告) }
     : null
   const 保护查看 = 处于受保护查看(当前文档?.来源路径, 已知文档路径[activeDocumentId ?? ''], 当前文档?.警告)
   const [独立工作表列表, set独立工作表列表] = useState<Sheet[]>(() => [创建工作表('Sheet1')])
@@ -99,7 +103,7 @@ const SheetEditor = () => {
   const 远端接收 = useRef<(value: Sheet[]) => void>(() => {})
   const 实时协作 = useRealtimeDocument({ documentId: activeDocumentId, type: 'table', model: 提取协作工作簿(工作表列表), onRemote: value => 远端接收.current(value), validate: 校验协作工作簿 })
   const 编辑只读 = 实时协作.readOnly || 保护查看
-  const 只读提示 = 保护查看 ? '当前处于受保护查看，请先另存为副本再编辑' : '当前共享文档为只读，可另存本机副本'
+  const 只读提示 = 保护查看 ? '当前为仅查看，请先另存副本再编辑' : '当前共享文档为只读，可另存本机副本'
   const set工作表列表: React.Dispatch<React.SetStateAction<Sheet[]>> = (更新) => {
     if (编辑只读) { message.warning(只读提示); return }
     const 当前 = 最新工作簿.current, 基线 = typeof 更新 === 'function' ? 当前 : 工作表列表, 下一个 = typeof 更新 === 'function' ? 更新(当前) : 更新
@@ -176,11 +180,19 @@ const SheetEditor = () => {
       设置全局文档路径(activeDocumentId, 路径)
       if (文件指纹) 更新文件指纹(activeDocumentId, 文件指纹)
       markDocumentSaved(activeDocumentId, '', JSON.stringify(保存快照))
+      // 覆盖保存含保真风险的来源表格后提示一次（同一文档本次会话只提示一次）
+      const 保真提示 = 应提示保存保真风险(activeDocumentId, 当前文档?.来源路径, 路径, 当前文档?.警告)
+      if (保真提示) modal.info({
+        title: '已保存，部分效果将在 Excel 或 WPS 中更新',
+        content: 风险内容(保真提示, '文件已覆盖保存，单元格数据与原有结构均已保留。以下效果沿用原文件或按近似方式处理：'),
+        okText: '我知道了',
+      })
     }
   }
+  const 执行命令引用 = useRef<(标识: string) => void>(() => {})
   const 风险内容 = (警告: string[], 说明: string) => React.createElement('div', null,
     React.createElement('p', null, 说明),
-    React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+    React.createElement(警告列表, { 警告 })
   )
   const 提示禁止覆盖 = (警告: string[]) => modal.warning({
     title: '已阻止覆盖来源文件',
@@ -218,15 +230,23 @@ const SheetEditor = () => {
     })
   })
   useEffect(() => {
-    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示导入警告.current.has(当前文档.id)) {
-      已提示导入警告.current.add(当前文档.id)
+    // 仍在来源路径上的内容风险已在打开询问中列出，只显示仅查看提示条；保真风险在覆盖保存时提示。
+    const 提示警告 = 内容风险警告(当前文档?.警告)
+    if (提示警告.length && !保护查看 && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示导入警告.current.has(当前文档!.id)) {
+      已提示导入警告.current.add(当前文档!.id)
       modal.warning({
         title: '表格内容可能未完整导入',
-        content: 风险内容(当前文档.警告, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
+        content: 风险内容(提示警告, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
         okText: '我知道了',
       })
     }
   }, [当前文档?.id, 当前文档?.警告])
+  // 打开时选择“另存副本并编辑”：表格就绪后进入现有另存为流程，原文件不改。
+  useEffect(() => {
+    if (!activeDocumentId || !保护查看 || !领取待另存副本(已知文档路径[activeDocumentId])) return
+    const 计时 = window.setTimeout(() => 执行命令引用.current('file.saveAs'), 0)
+    return () => window.clearTimeout(计时)
+  }, [activeDocumentId, 保护查看])
   /** 右键菜单状态 */
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
@@ -442,12 +462,8 @@ const SheetEditor = () => {
     }
   }, [])
   const 当前筛选 = 工作表.筛选
-  const 隐藏行 = new Set<number>()
-  if (当前筛选) {
-    for (let 行 = 1; 行 < 工作表.行数; 行 += 1) {
-      if (读取单元格(工作表, 生成地址(行, 当前筛选.列)).显示值 !== 当前筛选.值) 隐藏行.add(行)
-    }
-  }
+  // 兼容旧版单值筛选与导入的多列多值筛选，各列条件按 AND 组合隐藏行。
+  const 隐藏行 = 计算筛选隐藏行(工作表)
 
   /** 应用修改前统一检查验证规则与保护状态。 */
   let 最近更新被拒绝 = false
@@ -914,8 +930,76 @@ const SheetEditor = () => {
       modal.error({ title: '表格操作失败', content: 错误 instanceof Error ? 错误.message : '请检查所选内容后重试' })
     }
   }
+  执行命令引用.current = (标识: string) => 执行命令(标识)
 
   /** 保存表格文档：根据扩展名写出真实格式，并保留来源文件指纹。 */
+  /**
+   * XLSX 写盘后的回读校验：一致时直接提示成功；不一致时列出具体差异，
+   * 由用户选择“另存为副本”（原件恢复为保存前字节，新内容写到副本）或“保留本次保存”。
+   */
+  const 回读校验保存结果 = async (文件路径: string, 快照标识: string, 模型: unknown, 数据: string, 快照: Sheet[], 成功提示: string) => {
+    const 校验 = await 桥接.office.xlsxVerifySaved(快照标识, 模型).catch(() => null)
+    if (!校验?.成功) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      message.success(成功提示)
+      message.warning('文件已保存，但未能完成回读校验，建议用其他表格软件复核')
+      return
+    }
+    const 失败 = 校验.失败 ?? []
+    const 警告 = 校验.警告 ?? []
+    if (失败.length === 0) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      message.success(成功提示)
+      if (警告.length) message.warning('文件已保存，打印区域、隐藏行或行列尺寸存在细微差异')
+      return
+    }
+    const 未列出 = (校验.失败总数 ?? 失败.length) + (校验.警告总数 ?? 警告.length) - 失败.length - 警告.length
+    const 选择副本 = await new Promise<boolean>((完成) => modal.confirm({
+      title: '保存后回读发现差异',
+      width: 560,
+      content: React.createElement('div', { className: 'wps-sheet-verify-dialog' },
+        React.createElement('p', null, '文件已写入原位置，但重新读取后与编辑内容不一致：'),
+        React.createElement('ul', null, [...失败, ...警告].map((项, 序号) => React.createElement('li', { key: 序号 }, 项.说明))),
+        未列出 > 0 ? React.createElement('p', null, `另有 ${未列出} 项差异未列出`) : null,
+        校验.已抽样 ? React.createElement('p', null, '已抽样校验：大表格仅比对部分行。') : null,
+        React.createElement('p', null, '选择“另存为副本”会把原文件恢复为保存前的内容，并把本次内容写入新的文件。'),
+      ),
+      okText: '另存为副本',
+      cancelText: '保留本次保存',
+      onOk: () => 完成(true),
+      onCancel: () => 完成(false),
+    }))
+    if (!选择副本) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      message.warning('已保留本次保存，原文件已被写入且存在差异，建议用其他表格软件复核')
+      return
+    }
+    const 副本路径 = await 桥接.showSaveDialog(`${基准名(文件路径).replace(/\.[^.]+$/, '')}-副本.xlsx`, 'table' as const)
+    if (!副本路径) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      message.warning('已取消另存副本，原文件保留本次保存的内容')
+      return
+    }
+    const 目标路径 = 规范表格路径(副本路径)
+    if (是同一路径(目标路径, 文件路径) || !/\.xlsx$/i.test(目标路径)) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      提示文件错误('另存副本失败', '请选择与原文件不同的 XLSX 文件路径。原文件保留本次保存的内容。')
+      return
+    }
+    if (路径被其他标签占用(目标路径)) { void 桥接.office.xlsxReleaseSnapshot(快照标识); return }
+    const 副本结果 = await 桥接.saveToFile(目标路径, 数据, '二进制')
+    if (!副本结果.成功) {
+      void 桥接.office.xlsxReleaseSnapshot(快照标识)
+      if (!副本结果.已取消) 提示文件错误('另存副本失败', 副本结果.错误 || '文件写入失败')
+      return
+    }
+    const 恢复 = await 桥接.office.xlsxRestoreOriginal(快照标识)
+    记录当前路径(目标路径, 副本结果.文件指纹, 快照)
+    记录最近文档(目标路径, 基准名(目标路径), 'table')
+    if (恢复.成功) message.success('已另存为副本，原文件已恢复为保存前的内容')
+    else 提示文件错误('无法恢复原文件', 恢复.错误 || '原文件恢复失败')
+  }
+
   const 保存表格文件 = async (原始路径: string, 成功提示: string, 快照 = 最新工作簿.current) => {
     const 保存工作表 = 快照.find(sheet => sheet.id === 工作表.id) ?? 快照[0]
     const 文件路径 = 规范表格路径(原始路径)
@@ -961,19 +1045,24 @@ const SheetEditor = () => {
     const 模型 = /\.(slxls|sealsheet)$/i.test(文件路径) ? null : 数据输出?.模型 ?? 导出为Xlsx(快照.length > 1 ? 快照 : 保存工作表) ?? {
       工作表: [{ 名称: 保存工作表.name, 数据: [], 页面设置: 保存工作表.页面设置 }],
     }
-    await 写出办公文档('table', 文件路径, 模型, () => message.loading('正在转换并保存表格，请稍等…', 0),{工作表列表:快照,警告:保真风险?.警告??[]}).then((结果: any) => {
+    await 写出办公文档('table', 文件路径, 模型, () => message.loading('正在转换并保存表格，请稍等…', 0),{工作表列表:快照,警告:当前文档?.警告??[]}).then(async (结果: any) => {
       if (!(结果 && 结果.成功 && 结果.数据)) {
         提示文件错误('保存表格失败', 结果?.错误 || '表格格式转换失败，请检查内容后重试')
         return
       }
       if (路径被其他标签占用(文件路径)) return
-      return 桥接.saveToFile(文件路径, 结果.数据, '二进制', 预期文件指纹).then((保存结果) => {
+      // 保存 XLSX 前在主进程保留原文件字节，写盘后从磁盘回读校验；旧宿主不支持时不影响保存。
+      const 回读快照 = 模型 && /\.xlsx$/i.test(文件路径) ? await 桥接.office.xlsxSaveSnapshot(文件路径).catch(() => null) : null
+      const 快照标识 = 回读快照?.成功 && 回读快照.标识 ? 回读快照.标识 : null
+      return 桥接.saveToFile(文件路径, 结果.数据, '二进制', 预期文件指纹).then(async (保存结果) => {
         if (保存结果.成功) {
           记录当前路径(文件路径, 保存结果.文件指纹, 快照)
           记录最近文档(文件路径, 基准名(文件路径), 'table')
-          message.success(成功提示)
-        } else if (!保存结果.已取消) {
-          提示文件错误('保存表格失败', 保存结果.错误 || '文件写入失败')
+          if (快照标识) await 回读校验保存结果(文件路径, 快照标识, 模型, 结果.数据, 快照, 成功提示)
+          else message.success(成功提示)
+        } else {
+          if (快照标识) void 桥接.office.xlsxReleaseSnapshot(快照标识)
+          if (!保存结果.已取消) 提示文件错误('保存表格失败', 保存结果.错误 || '文件写入失败')
         }
       })
     }).catch((error: unknown) => {
@@ -1235,15 +1324,13 @@ const SheetEditor = () => {
         ref: 编辑区引用,
       },
       当前筛选 ? React.createElement('div', { className: 'wps-sheet-filterbar' },
-        `第 ${当前筛选.列 + 1} 列筛选：${当前筛选.值 === '' ? '空白' : 当前筛选.值}，显示 ${工作表.行数 - 1 - 隐藏行.size} 行`,
+        `${筛选说明(当前筛选)}，显示 ${工作表.行数 - 1 - 隐藏行.size} 行`,
         React.createElement('button', { type: 'button', onClick: () => 执行命令('data.filter') }, '清除筛选')
       ) : null,
       工作表.保护 ? React.createElement('div', { className: 'wps-sheet-protectionbar' },
         工作表.保护 === '外部' ? '原文件受保护，当前只读' : '工作表已保护，当前只读'
       ) : null,
-      保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
-        `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
-      ) : null,
+      保护查看 ? React.createElement(仅查看提示条, { 警告: 当前文档?.警告, 另存副本: () => 执行命令('file.saveAs') }) : null,
       Object.values(工作表.单元格).some(单元 => 单元.公式状态) ? React.createElement('div', { className: 'wps-sheet-filterbar', role: 'status' },
         '部分公式使用来源缓存或等待计算；缓存可能已过期，修改数据后需在支持该公式的表格软件中重新计算。公式原文将保留。'
       ) : null,

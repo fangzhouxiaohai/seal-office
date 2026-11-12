@@ -8,6 +8,10 @@ const { 读取原始公式, 展开共享公式Xml } = require('./xlsxFormulas')
 const { 读取工作簿元数据, 读取工作簿日期基准, 读取工作表打印方向, 写入动态元数据 } = require('./xlsxMetadata')
 const { 规范公式函数名 } = require('./xlsxFunctionNames')
 const { 读取公式兼容模式, 写入公式兼容模式 } = require('./xlsxCompatibility')
+const { 解析颜色, 读取索引调色板 } = require('./xlsxColors')
+const { 从Xml读取筛选, 规范筛选, 替换工作表筛选Xml, 含降级条件, 解析筛选范围, 行满足筛选 } = require('./xlsxFilter')
+const { 筛选降级告警, 内部名称告警 } = require('./warningLevels')
+const { 读取工作簿定义名, 写入打印定义名, 规范打印定义名 } = require('./xlsxDefinedNames')
 
 const 单张图片字节上限 = 5 * 1024 * 1024
 const 工作簿图片字节上限 = 20 * 1024 * 1024
@@ -182,14 +186,12 @@ async function 读取主题颜色(压缩包) {
   })
 }
 
-function 读取颜色(颜色, 警告, 主题颜色) {
-  const 值 = 颜色?.argb
-  if (typeof 值 === 'string' && /^FF[0-9a-f]{6}$/i.test(值)) return `#${值.slice(2).toUpperCase()}`
-  if (Number.isInteger(颜色?.theme) && (颜色.tint === undefined || 颜色.tint === 0) && 主题颜色?.[颜色.theme]) {
-    return `#${主题颜色[颜色.theme]}`
-  }
-  if (颜色) 警告.add('部分主题色或透明颜色未导入')
-  return undefined
+/**
+ * 颜色上下文：{ 主题颜色, 索引调色板 }。支持直接 ARGB（忽略透明通道）、索引色、主题色及色调；
+ * 用途为“边框”时无法解析也不提示，其余无法解析时提示“部分颜色按近似值导入”（保真风险）。
+ */
+function 读取颜色(颜色, 警告, 颜色上下文, 用途 = '字体') {
+  return 解析颜色(颜色, 警告, { ...颜色上下文, 用途 })
 }
 
 function 写入基础格式(单元格, 格式) {
@@ -244,11 +246,11 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
       格式.下划线 = !!字体.underline
       if (字体.underline !== true && 字体.underline !== false && 字体.underline !== 'single') 警告.add('部分下划线样式未导入')
     }
-    if (字体.color) 格式.字体颜色 = 读取颜色(字体.color, 警告, 主题颜色)
+    if (字体.color) { const 颜色 = 读取颜色(字体.color, 警告, 主题颜色, '字体'); if (颜色) 格式.字体颜色 = 颜色 }
     if (Object.keys(字体).some((字段) => !['name', 'size', 'bold', 'italic', 'underline', 'color', 'family', 'scheme', 'charset'].includes(字段))) 警告.add('部分字体样式未导入')
   }
   if (原格式.fill) {
-    if (原格式.fill.type === 'pattern' && 原格式.fill.pattern === 'solid') 格式.填充颜色 = 读取颜色(原格式.fill.fgColor, 警告, 主题颜色)
+    if (原格式.fill.type === 'pattern' && 原格式.fill.pattern === 'solid') { const 颜色 = 读取颜色(原格式.fill.fgColor, 警告, 主题颜色, '填充'); if (颜色) 格式.填充颜色 = 颜色 }
     else if (原格式.fill.type !== 'pattern' || 原格式.fill.pattern !== 'none') 警告.add('部分单元格填充样式未导入')
   }
   const 对齐 = 原格式.alignment
@@ -301,7 +303,7 @@ function 读取基础格式(单元格, 警告, 主题颜色) {
         边框[中文] = true
         if (原格式.border[英文].style !== 'thin') 警告.add('部分边框样式未导入')
         if (原格式.border[英文].color) {
-          const 颜色 = 读取颜色(原格式.border[英文].color, 警告, 主题颜色)
+          const 颜色 = 读取颜色(原格式.border[英文].color, 警告, 主题颜色, '边框')
           if (颜色) 边框颜色[中文] = 颜色
         }
       }
@@ -478,29 +480,6 @@ async function 工作表Xml路径列表(压缩包) {
   })
 }
 
-function 从Xml读取筛选(工作表Xml) {
-  const 匹配 = 工作表Xml.match(/<autoFilter\b([^>]*?)(?:\/>|>([\s\S]*?)<\/autoFilter>)/i)
-  if (!匹配) return undefined
-  const 范围 = 读取Xml属性(匹配[1], 'ref')
-  if (!范围 || !/^A1:[A-Z]+[1-9]\d*$/.test(范围) || !匹配[2]) return null
-  const 列列表 = [...匹配[2].matchAll(/<filterColumn\b([^>]*)>([\s\S]*?)<\/filterColumn>/g)]
-  if (列列表.length !== 1) return null
-  if (匹配[2].replace(列列表[0][0], '').trim() !== '') return null
-  const 列 = Number(读取Xml属性(列列表[0][1], 'colId'))
-  if (!Number.isInteger(列) || 列 < 0) return null
-  const 过滤器 = 列列表[0][2].trim().match(/^<filters\b([^>]*?)(?:\/>|>([\s\S]*?)<\/filters>)$/)
-  if (!过滤器) return null
-  const 空白 = 读取Xml属性(过滤器[1], 'blank') === '1'
-  const 过滤器内容 = (过滤器[2] ?? '').trim()
-  if (空白 && 过滤器内容 === '') return { 列, 值: '' }
-  if (空白) return null
-  const 值列表 = [...过滤器内容.matchAll(/<filter\b([^>]*)\/>/g)]
-  if (值列表.length !== 1) return null
-  if (过滤器内容.replace(值列表[0][0], '').trim() !== '') return null
-  const 值 = 读取Xml属性(值列表[0][1], 'val')
-  return 值 === undefined ? null : { 列, 值: 反转义Xml(值) }
-}
-
 async function 读取筛选列表(压缩包, 工作表数) {
   const 路径列表 = await 工作表Xml路径列表(压缩包)
   const 结果 = []
@@ -535,18 +514,13 @@ async function 写入筛选Xml(原数据, 筛选列表) {
     const 路径 = 路径列表[索引]
     const 部件 = 路径 && 压缩包.file(路径)
     if (!部件) throw new Error('无法定位工作表筛选数据')
-    const 原Xml = await 部件.async('string')
-    const 原筛选 = 原Xml.match(/<autoFilter\b[^>]*\/>/)
-    if (!原筛选) throw new Error('无法写入工作表筛选条件')
-    const ref = 读取Xml属性(原筛选[0], 'ref')
-    const 内容 = 筛选.值 === '' ? '<filters blank="1"/>' : `<filters><filter val="${转义(筛选.值)}"/></filters>`
-    const 新筛选 = `<autoFilter ref="${ref}"><filterColumn colId="${筛选.列}">${内容}</filterColumn></autoFilter>`
-    压缩包.file(路径, 原Xml.replace(原筛选[0], 新筛选))
+    // 同时兼容自闭合与非自闭合 autoFilter，写后重新解析自校验。
+    压缩包.file(路径, 替换工作表筛选Xml(await 部件.async('string'), 筛选))
   }
   return 压缩包.generateAsync({ type: 'nodebuffer' })
 }
 
-function 读取页面设置(工作表, 警告, 打印方向) {
+function 读取页面设置(工作表, 警告, 打印方向, 打印设置) {
   const 原设置 = 工作表.pageSetup ?? {}
   const 页边距 = Object.entries(页边距方案).find(([, 预设]) =>
     Object.entries(预设).every(([字段, 值]) => Math.abs((原设置.margins?.[字段] ?? 值) - 值) < 0.001)
@@ -568,6 +542,9 @@ function 读取页面设置(工作表, 警告, 打印方向) {
     ...(!页边距 ? { 自定义页边距: { ...原设置.margins } } : {}),
     方向: 方向 ?? '纵向',
     纸张大小: 纸张大小 ?? '跟随打印机',
+    ...(打印设置?.打印区域 ? { 打印区域: 打印设置.打印区域 } : {}),
+    ...(打印设置?.打印标题行 ? { 打印标题行: 打印设置.打印标题行 } : {}),
+    ...(打印设置?.打印标题列 ? { 打印标题列: 打印设置.打印标题列 } : {}),
   }
 }
 
@@ -582,10 +559,11 @@ function 写入页面设置(工作表, 页面) {
   工作表.pageSetup.orientation = { 横向: 'landscape', 纵向: 'portrait', 跟随打印机: 'default' }[页面.方向]
   工作表.pageSetup.margins = { ...页边距 }
   if (纸张) 工作表.pageSetup.paperSize = 纸张
+  写入打印定义名(工作表, 页面)
 }
 
 /** 仅对实际存在、但当前表格模型不会写回的内容发出保真提示。 */
-async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 公式来源列表) {
+async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 公式来源列表, 定义名) {
   const 警告 = new Set()
   const 文件名 = Object.keys(压缩包.files).filter((名称) => !压缩包.files[名称].dir)
   const 存在部件 = (表达式) => 文件名.some((名称) => 表达式.test(名称))
@@ -616,18 +594,24 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
   if (存在部件(/^xl\/tables\//i)) 警告.add('结构化表格未导入')
   if (存在部件(/^xl\/threadedComments\//i)) 警告.add('线程批注未导入')
   if (存在部件(/^xl\/(?:externalLinks|connections|queryTables)\//i)) 警告.add('外部数据连接未导入')
-  if (工作簿.definedNames?.model?.length > 0) 警告.add('命名区域未导入')
+  // 以原始 workbook.xml 为准：ExcelJS 会把打印区域等内部名转移到页面设置，不能只看 definedNames。
+  if (定义名?.用户名称.length) 警告.add('命名区域未导入')
+  if (定义名?.未保留内部名.length) 警告.add(内部名称告警)
 
   for (const [索引, 工作表] of 工作簿.worksheets.entries()) {
     const 已保留布尔格 = new Set(Object.values(公式来源列表?.[索引] ?? {}).flatMap(来源 => Object.entries(来源.数组缓存 ?? {}).filter(([,值]) => typeof 值 === 'boolean').map(([地址]) => 地址)))
     const 模型 = 工作表.model
     const 筛选 = 筛选列表[索引]
-    const 隐藏行异常 = 模型.rows?.some((行) => 行 && (行.outlineLevel || 行.collapsed ||
-      (行.hidden && (!筛选 || 行.number <= 1 || 工作表.getCell(行.number, 筛选.列 + 1).text === 筛选.值))))
+    const 范围 = 筛选 ? 解析筛选范围(筛选.范围) : null
+    // 被筛选隐藏的行可由筛选条件重新计算；条件仍显示的行却被隐藏，说明另有手工隐藏。
+    const 筛选可解释 = (行号) => !!范围 && 行号 - 1 > 范围.起行 && 行号 - 1 <= 范围.止行 &&
+      (含降级条件(筛选) || !行满足筛选(筛选, 行号 - 1, (行, 列) => 工作表.getCell(行 + 1, 列 + 1).text))
+    const 隐藏行异常 = 模型.rows?.some((行) => 行 && (行.outlineLevel || 行.collapsed || (行.hidden && !筛选可解释(行.number))))
     if (模型.cols?.some((列) => 列 && (列.hidden || 列.outlineLevel || 列.collapsed)) || 隐藏行异常) {
       警告.add('隐藏行列或分组状态未导入')
     }
     if (工作表.autoFilter && !筛选) 警告.add('筛选条件未导入')
+    if (含降级条件(筛选)) 警告.add(筛选降级告警)
     if (工作表.conditionalFormattings?.length > 0) 警告.add('条件格式未导入')
     if (保护列表[索引] === '外部') 警告.add('工作表保护设置未导入')
     工作表.eachRow({ includeEmpty: true }, (行) => {
@@ -735,14 +719,15 @@ async function 读取xlsx(数据) {
   await 工作簿.xlsx.load(兼容数据)
   工作簿.properties.date1904 = await 读取工作簿日期基准(压缩包)
   const 公式兼容模式 = await 读取公式兼容模式(压缩包)
-  const 主题颜色 = await 读取主题颜色(压缩包)
+  const 颜色上下文 = { 主题颜色: await 读取主题颜色(压缩包), 索引调色板: await 读取索引调色板(压缩包) }
+  const 定义名 = await 读取工作簿定义名(压缩包)
   const 筛选列表 = await 读取筛选列表(压缩包, 工作簿.worksheets.length)
   const 保护列表 = await 读取保护列表(压缩包, 工作簿.worksheets.length)
   const 图片状态 = { 总字节: 0, 已导入图片数: 0, 已导入媒体: new Set(), 无名媒体: [], 警告: new Set() }
   const 图片列表 = 工作簿.worksheets.map((工作表) => 读取工作表图片(工作表, 工作簿, 图片状态))
   const 数组预算 = { 剩余: 1000000 }
   const 完整公式来源 = 工作簿.worksheets.map((工作表, 索引) => 补充动态类型缓存(工作表, { ...读取公式来源(工作表, 工作簿.properties.date1904), ...公式来源列表[索引] }, 原始数字列表[索引], 公式警告, 数组预算))
-  const 警告 = await 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 完整公式来源)
+  const 警告 = await 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 完整公式来源, 定义名)
   警告.push(...公式警告)
   const 页面警告 = new Set(警告)
   if (!工作簿.worksheets || 工作簿.worksheets.length === 0) {
@@ -752,8 +737,8 @@ async function 读取xlsx(数据) {
   const 工作表列表 = 工作簿.worksheets.map((工作表, 索引) => ({
     名称: 工作表.name || 'Sheet1',
     html: 工作表转Html(工作表, 公式来源列表[索引], 原始数字列表[索引]),
-    页面设置: 读取页面设置(工作表, 页面警告, 打印方向列表[索引]),
-    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引], 保护列表[索引], 主题颜色), ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
+    页面设置: 读取页面设置(工作表, 页面警告, 打印方向列表[索引], 定义名.打印设置[索引]),
+    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引] ?? undefined, 保护列表[索引], 颜色上下文), ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
   }))
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }
 }
@@ -930,13 +915,15 @@ async function 写入xlsx(模型) {
     // 合并子格可以分别保存外缘边框，不能用主格样式覆盖这些真实格式。
     if (Array.isArray(表定义.合并区域)) 表定义.合并区域.forEach((区域) => 工作表.mergeCellsWithoutStyle(区域))
     if (表定义.筛选) {
-      const { 列, 值 } = 表定义.筛选
-      if (!Number.isInteger(列) || 列 < 0 || typeof 值 !== 'string') throw new Error('工作表筛选条件无效')
-      const 最后行 = Math.max(2, 表定义.数据.length)
-      const 最后列 = Math.max(列 + 1, ...表定义.数据.map((行) => Array.isArray(行) ? 行.length : 1))
-      工作表.autoFilter = `A1:${工作表.getCell(最后行, 最后列).address}`
-      for (let 行 = 2; 行 <= 表定义.数据.length; 行 += 1) {
-        工作表.getRow(行).hidden = 工作表.getCell(行, 列 + 1).text !== 值
+      // 兼容旧版 { 列, 值 }；新模型支持多列、多值、自定义条件与原样保留的条件。
+      const 筛选 = 规范筛选(表定义.筛选, 表定义.数据)
+      表定义.筛选 = 筛选
+      const 范围 = 解析筛选范围(筛选.范围)
+      工作表.autoFilter = 范围.文本
+      // 按 AND 组合各列条件写回隐藏行，Excel 打开时与筛选状态一致。
+      // 范围可能覆盖到百万行，只处理实际写入的数据行，避免生成大量空行。
+      for (let 行 = 范围.起行 + 1; 行 <= Math.min(范围.止行, 表定义.数据.length - 1); 行 += 1) {
+        工作表.getRow(行 + 1).hidden = !行满足筛选(筛选, 行, (行号, 列号) => 工作表.getCell(行号 + 1, 列号 + 1).text)
       }
     }
     if (表定义.图片 !== undefined && !Array.isArray(表定义.图片)) throw new Error('工作表图片列表无效')
@@ -946,7 +933,7 @@ async function 写入xlsx(模型) {
       工作表.addImage(图片编号, { tl: { col: 图片.列, row: 图片.行 }, ext: { width: 图片.宽, height: 图片.高 } })
     }
   })
-  const 原数据 = await 工作簿.xlsx.writeBuffer()
+  const 原数据 = 表定义列表.some(表 => 表.页面设置?.打印区域) ? await 规范打印定义名(await 工作簿.xlsx.writeBuffer()) : await 工作簿.xlsx.writeBuffer()
   return 写入公式兼容模式(await 写入动态元数据(await 写入筛选Xml(原数据, 表定义列表.map((表) => 表.筛选)), 动态数组地址列表), 公式兼容模式)
 }
 
@@ -954,4 +941,4 @@ function 转义(文本) {
   return 文本.replace(/[&<>"']/g, (字符) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[字符]))
 }
 
-module.exports = { 读取xlsx, 写入xlsx }
+module.exports = { 读取xlsx, 写入xlsx, 工作表Xml路径列表, 转单元格值 }

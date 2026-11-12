@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto } from './native'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
 import formats from '../../main/documentFormats.json'
@@ -185,6 +185,9 @@ function registerFiles() {
 async function initialize() {
   await waitForNative()
   if (window.sealNative) window.sealClipboard = { writeText: writeNativeClipboard }
+  // 拍照扫描：原生宿主提供相机；鸿蒙 WebView 的文件输入不可靠，图片导入同样走宿主文件选择器。
+  if (window.sealNative) window.sealCamera = captureNativePhoto
+  if (window.sealNative?.platform === 'harmony') window.sealPickImages = (multiple: boolean) => pickNativeFiles(multiple)
   if (navigator.locks) await new Promise<void>((resolve, reject) => {
     void navigator.locks.request('seal-office-workspace', { ifAvailable: true }, async (lock) => {
       if (!lock) { reject(new Error('海豹办公已在另一个页面打开，请先关闭那个页面再重试')); return }
@@ -231,9 +234,9 @@ async function initialize() {
     return { 成功: true, ...result }
   })
   registerFiles(); registerFonts(); await installExportAdapters(core, save, handle)
-  // 不提供仅属于 Windows 或独立桌面窗口的能力探测。
+  // 不提供仅属于 Windows 或独立桌面窗口的能力探测。update 为桌面主进程更新通道，Web 与移动端改走云服务查询。
   const api = window.electronAPI as any
-  for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity']) delete api[key]
+  for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity', 'update']) delete api[key]
   const originalCloud = api.cloud.invoke
   api.cloud.invoke = async (action: string, input: any = {}) => {
     if (['ocrImage', 'imagePresentation'].includes(action)) await platform.prepareImage(Buffer.from(input.data, 'base64'))

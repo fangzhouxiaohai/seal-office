@@ -3,6 +3,7 @@ const sax = require('sax')
 const path = require('path')
 const { XmlAttributeComponent } = require('docx')
 const { 规范Office命名空间 } = require('./ooxmlNamespaces')
+const { 分析域代码 } = require('./docxFields')
 const 转义 = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const MAX_ZIP = 20 * 1024 * 1024, MAX_EXPANDED = 100 * 1024 * 1024
 
@@ -16,7 +17,8 @@ function xmlNodes(xml) {
 }
 function bodyBlocks(xml) { return xmlNodes(xml).filter(node => node.parent?.name === 'w:body').map((node, index) => ({ ...node, id: `b${index}`, xml: xml.slice(node.start, node.end) })) }
 function advancedDrawing(xml) { return [...xml.matchAll(/<w:(drawing|pict)(?=[\s>])[^>]*>[\s\S]*?<\/w:\1>/g)].some(match => !/<a:blip(?=[\s/>])/.test(match[0]) || /<wp:anchor|<w:pict|<a:tile|<a:effectLst(?=[\s>])[^>]*>\s*<a:/.test(match[0]) || [...match[0].matchAll(/<a:srcRect(?=[\s/>])[^>]*>/g)].some(crop => /\b[trbl]=["'](?!0["'])/.test(crop[0]))) }
-function lockedBlock(xml) { return advancedDrawing(xml) || /<w:(?:object|sectPr|\w*Change|\w*(?:Ins|Del|Merge)|customXml\w*|sdt|ruby|subDoc|moveFromRangeStart|moveToRangeStart)(?=[\s/>])/.test(xml) || /<w:(?:trPr|tcPr)(?=[\s>])[\s\S]*?<w:(?:ins|del)(?=[\s/>])/.test(xml) || /<w:instrText(?=[\s>])/.test(xml) || [...xml.matchAll(/<w:fldSimple(?=[\s>])[^>]*>/g)].some(match => !/w:instr=["']\s*(?:PAGE|NUMPAGES)\s*["']/.test(match[0])) }
+function lockedBlock(xml) { return advancedDrawing(xml) || /<w:(?:object|sectPr|\w*Change|\w*(?:Ins|Del|Merge)|customXml\w*|sdt|ruby|subDoc|moveFromRangeStart|moveToRangeStart)(?=[\s/>])/.test(xml) || /<w:(?:trPr|tcPr)(?=[\s>])[\s\S]*?<w:(?:ins|del)(?=[\s/>])/.test(xml) || /<w:(?:instrText|fldChar)(?=[\s/>])/.test(xml) || [...xml.matchAll(/<w:fldSimple(?=[\s>])[^>]*>/g)].some(match => !/w:instr=["']\s*(?:PAGE|NUMPAGES)\s*["']/.test(match[0])) }
+// 只含域开始、分隔或结束符的段落（跨段落目录的首尾段）也属于域结构，同样整块受保护。
 const sourceBlockLocked = block => !['w:p', 'w:tbl'].includes(block.name) || lockedBlock(block.xml)
 
 async function 读取安全源包(data) {
@@ -135,9 +137,13 @@ async function 创建源包上下文(zip, render, baseline = {}, renderPart) {
   if (!zip.file('[Content_Types].xml')) return null
   const xml = await zip.file('word/document.xml').async('string')
   const complexDrawing = advancedDrawing(xml)
-  const special = /<w:(?:ins|del|moveFrom|moveTo|\w*Change|cellIns|cellDel|cellMerge|customXml\w*|footnoteReference|endnoteReference|instrText)(?=[\s/>])/.test(xml) || [...xml.matchAll(/<w:fldSimple(?=[\s>])[^>]*>/g)].some(match => !/w:instr=["']\s*(?:PAGE|NUMPAGES)\s*["']/.test(match[0]))
+  const special = /<w:(?:ins|del|moveFrom|moveTo|\w*Change|cellIns|cellDel|cellMerge|customXml\w*|footnoteReference|endnoteReference|instrText|fldChar)(?=[\s/>])/.test(xml) || [...xml.matchAll(/<w:fldSimple(?=[\s>])[^>]*>/g)].some(match => !/w:instr=["']\s*(?:PAGE|NUMPAGES)\s*["']/.test(match[0]))
   let extraHistory = false
-  if (!special && !complexDrawing) for (const file of Object.values(zip.files)) if (!file.dir && /^word\/.*\.xml$/.test(file.name) && file.name !== 'word/document.xml' && /<w:(?:ins|del|moveFrom|moveTo|\w*Change|cellIns|cellDel|cellMerge|customXml\w*)(?=[\s/>])/.test(await file.async('string'))) { extraHistory = true; break }
+  // 页眉页脚里的目录、日期、文档属性等域只能原样保留，同样需要源包，避免保存时被写成静态文字。
+  if (!special && !complexDrawing) for (const file of Object.values(zip.files)) if (!file.dir && /^word\/.*\.xml$/.test(file.name) && file.name !== 'word/document.xml') {
+    const partXml = await file.async('string')
+    if (/<w:(?:ins|del|moveFrom|moveTo|\w*Change|cellIns|cellDel|cellMerge|customXml\w*)(?=[\s/>])/.test(partXml) || /^word\/(?:header|footer)\d*\.xml$/.test(file.name) && 分析域代码(partXml).需原样保留) { extraHistory = true; break }
+  }
   if (!special && !complexDrawing && !extraHistory && (xml.match(/<w:sectPr(?=[\s>])/g) ?? []).length <= 1 && !/<w:(?:header|footer)Reference[^>]*w:type=["'](?:first|even)["']/.test(xml)) return null
   const data = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
   await 读取安全源包(data.toString('base64'))
@@ -352,7 +358,7 @@ async function 合并源包(generated, model) {
     else newRelationships.push(relationXml({ Id: `seal${kind}s`, Type: type, Target: `${prefix}/${kind}s.xml` }))
   }
   const nextXml = 合并命名空间(originalXml.replace(/(<w:body[^>]*>)[\s\S]*?(<\/w:body>)/, '$1' + output.join('') + finalSection + '$2'), freshXml)
-  source.file('word/document.xml', 应用原生修订动作(nextXml, actions))
+  source.file('word/document.xml', 规范书签标识(应用原生修订动作(nextXml, actions)))
   source.file(sourceRelsPath, sourceRels.replace('</Relationships>', newRelationships.join('') + '</Relationships>'))
   for (const entry of Object.values(source.files)) if (!entry.dir && /^word\/.*\.xml$/.test(entry.name) && entry.name !== 'word/document.xml') {
     const xml = await entry.async('string'), next = 应用原生修订动作(xml, actions, entry.name)
@@ -379,4 +385,33 @@ async function 清理生成部件(zip) {
   for (const file of Object.values(zip.files).filter(file => file.dir && /^word\/sealGenerated\d*\//.test(file.name)).sort((a, b) => b.name.length - a.name.length)) if (!Object.values(zip.files).some(other => !other.dir && other.name.startsWith(file.name))) zip.remove(file.name)
   if (removed.size) { let types = await partText(zip, '[Content_Types].xml'); for (const node of xmlNodes(types).filter(node => node.name === 'Override' && removed.has(node.attrs.PartName)).reverse()) types = types.slice(0, node.start) + types.slice(node.end); zip.file('[Content_Types].xml', types) }
 }
-module.exports = { xmlNodes, bodyBlocks, lockedBlock, 读取安全源包, 应用原生修订动作, 创建源包上下文, 标记来源, 合并源包 }
+/**
+ * 书签起止标识必须在整个部件内唯一且成对。docx 生成库为每个书签单独计数，
+ * 重新生成的段落书签全部写成 w:id="1"，与原样保留的 _Toc 目录书签混在一起时会重复；
+ * Word 会丢弃重复书签，导致目录跳转与页码引用失效。
+ * 按文档顺序处理：首次出现的标识保持不变（原生块不改），重复者分配新标识，
+ * 结束标记匹配同一原标识中最早尚未结束的起点。
+ */
+function 规范书签标识(xml) {
+  const 标识正则 = /\bw:id\s*=\s*(["'])(-?\d+)\1/
+  const 标记 = [...xml.matchAll(/<w:bookmark(Start|End)(?=[\s/>])[^>]*>/g)].map(项 => ({ 种类: 项[1], 位置: 项.index, 原文: 项[0], 标识: 项[0].match(标识正则)?.[2] })).filter(项 => 项.标识 !== undefined)
+  if (标记.length === 0) return xml
+  const 已用 = new Set(标记.map(项 => 项.标识)), 已分配 = new Set(), 未结束 = new Map(), 替换 = []
+  let 下一个 = Math.max(0, ...标记.map(项 => Number(项.标识) || 0)) + 1
+  const 改写 = (项, 新标识) => 替换.push({ ...项, 新文: 项.原文.replace(标识正则, `w:id="${新标识}"`) })
+  for (const 项 of 标记) {
+    if (项.种类 === 'Start') {
+      let 新标识 = 项.标识
+      if (已分配.has(新标识)) { while (已用.has(String(下一个))) 下一个++; 新标识 = String(下一个++); 已用.add(新标识); 改写(项, 新标识) }
+      已分配.add(新标识)
+      if (!未结束.has(项.标识)) 未结束.set(项.标识, [])
+      未结束.get(项.标识).push(新标识)
+    } else {
+      const 新标识 = 未结束.get(项.标识)?.shift()
+      if (新标识 !== undefined && 新标识 !== 项.标识) 改写(项, 新标识)
+    }
+  }
+  for (const 项 of 替换.reverse()) xml = xml.slice(0, 项.位置) + 项.新文 + xml.slice(项.位置 + 项.原文.length)
+  return xml
+}
+module.exports = { xmlNodes, bodyBlocks, lockedBlock, 规范书签标识, 读取安全源包, 应用原生修订动作, 创建源包上下文, 标记来源, 合并源包 }

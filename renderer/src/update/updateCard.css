@@ -1,0 +1,67 @@
+/* 更新卡片：颜色、圆角、阴影使用主题变量；缓动沿用 --ease-out，时长与现有弹层动效一致（.3s） */
+.seal-update-card {
+  position: fixed;
+  z-index: 990;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  padding: 18px 20px 16px;
+  overflow: hidden;
+  color: var(--text-1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-pop);
+}
+/* Windows / Web：左下角，从底部滑入 */
+.seal-update-card--bottom {
+  left: 16px;
+  bottom: 16px;
+  animation: seal-update-rise .3s var(--ease-out) both;
+}
+/* Android / HarmonyOS：中上部，从顶部落下 */
+.seal-update-card--top {
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  left: 50%;
+  translate: -50% 0;
+  animation: seal-update-drop .3s var(--ease-out) both;
+}
+@keyframes seal-update-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes seal-update-drop { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .seal-update-card--bottom, .seal-update-card--top { animation: none; }
+}
+.seal-update-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 990;
+  background: rgba(15, 22, 36, 0.42);
+}
+.seal-update-card__head { display: flex; flex-direction: column; gap: 2px; }
+.seal-update-card__title { margin: 0; font: 600 16px/1.5 var(--font-heading); color: var(--text-1); }
+.seal-update-card__time, .seal-update-card__empty, .seal-update-card__hint { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-3); }
+.seal-update-card__reason {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-1);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-control);
+}
+.seal-update-card__notes-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.seal-update-card__notes {
+  min-height: 0;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+.seal-update-card__actions { display: flex; justify-content: flex-end; gap: var(--space-2, 8px); margin-top: 4px; }
+/* 设置页「当前版本」行的控件区：状态文字 + 按钮 */
+.settings-update-control { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2, 8px); }

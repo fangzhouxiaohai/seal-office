@@ -14,6 +14,7 @@ const { createPasswords } = require('./passwords.cjs')
 const { createAccountErasure } = require('./accountErasure.cjs')
 const { createShareLinks } = require('./shareLinks.cjs')
 const { createMyShares } = require('./myShares.cjs')
+const { createReleases } = require('./releases.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -33,7 +34,7 @@ const effectiveMethod = req => {
   return allowedOverride.has(override) ? override : req.method
 }
 
-async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now,conversionTimeout=100000 } = {}) {
+async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now,conversionTimeout=100000,updateRateLimit } = {}) {
   const root = directory || env.SEAL_DATA_DIR || path.join(__dirname, 'data')
   const db = await openStore(root)
   const objects = path.join(root, 'objects'), incoming = path.join(root, 'incoming'), teamObjects = path.join(root,'team-objects')
@@ -120,6 +121,8 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const collaboration = createCollaboration({ db, clock, objects, teamObjects, usage, reservation, quota, ensureDisk, nodeFor, streamObject, audit })
   const shareLinks = createShareLinks({ db, clock, objects, nodeFor, streamObject, audit, usage, quota })
   const myShares = createMyShares({ db, clock, audit })
+  // 版本发布：匿名更新查询按 IP 令牌桶限流，管理接口沿用管理员会话鉴权
+  const releases = createReleases({ db, clock, audit, rateLimit: updateRateLimit })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const issueSession = (row, input, action = 'login') => {
     const token = randomBytes(32).toString('base64url')
@@ -156,6 +159,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(route==='/v1/admin/converter'&&method==='PATCH'){const result=await converter.update(await json());db.transaction(()=>audit('admin','converter-config',JSON.stringify({enabled:result.config.enabled,concurrency:result.config.concurrency})));return reply(result)}
         if(route==='/v1/admin/converter/token'&&method==='POST'){const result=await converter.update({},true);db.transaction(()=>audit('admin','converter-token-reset',result.config.tokenFingerprint));return reply(result)}
         if(route==='/v1/admin/converter/test'&&method==='POST'){const result=await converter.test();db.transaction(()=>audit('admin','converter-test',result.passed?'passed':'failed'));return reply(result)}
+        if(await releases.handleAdmin({route,method,url,json,reply}))return
         if(route==='/v1/admin/overview'&&method==='GET'){
           const lastActions=new Map(db.query('SELECT user_id,MAX(time) time FROM audit WHERE user_id IS NOT NULL GROUP BY user_id').map(row=>[row.user_id,Number(row.time)||0]))
           return reply({users:db.query('SELECT id,phone,enabled,autosave,created FROM users').map(u=>({...u,phone:maskPhone(u.phone),used:usage(u.id),lastAction:lastActions.get(u.id)||0})),publications:db.query('SELECT id,kind,title,description,cover,category,status,created FROM publications'),audit:db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200'),quota,smsConfigured:sender.configured,runtime:{diskFree:diskFree(),memory:process.memoryUsage().rss,uptime:process.uptime(),pendingUploads:db.one('SELECT COUNT(*) n FROM uploads').n},sms:{sign:env.SMS_SIGN_NAME||'',template:env.SMS_TEMPLATE_CODE||'',lastDay:db.one('SELECT COUNT(*) n FROM sends WHERE time>?',[clock()-86400000]).n}})
@@ -166,6 +170,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
+      if (await releases.handlePublic({ route, method, url, reply, ip: clientIp(req) })) return
       if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, shareLink:1, methodOverride:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])

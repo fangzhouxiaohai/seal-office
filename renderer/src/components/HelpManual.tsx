@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import Icon from './Icon'
+import { useSettings } from '../store/settingsStore'
+import { 英文帮助主题 } from '../i18n/helpManualEnglish'
 import './helpManual.css'
 
 interface 帮助主题 {
@@ -12,7 +14,7 @@ interface 帮助主题 {
   关键词?: string
 }
 
-const 帮助主题列表: 帮助主题[] = [
+export const 帮助主题列表: 帮助主题[] = [
   {
     标识: 'start', 分类: '开始使用', 标题: '从首页开始', 摘要: '新建、打开和最近文件都在首页；打开后的文件在窗口底部切换。',
     步骤: ['点击左侧“新建”，选择文字、表格或演示文稿。', '点击“打开”选择本机文件，也可以把文件从资源管理器拖进窗口直接打开（可一次拖入多个）。', '在“最近”列表中重新打开文件；点击“批量管理”可勾选多条记录一次性移除。', '使用窗口底部的标签切换已打开的文件；关闭标签前请留意未保存提示。'],
@@ -20,8 +22,8 @@ const 帮助主题列表: 帮助主题[] = [
     关键词: '首页 标签 新建 最近 拖入 批量管理 移除记录'
   },
   {
-    标识: 'privacy', 分类: '开始使用', 标题: '隐私与数据在哪里', 摘要: '程序不收集你的数据：文件、设置与对话都保存在本机，只有你主动使用的联网功能才会把片段发给你配置的服务。',
-    步骤: ['文件只在本机读写：打开、编辑、保存、打印、导出都在你的电脑上完成，没有账号、云端同步或使用统计上报。', '密钥、对话与记忆加密保存在本机用户数据目录；未保存的工作区自动备份为明文，用于异常后恢复。', '使用智能助手、翻译、语音、演示生成等联网功能时，只把完成该次请求所需的片段发送到你自己配置的服务地址（仅允许 https，本机地址可用 http）。', '“屏幕录制”可录制你选择的屏幕或窗口，麦克风需单独勾选；录制内容只有你保存后才写入本机文件。', '想彻底清除：删除用户数据目录（默认 %APPDATA%\\seal-office），或卸载后删除；你自己保存的文档不受影响。'],
+    标识: 'privacy', 分类: '开始使用', 标题: '隐私与数据在哪里', 摘要: '了解本机文件、云空间和联网服务的数据使用方式。',
+    步骤: ['本机文档的打开、编辑、保存、打印和导出在设备上完成。启用云服务后，上传或自动同步的私有文件先在设备上加密。', '密钥、对话与记忆加密保存在本机用户数据目录；未保存的工作区自动备份为明文，用于异常后恢复。', '使用智能助手、翻译、语音、演示生成等联网功能时，只把完成该次请求所需的片段发送到你自己配置的服务地址（仅允许 https，本机地址可用 http）。', '“屏幕录制”可录制你选择的屏幕或窗口，麦克风需单独勾选；录制内容只有你保存后才写入本机文件。', '要清除本机应用数据，可删除用户数据目录（默认 %APPDATA%\\seal-office），或卸载后删除；自行保存的文档不受影响，云端数据需要在对应云服务中单独处理。'],
     提醒: '完整说明见仓库中的《隐私声明》（docs/隐私声明.md）。服务商如何留存与使用你发送的内容，取决于你与其之间的条款，请在使用前阅读其隐私政策。',
     关键词: '隐私 数据 收集 上传 密钥 加密 录屏 麦克风 用户数据目录 清除'
   },
@@ -99,7 +101,7 @@ const 帮助主题列表: 帮助主题[] = [
   {
     标识: 'pdf', 分类: '阅读与处理', 标题: '阅读和处理 PDF', 摘要: '阅读区保持居中，处理工具位于右侧，可随时收起。',
     步骤: ['从首页打开 PDF 文件，或进入“PDF 工具”后点击右侧添加图标。', '在阅读区翻页和调整缩放；点击右侧图标选择提取、合并、删除或旋转。', '展开工具区，按提示填写页码；执行后选择路径保存处理结果。', '保存成功后，处理结果会在底部新标签中打开。'],
-    提醒: '页面处理会生成新的 PDF 文件；当前不提供 PDF 文字编辑、批注或文字识别。',
+    提醒: '页面处理会生成新的 PDF 文件；编辑内容与识别功能的可用范围以 PDF 工具界面和具体格式提示为准。',
     关键词: 'PDF 提取 合并 删除 旋转 页码'
   },
   {
@@ -212,27 +214,30 @@ const 帮助主题列表: 帮助主题[] = [
   },
 ]
 
-const 分类列表 = [...new Set(帮助主题列表.map((主题) => 主题.分类))]
-
 const HelpManual = ({ 关闭回调 }: { 打开状态?: boolean; 关闭回调?: () => void }) => {
+  const { 语言 } = useSettings()
   const [搜索词, set搜索词] = useState('')
   const [选中标识, set选中标识] = useState('start')
+  const 主题列表 = useMemo(() => 语言 === 'en-US'
+    ? 帮助主题列表.map((主题) => ({ ...主题, ...英文帮助主题[主题.标识] }))
+    : 帮助主题列表, [语言])
+  const 分类列表 = useMemo(() => [...new Set(主题列表.map((主题) => 主题.分类))], [主题列表])
   const 匹配主题 = useMemo(() => {
     const 查询 = 搜索词.trim().toLocaleLowerCase()
-    if (!查询) return 帮助主题列表
-    return 帮助主题列表.filter((主题) => [主题.标题, 主题.分类, 主题.摘要, 主题.关键词 ?? '', ...主题.步骤].join(' ').toLocaleLowerCase().includes(查询))
-  }, [搜索词])
+    if (!查询) return 主题列表
+    return 主题列表.filter((主题) => [主题.标题, 主题.分类, 主题.摘要, 主题.关键词 ?? '', ...主题.步骤].join(' ').toLocaleLowerCase().includes(查询))
+  }, [搜索词, 主题列表])
   const 当前主题 = 匹配主题.find((主题) => 主题.标识 === 选中标识) ?? 匹配主题[0]
 
   return (
-    <div className={关闭回调 ? 'help-manual help-manual--dialog' : 'help-manual'}>
-      {!关闭回调 && <header className="help-manual__header"><h1>帮助手册</h1><p>按任务查找操作方法，完成后回到文档继续工作。</p></header>}
+    <div className={关闭回调 ? 'help-manual help-manual--dialog' : 'help-manual'} data-ui-language-ignore="true">
+      {!关闭回调 && <header className="help-manual__header"><h1>{语言 === 'en-US' ? 'Help' : '帮助手册'}</h1><p>{语言 === 'en-US' ? 'Find instructions for a task, then return to your document.' : '按任务查找操作方法，完成后回到文档继续工作。'}</p></header>}
       <label className="help-manual__search">
         <Icon name="search" size={17} />
-        <input type="search" aria-label="搜索帮助内容" placeholder="搜索保存、PDF、快捷键等" value={搜索词} onChange={(事件) => set搜索词(事件.target.value)} />
+        <input type="search" aria-label={语言 === 'en-US' ? 'Search help' : '搜索帮助内容'} placeholder={语言 === 'en-US' ? 'Search saving, PDF, shortcuts, and more' : '搜索保存、PDF、快捷键等'} value={搜索词} onChange={(事件) => set搜索词(事件.target.value)} />
       </label>
       <div className="help-manual__layout">
-        <nav className="help-manual__nav" aria-label="帮助主题">
+        <nav className="help-manual__nav" aria-label={语言 === 'en-US' ? 'Help topics' : '帮助主题'}>
           {分类列表.map((分类) => {
             const 分类主题 = 匹配主题.filter((主题) => 主题.分类 === 分类)
             return 分类主题.length > 0 && <div className="help-manual__group" key={分类}>
@@ -245,10 +250,10 @@ const HelpManual = ({ 关闭回调 }: { 打开状态?: boolean; 关闭回调?: (
           <span className="help-manual__eyebrow">{当前主题.分类}</span>
           <h2>{当前主题.标题}</h2>
           <p className="help-manual__summary">{当前主题.摘要}</p>
-          <h3>操作步骤</h3>
+          <h3>{语言 === 'en-US' ? 'Steps' : '操作步骤'}</h3>
           <ol>{当前主题.步骤.map((步骤) => <li key={步骤}>{步骤}</li>)}</ol>
-          {当前主题.提醒 && <div className="help-manual__note"><strong>注意</strong><p>{当前主题.提醒}</p></div>}
-        </article> : <div className="help-manual__empty" role="status">没有找到相关内容，请换个关键词。</div>}
+          {当前主题.提醒 && <div className="help-manual__note"><strong>{语言 === 'en-US' ? 'Note' : '注意'}</strong><p>{当前主题.提醒}</p></div>}
+        </article> : <div className="help-manual__empty" role="status">{语言 === 'en-US' ? 'No matching help topics. Try another search.' : '没有找到相关内容，请换个关键词。'}</div>}
       </div>
     </div>
   )

@@ -156,6 +156,7 @@
 .assistant-drawer__background-task { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-size: 12px; color: var(--text-2); border-bottom: 1px solid var(--border); }
 .assistant-message__body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .assistant-output--streaming > .assistant-result > .assistant-result__heading::after { content: '接收中'; color: var(--brand); font-weight: 400; font-size: 11px; margin-left: auto; animation: assistant-cursor 1.6s linear infinite; }
+html:lang(en) .assistant-output--streaming > .assistant-result > .assistant-result__heading::after { content: 'Receiving'; }
 .assistant-thinking { white-space: normal; margin-bottom: var(--space-2); border-bottom: 1px solid var(--border); padding-bottom: var(--space-2); font-size: 12px; color: var(--text-2); }
 .assistant-thinking summary { cursor: pointer; line-height: 1.55; }
 .assistant-thinking summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
@@ -186,7 +187,9 @@
 .assistant-settings__note { margin: 0; }
 .assistant-settings__grid { display: grid; gap: var(--space-3); }
 .assistant-settings__grid label { display: grid; gap: var(--space-1); font-size: 12px; color: var(--text-2); }
-.assistant-settings__actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.assistant-settings__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.assistant-settings__action.ant-btn { min-height: 40px; padding-inline: 14px; border-radius: var(--radius-control); font-size: 13px; font-weight: 600; }
+.assistant-settings__action--save.ant-btn { min-width: 108px; }
 @media (max-width: 480px) {
   .assistant-launcher { right: var(--space-2); bottom: 104px; min-height: 44px; }
 
@@ -360,7 +363,9 @@
 .assistant-stop.ant-btn { width: 30px; min-width: 30px; height: 30px; padding: 0; }
 .assistant-preview__actions .assistant-icon-button { width: 34px; min-width: 34px; height: 34px; }
 .assistant-queue__actions .assistant-icon-button { width: 30px; min-width: 30px; height: 30px; }
-.assistant-settings__actions .assistant-icon-button { width: 36px; min-width: 36px; height: 36px; }
+@media (max-width: 480px) {
+  .assistant-settings__action.ant-btn { min-height: 44px; }
+}
 .assistant-settings__preferences { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-app); }
 .assistant-settings__preference { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .assistant-settings__preference > div { display: grid; gap: 4px; min-width: 0; }

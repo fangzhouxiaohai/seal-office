@@ -53,7 +53,9 @@ import { 读取可见矩形 } from '../components/overlayPlacement'
 import PrintPreview from '../components/PrintPreview'
 import { useAppStore } from '../store'
 import { 记录最近文档, 准备打开本地文件 } from '../fileOpen'
-import { 处于受保护查看 } from '../fileWarnings'
+import { 处于受保护查看, 存在内容风险, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
+import { 领取待另存副本 } from '../fileOpenChoice'
+import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
 import { 构建演示保存模型 } from './saveModel'
 import { 合并文字草稿 } from './textDraft'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
@@ -270,6 +272,16 @@ const PptEditor = () => {
       设置全局文档路径(activeDocumentId, 路径)
       if (文件指纹) 更新文件指纹(activeDocumentId, 文件指纹)
       markDocumentSaved(activeDocumentId, '', JSON.stringify(已保存文稿))
+      // 覆盖保存含保真风险的来源演示后提示一次（同一文档本次会话只提示一次）
+      const 保真提示 = 应提示保存保真风险(activeDocumentId, 当前文档?.来源路径, 路径, 当前文档?.警告)
+      if (保真提示) modal.info({
+        title: '已保存，部分效果将在 PowerPoint 或 WPS 中更新',
+        content: React.createElement('div', null,
+          React.createElement('p', null, '文件已覆盖保存，幻灯片内容与原有结构均已保留。以下效果沿用原文件或按近似方式处理：'),
+          React.createElement(警告列表, { 警告: 保真提示 })
+        ),
+        okText: '我知道了',
+      })
     }
     // 保存成功后通知文稿会话：同一文稿的其他窗口同步为已保存
     void 会话引用.current?.已保存(路径)
@@ -314,9 +326,11 @@ const PptEditor = () => {
     for (const 标识 of 历史表.current.keys()) 设置演示历史资源(标识, [])
   }, [设置演示历史资源])
   const 已提示警告 = useRef<Set<string>>(new Set())
-  const 保真风险 = 当前文档?.来源路径 && 当前文档.警告?.length
-    ? { 来源路径: 当前文档.来源路径, 警告: 当前文档.警告 }
+  // 只有内容风险会阻止覆盖或要求确认副本；主题、外观近似等保真风险允许直接覆盖保存。
+  const 保真风险 = 当前文档?.来源路径 && 存在内容风险(当前文档.警告)
+    ? { 来源路径: 当前文档.来源路径, 警告: 内容风险警告(当前文档.警告) }
     : null
+  const 执行命令引用 = useRef<(标识: string) => void>(() => {})
 
   const 显示文件错误 = (标题: string, 原因: string) => {
     modal.error({ title: 标题, content: 原因 })
@@ -338,7 +352,7 @@ const PptEditor = () => {
       title: '演示文稿内容可能未完整导入',
       content: React.createElement('div', null,
         React.createElement('p', null, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
-        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        React.createElement(警告列表, { 警告 })
       ),
       okText: '我知道了',
     })
@@ -348,8 +362,8 @@ const PptEditor = () => {
     modal.warning({
       title: '已阻止覆盖来源文件',
       content: React.createElement('div', null,
-        React.createElement('p', null, '当前版本无法完整保留此演示文稿的内容。请通过另存为保存到不同路径。'),
-        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        React.createElement('p', null, '此文件含本机暂不支持的内容，直接保存会丢失以下内容。请通过另存为保存到不同路径。'),
+        React.createElement(警告列表, { 警告 })
       ),
       okText: '我知道了',
     })
@@ -360,7 +374,7 @@ const PptEditor = () => {
       title: '确认保存副本',
       content: React.createElement('div', null,
         React.createElement('p', null, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
-        React.createElement('ul', null, 警告.map((项, 序号) => React.createElement('li', { key: 序号 }, 项)))
+        React.createElement(警告列表, { 警告 })
       ),
       okText: '保存副本',
       cancelText: '取消',
@@ -390,11 +404,20 @@ const PptEditor = () => {
   }, [activeDocumentId])
 
   useEffect(() => {
-    if (当前文档?.警告?.length && !原生文档类型(当前文档.来源路径 ?? '') && !已提示警告.current.has(当前文档.id)) {
-      已提示警告.current.add(当前文档.id)
-      展示导入警告(当前文档.警告)
+    // 仍在来源路径上的内容风险已在打开询问中列出，只显示仅查看提示条；保真风险在覆盖保存时提示。
+    const 提示警告 = 内容风险警告(当前文档?.警告)
+    if (提示警告.length && !保护查看 && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示警告.current.has(当前文档!.id)) {
+      已提示警告.current.add(当前文档!.id)
+      展示导入警告(提示警告)
     }
   }, [当前文档?.id, 当前文档?.警告])
+
+  // 打开时选择“另存副本并编辑”：演示就绪后进入现有另存为流程，原文件不改。
+  useEffect(() => {
+    if (!activeDocumentId || !保护查看 || !领取待另存副本(已知文档路径[activeDocumentId])) return
+    const 计时 = window.setTimeout(() => 执行命令引用.current('file.saveAs'), 0)
+    return () => window.clearTimeout(计时)
+  }, [activeDocumentId, 保护查看])
 
   // 记录初始状态，否则最新状态永远不在栈中，重做将无处可去
   useEffect(() => {
@@ -1105,7 +1128,7 @@ const PptEditor = () => {
           const 模型 = /\.(slppt|sealshow)$/i.test(文件路径) ? null : 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:当前文档?.警告??[]}).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
@@ -1164,7 +1187,7 @@ const PptEditor = () => {
           const 模型 = /\.(slppt|sealshow)$/i.test(文件路径) ? null : 构建演示保存模型(保存文稿, 资源结果.条目)
           const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
             ? 当前文档.文件指纹 : undefined
-          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:保真风险?.警告??[]}).then((结果: any) => {
+          写出办公文档('ppt', 文件路径, 模型,undefined,{演示文稿:保存文稿,资源条目:资源结果.条目,警告:当前文档?.警告??[]}).then((结果: any) => {
             if (结果 && 结果.成功 && 结果.数据) {
               if (路径被其他标签占用(文件路径)) return
               const 二进制内容 = 结果.数据
@@ -1213,6 +1236,7 @@ const PptEditor = () => {
       显示文件错误('演示操作失败', 错误 instanceof Error ? 错误.message : '请检查所选内容后重试')
     }
   }
+  执行命令引用.current = (标识: string) => 执行命令(标识)
   粘贴命令引用.current = (标识, 参数) => 执行命令(标识, 参数)
 
   const 提交编辑 = () => {
@@ -1347,9 +1371,7 @@ const PptEditor = () => {
     React.createElement('input', { ref: 附件输入, type: 'file', hidden: true, 'aria-label': '选择附件文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { const 文件 = 事件.target.files?.[0]; if (文件) void 插入附件(文件); 事件.target.value = '' } }),
     React.createElement('input', { ref: 媒体输入, type: 'file', accept: 媒体选择类型, hidden: true, 'aria-label': '选择音频或视频文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入媒体(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     React.createElement('input', { ref: 音效输入, type: 'file', accept: 音频选择类型, hidden: true, 'aria-label': '选择切换音效文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 更换音效(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
-    保护查看 ? React.createElement('div', { className: 'wps-sheet-protectionbar', role: 'status' },
-      `受保护查看：${当前文档?.警告?.join('；')}。请先另存为副本再编辑，原文件不会被覆盖。`
-    ) : null,
+    保护查看 ? React.createElement(仅查看提示条, { 警告: 当前文档?.警告, 另存副本: () => 执行命令('file.saveAs') }) : null,
     React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
     React.createElement(RibbonPanel, {
       缩放,

@@ -40,7 +40,7 @@
     return match ? match[1].toUpperCase() : '文件';
   }
 
-  // ---------- 路由解析：/share/#/s/<id>?a=<access>&k=<payload> ----------
+  // ---------- 路由解析：/share/?v=2#/s/<id>?a=<access>&k=<payload> ----------
   function parseRoute() {
     var hash = location.hash.replace(/^#/, '');
     var split = hash.split('?');
@@ -140,12 +140,22 @@
       anchor.href = url; anchor.download = state.payload.n || '海豹办公文件';
       anchor.rel = 'noopener'; document.body.appendChild(anchor); anchor.click(); anchor.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-      say('文件已解密并开始保存。若浏览器未自动保存，请再次点击“下载文件”。', 'ok');
-      show(el('retry'), true);
       state.code = code;
+      if (state.meta && state.meta.requiresCode) {
+        show(el('codeForm'), false);
+        show(el('downloadArea'), true);
+      }
+      say('文件已解密并开始保存。若浏览器未自动保存，请再次点击“下载文件”。', 'ok');
+      show(el('retry'), false);
     } catch (error) {
       say(error && error.message ? error.message : '下载失败，请稍后重试', 'error');
-      show(el('retry'), true);
+      if (state.meta && state.meta.requiresCode && !state.code) {
+        show(el('codeForm'), true);
+        show(el('downloadArea'), false);
+        el('code').focus();
+      } else {
+        show(el('retry'), true);
+      }
     } finally {
       state.busy = false;
       button.disabled = false;
@@ -217,9 +227,7 @@
     event.preventDefault();
     var code = el('code').value.trim();
     if (!/^\d{4,8}$/.test(code)) { say('请输入 4–8 位数字访问码', 'error'); el('code').focus(); return; }
-    show(el('codeForm'), false);
-    show(el('downloadArea'), true);
-    void fetchAndDecrypt(code, el('download'));
+    void fetchAndDecrypt(code, el('codeSubmit'));
   });
   el('download').addEventListener('click', function () { void fetchAndDecrypt(state.code, el('download')); });
   el('retry').addEventListener('click', function () { void fetchAndDecrypt(state.code, el('retry')); });

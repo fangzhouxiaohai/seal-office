@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.SealOffice.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#f5f7ff</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/seal_splash</item>
-        <item name="android:windowSplashScreenBrandingImage">@drawable/seal_brand</item>
-        <item name="postSplashScreenTheme">@android:style/Theme.Material.Light.NoActionBar</item>
-    </style>
-</resources>

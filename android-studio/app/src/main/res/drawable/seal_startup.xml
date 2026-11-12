@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="288dp" android:height="288dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/seal_splash"
+        android:left="40dp" android:right="40dp"
+        android:top="31dp" android:bottom="49dp" />
+    <item android:drawable="@drawable/seal_startup_wordmark" />
+</layer-list>

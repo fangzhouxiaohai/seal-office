@@ -2,8 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 
-const root = new URL('../../android-mobile/android-studio/', import.meta.url)
+const root = new URL('../../android-studio/', import.meta.url)
 const read = path => fs.readFile(new URL(path, root), 'utf8')
+
+test('根目录安卓工程从当前移动源码读取和核验资源', async () => {
+  const build = await read('app/build.gradle')
+  const verify = await read('scripts/verify-apk.py')
+  assert.match(build, /rootProject\.file\('\.\.\/mobile\/static\/office'\)/)
+  assert.match(verify, /project\.parent\s*\/\s*"mobile"/)
+})
 
 test('安卓原生工作台先确认安全桥接，再展示编辑器', async () => {
   const source = await read('app/src/main/java/com/sealoffice/mobile/MainActivity.java')
@@ -20,7 +27,12 @@ test('安卓启动时只保留系统启动页，工作台就绪后直接显示�
   assert.match(activity, /setKeepOnScreenCondition/)
   assert.doesNotMatch(activity, /new ImageView\(this\)|logo\.setVisibility/)
   assert.match(manifest, /android:theme="@style\/Theme\.SealOffice\.Starting"/)
-  assert.match(theme, /windowSplashScreenAnimatedIcon">@drawable\/seal_splash/)
+  assert.match(theme, /windowSplashScreenAnimatedIcon">@drawable\/seal_startup/)
+  assert.doesNotMatch(theme, /windowSplashScreenBrandingImage/)
+  assert.match(theme, /android:windowLightStatusBar">true/)
+  const drawable = await read('app/src/main/res/drawable/seal_startup.xml')
+  assert.match(drawable, /@drawable\/seal_splash/)
+  assert.match(drawable, /@drawable\/seal_startup_wordmark/)
   assert.equal((await fs.stat(new URL('app/src/main/res/drawable-nodpi/seal_splash.png', root))).size > 0, true)
 })
 

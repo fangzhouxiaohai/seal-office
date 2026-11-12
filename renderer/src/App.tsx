@@ -30,6 +30,7 @@ import AiAssistant from './assistant/AiAssistant'
 import NewFileNotifier, { 本机通知事件名, type 本机通知 } from './components/NewFileNotifier'
 import AssociatedFileOpener from './components/AssociatedFileOpener'
 import DefaultAppPrompt from './components/DefaultAppPrompt'
+import UpdateCard from './components/UpdateCard'
 import ErrorBoundary from './components/ErrorBoundary'
 import {CloudProvider,useCloud} from './cloud/CloudProvider'
 import CloudAutosave from './cloud/CloudAutosave'
@@ -529,7 +530,8 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
     React.createElement(AiAssistant, null),
     React.createElement(NewFileNotifier, null),
     React.createElement(AssociatedFileOpener, null),
-    React.createElement(DefaultAppPrompt, null)
+    React.createElement(DefaultAppPrompt, null),
+    React.createElement(UpdateCard, null)
   )
 }
 

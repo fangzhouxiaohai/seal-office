@@ -15,6 +15,7 @@ const { 注册云端通道 } = require('./cloudChannel')
 const { 注册Access数据库通道 } = require('./databaseChannel')
 const { 注册字体通道 } = require('./fontChannel')
 const { 注册Zotero通道 } = require('./zoteroChannel')
+const { 注册更新通道 } = require('./updateChannel')
 const { createService } = require('../cloud/service')
 const { 创建实名助手服务, 创建实名AI请求 } = require('../ai/identityGate')
 
@@ -52,6 +53,8 @@ function 注册全部通道(ipcMain, 依赖 = {}) {
   注册字体通道(ipcMain, 依赖)
   // Zotero 访问的是本机数据，与云端会话无关，因此单独注册，不合并进云端通道。
   注册Zotero通道(ipcMain, 依赖.zotero ?? {})
+  // 版本更新沿用云服务地址配置
+  注册更新通道(ipcMain, { cloudService, 更新服务: 依赖.更新服务 })
 }
 
 module.exports = { 注册全部通道, 创建共用助手服务 }

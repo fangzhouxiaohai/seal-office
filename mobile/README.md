@@ -2,13 +2,13 @@
 
 当前移动源码版本为 **2.7.0 / 20700**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。系统字体读取、自定义字体导入、专属格式字体嵌入和 DOCX/WPS 回退见[字体与跨平台兼容](../docs/字体与跨平台兼容.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名。本机只保留三个移动源码入口：`mobile/` 为工作源码，仓库根目录的 `android-mobile/` 与 `harmony-mobile/` 为各平台源码。`android-mobile/` 根目录保留原 HBuilderX 工程，`android-mobile/android-studio/` 是新的 Java 原生工程，不另开第四个顶层源码目录。两份旧云打包源码 ZIP、安装成品和校验记录位于 `release/v2.7.0/mobile-web/`。HBuilderX 安卓云源码仍受 60,000,000 字节限制；Java 本机打包不受该云服务收费门槛约束，完整字库与编辑器资源不得删减。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名。`mobile/` 为移动工作源码，`android-studio/` 为安卓 Java 本机工程，`android-mobile/` 保留原 HBuilderX 工程，`harmony-mobile/` 为鸿蒙项目；各工程均只有一个明确入口。两份旧云打包源码 ZIP、安装成品和校验记录位于 `release/v2.7.0/mobile-web/`。HBuilderX 安卓云源码仍受 60,000,000 字节限制；Java 本机打包不受该云服务收费门槛约束，完整字库与编辑器资源不得删减。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
 
 鸿蒙本地打包生成已签名 HAP 和 App Pack，独立验签后 HAP 可作为发行安装附件，App Pack 仅用于应用市场，不作为直接安装包对外分发。云服务返回的安卓文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档；签名与设备安装还需独立验证。
 
 Android、iOS、HarmonyOS 原有路径使用 **uni-app x / UTS 原生外壳 + 安装包内的本地 WebView 编辑器**；新增安卓路径使用 Java 原生宿主和同一份本地编辑器，H5 与 PC Web 使用同一自适应网页。编辑器沿用 React，基本文件处理和页面不依赖远端网页服务器。
 
-安卓新版优先使用 [Android Studio 本机工程](../android-mobile/android-studio/README.md)：先执行 `npm --prefix mobile run build:android`，再在 `android-mobile/android-studio/` 运行 `.\gradlew.bat testDebugUnitTest assembleDebug`。测试包与旧版应用并存。正式版沿用旧版签名证书、应用身份和完整本地资源路径；在隔离克隆设备上覆盖安装后，原有文档可打开、保存并在重启后重开。本机调试包不作为正式升级包。下文 HBuilderX 打包步骤保留作为原项目路径。
+安卓新版优先使用 [Android Studio 本机工程](../android-studio/README.md)：先执行 `npm --prefix mobile run build:android`，再在 `android-studio/` 运行 `.\gradlew.bat testDebugUnitTest assembleDebug`。测试包与旧版应用并存。正式版沿用旧版签名证书、应用身份和完整本地资源路径；在隔离克隆设备上覆盖安装后，原有文档可打开、保存并在重启后重开。本机调试包不作为正式升级包。下文 HBuilderX 打包步骤保留作为原项目路径。
 
 ## 运行与默认安卓打包
 
@@ -53,7 +53,7 @@ CLI 若提示“未检测到已打开的 HBuilderX”，脚本报失败，不将
 | 平台 | 命令 / 入口 | 验证状态 |
 | --- | --- | --- |
 | Android 旧工程 | HBuilderX 源码留档，不用于当前正式安卓版构建 | 保留原项目供历史追溯；当前安卓 APK 只使用下行 Android Studio Java 工程生成 |
-| Android Studio Java | `npm --prefix mobile run build:android`，`android-mobile/android-studio/` 本机 Gradle | 2.7.0 已完成旧签名一致性、包内全资源核对、并存测试包的启动、联网、导入和返回键验证；隔离克隆设备上的旧文档覆盖升级、保存和重开通过 |
+| Android Studio Java | `npm --prefix mobile run build:android`，`android-studio/` 本机 Gradle | 2.7.0 已完成旧签名一致性、包内全资源核对、并存测试包的启动、联网、导入和返回键验证；隔离克隆设备上的旧文档覆盖升级、保存和重开通过 |
 | iOS | `npm --prefix mobile run build:ios`，HBuilderX 选择 iOS | 原生外壳与接口共用，配置已预留；尚未编译、签名或真机验证 |
 | HarmonyOS | `npm --prefix mobile run build:harmony`，HBuilderX 生成原生项目，DevEco Studio 本机编译 | 2.7.0 已生成并分别验签 App Pack 与 HAP；本轮同步了最新网页资源和返回键原生逻辑，包内资源逐字节核对通过；尚未在真实设备安装 |
 | H5 / PC Web | `npm run web:build` → `mobile/unpackage/web/` | 手机和宽屏页面、文件往返、持久保存及中文 PDF 阅读/导出通过 |

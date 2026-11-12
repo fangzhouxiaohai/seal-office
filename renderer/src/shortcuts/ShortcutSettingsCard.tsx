@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, App as AntdApp, Button, Input, Select } from 'antd'
 import { findShortcutConflicts, getShortcutBindings, readShortcutOverrides, resetShortcutOverrides, saveShortcutOverrides, shortcutDefinitions, shortcutFromEvent, shortcutId, shortcutScopeNames, SHORTCUT_CHANGED_EVENT, SHORTCUT_STORAGE_KEY, type ShortcutOverrides, type ShortcutScope } from './shortcuts'
+import { 翻译界面文本 } from '../i18n/interfaceLanguage'
 import './shortcuts.css'
 
 /** 复用设置中心卡片和控件；改绑先在草稿中检查冲突，明确应用后持久化。 */
@@ -28,7 +29,7 @@ export default function ShortcutSettingsCard() {
     return () => { window.removeEventListener(SHORTCUT_CHANGED_EVENT, changed); window.removeEventListener('storage', storage) }
   }, [])
   const conflicts = findShortcutConflicts(overrides)
-  const visible = shortcutDefinitions.filter(definition => definition.scope === scope && `${definition.label} ${definition.command} ${getShortcutBindings(definition, overrides).join(' ')}`.toLowerCase().includes(search.trim().toLowerCase()))
+  const visible = shortcutDefinitions.filter(definition => definition.scope === scope && `${definition.label} ${翻译界面文本(definition.label, 'en-US')} ${definition.command} ${getShortcutBindings(definition, overrides).join(' ')}`.toLowerCase().includes(search.trim().toLowerCase()))
   const pageSize = 24, pages = Math.max(1, Math.ceil(visible.length / pageSize)), currentPage = Math.min(page, pages)
   const change = (id: string, shortcuts: string[] | null) => {
     setOverrides(current => {

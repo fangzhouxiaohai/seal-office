@@ -17,7 +17,7 @@ export default function MobileHome({children}:{children:ReactNode}){
   const subnav=section==='home'?[['home','最近'],['document','本机'],['shared','共享'],['star','星标'],['tag','标签']]:section==='cloud'?[['my-cloud','我的云空间'],['team','团队空间'],['knowledge','知识库'],['trash','回收站']]:null
   return <>
     <div className="seal-mobile-homebar">
-      <div className="seal-mobile-homebar__title"><strong>{section==='home'?'文档':section==='cloud'?'云盘':section==='templates'?'模板市场':section==='mine'?'我的':'办公服务'}</strong><Button aria-label="导入文件" onClick={importFile} icon={<Icon name="folder" size={17}/>}>导入文件</Button></div>
+      <div className="seal-mobile-homebar__title"><strong>{section==='home'?'文档':section==='cloud'?'云盘':section==='templates'?'模板市场':section==='mine'?'我的':'办公服务'}</strong><span className="seal-mobile-homebar__actions">{section==='home'&&document.documentElement.dataset.sealPlatform==='app'&&<Button aria-label="拍照扫描" onClick={()=>go('scan')} icon={<Icon name="scan" size={17}/>}>拍照扫描</Button>}<Button aria-label="导入文件" onClick={importFile} icon={<Icon name="folder" size={17}/>}>导入文件</Button></span></div>
       {subnav&&<nav className="seal-mobile-subnav" aria-label={section==='home'?'文档分类':'云空间分类'}>{subnav.map(([key,label])=><button key={key} aria-current={store.navKey===key||(key==='home'&&store.navKey==='recent')?'page':undefined} onClick={()=>go(key)}>{label}</button>)}</nav>}
       {section==='services'&&store.navKey!=='apps'&&<Button onClick={()=>go('apps')}>返回全部服务</Button>}
     </div>

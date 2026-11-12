@@ -41,7 +41,7 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
-  it('有损来源处于受保护查看，另存副本后恢复编辑', async () => {
+  it('有损来源处于仅查看，顶部提示条列出缺失项并提供另存入口，另存副本后恢复编辑', async () => {
     let 状态: ReturnType<typeof useAppStore> | null = null
     const 创建入口 = () => {
       状态 = useAppStore()
@@ -51,7 +51,11 @@ describe('编辑器容器', () => {
     await userEvent.click(screen.getByRole('button', { name: '打开有损文档' }))
     const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
     expect(编辑区.getAttribute('contenteditable')).toBe('false')
-    expect(screen.getByRole('status')).toHaveTextContent('图片尚未导入')
+    const 提示条 = screen.getByRole('status', { name: '仅查看提示' })
+    expect(提示条).toHaveTextContent('图片尚未导入')
+    expect(within(提示条).getByRole('button', { name: '另存副本以便编辑' })).toBeInTheDocument()
+    // 打开时已询问过的文件不再重复弹出导入警告
+    expect(screen.queryByText('文档内容可能未完整导入')).toBeNull()
     act(() => 状态!.set文档路径(状态!.activeDocumentId!, 'C:\\资料\\报告.sldoc'))
     await waitFor(() => expect(编辑区.getAttribute('contenteditable')).toBe('true'))
   })
@@ -135,25 +139,44 @@ describe('编辑器容器', () => {
     expect(screen.queryByRole('complementary', { name: '文档导航' })).toBeNull()
   })
 
-  it('导入未保真内容时显示警告弹窗', async () => {
+  it('带内容风险的来源文件只显示仅查看提示条，不重复弹出导入警告', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()
       return <button onClick={() => createDoc('word', '<p>原文</p>', { 路径: 'C:\\资料\\报告.docx', 警告: ['图片尚未导入'] })}>打开带警告文档</button>
     }
     render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告文档' }))
-    expect((await screen.findAllByText('文档内容可能未完整导入')).length).toBeGreaterThan(0)
+    // 打开时的询问弹窗已列出缺失项，这里不再重复弹窗
+    await waitFor(() => expect(screen.getByRole('status', { name: '仅查看提示' })).toHaveTextContent('图片尚未导入'))
+    expect(screen.queryByText('文档内容可能未完整导入')).toBeNull()
     expect(screen.getAllByText('图片尚未导入').length).toBeGreaterThan(0)
   })
 
-  it('目录域缓存直接打开时不弹导入警告，保存风险仍随文档保留', async () => {
+  it('目录域缓存直接打开时不弹导入警告、不进入仅查看，可直接覆盖保存且只提示一次', async () => {
     const 创建入口 = () => {
       const { createDoc } = useAppStore()
       return <button onClick={() => createDoc('word', '<p>目录正文</p>', { 路径: 'E:\\临时文件\\目录手册.docx', 警告: ['域代码未完整导入，已保留可读取的缓存结果'] })}>打开目录域文档</button>
     }
-    render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true, 文件指纹: '新指纹' })
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: {
+      backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }), saveToFile: 写入,
+      recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+      office: { writeDocx: vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' }) },
+    } })
+    const { container } = render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开目录域文档' }))
     await waitFor(() => expect(screen.queryByText('文档内容可能未完整导入')).toBeNull())
+    expect(screen.queryByRole('status', { name: '仅查看提示' })).toBeNull()
+    expect((container.querySelector('.wps-editor-canvas__content') as HTMLElement).getAttribute('contenteditable')).toBe('true')
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入.mock.calls[0]?.[0]).toBe('E:\\临时文件\\目录手册.docx'))
+    expect(screen.queryByText('已阻止覆盖来源文件')).toBeNull()
+    expect((await screen.findAllByText('已保存，部分效果将在 Word 或 WPS 中更新')).length).toBeGreaterThan(0)
+    await userEvent.click((await screen.findAllByRole('button', { name: '我知道了' })).slice(-1)[0])
+    await waitFor(() => expect(screen.queryByText('已保存，部分效果将在 Word 或 WPS 中更新')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('已保存，部分效果将在 Word 或 WPS 中更新')).toBeNull()
   })
 
 

@@ -165,6 +165,7 @@ export default {
         else if (action == 'font') this.font(id, messageString(message, 'family', 'sans'))
         else if (action == 'font-system-list') this.systemFonts(id)
         else if (action == 'pick-files') this.pickFiles(id, messageBoolean(message, 'multiple'))
+        else if (action == 'camera-capture') this.capturePhoto(id)
         else if (action == 'clipboard-write') {
           const text = messageString(message, 'text')
           if (text.length > 4194304) { this.reply({ id: id, type: 'error', error: '复制内容超过 4 MiB，请分段复制' }); return }
@@ -316,6 +317,46 @@ export default {
           this.readPickedFile(id, result.tempFiles, 0, 0)
         },
         fail: (error) => { this.reply({ id: id, type: error.errCode == 1101001 || error.errMsg.toLowerCase().includes('cancel') ? 'cancel' : 'error', error: error.errMsg }) }
+      })
+    },
+    // 拍照扫描（2.7.1）：网页层先展示本应用的授权说明，宿主再申请系统相机权限；拒绝时回传 camera-denied，
+    // 网页层提示后仍可相册或文件导入。旧 HBuilderX 安卓工程不声明相机权限，只提供导入。
+    capturePhoto(id: string) {
+      // #ifdef APP-HARMONY
+      UTSHarmony.requestSystemPermission(['ohos.permission.CAMERA'], (allRight: boolean, _granted: string[]) => {
+        if (allRight) this.openCamera(id)
+        else this.reply({ id: id, type: 'camera-denied', error: '未获得相机权限，可在系统设置中开启，或改用相册、文件导入' })
+      }, (_doNotAskAgain: boolean, _granted: string[]) => {
+        this.reply({ id: id, type: 'camera-denied', error: '未获得相机权限，可在系统设置中开启，或改用相册、文件导入' })
+      })
+      // #endif
+      // #ifndef APP-HARMONY
+      this.reply({ id: id, type: 'error', error: '当前安装包不提供拍照，请改用相册或文件导入' })
+      // #endif
+    },
+    openCamera(id: string) {
+      uni.chooseImage({ count: 1, sourceType: ['camera'], sizeType: ['original'],
+        success: (result) => {
+          if (result.tempFilePaths.length == 0) { this.reply({ id: id, type: 'cancel' }); return }
+          this.readCameraFile(id, result.tempFilePaths[0])
+        },
+        fail: (error) => {
+          const type = error.errCode == 1101001 || error.errMsg.toLowerCase().includes('cancel') ? 'cancel' : error.errCode == 1101005 ? 'camera-denied' : 'error'
+          this.reply({ id: id, type: type, error: type == 'camera-denied' ? '未获得相机权限，可在系统设置中开启，或改用相册、文件导入' : '系统相机未能完成拍摄，请重试或改用相册导入' })
+        }
+      })
+    },
+    readCameraFile(id: string, path: string) {
+      uni.getFileSystemManager().readFile({ filePath: path, encoding: 'base64',
+        success: (result) => {
+          const data = result.data as string
+          if (data.length == 0 || data.length > 139810136) { this.reply({ id: id, type: 'error', error: '照片为空或超过 100 MiB，无法导入' }); return }
+          this.reply({ id: id, type: 'file-start', name: 'photo-' + Date.now().toString() + '.jpg', size: Math.floor(data.length * 3 / 4) })
+          for (let start = 0; start < data.length; start += 32768) this.reply({ id: id, type: 'chunk', data: data.slice(start, start + 32768) })
+          this.reply({ id: id, type: 'file-end' })
+          this.reply({ id: id, type: 'end' })
+        },
+        fail: (_) => { this.reply({ id: id, type: 'error', error: '照片读取失败，请重试' }) }
       })
     },
     readPickedFile(id: string, files: ChooseFileTempFile[], index: number, transferred: number) {

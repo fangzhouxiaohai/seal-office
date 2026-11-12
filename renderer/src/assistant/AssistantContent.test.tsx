@@ -11,6 +11,17 @@ function 展示(内容: string) {
 afterEach(() => { 写入.mockReset(); 写入.mockResolvedValue(undefined); Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('助手回复按类型展示与复制', () => {
+  it('英文界面翻译回答和复制等固定控件，但保留原有对话正文和代码', () => {
+    const 视图 = render(<AntdApp><AssistantContent 内容={'# 中文标题\n\n```txt\n中文正文\n```\n\n```js\nconsole.log("中文")\n```'} 语言="en-US" /></AntdApp>)
+    expect(screen.getAllByText('Answer')).toHaveLength(2)
+    expect(screen.getByRole('heading', { name: '中文标题' })).toBeInTheDocument()
+    expect(screen.getByText('中文正文')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'JavaScript content' }).querySelector('code')).toHaveTextContent('console.log("中文")')
+    expect(screen.getByRole('button', { name: 'Copy Markdown source' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy text' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy JavaScript code' })).toBeInTheDocument()
+    视图.unmount()
+  })
   it('英文界面只翻译图片占位提示，不改写模型提供的图片说明', () => {
     render(<ConfigProvider><AntdApp><AssistantContent 内容="![用户的图表](https://example.com/chart.png)" 语言="en-US" /></AntdApp></ConfigProvider>)
     expect(screen.getByText('[Image: 用户的图表]')).toBeInTheDocument()

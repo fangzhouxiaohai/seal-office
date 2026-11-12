@@ -26,6 +26,9 @@ export interface SettingsState {
   /** 每次启动检查默认程序：打开时启动即校验，不是默认程序就静默设为默认 */
   启动时检查默认程序: boolean
   设置启动时检查默认程序: (开启: boolean) => void
+  /** 自动检查更新：默认开启；开启时启动检查一次并每 4 小时检查一次，关闭后不发任何自动请求 */
+  自动检查更新: boolean
+  设置自动检查更新: (开启: boolean) => void
 }
 
 const SettingsContext = createContext<SettingsState | null>(null)
@@ -133,6 +136,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     catch { return true }
   })
 
+  // 默认开启：自动检查更新，存储方式与「启动时检查默认程序」一致
+  const [自动检查更新, set自动检查更新] = useState<boolean>(() => {
+    try { return localStorage.getItem('seal-update-auto') !== '关闭' }
+    catch { return true }
+  })
+
   const 切换主题 = () => {
     const 新主题 = 主题 === '浅色' ? '深色' : '浅色'
     try {
@@ -175,9 +184,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     set启动时检查默认程序(开启)
   }
 
+  const 保存自动检查更新 = (开启: boolean) => {
+    try {
+      localStorage.setItem('seal-update-auto', 开启 ? '开启' : '关闭')
+    } catch (原因) {
+      set错误({ 标题: '保存更新设置失败', 内容: 原因 instanceof Error ? 原因.message : '无法写入本机设置' })
+      return
+    }
+    set自动检查更新(开启)
+  }
+
   return (
     <设置错误上下文.Provider value={{ 错误, 清除错误: () => set错误(null) }}>
-      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 皮肤, 已安装皮肤, 设置皮肤, 安装皮肤, 卸载皮肤, 预览皮肤: set预览, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查 }}>
+      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 皮肤, 已安装皮肤, 设置皮肤, 安装皮肤, 卸载皮肤, 预览皮肤: set预览, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查, 自动检查更新, 设置自动检查更新: 保存自动检查更新 }}>
         {children}
       </SettingsContext.Provider>
     </设置错误上下文.Provider>

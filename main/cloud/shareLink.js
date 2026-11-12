@@ -32,7 +32,8 @@ function createShareLinkService(service) {
    *   i 节点标识（密文的 AAD 上下文需要它，放在片段里才不会泄露给服务器）。
    */
   const fragment = payload => b64url(Buffer.from(JSON.stringify(payload), 'utf8'))
-  const linkUrl = (id, access, payload) => `${origin()}/share/#/s/${id}?a=${access}&k=${fragment(payload)}`
+  // 入口版本放在片段前，使浏览器不会复用早期错误缓存的后台首页；凭据仍只在片段中。
+  const linkUrl = (id, access, payload) => `${origin()}/share/?v=2#/s/${id}?a=${access}&k=${fragment(payload)}`
 
   async function shareLinkCreate(input) {
     if (!input || typeof input.id !== 'string' || !/^[0-9a-f-]{36}$/.test(input.id)) throw new Error('分享链接标识无效')

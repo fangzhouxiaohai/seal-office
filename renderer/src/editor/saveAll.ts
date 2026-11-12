@@ -12,6 +12,7 @@ import { 表格文本输出, 单表数据输出 } from '../sheet/sheetSave'
 import { 可保存扩展, 原生文档类型 } from '../fileFormats'
 import { 写出办公文档, 写出PDF文档 } from '../office/writeDocument'
 import type { 演示文稿 } from '../ppt/deck'
+import { 存在内容风险 } from '../fileWarnings'
 
 export type 待保存类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
@@ -26,7 +27,7 @@ export interface 待保存文档 {
   演示模型?: 演示文稿
   PDF数据?: string
   文件指纹?: string
-  /** 导入来源路径：与来源同名且导入时有警告时不允许直接覆盖 */
+  /** 导入来源路径：与来源同名且导入时有内容风险时不允许直接覆盖 */
   来源路径?: string
   警告?: string[]
 }
@@ -155,7 +156,8 @@ export async function 保存全部文档(列表: 待保存文档[]): Promise<保
   let 已取消 = false
   for (const 文档 of 列表) {
     try {
-      if (文档.来源路径 && 文档.路径 && (文档.警告?.length ?? 0) > 0 && 是同一路径(文档.路径, 文档.来源路径) && !/\.(sldoc|slxls|slppt|sealdoc|sealsheet|sealshow)$/i.test(文档.路径)) {
+      // 只有内容风险会阻止覆盖来源文件；目录页码缓存、近似颜色等保真风险允许直接覆盖保存。
+      if (文档.来源路径 && 文档.路径 && 存在内容风险(文档.警告) && 是同一路径(文档.路径, 文档.来源路径) && !/\.(sldoc|slxls|slppt|sealdoc|sealsheet|sealshow)$/i.test(文档.路径)) {
         throw new Error('导入时有未完整导入的内容，已阻止覆盖来源文件，请另存为副本')
       }
       let 路径 = 文档.路径

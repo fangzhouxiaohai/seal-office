@@ -207,7 +207,7 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(工作簿.worksheets[0].getRow(3).hidden).toBe(true)
     expect(工作簿.worksheets[0].getRow(4).hidden).toBe(false)
     const 读回 = await 读取xlsx(数据)
-    expect(读回.工作表列表[0].元数据.筛选).toEqual({ 列: 0, 值: '甲' })
+    expect(读回.工作表列表[0].元数据.筛选).toEqual({ 范围: 'A1:A4', 列条件: [{ 列: 0, 值列表: ['甲'] }] })
     expect(读回.警告).not.toContain('筛选条件未导入')
   })
   it('空白筛选以原生条件保存并读回', async () => {
@@ -216,9 +216,10 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     const 工作表Xml = await 压缩包.file('xl/worksheets/sheet1.xml').async('string')
     expect(工作表Xml).toContain('<filters blank="1"/>')
     const 读回 = await 读取xlsx(数据)
-    expect(读回.工作表列表[0].元数据.筛选).toEqual({ 列: 0, 值: '' })
+    expect(读回.工作表列表[0].元数据.筛选).toEqual({ 范围: 'A1:A3', 列条件: [{ 列: 0, 空白: true }] })
     expect(读回.警告).not.toContain('筛选条件未导入')
   })
+  // 2.7.1 起空白与指定值组合可完整读入，不再判为未导入（旧断言为 toBeUndefined + 筛选条件未导入）。
   it('包含空白和指定值的复合筛选不会被误读为单一空白条件', async () => {
     const 数据 = await 写入xlsx({ 工作表: [{ 名称: '复合筛选', 数据: [['类别'], [''], ['甲']], 筛选: { 列: 0, 值: '' } }] })
     const 压缩包 = await JSZip.loadAsync(数据)
@@ -226,8 +227,8 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     const 原Xml = await 压缩包.file(路径).async('string')
     压缩包.file(路径, 原Xml.replace('<filters blank="1"/>', '<filters blank="1"><filter val="甲"/></filters>'))
     const 读回 = await 读取xlsx(await 压缩包.generateAsync({ type: 'nodebuffer' }))
-    expect(读回.工作表列表[0].元数据.筛选).toBeUndefined()
-    expect(读回.警告).toContain('筛选条件未导入')
+    expect(读回.工作表列表[0].元数据.筛选).toEqual({ 范围: 'A1:A3', 列条件: [{ 列: 0, 值列表: ['甲'], 空白: true }] })
+    expect(读回.警告).not.toContain('筛选条件未导入')
   })
   it('基础格式、合并、行列尺寸与冻结可写入并读回', async () => {
     const 数据 = await 写入xlsx({ 工作表: [{
@@ -316,7 +317,7 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     表.getCell('A1').numFmt = '000000'
     const 结果 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
     expect(结果.工作表列表[0].元数据.单元格格式.A1.字体颜色).toBe('#EEECE1')
-    expect(结果.警告).not.toContain('部分主题色或透明颜色未导入')
+    expect(结果.警告).not.toContain('部分颜色按近似值导入')
     expect(结果.工作表列表[0].元数据.单元格格式.A1.数字格式代码).toBe('000000')
     expect(结果.警告).not.toContain('部分数字格式未导入')
     const 重存 = await 写入xlsx({ 行: [[{ 文字: [{ 文本: '1234' }], 格式: 结果.工作表列表[0].元数据.单元格格式.A1 }]] })
@@ -343,7 +344,9 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     expect(重开.警告).toEqual([])
   })
 
-  it('未知主题索引、透明色与尚未支持的主题色调仍提示保真风险', async () => {
+  // 2.7.1 起透明色忽略透明通道、主题色调按 HLS 计算，只有真正无法解析的未知主题索引才提示，
+  // 提示文案统一为“部分颜色按近似值导入”（保真风险）。旧断言要求三者都告警且都不导入颜色。
+  it('未知主题索引仍提示保真风险，透明色与主题色调正常导入', async () => {
     const 工作簿 = new ExcelJS.Workbook()
     const 表 = 工作簿.addWorksheet('未覆盖颜色')
     for (const [地址, 颜色] of [['A1', { theme: 99 }], ['B1', { argb: '00336699' }], ['C1', { theme: 4, tint: 0.5 }]]) {
@@ -351,8 +354,10 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
       表.getCell(地址).font = { color: 颜色 }
     }
     const 读取 = await 读取xlsx(await 工作簿.xlsx.writeBuffer())
-    expect(读取.警告).toContain('部分主题色或透明颜色未导入')
-    for (const 地址 of ['A1', 'B1', 'C1']) expect(读取.工作表列表[0].元数据.单元格格式[地址]?.字体颜色).toBeUndefined()
+    expect(读取.警告).toEqual(['部分颜色按近似值导入'])
+    expect(读取.工作表列表[0].元数据.单元格格式.A1?.字体颜色).toBeUndefined()
+    expect(读取.工作表列表[0].元数据.单元格格式.B1.字体颜色).toBe('#336699')
+    expect(读取.工作表列表[0].元数据.单元格格式.C1.字体颜色).toBe('#A7C0DE')
   })
 
   it('显式彩色细边框导入和写回保持颜色', async () => {

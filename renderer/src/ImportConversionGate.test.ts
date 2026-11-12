@@ -6,7 +6,7 @@ import { 准备打开本地文件, 注册导入确认弹窗, 通过路径打开�
 const require=createRequire(import.meta.url),codec=require('../../main/office/sealFormat.js')
 const original=window.electronAPI
 let unregister:(()=>void)|undefined
-afterEach(()=>{unregister?.();unregister=undefined;window.electronAPI=original;vi.restoreAllMocks()})
+afterEach(()=>{unregister?.();unregister=undefined;window.electronAPI=original;vi.restoreAllMocks();try{localStorage.clear()}catch{}})
 function fixture(){
   const files=new Map<string,string>([['source.xlsx','ORIGINAL_SOURCE_BYTES']])
   const save=vi.fn(async(path:string,data:string)=>{files.set(path,data);return {成功:true,文件指纹:'converted-fingerprint'}})
@@ -18,15 +18,15 @@ function fixture(){
   }} as any
   return {files,save,picker}
 }
-it('取消不完整导入前不创建标签、不弹保存框、不写原文件或副本',async()=>{
+it('选择仅查看时以来源路径打开、不弹保存框、不写原文件或副本',async()=>{
   const {files,save,picker}=fixture(),open=vi.fn(),error=vi.fn(),confirm=vi.fn(options=>options.onCancel?.())
   unregister=注册导入确认弹窗(confirm)
-  expect(await 通过路径打开文件('source.xlsx',{info:vi.fn(),success:vi.fn()},{error},open)).toBe(false)
-  expect(confirm.mock.calls[0][0]).toMatchObject({okText:'查看已识别内容',cancelText:'取消打开'})
-  expect(open).not.toHaveBeenCalled();expect(error).not.toHaveBeenCalled();expect(picker).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled()
+  expect(await 通过路径打开文件('source.xlsx',{info:vi.fn(),success:vi.fn()},{error},open)).toBe(true)
+  expect(confirm.mock.calls[0][0]).toMatchObject({okText:'另存副本并编辑',cancelText:'仅查看'})
+  expect(open.mock.calls[0][2]).toBe('source.xlsx');expect(error).not.toHaveBeenCalled();expect(picker).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled()
   expect([...files]).toEqual([['source.xlsx','ORIGINAL_SOURCE_BYTES']])
 })
-it('确认后只查看已识别内容，保留来源路径和字节，等待用户主动另存副本',async()=>{
+it('选择另存副本并编辑后打开链路不直接写盘，保留来源路径和字节，由编辑器接着弹出另存为',async()=>{
   const {files,save,picker}=fixture(),open=vi.fn()
   unregister=注册导入确认弹窗(options=>options.onOk?.())
   expect(await 通过路径打开文件('source.xlsx',{info:vi.fn(),success:vi.fn()},{error:vi.fn()},open)).toBe(true)

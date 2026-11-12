@@ -7,7 +7,7 @@ export const 导航色调: Record<string, 色调> = {
   'my-cloud': 'blue', knowledge: 'teal', market: 'orange', skins: 'pink', device: 'indigo', tag: 'pink', team: 'green', trash: 'slate',
   desktop: 'sky', document: 'blue', download: 'teal', browse: 'indigo',
   pdf: 'red', mindmap: 'purple', flow: 'teal', multitable: 'green', design: 'pink', notes: 'amber',
-  calendar: 'orange', apps: 'violet', help: 'slate', ai: 'purple', aippt: 'orange', database: 'indigo', settings: 'slate',
+  calendar: 'orange', scan: 'teal', receipt: 'green', apps: 'violet', help: 'slate', ai: 'purple', aippt: 'orange', database: 'indigo', settings: 'slate',
   word: 'blue', table: 'green', ppt: 'orange', template: 'violet',
 }
 

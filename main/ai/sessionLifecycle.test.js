@@ -114,6 +114,15 @@ afterEach(async () => {
 })
 
 describe('真实助手服务的文件会话生命周期', () => {
+  it('切换为英文后新一轮会话按英文答复但保留历史原文', async () => {
+    const 环境 = await 创建环境()
+    await 环境.对话(新文件标识, '先保留中文历史')
+    await 环境.对话(新文件标识, 'Summarize', 1, { 界面语言: 'en-US' })
+    const 消息 = 环境.请求列表.at(-1).messages
+    expect(消息[0].content).toContain('默认使用英文')
+    expect(消息[0].content).not.toContain('直接回复中文正文')
+    expect(消息.some(项 => 项.content === '先保留中文历史')).toBe(true)
+  })
   it('未保存文档绑定实际路径后，新服务恢复完整消息、工具和待确认候选', async () => {
     const 环境 = await 创建环境()
     const 原会话 = await 环境.生成候选()

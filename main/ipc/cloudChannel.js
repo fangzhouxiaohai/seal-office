@@ -34,6 +34,8 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     mySharesList:i=>shareLinkService().mySharesList(i),mySharesBatch:i=>shareLinkService().mySharesBatch(i),mySharesCleanupPreview:()=>shareLinkService().mySharesCleanupPreview(),
     // Zotero 中文社区资料：站点无 CORS 头，必须由主进程代理后才能在各端使用。
     zoteroIndex:()=>zotero().index(),zoteroRead:i=>zotero().read(i),
+    // 版本更新查询（Web 与移动端）：沿用当前云服务地址，接口匿名访问
+    updateLatest:i=>service().request('/v1/updates/latest?'+new URLSearchParams({platform:String(i.platform||''),version:String(i.version||''),channel:String(i.channel||'stable')})),
     conversionCapabilities:()=>service().conversionCapabilities(),convertDocument:i=>service().convertDocument(i),
     status:()=>service().status(),refresh:()=>service().refresh(),
     code:i=>service().sendCode(i.phone,i.purpose),login:i=>service().login(i.phone,i.code),logout:()=>service().logout(),
@@ -73,7 +75,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     }
   }
   ipcMain.handle('cloud.invoke',async(_event,action,input={})=>{
-    try{if(!Object.prototype.hasOwnProperty.call(calls,action))throw new Error('云端操作不受支持');if(!input||typeof input!=='object')throw new Error('请求参数无效');const result=await calls[action](input);if(action!=='shareLinkCreate'&&result&&typeof result==='object'&&!Array.isArray(result)&&Object.prototype.hasOwnProperty.call(result,'url')){const {url,...data}=result;return {成功:true,数据:data}}return {成功:true,数据:result}}
+    try{if(!Object.prototype.hasOwnProperty.call(calls,action))throw new Error('云端操作不受支持');if(!input||typeof input!=='object')throw new Error('请求参数无效');const result=await calls[action](input);if(!['shareLinkCreate','updateLatest'].includes(action)&&result&&typeof result==='object'&&!Array.isArray(result)&&Object.prototype.hasOwnProperty.call(result,'url')){const {url,...data}=result;return {成功:true,数据:data}}return {成功:true,数据:result}}
     catch(error){return AI失败结果(error,'云端操作失败')}
   })
 }

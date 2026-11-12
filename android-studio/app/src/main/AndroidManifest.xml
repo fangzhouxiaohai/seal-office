@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 2.7.1 拍照扫描：仅在用户点“拍照”并确认授权说明后申请，用于拍摄文档与单据；拒绝后仍可相册或文件导入。 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <application
+        android:label="${appLabel}"
+        android:icon="@drawable/seal_logo"
+        android:usesCleartextTraffic="false"
+        android:allowBackup="false"
+        android:theme="@style/Theme.SealOffice.Starting"
+        android:enableOnBackInvokedCallback="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- 系统相机把照片写入应用缓存 camera/ 目录，只授权单次写入，不暴露其他目录。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.scanfiles"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/scan_files" />
+        </provider>
+    </application>
+</manifest>

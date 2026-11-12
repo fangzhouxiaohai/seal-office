@@ -52,6 +52,9 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'design', label: '设计', icon: 'edit', implemented: true },
     { key: 'notes', label: '笔记', icon: 'doc-word', implemented: true },
     { key: 'calendar', label: '日历', icon: 'calendar', implemented: true },
+    // 2.7.1 拍照扫描与单据识别：拍照仅 Android / HarmonyOS，桌面与网页为导入，网页版不提供扫描件库。
+    { key: 'scan', label: '扫描与识别', icon: 'scan', implemented: true },
+    { key: 'receipt', label: '单据转表格', icon: 'doc-table', implemented: true },
     { key: 'apps', label: '应用', icon: 'apps', implemented: true },
   ],
   [

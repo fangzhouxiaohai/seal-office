@@ -108,6 +108,19 @@
 .database-sql-card textarea { font-family: var(--font-code, ui-monospace, Consolas, monospace); }
 .database-row-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-4); max-height: min(60vh, 620px); overflow: auto; padding-right: var(--space-2); }
 .database-row-form .ant-form-item { min-width: 0; }
+/* 2.7.1 选择式建表与查询：只复用现有间距、圆角与文字色变量，不新增颜色。 */
+.database-field-label { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.database-chip-row, .database-sql-tools, .database-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
+.database-sql-tools > .ant-select, .database-filter-row > .ant-select { min-width: 160px; }
+.database-filter-row > .ant-input { flex: 1 1 160px; min-width: 0; width: auto; }
+.database-table-builder { display: grid; gap: var(--space-2); min-width: 0; }
+.database-field-rows { display: grid; gap: var(--space-2); max-height: min(46vh, 460px); overflow: auto; padding-right: var(--space-1); }
+.database-field-row { display: grid; grid-template-columns: minmax(120px, 1.4fr) minmax(110px, 1fr) 76px auto auto auto; align-items: start; gap: var(--space-2); min-width: 0; padding: var(--space-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+.database-field-row__name { display: grid; gap: var(--space-1); min-width: 0; }
+.database-field-row__type, .database-field-row__length { width: 100%; min-width: 0; }
+.database-field-row__error { color: var(--ant-color-error, currentColor); font-size: 12px; line-height: 1.4; }
+.database-field-row__switch { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 32px; color: var(--text-2); font-size: 13px; white-space: nowrap; }
+.database-field-row__actions { justify-self: end; }
 .database-page button:focus-visible, .database-page input:focus-visible, .database-page textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 @container wps-main (max-width: 900px) {
   .calendar-layout, .diagram-layout { grid-template-columns: 1fr; }
@@ -125,6 +138,17 @@
   .database-summary, .database-table-toolbar { align-items: flex-start; flex-direction: column; }
   .database-table-card { padding-inline: var(--space-4); }
   .database-row-form { grid-template-columns: 1fr; }
+  /* 窄屏：字段行拆成两列网格，名称与类型各占一行，避免横向溢出 */
+  .database-field-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .database-field-row__name, .database-field-row__type { grid-column: 1 / -1; }
+  .database-field-row__actions { grid-column: 1 / -1; justify-self: start; }
+}
+/* 弹窗挂在 body 上不受容器查询影响，窄视口另按视口宽度收拢字段行 */
+@media (max-width: 620px) {
+  .database-field-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .database-field-row__name, .database-field-row__type { grid-column: 1 / -1; }
+  .database-field-row__actions { grid-column: 1 / -1; justify-self: start; }
+  .database-sql-tools > .ant-select, .database-filter-row > .ant-select { flex: 1 1 100%; min-width: 0; }
 }
 @container wps-main (max-width: 480px) {
   .calendar-card__nav, .calendar-grid { min-width: 350px; }

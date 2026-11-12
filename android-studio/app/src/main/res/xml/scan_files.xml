@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 拍照扫描临时照片目录：仅应用缓存下的 camera/，读取后即删除。 -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

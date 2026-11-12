@@ -133,7 +133,7 @@ type Xlsx工作表 = {
   默认行高?: number
   视图?: Sheet['视图']
   冻结?: { 行: number; 列: number }
-  筛选?: { 列: number; 值: string }
+  筛选?: import('./model').工作表筛选
   保护?: boolean
   图片?: SheetImage[]
 }

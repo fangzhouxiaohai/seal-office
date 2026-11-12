@@ -308,7 +308,7 @@ describe('演示文稿编辑器容器', () => {
     await userEvent.click(取消按钮[取消按钮.length - 1])
     expect(screen.getByRole('tab', { name: /汇报\.pptx/ })).toBeInTheDocument()
   })
-  it.each(['图片尚未导入','图片效果未完整导入','图片填充区域未完整导入','组合锁定属性未完整导入','图表外部属性未完整导入','原生对象已被外部修改，语义结构未完整导入'])('导入风险 %s 弹窗提示并禁止覆盖来源', async 风险 => {
+  it.each(['图片尚未导入','图表外部属性未完整导入','原生对象已被外部修改，语义结构未完整导入','图片与文字图层未完整导入'])('内容风险 %s 进入仅查看并禁止覆盖来源', async 风险 => {
     const 写入 = vi.fn()
     const 编码 = vi.fn()
     Object.defineProperty(window, 'electronAPI', {
@@ -330,15 +330,47 @@ describe('演示文稿编辑器容器', () => {
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
-    expect((await screen.findAllByText('演示文稿内容可能未完整导入')).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(风险).length).toBeGreaterThan(0)
+    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent(风险)
+    expect(screen.queryByText('演示文稿内容可能未完整导入')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '保存' }))
     expect((await screen.findAllByText('已阻止覆盖来源文件')).length).toBeGreaterThan(0)
     expect(编码).not.toHaveBeenCalled()
     expect(写入).not.toHaveBeenCalled()
   })
 
-  it('有保真风险的演示只能在确认后另存到不同路径', async () => {
+  it.each(['图片效果未完整导入','图片填充区域未完整导入','组合锁定属性未完整导入'])('保真风险 %s 不锁定文件，可直接覆盖保存', async 风险 => {
+    const 写入 = vi.fn().mockResolvedValue({ 成功: true })
+    const 编码 = vi.fn().mockResolvedValue({ 成功: true, 数据: 'UEsDBAo=' })
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }),
+        backupSave: vi.fn().mockResolvedValue({ 成功: true }),
+        backupClear: vi.fn().mockResolvedValue({ 成功: true }),
+        saveToFile: 写入,
+        recentAdd: vi.fn().mockResolvedValue({ 成功: true }),
+        presentationResources: { export: vi.fn().mockResolvedValue({ 成功: true, 条目: [] }), sync: vi.fn().mockResolvedValue({ 成功: true }), release: vi.fn().mockResolvedValue({ 成功: true }) },
+        office: { writePptx: 编码 },
+      },
+    })
+    const 创建入口 = () => {
+      const 状态 = useAppStore()
+      return <>
+        <button onClick={() => 状态.createDoc('ppt', 创建演示文稿(), { 路径: 'C:\\资料\\汇报.pptx', 警告: [风险] })}>打开近似演示</button>
+        {状态.module === 'ppt' ? <PptEditor /> : null}
+      </>
+    }
+    render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
+    await userEvent.click(screen.getByRole('button', { name: '打开近似演示' }))
+    expect(screen.queryByRole('status', { name: '仅查看提示' })).toBeNull()
+    expect(screen.queryByText('演示文稿内容可能未完整导入')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(写入).toHaveBeenCalled())
+    expect(screen.queryByText('已阻止覆盖来源文件')).toBeNull()
+    expect((await screen.findAllByText('已保存，部分效果将在 PowerPoint 或 WPS 中更新')).length).toBeGreaterThan(0)
+  })
+
+  it('有内容风险的演示只能在确认后另存到不同路径', async () => {
     const 写入 = vi.fn().mockResolvedValue({ 成功: true })
     const 选择路径 = vi.fn().mockResolvedValueOnce('C:\\资料\\汇报.pptx').mockResolvedValueOnce('C:\\资料\\副本.pptx')
     Object.defineProperty(window, 'electronAPI', {
@@ -361,7 +393,7 @@ describe('演示文稿编辑器容器', () => {
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
-    await screen.findAllByText('演示文稿内容可能未完整导入')
+    await screen.findByRole('status', { name: '仅查看提示' })
     await userEvent.click(screen.getByRole('button', { name: '另存为' }))
     await waitFor(() => expect(选择路径).toHaveBeenCalledTimes(1))
     expect(写入).not.toHaveBeenCalled()

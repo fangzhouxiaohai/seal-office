@@ -8,6 +8,7 @@ import { AppProvider, useAppStore } from '../store'
 import DocEditor from '../editor/DocEditor'
 import AiAssistant from './AiAssistant'
 import { 标记放映开始 } from '../ppt/presentationState'
+import { InterfaceLanguageAdapter } from '../i18n/interfaceLanguage'
 
 // This file exercises AI behavior as an explicitly verified, isolated account.
 const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
@@ -19,6 +20,23 @@ const 受信AI测试账号 = () => ({ invoke: vi.fn(async (action: string) => {
 afterEach(() => { Reflect.deleteProperty(window, 'electronAPI') })
 
 describe('智能助手对话修改链路', () => {
+  it('英文界面翻译进度控件但保留历史计划、思考和回答原文', async () => {
+    localStorage.setItem('seal-language', 'en-US')
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
+      getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: vi.fn(), onToolCall: () => () => {},
+      getSession: vi.fn().mockResolvedValue({ 成功: true, 数据: { 显示消息: [{ 角色: 'assistant', 内容: '删除', 思考: '打开', 状态: '完成', 执行记录: [{ id: 'a', 标题: '更新任务计划', 状态: '完成' }] }], 摘要: '', 压缩次数: 0, 计划: [{ id: 'p', title: '保存', status: 'completed' }] } }),
+    }, backupLoad: vi.fn().mockResolvedValue({ 成功: true, 内容: null }) } })
+    try {
+      render(<SettingsProvider><InterfaceLanguageAdapter/><ConfigProvider button={{ autoInsertSpace: false }}><AntdApp><AppProvider><AiAssistant /></AppProvider></AntdApp></ConfigProvider></SettingsProvider>)
+      await userEvent.click(await screen.findByRole('button', { name: 'Open Assistant' }))
+      expect(await screen.findByText('Progress · 1 completed')).toBeInTheDocument()
+      expect(screen.getByText('删除')).toBeInTheDocument()
+      const 计划 = document.querySelector('.assistant-plan')!
+      expect(计划).toHaveTextContent('保存')
+      const 思考 = document.querySelector('.assistant-thinking')!
+      expect(思考).toHaveTextContent('打开')
+    } finally { localStorage.removeItem('seal-language') }
+  })
   it('已完成回复收起执行过程，保留可展开的逐项状态与回答', async () => {
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }),
@@ -232,8 +250,8 @@ describe('智能助手对话修改链路', () => {
     expect(对话.mock.calls[0][0].文档上下文.length).toBeGreaterThan(120000)
     expect(document.querySelectorAll('.assistant-preview__item')).toHaveLength(20)
     await userEvent.click(screen.getByRole('button', { name: '下一页修改' }))
-    expect(screen.getByText('修改后：批量新文21')).toBeInTheDocument()
-    expect(screen.queryByText('修改后：批量新文1')).not.toBeInTheDocument()
+    expect(screen.getByText('批量新文21', { selector: '.assistant-preview__new span' })).toBeInTheDocument()
+    expect(screen.queryByText('批量新文1', { selector: '.assistant-preview__new span' })).not.toBeInTheDocument()
   })
 
   it('恢复持久会话与压缩摘要，后续追问保留完整历史并能开始新对话', async () => {
@@ -751,7 +769,7 @@ describe('助手自动确认与发送快捷键', () => {
     expect(screen.queryByRole('button', { name: '应用修改' })).not.toBeInTheDocument()
   })
 
-  it('有损导入的来源文件仍处于受保护查看时，助手不能写入原件', async () => {
+  it('含内容风险的来源文件处于仅查看时，助手不能写入原件', async () => {
     const 对话 = vi.fn().mockResolvedValue(修改回复)
     Object.defineProperty(window, 'electronAPI', { configurable: true, value: { cloud: 受信AI测试账号(), ai: {
       getConfig: vi.fn().mockResolvedValue({ 成功: true, 数据: { 名称: '测试', 地址: 'http://localhost/chat', 模型: '测试', 已配置密钥: false } }), chat: 对话,
@@ -763,7 +781,7 @@ describe('助手自动确认与发送快捷键', () => {
     await userEvent.type(screen.getByRole('textbox', { name: '发送给智能助手的消息' }), '把标题改一下')
     await userEvent.click(screen.getByRole('button', { name: '发送' }))
     await waitFor(() => expect(对话).toHaveBeenCalled())
-    await waitFor(() => expect(screen.getAllByText(/受保护查看.*另存为副本/).length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText(/仅查看.*另存副本/).length).toBeGreaterThan(0))
     expect(screen.getByTestId('受保护正文')).toHaveTextContent('原始标题')
     expect(screen.queryByRole('button', { name: '应用修改' })).not.toBeInTheDocument()
   })

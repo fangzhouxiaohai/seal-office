@@ -42,11 +42,21 @@ describe('真实 DOCX 兼容边界到编辑器保存链路', () => {
     }
   })
 
+  it('只有域缓存保真提示时 file.save 不再阻止覆盖原始 DOCX', async () => {
+    const 读取 = await 读正文('<w:p><w:fldSimple w:instr="DATE"><w:r><w:t>2026年10月18日</w:t></w:r></w:fldSimple></w:p>')
+    expect(读取.警告).toEqual(['域代码未完整导入，已保留可读取的缓存结果'])
+    const 写出 = vi.fn().mockResolvedValue({ 成功: false, 错误: '测试中止' }), 提示 = vi.fn(), 通知 = vi.fn(), 来源 = 'C:\\资料\\原始.docx'
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { saveToFile: vi.fn(), office: { writeDocx: 写出 } } })
+    命令表['file.save'].run({ 当前文档名: '原始.docx', 当前文档路径: 来源, 读取内容: () => 净化富文本(读取.html), 保真风险: { 来源路径: 来源, 警告: 读取.警告 }, 提示保真风险: 提示, notify: 通知, view: { 纸张: 'A4', 纸张方向: '纵向', 页边距: '常规', 分栏: '一栏', 水印: '无', 页面边框: '无', 页面颜色: '#FFFFFF', 文字方向: '横排' } } as any)
+    await vi.waitFor(() => expect(写出).toHaveBeenCalled())
+    expect(通知).not.toHaveBeenCalledWith(expect.stringContaining('已阻止'))
+    expect(提示).not.toHaveBeenCalled()
+  })
+
   it.each([
-    '<w:p><w:fldSimple w:instr="DATE"><w:r><w:t>2026年10月18日</w:t></w:r></w:fldSimple></w:p>',
     '<w:p><w:moveFrom w:id="1"><w:r><w:t>移动前</w:t></w:r></w:moveFrom><w:moveTo w:id="2"><w:r><w:t>移动后</w:t></w:r></w:moveTo></w:p>',
     '<w:p><w:r><w:rPr><w:b/><w:rPrChange w:id="3"><w:rPr><w:i/></w:rPr></w:rPrChange></w:rPr><w:t>当前仅加粗</w:t></w:r></w:p>',
-  ])('实际导入警告阻止 file.save 直接覆盖原始 DOCX：%s', async body => {
+  ])('内容风险警告阻止 file.save 直接覆盖原始 DOCX：%s', async body => {
     const 读取 = await 读正文(body)
     expect(读取.警告.length).toBeGreaterThan(0)
     const 保存 = vi.fn(), 写出 = vi.fn(), 提示 = vi.fn(), 来源 = 'C:\\资料\\原始.docx'

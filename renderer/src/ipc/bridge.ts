@@ -13,6 +13,10 @@ export interface 最近文档记录 {
   置顶?: boolean
   时间?: number
 }
+/** 版本更新：平台取值与服务端发布表一致；unsupported 表示当前运行方式不支持在线更新（便携版、非 Windows 桌面）。 */
+export type 更新平台 = 'windows' | 'windows-store' | 'web' | 'android' | 'harmony' | 'unsupported'
+export interface 版本发布 { hasUpdate: boolean; version?: string; mandatory?: boolean; notes?: string; url?: string | null; sha256?: string | null; bytes?: number | null; publishedAt?: number }
+export interface 更新操作结果<T> { 成功: boolean; 数据?: T; 错误?: string; 状态码?: number; 不支持?: boolean }
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
 export type 思考强度 = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra'
 export type 思考参数模式 = 'none' | 'three' | 'four' | 'six' | 'thinking' | 'budget'
@@ -22,7 +26,7 @@ export interface 助手计划项 { id: string; title: string; status: 'pending' 
 export interface 助手待确认候选 { 回复: string; 修改: unknown[]; 文档上下文: string; 文件快照: string | null }
 export interface 助手执行记录 { id: string; 标题: string; 状态: '执行中' | '完成' | '失败' | '已停止'; 详情?: string }
 export interface 助手会话 { 显示消息: Array<{ 角色: 'user' | 'assistant'; 内容: string; 思考?: string; 状态?: '完成' | '已停止' | '失败'; 阶段?: string; 执行记录?: 助手执行记录[] }>; 摘要: string; 计划: 助手计划项[]; 压缩次数: number; 待确认候选?: 助手待确认候选 | null }
-export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 用途?: '识别' | '演示生成' | '图片转演示' | '知识问答' | '文档搜索'; 请求标识?: string; 思考强度?: 思考强度; 会话标识?: string; 自动执行?: boolean; 只读对话?: boolean; 手动压缩?: boolean; 上下文令牌?: number; 文件快照?: string }
+export interface 助手对话输入 { 消息: Array<{ 角色: 'user' | 'assistant'; 内容: string }>; 文档上下文: string; 界面语言?: 'zh-CN' | 'en-US'; 用途?: '识别' | '演示生成' | '图片转演示' | '知识问答' | '文档搜索'; 请求标识?: string; 思考强度?: 思考强度; 会话标识?: string; 自动执行?: boolean; 只读对话?: boolean; 手动压缩?: boolean; 上下文令牌?: number; 文件快照?: string }
 export interface 助手流片段 { 请求标识: string; 类型: '思考' | '正文' | '状态' | '计划' | '工具' | '压缩'; 内容: string; 调用标识?: string; 工具?: string; 执行状态?: 助手执行记录['状态']; 详情?: string }
 export interface 助手工具请求 { 请求标识: string; 调用标识: string; 工具: string; 参数: unknown }
 export interface 助手工具结果 { 请求标识: string; 调用标识: string; 成功: boolean; 数据?: unknown; 错误?: string }
@@ -135,15 +139,16 @@ export interface 演示捕获接口 {
   recognitionStatus: () => Promise<识别状态结果>
   recognize: (数据: string, 类型: string) => Promise<{ 成功: boolean; 文本?: string; 错误?: string }>
 }
-export type Access数据库操作 = 'inspect' | 'query' | 'readTable' | 'execute' | 'insert' | 'update' | 'delete' | 'createTable' | 'dropTable' | 'importRows'
+export type Access数据库操作 = 'inspect' | 'query' | 'readTable' | 'execute' | 'insert' | 'update' | 'delete' | 'createTable' | 'alterTable' | 'dropTable' | 'importRows'
 export type Access单元格值 = string | number | boolean | null | { __type: 'binary'; length: number }
-export interface Access字段信息 { name: string; type: string; dataType?: number | string | null; ordinal?: number | null; maxLength?: number | null; nullable: boolean; defaultValue?: Access单元格值 }
+export interface Access字段信息 { name: string; type: string; dataType?: number | string | null; ordinal?: number | null; maxLength?: number | null; nullable: boolean; defaultValue?: Access单元格值; autoIncrement?: boolean }
 export interface Access索引信息 { name: string; columns: string[]; primary: boolean; unique: boolean }
 export interface Access表信息 { name: string; type: string; columns: Access字段信息[]; indexes: Access索引信息[]; primaryKey: string[] }
 export interface Access关系信息 { name: string; primaryTable: string; primaryColumn: string; foreignTable: string; foreignColumn: string }
 export interface Access数据库结构 { tables: Access表信息[]; queries: Array<{ name: string; type: string }>; relationships: Access关系信息[]; 提供者?: string; 位数?: number; 格式代际?: string }
 export interface Access查询结果 { columns: Array<{ name: string; type: string }>; rows: Array<Record<string, Access单元格值>>; truncated: boolean; rowCount: number; 提供者?: string; 位数?: number; 格式代际?: string }
-export interface Access操作结果<T = Record<string, unknown>> { 成功: boolean; 数据?: T; 路径?: string; 已取消?: boolean; 需要旧版转换?: boolean; 安装地址?: string; 错误?: string }
+export type Access错误类别 = '驱动未安装' | '目录不可写' | '文件损坏' | '文件已存在' | '密码错误' | '结构冲突' | '其他'
+export interface Access操作结果<T = Record<string, unknown>> { 成功: boolean; 数据?: T; 路径?: string; 已取消?: boolean; 需要旧版转换?: boolean; 安装地址?: string; 错误?: string; 错误类别?: Access错误类别; 详情?: string; 已创建?: boolean; 原因?: string }
 export interface Access数据库状态 { 成功: boolean; 可用?: boolean; 平台支持?: boolean; 提供者?: Array<{ 名称: string; 位数: number }>; 安装地址?: string; 兼容范围?: { 直接读写?: string[]; 不支持?: string[] }; 错误?: string }
 export interface Access数据库接口 {
   status: () => Promise<Access数据库状态>
@@ -179,6 +184,10 @@ export interface 演示生成接口 {
     semanticSearch: (输入: { 请求标识: string; 查询: string }) => Promise<{ 成功: boolean; 数据?: 素材搜索结果; 错误?: string }>
   }
 }
+/** 表格保存回读校验的单条差异；说明为主进程生成的中文文案。 */
+export interface 表格回读差异 { 表: string; 位置?: string; 项目: string; 期望?: unknown; 实际?: unknown; 说明: string }
+export interface 表格保存快照结果 { 成功: boolean; 标识?: string; 有原文件?: boolean; 错误?: string }
+export interface 表格回读校验结果 { 成功: boolean; 一致?: boolean; 失败?: 表格回读差异[]; 警告?: 表格回读差异[]; 已抽样?: boolean; 失败总数?: number; 警告总数?: number; 错误?: string }
 export interface 电子接口 {
   database?: Access数据库接口
   showSaveDialog: (默认文件名: string, 保存类型?: 'word' | 'table' | 'ppt' | 'pdf' | 'ofd') => Promise<string | null>
@@ -244,6 +253,11 @@ export interface 电子接口 {
   checkIntegrity: () => Promise<完整性检查结果>
   getHelpContent: () => Promise<Record<string, string>>
   getAppInfo: () => Promise<应用信息>
+  update?: {
+    info: () => Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }>
+    check: (通道: 'stable' | 'beta') => Promise<更新操作结果<版本发布>>
+    install: (发布: 版本发布) => Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean }>>
+  }
   cloud?: { invoke: (action: string, input?: unknown) => Promise<云端响应<any>> }
   zotero?: { invoke: (动作: string, 输入?: unknown) => Promise<云端响应<any>> }
   ai: {
@@ -264,7 +278,7 @@ export interface 电子接口 {
   }
   presentationAi?: 演示智能接口
   presentationGeneration?: 演示生成接口
-  office: { readSeal:(扩展:string,数据:string)=>Promise<any>;writeSeal:(类型:string,数据:unknown)=>Promise<any>;readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any> }
+  office: { readSeal:(扩展:string,数据:string)=>Promise<any>;writeSeal:(类型:string,数据:unknown)=>Promise<any>;readCompatible: (扩展: string, 数据: string) => Promise<any>; writeCompatible: (类型: string, 扩展: string, 模型: unknown) => Promise<any>; writeDocx: (模型: unknown) => Promise<any>; readDocx: (数据: string) => Promise<any>; readXlsx: (数据: string) => Promise<any>; writeXlsx: (模型: unknown) => Promise<any>; readPptx: (数据: string) => Promise<any>; writePptx: (模型: unknown) => Promise<any>; xlsxSaveSnapshot?: (路径: string) => Promise<表格保存快照结果>; xlsxVerifySaved?: (标识: string, 模型: unknown) => Promise<表格回读校验结果>; xlsxRestoreOriginal?: (标识: string) => Promise<{ 成功: boolean; 错误?: string }>; xlsxReleaseSnapshot?: (标识: string) => Promise<{ 成功: boolean; 错误?: string }> }
   fonts?: {
     list: (选项?: { 刷新?: boolean }) => Promise<字体目录结果>
     read: (标识: string) => Promise<字体读取结果>
@@ -433,6 +447,13 @@ export const 桥接 = {
   checkIntegrity: (): Promise<完整性检查结果> => 取后端()?.checkIntegrity() ?? 失败('请使用 Windows 打包版本检查安装目录'),
   openExternal: (地址: string) => 取后端()?.openExternal?.(地址) ?? 失败('当前环境不支持打开外部链接'),
   getHelpContent: () => 取后端()?.getHelpContent() ?? Promise.resolve({}),
+  /** 版本更新（桌面主进程）：版本号来自 app.getVersion()，安装包由主进程下载并校验 */
+  update: {
+    get 可用() { return typeof 取后端()?.update?.check === 'function' },
+    info: (): Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }> => 取后端()?.update?.info() ?? 失败('当前环境不支持检查更新'),
+    check: (通道: 'stable' | 'beta' = 'stable'): Promise<更新操作结果<版本发布>> => 取后端()?.update?.check(通道) ?? 失败('当前环境不支持检查更新'),
+    install: (发布: 版本发布): Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean }>> => 取后端()?.update?.install(发布) ?? 失败('当前环境不支持在线更新'),
+  },
   getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务' }),
   ai: {
     get 可用() { return typeof 取后端()?.ai?.getConfig === 'function' && typeof 取后端()?.ai?.chat === 'function' },
@@ -507,6 +528,11 @@ export const 桥接 = {
     readCompatible: (扩展: string, 数据: string) => 取后端()?.office.readCompatible?.(扩展, 数据) ?? 失败('当前环境缺少文档兼容引擎'),
     writeCompatible: (类型: string, 扩展: string, 模型: unknown) => 取后端()?.office.writeCompatible?.(类型, 扩展, 模型) ?? 失败('当前环境缺少文档兼容引擎'),
     writeDocx: (模型: unknown) => 取后端()?.office.writeDocx(模型) ?? 失败('当前环境不支持文字文档写入'), readDocx: (数据: string) => 取后端()?.office.readDocx(数据) ?? 失败('当前环境不支持文字文档读取'), readXlsx: (数据: string) => 取后端()?.office.readXlsx(数据) ?? 失败('当前环境不支持表格文档读取'), writeXlsx: (模型: unknown) => 取后端()?.office.writeXlsx(模型) ?? 失败('当前环境不支持表格文档写入'), readPptx: (数据: string) => 取后端()?.office.readPptx(数据) ?? 失败('当前环境不支持演示文档读取'), writePptx: (模型: unknown) => 取后端()?.office.writePptx(模型) ?? 失败('当前环境不支持演示文档写入'),
+    /** 表格保存回读校验：写盘前快照、写盘后从磁盘回读比对、按需恢复原文件；旧宿主缺少能力时返回失败而不阻断保存。 */
+    xlsxSaveSnapshot: (路径: string): Promise<表格保存快照结果> => 取后端()?.office.xlsxSaveSnapshot?.(路径) ?? 失败('当前环境不支持保存后回读校验'),
+    xlsxVerifySaved: (标识: string, 模型: unknown): Promise<表格回读校验结果> => 取后端()?.office.xlsxVerifySaved?.(标识, 模型) ?? 失败('当前环境不支持保存后回读校验'),
+    xlsxRestoreOriginal: (标识: string) => 取后端()?.office.xlsxRestoreOriginal?.(标识) ?? 失败('当前环境不支持恢复原文件'),
+    xlsxReleaseSnapshot: (标识: string) => 取后端()?.office.xlsxReleaseSnapshot?.(标识) ?? Promise.resolve({ 成功: true }),
   },
   pdf: {
     insertBlank: (数据: string, 位置: number) => 取后端()?.pdf.insertBlank(数据, 位置) ?? 失败('当前环境不支持 PDF 插入空白页'),    insertPages: (数据: string, 插入数据: string, 页码: number[], 位置: number) => 取后端()?.pdf.insertPages(数据, 插入数据, 页码, 位置) ?? 失败('当前环境不支持 PDF 插入页面'),

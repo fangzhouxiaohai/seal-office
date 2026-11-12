@@ -152,6 +152,9 @@ export default function AiSettingsCard({ onSaved, compact = false, children, 自
     </div>
     {children}
     {配置.已配置密钥 ? <Checkbox checked={清除密钥} disabled={保存中} onChange={(事件) => set清除密钥(事件.target.checked)}>删除已保存密钥</Checkbox> : null}
-    <div className="assistant-settings__actions"><Button className="assistant-icon-button" type="text" icon={<Icon name="trash" size={16} />} aria-label="清除设置" title="清除设置" onClick={清除设置} disabled={!桌面可用 || 保存中} /><Button className="assistant-icon-button" type="primary" icon={<Icon name="save" size={16} />} aria-label="保存模型设置" title="保存模型设置" onClick={() => void 保存()} loading={保存中} disabled={!桌面可用 || 读取中} /></div>
+    <div className="assistant-settings__actions">
+      <Button className="assistant-settings__action assistant-settings__action--clear" icon={<Icon name="trash" size={16} variant="outline" />} aria-label="清除设置" onClick={清除设置} disabled={!桌面可用 || 保存中}>清除设置</Button>
+      <Button className="assistant-settings__action assistant-settings__action--save" type="primary" icon={<Icon name="save" size={16} variant="outline" />} aria-label="保存模型设置" onClick={() => void 保存()} loading={保存中} disabled={!桌面可用 || 读取中}>保存设置</Button>
+    </div>
   </section>
 }

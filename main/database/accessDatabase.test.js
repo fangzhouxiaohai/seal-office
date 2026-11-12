@@ -1,7 +1,7 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { POWERSHELL_SCRIPT, 执行PowerShell请求, 规范请求, 提供者顺序, 创建Access数据库服务 } = require('./accessDatabase')
+const { POWERSHELL_SCRIPT, 执行PowerShell请求, 规范请求, 提供者顺序, 创建Access数据库服务, 分类Access错误 } = require('./accessDatabase')
 
 describe('Access 数据库兼容服务', () => {
   let 目录
@@ -26,7 +26,7 @@ describe('Access 数据库兼容服务', () => {
 
   it('创建 ACCDB 时不使用会强制生成 Jet 4.0 MDB 的 Engine Type=5', () => {
     expect(POWERSHELL_SCRIPT).not.toContain('Jet OLEDB:Engine Type=5')
-    expect(POWERSHELL_SCRIPT).toContain("$catalog.Create($connectionString)")
+    expect(POWERSHELL_SCRIPT).toContain('$catalog.Create((New-SealConnectionString $request))')
   })
 
   it('ACE 连接使用标准 Data Source 键，避免误报找不到可安装的 ISAM', () => {
@@ -121,5 +121,123 @@ describe('Access 数据库兼容服务', () => {
     const 服务 = 创建Access数据库服务({ 平台: 'linux' })
     expect(await 服务.status()).toMatchObject({ 成功: true, 可用: false, 平台支持: false })
     expect(await 服务.invoke('inspect', { 路径: 数据库路径 })).toMatchObject({ 成功: false, 错误: expect.stringContaining('Windows') })
+  })
+})
+
+describe('Access 2.7.1 新建修复与错误分类', () => {
+  const 驱动缺失 = [
+    { provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 错误: '使用“0”个参数调用“Open”时发生异常:“未在本地计算机上注册“Microsoft.ACE.OLEDB.16.0”提供程序。”' },
+    { provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 32, 错误: 'Class not registered' },
+    { provider: 'Microsoft.ACE.OLEDB.12.0', 位数: 64, 错误: 'The provider is not registered on the local machine.' },
+  ]
+
+  it('新建使用连接串构造器传路径，分号、等号、单引号不会被拆成连接参数', () => {
+    expect(POWERSHELL_SCRIPT).not.toContain("';Data Source=' + $request.path")
+    expect(POWERSHELL_SCRIPT).toMatch(/\$catalog\.Create\(\(New-SealConnectionString \$request\)\)/)
+    expect(POWERSHELL_SCRIPT).toContain("$builder['Data Source'] = [string]$Request.path")
+  })
+
+  it('含中文、空格、单引号与分号的绝对路径原样进入请求，不做截断或改写', () => {
+    const 路径 = path.join(os.tmpdir(), "测试 库's", '甲;乙=丙.accdb')
+    const 结果 = 规范请求('create', { 路径 })
+    expect(结果.请求.path).toBe(path.resolve(路径))
+    expect(JSON.parse(JSON.stringify(结果.请求)).path).toBe(path.resolve(路径))
+  })
+
+  it('全部提供者均未注册时归类为驱动未安装并给出安装地址', () => {
+    const 结果 = 分类Access错误(驱动缺失, { 动作: 'create', 扩展名: '.accdb' })
+    expect(结果.错误类别).toBe('驱动未安装')
+    expect(结果.错误).toContain('Access Runtime')
+    expect(结果.安装地址).toMatch(/^https:\/\/support\.microsoft\.com\//)
+  })
+
+  it('新建时目录无写入权限或目录不存在归类为目录不可写，不再说打开失败', () => {
+    for (const 原因 of [
+      'Microsoft Access 数据库引擎无法打开文件“C:\\Windows\\System32\\x.accdb”或向其写入数据。它已经被其他用户以独占方式打开，或者您没有查看和写入其数据的权限。',
+      '“E:\\不存在\\x.accdb”不是一个有效的路径。确定路径名称拼写是否正确，以及是否连接到文件存放的服务器。',
+    ]) {
+      const 结果 = 分类Access错误([{ provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 错误: 原因 }, ...驱动缺失.slice(1)], { 动作: 'create', 扩展名: '.accdb' })
+      expect(结果.错误类别).toBe('目录不可写')
+      expect(结果.错误).not.toContain('打开失败')
+      expect(结果.安装地址).toBeUndefined()
+    }
+  })
+
+  it('不可识别的数据库格式归类为文件损坏，并剥离 PowerShell 异常外壳保留原始原因', () => {
+    const 结果 = 分类Access错误([
+      { provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 错误: "使用“0”个参数调用“Open”时发生异常:“不可识别的数据库格式 'E:\\损坏.accdb'。”" },
+      ...驱动缺失.slice(1),
+    ], { 动作: 'inspect', 扩展名: '.accdb' })
+    expect(结果.错误类别).toBe('文件损坏')
+    expect(结果.详情).toBe("不可识别的数据库格式 'E:\\损坏.accdb'。")
+  })
+
+  it('目标已存在、主键重复、类型不兼容、索引字段删除都有具体中文提示', () => {
+    const 分类 = (错误, 动作 = 'alterTable') => 分类Access错误([{ provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 错误 }], { 动作, 扩展名: '.accdb' })
+    expect(分类('目标数据库文件已存在', 'create')).toMatchObject({ 错误类别: '文件已存在', 错误: expect.stringContaining('换一个文件名') })
+    expect(分类('由于将在索引、 主关键字、或关系中创建重复的值，请求对表的改变没有成功。').错误).toContain('重复值或空值')
+    expect(分类('标准表达式中数据类型不匹配。').错误).toContain('无法转换')
+    expect(分类('不能删除已成为索引的一部分或是系统所需要的字段。').错误).toContain('主键或索引')
+  })
+
+  it('无法归类的错误保留引擎原文并加统一前缀，便于双语映射', () => {
+    const 结果 = 分类Access错误([{ provider: 'Microsoft.ACE.OLEDB.16.0', 位数: 64, 错误: 'FROM 子句语法错误。' }, ...驱动缺失.slice(1)], { 动作: 'query', 扩展名: '.accdb' })
+    expect(结果).toMatchObject({ 错误类别: '其他', 错误: '数据库引擎返回错误：FROM 子句语法错误。' })
+  })
+
+  it('服务把引擎失败转换为分类结果并保留各提供者尝试记录', async () => {
+    const 服务 = 创建Access数据库服务({
+      平台: 'win32',
+      获取PowerShell候选: () => [{ 路径: 'x64', 位数: 64 }, { 路径: 'x86', 位数: 32 }],
+      运行: async (请求, shell) => ({ success: false, error: shell.位数 === 32 ? 'Class not registered' : 'Microsoft Access 数据库引擎无法打开文件“C:\\Windows\\x.accdb”或向其写入数据。' }),
+    })
+    const 结果 = await 服务.invoke('create', { 路径: path.join(os.tmpdir(), '不可写.accdb') })
+    expect(结果).toMatchObject({ 成功: false, 错误类别: '目录不可写' })
+    expect(结果.尝试.length).toBeGreaterThan(1)
+  })
+
+  it('结构读取会标记自动编号字段', () => {
+    expect(POWERSHELL_SCRIPT).toContain('IsAutoIncrement')
+    expect(POWERSHELL_SCRIPT).toContain('autoIncrement =')
+  })
+})
+
+describe('Access 表结构修改请求', () => {
+  let 目录
+  let 数据库路径
+  beforeEach(() => {
+    目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-access-alter-'))
+    数据库路径 = path.join(目录, '业务.accdb')
+    fs.writeFileSync(数据库路径, '测试占位')
+  })
+  afterEach(() => fs.rmSync(目录, { recursive: true, force: true }))
+
+  const 规范 = (输入) => 规范请求('alterTable', { 路径: 数据库路径, 表名: '客户', ...输入 }).请求
+
+  it('增加字段与修改类型复用建表类型白名单', () => {
+    expect(规范({ 操作: 'addColumn', 字段: { 名称: '备注', 类型: 'LONGTEXT' } })).toMatchObject({ action: 'alterTable', operation: 'addColumn', table: '客户', column: '备注', type: 'LONGTEXT', required: false })
+    expect(规范({ 操作: 'alterColumn', 字段: { 名称: '年龄', 类型: 'double', 必填: true } })).toMatchObject({ operation: 'alterColumn', column: '年龄', type: 'DOUBLE', required: true })
+    expect(() => 规范({ 操作: 'addColumn', 字段: { 名称: '坏', 类型: 'VARCHAR(10); DROP TABLE x' } })).toThrow('数据类型不受支持')
+  })
+
+  it('已有字段不能改为自动编号，如实给出中文原因', () => {
+    expect(() => 规范({ 操作: 'alterColumn', 字段: { 名称: '序号', 类型: 'COUNTER' } })).toThrow('自动编号只能在新建字段时设置')
+  })
+
+  it('重命名、删除字段与主键变更参数校验', () => {
+    expect(规范({ 操作: 'renameColumn', 字段名: '年龄', 新名称: '岁数' })).toMatchObject({ operation: 'renameColumn', column: '年龄', newName: '岁数' })
+    expect(() => 规范({ 操作: 'renameColumn', 字段名: '年龄', 新名称: '年龄' })).toThrow('新字段名与原字段名相同')
+    expect(规范({ 操作: 'dropColumn', 字段名: '备注' })).toMatchObject({ operation: 'dropColumn', column: '备注' })
+    expect(规范({ 操作: 'setPrimaryKey', 主键: ['编号', '姓名'] })).toMatchObject({ operation: 'setPrimaryKey', primaryKey: ['编号', '姓名'] })
+    expect(规范({ 操作: 'setPrimaryKey', 主键: [] }).primaryKey).toEqual([])
+    expect(() => 规范({ 操作: 'setPrimaryKey', 主键: ['编号', '编号'] })).toThrow('主键字段不能重复')
+    expect(() => 规范({ 操作: 'truncate' })).toThrow('不支持的表结构修改')
+  })
+
+  it('PowerShell 端：重命名走 ADOX，主键变更在事务中先删后建', () => {
+    expect(POWERSHELL_SCRIPT).toContain("$request.action -eq 'alterTable'")
+    expect(POWERSHELL_SCRIPT).toContain('.Columns.Item([string]$request.column).Name = [string]$request.newName')
+    expect(POWERSHELL_SCRIPT).toMatch(/DROP CONSTRAINT[\s\S]*ADD CONSTRAINT \[PrimaryKey\] PRIMARY KEY/)
+    expect(POWERSHELL_SCRIPT).toMatch(/setPrimaryKey[\s\S]*BeginTransaction\(\)[\s\S]*Rollback\(\)/)
   })
 })

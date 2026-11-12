@@ -1,5 +1,5 @@
 // 设置页：单页滚动、分组卡片行。可操作项接入本机行为；系统组件或云端服务未接入时说明边界。
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { App as AntdApp, Switch, Button, Input, Select } from 'antd'
 import { useSettings } from '../store/settingsStore'
 import { useAppStore } from '../store'
@@ -13,12 +13,18 @@ import FontLibraryCard from '../fonts/FontLibraryCard'
 import { resetShortcutOverrides } from '../shortcuts/shortcuts'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
+import { 检查更新, 展示更新, 读取更新平台, 手动检查间隔 } from '../update/updateCenter'
+import '../update/updateCard.css'
 import './settings.css'
 
 const SettingsPage = () => {
   const 桌面系统功能 = !document.documentElement.dataset.sealPlatform
   const { message, modal } = AntdApp.useApp()
-  const { 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序 } = useSettings()
+  const { 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序, 自动检查更新, 设置自动检查更新 } = useSettings()
+  const [当前版本, 设当前版本] = useState<string>(__APP_VERSION__)
+  const [检查中, 设检查中] = useState(false)
+  const [检查状态, 设检查状态] = useState<{ 文字: string; 可重试: boolean } | null>(null)
+  const 上次手动检查 = useRef(0)
   const { goHome } = useAppStore()
   const [翻译地址, 设翻译地址] = useState('')
   const [翻译密钥, 设翻译密钥] = useState('')
@@ -192,6 +198,33 @@ const SettingsPage = () => {
   /** 分组标题 */
   const 组标题 = (标题: string) => <h2 className="settings-group__title">{标题}</h2>
 
+  // 当前版本：桌面取主进程 app.getVersion()，Web 与移动端取构建时注入的版本号
+  useEffect(() => {
+    let 有效 = true
+    void 读取更新平台().then(信息 => { if (有效) 设当前版本(信息.版本) }).catch(() => {})
+    return () => { 有效 = false }
+  }, [])
+
+  /** 手动检查：不受自动开关影响；加载中禁用，连续点击至少间隔 5 秒；结果如实显示 */
+  const 手动检查更新 = async () => {
+    if (检查中 || Date.now() - 上次手动检查.current < 手动检查间隔) return
+    上次手动检查.current = Date.now()
+    设检查中(true)
+    设检查状态(null)
+    try {
+      const 结果 = await 检查更新()
+      if (结果.类型 === '有新版') { 展示更新(结果.发布, '手动'); 设检查状态(null) }
+      else if (结果.类型 === '已最新') 设检查状态({ 文字: `已是最新版本（${结果.版本}）`, 可重试: false })
+      else if (结果.类型 === '商店版') 设检查状态({ 文字: '当前为商店版本，请到微软商店更新', 可重试: false })
+      else if (结果.类型 === '不支持') 设检查状态({ 文字: '当前运行方式不支持在线更新', 可重试: false })
+      else if (结果.状态码 === 429) 设检查状态({ 文字: '检查过于频繁，请稍后重试', 可重试: true })
+      else if (结果.状态码 !== undefined && 结果.状态码 >= 500) 设检查状态({ 文字: '更新服务暂时不可用，请稍后重试', 可重试: true })
+      else 设检查状态({ 文字: '检查更新失败，请检查网络后重试', 可重试: true })
+    } finally {
+      设检查中(false)
+    }
+  }
+
   /** 设置行：标题 + 描述 + 右侧控件；传点击时整行为链接行（右侧箭头） */
   const 设置行 = (
     标题: string,
@@ -324,6 +357,26 @@ const SettingsPage = () => {
 
         {组标题('智能助手')}
         <AiSettingsCard />
+
+        {/* 关于与更新 */}
+        {组标题('关于与更新')}
+        <div className="settings-wps-card">
+          {设置行(
+            '自动检查更新',
+            '启动时检查一次，运行期间每 4 小时检查一次；关闭后不再自动联网检查，仍可手动检查',
+            <Switch aria-label="自动检查更新" checked={自动检查更新} onChange={设置自动检查更新} />
+          )}
+          {设置行(
+            '当前版本',
+            '手动检查不受自动检查开关影响；发现新版本时弹出更新卡片',
+            <div className="settings-update-control">
+              <span className="settings-wps-row__status">{当前版本}</span>
+              {检查状态 ? <span className="settings-wps-row__status" role="status">{检查状态.文字}</span> : null}
+              {检查状态?.可重试 ? <Button size="small" disabled={检查中} onClick={() => void 手动检查更新()}>重试</Button> : null}
+              <Button size="small" loading={检查中} disabled={检查中} onClick={() => void 手动检查更新()}>检查更新</Button>
+            </div>
+          )}
+        </div>
 
         {/* 其他 */}
         {组标题('其他')}

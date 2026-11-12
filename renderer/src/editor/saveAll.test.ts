@@ -87,6 +87,27 @@ describe('关闭前保存全部文档', () => {
     expect(结果.已取消).toBe(false)
   })
 
+  it('仅有保真风险（目录页码缓存、近似颜色）时允许覆盖来源文件', async () => {
+    const { 保存 } = 安装桥接()
+    const 结果 = await 保存全部文档([{
+      标识: '乙', 名称: '目录.docx', 类型: 'word', 路径: 'C:\\来源\\目录.docx',
+      html: '<p>正文</p>', 来源路径: 'C:\\来源\\目录.docx', 警告: ['域代码未完整导入，已保留可读取的缓存结果'],
+    }])
+    expect(结果.失败).toEqual([])
+    expect(结果.已保存.map((项) => 项.标识)).toEqual(['乙'])
+    expect(保存).toHaveBeenCalledTimes(1)
+  })
+
+  it('保真风险与内容风险并存时仍阻止覆盖', async () => {
+    const { 保存 } = 安装桥接()
+    const 结果 = await 保存全部文档([{
+      标识: '丙', 名称: '混合.docx', 类型: 'word', 路径: 'C:\\来源\\混合.docx',
+      html: '<p>正文</p>', 来源路径: 'C:\\来源\\混合.docx', 警告: ['域代码未完整导入，已保留可读取的缓存结果', '图片未导入'],
+    }])
+    expect(保存).not.toHaveBeenCalled()
+    expect(结果.失败[0].原因).toContain('已阻止覆盖来源文件')
+  })
+
   it('单个文档失败不打断其余文档，并带出原因', async () => {
     const 保存 = vi.fn(async (路径: string) => 路径.endsWith('坏.docx')
       ? { 成功: false, 错误: '文件被其他程序占用' }

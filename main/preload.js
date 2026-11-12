@@ -143,6 +143,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (地址) => ipcRenderer.invoke('system.openExternal', 地址),
   getHelpContent: () => ipcRenderer.invoke('help.getContent'),
   getAppInfo: () => ipcRenderer.invoke('app.getInfo'),
+  update: {
+    info: () => ipcRenderer.invoke('update.info'),
+    check: (通道) => ipcRenderer.invoke('update.check', 通道),
+    install: (发布) => ipcRenderer.invoke('update.install', 发布),
+  },
   ai: {
     getConfig: () => ipcRenderer.invoke('ai.getConfig'),
     saveConfig: (配置) => ipcRenderer.invoke('ai.saveConfig', 配置),
@@ -225,6 +230,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     writeXlsx: (模型) => ipcRenderer.invoke('office.writeXlsx', 模型),
     readPptx: (数据) => ipcRenderer.invoke('office.readPptx', 数据),
     writePptx: (模型) => ipcRenderer.invoke('office.writePptx', 模型),
+    xlsxSaveSnapshot: (路径) => ipcRenderer.invoke('office.xlsxSaveSnapshot', 路径),
+    xlsxVerifySaved: (标识, 模型) => ipcRenderer.invoke('office.xlsxVerifySaved', 标识, 模型),
+    xlsxRestoreOriginal: (标识) => ipcRenderer.invoke('office.xlsxRestoreOriginal', 标识),
+    xlsxReleaseSnapshot: (标识) => ipcRenderer.invoke('office.xlsxReleaseSnapshot', 标识),
   },
   fonts: {
     list: (选项) => ipcRenderer.invoke('font.list', 选项),

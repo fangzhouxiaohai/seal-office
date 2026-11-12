@@ -12,11 +12,21 @@ test('匿名分享地址由独立下载页处理，不回落到管理后台', ()
   const deploy = read('scripts/deploy-server.cjs')
   assert.match(html, /id="download"[^>]*>下载文件/)
   assert.doesNotMatch(html, /登录管理后台|管理员工作台/)
-  assert.match(html, /<script src="\.\/app\.js"/)
+  assert.match(html, /<script src="\.\/app\.js\?v=2"/)
   assert.doesNotMatch(html, /<script>/)
   assert.ok(fs.existsSync(path.join(root, 'share/app.js')))
   assert.match(config, /location \^~ \/share\//)
   assert.match(config, /\/share\//)
+  for (const configFile of ['server/deploy/nginx-admin-assets.conf', 'server/deploy/nginx-https.conf']) {
+    const source = read(configFile)
+    for (const route of [/location = \/share\/\s*\{([^}]*)\}/, /location \^~ \/share\/\s*\{([^}]*)\}/]) {
+      const match = source.match(route)
+      assert.ok(match, `${configFile} 缺少下载页路由`)
+      assert.match(match[1], /Cache-Control[^\n]*no-store/)
+      assert.match(match[1], /Referrer-Policy[^\n]*no-referrer/)
+      assert.match(match[1], /Content-Security-Policy[^\n]*script-src 'self'/)
+    }
+  }
   assert.match(deploy, /share\/index\.html/)
   assert.match(deploy, /share\/app\.js/)
 })

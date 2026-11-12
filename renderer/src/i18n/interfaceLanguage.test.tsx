@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -9,6 +9,7 @@ import { SettingsProvider, useSettings } from '../store/settingsStore'
 import { RIBBON_TABS, type RibbonTabSpec } from '../editor/ribbon/tabSpecs'
 import { 表格标签 } from '../sheet/ribbonSpecs'
 import { 演示标签 } from '../ppt/ribbonSpecs'
+import { shortcutDefinitions, shortcutScopeNames } from '../shortcuts/shortcuts'
 import { InterfaceLanguageAdapter, 翻译界面文本 } from './interfaceLanguage'
 
 const 夹具 = () => {
@@ -35,6 +36,49 @@ describe('界面中英文适配', () => {
     expect(翻译界面文本('首页', 'en-US')).toBe('Home')
     expect(翻译界面文本('找到 2 个匹配文件', 'en-US')).toBe('Found 2 matching files')
     expect(翻译界面文本('首页', 'zh-CN')).toBe('首页')
+  })
+
+  it('英文界面覆盖移动编辑模式和各格式状态栏', () => {
+    expect(翻译界面文本('可编辑', 'en-US')).toBe('Editable')
+    expect(翻译界面文本('只读', 'en-US')).toBe('Read-only')
+    expect(翻译界面文本('计数：2', 'en-US')).toBe('Count: 2')
+    expect(翻译界面文本('求和：-12.5', 'en-US')).toBe('Sum: -12.5')
+    expect(翻译界面文本('平均值：6', 'en-US')).toBe('Average: 6')
+    expect(翻译界面文本('文本框：3', 'en-US')).toBe('Text boxes: 3')
+    expect(翻译界面文本('恢复百分之百', 'en-US')).toBe('Reset zoom to 100%')
+    expect(翻译界面文本('字体：HarmonyOS Sans SC', 'en-US')).toBe('Font: HarmonyOS Sans SC')
+    expect(翻译界面文本('字体：用户字体', 'en-US')).toBe('Font: 用户字体')
+  })
+
+  it('英文界面翻译新建入口、移动导航和助手常见固定文案', () => {
+    const 文案 = ['应用服务', '思维导图', '本机', '导入文件', '服务', '模板', '我的', '回答', '自动应用', '描述修改或写作需求，也可以提问…', 'Enter 发送 · Shift+Enter 换行', '云文档自动保存已开启，内容变动后加密同步']
+    expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+    expect(翻译界面文本('执行过程 · 5 项已完成', 'en-US')).toBe('Progress · 5 completed')
+    expect(翻译界面文本('执行过程 · 已完成 2/5 项', 'en-US')).toBe('Progress · 2/5 completed')
+    expect(翻译界面文本('5 项已完成', 'en-US')).toBe('5 completed')
+    expect(翻译界面文本('已完成 2/5 项', 'en-US')).toBe('2/5 completed')
+    expect(翻译界面文本('更新任务计划', 'en-US')).toBe('Update task plan')
+    expect(翻译界面文本('校验文件修改候选', 'en-US')).toBe('Validate proposed file changes')
+  })
+
+  it('翻译助手文本框的提示和无障碍名称，但保留用户输入和被排除区域', async () => {
+    render(<SettingsProvider><InterfaceLanguageAdapter /><textarea aria-label="发送给智能助手的消息" placeholder="描述修改或写作需求，也可以提问…" defaultValue="我的原始输入" /><div data-ui-language-ignore="true"><textarea placeholder="保存" defaultValue="保留原文" /></div></SettingsProvider>)
+    const 输入 = await screen.findByRole('textbox', { name: 'Message to assistant' })
+    expect(输入).toHaveAttribute('placeholder', 'Describe an edit or writing task, or ask a question…')
+    expect(输入).toHaveValue('我的原始输入')
+    expect(screen.getByPlaceholderText('保存')).toHaveValue('保留原文')
+  })
+
+  it('切换语言时保留尚未被观察器处理的最新界面内容与属性', async () => {
+    render(<SettingsProvider><夹具 /><span data-testid="动态节点" title="保存">打开</span></SettingsProvider>)
+    const 节点 = await screen.findByTestId('动态节点')
+    expect(节点).toHaveTextContent('Open')
+    expect(节点).toHaveAttribute('title', 'Save')
+    节点.firstChild!.nodeValue = '新内容'
+    节点.setAttribute('title', '新提示')
+    fireEvent.click(screen.getByRole('button', { name: '切换回中文' }))
+    expect(节点).toHaveTextContent('新内容')
+    expect(节点).toHaveAttribute('title', '新提示')
   })
 
   it('英文界面覆盖多维表格的固定控件和动态计数', () => {
@@ -69,6 +113,24 @@ describe('界面中英文适配', () => {
       '切换与动画', '对象动画顺序', '设计主题面板', '母版与版式', '提纲与文稿生成', '导出演示文稿', '放映范围',
     ]
     expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+  })
+
+  it('英文界面覆盖移动 PDF 翻页、页面操作和演示模型配置提示', () => {
+    const 文案 = ['文档预览', '未打开文件', 'PDF 文件', '切换左右翻页', '当前为连续阅读，切换左右翻页', '全屏阅读 · 左右翻页 · 双指缩放', 'PDF 连续滚动阅读区', 'PDF 左右翻页阅读区', '展开 PDF 工具', '展开工具', '提取页面', '合并文件', '删除页面', '旋转页面', '插入空白页', '插入其他文件页面', '请先填写所选服务商的 API 密钥', '应用文档空间', '文档文件列表', '登录并开通云空间', '我的知识库', 'Zotero 百科', '云服务请求失败', '全部知识']
+    expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+  })
+
+  it('全部快捷键命令、分类和操作标签都有英文文案', () => {
+    const 标签 = [...new Set(shortcutDefinitions.map(定义 => 定义.label))]
+    const 分类 = Object.values(shortcutScopeNames)
+    const 文案 = [...标签, ...分类.map(名称 => `${名称}快捷键列表`), ...标签.flatMap(名称 => [`${名称}快捷键`, `清除${名称}快捷键`, `恢复${名称}默认快捷键`]), '使用已保存的快捷键；输入框和输入法保持原有行为', '填写自建服务的访问令牌']
+    expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+    for (const 名称 of 标签) {
+      const 命令 = 翻译界面文本(名称, 'en-US')
+      expect(翻译界面文本(`${名称}快捷键`, 'en-US'), 名称).toBe(`${命令} shortcut`)
+      expect(翻译界面文本(`清除${名称}快捷键`, 'en-US'), 名称).toBe(`Clear shortcut for ${命令}`)
+      expect(翻译界面文本(`恢复${名称}默认快捷键`, 'en-US'), 名称).toBe(`Restore default shortcut for ${命令}`)
+    }
   })
 
   it('英文界面完整翻译文档导航和助手动态计数', () => {
@@ -121,28 +183,44 @@ describe('界面中英文适配', () => {
     expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
   })
 
-  it('自动审计全部界面组件的静态中文文案', () => {
+  // 知识库正文、皮肤模板数据与帮助手册长文属于内容而非界面，各自有独立英文来源
+  // （knowledgeBuiltinEnglish.ts 等），保持原语言，不纳入本审计。
+  const 界面属性键 = new Set(['label', 'title', 'placeholder', 'okText', 'cancelText', 'emptyText', 'ariaLabel', 'description'])
+
+  // 以下是内容示例而不是界面文案，保持原语言：
+  // 皮肤模板 JSON 的字段说明值，以及术语表输入框的格式示例（原文=译文）。
+  const 内容示例豁免 = new Set(['一句话介绍这套皮肤', '海豹办公=Seal Office', '我的皮肤', '你的名字'])
+
+  it('自动审计桌面端与移动端全部界面组件的静态中文文案', () => {
     const 文件: Array<[string, string]> = []
-    const 收集 = (目录: string, 相对目录 = ''): void => {
+    const 收集 = (目录: string, 相对目录 = '', 显示前缀 = ''): void => {
       for (const 条目 of readdirSync(目录, { withFileTypes: true })) {
         const 相对路径 = 相对目录 ? 相对目录 + '/' + 条目.name : 条目.name
-        if (条目.isDirectory()) 收集(join(目录, 条目.name), 相对路径)
-        else if (条目.name.endsWith('.tsx') && !条目.name.includes('.test.')) 文件.push([相对路径, join(目录, 条目.name)])
+        if (条目.isDirectory()) 收集(join(目录, 条目.name), 相对路径, 显示前缀)
+        else if (条目.name.endsWith('.tsx') && !条目.name.includes('.test.')) 文件.push([显示前缀 + 相对路径, join(目录, 条目.name)])
       }
     }
     收集(existsSync('renderer/src') ? 'renderer/src' : 'src')
+    // 移动端入口 mobile/web 复用同一套翻译，漏扫这里正是此前移动端漏译的根因。
+    const 移动端 = join(process.cwd(), '..', 'mobile', 'web')
+    if (existsSync(移动端)) 收集(移动端, '', 'mobile/web/')
+    expect(文件.length).toBeGreaterThan(0)
     const 未覆盖: string[] = []
     for (const [相对路径, 路径] of 文件) {
       const 源码 = parse(readFileSync(路径, 'utf8'), { sourceType: 'module', plugins: ['typescript', 'jsx'] })
       const 检查 = (文本: string) => {
         const 文案 = 文本.trim()
+        if (内容示例豁免.has(文案)) return
         if (/[\u3400-\u9fff]/u.test(文案) && 文案 !== '海豹办公' && 翻译界面文本(文案, 'en-US') === 文案) 未覆盖.push(相对路径 + ': ' + 文案)
       }
       const 遍历 = (节点: any): void => {
+        if (!节点 || typeof 节点 !== 'object') return
         if (节点.type === 'JSXText') 检查(节点.value)
-        if (节点.type === 'JSXAttribute' && 节点.value?.type === 'StringLiteral') 检查(节点.value.value)
+        else if (节点.type === 'JSXAttribute' && 节点.value?.type === 'StringLiteral') 检查(节点.value.value)
+        // 下拉选项、弹窗按钮与错误标题多以对象字面量给出，此前未被审计覆盖。
+        else if (节点.type === 'ObjectProperty' && 节点.value?.type === 'StringLiteral' && 界面属性键.has(节点.key?.name ?? 节点.key?.value)) 检查(节点.value.value)
         for (const [键, 值] of Object.entries(节点)) {
-          if (键 === 'loc' || 键 === 'tokens') continue
+          if (键 === 'loc' || 键 === 'tokens' || 键 === 'start' || 键 === 'end') continue
           if (Array.isArray(值)) 值.forEach(项 => { if (项?.type) 遍历(项) })
           else if ((值 as any)?.type) 遍历(值)
         }

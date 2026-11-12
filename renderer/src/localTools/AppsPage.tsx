@@ -32,6 +32,8 @@ export default function AppsPage() {
     { 名称: 'PDF 工具', 键: 'pdf', 说明: '阅读和处理 PDF 文件', 图标: 'pdf', 分类: '编辑文件', 打开: () => createDoc('pdf') },
     { 名称: 'Access 数据库', 键: 'database', 说明: '维护 MDB 与 ACCDB 数据库', 图标: 'doc-table', 分类: '编辑文件', 打开: () => setNavKey('database') },
     { 名称: '本机日历', 键: 'calendar', 说明: '安排日程并导出日历文件', 图标: 'calendar', 分类: '本地工具', 打开: () => setNavKey('calendar') },
+    { 名称: '扫描与识别', 键: 'scan', 说明: '导入图片或粘贴截图，裁边增强后转 PDF、Word 与文字', 图标: 'scan', 分类: '本地工具', 打开: () => setNavKey('scan') },
+    { 名称: '单据转表格', 键: 'receipt', 说明: '把送货单、发票等单据识别为可核对的工作表', 图标: 'doc-table', 分类: '本地工具', 打开: () => setNavKey('receipt') },
     { 名称: '脑图', 键: 'mindmap', 说明: '梳理主题与分支', 图标: 'mindmap', 分类: '本地工具', 打开: () => setNavKey('mindmap') },
     { 名称: '流程图', 键: 'flow', 说明: '绘制步骤和连接关系', 图标: 'flow', 分类: '本地工具', 打开: () => setNavKey('flow') },
     { 名称: '多维表格', 键: 'multitable', 说明: '数据表、看板与表单共用记录', 图标: 'doc-table', 分类: '本地工具', 打开: () => setNavKey('multitable') },

@@ -177,6 +177,11 @@ function 生成文档标识(): string {
 
 /** 取模块对应的默认文档名，home 不参与编辑器 */
 function 模块默认文档名(模块: ModuleKey): string {
+  if (typeof document !== 'undefined' && document.documentElement.lang === 'en-US') {
+    if (模块 === 'word' || 模块 === 'home') return 'Untitled Document.sldoc'
+    if (模块 === 'table') return 'Untitled Spreadsheet.slxls'
+    if (模块 === 'ppt') return 'Untitled Presentation.slppt'
+  }
   return 模块 === 'home' ? NEW_DOC_NAMES.word : NEW_DOC_NAMES[模块]
 }
 
@@ -781,7 +786,8 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       }
     } else if (目标模块 === 'ppt') {
       if (初始内容 === undefined || 初始内容 === null) {
-        新演示 = 创建演示文稿()
+        新演示 = 来源 === undefined && typeof document !== 'undefined' && document.documentElement.lang === 'en-US'
+          ? 创建演示文稿(模块默认文档名('ppt')) : 创建演示文稿()
       } else if (typeof 初始内容 === 'object' && Array.isArray((初始内容 as 演示文稿).幻灯片列表)) {
         新演示 = 迁移演示文稿(初始内容)
       } else {

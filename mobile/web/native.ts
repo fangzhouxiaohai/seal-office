@@ -172,6 +172,30 @@ export function pickNativeFiles(multiple: boolean): Promise<File[]> {
     try { send({ id, action: 'pick-files', multiple }) } catch (error) { cleanup(); reject(error) }
   })
 }
+/** 原生宿主拍照（2.7.1 拍照扫描）：复用文件分块协议；用户拒绝相机权限时抛出 CameraDeniedError，界面据此提示并保留相册导入。 */
+export function captureNativePhoto(): Promise<File[]> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID(), files: File[] = []
+    let name = '', chunks: Uint8Array[] = [], reading = false, total = 0
+    const cleanup = () => { clearTimeout(timer); pending.delete(id) }
+    const timer = setTimeout(() => { cleanup(); reject(new Error('拍照超时，请重新拍摄')) }, 600000)
+    pending.set(id, event => {
+      try {
+        if (event.type === 'file-start') { if (reading || files.length) throw new Error('照片读取顺序无效'); name = event.name || 'photo.jpg'; chunks = []; reading = true }
+        else if (event.type === 'chunk') {
+          if (!reading) throw new Error('照片读取尚未开始')
+          const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64')); total += chunk.length
+          if (total > 100 * 1024 * 1024) throw new Error('照片超过 100 MiB，无法导入')
+          chunks.push(chunk)
+        } else if (event.type === 'file-end') { if (!reading) throw new Error('照片读取尚未开始'); files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name, { type: 'image/jpeg' })); chunks = []; reading = false }
+        else if (event.type === 'end' || event.type === 'cancel') { if (event.type === 'end' && reading) throw new Error('照片读取未完成，请重新拍摄'); cleanup(); resolve(event.type === 'cancel' ? [] : files) }
+        else if (event.type === 'camera-denied') { cleanup(); reject(Object.assign(new Error(event.error || '未获得相机权限'), { name: 'CameraDeniedError' })) }
+        else if (event.type === 'error') throw new Error(event.error || '拍照失败')
+      } catch (error) { cleanup(); reject(error) }
+    })
+    try { send({ id, action: 'camera-capture' }) } catch (error) { cleanup(); reject(error) }
+  })
+}
 export async function platformFetch(input: string | URL | Request, options: RequestInit = {}): Promise<Response> {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
   if (window.sealNative && /^https?:\/\//i.test(url)) return nativeFetch(url, options)
