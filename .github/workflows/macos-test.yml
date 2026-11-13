@@ -62,6 +62,7 @@ jobs:
           app="$RUNNER_TEMP/seal-macos-copy/海豹办公.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$(node -p "require('./package.json').version")"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0
           file "$app/Contents/MacOS/海豹办公" | grep arm64
           python3 - "$app/Contents/Info.plist" <<'PY'
           import json, plistlib, sys

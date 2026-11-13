@@ -15,7 +15,7 @@
     "test": "vitest",
     "test:run": "vitest run && vitest run --config vitest.main.config.js && npm run test:packaging",
     "test:main": "vitest run --config vitest.main.config.js",
-    "test:packaging": "node --test scripts/generate-integrity.test.cjs scripts/artifact-names.test.cjs scripts/retain-web-session-assets.test.cjs",
+    "test:packaging": "node --test scripts/generate-integrity.test.cjs scripts/artifact-names.test.cjs scripts/retain-web-session-assets.test.cjs scripts/macos-config.test.cjs",
     "typecheck": "tsc --noEmit",
     "icons:files": "electron build/make-file-icons.cjs",
     "pack": "npm --prefix mobile run pack:android",

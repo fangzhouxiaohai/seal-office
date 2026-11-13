@@ -15,6 +15,7 @@ module.exports = {
   npmRebuild: false,
   mac: {
     icon: 'build/icon.png',
+    minimumSystemVersion: '11.0',
     target: [{ target: 'dmg', arch: ['arm64'] }],
     artifactName: require('./artifact-names.json').macos,
     identity: null,
