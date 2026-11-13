@@ -279,6 +279,22 @@ class TestPublisher(unittest.TestCase):
         remote.api = lambda *args, **kwargs: {'id': 1, 'tag_name': 'v2.7.2', 'assets': [{'name':'same'}, {'name':'same'}]}
         with self.assertRaisesRegex(ValueError, '重复'): remote.release('v2.7.2')
 
+    def test_附件列表缺失或类型错误时预检拒绝且不上传(self):
+        for assets in ('字段缺失', None, '错误类型', {'name': 'x'}):
+            with self.subTest(assets=assets):
+                first = FakeRemote('github')
+                second = publisher.Remote.__new__(publisher.Remote); second.name = 'gitcode'
+                second.tag = lambda tag: 'b' * 40
+                second.has_commit = lambda commit: True
+                body = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40, 'name': '发行'}
+                if assets != '字段缺失': body['assets'] = assets
+                second.api = lambda *args, **kwargs: body
+                second.upload = unittest.mock.Mock()
+                with self.assertRaisesRegex(ValueError, '附件列表'):
+                    publisher.publish(self.params, [first, second], check=False)
+                self.assertEqual(first.actions, [])
+                second.upload.assert_not_called()
+
     def test_旧附件同名但身份变化必须中止(self):
         original = self.remotes[0].release
         calls = 0

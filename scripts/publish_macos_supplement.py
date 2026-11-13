@@ -316,7 +316,9 @@ class Remote:
             fields = {key: release.get(key) for key in ('tag_name', 'created_at', 'target_commitish', 'name', 'body', 'author', 'prerelease', 'release_status')}
             if not fields['created_at'] or not fields['target_commitish']: raise ValueError('GitCode 发行身份信息不完整')
             identity = hashlib.sha256(json.dumps(fields, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
-        items = release.get('assets', [])
+        if 'assets' not in release or not isinstance(release['assets'], list):
+            raise ValueError(self.name + ' 发行附件列表缺失或格式无效')
+        items = release['assets']
         names = [item['name'] for item in items]
         if len(names) != len(set(names)): raise ValueError(self.name + ' 发行包含重复名称附件')
         keys = ('id', 'size', 'digest', 'type', 'browser_download_url')
