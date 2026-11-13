@@ -50,6 +50,7 @@ jobs:
           npx electron-builder --config build/electron-macos.cjs --mac dmg --arm64 --publish never
           node -e "const fs=require('fs'),p=require('./package.json');if(!/^\d+\.\d+\.\d+$/.test(p.version))throw Error('版本无效');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+p.version+'\n')"
       - name: 核对磁盘映像并验收隔离副本
+        timeout-minutes: 8
         run: |
           set -euo pipefail
           dmg="$RELEASE_DIR/seal-office-$(node -p "require('./package.json').version")-macos.dmg"
