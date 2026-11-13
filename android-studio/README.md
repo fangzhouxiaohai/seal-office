@@ -34,3 +34,9 @@ node scripts/emulator-smoke.cjs
 在本机环境变量中设置 `SEAL_ANDROID_KEYSTORE`、`SEAL_ANDROID_STORE_PASSWORD`、`SEAL_ANDROID_KEY_ALIAS`、`SEAL_ANDROID_KEY_PASSWORD`，再运行 `.\gradlew.bat verifyReleaseSigning assembleRelease`。签名文件和密码不得提交到仓库。用 `python scripts/verify-apk.py app/build/outputs/apk/release/app-release.apk` 核对内置资源，再用安卓签名工具核对证书。新版保持旧版完整 `file:///android_asset/apps/__UNI__B52B65B/www/static/office/index.html` 路径，避免因切换来源使本地存储不可见；隔离克隆设备已验证旧文档覆盖安装、保存和重开。
 
 在原有模拟器的隔离克隆设备上，先打开旧版中的文档，再覆盖安装同签名的 Java 原生候选包；原文档正文保持，保存后重启应用仍能重开。Java 工程、网页资源和原有 HBuilderX 工程彼此独立。调试包不是正式升级包，不能以调试包替换发行页的安卓版附件。
+
+## 安卓更新下载与系统安装
+
+更新下载由数据同步前台服务执行，通知栏显示进度；活动销毁或切到桌面不会主动中断任务。服务器发布信息、文件大小、SHA-256、包身份与签名均须核验。安装包下载并校验完成时，应用可见则尝试打开系统安装器；应用处于后台时遵循 Android 后台启动限制，用户可点击完成通知进入安装。通知权限或更新通知渠道关闭时仍允许下载，应用会提示后台进度通知可能不可见；安装未知应用权限须由用户在系统设置中授权。已交给安装器但尚未安装的包不会被误删。
+
+下载发生错误或进程意外中断后，恢复状态会保留错误信息；强制更新由服务端核实并拒绝取消。下载任务被接受时桥接立即返回，后续进度、失败和安装状态通过事件通知网页，避免长下载等待时限误报。Android 系统安装器仍需用户确认，不会静默安装。

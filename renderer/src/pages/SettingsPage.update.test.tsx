@@ -51,7 +51,7 @@ describe('设置页关于与更新', () => {
     expect(screen.getByRole('switch', { name: '自动检查更新' })).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('关闭自动检查后手动检查仍可点，有新版时弹出更新卡片', async () => {
+  it('关闭自动检查后手动检查仍可点，有新版时显示更新入口', async () => {
     localStorage.setItem('seal-update-auto', '关闭')
     const 检查 = 模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
     渲染设置页()
@@ -59,9 +59,8 @@ describe('设置页关于与更新', () => {
     expect(按钮).toBeEnabled()
     await userEvent.click(按钮)
     expect(检查).toHaveBeenCalledOnce()
-    expect(await screen.findByRole('dialog', { name: '发现新版本 2.7.1' })).toBeInTheDocument()
-    expect(screen.getByText('发布时间：2026-11-08')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '立即更新' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '更新' })).toBeInTheDocument()
+    expect(screen.queryByText('发现新版本 2.7.1')).toBeNull()
   })
 
   it('已是最新版本时行内如实显示版本号', async () => {
@@ -140,25 +139,21 @@ describe('更新卡片', () => {
 
   const 渲染卡片 = () => render(<外壳><UpdateCard /></外壳>)
 
-  it('开启时启动检查一次并每 4 小时检查一次；点稍后本次运行内不再弹', async () => {
+  it('开启时启动检查一次并每 4 小时检查一次，普通更新持续显示入口', async () => {
     vi.useFakeTimers()
     const 检查 = 模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
     渲染卡片()
     expect(检查).not.toHaveBeenCalled()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
     expect(检查).toHaveBeenCalledTimes(1)
-    const 卡片 = screen.getByRole('dialog', { name: '发现新版本 2.7.1' })
-    expect(卡片).toHaveClass('seal-update-card--bottom')
-    fireEvent.click(screen.getByRole('button', { name: '稍后' }))
-    expect(screen.queryByRole('dialog')).toBeNull()
-    // 4 小时周期计时自挂载起算，与启动检查互不叠加
+    expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
+    expect(screen.queryByText('发现新版本 2.7.1')).toBeNull()
     await act(async () => { await vi.advanceTimersByTimeAsync(自动检查间隔 - 启动检查延迟 - 1) })
     expect(检查).toHaveBeenCalledTimes(1)
     await act(async () => { await vi.advanceTimersByTimeAsync(1) })
     expect(检查).toHaveBeenCalledTimes(2)
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
   })
-
   it('关闭自动检查后完全不请求', async () => {
     vi.useFakeTimers()
     localStorage.setItem('seal-update-auto', '关闭')
@@ -177,68 +172,68 @@ describe('更新卡片', () => {
     expect(document.body.textContent).not.toMatch(/失败/)
   })
 
-  it('强制更新卡片没有稍后与关闭按钮，点遮罩不关闭，并说明原因', async () => {
+  it('强制更新自动下载，桌面进度圈不可取消', async () => {
     vi.useFakeTimers()
     模拟桌面().mockResolvedValue({ 成功: true, 数据: { ...新版, mandatory: true } })
+    vi.spyOn(桥接.update, '下载可用', 'get').mockReturnValue(true)
+    vi.spyOn(桥接.update, 'status').mockResolvedValue({成功:true,数据:{阶段:'空闲',已下载:0,总大小:0}})
+    const 下载 = vi.spyOn(桥接.update, 'download').mockImplementation(() => new Promise<never>(() => {}))
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
-    const 卡片 = screen.getByRole('alertdialog', { name: '发现新版本 2.7.1' })
-    expect(screen.queryByRole('button', { name: '稍后' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /关闭/ })).toBeNull()
-    expect(screen.getAllByRole('button').map(按钮 => 按钮.textContent)).toEqual(['收起', '立即更新'])
-    expect(screen.getByText(/此版本为强制更新/)).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('update-mask'))
-    expect(卡片).toBeInTheDocument()
+    expect(下载).toHaveBeenCalledOnce()
+    expect(screen.getByRole('progressbar', { name:'后台下载进度' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name:'取消下载' })).toBeNull()
   })
-
-  it('移动端卡片位于中上部从顶部落下，说明可折叠', async () => {
+  it('移动端普通更新显示轻量入口，不显示大型更新卡片', async () => {
     vi.useFakeTimers()
     document.documentElement.dataset.sealPlatform = 'app'
     模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
-    expect(screen.getByRole('dialog', { name: '发现新版本 2.7.1' })).toHaveClass('seal-update-card--top')
-    expect(screen.getByText(/修复表格筛选/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '收起' }))
-    expect(screen.queryByText(/修复表格筛选/)).toBeNull()
+    expect(screen.getByRole('button', { name:'更新' }).closest('aside')).toHaveClass('seal-update-entry--mobile')
+    expect(screen.queryByText('发现新版本 2.7.1')).toBeNull()
   })
-
-  it('更新说明解析 Markdown 标题和列表，保留文字与标点且不执行嵌入内容', async () => {
+  it('下载窗口中的更新说明正确解析 Markdown 且不执行嵌入内容', async () => {
     vi.useFakeTimers()
-    document.documentElement.dataset.sealPlatform = 'app'
     const 说明 = '# 海豹办公 2.7.2\n\n## 编辑与查看\n\n- 支持 C#、3.14 与中文标点。\n- **重要**：修复问题！\n\n<script>危险脚本</script>'
     模拟桌面().mockResolvedValue({ 成功: true, 数据: { ...新版, notes: 说明 } })
+    vi.spyOn(桥接.update, '下载可用', 'get').mockReturnValue(true)
+    vi.spyOn(桥接.update, 'status').mockResolvedValue({成功:true,数据:{阶段:'空闲',已下载:0,总大小:0}})
+    vi.spyOn(桥接.update, 'download').mockImplementation(() => new Promise<never>(() => {}))
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
-    const 内容 = screen.getByRole('dialog', { name: '发现新版本 2.7.1' }).querySelector('.seal-update-card__notes')!
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name:'更新' })) })
+    fireEvent.click(screen.getByText('查看更新说明'))
+    const 内容 = document.querySelector('.seal-update-card__notes')!
     expect(内容.querySelector('h1')?.textContent).toBe('海豹办公 2.7.2')
     expect(内容.querySelector('h2')?.textContent).toBe('编辑与查看')
     expect(内容.querySelectorAll('li')).toHaveLength(2)
     expect(内容.textContent).toContain('支持 C#、3.14 与中文标点。')
     expect(内容.textContent).toContain('重要：修复问题！')
-    expect(内容.textContent).not.toContain('## 编辑与查看')
     expect(内容.querySelector('script')).toBeNull()
   })
-
-  it('英文界面下中文更新说明提示原文为中文并保留原文', async () => {
-    vi.useFakeTimers()
-    localStorage.setItem('seal-language', 'en-US')
+  it('英文界面下下载窗口提示更新说明原文为中文', async () => {
+    vi.useFakeTimers(); localStorage.setItem('seal-language', 'en-US')
     try {
       模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
+      vi.spyOn(桥接.update, '下载可用', 'get').mockReturnValue(true)
+      vi.spyOn(桥接.update, 'status').mockResolvedValue({成功:true,数据:{阶段:'空闲',已下载:0,总大小:0}})
+      vi.spyOn(桥接.update, 'download').mockImplementation(() => new Promise<never>(() => {}))
       渲染卡片()
       await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
+      await act(async () => { fireEvent.click(screen.getByRole('button', {name:'更新'})) })
+      fireEvent.click(screen.getByText('查看更新说明'))
       expect(screen.getByText('更新说明原文为中文')).toBeInTheDocument()
       expect(screen.getByText(/修复表格筛选/)).toBeInTheDocument()
     } finally { localStorage.removeItem('seal-language') }
   })
-
   it('立即更新失败时如实弹出中文错误，不静默', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
     vi.spyOn(桥接.update, 'install').mockResolvedValue({ 成功: false, 错误: '安装包校验失败：sha256 与发布记录不一致，已拒绝安装' })
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
-    fireEvent.click(screen.getByRole('button', { name: '立即更新' }))
+    fireEvent.click(screen.getByRole('button', { name: '更新' }))
     expect(await screen.findByText('安装包校验失败：sha256 与发布记录不一致，已拒绝安装')).toBeInTheDocument()
     expect(screen.getAllByText('更新失败').length).toBeGreaterThan(0)
   })

@@ -89,3 +89,9 @@
 @media (prefers-reduced-motion: reduce) { .seal-update-circle__value.is-indeterminate { animation: none; } }
 /* 设置页「当前版本」行的控件区：状态文字 + 按钮 */
 .settings-update-control { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2, 8px); }
+
+.seal-update-entry { position: fixed; z-index: 994; right: 118px; bottom: 8px; }
+.seal-update-entry--mobile { right: 16px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+.seal-update-notes-details { margin-bottom: 14px; color: var(--text-2); }
+.seal-update-notes-details summary { cursor: pointer; margin-bottom: 8px; }

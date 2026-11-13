@@ -9,6 +9,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import java.lang.ref.WeakReference;
 import android.provider.Settings;
 import androidx.core.content.FileProvider;
 import org.json.JSONObject;
@@ -35,24 +38,42 @@ final class NativeUpdater {
     static final int INSTALL_REQUEST = 20942;
     interface Callback { void finish(JSONObject result); }
     interface Listener { void state(JSONObject state); }
-    private final Activity activity;
+    private final Context context;
+    private final UpdateLifecycle lifecycle = new UpdateLifecycle();
+    private volatile WeakReference<Activity> activity = new WeakReference<>(null);
     private final File directory, part;
     private final SharedPreferences preferences;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean cancelled = new AtomicBoolean();
-    private final Listener listener;
+    private volatile Listener listener;
     private volatile HttpURLConnection connection;
     private volatile boolean active;
     private volatile boolean installing;
+    private volatile boolean mandatoryTask;
+    private volatile boolean metadataVerified = true;
+    private volatile boolean waitingInstallPermission;
     private volatile String taskId = "";
     private JSONObject state;
 
-    NativeUpdater(Activity activity, Listener listener) {
-        this.activity = activity; this.listener = listener;
-        directory = new File(activity.getFilesDir(), "updates"); part = new File(directory, "pending-part.apk");
-        preferences = activity.getSharedPreferences("seal_update", Context.MODE_PRIVATE);
+    NativeUpdater(Context context) {
+        this.context = context.getApplicationContext();
+        directory = new File(this.context.getFilesDir(), "updates"); part = new File(directory, "pending-part.apk");
+        preferences = this.context.getSharedPreferences("seal_update", Context.MODE_PRIVATE);
         state = state("空闲", 0, 0, "", "");
     }
+    synchronized void attach(Activity value, Listener valueListener) { activity = new WeakReference<>(value); listener = valueListener; }
+    synchronized void detach(Activity value) { if (activity.get() == value) { lifecycle.setVisible(false); listener = null; activity.clear(); } }
+    void visible(Activity value, boolean shown) {
+        if (activity.get() != value) return;
+        lifecycle.setVisible(shown);
+        if (shown && waitingInstallPermission && value.getPackageManager().canRequestPackageInstalls()) {
+            waitingInstallPermission = false;
+            autoInstallWhenVisible();
+        } else if (shown && !waitingInstallPermission && !isBusy() && "已就绪".equals(current().optString("阶段"))) {
+            status(ignored -> {});
+        }
+    }
+    boolean isBusy() { return active || installing; }
     private static JSONObject state(String phase, long done, long total, String version, String error) {
         JSONObject value = new JSONObject();
         try { value.put("阶段", phase); value.put("已下载", done); value.put("总大小", total); if (!version.isEmpty()) value.put("版本", version); if (!error.isEmpty()) value.put("错误", error); }
@@ -67,10 +88,15 @@ final class NativeUpdater {
     }
     private synchronized void emit(String phase, long done, long total, String version, String error) {
         state = state(phase, done, total, version, error);
-        try { if (!taskId.isEmpty()) state.put("任务标识", taskId); } catch (Exception ignored) { }
-        listener.state(state);
+        try { if (!taskId.isEmpty()) state.put("任务标识", taskId); state.put("强制", mandatoryTask); state.put("通知可见", UpdateService.notificationsVisible(context)); } catch (Exception ignored) { }
+        if ("失败".equals(phase) && !preferences.edit().putString("failure", state.toString()).commit()) {
+            try { state.put("错误", error + "；无法保存下载失败记录"); } catch (Exception ignored) { }
+        }
+        Listener target = listener;
+        if (target != null) target.state(state);
+        UpdateService.update(context, state);
     }
-    private JSONObject current() { synchronized (this) { try { return new JSONObject(state.toString()); } catch (Exception error) { return state("失败", 0, 0, "", "读取更新状态失败"); } } }
+    JSONObject current() { synchronized (this) { try { return new JSONObject(state.toString()); } catch (Exception error) { return state("失败", 0, 0, "", "读取更新状态失败"); } } }
     private static String message(Exception error) { String value = error.getMessage(); return value == null || value.isEmpty() ? "更新操作失败，请重试" : value; }
 
     private HttpURLConnection open(String address) throws IOException {
@@ -104,6 +130,11 @@ final class NativeUpdater {
             while ((count=input.read(buffer))!=-1) { total+=count; if(total>1024*1024)throw new IOException("更新服务响应过大"); output.write(buffer,0,count); }
             JSONObject latest=new JSONObject(output.toString("UTF-8"));
             if (!UpdatePolicy.matches(latest.optBoolean("hasUpdate",false),latest.optString("version"),latest.optString("url"),latest.optString("sha256"),latest.optLong("bytes",0),version,url,sha,bytes)) throw new IOException("更新已变更或下架，请重新检查版本");
+            if (!(latest.opt("mandatory") instanceof Boolean)) throw new IOException("更新服务未返回有效的强制更新状态");
+            mandatoryTask = latest.optBoolean("mandatory");
+            release.put("mandatory", mandatoryTask);
+            if (active && !preferences.edit().putString("in-progress", release.toString()).commit()) throw new IOException("无法保存更新下载状态");
+            metadataVerified = true;
         } finally { request.disconnect(); connection=null; }
     }
     private void verifyPackage(File file, JSONObject release) throws Exception {
@@ -112,9 +143,9 @@ final class NativeUpdater {
         try(InputStream in=new FileInputStream(file)){while((count=in.read(buffer))!=-1)digest.update(buffer,0,count);}
         StringBuilder sha=new StringBuilder();for(byte b:digest.digest())sha.append(String.format(Locale.ROOT,"%02x",b&255));
         if(!sha.toString().equalsIgnoreCase(release.optString("sha256")))throw new IOException("已下载安装包校验失败，请重新下载");
-        PackageManager pm=activity.getPackageManager();int flags=PackageManager.GET_SIGNING_CERTIFICATES;
-        PackageInfo archive=pm.getPackageArchiveInfo(file.getAbsolutePath(),flags), installed=pm.getPackageInfo(activity.getPackageName(),flags);
-        if(archive==null||!activity.getPackageName().equals(archive.packageName)||!release.optString("version").equals(archive.versionName)||archive.signingInfo==null||installed.signingInfo==null)throw new IOException("安装包身份或版本不匹配，已拒绝安装");
+        PackageManager pm=context.getPackageManager();int flags=PackageManager.GET_SIGNING_CERTIFICATES;
+        PackageInfo archive=pm.getPackageArchiveInfo(file.getAbsolutePath(),flags), installed=pm.getPackageInfo(context.getPackageName(),flags);
+        if(archive==null||!context.getPackageName().equals(archive.packageName)||!release.optString("version").equals(archive.versionName)||archive.signingInfo==null||installed.signingInfo==null)throw new IOException("安装包身份或版本不匹配，已拒绝安装");
         Signature[] a=archive.signingInfo.getApkContentsSigners(), b=installed.signingInfo.getApkContentsSigners();
         if(a.length!=b.length)throw new IOException("安装包签名不匹配，已拒绝安装");
         String[] left=new String[a.length],right=new String[b.length];for(int i=0;i<a.length;i++)left[i]=a[i].toCharsString();for(int i=0;i<b.length;i++)right[i]=b[i].toCharsString();Arrays.sort(left);Arrays.sort(right);
@@ -125,16 +156,17 @@ final class NativeUpdater {
         JSONObject data=new JSONObject(raw);
         if(!UpdatePolicy.validTaskId(data.optString("taskId")))throw new IOException("待安装更新任务无效，请重新检查更新");
         taskId=data.optString("taskId");
+        mandatoryTask=data.optBoolean("mandatory", false);metadataVerified=true;
         File pending=pendingFile(data);
         if(!UpdatePolicy.validRelease(data.optString("base"),data.optString("url"),data.optString("version"),data.optString("sha256"),data.optLong("bytes",0),data.optString("channel","stable")))throw new IOException("待安装更新记录无效，请重新检查更新");
         verifyPackage(pending,data);
-        PackageManager manager=activity.getPackageManager();
-        PackageInfo current=manager.getPackageInfo(activity.getPackageName(),0), archive=manager.getPackageArchiveInfo(pending.getAbsolutePath(),0);
+        PackageManager manager=context.getPackageManager();
+        PackageInfo current=manager.getPackageInfo(context.getPackageName(),0), archive=manager.getPackageArchiveInfo(pending.getAbsolutePath(),0);
         if(archive==null)throw new IOException("待安装文件无法读取，请重新下载");
         String installedHash="";
         if(current.getLongVersionCode()==archive.getLongVersionCode()) {
             MessageDigest digest=MessageDigest.getInstance("SHA-256");byte[] buffer=new byte[65536];int count;
-            try(InputStream in=new FileInputStream(activity.getApplicationInfo().sourceDir)){while((count=in.read(buffer))!=-1)digest.update(buffer,0,count);}
+            try(InputStream in=new FileInputStream(context.getApplicationInfo().sourceDir)){while((count=in.read(buffer))!=-1)digest.update(buffer,0,count);}
             StringBuilder value=new StringBuilder();for(byte b:digest.digest())value.append(String.format(Locale.ROOT,"%02x",b&255));installedHash=value.toString();
         }
         if(UpdatePolicy.alreadyInstalled(current.getLongVersionCode(),archive.getLongVersionCode(),installedHash,data.optString("sha256"))){
@@ -147,12 +179,19 @@ final class NativeUpdater {
     }
     synchronized void download(JSONObject release, Callback callback) {
         if(active||installing){callback.finish(result(false,null,"已有更新正在下载或安装"));return;}
+        String nextTask = lifecycle.begin();
+        try { release.put("taskId", nextTask); }
+        catch (Exception error) { callback.finish(result(false,null,"无法创建更新任务，请重试")); return; }
+        if(!preferences.edit().remove("failure").putString("in-progress", release.toString()).commit()){callback.finish(result(false,null,"无法保存更新下载状态，请重试"));return;}
+        taskId=nextTask;
         active=true;cancelled.set(false);
-        executor.execute(()->{
+        mandatoryTask=release.optBoolean("mandatory", false);metadataVerified=false;
+        emit("下载中",0,release.optLong("bytes",0),release.optString("version"),"");
+        try { lifecycle.dispatch(executor, ()->{
             String version=release.optString("version"),url=release.optString("url");long total=release.optLong("bytes",0);
+            boolean readyToInstall = false;
             try {
                 if(installing)throw new IOException("系统安装程序正在运行，请先完成或取消安装");
-                taskId=UpdatePolicy.newTaskId();release.put("taskId",taskId);
                 String previous=preferences.getString("pending","");
                 JSONObject old=previous==null||previous.isEmpty()?null:new JSONObject(previous);
                 if(old!=null) {
@@ -173,37 +212,93 @@ final class NativeUpdater {
                     if(destination.exists()&&!destination.delete())throw new IOException("无法保存更新状态且无法清理临时安装包");
                     throw new IOException("无法保存待安装更新状态");
                 }
-                emit("已就绪",total,total,version,"");callback.finish(result(true,current(),""));
+                emit("已就绪",total,total,version,"");readyToInstall=true;
             } catch(Exception error) {
                 if(part.exists()&&!part.delete())part.deleteOnExit();
-                String phase=cancelled.get()?"已取消":"失败";emit(phase,0,total,version,message(error));callback.finish(result(false,current(),message(error)));
-            } finally {active=false;connection=null;}
-        });
+                String phase=cancelled.get()?"已取消":"失败";emit(phase,0,total,version,message(error));
+            } finally {
+                active=false;connection=null;metadataVerified=true;
+                if(!preferences.edit().remove("in-progress").commit()) { readyToInstall=false; emit("失败",0,total,version,"无法清除下载状态，请重试"); }
+            }
+            if(readyToInstall) autoInstallWhenVisible();
+        }, () -> callback.finish(result(true,current(),""))); }
+        catch (java.util.concurrent.RejectedExecutionException error) {
+            active=false;metadataVerified=true;
+            preferences.edit().remove("in-progress").commit();
+            emit("失败",0,release.optLong("bytes",0),release.optString("version"),"无法启动下载任务，请重试");
+            callback.finish(result(false,current(),"无法启动下载任务，请重试"));
+        }
     }
     void cancel(Callback callback) {
-        if(installing){callback.finish(result(false,current(),"系统安装程序正在运行，请先完成或取消安装"));return;}
-        cancelled.set(true);HttpURLConnection current=connection;if(current!=null)current.disconnect();
-        executor.execute(()->{try {if(installing)throw new IOException("系统安装程序正在运行，请先完成或取消安装");String raw=preferences.getString("pending","");JSONObject old=raw==null||raw.isEmpty()?null:new JSONObject(raw);if(!preferences.edit().remove("pending").commit())throw new IOException("无法清除待安装状态");if(old!=null)discard(old,false);emit("已取消",0,0,"","");callback.finish(result(true,current(),"")); }catch(Exception error){callback.finish(result(false,current(),message(error)));}});
+        if(!UpdateLifecycle.canCancel(metadataVerified, mandatoryTask, installing)) {
+            String reason = installing ? "系统安装程序正在运行，请先完成或取消安装" : mandatoryTask ? "当前版本要求强制更新，无法取消" : "正在核实更新信息，请稍后再试";
+            callback.finish(result(false,current(),reason));return;
+        }
+        lifecycle.cancel();waitingInstallPermission=false;cancelled.set(true);HttpURLConnection current=connection;if(current!=null)current.disconnect();
+        executor.execute(()->{try {if(installing)throw new IOException("系统安装程序正在运行，请先完成或取消安装");String raw=preferences.getString("pending","");JSONObject old=raw==null||raw.isEmpty()?null:new JSONObject(raw);if(!preferences.edit().remove("pending").remove("failure").remove("in-progress").commit())throw new IOException("无法清除待安装状态");if(old!=null)discard(old,false);emit("已取消",0,0,"","");callback.finish(result(true,current(),"")); }catch(Exception error){callback.finish(result(false,current(),message(error)));}});
     }
     void status(Callback callback) {
         if(active||installing){callback.finish(result(true,current(),""));return;}
-        executor.execute(()->{try {if(installing){callback.finish(result(true,current(),""));return;}if(part.exists()&&!part.delete())throw new IOException("无法清理未完成的下载文件");JSONObject data=saved();if(data!=null)emit("已就绪",data.optLong("bytes"),data.optLong("bytes"),data.optString("version"),"");else {taskId="";emit("空闲",0,0,"","");}callback.finish(result(true,current(),""));}catch(Exception error){emit("失败",0,0,"",message(error));callback.finish(result(false,current(),message(error)));}});
+        executor.execute(()->{try {
+            if(installing){callback.finish(result(true,current(),""));return;}
+            if(part.exists()&&!part.delete())throw new IOException("无法清理未完成的下载文件");
+            JSONObject data=saved();
+            String interrupted=preferences.getString("in-progress", "");
+            if(interrupted!=null && !interrupted.isEmpty() && !preferences.edit().remove("in-progress").commit()) throw new IOException("无法清除中断的下载状态");
+            if(data!=null)emit("已就绪",data.optLong("bytes"),data.optLong("bytes"),data.optString("version"),"");
+            else {
+                String rawFailure=preferences.getString("failure", "");
+                if((rawFailure==null || rawFailure.isEmpty()) && UpdateLifecycle.wasInterrupted(interrupted!=null && !interrupted.isEmpty(), false)) {
+                    JSONObject previous = new JSONObject(interrupted);
+                    taskId=previous.optString("taskId");mandatoryTask=previous.optBoolean("mandatory",false);
+                    emit("失败",0,previous.optLong("bytes",0),previous.optString("version"),"更新下载意外中断，请重新开始下载");
+                    rawFailure=preferences.getString("failure", "");
+                }
+                if(rawFailure!=null && !rawFailure.isEmpty()) {
+                    JSONObject failure=new JSONObject(rawFailure);
+                    if(!UpdateLifecycle.shouldPreserveFailure(failure.optString("阶段"), false) || failure.optString("错误").isEmpty()) throw new IOException("下载失败记录无效，请重新检查更新");
+                    taskId=failure.optString("任务标识");mandatoryTask=failure.optBoolean("强制",false);
+                    emit("失败",failure.optLong("已下载"),failure.optLong("总大小"),failure.optString("版本"),failure.optString("错误"));
+                } else if(!UpdateLifecycle.shouldPreserveFailure(current().optString("阶段"), false)) {taskId="";emit("空闲",0,0,"","");}
+            }
+            callback.finish(result(true,current(),""));
+            if(UpdateLifecycle.shouldRestoreAuto(data!=null, data!=null && handed(data), waitingInstallPermission)) autoInstallWhenVisible();
+        }catch(Exception error){emit("失败",0,0,"",message(error));callback.finish(result(false,current(),message(error)));}});
+    }
+    void reportStartFailure(String version, long total, boolean mandatory, String message) {
+        mandatoryTask=mandatory; metadataVerified=true;
+        emit("失败",0,total,version,message);
+    }
+    void installWhenVisible() { autoInstallWhenVisible(); }
+    private void autoInstallWhenVisible() {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (!lifecycle.shouldAutoInstall() || activity.get() == null || isBusy()) return;
+            install(value -> {
+                if (!value.optBoolean("成功", false) && !installing) {
+                    JSONObject before = current();
+                    emit("已就绪", before.optLong("已下载"), before.optLong("总大小"), before.optString("版本"), value.optString("错误", "无法打开安装程序"));
+                }
+            });
+        });
     }
     synchronized void install(Callback callback) {
         if(active||installing){callback.finish(result(false,null,"安装包正在下载或安装，请稍后再试"));return;}
         installing=true;
         executor.execute(()->{try {
             JSONObject data=saved();if(data==null)throw new IOException("没有可安装的更新，请重新检查");File pending=pendingFile(data);verifyRelease(data);verifyPackage(pending,data);
-            activity.runOnUiThread(()->{try {
-                if(Build.VERSION.SDK_INT>=26&&!activity.getPackageManager().canRequestPackageInstalls()){
-                    installing=false;
-                    activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+activity.getPackageName())));
+            Activity target = activity.get();
+            if(target == null || !lifecycle.shouldAutoInstall()) throw new IOException("请回到海豹办公并点击通知安装更新");
+            target.runOnUiThread(()->{try {
+                if(activity.get() != target || !lifecycle.shouldAutoInstall()) { installing=false; callback.finish(result(false,current(),"请回到海豹办公并点击通知安装更新")); return; }
+                if(Build.VERSION.SDK_INT>=26&&!target.getPackageManager().canRequestPackageInstalls()){
+                    installing=false;waitingInstallPermission=true;
+                    target.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+context.getPackageName())));
                     callback.finish(result(false,current(),"请允许海豹办公安装未知应用，返回后再次点击更新"));return;
                 }
-                Uri uri=FileProvider.getUriForFile(activity,activity.getPackageName()+".updates",pending);
+                Uri uri=FileProvider.getUriForFile(context,context.getPackageName()+".updates",pending);
                 Intent intent=new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(uri).putExtra(Intent.EXTRA_RETURN_RESULT,true).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 markHanded(data);
-                activity.startActivityForResult(intent,INSTALL_REQUEST);emit("安装中",data.optLong("bytes"),data.optLong("bytes"),data.optString("version"),"");callback.finish(result(true,current(),""));
+                target.startActivityForResult(intent,INSTALL_REQUEST);emit("安装中",data.optLong("bytes"),data.optLong("bytes"),data.optString("version"),"");callback.finish(result(true,current(),""));
             }catch(Exception error){installing=false;callback.finish(result(false,current(),error instanceof IOException?message(error):"无法打开系统安装程序，请检查系统设置"));}});
         }catch(Exception error){installing=false;callback.finish(result(false,current(),message(error)));}});
     }

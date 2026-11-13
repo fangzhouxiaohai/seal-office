@@ -82,12 +82,15 @@ let 下载代次 = 0
 let 恢复请求: Promise<void> | null = null
 let 已发起启动恢复 = false
 let 正在取消 = false
+let 下载发布: 有效发布 | null = null
+export function 取下载发布(): 有效发布 | null { return 下载发布 }
 export function 取下载状态(): 下载界面状态 { return 下载状态 }
 export function 正在下载或待安装(): boolean { return 应跳过自动检查(下载状态) }
 export function use下载状态(): 下载界面状态 { return useSyncExternalStore(回调 => { 订阅者.add(回调); return () => { 订阅者.delete(回调) } }, () => 下载状态, () => 初始下载状态) }
 export function 改变下载界面(界面: 下载界面状态['界面']): void { 下载状态 = 更新下载界面(下载状态, 界面); 通知() }
 export function 接收下载进度(进度: 下载进度): void {
   if (下载状态.进度?.阶段 === '已取消' && 下载状态.进度.任务标识 === 进度.任务标识 && 进度.阶段 !== '已取消') return
+  if (下载状态.进度?.任务标识 && 下载状态.进度.任务标识 === 进度.任务标识 && ['失败', '已就绪', '安装中'].includes(下载状态.进度.阶段) && ['下载中', '校验中'].includes(进度.阶段)) return
   const 下个状态 = 应用下载进度(下载状态, 进度)
   if (下个状态 !== 下载状态) { 下载状态 = 下个状态; 下载代次++; 通知() }
 }
@@ -104,16 +107,21 @@ export async function 恢复下载状态(): Promise<void> {
     if (!结果.成功 || !结果.数据) { if (启动查询 && 代次 === 下载代次) 已发起启动恢复 = false; throw new Error(结果.错误 || '无法读取下载状态，请重试') }
     if (代次 !== 下载代次) return
     接收下载进度(结果.数据)
-    if (['下载中', '校验中', '已就绪', '安装中'].includes(结果.数据.阶段)) 改变下载界面('后台')
-    if (启动查询 && 结果.数据.阶段 === '已就绪') await 安装已下载更新()
+    const 恢复代次 = 下载代次
+    const { 平台 } = await 读取更新平台()
+    if (恢复代次 !== 下载代次) return
+    if (平台 === 'android' && 结果.数据.阶段 === '失败') 改变下载界面('前台')
+    else if (['下载中', '校验中', '已就绪', '安装中'].includes(结果.数据.阶段)) 改变下载界面(平台 === 'android' && (结果.数据.强制 || 结果.数据.错误) ? '前台' : '后台')
+    if (启动查询 && 结果.数据.阶段 === '已就绪' && 平台 !== 'android') await 安装已下载更新()
   })()
   恢复请求 = 请求
   try { await 请求 } finally { if (恢复请求 === 请求) 恢复请求 = null }
 }
-export async function 开始下载更新(发布: 有效发布): Promise<void> {
+export async function 开始下载更新(发布: 有效发布, 界面: 下载界面状态['界面'] = '前台', 保留入口 = false): Promise<void> {
   if (正在下载或待安装()) throw new Error('已有更新任务正在进行')
   已发起启动恢复 = true
-  下载状态 = 更新下载界面(初始下载状态, '前台'); 当前卡片 = null; 下载代次++; 通知()
+  下载发布 = 发布
+  下载状态 = 更新下载界面(初始下载状态, 界面); if (!保留入口) 当前卡片 = null; 下载代次++; 通知()
   let 结果
   try { 结果 = await 桥接.update.download(发布) }
   catch (错误) { if (正在取消 || 下载状态.进度?.阶段 === '已取消') return; throw 错误 }
@@ -166,6 +174,7 @@ export function 重置更新状态(): void {
   恢复请求 = null
   已发起启动恢复 = false
   正在取消 = false
+  下载发布 = null
   通知()
 }
 

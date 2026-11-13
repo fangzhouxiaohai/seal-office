@@ -12,6 +12,8 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import java.lang.ref.WeakReference;
 import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,6 +40,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewCompat;
@@ -76,6 +79,7 @@ public final class MainActivity extends Activity {
     private static final int HTML_PICKER = 42103;
     private static final int CAMERA_CAPTURE = 42104;
     private static final int CAMERA_PERMISSION = 42105;
+    private static final int UPDATE_NOTIFICATIONS_PERMISSION = 42106;
     private static final long MAX_IMPORT = 100L * 1024L * 1024L;
     private static final String LEGACY_ASSET_ROOT = "apps/__UNI__B52B65B/www/static/office/";
     private static final String ENTRY = "file:///android_asset" + HostProtocol.LEGACY_ASSET_PATH + "?native=1";
@@ -87,6 +91,10 @@ public final class MainActivity extends Activity {
     private final String token = UUID.randomUUID().toString();
     private WebView web;
     private NativeUpdater updater;
+    private JSONObject pendingUpdateRelease;
+    private final UpdatePermissionGate updatePermission = new UpdatePermissionGate();
+    private boolean installFromNotification;
+    private boolean restoredPermissionRequest;
     private LinearLayout failure;
     private TextView failureDetail;
     private boolean ready;
@@ -108,7 +116,17 @@ public final class MainActivity extends Activity {
         SplashScreen splash = SplashScreen.installSplashScreen(this);
         splash.setKeepOnScreenCondition(() -> startupPending);
         super.onCreate(state);
-        updater = new NativeUpdater(this, value -> evaluate("window.dispatchEvent(new CustomEvent('seal-native-update',{detail:" + value + "}))"));
+        updater = UpdateService.attach(this, value -> evaluate("window.dispatchEvent(new CustomEvent('seal-native-update',{detail:" + value + "}))"));
+        if (state != null && state.containsKey("seal-update-permission-release")) {
+            try {
+                JSONObject release = new JSONObject(state.getString("seal-update-permission-release", ""));
+                String id = state.getString("seal-update-permission-id", "");
+                if (!id.isEmpty() && updatePermission.begin(id, release.optBoolean("mandatory", false))) {
+                    pendingUpdateRelease = release; restoredPermissionRequest = true;
+                }
+            } catch (Exception error) { updater.reportStartFailure("", 0, false, "恢复更新授权状态失败，请重新开始下载"); }
+        }
+        installFromNotification = UpdateService.isInstallIntent(this, getIntent());
         getWindow().setStatusBarColor(Color.rgb(245, 247, 255));
         getWindow().setNavigationBarColor(Color.rgb(245, 247, 255));
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
@@ -304,11 +322,23 @@ public final class MainActivity extends Activity {
                     JSONObject release = data.optJSONObject("release");
                     if (release == null) { replyError(id, "更新信息不完整"); break; }
                     release.put("base", data.optString("base"));
-                    updater.download(release, value -> replyUpdate(id, value));
+                    startUpdate(id, release);
                     break;
                 }
-                case "update-cancel": updater.cancel(value -> replyUpdate(id, value)); break;
-                case "update-status": updater.status(value -> replyUpdate(id, value)); break;
+                case "update-cancel": {
+                    if (updatePermission.pending() != null) {
+                        if (!updatePermission.cancel()) { replyUpdateError(id, "当前版本要求强制更新，无法取消"); break; }
+                        pendingUpdateRelease = null;
+                        JSONObject state = new JSONObject().put("阶段", "已取消").put("已下载", 0).put("总大小", 0);
+                        replyUpdate(id, new JSONObject().put("成功", true).put("数据", state));
+                    } else updater.cancel(value -> replyUpdate(id, value));
+                    break;
+                }
+                case "update-status": {
+                    if (updatePermission.pending() != null && pendingUpdateRelease != null) replyUpdate(id, pendingPermissionState(pendingUpdateRelease));
+                    else updater.status(value -> replyUpdate(id, value));
+                    break;
+                }
                 case "update-install": updater.install(value -> replyUpdate(id, value)); break;
                 case "pick-files": pickFiles(id, data.optBoolean("multiple")); break;
                 case "camera-capture": capturePhoto(id, null); break;
@@ -349,8 +379,81 @@ public final class MainActivity extends Activity {
         catch (Exception error) { moveTaskToBack(true); }
     }
 
+    private void startUpdate(String id, JSONObject release) {
+        if (updater.isBusy()) { replyUpdateError(id, "已有更新正在下载或安装"); return; }
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            if (!updatePermission.begin(id, release.optBoolean("mandatory", false))) { replyUpdateError(id, "正在等待通知权限，请先处理系统提示"); return; }
+            pendingUpdateRelease = release;
+            try {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, UPDATE_NOTIFICATIONS_PERMISSION);
+                replyUpdate(id, pendingPermissionState(release));
+            } catch (Exception error) {
+                updatePermission.take(); pendingUpdateRelease = null;
+                replyUpdateError(id, "无法请求通知权限，请检查系统设置后重试");
+            }
+            return;
+        }
+        launchUpdate(id, release, false);
+    }
+    private JSONObject pendingPermissionState(JSONObject release) {
+        JSONObject value = new JSONObject(), state = new JSONObject();
+        try {
+            state.put("阶段", "下载中"); state.put("已下载", 0); state.put("总大小", release.optLong("bytes", 0));
+            state.put("版本", release.optString("version")); state.put("强制", release.optBoolean("mandatory", false)); state.put("通知可见", false);
+            value.put("成功", true); value.put("数据", state);
+        } catch (JSONException ignored) { }
+        return value;
+    }
+    private void launchUpdate(String id, JSONObject release, boolean acknowledged) {
+        try {
+            if (!UpdateService.notificationsVisible(this)) Toast.makeText(this, "通知权限未开启，后台下载进度可能不会显示；可在系统设置中开启通知", Toast.LENGTH_LONG).show();
+            UpdateService.begin(this);
+            WeakReference<MainActivity> owner = new WeakReference<>(this);
+            updater.download(release, value -> {
+                MainActivity current = owner.get();
+                if (!acknowledged && current != null && !current.isDestroyed()) current.replyUpdate(id, value);
+                else if (acknowledged && !value.optBoolean("成功", false)) updater.reportStartFailure(release.optString("version"), release.optLong("bytes", 0), release.optBoolean("mandatory", false), value.optString("错误", "无法启动下载"));
+            });
+        } catch (Exception error) {
+            String message = "无法启动后台下载，请检查系统设置后重试";
+            if (acknowledged) updater.reportStartFailure(release.optString("version"), release.optLong("bytes", 0), release.optBoolean("mandatory", false), message);
+            else replyUpdateError(id, message);
+        }
+    }
+    private void replyUpdateError(String id, String message) {
+        JSONObject value = new JSONObject();
+        try { value.put("成功", false); value.put("错误", message); replyUpdate(id, value); } catch (JSONException ignored) { }
+    }
+    @Override protected void onResume() {
+        super.onResume();
+        if (updater != null) updater.visible(this, true);
+        if (restoredPermissionRequest) {
+            restoredPermissionRequest = false;
+            if (updatePermission.take() != null && pendingUpdateRelease != null) {
+                JSONObject release = pendingUpdateRelease; pendingUpdateRelease = null;
+                updater.reportStartFailure(release.optString("version"), release.optLong("bytes", 0), release.optBoolean("mandatory", false), "通知授权过程已中断，请重新开始下载");
+            }
+        }
+        if (installFromNotification && updater != null) {
+            installFromNotification = false;
+            updater.installWhenVisible();
+        }
+    }
+    @Override protected void onPause() { if (updater != null) updater.visible(this, false); super.onPause(); }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent); setIntent(intent);
+        if (UpdateService.isInstallIntent(this, intent)) { installFromNotification = true; }
+    }
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        String id = updatePermission.pending();
+        if (id != null && pendingUpdateRelease != null) {
+            outState.putString("seal-update-permission-id", id);
+            outState.putString("seal-update-permission-release", pendingUpdateRelease.toString());
+        }
+        super.onSaveInstanceState(outState);
+    }
     @Override public void onDestroy() {
-        if (updater != null) updater.close();
+        if (updater != null) updater.detach(this);
         for (Future<?> task : tasks.values()) task.cancel(true);
         for (HttpURLConnection connection : connections.values()) connection.disconnect();
         workers.shutdownNow();
@@ -503,6 +606,12 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == UPDATE_NOTIFICATIONS_PERMISSION) {
+            String id = updatePermission.take(); JSONObject release = pendingUpdateRelease;
+            pendingUpdateRelease = null;
+            if (id != null && release != null) launchUpdate(id, release, true);
+            return;
+        }
         if (requestCode != CAMERA_PERMISSION) return;
         if (HostProtocol.permissionGranted(results)) openCamera();
         else finishCamera("camera-denied", "未获得相机权限，可在系统设置中开启，或改用相册、文件导入");

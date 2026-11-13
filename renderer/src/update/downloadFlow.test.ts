@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { 桥接, type 更新操作结果 } from '../ipc/bridge'
 import type { 下载进度 } from './downloadState'
-import { 开始下载更新, 恢复下载状态, 重置更新状态 } from './updateCenter'
+import { 开始下载更新, 恢复下载状态, 重置更新状态, 取下载状态 } from './updateCenter'
 
 const 进度 = { 阶段:'已就绪' as const, 已下载:100, 总大小:100, 版本:'2.7.3', 任务标识:'a' }
 beforeEach(() => { 重置更新状态(); vi.spyOn(桥接.update,'下载可用','get').mockReturnValue(true) })
@@ -33,4 +33,18 @@ it('启动查询抛出异常后，尚未开启新下载时可安全重试原待�
   await expect(恢复下载状态()).rejects.toThrow('连接中断')
   await 恢复下载状态()
   expect(安装).toHaveBeenCalledOnce()
+})
+
+it('恢复查询等待平台期间新任务开始，不得用旧失败状态重开下载窗口', async () => {
+  vi.spyOn(桥接.update,'可用','get').mockReturnValue(true)
+  let 完成平台!: (v: {成功:boolean;平台:'android';版本:string})=>void
+  vi.spyOn(桥接.update,'info').mockImplementation(()=>new Promise<{成功:boolean;平台:'android';版本:string}>(resolve=>{完成平台=resolve}))
+  vi.spyOn(桥接.update,'status').mockResolvedValue({成功:true,数据:{阶段:'失败',已下载:0,总大小:100,版本:'2.7.3',任务标识:'旧任务',错误:'旧任务失败'}})
+  vi.spyOn(桥接.update,'download').mockResolvedValue({成功:true,数据:{阶段:'下载中',已下载:0,总大小:100,版本:'2.7.4',任务标识:'新任务'}})
+  const 恢复=恢复下载状态()
+  await vi.waitFor(()=>expect(桥接.update.info).toHaveBeenCalledOnce())
+  await 开始下载更新({hasUpdate:true,version:'2.7.4'},'后台')
+  完成平台({成功:true,平台:'android',版本:'2.7.2'});await 恢复
+  expect(取下载状态().界面).toBe('后台')
+  expect(取下载状态().进度?.任务标识).toBe('新任务')
 })
