@@ -61,6 +61,7 @@ jobs:
           cp -R "$mountpoint/海豹办公.app" "$RUNNER_TEMP/seal-macos-copy/"
           app="$RUNNER_TEMP/seal-macos-copy/海豹办公.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$(node -p "require('./package.json').version")"
           file "$app/Contents/MacOS/海豹办公" | grep arm64
           python3 - "$app/Contents/Info.plist" <<'PY'
           import json, plistlib, sys
