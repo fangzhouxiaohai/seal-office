@@ -88,6 +88,7 @@ jobs:
           signApp({ app: process.argv[2], platform: 'darwin', identity: '-', identityValidation: false, hardenedRuntime: false, preEmbedProvisioningProfile: false }).catch(error => { console.error(error); process.exitCode = 1 })
           NODE
           codesign --verify --deep --strict --verbose=2 "$app"
+          node -e "require('./scripts/verify-macos-universal.cjs').校验完整性(process.argv[1])" "$app"
           while IFS= read -r -d '' file; do
             if file -b "$file" | grep -q 'Mach-O'; then
               case "$file" in
@@ -161,6 +162,7 @@ jobs:
             brew install --cask libreoffice
           fi
           cd "$GITHUB_WORKSPACE"
+          node -e "require('./scripts/verify-macos-universal.cjs').校验完整性(process.argv[1])" "$app"
           node scripts/verify-macos-candidate.cjs "$app"
           node scripts/verify-macos-universal.cjs --canvas "$app"
           printf '%s\n' '隔离试验：临时签名、未公证；未完成真实访达、程序坞和安装更新验收。'

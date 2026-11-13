@@ -2,8 +2,43 @@ const fs = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
 const { spawn } = require('node:child_process')
+const { isDeepStrictEqual } = require('node:util')
+const { createHash } = require('node:crypto')
+const plist = require('plist')
+const asar = require('@electron/asar')
 
 const 原生路径 = arch => `Contents/Resources/app.asar.unpacked/node_modules/@napi-rs/canvas-darwin-${arch}/skia.darwin-${arch}.node`
+
+function 排序字典(值) {
+  if (Array.isArray(值)) return 值.map(排序字典)
+  if (值 && Object.getPrototypeOf(值) === Object.prototype) return Object.fromEntries(Object.keys(值).sort().map(键 => [键, 排序字典(值[键])]))
+  return 值
+}
+
+function 规范属性(x64, arm64) {
+  const 原数据 = [x64, arm64].map(文件 => {
+    if (!fs.lstatSync(文件).isFile()) throw new Error('属性文件不是普通文件')
+    return plist.parse(fs.readFileSync(文件, 'utf8'))
+  })
+  const 业务数据 = 原数据.map(数据 => { const 副本 = { ...数据 }; delete 副本.ElectronAsarIntegrity; return 副本 })
+  if (!isDeepStrictEqual(业务数据[0], 业务数据[1])) throw new Error('两种架构的属性内容不一致，拒绝合并')
+  for (let i = 0; i < 2; i++) fs.writeFileSync([x64, arm64][i], plist.build(排序字典(原数据[i])))
+}
+
+function 校验完整性(应用) {
+  const 内容 = path.join(应用, 'Contents'), 资源 = path.join(内容, 'Resources')
+  const 属性 = plist.parse(fs.readFileSync(path.join(内容, 'Info.plist'), 'utf8'))
+  const 表 = 属性.ElectronAsarIntegrity
+  const 名称 = ['app.asar', 'app-arm64.asar', 'app-x64.asar'].sort()
+  const 键 = 名称.map(项 => 'Resources/' + 项).sort()
+  if (!表 || !isDeepStrictEqual(Object.keys(表).sort(), 键)) throw new Error('通用包完整性路径不一致')
+  for (const 项 of 名称) {
+    const 记录 = 表['Resources/' + 项]
+    const 摘要 = createHash('sha256').update(asar.getRawHeader(path.join(资源, 项)).headerString).digest('hex')
+    if (记录?.algorithm !== 'SHA256' || 记录.hash !== 摘要) throw new Error('通用包完整性摘要不一致：' + 项)
+  }
+  console.log('通过：通用包三份 ASAR 路径和头摘要')
+}
 
 function 清除旧签名(目录) {
   for (const 条目 of fs.readdirSync(目录, { withFileTypes: true })) {
@@ -41,12 +76,14 @@ async function 合并(x64, arm64, 输出) {
     const 相对 = path.relative(临时根, 实际)
     if (!相对 || 相对.startsWith('..' + path.sep) || 相对 === '..' || path.isAbsolute(相对)) throw new Error('应用副本必须位于运行器临时目录')
   }
+  规范属性(path.join(x64, 'Contents/Info.plist'), path.join(arm64, 'Contents/Info.plist'))
   对齐副本(x64, arm64)
   await require('@electron/universal').makeUniversalApp({
     x64AppPath: x64, arm64AppPath: arm64, outAppPath: 输出,
     mergeASARs: false,
     x64ArchFiles: '**/@napi-rs/canvas-darwin-*/skia.darwin-*.node',
   })
+  校验完整性(输出)
 }
 
 async function 校验图形(应用) {
@@ -83,7 +120,7 @@ async function 校验图形(应用) {
   }
 }
 
-module.exports = { 对齐副本 }
+module.exports = { 对齐副本, 规范属性, 校验完整性 }
 if (require.main === module) {
   const 参数 = process.argv.slice(2)
   const 任务 = 参数[0] === '--canvas' ? 校验图形(参数[1]) : 合并(...参数)
