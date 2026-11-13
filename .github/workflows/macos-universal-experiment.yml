@@ -92,9 +92,9 @@ jobs:
           while IFS= read -r -d '' file; do
             if file -b "$file" | grep -q 'Mach-O'; then
               case "$file" in
-                */canvas-darwin-arm64/skia.darwin-arm64.node) lipo -verify_arch arm64 "$file" ;;
-                */canvas-darwin-x64/skia.darwin-x64.node) lipo -verify_arch x86_64 "$file" ;;
-                *) lipo -verify_arch x86_64 arm64 "$file" ;;
+                */canvas-darwin-arm64/skia.darwin-arm64.node) lipo "$file" -verify_arch arm64 ;;
+                */canvas-darwin-x64/skia.darwin-x64.node) lipo "$file" -verify_arch x86_64 ;;
+                *) lipo "$file" -verify_arch x86_64 arm64 ;;
               esac
             fi
           done < <(find "$app/Contents" -type f -print0)
@@ -156,7 +156,7 @@ jobs:
           ditto "$PWD/mount/海豹办公.app" "$PWD/copy/海豹办公.app"
           app="$PWD/copy/海豹办公.app"
           codesign --verify --deep --strict --verbose=2 "$app"
-          lipo -verify_arch x86_64 arm64 "$app/Contents/MacOS/海豹办公"
+          lipo "$app/Contents/MacOS/海豹办公" -verify_arch x86_64 arm64
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
             if [ "$EXPECTED_ARCH" = x86_64 ]; then brew update; fi
             brew install --cask libreoffice

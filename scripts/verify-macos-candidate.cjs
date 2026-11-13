@@ -10,6 +10,7 @@ const 延迟 = ms => new Promise(resolve => setTimeout(resolve, ms))
 const 中断错误 = () => new Error('验收超时或已取消')
 const 限时 = (信号, 毫秒) => AbortSignal.any([信号, AbortSignal.timeout(毫秒)])
 const 图形表达式 = () => `(()=>{const e=process.mainModule.require('electron'),p=process.mainModule.require('path');const canvas=process.mainModule.require(p.join(e.app.getAppPath(),'node_modules/@napi-rs/canvas'));return canvas.createCanvas(2,2).toBuffer('image/png').subarray(0,8).toString('hex')})()`
+const 窗口表达式 = () => "typeof process !== 'undefined' && !!process.mainModule && process.mainModule.require('electron').BrowserWindow.getAllWindows().length > 0"
 
 function 有界等待(任务, 信号) {
   return new Promise((resolve, reject) => {
@@ -19,6 +20,16 @@ function 有界等待(任务, 信号) {
     信号.addEventListener('abort', 中断, { once: true })
     Promise.resolve(任务).then(值 => { 清理(); resolve(值) }, 错误 => { 清理(); reject(错误) })
   })
+}
+
+async function 等待窗口(计算, 检查, 总信号, 毫秒 = 30000, 间隔 = 100) {
+  const 信号 = 限时(总信号, 毫秒)
+  while (!信号.aborted) {
+    检查()
+    if (await 有界等待(计算(窗口表达式()), 信号)) return
+    await 有界等待(延迟(间隔), 信号)
+  }
+  throw 中断错误()
 }
 
 async function 读取目标(端口, 信号) {
@@ -125,15 +136,7 @@ async function 验收(应用) {
     进度('连接主进程调试接口')
     const 主进程 = await 连接(19331, 目标 => !!目标.webSocketDebuggerUrl)
     进度('等待应用窗口')
-    const 截止 = Date.now() + 30000
-    let 已就绪 = false
-    while (Date.now() < 截止) {
-      检查进程()
-      已就绪 = await 主进程.计算("!!process.mainModule && process.mainModule.require('electron').BrowserWindow.getAllWindows().length > 0")
-      if (已就绪) break
-      await 延迟(100)
-    }
-    if (!已就绪) throw new Error('应用窗口未创建')
+    await 等待窗口(主进程.计算, 检查进程, 总信号)
     进度('连接界面调试接口')
     const 渲染 = await 连接(19330, 目标 => 目标.url.endsWith('/dist/index.html'))
     进度('核对应用与沙箱')
@@ -167,5 +170,5 @@ async function 验收(应用) {
   }
 }
 
-module.exports = { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式 }
+module.exports = { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口 }
 if (require.main === module) 验收(process.argv[2]).catch(错误 => { console.error(错误); process.exitCode = 1 })

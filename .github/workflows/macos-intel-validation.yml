@@ -46,6 +46,8 @@ jobs:
           cache: npm
       - name: 安装测试依赖
         run: npm ci --no-audit --no-fund
+      - name: 校验验收脚本
+        run: node --test scripts/verify-macos-candidate.test.cjs
       - name: 安装文档转换工具
         run: |
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then

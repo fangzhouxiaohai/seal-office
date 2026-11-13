@@ -4,7 +4,36 @@ const http = require('node:http')
 const net = require('node:net')
 const path = require('node:path')
 const { EventEmitter } = require('node:events')
-const { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式 } = require('./verify-macos-candidate.cjs')
+const { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口 } = require('./verify-macos-candidate.cjs')
+
+test('上下文未初始化和主模块未就绪均可安全重试，真实异常继续抛出', () => {
+  const vm = require('node:vm')
+  assert.equal(vm.runInNewContext(窗口表达式(), {}), false)
+  assert.equal(vm.runInNewContext(窗口表达式(), { process: {} }), false)
+  const process = { mainModule: { require: () => ({ BrowserWindow: { getAllWindows: () => [{}] } }) } }
+  assert.equal(vm.runInNewContext(窗口表达式(), { process }), true)
+  const 错误进程 = { mainModule: { require: () => { throw new Error('加载失败') } } }
+  assert.throws(() => vm.runInNewContext(窗口表达式(), { process: 错误进程 }), /加载失败/)
+})
+
+test('等待窗口只对未就绪结果重试，真实错误和总时限立即终止', async () => {
+  let 次数 = 0
+  await 等待窗口(async () => ++次数 >= 3, () => {}, new AbortController().signal, 1000, 1)
+  assert.equal(次数, 3)
+  await assert.rejects(等待窗口(async () => { throw new Error('真实调试错误') }, () => {}, new AbortController().signal, 1000, 1), /真实调试错误/)
+  const 控制 = new AbortController(), 计时 = setTimeout(() => 控制.abort(), 30)
+  try { await assert.rejects(等待窗口(async () => false, () => {}, 控制.signal, 1000, 1), /超时|取消/) }
+  finally { clearTimeout(计时) }
+})
+
+test('通用包工作流的架构校验把文件放在选项前面', () => {
+  const yaml = require('js-yaml')
+  const 流程 = yaml.load(require('node:fs').readFileSync(path.join(__dirname, '../.github/workflows/macos-universal-experiment.yml'), 'utf8'))
+  const commands = Object.values(流程.jobs).flatMap(job => job.steps || []).map(step => step.run || '').join('\n')
+  const 检查 = commands.split('\n').filter(line => line.includes('lipo ') && line.includes('-verify_arch'))
+  assert.equal(检查.length, 4)
+  for (const 行 of 检查) assert.match(行, /lipo\s+"\$[^"]+"\s+-verify_arch\s+(?:x86_64|arm64)/)
+})
 
 test('图形验收使用当前应用路径加载原生模块并检查图片签名', () => {
   const vm = require('node:vm')
