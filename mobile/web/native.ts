@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
 
-type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[] }
+type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[]; value?: any }
 type Bridge = { token: string; platform: string }
 declare global {
   interface Window {
@@ -15,6 +15,28 @@ window.sealReceiveNative = (event) => pending.get(event.id)?.(event)
 function send(data: Record<string, unknown>) {
   if (!window.sealNative || !window.uni?.webView) throw new Error('原生接口尚未就绪')
   window.uni.webView.postMessage({ data: { ...data, token: window.sealNative.token } })
+}
+
+/** 原生更新进度只来自实际宿主事件；订阅者可随时解除监听。 */
+export function onNativeUpdate(callback: (state: any) => void): () => void {
+  const listener = (event: Event) => callback((event as CustomEvent).detail)
+  window.addEventListener('seal-native-update', listener)
+  return () => window.removeEventListener('seal-native-update', listener)
+}
+
+export function nativeUpdate(action: 'update-download' | 'update-cancel' | 'update-status' | 'update-install' | 'update-store-open', fields: Record<string, unknown> = {}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('更新操作超时，请检查网络或重试')) }, action === 'update-download' ? 30 * 60 * 1000 : 120000)
+    pending.set(id, event => {
+      if (event.type !== 'update-result' && event.type !== 'error') return
+      clearTimeout(timer); pending.delete(id)
+      if (event.type === 'error') reject(new Error(event.error || '原生更新操作失败'))
+      else if (!event.value || typeof event.value.成功 !== 'boolean') reject(new Error('原生更新返回内容无效'))
+      else resolve(event.value)
+    })
+    try { send({ ...fields, id, action }) } catch (error) { clearTimeout(timer); pending.delete(id); reject(error) }
+  })
 }
 export async function waitForNative() {
   if (!new URLSearchParams(location.search).has('native')) return

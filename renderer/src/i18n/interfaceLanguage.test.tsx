@@ -61,6 +61,12 @@ describe('界面中英文适配', () => {
     expect(翻译界面文本('校验文件修改候选', 'en-US')).toBe('Validate proposed file changes')
   })
 
+  it('英文界面覆盖下载更新固定文案、辅助标签和动态版本号', () => {
+    const 文案 = ['下载状态异常','上次更新未完成','更新状态读取失败','安装未完成','安装状态读取失败','取消下载失败','后台下载进度','正在后台下载','查看进度','更新','安装程序已启动','更新下载进度','取消下载','后台下载','稍后安装','安装更新','正在下载更新','正在取消下载','正在校验安装包','更新已下载','安装包已校验，请选择安装更新。','请按系统提示完成安装。','请保持网络连接，下载期间可以继续使用应用。','正在连接更新服务','下载中','无法读取下载状态，请重试','已有更新任务正在进行','下载更新失败，请重试','取消下载未完成，请重试','安装程序未启动，请重试','已打开应用市场更新弹窗，请按系统提示完成更新','应用市场未显示更新弹窗，请稍后重试']
+    expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+    expect(翻译界面文本('版本 2.7.3', 'en-US')).toBe('Version 2.7.3')
+  })
+
   it('翻译助手文本框的提示和无障碍名称，但保留用户输入和被排除区域', async () => {
     render(<SettingsProvider><InterfaceLanguageAdapter /><textarea aria-label="发送给智能助手的消息" placeholder="描述修改或写作需求，也可以提问…" defaultValue="我的原始输入" /><div data-ui-language-ignore="true"><textarea placeholder="保存" defaultValue="保留原文" /></div></SettingsProvider>)
     const 输入 = await screen.findByRole('textbox', { name: 'Message to assistant' })

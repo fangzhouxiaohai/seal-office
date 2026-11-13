@@ -86,6 +86,7 @@ public final class MainActivity extends Activity {
     private final Map<String, HttpURLConnection> connections = new ConcurrentHashMap<>();
     private final String token = UUID.randomUUID().toString();
     private WebView web;
+    private NativeUpdater updater;
     private LinearLayout failure;
     private TextView failureDetail;
     private boolean ready;
@@ -107,6 +108,7 @@ public final class MainActivity extends Activity {
         SplashScreen splash = SplashScreen.installSplashScreen(this);
         splash.setKeepOnScreenCondition(() -> startupPending);
         super.onCreate(state);
+        updater = new NativeUpdater(this, value -> evaluate("window.dispatchEvent(new CustomEvent('seal-native-update',{detail:" + value + "}))"));
         getWindow().setStatusBarColor(Color.rgb(245, 247, 255));
         getWindow().setNavigationBarColor(Color.rgb(245, 247, 255));
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
@@ -298,6 +300,16 @@ public final class MainActivity extends Activity {
                     break;
                 }
                 case "request": request(id, data); break;
+                case "update-download": {
+                    JSONObject release = data.optJSONObject("release");
+                    if (release == null) { replyError(id, "更新信息不完整"); break; }
+                    release.put("base", data.optString("base"));
+                    updater.download(release, value -> replyUpdate(id, value));
+                    break;
+                }
+                case "update-cancel": updater.cancel(value -> replyUpdate(id, value)); break;
+                case "update-status": updater.status(value -> replyUpdate(id, value)); break;
+                case "update-install": updater.install(value -> replyUpdate(id, value)); break;
                 case "pick-files": pickFiles(id, data.optBoolean("multiple")); break;
                 case "camera-capture": capturePhoto(id, null); break;
                 case "save": save(id, data, false); break;
@@ -338,11 +350,16 @@ public final class MainActivity extends Activity {
     }
 
     @Override public void onDestroy() {
+        if (updater != null) updater.close();
         for (Future<?> task : tasks.values()) task.cancel(true);
         for (HttpURLConnection connection : connections.values()) connection.disconnect();
         workers.shutdownNow();
         if (web != null) { web.destroy(); web = null; }
         super.onDestroy();
+    }
+
+    private void replyUpdate(String id, JSONObject value) {
+        try { reply(result(id, "update-result").put("value", value)); } catch (JSONException ignored) { }
     }
 
     private void clipboard(String id, String text) {
@@ -571,6 +588,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == NativeUpdater.INSTALL_REQUEST) { if (updater != null) updater.installReturned(); return; }
         if (requestCode == HTML_PICKER) {
             ValueCallback<Uri[]> callback = htmlPicker; htmlPicker = null;
             if (callback != null) callback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));

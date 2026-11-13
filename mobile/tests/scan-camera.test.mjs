@@ -39,10 +39,13 @@ test('鸿蒙声明相机权限并提供使用理由，拍照前先申请权限�
     assert.match(strings.find(item => item.name === 'seal_camera_reason').value, /拍摄文档/)
   }
   const mobile = await read('../pages/workspace/workspace.uvue'), harmony = await read('../../harmony-mobile/pages/workspace/workspace.uvue')
-  assert.equal(mobile, harmony)
-  assert.match(mobile, /action == 'camera-capture'\) this\.capturePhoto\(id\)/)
-  assert.match(mobile, /requestSystemPermission\(\['ohos\.permission\.CAMERA'\][\s\S]*this\.openCamera\(id\)/)
-  assert.match(mobile, /uni\.chooseImage\(\{[^}]*sourceType: \['camera'\]/)
+  assert.equal(mobile, harmony, '发行前工作源码和鸿蒙交付源码必须同步')
+  for (const source of ['../pages/workspace/workspace.uvue', '../../harmony-mobile/pages/workspace/workspace.uvue']) {
+    const code = await read(source)
+    assert.match(code, /action == 'camera-capture'\) this\.capturePhoto\(id\)/, source)
+    assert.match(code, /requestSystemPermission\(\['ohos\.permission\.CAMERA'\][\s\S]*this\.openCamera\(id\)/, source)
+    assert.match(code, /uni\.chooseImage\(\{[^}]*sourceType: \['camera'\]/, source)
+  }
 })
 
 test('网页侧拍照通道复用分块传输，拒绝相机权限时给出可识别的错误，取消返回空列表', async () => {

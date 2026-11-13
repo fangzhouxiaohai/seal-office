@@ -15,6 +15,7 @@ import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, message
 // #ifdef APP-HARMONY
 import systemFont from '@ohos.font'
 import http from '@ohos.net.http'
+import { updateManager } from '@kit.AppGalleryKit'
 // #endif
 export default {
   data() {
@@ -150,6 +151,9 @@ export default {
         if (id.length == 0 || id.length > 100) return
         try {
         if (action == 'ping') this.reply({ id: id, type: 'ready' })
+        // #ifdef APP-HARMONY
+        else if (action == 'update-store-open') this.openHarmonyStoreUpdate(id)
+        // #endif
         else if (action == 'abort') {
           // #ifdef APP-HARMONY
           this.harmonyTasks.get(id)?.destroy()
@@ -180,6 +184,23 @@ export default {
         }
       })
     },
+    // #ifdef APP-HARMONY
+    openHarmonyStoreUpdate(id: string) {
+      try {
+        const context = UTSHarmony.getUIAbilityContext()
+        updateManager.checkAppUpdate(context).then((result: updateManager.CheckUpdateResult) => {
+          if (result.updateAvailable != updateManager.UpdateAvailableCode.LATER_VERSION_EXIST) {
+            this.reply({ id: id, type: 'update-result', value: { 成功: false, 错误: '华为应用市场暂未发现可更新版本，请稍后再试' } })
+            return
+          }
+          updateManager.showUpdateDialog(context).then((shown: updateManager.ShowUpdateResultCode) => {
+            if (shown == updateManager.ShowUpdateResultCode.SHOW_DIALOG_SUCCESS) this.reply({ id: id, type: 'update-result', value: { 成功: true, 数据: { 已显示: true } } })
+            else this.reply({ id: id, type: 'update-result', value: { 成功: false, 错误: '无法显示华为应用市场更新窗口，请稍后重试' } })
+          }).catch((_) => { this.reply({ id: id, type: 'update-result', value: { 成功: false, 错误: '无法显示华为应用市场更新窗口，请检查网络后重试' } }) })
+        }).catch((_) => { this.reply({ id: id, type: 'update-result', value: { 成功: false, 错误: '无法检查华为应用市场更新，请检查网络并确认应用已上架' } }) })
+      } catch (_) { this.reply({ id: id, type: 'update-result', value: { 成功: false, 错误: '无法打开华为应用市场更新，请返回应用前台后重试' } }) }
+    },
+    // #endif
     request(id: string, message: UTSJSONObject) {
       const url = messageString(message, 'url')
       if (!url.startsWith('https://') && !url.startsWith('http://127.0.0.1:') && !url.startsWith('http://localhost:')) { this.reply({ id: id, type: 'error', error: '联网地址须使用 HTTPS' }); return }
