@@ -49,6 +49,7 @@ jobs:
       - name: 安装文档转换工具
         run: |
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            brew update
             brew install --cask libreoffice
           fi
           /Applications/LibreOffice.app/Contents/MacOS/soffice --version
