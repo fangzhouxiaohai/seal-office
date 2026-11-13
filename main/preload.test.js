@@ -9,7 +9,7 @@ describe('预加载桥接', () => {
     const 调用 = vi.fn().mockResolvedValue({ 成功: true })
     require.cache[电子路径].exports = {
       contextBridge: { exposeInMainWorld: (_名称, 接口) => { 对外接口 = 接口 } },
-      ipcRenderer: { invoke: 调用 },
+      ipcRenderer: { invoke: 调用, on: vi.fn(), removeListener: vi.fn() },
     }
     delete require.cache[预加载路径]
     try {
@@ -138,7 +138,7 @@ describe('预加载桥接', () => {
     delete require.cache[预加载路径]
     try {
       require('./preload')
-      expect(Object.keys(对外接口.update).sort()).toEqual(['check', 'info', 'install'])
+      expect(Object.keys(对外接口.update).sort()).toEqual(['cancel', 'check', 'download', 'info', 'install', 'installReady', 'onProgress', 'status'])
       await 对外接口.update.info()
       expect(调用).toHaveBeenLastCalledWith('update.info')
       await 对外接口.update.check('stable')
@@ -146,7 +146,11 @@ describe('预加载桥接', () => {
       const 发布 = { hasUpdate: true, version: '2.7.1' }
       await 对外接口.update.install(发布)
       expect(调用).toHaveBeenLastCalledWith('update.install', 发布)
-      expect(new Set(调用.mock.calls.map(([通道]) => 通道))).toEqual(new Set(['update.info', 'update.check', 'update.install']))
+      await 对外接口.update.download(发布)
+      await 对外接口.update.cancel()
+      await 对外接口.update.status()
+      await 对外接口.update.installReady()
+      expect(new Set(调用.mock.calls.map(([通道]) => 通道))).toEqual(new Set(['update.info', 'update.check', 'update.install', 'update.download', 'update.cancel', 'update.status', 'update.installReady']))
     } finally {
       require.cache[电子路径].exports = 原电子导出
       if (原预加载缓存) require.cache[预加载路径] = 原预加载缓存

@@ -147,6 +147,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     info: () => ipcRenderer.invoke('update.info'),
     check: (通道) => ipcRenderer.invoke('update.check', 通道),
     install: (发布) => ipcRenderer.invoke('update.install', 发布),
+    download: (发布) => ipcRenderer.invoke('update.download', 发布),
+    cancel: () => ipcRenderer.invoke('update.cancel'),
+    status: () => ipcRenderer.invoke('update.status'),
+    installReady: () => ipcRenderer.invoke('update.installReady'),
+    onProgress: (回调) => {
+      const 处理 = (_事件, 状态) => { if (状态 && typeof 状态.阶段 === 'string') 回调(状态) }
+      ipcRenderer.on('update.progress', 处理)
+      return () => ipcRenderer.removeListener('update.progress', 处理)
+    },
   },
   ai: {
     getConfig: () => ipcRenderer.invoke('ai.getConfig'),

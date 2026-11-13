@@ -2,6 +2,7 @@
 // 桌面经主进程（版本取 app.getVersion()，安装包由主进程下载校验）；Web 与移动端经云服务通道查询，版本取构建时注入的 __APP_VERSION__。
 import { useSyncExternalStore } from 'react'
 import { 桥接, type 更新平台, type 版本发布 } from '../ipc/bridge'
+import { 初始下载状态, 应用下载进度, 应跳过自动检查, 更新下载界面, type 下载界面状态, type 下载进度 } from './downloadState'
 
 export type 有效发布 = 版本发布 & { hasUpdate: true; version: string }
 export type 检查结果 =
@@ -76,6 +77,64 @@ let 当前卡片: 卡片状态 | null = null
 const 稍后版本 = new Set<string>()
 const 订阅者 = new Set<() => void>()
 const 通知 = () => { for (const 回调 of 订阅者) 回调() }
+let 下载状态: 下载界面状态 = 初始下载状态
+let 下载代次 = 0
+let 恢复请求: Promise<void> | null = null
+let 已发起启动恢复 = false
+let 正在取消 = false
+export function 取下载状态(): 下载界面状态 { return 下载状态 }
+export function 正在下载或待安装(): boolean { return 应跳过自动检查(下载状态) }
+export function use下载状态(): 下载界面状态 { return useSyncExternalStore(回调 => { 订阅者.add(回调); return () => { 订阅者.delete(回调) } }, () => 下载状态, () => 初始下载状态) }
+export function 改变下载界面(界面: 下载界面状态['界面']): void { 下载状态 = 更新下载界面(下载状态, 界面); 通知() }
+export function 接收下载进度(进度: 下载进度): void {
+  if (下载状态.进度?.阶段 === '已取消' && 下载状态.进度.任务标识 === 进度.任务标识 && 进度.阶段 !== '已取消') return
+  const 下个状态 = 应用下载进度(下载状态, 进度)
+  if (下个状态 !== 下载状态) { 下载状态 = 下个状态; 下载代次++; 通知() }
+}
+export async function 恢复下载状态(): Promise<void> {
+  if (!桥接.update.下载可用) return
+  if (恢复请求) return 恢复请求
+  const 代次 = 下载代次
+  const 启动查询 = !已发起启动恢复
+  已发起启动恢复 = true
+  const 请求 = (async () => {
+    let 结果
+    try { 结果 = await 桥接.update.status() }
+    catch (错误) { if (启动查询 && 代次 === 下载代次) 已发起启动恢复 = false; throw 错误 }
+    if (!结果.成功 || !结果.数据) { if (启动查询 && 代次 === 下载代次) 已发起启动恢复 = false; throw new Error(结果.错误 || '无法读取下载状态，请重试') }
+    if (代次 !== 下载代次) return
+    接收下载进度(结果.数据)
+    if (['下载中', '校验中', '已就绪', '安装中'].includes(结果.数据.阶段)) 改变下载界面('后台')
+    if (启动查询 && 结果.数据.阶段 === '已就绪') await 安装已下载更新()
+  })()
+  恢复请求 = 请求
+  try { await 请求 } finally { if (恢复请求 === 请求) 恢复请求 = null }
+}
+export async function 开始下载更新(发布: 有效发布): Promise<void> {
+  if (正在下载或待安装()) throw new Error('已有更新任务正在进行')
+  已发起启动恢复 = true
+  下载状态 = 更新下载界面(初始下载状态, '前台'); 当前卡片 = null; 下载代次++; 通知()
+  let 结果
+  try { 结果 = await 桥接.update.download(发布) }
+  catch (错误) { if (正在取消 || 下载状态.进度?.阶段 === '已取消') return; throw 错误 }
+  if (正在取消 || 下载状态.进度?.阶段 === '已取消') return
+  if (!结果.成功 || !结果.数据) throw new Error(结果.错误 || '下载更新失败，请重试')
+  接收下载进度(结果.数据)
+}
+export async function 取消下载更新(): Promise<void> {
+  if (正在取消) return
+  正在取消 = true
+  try {
+    const 结果 = await 桥接.update.cancel()
+    if (!结果.成功 || !结果.数据 || 结果.数据.阶段 !== '已取消') throw new Error(结果.错误 || '取消下载未完成，请重试')
+    接收下载进度(结果.数据); 改变下载界面('隐藏')
+  } finally { 正在取消 = false }
+}
+export async function 安装已下载更新(): Promise<void> {
+  const 结果 = await 桥接.update.installReady()
+  if (!结果.成功 || !结果.数据 || 结果.数据.阶段 !== '安装中') throw new Error(结果.错误 || '安装程序未启动，请重试')
+  接收下载进度(结果.数据)
+}
 
 /** 展示更新卡片；自动检查尊重本次运行内的「稍后」，手动检查与强制更新总是展示 */
 export function 展示更新(发布: 有效发布, 来源: '自动' | '手动'): boolean {
@@ -102,6 +161,11 @@ export function 重置更新状态(): void {
   当前卡片 = null
   稍后版本.clear()
   平台信息 = null
+  下载状态 = 初始下载状态
+  下载代次++
+  恢复请求 = null
+  已发起启动恢复 = false
+  正在取消 = false
   通知()
 }
 
@@ -122,7 +186,13 @@ export async function 执行更新(发布: 有效发布, 刷新页面: () => voi
     return { 成功: true, 提示: 结果.数据?.已打开商店 ? '已打开微软商店，请在商店中完成更新' : 结果.数据?.已打开下载 ? 下载提示 : '安装包校验通过，正在启动安装程序，海豹办公即将退出' }
   }
   if (平台 === 'web') { 刷新页面(); return { 成功: true } }
-  if (平台 === 'android' || 平台 === 'harmony') {
+  if (平台 === 'harmony') {
+    const 结果 = await 桥接.update.openStore()
+    if (!结果.成功) return { 成功: false, 错误: 结果.错误 || '无法打开应用市场更新' }
+    if (!结果.数据?.已显示) return { 成功: false, 错误: '应用市场未显示更新弹窗，请稍后重试' }
+    return { 成功: true, 提示: '已打开应用市场更新弹窗，请按系统提示完成更新' }
+  }
+  if (平台 === 'android') {
     if (!发布.url) return { 成功: false, 错误: '发布记录缺少下载地址，请稍后再试' }
     const 结果 = await 桥接.openExternal(发布.url)
     if (!结果.成功) return { 成功: false, 错误: 结果.错误 || '无法打开下载地址' }

@@ -20,12 +20,12 @@ function 判定更新平台({ platform = process.platform, windowsStore = Boolea
 const 失败 = (消息, 附加 = {}) => Object.assign(new Error(消息), 附加)
 
 function 创建更新服务({ 当前版本, 平台, 获取服务地址, 请求 = globalThis.fetch, 临时目录, 启动安装程序, 退出, 打开外部, 退出延迟 = 800, 超时 = 15000 }) {
-  async function 检查(通道 = 'stable') {
+  async function 检查(通道 = 'stable', 信号) {
     if (!['windows', 'windows-store', 'linux', 'macos'].includes(平台)) throw 失败('当前平台暂不支持在线更新', { code: 'UNSUPPORTED' })
     if (通道 !== 'stable' && 通道 !== 'beta') throw 失败('发布通道无效')
     const 地址 = `${String(获取服务地址()).replace(/\/$/, '')}/v1/updates/latest?platform=${encodeURIComponent(平台)}&version=${encodeURIComponent(当前版本)}&channel=${通道}`
     let 响应
-    try { 响应 = await 请求(地址, { signal: AbortSignal.timeout(超时), headers: { Accept: 'application/json' } }) }
+    try { 响应 = await 请求(地址, { signal: 信号 ? AbortSignal.any([信号, AbortSignal.timeout(超时)]) : AbortSignal.timeout(超时), headers: { Accept: 'application/json' } }) }
     catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
     if ([401, 403, 404].includes(响应.status)) throw 失败('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', { status: 响应.status })
     let 数据
