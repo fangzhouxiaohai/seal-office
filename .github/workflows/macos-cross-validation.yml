@@ -1,0 +1,65 @@
+name: 本机苹果测试包系统验收
+on:
+  push:
+    branches: ['codex/**']
+    paths: ['.github/workflows/macos-cross-validation.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      NODE_OPTIONS: '--max-old-space-size=4096'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: 安装测试依赖
+        run: npm ci --no-audit --no-fund
+      - name: 安装文档转换工具
+        run: |
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            brew install --cask libreoffice
+          fi
+          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+      - name: 下载草稿中的本机测试包并核对摘要
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/octet-stream' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/assets/744643531' \
+            --output "$RUNNER_TEMP/seal-macos-cross-test.dmg"
+          test "$(stat -f '%z' "$RUNNER_TEMP/seal-macos-cross-test.dmg")" = 232607241
+          printf '%s  %s\n' '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | shasum -a 256 -c -
+      - name: 验证本机测试包并启动应用
+        run: |
+          set -euo pipefail
+          dmg="$RUNNER_TEMP/seal-macos-cross-test.dmg"
+          hdiutil verify "$dmg"
+          mountpoint="$RUNNER_TEMP/seal-cross-mount"
+          mkdir -p "$mountpoint" "$RUNNER_TEMP/seal-cross-copy"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mountpoint" "$dmg"
+          trap 'hdiutil detach "$mountpoint"' EXIT
+          cp -R "$mountpoint/海豹办公.app" "$RUNNER_TEMP/seal-cross-copy/"
+          app="$RUNNER_TEMP/seal-cross-copy/海豹办公.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 2.7.2
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0
+          file "$app/Contents/MacOS/海豹办公" | grep arm64
+          codesign --display --verbose=2 "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          if spctl --assess --type execute --verbose=4 "$app"; then
+            echo '系统接受此应用的默认安全评估。'
+          else
+            echo '未公证测试包未通过系统默认安全评估；仍需单独验证用户首次打开流程。'
+          fi
+          node scripts/verify-macos-candidate.cjs "$app"
