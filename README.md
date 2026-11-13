@@ -281,7 +281,7 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 当前源码为 **2.7.2 / 20702**。本次各平台产物、签名及交互验收状态见[2.7.2 发行验收](docs/verification/v2.7.2-release.md)。正式下载以 [GitHub 2.7.2 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2)和 [GitCode 2.7.2 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2)中的实际文件和校验清单为准。
 
-新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.2/`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Android APK、HarmonyOS HAP 和 Web ZIP。Android 正式包由根目录 Java 工程本机构建，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS 已支持上传和更新检查，本轮未生成 DMG。安装运行、浏览器模拟和静态验包的范围分别记录。
+新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.2/`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Android APK、HarmonyOS HAP 和 Web ZIP。Android 正式包由根目录 Java 工程本机构建，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS 通用 DMG 支持 Apple Silicon 和 Intel，已上传到两个发行页，校验值见独立的 `SHA256SUMS-macos.txt`。包使用临时签名且未经苹果公证；首次打开可能需要在系统设置中确认。实体 Mac 的手工安装及更新流程尚未验收。后台已发布 macOS 更新，2.7.1 可检测到 2.7.2；已安装 2.7.2 的用户需要手动下载安装同号修订。安装运行、浏览器模拟和静态验包的范围分别记录。
 
 历史下载与设备核验保留在对应发行及报告中：[1.9.15 发布说明](docs/v1.9.15-发布与移动平台上架说明.md)、[Android 备案包信息](docs/v1.9.15-APP备案包信息.md)、[Ubuntu 版说明](docs/Ubuntu版安装与发布.md)、[Packages 说明](docs/GitHub-Packages发布.md)。历史成品的签名和平台状态不代表当前版本。
 
