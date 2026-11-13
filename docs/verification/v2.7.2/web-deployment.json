@@ -10,7 +10,7 @@
   "assetCount": 527,
   "nginxHash": "5d0870bb6f98bf451270632231c4332b72def506d5d5351dd3bb2f53ef32989b",
   "completedAt": "2026-11-13T14:44:42.754Z",
-  "browserCheck": "pending public browser acceptance",
+  "browserCheck": "已通过三个公网浏览器组，去重后10项检查，零脚本错误",
   "browserAcceptance": {
     "passed": true,
     "version": "2.7.2",

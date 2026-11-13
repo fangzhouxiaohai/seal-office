@@ -882,5 +882,7 @@
       "ubuntu-24.04"
     ],
     "observations": "两套环境中文表格内容、工具栏、海豹悬浮球和2.7.2版本标识正常显示，无错误弹窗。"
-  }
+  },
+  "publicationScope": "published=false仅表示CI工作流自身未发布发行附件；主任务已采用同字节DEB，仓库发布状态另见repositories.json",
+  "adoptedByMainTask": true
 }

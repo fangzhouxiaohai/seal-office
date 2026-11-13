@@ -16,5 +16,8 @@
   "desktopName": "海豹办公",
   "sha256": "6f5200b34afadefd51c76fc28806cf5ba9533618d43346a11705099191d8a095",
   "bytes": 152120784,
-  "passed": true
+  "passed": true,
+  "artifactRole": "历史本机构建候选，未作为最终发行DEB；保留静态核验记录",
+  "finalReleaseEvidence": "linux-deb.json",
+  "finalReleaseSha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126"
 }

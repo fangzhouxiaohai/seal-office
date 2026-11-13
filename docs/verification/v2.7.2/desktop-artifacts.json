@@ -23,5 +23,6 @@
   ],
   "limitations": [
     "Linux installation and UI execution are not established by static checks."
-  ]
+  ],
+  "evidenceScope": "本机Windows与Linux解包构建的源码完整性记录；Linux解包候选未作为最终DEB，正式DEB以ubuntu-ci.json及linux-deb.json为准"
 }

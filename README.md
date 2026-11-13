@@ -265,15 +265,15 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 ## 下载与平台交付
 
-当前源码为 **2.3.0 / 20300**。本次各平台产物、签名及交互验收状态见[2.3.0 打包状态](docs/verification/v2.3.0/打包状态.md)，尚未完成的成品不列为可下载附件。正式下载以 [GitHub 发行列表](https://github.com/fangzhouxiaohai/seal-office/releases)和 [GitCode 发行列表](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases)中的实际版本、文件和校验清单为准。
+当前源码为 **2.7.2 / 20702**。本次各平台产物、签名及交互验收状态见[2.7.2 发行验收](docs/verification/v2.7.2-release.md)。正式下载以 [GitHub 2.7.2 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2)和 [GitCode 2.7.2 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2)中的实际文件和校验清单为准。
 
-新发行统一使用 `seal-office` 文件名前缀；Windows 安装版、便携版、商店包及 Ubuntu、Web、移动云源码集中放入 `release/v2.2.2/`。Android 与 HarmonyOS 云源码分别归档，源码快照需要继续提交原生云打包，不能作为已生成或已验收的安装包。Windows 安装、Ubuntu 图形界面及移动真机结果分别记录，不能用静态验包代替。
+新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.2/`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Android APK、HarmonyOS HAP 和 Web ZIP。Android 正式包由根目录 Java 工程本机构建，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS 已支持上传和更新检查，本轮未生成 DMG。安装运行、浏览器模拟和静态验包的范围分别记录。
 
 历史下载与设备核验保留在对应发行及报告中：[1.9.15 发布说明](docs/v1.9.15-发布与移动平台上架说明.md)、[Android 备案包信息](docs/v1.9.15-APP备案包信息.md)、[Ubuntu 版说明](docs/Ubuntu版安装与发布.md)、[Packages 说明](docs/GitHub-Packages发布.md)。历史成品的签名和平台状态不代表当前版本。
 
 ### 最新版介绍视频
 
-2.6.0 电脑横版 1920×1080 操作视频在本机 `release/promo/` 交付，文件名为 `seal-office-2.6.0-pc-intro-1080p.mp4`。分镜见[电脑横版分镜](docs/promo/pc-current-storyboard.json)，[制作说明与验收结果](docs/2.6.0-电脑横版介绍视频制作说明.md)记录素材来源和校验信息，制作入口为 `npm run promo:build -- --pc-current`。内容演示皮肤市场、文字插入与保存重开、从本机 Zotero 导入文献并生成引文和书目、云空间分享链接、表格公式、演示模板、助手任务入口、脑图流程图，以及 PDF 搜索、复制和批注另存。画面来自生产 Web 界面在隔离 Electron 窗口中的实际操作；云分享使用本机隔离服务与演示账号，未公开用户现有文件。配音沿用用户确认的晓晓音色与参数，保留真实点击、逐字输入和结果校验。正式发行仍须另行完成当前版本 Android 竖版验收。
+2.7.2 两条操作视频已在本机 `release/promo/` 交付：电脑横版 `seal-office-2.7.2-pc-intro-1080p.mp4` 为 1920×1080，安卓竖版 `seal-office-2.7.2-android-intro-1080p.mp4` 为 1080×1920。分镜见[当前版本分镜](docs/promo/current-storyboard.json)，来源、SHA-256 和完整验收见[本版视频记录](docs/verification/v2.7.2-tutorials/README.md)，制作入口为 `npm run promo:build`。两条均按最终 Web ZIP 和 APK 内资源重新录制，展示实际输入、编辑保存、简洁模式、默认缩放和更新检查；分别通过 20 项和 15 项功能断言，完整解码、字幕、音轨与代表画面检查通过。配音沿用晓晓、语速 +5%、音调 +4Hz。画面来自隔离浏览器宿主中的真实操作，未使用用户文档，不作为手机真机验收证明。
 
 ### 右键新建与默认程序
 
@@ -570,7 +570,7 @@ renderer/src/
 
 ## 版本
 
-当前源码版本：2.3.0，移动构建号 20300。升级内容与待验状态见上方“2.3.0 界面焕新、打印修复与 Office 兼容”；以下为仓库保留的历史版本记录。
+当前源码版本：2.7.2，移动构建号 20702。升级内容见上方“2.7.2 简洁模式、默认缩放与后台分平台更新”，实测范围见[本版发行验收](docs/verification/v2.7.2-release.md)；以下为仓库保留的历史版本记录。
 
 ### v1.9.15（历史记录）
 
