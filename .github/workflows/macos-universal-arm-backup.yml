@@ -1,0 +1,72 @@
+name: 苹果通用包 ARM 备用复测
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/**']
+    paths: ['.github/workflows/macos-universal-arm-backup.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      EXPECTED_ARCH: arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: 安装验收依赖
+        timeout-minutes: 20
+        run: npm ci --no-audit --no-fund
+      - name: 检查验收脚本
+        timeout-minutes: 3
+        run: |
+          node --test scripts/verify-macos-candidate.test.cjs scripts/verify-macos-universal.test.cjs scripts/verify-macos-universal-retest.test.cjs
+      - name: 安装系统文档转换器
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            if [ "$EXPECTED_ARCH" = x86_64 ]; then brew update; fi
+            brew install --cask libreoffice
+          fi
+          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+      - name: 下载固定验收产物
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 14067402093
+          run-id: 43485198435
+          repository: fangzhouxiaohai/seal-office
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/seal-universal-retest
+      - name: 验证磁盘映像并运行隔离应用
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          root="$RUNNER_TEMP/seal-universal-retest"
+          dmg="$root/seal-office-2.7.2-macos-universal-test-only.dmg"
+          test -f "$dmg"
+          test "$(stat -f %z "$dmg")" = 467583156
+          printf '%s  %s\n' 'ee5239b483c4823016eee38f8902d60e552b196a45d72a3c190d0a244eacd256' "$dmg" | shasum -a 256 -c -
+          hdiutil verify "$dmg"
+          mkdir "$root/mount" "$root/copy"
+          hdiutil attach -readonly -nobrowse -mountpoint "$root/mount" "$dmg"
+          trap 'hdiutil detach "$root/mount" || true' EXIT
+          ditto "$root/mount/海豹办公.app" "$root/copy/海豹办公.app"
+          app="$root/copy/海豹办公.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 2.7.2
+          codesign --verify --deep --strict --verbose=2 "$app"
+          lipo "$app/Contents/MacOS/海豹办公" -verify_arch x86_64 arm64
+          node -e "require('./scripts/verify-macos-universal.cjs').校验完整性(process.argv[1])" "$app"
+          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-universal.cjs --canvas "$app"
+          printf '%s\n' '隔离复测：临时签名、未公证；访达、程序坞及安装更新仍需真实用户流程验收。'
