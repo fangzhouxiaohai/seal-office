@@ -1,0 +1,30 @@
+name: 结束已替代的通用包测试
+on:
+  push:
+    branches: ['codex/markdown-update-272']
+    paths: ['.github/workflows/cancel-stalled-macos.yml']
+permissions:
+  actions: write
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 停止旧通用包测试
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for run in 43485198435 43487180257; do
+            status=$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/fangzhouxiaohai/seal-office/actions/runs/$run" | jq -r '.status')
+            if [ "$status" = completed ]; then echo "任务 $run 已结束"; continue; fi
+            code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -X POST --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/fangzhouxiaohai/seal-office/actions/runs/$run/cancel")
+            if [ "$code" != 202 ]; then echo "任务 $run 停止失败：$code"; exit 1; fi
+            echo "已请求停止任务 $run"
+          done
