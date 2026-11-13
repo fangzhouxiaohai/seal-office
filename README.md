@@ -21,6 +21,8 @@
 - 新增拍照扫描与单据转表格：手机以拍照为主入口，电脑只做导入与截图粘贴，网页只做上传处理下载；识别前需授权确认，结果附异常清单供核对。
 - 已知边界：用户原始样本未在本机验收；透视表、宏、外部连接、SmartArt 等仍不能完整读写，打开时会列出缺失项。详见[2.7.1 功能修改说明](docs/release-notes/v2.7.1.md)。
 
+各端安装包见 [GitHub 2.7.1 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.1) 或 [GitCode 2.7.1 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.1)；文件哈希以 `release/v2.7.1/SHA256SUMS.txt` 为准。
+
 ## 2.7.0 文件兼容、分享管理与界面升级
 
 - 网页型 `.xls` 报表按真实内容导入表格文本，传统二进制 `.xls` 继续走原有转换路径；有损导入可受保护查看，另存副本后编辑，来源文件不被直接覆盖。
