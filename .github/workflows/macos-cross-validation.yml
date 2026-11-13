@@ -63,7 +63,7 @@ jobs:
           printf '%s  %s\n' '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | shasum -a 256 -c -
       - name: 验证本机测试包并启动应用
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           dmg="$RUNNER_TEMP/seal-macos-cross-test.dmg"
           hdiutil verify "$dmg"
           mountpoint="$RUNNER_TEMP/seal-cross-mount"
@@ -74,7 +74,7 @@ jobs:
           app="$RUNNER_TEMP/seal-cross-copy/海豹办公.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 2.7.2
-          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0.0
           file "$app/Contents/MacOS/海豹办公" | grep arm64
           codesign --display --verbose=2 "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
