@@ -266,13 +266,39 @@ class TestPublisher(unittest.TestCase):
     def test_gitcode无数字id时使用稳定发行身份并检测发行变化(self):
         remote = publisher.Remote.__new__(publisher.Remote)
         remote.name = 'gitcode'
-        value = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40, 'name': '发行', 'body': '说明', 'assets': []}
+        value = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40, 'name': '发行', 'body': '说明', 'assets': [], 'prerelease': False, 'release_status': 'latest'}
         remote.api = lambda *args, **kwargs: dict(value)
         first = remote.release('v2.7.2')
         self.assertTrue(first['id'])
         self.assertEqual(first['id'], remote.release('v2.7.2')['id'])
         value['body'] = '变更'
         self.assertNotEqual(first['id'], remote.release('v2.7.2')['id'])
+
+    def test_gitcode发行状态异常时拒绝且两个仓库均不上传(self):
+        cases = [
+            ('prerelease', True), ('prerelease', None), ('prerelease', 0),
+            ('prerelease', 'false'), ('prerelease', '字段缺失'),
+            ('release_status', 'pre'), ('release_status', None),
+            ('release_status', ''), ('release_status', False),
+            ('release_status', 'unknown'), ('release_status', '字段缺失'),
+            ('draft', True), ('draft', None),
+        ]
+        for field, value in cases:
+            with self.subTest(field=field, value=value):
+                first = FakeRemote('github')
+                second = publisher.Remote.__new__(publisher.Remote); second.name = 'gitcode'
+                second.tag = lambda tag: 'b' * 40
+                second.has_commit = lambda commit: True
+                body = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40,
+                        'prerelease': False, 'release_status': 'latest', 'assets': []}
+                if value == '字段缺失': del body[field]
+                else: body[field] = value
+                second.api = lambda *args, **kwargs: body
+                second.upload = unittest.mock.Mock()
+                with self.assertRaisesRegex(ValueError, '正式版本'):
+                    publisher.publish(self.params, [first, second], check=False)
+                self.assertEqual(first.actions, [])
+                second.upload.assert_not_called()
 
     def test_重复名称附件必须拒绝(self):
         remote = publisher.Remote.__new__(publisher.Remote); remote.name = 'github'
@@ -286,7 +312,7 @@ class TestPublisher(unittest.TestCase):
                 second = publisher.Remote.__new__(publisher.Remote); second.name = 'gitcode'
                 second.tag = lambda tag: 'b' * 40
                 second.has_commit = lambda commit: True
-                body = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40, 'name': '发行'}
+                body = {'tag_name': 'v2.7.2', 'created_at': 'date', 'target_commitish': 'a'*40, 'name': '发行', 'prerelease': False, 'release_status': 'latest'}
                 if assets != '字段缺失': body['assets'] = assets
                 second.api = lambda *args, **kwargs: body
                 second.upload = unittest.mock.Mock()

@@ -311,6 +311,12 @@ class Remote:
         if not release: return None
         if release.get('draft') or release.get('prerelease') or release.get('tag_name') != tag:
             raise ValueError(self.name + ' 目标发行不是指定正式版本')
+        if self.name == 'gitcode' and (
+            release.get('prerelease') is not False
+            or release.get('release_status') != 'latest'
+            or ('draft' in release and release['draft'] is not False)
+        ):
+            raise ValueError('gitcode 目标发行不是指定正式版本或状态字段无效')
         identity = release.get('id')
         if self.name == 'gitcode':
             fields = {key: release.get(key) for key in ('tag_name', 'created_at', 'target_commitish', 'name', 'body', 'author', 'prerelease', 'release_status')}
