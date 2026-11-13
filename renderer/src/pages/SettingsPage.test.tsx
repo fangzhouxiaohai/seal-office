@@ -223,6 +223,30 @@ describe('设置页状态与真实能力一致', () => {
     expect(screen.getByLabelText('翻译服务地址')).toHaveValue('')
   })
 
+  it('显示开关使用初始默认值、重启保留，恢复默认后一起重置', async () => {
+    const 挂载 = () => render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)
+    const 简洁 = () => screen.getByRole('switch', { name: '简洁模式' })
+    const 放大 = () => screen.getByRole('switch', { name: '默认放大至 150%' })
+    try {
+      const 首次 = 挂载()
+      expect(简洁()).toHaveAttribute('aria-checked', 'true')
+      expect(放大()).toHaveAttribute('aria-checked', 'false')
+      await userEvent.click(简洁())
+      await userEvent.click(放大())
+      首次.unmount()
+      挂载()
+      expect(简洁()).toHaveAttribute('aria-checked', 'false')
+      expect(放大()).toHaveAttribute('aria-checked', 'true')
+      await userEvent.click(screen.getByRole('button', { name: '恢复默认' }))
+      await userEvent.click(screen.getByRole('button', { name: '确认恢复' }))
+      expect(await screen.findByText('已恢复初始默认设置')).toBeInTheDocument()
+      expect(简洁()).toHaveAttribute('aria-checked', 'true')
+      expect(放大()).toHaveAttribute('aria-checked', 'false')
+    } finally {
+      localStorage.removeItem('seal-display-preferences')
+    }
+  })
+
   it('恢复默认清除深色主题后不重复写入主题设置', async () => {
     localStorage.setItem('seal-theme', '深色')
     render(<SettingsProvider><AntdApp><AppProvider><SettingsPage /></AppProvider></AntdApp></SettingsProvider>)

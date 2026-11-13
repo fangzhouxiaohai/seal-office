@@ -91,7 +91,7 @@ describe('帮助手册', () => {
     render(<HelpManual />)
     fireEvent.click(screen.getByRole('button', { name: '缩放页面内容' }))
     expect(screen.getByText(/按住 Ctrl（macOS 为 Command）滚动滚轮/)).toBeInTheDocument()
-    expect(screen.getByText(/打开时默认 150%/)).toBeInTheDocument()
+    expect(screen.getByText(/打开时默认 100%.*默认放大至 150%/)).toBeInTheDocument()
     expect(screen.getByText(/缩放只影响你自己的查看比例，不写入文档/)).toBeInTheDocument()
   })
 

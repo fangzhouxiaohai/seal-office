@@ -14,11 +14,25 @@ def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def duration(p):
     r=subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-i',str(p),'-f','s16le','-ar','48000','-ac','1','-'],capture_output=True,check=True)
     return len(r.stdout)/96000
-async def generate(text,path):
+def sentences(path, text, seconds):
+    boundaries=[json.loads(line) for line in path.read_text(encoding='utf-8').splitlines()]
+    if not boundaries or ''.join(item['text'] for item in boundaries) != text:
+        raise ValueError('配音时间戳与分镜文案不一致：'+path.name)
+    cues=[]
+    for index,item in enumerate(boundaries):
+        start=item['offset']/10_000_000
+        end=(item['offset']+item['duration'])/10_000_000
+        if index+1<len(boundaries):
+            end=min(end,boundaries[index+1]['offset']/10_000_000)
+        if item['type']!='SentenceBoundary' or not 0<=start<end<=seconds+.12 or (cues and start<cues[-1]['end']):
+            raise ValueError('配音句子时间戳无效：'+path.name)
+        cues.append({'text':item['text'],'start':start,'end':min(end,seconds)})
+    return cues
+async def generate(text,path,metadata=None):
     errors=[]
-    for proxy in [None,'http://127.0.0.1:17899']:
+    for proxy in [None,'http://127.0.0.1:7890','http://127.0.0.1:17899']:
         try:
-            await asyncio.wait_for(edge_tts.Communicate(text,VOICE['name'],rate=VOICE['rate'],pitch=VOICE['pitch'],proxy=proxy).save(str(path)),timeout=45)
+            await asyncio.wait_for(edge_tts.Communicate(text,VOICE['name'],rate=VOICE['rate'],pitch=VOICE['pitch'],proxy=proxy,boundary='SentenceBoundary').save(str(path),str(metadata) if metadata else None),timeout=45)
             assert path.stat().st_size>2000
             return
         except Exception as exc: errors.append(type(exc).__name__)
@@ -42,12 +56,14 @@ async def main():
     allclips=[]
     for platform in (['pc'] if args.pc_current else ['pc','android']):
         for step in plan[platform]:
-            file=WORK/(platform+'-'+step['id']+'.mp3');stamp=file.with_suffix('.source.json')
+            file=WORK/(platform+'-'+step['id']+'.mp3');stamp=file.with_suffix('.source.json');metadata=file.with_suffix('.sentences.jsonl')
             expected={'voice':VOICE,'text':step['narration']}
-            if not(file.exists() and stamp.exists() and json.loads(stamp.read_text(encoding='utf-8'))==expected):
-                await generate(step['narration'],file);stamp.write_text(json.dumps(expected,ensure_ascii=False),encoding='utf-8')
+            cached=json.loads(stamp.read_text(encoding='utf-8')) if stamp.exists() else {}
+            if not(file.exists() and metadata.exists() and cached=={**expected,'audioSha256':sha(file),'metadataSha256':sha(metadata)}):
+                await generate(step['narration'],file,metadata)
+                stamp.write_text(json.dumps({**expected,'audioSha256':sha(file),'metadataSha256':sha(metadata)},ensure_ascii=False),encoding='utf-8')
             seconds=duration(file)
-            allclips.append({'platform':platform,'id':step['id'],'text':step['narration'],'file':file.name,'seconds':seconds,'sha256':sha(file)})
+            allclips.append({'platform':platform,'id':step['id'],'text':step['narration'],'file':file.name,'seconds':seconds,'sha256':sha(file),'sentences':sentences(metadata,step['narration'],seconds)})
             print(json.dumps({'platform':platform,'id':step['id'],'seconds':seconds}),flush=True)
     (WORK/'voice.json').write_text(json.dumps({'reference':reference,'clips':allclips},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 if __name__=='__main__':

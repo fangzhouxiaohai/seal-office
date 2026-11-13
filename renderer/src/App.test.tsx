@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { createRequire } from 'node:module'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -23,6 +23,8 @@ const 通过新建菜单创建 = async (名称: string) => {
 }
 
 describe('应用外壳（WPS 版式首页）', () => {
+  afterEach(() => localStorage.removeItem('seal-display-preferences'))
+
   it.each(['首页打开', '最近列表'])('%s 重开真实 DOCX 时保留黑色标题和已保存状态', async (入口) => {
     const 原接口 = Object.getOwnPropertyDescriptor(window, 'electronAPI')
     const 数据 = await 生成docx(htmlToDocxModel('<h1 style="color:black">黑色标题</h1><p>文档正文</p>'))
@@ -578,16 +580,46 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
   })
 
-  it('新建文档时顶栏显示未命名文档，不显示无关文件名', async () => {
-    render(<App 初始最近文档={RECENT_DOCS} />)
-    await 通过新建菜单创建('新建表格')
-    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.slxls')
+  it('简洁模式保留文件标签、工具提示、下拉和返回首页入口', async () => {
+    const { container } = render(<App 初始最近文档={[]} />)
+    await 通过新建菜单创建('新建文字')
+    expect(container.querySelector('.wps-titlebar__doc')).toBeNull()
+    expect(screen.getByRole('tab', { name: /未命名文档\.sldoc/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '插入' })).toBeInTheDocument()
+    expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
+    expect(screen.getByRole('button', { name: '保存' })).toHaveAttribute('title', '保存')
+    expect(within(screen.getByRole('button', { name: '保存' })).queryByText('保存')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '字号' }))
+    expect((await screen.findAllByRole('menuitem')).length).toBeGreaterThan(0)
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await userEvent.click(screen.getByRole('button', { name: '返回首页' }))
+    expect(container.querySelector('.wps-homebody')).not.toBeNull()
+  })
+
+  it.each(['新建文字', '新建表格', '新建演示'])('%s 保留当前手动比例，随后打开的文件采用 150%', async (类型) => {
+    const { container } = render(<App 初始最近文档={[]} />)
+    await 通过新建菜单创建(类型)
+    const 原标签 = container.querySelector('.wps-global-tabs [role="tab"][aria-selected="true"]')?.textContent
+    const 比例 = () => screen.getByRole('button', { name: '恢复百分之百' })
+    expect(比例()).toHaveTextContent('100%')
+    fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
+    expect(比例()).toHaveTextContent('110%')
+    await userEvent.click(screen.getByRole('button', { name: '设置中心' }))
+    await userEvent.click(screen.getByRole('switch', { name: '默认放大至 150%' }))
+    await userEvent.click(screen.getByRole('switch', { name: '简洁模式' }))
+    await userEvent.click(screen.getByRole('tab', { name: 名称 => 名称.startsWith(原标签 ?? '') }))
+    expect(比例()).toHaveTextContent('110%')
+    expect(container.querySelector('.wps-titlebar__doc')).toHaveTextContent(原标签 ?? '')
+    expect(container.querySelector('.wps-ribbon-group__name')).not.toBeNull()
+    await userEvent.click(screen.getByRole('tab', { name: '首页' }))
+    await 通过新建菜单创建(类型)
+    expect(比例()).toHaveTextContent('150%')
   })
 
   it('推荐面板的本机工具入口进入实际编辑模块', async () => {
     render(<App 初始最近文档={RECENT_DOCS} />)
     await userEvent.click(screen.getByRole('button', { name: '空白表格' }))
-    expect(document.querySelector('.wps-titlebar__doc')?.textContent).toBe('未命名表格.slxls')
+    expect(screen.getByRole('tab', { name: /未命名表格\.slxls/ })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('侧栏 PDF 工具入口切换到 PDF 模块', async () => {
@@ -612,7 +644,7 @@ describe('应用外壳（WPS 版式首页）', () => {
     else await 通过新建菜单创建(名称)
     expect(container.querySelector('.wps-homebody')).toBeNull()
     expect(container.querySelector('.wps-sidebar')).toBeNull()
-    expect(screen.queryByRole('button', { name: '返回首页' })).toBeNull()
+    expect(within(screen.getByRole('navigation', { name: '工作区导航' })).getByRole('button', { name: '返回首页' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     expect(container.querySelector('.wps-homebody')).not.toBeNull()
   })

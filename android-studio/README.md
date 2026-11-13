@@ -27,7 +27,9 @@ node scripts/emulator-smoke.cjs
 
 ## 正式升级包的签名门槛
 
-正式版沿用 `com.sealoffice.mobile`、`2.7.0` 和构建号 `20700`。已取得旧版 Android 签名文件，别名为 `__uni__b52b65b`；旧版 APK 与本机签名包的证书 SHA-256 均为 `53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad`。`assembleRelease` 在缺少签名或证书指纹不一致时失败，不会产出无法覆盖旧版的正式安装包。签名文件位于仓库外，口令只通过本机交互输入传给构建进程。
+正式版沿用 `com.sealoffice.mobile`，当前版本 `2.7.2`、构建号 `20702`。原 Android 签名别名为 `__uni__b52b65b`，证书 SHA-256 为 `53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad`。`assembleRelease` 在缺少签名或证书指纹不一致时失败，不会产出无法覆盖旧版的正式安装包。签名文件和口令只保存在本机受保护位置，不纳入 Git。
+
+从仓库根目录运行 `npm run pack`、`npm run dist` 或 `npm --prefix mobile run pack:android`，均走 Java 本机正式打包流程：构建安卓网页资源、运行 Java 单元测试、生成正式 APK、逐文件核对工作台、核对应用身份和签名，再归档到当前版本发行目录。签名配置缺失立即停止，不再回退旧云打包流程。
 
 在本机环境变量中设置 `SEAL_ANDROID_KEYSTORE`、`SEAL_ANDROID_STORE_PASSWORD`、`SEAL_ANDROID_KEY_ALIAS`、`SEAL_ANDROID_KEY_PASSWORD`，再运行 `.\gradlew.bat verifyReleaseSigning assembleRelease`。签名文件和密码不得提交到仓库。用 `python scripts/verify-apk.py app/build/outputs/apk/release/app-release.apk` 核对内置资源，再用安卓签名工具核对证书。新版保持旧版完整 `file:///android_asset/apps/__UNI__B52B65B/www/static/office/index.html` 路径，避免因切换来源使本地存储不可见；隔离克隆设备已验证旧文档覆盖安装、保存和重开。
 

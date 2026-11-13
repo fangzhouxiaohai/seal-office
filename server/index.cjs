@@ -15,6 +15,7 @@ const { createAccountErasure } = require('./accountErasure.cjs')
 const { createShareLinks } = require('./shareLinks.cjs')
 const { createMyShares } = require('./myShares.cjs')
 const { createReleases } = require('./releases.cjs')
+const { createReleaseAssets } = require('./releaseAssets.cjs')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -122,7 +123,8 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const shareLinks = createShareLinks({ db, clock, objects, nodeFor, streamObject, audit, usage, quota })
   const myShares = createMyShares({ db, clock, audit })
   // 版本发布：匿名更新查询按 IP 令牌桶限流，管理接口沿用管理员会话鉴权
-  const releases = createReleases({ db, clock, audit, rateLimit: updateRateLimit })
+  const releaseAssets = createReleaseAssets({ directory: root, db, env, clock, audit })
+  const releases = createReleases({ db, clock, audit, assets: releaseAssets, rateLimit: updateRateLimit })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const issueSession = (row, input, action = 'login') => {
     const token = randomBytes(32).toString('base64url')
@@ -142,6 +144,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     res.setHeader('Content-Security-Policy', "default-src 'none'")
     try {
       const url = new URL(req.url, 'http://localhost'), route = url.pathname, method = effectiveMethod(req)
+      req.setTimeout(route === '/v1/admin/release-assets' ? 120000 : 30000)
       const json = async limit => { const raw = await body(req, limit); if (!route.startsWith('/v1/admin/') && !route.startsWith('/v1/auth/') && !route.startsWith('/v1/devices') && !route.endsWith('/report') && route !== '/v1/space/enable' && user && !db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled) fail(403,'云空间已停用'); try { return JSON.parse(raw.toString('utf8')) } catch { fail(400, '请求数据无效') } }
       const reply = value => { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify(value)) }
       if(route==='/v1/admin/login'&&method==='POST'){
@@ -159,6 +162,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         if(route==='/v1/admin/converter'&&method==='PATCH'){const result=await converter.update(await json());db.transaction(()=>audit('admin','converter-config',JSON.stringify({enabled:result.config.enabled,concurrency:result.config.concurrency})));return reply(result)}
         if(route==='/v1/admin/converter/token'&&method==='POST'){const result=await converter.update({},true);db.transaction(()=>audit('admin','converter-token-reset',result.config.tokenFingerprint));return reply(result)}
         if(route==='/v1/admin/converter/test'&&method==='POST'){const result=await converter.test();db.transaction(()=>audit('admin','converter-test',result.passed?'passed':'failed'));return reply(result)}
+        if(await releaseAssets.handleAdmin({route,method,url,req,reply}))return
         if(await releases.handleAdmin({route,method,url,json,reply}))return
         if(route==='/v1/admin/overview'&&method==='GET'){
           const lastActions=new Map(db.query('SELECT user_id,MAX(time) time FROM audit WHERE user_id IS NOT NULL GROUP BY user_id').map(row=>[row.user_id,Number(row.time)||0]))
@@ -171,6 +175,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
         fail(404,'管理接口不存在')
       }
       if (await releases.handlePublic({ route, method, url, reply, ip: clientIp(req) })) return
+      if (releaseAssets.handlePublic({ route, method, req, res })) return
       if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, shareLink:1, methodOverride:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
@@ -322,7 +327,8 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       fail(404,'接口不存在')
     } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试',...(error.code==='AI_IDENTITY_REQUIRED'?{code:error.code}:{})}))}else res.destroy() }
   })
-  server.requestTimeout=30000;server.headersTimeout=15000
+  // 大安装包允许持续上传；普通接口仍有独立的请求体限制和 30 秒空闲超时。
+  server.requestTimeout=30*60*1000;server.headersTimeout=15000
   return { server, db, root, usage, shareLinks, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }
 }
 

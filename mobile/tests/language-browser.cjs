@@ -36,7 +36,7 @@ app.whenReady().then(async () => {
   const collect = selector => evaluate(`(() => {
     const root = ${selector ? `document.querySelector(${JSON.stringify(selector)})` : 'document.body'};
     if (!root) throw Error('找不到检查区域');
-    const ignored='[data-ui-language-ignore="true"],[contenteditable="true"],textarea,pre,code,.wps-doc-card__name,.wps-doc-row__name,.wps-titlebar__doc,.assistant-message__body,.assistant-markdown,.assistant-plaintext,.wps-sheet-stage,.wps-ppt-stage';
+    const ignored='[data-ui-language-ignore="true"],[contenteditable="true"],textarea,pre,code,.wps-doc-card__name,.wps-doc-row__name,.wps-titlebar__doc,.wps-global-tab__name,.assistant-message__body,.assistant-markdown,.assistant-plaintext,.wps-sheet-stage,.wps-ppt-stage';
     const ignoredAttributes=ignored.replace(',textarea,',',');
     const allArticleText=${['.help-manual__article', '.settings-page'].includes(selector) ? 'true' : 'false'};
     const visible = el => { const box=el.getBoundingClientRect(),style=getComputedStyle(el); return box.width>0&&box.height>0&&(allArticleText||(box.bottom>0&&box.top<innerHeight&&box.right>0&&box.left<innerWidth))&&style.visibility!=='hidden'&&style.display!=='none'&&style.opacity!=='0'&&!el.closest('[hidden],[aria-hidden="true"]'); };
@@ -115,13 +115,13 @@ app.whenReady().then(async () => {
       await scan('移动' + item.name + '顶部外框', '.wps-titlebar')
       if (await evaluate("Boolean(document.querySelector('.wps-editor-status'))")) await scan('移动' + item.name + '底部状态栏', '.wps-editor-status')
       if (item.key === 'word') {
-        const initialName = await evaluate("document.querySelector('.wps-titlebar__doc')?.textContent.trim()")
+        const initialName = await evaluate("document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent.trim()")
         assert.equal(initialName, 'Untitled Document.sldoc', '英文界面新建文字文档使用英文默认名称')
         await evaluate("(()=>{const e=document.querySelector('.wps-editor-canvas__content');e.focus();document.execCommand('insertText',false,'首页 保存：这是用户正文');e.dispatchEvent(new Event('input',{bubbles:true}))})()")
         win.setContentSize(1280, 900); await wait(300)
         await switchLanguage('zh-CN'); await switchLanguage('en-US')
         assert.ok(await evaluate("document.querySelector('.wps-editor-canvas__content')?.textContent.includes('首页 保存：这是用户正文')"), '切换语言不能更改用户正文')
-        assert.equal(await evaluate("document.querySelector('.wps-titlebar__doc')?.textContent.trim()"), initialName, '切换语言不能更改已创建的文件名')
+        assert.equal(await evaluate("document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent.trim()"), initialName, '切换语言不能更改已创建的文件名')
         win.setContentSize(390, 844); await wait(300)
         await until("Boolean(document.querySelector('.seal-reading-toolbar'))", '移动阅读工具')
         await scan('移动文字编辑模式', '.seal-reading-toolbar')
@@ -151,7 +151,7 @@ app.whenReady().then(async () => {
               assert.match(await evaluate("getComputedStyle(document.querySelector('.wps-editor-status__left'),'::before').content"), language === 'en-US' ? /Mobile reading view/ : /手机阅读视图/)
               await evaluate("document.querySelector('.seal-reading-toolbar__modes button:nth-child(2)').click()")
               await until("document.querySelector('.seal-reading-toolbar').dataset.reading==='false'", '移动编辑模式')
-              assert.equal(await evaluate("document.querySelector('.wps-titlebar__doc')?.textContent.trim()"), initialName, '切换语言不能更改已创建的文件名')
+              assert.equal(await evaluate("document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent.trim()"), initialName, '切换语言不能更改已创建的文件名')
             }
           }
         }

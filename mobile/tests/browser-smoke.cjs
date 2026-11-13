@@ -70,7 +70,8 @@ app.whenReady().then(async () => {
     checks.push('数字输入框与助手输入框实际聚焦无粗描边及黑色光晕，边框使用皮肤色')
     if (localFile) {
       // 字体与导出使用确定性的宿主模拟；页面和编辑器本身从 file:// 加载。
-      await evaluate(`window.sealNative={token:'offline-test',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
+      // 鸿蒙打开文档会等系统字体枚举；宿主回复空目录，内置字体仍读取真实文件。
+      await evaluate(`window.sealNative={token:'offline-test',platform:${JSON.stringify(nativePlatform)}};window.uni={webView:{postMessage:async({data})=>{if(data.action==='ping'){window.sealReceiveNative({id:data.id,type:'ready'});return}if(data.action==='save'){window.sealReceiveNative({id:data.id,type:'saved'});return}if(data.action==='font-system-list'){window.sealReceiveNative({id:data.id,type:'system-fonts',fonts:[]});return}if(data.action==='font'){const result=await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET',${JSON.stringify(origin)}+'/fonts/'+(data.family==='serif'?'NotoSerifCJKsc-Regular.otf':'NotoSansSC.ttf'));xhr.responseType='arraybuffer';xhr.onload=()=>resolve(xhr.response);xhr.onerror=reject;xhr.send()});const bytes=new Uint8Array(result);for(let start=0;start<bytes.length;start+=98304){let text='';for(const b of bytes.slice(start,start+98304))text+=String.fromCharCode(b);window.sealReceiveNative({id:data.id,type:'chunk',data:btoa(text)})}window.sealReceiveNative({id:data.id,type:'end'})}}}};true`)
     }
     const roundtrip = await evaluate(`(async () => {
       const api=window.electronAPI;
@@ -157,7 +158,7 @@ app.whenReady().then(async () => {
     checks.push('真实工作区备份恢复未保存正文与文字编辑页面')
     await require('./reading-actions.cjs')({ win, evaluate, output, checks })
     win.setContentSize(390, 844); await new Promise(resolve => setTimeout(resolve, 150))
-    assert.equal(await evaluate('innerWidth'), 390, '新增宽屏数组验收后必须恢复手机视口再检查PDF和22个导航入口')
+    assert.equal(await evaluate('innerWidth'), 390, '新增宽屏数组验收后必须恢复手机视口再检查 PDF 和全部服务入口')
     await evaluate(`window.electronAPI.showOpenDialog=async()=>${JSON.stringify(data.filename)};(async()=>{document.querySelector('.seal-mobile-nav [aria-label="返回首页"]').click();for(let i=0;i<100&&!document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]');i++)await new Promise(resolve=>setTimeout(resolve,20));document.querySelector('.seal-mobile-homebar [aria-label="导入文件"]').click()})()`)
     for(let attempt=0;attempt<150;attempt++){if(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`))break;await new Promise(resolve=>setTimeout(resolve,100))}
     assert.ok(await evaluate(`!!document.querySelector('.pdf-viewer__canvas')?.width && !!document.querySelector('.pdf-viewer__text-layer')?.textContent?.includes('中文打印验收')`), '本地 PDF 必须在阅读器中绘制并提取中文：'+await evaluate(`document.querySelector('.pdf-viewer')?.textContent`))
@@ -167,7 +168,7 @@ app.whenReady().then(async () => {
     await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
     const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
-    const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','shared','my-cloud','device','tag','team','knowledge','market','skins','trash','document','settings','help']
+    const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','scan','receipt','shared','my-cloud','device','tag','team','knowledge','market','skins','trash','document','settings','help']
     assert.equal(navigation.length, expectedNavigation.length, '服务页面可操作入口数量：' + navigation.map(item => item.key).join('、'))
     assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '服务页须完整呈现全部工具、协作和设置入口')
     assert.equal(navigation.some(item=>item.key==='database'), false, '移动端不提供依赖桌面数据库引擎的 Access 入口')

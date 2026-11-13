@@ -1,7 +1,10 @@
 """检查教程投稿文案随版本变化，运行时不读取或生成视频素材。"""
 import ast
+import importlib.util
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 
 SOURCE = Path(__file__).with_name('tutorial-finalize.py')
@@ -57,6 +60,36 @@ class TutorialSubmissionVersionTests(unittest.TestCase):
         self.assertFalse(result['published'])
         self.assertIn('本次未要求', result['reason'])
         self.assertNotIn('unavailable', result['reason'])
+
+    def test_old_promo_cleanup_requires_both_reviews_and_preserves_other_files(self):
+        spec = importlib.util.spec_from_file_location('tutorial_finalize', SOURCE)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with TemporaryDirectory() as temp, patch.object(module, 'OUT', Path(temp)), patch.object(module, 'VERSION', '2.7.2'):
+            old = Path(temp) / 'seal-office-2.7.0-android-intro-1080p.mp4'
+            old.write_bytes(b'old')
+            old_work = Path(temp) / 'work-2.7.0-tutorial'
+            old_work.mkdir()
+            (old_work / 'voice.json').write_bytes(b'{}')
+            user = Path(temp) / '资料.mp4'
+            user.write_bytes(b'user')
+            current = Path(temp) / 'seal-office-2.7.2-android-intro-1080p.mp4'
+            current.write_bytes(b'new')
+            pc = Path(temp) / 'seal-office-2.7.2-pc-intro-1080p.mp4'
+            pc.write_bytes(b'new pc')
+            report = {'version': '2.7.2', 'passed': True, 'visualReview': {'passed': True}, 'videos': [
+                {'platform': 'android', 'file': current.name, 'sha256': module.sha(current), 'visualReview': {'passed': True}},
+                {'platform': 'pc', 'file': pc.name, 'sha256': module.sha(pc), 'visualReview': {'passed': False}},
+            ]}
+            with self.assertRaises(AssertionError):
+                module.cleanup_old_promo(report)
+            self.assertTrue(old.exists())
+            report['videos'][1]['visualReview']['passed'] = True
+            removed = module.cleanup_old_promo(report)
+            self.assertEqual({Path(item['path']).name for item in removed}, {old.name, old_work.name})
+            self.assertTrue(user.exists())
+            self.assertTrue(current.exists())
+            self.assertTrue(pc.exists())
 
 
 if __name__ == '__main__':

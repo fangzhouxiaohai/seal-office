@@ -3,6 +3,7 @@ import React from 'react'
 import { Dropdown } from 'antd'
 import Icon from '../../components/Icon'
 import type { 色调 } from '../../components/navTones'
+import { use显示偏好 } from '../../store/settingsStore'
 
 export interface 下拉选项 {
   label: string
@@ -60,6 +61,7 @@ const RibbonButton = ({
   onSelect,
   onDropdownOpen,
 }: Props) => {
+  const 简洁模式 = use显示偏好()?.简洁模式
   const 类名 = [
     'wps-ribbon-button',
     `wps-ribbon-button--${size}`,
@@ -102,9 +104,9 @@ const RibbonButton = ({
       },
       React.createElement(
         'button',
-        { type: 'button', className: 类名, 'aria-label': label, 'data-seal-command-menu': commandId, title: disabledReason ?? label, disabled, onPointerDown: () => onDropdownOpen?.(true), onClick: () => onDropdownOpen?.(true), onMouseDown: 保持选区 },
+        { type: 'button', className: 类名, 'aria-label': label, 'aria-haspopup': 'menu', 'data-seal-command-menu': commandId, title: disabledReason ?? (简洁模式 && currentValue ? `${label}：${currentValue}` : label), disabled, onPointerDown: () => onDropdownOpen?.(true), onClick: () => onDropdownOpen?.(true), onMouseDown: 保持选区 },
         渲染图标(16),
-        React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
+        !简洁模式 && React.createElement('span', { className: 'wps-ribbon-button__value' }, currentValue ?? label),
         React.createElement('span', { className: 'wps-ribbon-button__caret' })
       )
     )
@@ -123,7 +125,7 @@ const RibbonButton = ({
       onClick: disabled ? undefined : onClick,
     },
     渲染图标(size === 'large' ? 20 : 16),
-    size === 'large' ? React.createElement('span', { className: 'wps-ribbon-button__label' }, label) : null
+    size === 'large' && !简洁模式 ? React.createElement('span', { className: 'wps-ribbon-button__label' }, label) : null
   )
 }
 

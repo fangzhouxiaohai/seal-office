@@ -1,90 +1,143 @@
 <script setup lang="ts">
-import {computed,h,onMounted,onUnmounted,ref} from 'vue'
+import {computed,h,nextTick,onMounted,onUnmounted,ref} from 'vue'
 import {NButton} from 'naive-ui'
-const props=defineProps<{call:(route:string,method?:string,body?:unknown)=>Promise<any>}>()
-// 平台与通道取值与服务端 releases.cjs 保持一致
-const platforms=[{key:'windows',label:'Windows 安装版',hint:'NSIS 安装包：客户端下载后校验 sha256 与字节数，一致才启动安装程序'},{key:'windows-store',label:'Windows 商店版',hint:'微软商店 MSIX：客户端只引导打开商店页面，地址填写 ms-windows-store 或 https 商店链接'},{key:'web',label:'Web',hint:'网页版：新版部署后客户端提示刷新页面，无需安装包地址'},{key:'android',label:'Android',hint:'安卓：客户端在外部浏览器打开下载地址，由用户确认安装'},{key:'harmony',label:'HarmonyOS',hint:'鸿蒙：客户端跳转 AppGallery，地址填写应用市场链接'}]
-const channelOptions=[{label:'稳定版',value:'stable'},{label:'测试版',value:'beta'}]
-const platform=ref('windows'),items=ref<any[]>([]),busy=ref(false),error=ref(''),notice=ref('')
-const blank=()=>({version:'',channel:'stable',mandatory:false,minVersion:'',notes:'',url:'',sha256:'',bytes:''})
-const form=ref<any>(blank())
-const confirmMandatory=ref(false),pendingMandatory=ref<any>(null),pendingDelete=ref<any>(null)
-let disposed=false
-const current=computed(()=>platforms.find(p=>p.key===platform.value)!)
-const rows=computed(()=>items.value.filter(item=>item.platform===platform.value))
-const counts=computed(()=>Object.fromEntries(platforms.map(p=>[p.key,items.value.filter(item=>item.platform===p.key).length])))
-const needsPackage=computed(()=>platform.value==='windows')
-const urlLabel=computed(()=>({windows:'安装包地址','windows-store':'微软商店链接',web:'网页地址（可不填）',android:'安装包地址',harmony:'AppGallery 链接'} as Record<string,string>)[platform.value])
-const pad=(value:number)=>String(value).padStart(2,'0')
-const stamp=(value:any)=>{const time=Number(value);if(!time)return '—';const date=new Date(time);return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`}
-async function run(task:()=>Promise<void>){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{await task()}catch(e){if(!disposed)error.value=e instanceof Error?e.message:'操作失败'}finally{if(!disposed)busy.value=false}}
-async function load(){const result=await props.call('releases');if(!disposed)items.value=result.items}
-function switchPlatform(key:string){platform.value=key;form.value=blank();error.value='';notice.value=''}
-// 打开强制更新先二次确认，关闭无需确认
-function toggleFormMandatory(value:boolean){if(value)confirmMandatory.value=true;else form.value.mandatory=false}
-function acceptFormMandatory(){confirmMandatory.value=false;form.value.mandatory=true}
+type Asset={id:string;platform:string;version:string;filename:string;sha256:string;bytes:number;url:string}
+type Platform={key:string;label:string;extension:string;filename:(version:string)=>string;hint:string}
+const props=defineProps<{
+  call:(route:string,method?:string,body?:unknown)=>Promise<any>
+  upload:(platform:string,version:string,file:File,progress:(value:number)=>void,signal:AbortSignal)=>Promise<{item:Asset}>
+}>()
+const platforms:Platform[]=[
+  {key:'windows',label:'Windows 安装版',extension:'.exe',filename:v=>`seal-office-setup-${v}.exe`,hint:'安装程序下载后自动校验，确认一致才启动安装。'},
+  {key:'windows-store',label:'Windows 商店版',extension:'.msix',filename:v=>`seal-office-${v}-microsoft-store-x64.msix`,hint:'商店附件单独归档，客户端通过下方商店链接更新。'},
+  {key:'macos',label:'macOS',extension:'.dmg',filename:v=>`seal-office-${v}-macos.dmg`,hint:'上传已验收的 DMG，用户下载后按 macOS 提示安装。'},
+  {key:'linux',label:'Ubuntu',extension:'.deb',filename:v=>`seal-office-${v}-amd64.deb`,hint:'下载 DEB 安装包后，由用户按系统提示安装。'},
+  {key:'web',label:'网页版',extension:'.zip',filename:v=>`seal-office-${v}-web.zip`,hint:'先部署新网页再发布通知；可上传网页归档，也可不附文件。'},
+  {key:'android',label:'Android',extension:'.apk',filename:v=>`seal-office-${v}-android.apk`,hint:'上传已验收的正式 APK，用户下载后确认安装。'},
+  {key:'harmony',label:'HarmonyOS',extension:'.hap',filename:v=>`seal-office-${v}-harmony.hap`,hint:'上传独立签名的 HAP，不能使用 App Pack 代替。'},
+]
+const blankPlatforms=()=>Object.fromEntries(platforms.map(p=>[p.key,{selected:false,file:null as File|null,asset:null as Asset|null,progress:0}]))
+const form=ref({version:'',channel:'stable',mandatory:false,minVersion:'',notes:'',storeUrl:'ms-windows-store://pdp/?productid=9NGPL705R5Z3'})
+const selections=ref(blankPlatforms()),items=ref<any[]>([]),statistics=ref({all:0,published:0,withdrawn:0})
+const busy=ref(false),uploading=ref(''),error=ref(''),notice=ref(''),confirmMandatory=ref(false),pendingMandatory=ref<any>(null),pendingDelete=ref<any>(null),detail=ref<any>(null)
+const filter=ref('all'),search=ref(''),platformFilter=ref(''),query=ref({search:'',platform:''})
+const filters=[{key:'all',label:'全部'},{key:'published',label:'已上架'},{key:'withdrawn',label:'已下架'}] as const
+const composing=ref(false),closeHint=ref(''),publishTrigger=ref<InstanceType<typeof NButton>|null>(null)
+let disposed=false,controller:AbortController|null=null
+const selected=computed(()=>platforms.filter(p=>selections.value[p.key].selected))
+const hasAssets=computed(()=>platforms.some(p=>selections.value[p.key].asset))
+const label=(key:string)=>platforms.find(p=>p.key===key)?.label||key
+const size=(bytes:number)=>bytes<1024*1024?`${(bytes/1024).toFixed(1)} KiB`:`${(bytes/1024/1024).toFixed(1)} MiB`
+const stamp=(value:number)=>new Date(value).toLocaleString('zh-CN',{hour12:false})
+const groups=computed(()=>{
+  const map=new Map<string,any>()
+  for(const item of items.value){const key=item.version+'/'+item.channel;const group=map.get(key)||{key,version:item.version,channel:item.channel,publishedAt:0,items:[]};group.items.push(item);group.publishedAt=Math.max(group.publishedAt,item.publishedAt);map.set(key,group)}
+  return [...map.values()].map(group=>({...group,published:group.items.some((item:any)=>!item.withdrawn)})).sort((a,b)=>b.publishedAt-a.publishedAt)
+})
+const rows=computed(()=>groups.value.filter(row=>(filter.value==='all'||(filter.value==='published')===row.published)&&row.version.includes(query.value.search)&&(!query.value.platform||row.items.some((item:any)=>item.platform===query.value.platform))))
+async function run(task:()=>Promise<void>){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{await task()}catch(e){if(!disposed)error.value=e instanceof Error?e.message:'操作失败，请稍后重试'}finally{if(!disposed){busy.value=false;closeHint.value=''}}}
+async function load(){const result=await props.call('releases');if(disposed)return;items.value=result.items;statistics.value=result.statistics;if(detail.value)detail.value=groups.value.find(group=>group.key===detail.value.key)||null}
+function chooseFile(key:string,event:Event){const input=event.target as HTMLInputElement;selections.value[key].file=input.files?.[0]||null;selections.value[key].asset=null;selections.value[key].progress=0}
+async function uploadFile(platform:Platform){await run(async()=>{
+  const state=selections.value[platform.key],version=form.value.version.trim()
+  if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))throw new Error('请先填写有效版本号，例如 2.7.2')
+  if(!state.file)throw new Error('请先选择 '+platform.label+' 安装包')
+  if(state.file.name!==platform.filename(version))throw new Error('文件名与平台或版本不一致，应为 '+platform.filename(version))
+  if(state.file.size>1024*1024*1024)throw new Error('单个安装包不能超过 1 GiB')
+  controller=new AbortController();uploading.value=platform.key
+  try{const result=await props.upload(platform.key,version,state.file,value=>{if(!disposed)state.progress=value},controller.signal);if(!disposed){state.asset=result.item;state.progress=100;notice.value=platform.label+' 上传完成'}}finally{controller=null;if(!disposed)uploading.value=''}
+})}
+function resetDraft(){if(busy.value)return;selections.value=blankPlatforms();form.value={version:'',channel:'stable',mandatory:false,minVersion:'',notes:'',storeUrl:'ms-windows-store://pdp/?productid=9NGPL705R5Z3'};notice.value=''}
+function openComposer(){closeHint.value='';composing.value=true}
+function closeComposer(){document.querySelector('.admin-shell')?.removeAttribute('inert');composing.value=false;closeHint.value=''}
+function requestClose(){if(busy.value){closeHint.value=uploading.value?'安装包正在上传，请等待上传完成后关闭，当前进度会保留。':'正在提交发布，请等待完成后关闭。';return false}closeComposer();return false}
+async function focusComposer(){document.querySelector('.admin-shell')?.setAttribute('inert','');await nextTick();document.querySelector<HTMLInputElement>('#release-version:not(:disabled)')?.focus()}
+function restoreFocus(){publishTrigger.value?.$el?.focus()}
+function protectUpload(event:BeforeUnloadEvent){if(composing.value&&busy.value){event.preventDefault();event.returnValue=''}}
 async function publish(){await run(async()=>{
-  const value=form.value,bytes=String(value.bytes).trim()
-  if(bytes&&!/^\d+$/.test(bytes))throw new Error('安装包字节数须为正整数')
-  const body={platform:platform.value,version:value.version.trim(),channel:value.channel,mandatory:value.mandatory,minVersion:value.minVersion.trim()||null,notes:value.notes,url:value.url.trim()||null,sha256:value.sha256.trim()||null,bytes:bytes?Number(bytes):null}
-  await props.call('releases','POST',body);await load();if(disposed)return
-  form.value=blank();notice.value=`已发布 ${current.value.label} ${body.version}`
+  if(!selected.value.length)throw new Error('请至少选择一个需要发布的平台')
+  const entries=selected.value.map(p=>{const state=selections.value[p.key];if(!state.asset&&!['web','windows-store'].includes(p.key))throw new Error('请先上传 '+p.label+' 安装包，或取消选择该平台');return {platform:p.key,...(state.asset?{assetId:state.asset.id}:{}),...(p.key==='windows-store'?{url:form.value.storeUrl.trim()}: {})}})
+  const version=form.value.version.trim()
+  await props.call('releases/batch','POST',{version,channel:form.value.channel,mandatory:form.value.mandatory,minVersion:form.value.minVersion.trim()||null,notes:form.value.notes,platforms:entries})
+  if(disposed)return;closeComposer();selections.value=blankPlatforms();form.value.version='';form.value.notes='';notice.value=`已发布 ${version}，共 ${entries.length} 个平台；未选择的平台保持原状`;await load()
 })}
 function requestMandatory(row:any){if(row.mandatory)void setMandatory(row,false);else pendingMandatory.value=row}
-async function setMandatory(row:any,mandatory:boolean){pendingMandatory.value=null;await run(async()=>{await props.call('releases/'+row.id,'PATCH',{mandatory});await load();if(!disposed)notice.value=mandatory?`${row.version} 已设为强制更新`:`${row.version} 已取消强制更新`})}
-async function setWithdrawn(row:any,withdrawn:boolean){await run(async()=>{await props.call('releases/'+row.id,'PATCH',{withdrawn});await load();if(!disposed)notice.value=withdrawn?`${row.version} 已下架，客户端不再收到该版本`:`${row.version} 已重新上架`})}
-async function remove(){const row=pendingDelete.value;pendingDelete.value=null;if(!row)return;await run(async()=>{await props.call('releases/'+row.id,'DELETE');await load();if(!disposed)notice.value=`${row.version} 的发布记录已删除`})}
+async function setMandatory(row:any,mandatory:boolean){pendingMandatory.value=null;await run(async()=>{await props.call('releases/'+row.id,'PATCH',{mandatory});await load();if(!disposed)notice.value=mandatory?'已设为强制更新':'已取消强制更新'})}
+async function setWithdrawn(row:any,withdrawn:boolean){await run(async()=>{await props.call('releases/'+row.id,'PATCH',{withdrawn});await load();if(!disposed)notice.value=withdrawn?'已下架所选平台，客户端不再收到该版本':'已重新上架所选平台'})}
+async function remove(){const row=pendingDelete.value;pendingDelete.value=null;if(!row)return;await run(async()=>{await props.call('releases/'+row.id,'DELETE');await load();if(!disposed)notice.value='已删除所选平台的发布记录'})}
+function applyQuery(){query.value={search:search.value.trim(),platform:platformFilter.value}}
+function resetQuery(){filter.value='all';search.value='';platformFilter.value='';applyQuery()}
 const columns=[
-  {title:'版本',key:'version',width:140,render:(r:any)=>h('span',{class:'num'},r.version)},
-  {title:'通道',key:'channel',width:96,render:(r:any)=>h('span',{class:['pill',r.channel==='beta'?'warn':'']},r.channel==='beta'?'测试版':'稳定版')},
-  {title:'状态',key:'withdrawn',width:96,render:(r:any)=>h('span',{class:['pill',r.withdrawn?'':'ok']},r.withdrawn?'已下架':'已上架')},
-  {title:'强制更新',key:'mandatory',width:150,render:(r:any)=>r.mandatory?h('span',{class:'pill bad'},'强制更新'):r.minVersion?h('span',{class:'pill warn'},'低于 '+r.minVersion+' 强制'):h('span',{class:'pill'},'可跳过')},
-  {title:'发布时间',key:'publishedAt',width:164,defaultSortOrder:'descend',sorter:(a:any,b:any)=>a.publishedAt-b.publishedAt,render:(r:any)=>h('span',{class:'stamp'},stamp(r.publishedAt))},
-  {title:'安装包',key:'url',ellipsis:{tooltip:true},render:(r:any)=>r.url?h('span',{class:'cell-id'},r.url):'—'},
-  {title:'操作',key:'actions',width:260,render:(r:any)=>h('div',{class:'release-actions'},[
-    h(NButton,{size:'small',disabled:busy.value,onClick:()=>requestMandatory(r)},{default:()=>r.mandatory?'取消强制':'设为强制'}),
-    h(NButton,{size:'small',disabled:busy.value,onClick:()=>void setWithdrawn(r,!r.withdrawn)},{default:()=>r.withdrawn?'重新上架':'下架'}),
-    h(NButton,{size:'small',type:'error',ghost:true,disabled:busy.value,onClick:()=>{pendingDelete.value=r}},{default:()=>'删除'})])}
+  {title:'版本',key:'version',width:130},
+  {title:'通道',key:'channel',width:90,render:(row:any)=>row.channel==='beta'?'测试版':'稳定版'},
+  {title:'已发布平台',key:'platforms',minWidth:240,render:(row:any)=>row.items.map((item:any)=>label(item.platform)).join('、')},
+  {title:'状态',key:'published',width:105,render:(row:any)=>h('span',{class:['c-tag',row.published?'c-tag--success':'c-tag--danger']},row.published?'已上架':'已下架')},
+  {title:'发布时间',key:'publishedAt',width:185,render:(row:any)=>stamp(row.publishedAt)},
+  {title:'操作',key:'actions',width:110,render:(row:any)=>h(NButton,{size:'small',onClick:()=>{detail.value=row}},{default:()=>'管理平台'})},
 ]
-onMounted(()=>void run(load))
-onUnmounted(()=>{disposed=true})
+onMounted(()=>{void run(load);window.addEventListener('beforeunload',protectUpload)})
+onUnmounted(()=>{disposed=true;controller?.abort();document.querySelector('.admin-shell')?.removeAttribute('inert');window.removeEventListener('beforeunload',protectUpload)})
 </script>
+
 <template>
-  <div class="release-panel">
-    <div class="converter-refresh"><NButton :loading="busy" @click="run(load)">刷新发布列表</NButton></div>
-    <NAlert v-if="error" type="error" role="alert" class="converter-alert">{{error}}</NAlert><NAlert v-if="notice" type="success" aria-live="polite" class="converter-alert">{{notice}}</NAlert>
-    <NTabs :value="platform" type="segment" animated class="release-tabs" aria-label="发布平台" @update:value="switchPlatform"><NTabPane v-for="p in platforms" :key="p.key" :name="p.key" :tab="p.label+'（'+counts[p.key]+'）'"/></NTabs>
-    <div class="converter-grid"><NCard :title="'发布 '+current.label+' 新版本'">
-      <form method="post" action="/api/v1/admin/releases" @submit.prevent="publish"><fieldset class="converter-fieldset" :disabled="busy"><legend class="converter-label">{{current.hint}}</legend>
+  <section class="c-page release-panel" aria-label="版本管理工作区">
+    <header class="page-heading c-head release-list-heading"><div><h1 class="c-title">版本管理</h1><p class="c-sub">按版本和平台查看发布状态，未选择的平台不会发布。</p></div><div class="release-actions"><NButton :loading="busy" @click="run(load)">刷新列表</NButton><NButton ref="publishTrigger" type="primary" @click="openComposer">发布版本</NButton></div></header>
+    <p v-if="notice" class="release-notice" role="status">{{notice}}</p>
+    <NModal :show="composing" preset="card" class="release-publish-modal" aria-labelledby="release-publish-title" :mask-closable="false" :close-on-esc="false" :on-close="requestClose" @esc="requestClose" @after-enter="focusComposer" @after-leave="restoreFocus">
+      <template #header><h2 id="release-publish-title">发布版本</h2></template>
+      <form class="release-compose" @submit.prevent="publish">
+      <div class="release-modal-body">
+      <p class="c-help release-compose-intro">填写更新说明，按需选择平台并分别上传附件。未选择的平台不发布。</p>
+      <p v-if="notice" class="release-notice" role="status">{{notice}}</p>
+      <fieldset class="release-fieldset" :disabled="busy"><legend class="release-legend">版本信息与可选附件</legend>
         <div class="release-form-grid">
-          <div><label class="converter-label" for="release-version">版本号</label><NInput id="release-version" v-model:value="form.version" placeholder="例如 2.7.1" autocomplete="off"/></div>
-          <div><label class="converter-label" for="release-channel">发布通道</label><NSelect id="release-channel" v-model:value="form.channel" :options="channelOptions"/></div>
+          <div><label class="converter-label" for="release-version">版本号</label><input id="release-version" v-model="form.version" class="c-field" :disabled="hasAssets" required placeholder="例如 2.7.2" autocomplete="off"/><span v-if="hasAssets" class="c-help">已上传附件与此版本绑定。更改版本请清空本次选择。</span></div>
+          <div><label class="converter-label" for="release-channel">发布通道</label><select id="release-channel" v-model="form.channel" class="c-field"><option value="stable">稳定版</option><option value="beta">测试版</option></select></div>
         </div>
-        <div class="converter-field"><div><label for="release-mandatory">强制更新</label><p class="release-warning">打开后所有低于此版本的用户将无法跳过本次更新：更新卡片不可关闭，每次启动都会再次弹出。</p></div><NSwitch id="release-mandatory" :value="form.mandatory" aria-label="强制更新" @update:value="toggleFormMandatory"/></div>
-        <label class="converter-label release-gap" for="release-min">最低可用版本（可不填）</label><NInput id="release-min" v-model:value="form.minVersion" placeholder="低于此版本的用户视为强制更新，例如 2.7.0" autocomplete="off"/>
-        <label class="converter-label release-gap" for="release-notes">更新说明</label><NInput id="release-notes" v-model:value="form.notes" type="textarea" :autosize="{minRows:4,maxRows:10}" maxlength="4000" show-count placeholder="逐条写明本次更新内容，客户端更新卡片原样显示"/>
-        <label class="converter-label release-gap" for="release-url">{{urlLabel}}</label><NInput id="release-url" v-model:value="form.url" :placeholder="platform==='windows-store'?'ms-windows-store://pdp/?productid=':'https://'" autocomplete="off"/>
-        <div class="release-form-grid release-gap">
-          <div><label class="converter-label" for="release-sha">安装包 sha256{{needsPackage?'':'（可不填）'}}</label><NInput id="release-sha" v-model:value="form.sha256" placeholder="64 位十六进制" autocomplete="off"/></div>
-          <div><label class="converter-label" for="release-bytes">安装包字节数{{needsPackage?'':'（可不填）'}}</label><NInput id="release-bytes" v-model:value="form.bytes" placeholder="例如 168240512" autocomplete="off"/></div>
+        <label class="converter-label release-gap" for="release-notes">更新说明</label><textarea id="release-notes" v-model="form.notes" class="c-field" rows="4" maxlength="4000" placeholder="逐条说明本次更新的功能与修复内容"/>
+        <div class="release-form-grid release-gap"><div><label class="converter-label" for="release-min">最低可用版本（可不填）</label><input id="release-min" v-model="form.minVersion" class="c-field" placeholder="低于此版本时强制更新"/></div><div class="release-force"><div><span>强制更新 </span><NSwitch :value="form.mandatory" aria-label="强制更新" @update:value="value=>{if(value)confirmMandatory=true;else form.mandatory=false}"/></div><span class="c-help">开启后，低于此版本的客户端不能跳过更新。</span></div></div>
+        <div class="release-platform-list">
+          <section v-for="p in platforms" :key="p.key" class="release-platform" :aria-label="p.label+' 发布附件'">
+            <label class="release-platform-choice"><input v-model="selections[p.key].selected" type="checkbox" :data-platform="p.key"/>{{p.label}}<span class="c-help">可选</span></label>
+            <p class="c-help">{{p.hint}}</p>
+            <div v-if="selections[p.key].selected" class="release-platform-fields">
+              <label class="converter-label" :for="'release-file-'+p.key">{{p.label}}附件（{{p.extension}}）</label>
+              <div class="release-upload"><input :id="'release-file-'+p.key" :key="form.version" type="file" :accept="p.extension" @change="chooseFile(p.key,$event)"/><NButton :data-upload-platform="p.key" :disabled="!selections[p.key].file||!form.version.trim()||busy" :loading="uploading===p.key" @click="uploadFile(p)">上传安装包</NButton></div>
+              <span class="c-help">{{p.filename(form.version.trim()||'版本号')}}，单个附件上限 1 GiB。</span>
+              <progress v-if="uploading===p.key" :value="selections[p.key].progress" max="100" :aria-label="p.label+' 上传进度'"/>
+              <p v-if="selections[p.key].asset" class="release-asset" role="status"><strong>上传完成：{{selections[p.key].asset!.filename}}</strong><span>{{size(selections[p.key].asset!.bytes)}}</span><span class="release-digest">SHA-256：{{selections[p.key].asset!.sha256}}</span></p>
+              <template v-if="p.key==='windows-store'"><label class="converter-label release-gap" for="release-store-url">微软商店链接</label><input id="release-store-url" v-model="form.storeUrl" class="c-field" required/></template>
+            </div>
+          </section>
         </div>
-        <p class="service-note">Windows 安装版必须填写 sha256 与字节数，客户端下载后逐项核对，不一致即拒绝安装。发布、修改与删除均记入后台操作记录。</p><NButton type="primary" attr-type="submit" :loading="busy" :disabled="!form.version.trim()">发布版本</NButton>
-      </fieldset></form>
-    </NCard><NCard title="发布规则">
-      <dl class="detail-list"><div><dt>客户端查询</dt><dd>GET /v1/updates/latest?platform=&amp;version=&amp;channel=</dd></div><div><dt>匹配方式</dt><dd>只下发高于客户端版本的最新已上架版本；测试通道同时可见稳定版</dd></div><div><dt>强制判定</dt><dd>客户端跨越的任一版本被设为强制，或客户端低于该版本的最低可用版本</dd></div><div><dt>匿名访问</dt><dd>无需登录，按来源 IP 限流，只返回版本、说明、地址与校验值</dd></div></dl>
-      <p class="service-note">误发的版本先下架，确认无用户依赖后再删除。下架后客户端立即不再收到该版本。</p>
-    </NCard></div>
-    <NCard :title="current.label+' 已发布版本'" class="converter-jobs"><template #header-extra><span class="table-count">{{rows.length}} 个版本</span></template><NDataTable :columns="columns" :data="rows" :pagination="{pageSize:10}" :scroll-x="1100" :loading="busy&&!items.length"/></NCard>
-    <NModal v-model:show="confirmMandatory" preset="dialog" type="warning" title="确认开启强制更新" content="开启后所有低于此版本的用户将无法跳过本次更新：更新卡片没有关闭按钮，每次启动都会再次弹出。请确认这是必要的安全或兼容修复。" positive-text="确认开启" negative-text="取消" @positive-click="acceptFormMandatory"/>
-    <NModal :show="Boolean(pendingMandatory)" preset="dialog" type="warning" title="确认设为强制更新" :content="pendingMandatory?`将 ${pendingMandatory.version} 设为强制更新后，所有低于此版本的用户将无法跳过本次更新，每次启动都会再次弹出。`:''" positive-text="确认设为强制" negative-text="取消" @update:show="value=>{if(!value)pendingMandatory=null}" @positive-click="setMandatory(pendingMandatory,true)"/>
-    <NModal :show="Boolean(pendingDelete)" preset="dialog" type="error" title="确认删除发布记录" :content="pendingDelete?`删除 ${pendingDelete.version} 后无法恢复，客户端立即不再收到该版本。若只是暂停分发，请改用下架。`:''" positive-text="确认删除" negative-text="取消" @update:show="value=>{if(!value)pendingDelete=null}" @positive-click="remove"/>
-  </div>
+      </fieldset>
+      </div>
+      <footer class="release-modal-footer"><p v-if="closeHint" class="release-close-hint" role="alert">{{closeHint}}</p><span class="c-help">已选择 {{selected.length}} 个平台</span><NButton :disabled="busy" @click="resetDraft">清空选择</NButton><div class="release-footer-actions"><NButton id="release-cancel" @click="requestClose">取消</NButton><NButton type="primary" attr-type="submit" :loading="busy&&!uploading" :disabled="busy||!selected.length||!form.version.trim()">发布所选平台</NButton></div></footer>
+      </form>
+    </NModal>
+    <div class="c-card">
+      <form class="c-toolbar" @submit.prevent="applyQuery"><div class="c-seg" role="tablist" aria-label="发布状态"><button v-for="state in filters" :key="state.key" type="button" role="tab" class="c-seg__item" :class="{'is-active':filter===state.key}" :aria-selected="filter===state.key" @click="filter=state.key">{{state.label}}<span class="c-seg__count">{{statistics[state.key]}}</span></button></div><label class="release-filter">版本号<input v-model="search" class="c-field" placeholder="筛选版本号"/></label><label class="release-filter">发布平台<select v-model="platformFilter" class="c-field"><option value="">全部平台</option><option v-for="p in platforms" :key="p.key" :value="p.key">{{p.label}}</option></select></label><NButton attr-type="submit">查询</NButton><NButton @click="resetQuery">重置</NButton></form>
+      <div class="layui-card-body release-table"><NDataTable size="small" :columns="columns" :data="rows" :pagination="{pageSize:10}" :scroll-x="900" :loading="busy&&!items.length" :row-key="(row:any)=>row.key"/></div>
+    </div>
+    <NModal :show="Boolean(detail)" preset="card" :title="detail?detail.version+' 平台发布管理':''" class="release-detail-modal" @update:show="value=>{if(!value)detail=null}"><div v-if="detail" class="release-detail-list"><section v-for="row in detail.items" :key="row.id" class="release-platform"><h3>{{label(row.platform)}} <span class="c-tag" :class="row.withdrawn?'c-tag--danger':'c-tag--success'">{{row.withdrawn?'已下架':'已上架'}}</span></h3><p class="release-notes">{{row.notes||'未填写更新说明'}}</p><p class="c-help">{{row.asset?.filename||row.url||'无附件'}}<template v-if="row.bytes">，{{size(row.bytes)}}</template></p><div class="release-actions"><NButton size="small" :disabled="busy" @click="requestMandatory(row)">{{row.mandatory?'取消强制':'设为强制'}}</NButton><NButton size="small" :disabled="busy" @click="setWithdrawn(row,!row.withdrawn)">{{row.withdrawn?'重新上架':'下架'}}</NButton><NButton size="small" type="error" ghost :disabled="busy" @click="pendingDelete=row">删除</NButton></div></section></div></NModal>
+    <NModal :show="Boolean(error)" preset="dialog" type="error" title="操作未完成" :content="error" positive-text="知道了" @positive-click="error=''" @update:show="value=>{if(!value)error=''}"/>
+    <NModal v-model:show="confirmMandatory" preset="dialog" type="warning" title="确认开启强制更新" content="开启后低于此版本的用户无法跳过更新。请确认对应安装包与发布内容已经验收。" positive-text="确认开启" negative-text="取消" @positive-click="form.mandatory=true"/>
+    <NModal :show="Boolean(pendingMandatory)" preset="dialog" type="warning" title="确认设为强制更新" content="该平台低于此版本的用户将无法跳过更新。" positive-text="确认设为强制" negative-text="取消" @update:show="value=>{if(!value)pendingMandatory=null}" @positive-click="setMandatory(pendingMandatory,true)"/>
+    <NModal :show="Boolean(pendingDelete)" preset="dialog" type="error" title="确认删除发布记录" content="删除后客户端不再收到该平台版本。若只是暂停分发，请改用下架。" positive-text="确认删除" negative-text="取消" @update:show="value=>{if(!value)pendingDelete=null}" @positive-click="remove"/>
+  </section>
 </template>
+
 <style>
-.release-tabs{margin-bottom:4px}
-.release-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.release-gap{margin-top:18px}
-.release-warning{margin:6px 0 0;font-size:12px;line-height:1.7;color:#bc4954}
-.release-actions{display:flex;gap:8px;flex-wrap:wrap}
-@media(max-width:600px){.release-form-grid{grid-template-columns:minmax(0,1fr)}}
+.release-publish-modal{width:1120px!important;max-width:95vw;max-height:90vh;max-height:90dvh;display:flex;flex-direction:column;margin:5vh auto!important;border-radius:4px!important}
+.release-publish-modal>.n-card-header{flex:none;padding:16px 20px!important;border-bottom:1px solid #e5e7eb}
+.release-publish-modal>.n-card__content{padding:0!important;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#release-publish-title{margin:0;font-size:18px;font-weight:600}
+.release-compose{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.release-modal-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px 20px;scroll-padding:16px}
+.release-compose-intro{margin:0 0 16px}.release-fieldset{border:0;padding:0;margin:0;min-width:0}.release-legend{font-size:14px;font-weight:600;margin-bottom:14px}
+.release-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.release-gap{margin-top:14px}.release-force{display:flex;flex-direction:column;justify-content:center;gap:6px}.release-platform-choice{display:flex;align-items:center;gap:8px;min-height:28px;font-size:14px;font-weight:600}.release-platform-choice input{width:17px;height:17px;accent-color:#1e5eff}
+.release-platform-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.release-platform{min-width:0;padding:14px;border:1px solid #e2e6ec;border-radius:4px;background:#fff}.release-platform-fields{margin-top:12px}.release-platform .c-help{overflow-wrap:anywhere}.release-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.release-upload input{max-width:100%;min-width:0;flex:1}.release-asset{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#22684d;overflow-wrap:anywhere}.release-digest{font-family:monospace;font-size:11px}.release-platform progress{width:100%;margin-top:10px}
+.release-modal-footer{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid #e5e7eb;background:#fafbfc}.release-footer-actions{display:flex;gap:10px;margin-left:auto}.release-close-hint{flex-basis:100%;margin:0;color:#8b5d14;font-size:13px}.release-notice{background:#edf8f2;color:#22684d;padding:10px 14px;border-radius:4px;margin:0}.release-modal-body>.release-notice{margin-bottom:14px}
+.release-filter{display:flex;align-items:center;gap:8px;font-size:13px}.release-filter .c-field{width:150px}.release-table{padding:0}.release-table .n-data-table-base-table-header{background:#fafbfc}.release-table .n-data-table__pagination{padding:0 14px 12px}.release-actions{display:flex;gap:8px;flex-wrap:wrap}.release-detail-list .release-actions{margin-top:12px}.release-detail-modal{width:min(760px,95vw)!important;max-height:90vh;max-height:90dvh}.release-detail-modal>.n-card__content{overflow:auto}.release-detail-list{display:grid;gap:12px}.release-detail-list h3{font-size:14px;margin:0}.release-notes{white-space:pre-wrap;overflow-wrap:anywhere}.release-publish-modal textarea{resize:vertical;min-height:80px}
+@media(max-width:720px){.release-form-grid,.release-platform-list{grid-template-columns:minmax(0,1fr)}.release-modal-body{padding:14px}.release-publish-modal>.n-card-header{padding:14px!important}.release-modal-footer{padding:10px 14px;gap:8px}.release-filter{flex:1 1 100%}.release-filter .c-field{width:auto;flex:1;min-width:0}.release-upload input{flex-basis:100%}.release-footer-actions{margin-left:auto}.release-list-heading .release-actions{margin-left:auto}}
 </style>

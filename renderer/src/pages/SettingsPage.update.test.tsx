@@ -92,6 +92,14 @@ describe('设置页关于与更新', () => {
     expect(await screen.findByText('当前为商店版本，请到微软商店更新')).toHaveClass('settings-wps-row__status')
   })
 
+  it('旧后台未部署更新接口时说明部署故障，不误导用户检查网络或重新登录', async () => {
+    模拟桌面().mockResolvedValue({ 成功: false, 错误: '登录已过期，请重新登录', 状态码: 401 })
+    渲染设置页()
+    await userEvent.click(screen.getByRole('button', { name: '检查更新' }))
+    expect(await screen.findByText('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试')).toBeInTheDocument()
+    expect(screen.queryByText('检查更新失败，请检查网络后重试')).toBeNull()
+  })
+
   it('便携版等不支持在线更新的运行方式如实说明且不发请求', async () => {
     const 检查 = 模拟桌面('unsupported')
     渲染设置页()

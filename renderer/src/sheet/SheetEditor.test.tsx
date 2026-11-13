@@ -1072,17 +1072,17 @@ describe('表格缩放', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
 
-    expect(百分比()).toBe('150%')
+    expect(百分比()).toBe('100%')
     滚(-100)
-    await waitFor(() => expect(百分比()).toBe('175%'))
+    await waitFor(() => expect(百分比()).toBe('110%'))
     // 网格根元素仍在（缩放经其 zoom 生效，jsdom 不解析该属性，改由成品核验实测）
     expect(container.querySelector('.wps-sheet')).not.toBeNull()
     // 未按 Ctrl 时不缩放
     滚(-100, false)
-    await waitFor(() => expect(百分比()).toBe('175%'))
-    // 按档位放大：110%/150%/175%…连续滚动到上限 6400%
+    await waitFor(() => expect(百分比()).toBe('110%'))
+    // 按档位放大：连续滚动按档位变化，到达上限后保持 6400%
     for (let 次 = 0; 次 < 4; 次 += 1) 滚(-100)
-    await waitFor(() => expect(百分比()).toBe('400%'))
+    await waitFor(() => expect(百分比()).toBe('200%'))
     for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
     await waitFor(() => expect(百分比()).toBe('6400%'))
   })

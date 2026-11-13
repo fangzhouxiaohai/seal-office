@@ -51,7 +51,7 @@ import { 准备打开本地文件, 记录最近文档 } from '../fileOpen'
 import { 处于受保护查看, 存在内容风险, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
 import { 领取待另存副本 } from '../fileOpenChoice'
 import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
-import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
+import { 放大一档, 缩小一档, use文件缩放, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import SheetChartDialog from './SheetChartDialog'
 import { dispatchShortcut } from '../shortcuts/shortcuts'
@@ -147,17 +147,13 @@ const SheetEditor = () => {
   const 视图键 = `${activeDocumentId ?? '独立'}:${视图工作表.id}`
   const [只读视图, set只读视图] = useState<Record<string, NonNullable<Sheet['视图']>>>({})
   const 来源视图 = 编辑只读 ? 只读视图[视图键] ?? 视图工作表.视图 : 视图工作表.视图
-  const 缩放 = 来源视图?.缩放 !== undefined && Number.isFinite(来源视图.缩放) && 来源视图.缩放 > 0 ? 来源视图.缩放 / 100 : 默认文件缩放
+  const [缩放, set缩放] = use文件缩放(activeDocumentId, 视图工作表.id)
   const 更新当前视图 = (更新: NonNullable<Sheet['视图']>) => {
     if (编辑只读) {
       set只读视图(当前 => ({ ...当前, [视图键]: { ...来源视图, ...更新 } }))
       return
     }
     set工作表列表(当前 => 当前.map(项 => 项.id === 视图工作表.id ? { ...项, 视图: { ...项.视图, ...更新 } } : 项))
-  }
-  const set缩放: React.Dispatch<React.SetStateAction<number>> = 更新 => {
-    const 目标 = typeof 更新 === 'function' ? 更新(缩放) : 更新
-    if (Number.isFinite(目标) && 目标 > 0 && 目标 !== 缩放) 更新当前视图({ 缩放: 目标 * 100 })
   }
   const [当前视图, set当前视图] = useState<'普通' | '页面布局'>('普通')
   const 显示网格线 = 来源视图?.显示网格线 ?? true

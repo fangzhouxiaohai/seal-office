@@ -19,6 +19,51 @@ beforeEach(()=>{
 })
 afterEach(()=>{vi.useRealTimers()})
 describe('云端自动保存关闭链路',()=>{
+  it('简洁模式隐藏常驻说明，继续自动保存并报告云端冲突',async()=>{
+    const view=render(<CloudAutosave 简洁模式 />)
+    expect(screen.queryByText(/内容变动后加密同步/)).toBeNull()
+    await act(async()=>{await flushCloudBeforeClose()})
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(1)
+    expect(screen.queryByText('离线待同步')).toBeNull()
+    const 已保存标识=fixture.call.mock.calls.find(([action])=>action==='save')![1].linkId
+    fixture.state={...fixture.state,statuses:{[已保存标识]:'版本冲突'}}
+    view.rerender(<CloudAutosave 简洁模式 />)
+    expect(screen.getByRole('status')).toHaveTextContent('版本冲突')
+  })
+
+  it('简洁模式保留实际保存失败提示',async()=>{
+    fixture.call.mockRejectedValueOnce(new Error('文档转换失败'))
+    render(<CloudAutosave 简洁模式 />)
+    await act(async()=>{await flushCloudBeforeClose()})
+    expect(screen.getByRole('status')).toHaveTextContent('文档转换失败')
+  })
+  it('立即同步重试入队失败，空上传队列成功不得消除保存错误',async()=>{
+    let 拒绝保存=true
+    fixture.call.mockImplementation(async(action,input)=>{
+      if(action==='save'&&拒绝保存)throw new Error('本机云快照写入失败')
+      return action==='save'?{id:input.linkId,statuses:{[input.linkId]:'离线待同步'}}:{}
+    })
+    render(<CloudAutosave 简洁模式 />)
+    await act(async()=>{await flushCloudBeforeClose()})
+    await act(async()=>{screen.getByRole('button',{name:'立即同步'}).click()})
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('本机云快照写入失败')
+    拒绝保存=false
+    await act(async()=>{screen.getByRole('button',{name:'立即同步'}).click()})
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(3)
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+  it('上传重试成功只消除上传错误，不重复写入已经入队的快照',async()=>{
+    render(<CloudAutosave />)
+    await act(async()=>{await flushCloudBeforeClose()})
+    fixture.call.mockImplementation(async(action)=>{if(action==='flush')throw new Error('服务器暂时无法连接');return {}})
+    await act(async()=>{screen.getByRole('button',{name:'立即同步'}).click()})
+    expect(screen.getByRole('status')).toHaveTextContent('服务器暂时无法连接')
+    fixture.call.mockResolvedValue({})
+    await act(async()=>{screen.getByRole('button',{name:'立即同步'}).click()})
+    expect(screen.getByRole('status')).not.toHaveTextContent('服务器暂时无法连接')
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(1)
+  })
   it('更换账号后不会继承上一账号的快照去重状态',async()=>{
     const view=render(<CloudAutosave/>);await act(async()=>{await flushCloudBeforeClose()})
     fixture.call.mockClear();fixture.state={...fixture.state,account:{id:'other-user',enabled:true,autosave:true}}

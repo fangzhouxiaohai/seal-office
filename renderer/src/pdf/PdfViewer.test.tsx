@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PdfViewer from './PdfViewer'
+import { SettingsProvider, useSettings } from '../store/settingsStore'
 import { saveShortcutOverrides, SHORTCUT_STORAGE_KEY } from '../shortcuts/shortcuts'
 
 const PDF模拟 = vi.hoisted(() => ({ 取文档: vi.fn() }))
@@ -15,6 +16,36 @@ describe('PDF 阅读预览', () => {
     localStorage.removeItem(SHORTCUT_STORAGE_KEY)
     vi.clearAllMocks()
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as CanvasRenderingContext2D)
+  })
+
+  it('150% 偏好仅用于下一份 PDF，窄窗口初始显示仍适配页宽', async () => {
+    PDF模拟.取文档.mockImplementation(() => ({
+      promise: Promise.resolve({ numPages: 1, getPage: async () => ({ getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }), render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }), getTextContent: async () => ({ items: [] }) }) }),
+      destroy: vi.fn(),
+    }))
+    const 偏好按钮 = () => {
+      const 设置 = useSettings()
+      return <button onClick={() => 设置.设置默认放大?.(true)}>切换放大偏好</button>
+    }
+    const 内容 = (文件: string) => <SettingsProvider><偏好按钮 /><PdfViewer 数据={btoa(文件)} /></SettingsProvider>
+    try {
+      const view = render(内容('first'))
+      const 舞台 = view.container.querySelector('.pdf-viewer__stage') as HTMLDivElement
+      Object.defineProperty(舞台, 'clientWidth', { configurable: true, value: 400 })
+      舞台.style.padding = '24px'
+      fireEvent(window, new Event('resize'))
+      expect(await screen.findByText('100%')).toBeInTheDocument()
+      await screen.findByText('第 1 页 / 共 1 页')
+      fireEvent.click(screen.getByRole('button', { name: '放大' }))
+      expect(screen.getByText('110%')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: '切换放大偏好' }))
+      expect(screen.getByText('110%')).toBeInTheDocument()
+      view.rerender(内容('second'))
+      expect(await screen.findByText('150%')).toBeInTheDocument()
+      await waitFor(() => expect(view.container.querySelector<HTMLCanvasElement>('.pdf-viewer__canvas')?.style.width).toBe('352px'))
+    } finally {
+      localStorage.removeItem('seal-display-preferences')
+    }
   })
 
   it('移动全屏默认隐藏操作栏，翻页不唤出工具，双击显示并在3秒后隐藏，Esc仍可返回',async()=>{
@@ -74,11 +105,11 @@ describe('PDF 阅读预览', () => {
     const touch=(type:string,points:number[][])=>{const event=new Event(type,{bubbles:true,cancelable:true});Object.defineProperty(event,'touches',{value:points.map(([clientX,clientY])=>({clientX,clientY}))});fireEvent(stage.querySelector('[data-pdf-slide="2"]')!,event);return event}
     expect(touch('touchstart',[[100,150],[200,150]]).defaultPrevented).toBe(true)
     touch('touchmove',[[50,150],[250,150]]);touch('touchend',[])
-    await screen.findByText('300%')
+    await screen.findByText('200%')
     fireEvent.click(screen.getByRole('button',{name:'退出全屏阅读'}))
     expect(screen.queryByRole('dialog',{name:'PDF 阅读预览'})).toBeNull()
     expect(container.querySelector('.pdf-viewer__stage')).toHaveAttribute('data-view-mode','continuous')
-    expect(screen.getByText('150%')).toBeInTheDocument()
+    expect(screen.getByText('100%')).toBeInTheDocument()
     await waitFor(()=>expect(screen.getByRole('button',{name:'全屏左右翻页阅读'})).toHaveFocus())
     expect(screen.queryByText('连续滚动')).toBeNull()
   })
@@ -134,8 +165,8 @@ describe('PDF 阅读预览', () => {
     fireEvent.click(screen.getByRole('button', { name: '下一页' }))
     await waitFor(() => expect(取页面).toHaveBeenCalledWith(2))
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.75 }))
-    expect(screen.getByText('175%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.1 }))
+    expect(screen.getByText('110%')).toBeInTheDocument()
   })
 
   it('窄阅读区先适配页面宽度，放大后允许横向滚动', async () => {
@@ -155,7 +186,7 @@ describe('PDF 阅读预览', () => {
       return 节点!
     })
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
-    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(352 * 1.75 / 1.5, 1))
+    await waitFor(() => expect(Number.parseFloat(画布.style.width)).toBeCloseTo(352 * 1.1, 1))
   })
 
   it('解析失败时通知工作台并显示失败状态', async () => {
@@ -315,14 +346,14 @@ describe('PDF 阅读预览', () => {
     const 滚 = (deltaY: number, ctrlKey = true) =>
       fireEvent(window, new WheelEvent('wheel', { deltaY, ctrlKey, cancelable: true }))
     滚(-100)
-    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.75 }))
-    expect(screen.getByText('175%')).toBeInTheDocument()
+    await waitFor(() => expect(取视口).toHaveBeenCalledWith({ scale: 1.1 }))
+    expect(screen.getByText('110%')).toBeInTheDocument()
     // 未按 Ctrl 时不缩放
     滚(-100, false)
-    await waitFor(() => expect(screen.getByText('175%')).toBeInTheDocument())
-    // 从默认 150% 放大：175% → 200% → 250%，继续滚动最终停在上限 6400%
+    await waitFor(() => expect(screen.getByText('110%')).toBeInTheDocument())
+    // 从默认 100% 放大：110% → 125% → 150%，继续滚动最终停在上限 6400%
     for (let 次 = 0; 次 < 2; 次 += 1) 滚(-100)
-    await waitFor(() => expect(screen.getByText('250%')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('150%')).toBeInTheDocument())
     for (let 次 = 0; 次 < 40; 次 += 1) 滚(-100)
     await waitFor(() => expect(screen.getByText('6400%')).toBeInTheDocument())
   })

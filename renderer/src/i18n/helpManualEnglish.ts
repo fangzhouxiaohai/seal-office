@@ -87,7 +87,7 @@ export const 英文帮助主题: Record<string, 英文帮助条目> = {
     步骤: [
       'In a document, spreadsheet, presentation, or PDF, hold Ctrl (Command on macOS) while scrolling up to zoom in or down to zoom out.',
       'Use the minus, percentage, and plus controls in the lower-right status bar. Select the percentage to reset to 100%.',
-      'The default opening zoom is 150%; the supported range is 8.33%–6400%. Scrolling past a limit does not exceed it.',
+      'Files open at 100%. Enable Open files at 150% in Settings to change the starting zoom for files you open next. Open files keep their current zoom. The supported range in documents, spreadsheets, presentations, and PDFs is 8.33%–6400%.',
       'Zoom affects your view only. It is not saved into the document and does not change printed or exported page dimensions.',
       'Without Ctrl, the wheel scrolls normally. Editor operations such as slide sorting continue to use their own scrolling behavior.',
     ],
@@ -181,7 +181,7 @@ export const 英文帮助主题: Record<string, 英文帮助条目> = {
   },
   settings: {
     分类: 'Settings and troubleshooting', 标题: 'Settings and recovery', 摘要: 'Manage appearance, translation services, and local workspace preferences.',
-    步骤: ['Choose light or dark appearance and set workspace recovery, tab closing, and new-file notifications.', 'To use document translation, enter and save the translation service endpoint and key.', 'After an unexpected exit, reopen the app to restore the workspace and unsaved markers; review and save your content.', 'Use Restore initial defaults to clear local appearance and other settings.'],
+    步骤: ['Choose light or dark appearance and set workspace recovery, tab closing, and new-file notifications.', 'Compact mode is on by default and keeps workspace tools available as icons. Turn it off to show the full toolbar and workspace title.', 'To use document translation, enter and save the translation service endpoint and key.', 'After an unexpected exit, reopen the app to restore the workspace and unsaved markers; review and save your content.', 'Use Restore initial defaults to clear local appearance and other settings.'],
     提醒: 'Restoring defaults does not delete documents you saved.',
   },
   associations: {

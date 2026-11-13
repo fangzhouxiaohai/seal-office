@@ -7,6 +7,7 @@ import RibbonButton from './RibbonButton'
 import FontPicker from '../../fonts/FontPicker'
 import { 缩放百分比文本 } from '../wheelZoom'
 import { 取文字功能区色调 } from './iconTones'
+import { use显示偏好 } from '../../store/settingsStore'
 
 interface Props {
   activeKey: string
@@ -37,6 +38,7 @@ const RibbonPanel = ({
   获取当前值,
   onDropdownOpen,
 }: Props) => {
+  const 简洁模式 = use显示偏好()?.简洁模式
   const 标签 = tabs.find((项) => 项.key === activeKey)
   if (标签 === undefined) {
     return null
@@ -44,7 +46,7 @@ const RibbonPanel = ({
 
   return React.createElement(
     'div',
-    { className: tabs === RIBBON_TABS ? 'wps-ribbon-panel wps-ribbon-panel--document' : 'wps-ribbon-panel' },
+    { className: `wps-ribbon-panel${tabs === RIBBON_TABS ? ' wps-ribbon-panel--document' : ''}${简洁模式 ? ' wps-ribbon-panel--compact' : ''}` },
     标签.groups.map((组) =>
       React.createElement(
         RibbonGroup,

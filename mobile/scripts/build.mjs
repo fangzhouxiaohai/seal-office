@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from '../../node_modules/vite/dist/node/index.js'
 import { buildCore } from './core-build.mjs'
+import { deduplicateBinaryLiterals } from './deduplicate-literals.mjs'
 import { build as bundle } from 'esbuild'
 const directory = fileURLToPath(new URL('..', import.meta.url))
 export async function buildPlatform(platform = 'android') {
@@ -27,6 +28,10 @@ export async function buildPlatform(platform = 'android') {
     const entry = html.match(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/)
     if (!entry) throw new Error('未找到本地办公页面的脚本入口')
     await bundle({ entryPoints: [path.resolve(output, entry[1])], outfile: path.join(output, 'office.js'), bundle: true, format: 'iife', platform: 'browser', external: ['fs', 'https'], define: { 'import.meta.url': 'document.baseURI' }, target: ['chrome100', 'safari15'], minify: true, charset: 'utf8', logLevel: 'warning' })
+    const scriptFile = path.join(output, 'office.js')
+    const compact = deduplicateBinaryLiterals(await fs.readFile(scriptFile, 'utf8'))
+    await fs.writeFile(scriptFile, compact.code)
+    console.log(`本地资源无损去重：共享 ${compact.literals} 个重复常量，节省 ${compact.savedBytes} 字节；全部图片和字库保持完整。`)
     await fs.writeFile(htmlFile, html.replace(entry[0], '<script defer src="./office.js"></script>').replace(/<link rel="modulepreload"[^>]*>/g, ''))
     // IIFE 已包含 Vite 的 JS 分块，只保留 CSS 和其它资源，避免在 APK 内重复携带。
     const assets = path.join(output, 'assets')

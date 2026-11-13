@@ -8,6 +8,7 @@ const {createZoteroLocalApi}=require('../../main/zotero/localApi')
 const {createLocalCollaborationFixture}=require('../../server/test/collaborationFixture.cjs')
 const {createShareLinkService}=require('../../main/cloud/shareLink')
 const {randomUUID}=require('node:crypto')
+const {verifyWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version
 const pcCurrent=process.argv.includes('--pc-current')
 const plan=pcCurrent?require('../../docs/promo/pc-current-storyboard.json'):require('../../docs/promo/current-storyboard.json'),out=path.join(root,'release/promo'),work=path.join(out,'work-'+version+'-tutorial')
@@ -19,10 +20,12 @@ assert(fs.existsSync(ffmpeg),'FFmpeg runtime missing')
 app.setPath('userData',path.join(work,'profile-'+process.pid));app.disableHardwareAcceleration();app.commandLine.appendSwitch('force-device-scale-factor','1')
 if(!global.fetch)global.fetch=net.fetch.bind(net)
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=p=>require('node:crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex')
-const mobileRoot=pcCurrent?null:require('./android-source.cjs').verifyAndroidRecordingSource(
+const artifactName=require('../artifact-names.cjs').artifactName
+const artifact=platform=>path.join(root,'release/v'+version,artifactName(platform,version))
+const mobileRoot=pcCurrent||requested==='pc'?null:require('./android-source.cjs').verifyAndroidRecordingSource(
   process.env.SEAL_PROMO_ANDROID_ROOT||path.join(root,'android-studio/app/src/main/assets/apps/__UNI__B52B65B/www/static/office'),
-  path.join(root,'release/v'+version,require('../artifact-names.cjs').artifactName('android',version)),version)
-const webRoot=path.join(root,'mobile/unpackage/web')
+  artifact('android'),version)
+const webRoot=path.resolve(process.env.SEAL_PROMO_WEB_ROOT||path.join(root,'mobile/unpackage/web'))
 const visible="e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&!e.closest('[hidden]')&&!e.closest('.ant-modal-wrap[style*=\"display: none\"]')"
 const sel=s=>`[...document.querySelectorAll(${JSON.stringify(s)})].filter(${visible})[0]`
 const btn=(label,scope='document')=>`[...${scope}.querySelectorAll('button,[role="tab"]')].filter(${visible}).find(e=>e.getAttribute('aria-label')===${JSON.stringify(label)}||e.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g,''))})`
@@ -30,10 +33,35 @@ app.on('window-all-closed',()=>{})
 app.whenReady().then(async()=>{let server,win,recording,loop,encoder,cloudFixture,cloudClient,shareLinks,originalClipboard
 try{
  fs.mkdirSync(work,{recursive:true})
+ const webEvidence=!pcCurrent&&requested!=='android'?await verifyWebRecordingSource(webRoot,artifact('web'),version):null
+ const updateQueries=[]
+ if(!pcCurrent&&!probe){
+  const platforms=requested?[requested==='pc'?'web':'android']:['web','android']
+  await Promise.all(platforms.map(async platform=>{
+    const url=new URL(updateEndpoint)
+    url.search=new URLSearchParams({platform,version,channel:'stable'})
+    const result=await fetchPublicUpdate(url,'GET',version)
+    assert(result.status===200&&result.hasUpdate===false,
+      `线上更新服务尚未确认 ${platform} ${version} 为最新版本（HTTP ${result.status}）`)
+  }))
+ }
  if(pcCurrent)originalClipboard={text:clipboard.readText(),image:clipboard.readImage()}
  if(pcCurrent){cloudFixture=await createLocalCollaborationFixture(null,{clients:false});cloudClient=await cloudFixture.client('13800111001');shareLinks=createShareLinkService(cloudClient);const saved=await cloudClient.save({linkId:randomUUID(),name:'项目计划-分享演示.txt',data:Buffer.from('项目计划分享链接演示资料。此文件仅用于本地隔离录制。').toString('base64')});assert.equal(saved.statuses[saved.id],'云端已保存')}
  const zotero=createZoteroLocalApi()
- server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(u.pathname==='/api/clipboard'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy()});req.on('end',()=>{try{const value=JSON.parse(body).text;if(typeof value!=='string')throw Error('复制文字无效');clipboard.writeText(value);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true}))}catch(error){res.writeHead(400);res.end(error.message)}});return}if(u.pathname==='/api/cloud'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>body+=chunk);req.on('end',async()=>{try{const {action,input}=JSON.parse(body);const allowed={status:()=>cloudClient.status(),list:()=>cloudClient.list(),pending:()=>cloudClient.pending(),shareLinkCreate:()=>shareLinks.shareLinkCreate(input),shareLinkList:()=>shareLinks.shareLinkList()};if(!allowed[action])throw Error('录制环境不支持此云操作');const data=await allowed[action]();res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}catch(error){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))}});return}if(u.pathname==='/api/zotero'){if(!pcCurrent){res.writeHead(404);res.end();return}zotero.列条目({关键词:'海豹办公二点六演示文献',上限:5}).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}).catch(error=>{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))});return}if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
+ server=http.createServer(async(req,res)=>{
+  const u=new URL(req.url,'http://localhost')
+  if(!pcCurrent&&u.pathname===updatePath){
+    try{
+      const result=await fetchPublicUpdate(u,req.method,version)
+      updateQueries.push({endpoint:updateEndpoint,platform:u.searchParams.get('platform'),version:u.searchParams.get('version'),channel:u.searchParams.get('channel'),status:result.status,hasUpdate:result.hasUpdate,receivedAt:new Date().toISOString()})
+      res.writeHead(result.status,{'Content-Type':'application/json'});res.end(result.body)
+    }catch(error){
+      updateQueries.push({endpoint:updateEndpoint,platform:u.searchParams.get('platform'),version,status:502,error:error.message})
+      res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'连接线上更新服务失败'}))
+    }
+    return
+  }
+  if(u.pathname==='/api/clipboard'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy()});req.on('end',()=>{try{const value=JSON.parse(body).text;if(typeof value!=='string')throw Error('复制文字无效');clipboard.writeText(value);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true}))}catch(error){res.writeHead(400);res.end(error.message)}});return}if(u.pathname==='/api/cloud'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>body+=chunk);req.on('end',async()=>{try{const {action,input}=JSON.parse(body);const allowed={status:()=>cloudClient.status(),list:()=>cloudClient.list(),pending:()=>cloudClient.pending(),shareLinkCreate:()=>shareLinks.shareLinkCreate(input),shareLinkList:()=>shareLinks.shareLinkList()};if(!allowed[action])throw Error('录制环境不支持此云操作');const data=await allowed[action]();res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}catch(error){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))}});return}if(u.pathname==='/api/zotero'){if(!pcCurrent){res.writeHead(404);res.end();return}zotero.列条目({关键词:'海豹办公二点六演示文献',上限:5}).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}).catch(error=>{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))});return}if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
   const base=u.pathname.startsWith('/android/')?mobileRoot:webRoot,file=path.resolve(base,'.'+decodeURIComponent(u.pathname).replace(/^\/(?:pc|android)\//,'/').replace(/\/$/,'/index.html'))
   if(!file.startsWith(base+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
   if(pcCurrent&&path.basename(file)==='index.html'){const inject=`<script>Object.defineProperty(window,'electronAPI',{configurable:true,get(){return this.__tutorialBridge},set(api){api.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};api.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};this.__tutorialBridge=api}})</script>`;res.writeHead(200,{'Content-Type':'text/html'});res.end(fs.readFileSync(file,'utf8').replace('<script type="module"',inject+'<script type="module"'));return}
@@ -103,23 +131,96 @@ try{
   const segment=label=>`[...document.querySelectorAll('.ant-segmented-item')].filter(${visible}).find(e=>e.textContent.trim()===${JSON.stringify(label)})`
   const brand=hex=>check(`getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().toUpperCase()===${JSON.stringify(hex)}`,'skin brand colour '+hex)
   const hover=async(expr,label,ms=1600)=>{const r=await focus(expr,label);await move(r.cx,r.cy);log('hover',{label,x:r.cx,y:r.cy});await pause(ms);await move(r.cx,r.cy-90)}
-  let wordPath,skinShot
+  const switchState=(label,value)=>`(${btn(label)})?.getAttribute('aria-checked')===${JSON.stringify(String(value))}`
+  const compact=`document.querySelector('.wps-app')?.dataset.compactWorkspace==='true'`
+  const zoom=btn('恢复百分之百')
+  const confirmZoom=async percent=>{
+    const condition=`(${zoom})?.textContent.trim()===${JSON.stringify(percent+'%')}`
+    await until(condition,'显示比例为 '+percent+'%')
+    await check(condition,'显示比例为 '+percent+'%')
+    await focus(zoom,'当前显示比例 '+percent+'%')
+  }
+  const settings=async({fromEditor=false}={})=>{
+    if(fromEditor&&await ev(`!!(${btn('设置中心')})`)) await click('设置中心')
+    else if(mobile){
+      await click('我的')
+      await tap(`[...document.querySelectorAll('.seal-mobile-profile__links button')].find(e=>e.textContent.startsWith('应用设置'))`,'应用设置')
+    }else{
+      await click('全局设置')
+      await tap(`[...document.querySelectorAll('[role="menuitem"]')].find(e=>e.textContent.trim()==='全局设置')`,'打开全局设置')
+    }
+    await until(`!!document.querySelector('.settings-page')`,'设置中心已打开')
+  }
+  const wordTab=`[...document.querySelectorAll('.wps-global-tab__select')].find(e=>e.querySelector('.wps-global-tab__name')?.textContent==='每周工作计划.sldoc')`
+  const returnToWord=async()=>{
+    await tap(wordTab,'返回每周工作计划')
+    await until(`!!document.querySelector('.wps-editor-canvas__content')`,'返回同一份已保存文档')
+  }
+  const confirmCompact=async value=>{
+    const condition=value
+      ? `(${compact})&&!document.querySelector('.wps-titlebar,.wps-ribbon-group__name,.wps-ribbon-button__label')&&!!document.querySelector('.wps-ribbon-button[aria-label],.wps-ribbon-tab')`
+      : `!(${compact})&&!!document.querySelector('.wps-titlebar')&&!!document.querySelector('.wps-ribbon-group__name,.wps-ribbon-button__label')`
+    await until(condition,value?'简洁工作区保留工具':'完整标题和工具文字已恢复')
+    await check(condition,value?'简洁工作区保留工具':'完整标题和工具文字已恢复')
+    await focus(sel('.wps-ribbon-panel'),'当前工具区')
+    const dimensions=await ev(`(()=>{
+      const size=element=>{const {width,height}=element.getBoundingClientRect();return {width,height}}
+      const buttonSize=element=>({label:element.getAttribute('aria-label')||element.title||element.textContent.trim(),...size(element)})
+      const panel=document.querySelector('.wps-ribbon-panel')
+      const navigation=[...document.querySelectorAll('.wps-workspace-navigation button')].map(buttonSize)
+      const tools=[...panel.querySelectorAll('.wps-ribbon-button')].filter(${visible}).map(buttonSize)
+      return {ribbon:size(panel),navigation,tools}
+    })()`)
+    log('display-layout',{compact:value,...dimensions})
+  }
+  let wordPath
   const operations={
     'skins-open':async()=>{await nav('skins','皮肤市场');await until(`document.querySelectorAll('.seal-skin-card').length===10`,'ten built-in skins');await focus(sel('.seal-skin-grid'),'内置皮肤')},
-    'skins-apply':async()=>{await hover(btn('预览 深海蓝'),'临时预览深海蓝');await brand('#6A5CF5');await click('应用 深海蓝');await brand('#2563EB');await focus(sel('.seal-skin-card.is-active'),'当前使用深海蓝')
-      // 后续“截图粘贴”使用的就是这一刻的界面截图。
-      const r=await ev(`(()=>{const r=document.querySelector('.seal-skin-grid').getBoundingClientRect();return{x:Math.round(r.x),y:Math.round(r.y),width:Math.min(760,Math.round(r.width)),height:Math.min(300,Math.round(r.height))}})()`);skinShot=await win.capturePage(r)},
+    'skins-apply':async()=>{await hover(btn('预览 深海蓝'),'临时预览深海蓝');await brand('#6A5CF5');await click('应用 深海蓝');await brand('#2563EB');await focus(sel('.seal-skin-card.is-active'),'当前使用深海蓝')},
     'skins-rules':async()=>{await tap(segment('开发规则'),'开发规则');await until(`!!document.querySelector('.seal-skin-rules')`,'skin rules');await focus(sel('.seal-skin-rules ol'),'皮肤格式与可读性规则');await pause(2600);await tap(segment('内置皮肤'),'内置皮肤');await click('应用 海豹紫');await brand('#6A5CF5')},
     'skins':async()=>{await nav('skins','皮肤市场');await until(`document.querySelectorAll('.seal-skin-card').length===10`,'ten built-in skins');await click('应用 樱花粉');await brand('#DB2777');await focus(sel('.seal-skin-card.is-active'),'当前使用樱花粉');await pause(2200);await click('应用 海豹紫');await brand('#6A5CF5')},
-    'word-paste':async()=>{assert(skinShot&&!skinShot.isEmpty(),'skin screenshot missing');const {clipboard}=require('electron'),saved={text:clipboard.readText(),image:clipboard.readImage()};clipboard.writeImage(skinShot)
-      try{await tap(sel('.wps-editor-canvas__content'),'正文光标位置');await key('End',['control']);log('shortcut',{label:'Ctrl+V 粘贴截图'});await key('V',['control']);await until(`!!document.querySelector('.wps-editor-canvas__content img')`,'pasted screenshot inserted')}
-      finally{if(!saved.image.isEmpty())clipboard.writeImage(saved.image);else clipboard.writeText(saved.text)}
-      await focus(sel('.wps-editor-canvas__content img'),'粘贴进文档的截图');await check(`document.querySelector('.wps-editor-canvas__content img').naturalWidth>100`,'pasted screenshot decoded')},
     'new-word':newWord,
     'word-title':async()=>{await type(sel('.wps-editor-canvas__content'),'每周工作计划','输入标题');await key('Enter');await check(`document.querySelector('.wps-editor-canvas__content').textContent.includes('每周工作计划')`,'title entered')},
     'word-body':async()=>{const text=mobile?'每周工作计划\n本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。':'本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。';await type(sel('.wps-editor-canvas__content'),text,'填写计划正文');await check(`document.querySelector('.wps-editor-canvas__content').textContent.includes('完成交付')&&document.querySelector('.wps-editor-canvas__content').children.length>=3`,'body entered in separate paragraphs')},
     'word-save':async()=>{wordPath=await save('每周工作计划.sldoc');await check(`document.querySelector('.wps-global-tab--active')?.textContent.includes('.sldoc')&&!document.querySelector('.wps-global-tab--active .wps-global-tab__dirty')`,'saved SLDOC tab clean')},
-    'word-reopen':async()=>{await tap(sel('.wps-global-tab--active .wps-global-tab__close'),'关闭已保存文档');await openFile(wordPath,'word');await check(`document.querySelector('.wps-editor-canvas__content').textContent.includes('完成交付')`,'saved content reopened');await check(`[...document.querySelectorAll('.wps-editor-canvas__content img')].some(i=>i.complete&&i.naturalWidth>100)`,'pasted screenshot reopened')},
+    'display-default':async()=>{await confirmCompact(true);await pause(1200);await confirmZoom(100)},
+    'display-full':async()=>{
+      await settings({fromEditor:true})
+      await check(switchState('简洁模式',true),'简洁模式默认开启')
+      await check(switchState('默认放大至 150%',false),'默认放大开关默认关闭')
+      await click('简洁模式')
+      await check(switchState('简洁模式',false),'简洁模式已关闭')
+      await pause(1200)
+      await returnToWord()
+      await confirmCompact(false)
+    },
+    'display-compact':async()=>{
+      await home()
+      await settings()
+      await click('简洁模式')
+      await check(switchState('简洁模式',true),'简洁模式已重新开启')
+      await pause(1200)
+      await returnToWord()
+      await confirmCompact(true)
+    },
+    'display-zoom-option':async()=>{
+      await settings()
+      await click('简洁模式')
+      await check(switchState('简洁模式',true),'简洁模式已重新开启')
+      await click('默认放大至 150%')
+      await check(switchState('默认放大至 150%',true),'默认放大开关已开启')
+      await pause(1200)
+      await returnToWord()
+      await check(compact,'同一文件恢复简洁工作区')
+      await confirmCompact(true)
+      await confirmZoom(100)
+    },
+    'word-reopen':async()=>{
+      await tap(sel('.wps-global-tab--active .wps-global-tab__close'),'关闭已保存文档')
+      await openFile(wordPath,'word')
+      await check(`document.querySelector('.wps-editor-canvas__content').textContent.includes('完成交付')`,'重新打开后正文完整')
+      await confirmZoom(150)
+    },
     'sheet-open':()=>openFile(fixture.sheet,'sheet'),
     'sheet-formula':formula,
     'sheet-save':async()=>{await click('自适应列宽');await save('项目预算.slxls',true)},
@@ -139,6 +240,24 @@ try{
     'assistant-modes':async()=>{await focus(sel('[aria-label="助手目标文件"]'),'当前目标文件');await pause(800);await click('对话模式');await check(`(${btn('对话模式')}).getAttribute('aria-pressed')==='true'`,'chat mode selected');await click('工作模式');await check(`(${btn('工作模式')}).getAttribute('aria-pressed')==='true'`,'work mode selected');await check(`document.querySelector('.assistant-mobile-mode-hint').textContent.includes('自动应用')`,'work mode applies edits directly');await focus(sel('.assistant-mobile-mode-hint'),'工作模式说明');await pause(900)},
     'assistant-target':async()=>{await click('打开智能助手');await tap(sel('[aria-label="助手目标文件"]'),'选择已打开的目标文件');await key('Home');await key('Enter');await click('对话模式');await check(`(${btn('对话模式')}).getAttribute('aria-pressed')==='true'`,'target file and chat mode selected');await tap(btn('收起智能助手'),'关闭助手')},
     'projects':async()=>{await nav('mindmap','脑图');await createProject('新品发布计划');await click('返回项目列表');await createProject('团队工作分解');await click('返回项目列表');await check(`document.querySelectorAll('.diagram-project-card').length===2`,'two independent mobile projects')},
+    'check-update':async()=>{
+      if(mobile)await home()
+      await settings({fromEditor:!mobile})
+      const current=sel('.settings-update-control .settings-wps-row__status')
+      await until(`(${current})?.textContent.trim()===${JSON.stringify(version)}`,'设置中心显示当前发行版本')
+      await focus(sel('.settings-update-control'),'关于与更新')
+      await pause(800)
+      const before=updateQueries.length
+      await click('检查更新')
+      const result=sel('.settings-update-control [role="status"]')
+      await until(`!!(${result})`,'等待线上更新检查结果')
+      const request=updateQueries.slice(before).at(-1)
+      assert(request&&request.platform===(mobile?'android':'web')&&request.status===200&&request.hasUpdate===false,
+        '线上更新接口未确认当前版本为最新：'+JSON.stringify(request))
+      await check(`(${result}).textContent.trim()===${JSON.stringify('已是最新版本（'+version+'）')}`,'界面显示线上更新检查结果')
+      log('public-update-response',request)
+      await focus(result,'已是最新版本 '+version)
+    },
     'outro':async()=>{await home();await focus(sel('.wps-global-tabs'),'已打开文件与项目');await pause(1800)}
   }
   if(pcCurrent){
@@ -183,7 +302,9 @@ try{
   const finished=new Promise((resolve,reject)=>encoder.on('exit',code=>code===0?resolve():reject(Error('Recording encoder '+code+': '+encoderErrors))));finished.catch(()=>{})
   running=true;loop=(async()=>{while(running){const tick=Date.now();if(frame){if(!encoder.stdin.write(frame))await new Promise(r=>encoder.stdin.once('drain',r));frames++}await pause(Math.max(1,50-(Date.now()-tick)))}})()
   const waitFrames=async target=>{while(frames<target)await pause(35)}
-  const scenes=probe==='reading'?plan[platform].filter(s=>s.id.startsWith('reading-')):probe==='word'?plan[platform].filter(s=>['new-word','word-title','word-body'].includes(s.id)):probe==='cloud'?plan[platform].filter(s=>s.id.startsWith('cloud-')):probe==='pdf'?plan[platform].filter(s=>s.id.startsWith('pdf-')||s.id==='outro'):probe==='after-cloud'?plan[platform].slice(plan[platform].findIndex(s=>s.id==='sheet-open')):plan[platform]
+  const scenes=probe==='display'
+    ? plan[platform].slice(0,plan[platform].findIndex(s=>s.id===(mobile?'reading-enter':'sheet-open')))
+    : probe==='reading'?plan[platform].filter(s=>s.id.startsWith('reading-')):probe==='word'?plan[platform].filter(s=>['new-word','word-title','word-body'].includes(s.id)):probe==='cloud'?plan[platform].filter(s=>s.id.startsWith('cloud-')):probe==='pdf'?plan[platform].filter(s=>s.id.startsWith('pdf-')||s.id==='outro'):probe==='after-cloud'?plan[platform].slice(plan[platform].findIndex(s=>s.id==='sheet-open')):plan[platform]
   for(const [index,scene]of scenes.entries()){
     activeStep=scene.id;const startFrame=frames,voice=voices.find(v=>v.platform===platform&&v.id===scene.id);assert(voice)
     if(index>0)await ev(`window.__tutorialMark(null)`)
@@ -195,7 +316,8 @@ try{
     console.log(JSON.stringify({platform,step:scene.id,seconds:(frames-startFrame)/20,actions:actions.filter(a=>a.step===scene.id).length,assertions:assertions.length}),true)
   }
   running=false;await loop;encoder.stdin.end();await finished;encoder=null
-  const report={passed:true,version,platform,build,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,filePickerFixture:true,realFileSave:true,savedWordReopened:!mobile,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
+  const sourceArchive=pcCurrent?null:{name:path.basename(artifact(mobile?'android':'web')),sha256:mobile?sha(artifact('android')):webEvidence.archiveSha256,...(mobile?{}:{files:webEvidence.files})}
+  const report={passed:true,version,platform,build,sourceArchive,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,filePickerFixture:true,realFileSave:true,savedWordReopened:!mobile,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
   fs.writeFileSync(path.join(work,platform+(probe?'-probe':'')+'-recording.json'),JSON.stringify(report,null,2)+'\n');assert.equal(errors.length,0,errors.join('\n'));clearInterval(captureTimer);win.destroy();win=null
  }
  app.exit(0)

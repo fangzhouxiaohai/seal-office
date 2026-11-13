@@ -55,14 +55,23 @@ export default function MobileNavigation() {
     let paintScheduled = false
     let active = true
     const frames: number[] = []
+    const workspacePainted = () => {
+      if (document.querySelector('.startup-screen') || !document.querySelector('.seal-mobile-nav')) return false
+      const header = document.querySelector('.wps-app .wps-titlebar, .wps-app[data-compact-workspace="true"] .wps-workspace-navigation')
+      return header !== null && visible(header)
+    }
     const report = () => {
       if (!active || !window.sealNative) return
       // 原生启动画面要等工作台实际绘制后再退出，不能先露出网页加载占位。
       if (!firstPaintDone) {
-        if (!paintScheduled && document.querySelector('.wps-titlebar') && document.querySelector('.seal-mobile-nav') && !document.querySelector('.startup-screen')) {
+        if (!paintScheduled && workspacePainted()) {
           paintScheduled = true
           const first = requestAnimationFrame(() => {
-            const second = requestAnimationFrame(() => { firstPaintDone = true; report() })
+            const second = requestAnimationFrame(() => {
+              paintScheduled = false
+              firstPaintDone = workspacePainted()
+              if (firstPaintDone) report()
+            })
             frames.push(second)
           })
           frames.push(first)

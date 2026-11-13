@@ -21,6 +21,7 @@ const { execFileSync, spawnSync } = require('child_process')
 const { createHash } = require('node:crypto')
 const fs = require('fs')
 const path = require('path')
+const { verifyManifest } = require('./admin-build-manifest.cjs')
 
 // ── 生产服务器（写死，避免记错）──────────────────────────────
 const SERVER = {
@@ -30,8 +31,8 @@ const SERVER = {
   // 站点根目录：releases/ 与 current 软链都在这里
   siteRoot: '/www/wwwroot/seal.xingmasoft.com',
   service: 'seal-cloud',
-  // 生产 API 端口（systemd 里 node 监听 8298，Nginx 反代 /api）
-  localPort: 8298,
+  // 主 API 为 8096；8298 是独立文档转换网关，不能用于版本发布验收。
+  localPort: 8096,
   // 隔离验证端口：切换前用它确认新版本能真正启动
   verifyPort: 8791,
   publicUrl: 'https://seal.xingmasoft.com/api/v1/capabilities',
@@ -67,6 +68,7 @@ const REQUIRED_FILES = [
   // 公开内容与原生格式校验
   'publicValidation.cjs', 'nativeCodec.cjs', 'nativeSealFormat.cjs',
   'skinFormat.cjs', 'converterAdmin.cjs', 'validateIsolated.cjs',
+  'releases.cjs', 'releaseAssets.cjs',
   // 数据与元数据
   'documentFormats.json', 'package.json',
 ]
@@ -107,16 +109,16 @@ function sshArgs(extra = []) {
  * 自动应答密码。
  * Windows 自带的 OpenSSH 直接从终端读密码，不读 stdin，所以 spawnSync 的 input
  * 永远喂不进去，表现就是“卡住不动”。这里改用 SSH_ASKPASS：把密码写进一个
- * 临时 .cmd 助手脚本，设 SSH_ASKPASS_REQUIRE=force 后 ssh 会主动调用它取密码。
- * 助手脚本放在已被 .gitignore 忽略的 .upgrade-private/ 下。
+ * 临时 .cmd 助手只从子进程环境中读取密码，不把密码文本写入文件。
+ * 助手放在 .upgrade-private/，结束后删除。
  */
 function installAskpass(password) {
   if (process.platform !== 'win32') return {}
   const askDir = path.join(ROOT, '.upgrade-private')
   fs.mkdirSync(askDir, { recursive: true })
   const askFile = path.join(askDir, 'ask.cmd')
-  fs.writeFileSync(askFile, `@echo off\r\necho ${password}\r\n`, 'utf8')
-  return { SSH_ASKPASS: askFile, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: 'localhost:0' }
+  fs.writeFileSync(askFile, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n', 'utf8')
+  return { SSH_ASKPASS: askFile, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: 'localhost:0', SEAL_DEPLOY_PASSWORD: password }
 }
 
 /** 部署机侧执行；密码经 ASKPASS 提供，不出现在进程参数里。 */
@@ -130,6 +132,95 @@ function runRemote(command, { password, check = false } = {}) {
     fail(`远程命令失败（退出码 ${result.status}）：${command}\n${result.stderr || result.stdout}`)
   }
   return result.stdout || ''
+}
+
+/** 配置备份放在发布目录之外，重复部署复制 current 时不会继承并累积旧备份。 */
+function createDeploymentConfigBackup({ siteRoot, release, stamp, targets }) {
+  if (!path.isAbsolute(siteRoot) || !/^releases\/[A-Za-z0-9_.-]+$/.test(release) || !/^\d{14}$/.test(stamp) || !release.endsWith('-' + stamp)) throw new Error('本次部署备份标识无效')
+  return { directory: path.posix.join(siteRoot.replace(/\\/g, '/'), 'deployment-config-backups', path.posix.basename(release)), targets }
+}
+
+/** 备份确切的配置文件及其原先不存在状态；函数也在服务器的 Node 进程中执行。 */
+function backupDeploymentFiles({ directory, targets }) {
+  const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto')
+  if (!path.isAbsolute(directory) || !Array.isArray(targets) || targets.some(target => !path.isAbsolute(target))) throw new Error('部署配置备份路径无效')
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 })
+  const records = targets.map((target, index) => {
+    if (!fs.existsSync(target)) return { target, existed: false }
+    const stat = fs.lstatSync(target)
+    if (!stat.isFile()) throw new Error('部署配置不是普通文件，拒绝覆盖：' + target)
+    const bytes = fs.readFileSync(target), backup = `config-${index}.backup`
+    fs.writeFileSync(path.join(directory, backup), bytes, { flag: 'wx', mode: 0o600 })
+    return { target, existed: true, backup, mode: stat.mode & 0o777, uid: stat.uid, gid: stat.gid, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }
+  })
+  fs.writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify(records), { flag: 'wx', mode: 0o600 })
+}
+
+/** 仅恢复备份中且在本次清单内的文件，绝不扩大到目录清理。 */
+function restoreDeploymentFiles({ directory, targets }) {
+  const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto')
+  const records = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8'))
+  if (!Array.isArray(records) || records.length !== targets.length || records.some((record, index) => record.target !== targets[index])) throw new Error('部署配置备份清单不一致，拒绝恢复')
+  for (const record of records) {
+    if (!record.existed) { fs.rmSync(record.target, { force: true }); continue }
+    if (!/^config-\d+\.backup$/.test(record.backup)) throw new Error('部署配置备份文件名无效')
+    const bytes = fs.readFileSync(path.join(directory, record.backup))
+    if (crypto.createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('部署配置备份校验失败')
+    const temporary = record.target + '.seal-restore-' + crypto.randomUUID()
+    try {
+      fs.writeFileSync(temporary, bytes, { flag: 'wx', mode: record.mode })
+      fs.chmodSync(temporary, record.mode)
+      if (process.platform !== 'win32') fs.chownSync(temporary, record.uid, record.gid)
+      fs.renameSync(temporary, record.target)
+    } finally { fs.rmSync(temporary, { force: true }) }
+  }
+}
+
+/** 精确恢复本次后台备份；任何移动失败立即抛错，不能继续把备份嵌入错误目录。 */
+function restoreAdminDirectory({ siteRoot, backupName, failedName }) {
+  const fs = require('node:fs'), path = require('node:path')
+  if (!path.isAbsolute(siteRoot) || !/^admin\.backup-\d{14}$/.test(backupName) || !/^admin\.failed-\d{14}$/.test(failedName)) throw new Error('后台恢复路径无效')
+  const root = path.resolve(siteRoot), admin = path.resolve(root, 'admin'), backup = path.resolve(root, backupName), failed = path.resolve(root, failedName)
+  if ([admin, backup, failed].some(target => path.dirname(target) !== root)) throw new Error('后台恢复目标超出站点目录')
+  if (!fs.existsSync(backup)) return
+  if (fs.existsSync(admin)) {
+    if (fs.existsSync(failed)) throw new Error('本次失败后台目录已存在，拒绝覆盖')
+    fs.renameSync(admin, failed)
+  }
+  fs.renameSync(backup, admin)
+}
+
+/** 使用 Node 默认 TLS 校验检查公网响应；函数原样发送到服务器，保持本机和远端验收一致。 */
+async function probeDeployment({ baseUrl, version, adminSha256, assets = [], checkUpdates = true }) {
+  const { createHash } = require('node:crypto')
+  if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') throw new Error('部署验收要求启用默认 TLS 证书校验')
+  const checks = []
+  const get = async (pathname, label, kind, expectedHash) => {
+    let response
+    try { response = await fetch(new URL(pathname, baseUrl), { redirect: 'error', signal: AbortSignal.timeout(20000) }) }
+    catch (error) { throw new Error(`${label}请求失败：${error.cause?.message || error.message}`) }
+    if (response.status !== 200) throw new Error(`${label}状态码不是 200：${response.status}`)
+    const contentType = response.headers.get('content-type') || ''
+    const expectedType = { json: /application\/json/i, html: /text\/html/i, javascript: /(?:application|text)\/javascript/i, css: /text\/css/i }[kind]
+    if (!expectedType || !expectedType.test(contentType)) throw new Error(`${label}响应类型不正确：${contentType || '未声明类型'}`)
+    const bytes = Buffer.from(await response.arrayBuffer()), body = bytes.toString('utf8')
+    if (expectedHash && createHash('sha256').update(bytes).digest('hex') !== expectedHash) throw new Error(`${label}内容与本次构建不一致`)
+    if (kind === 'html' && !/<html(?:\s|>)/i.test(body)) throw new Error(`${label}没有返回完整网页`)
+    checks.push({ name: label, path: pathname, status: response.status, contentType, ...(expectedHash ? { sha256: expectedHash } : {}) })
+    if (kind !== 'json') return body
+    try { return JSON.parse(body) } catch { throw new Error(`${label}没有返回有效的 JSON 协议`) }
+  }
+  const capabilities = await get('/api/v1/capabilities', '能力接口', 'json')
+  if (capabilities?.version !== 1) throw new Error('能力接口协议版本不正确')
+  if (checkUpdates) {
+    const update = await get('/api/v1/updates/latest?platform=windows&version=' + encodeURIComponent(version), '更新接口', 'json')
+    if (typeof update?.hasUpdate !== 'boolean' || (update.hasUpdate && typeof update.version !== 'string')) throw new Error('更新接口协议不完整')
+  }
+  await get('/', '后台首页', 'html', adminSha256)
+  const share = await get('/share/', '分享页', 'html')
+  if (!/<title>[^<]*文件下载[^<]*海豹办公[^<]*<\/title>/i.test(share)) throw new Error('分享页没有返回海豹办公文件下载页面')
+  for (const asset of assets) await get(asset.path, '后台资源 ' + asset.path, asset.kind, asset.sha256)
+  return { passed: true, tlsVerification: 'default', checks }
 }
 
 /** 收集并校验本地待部署文件；缺文件立即中止，绝不上传残缺版本。 */
@@ -184,10 +275,13 @@ const SHARE_LANDING = {
   files: ['share/index.html', 'share/app.js'],
   target: 'share',
 }
+const NGINX_PATCHES = [
+  { source: ADMIN.nginxPatch, target: ADMIN.nginxTarget },
+  { source: 'server/deploy/nginx-release-assets.conf', target: '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/20-release-assets.conf' },
+]
 
 /** 校验本地后台产物存在且入口资源齐全；缺失就拒绝部署，不推半成品上去。 */
-function collectAdmin() {
-  const dist = path.join(ROOT, ADMIN.source)
+function collectAdmin(dist = path.join(ROOT, ADMIN.source)) {
   if (!fs.existsSync(dist)) {
     fail(`管理后台构建产物不存在：${ADMIN.source}\n请先在 server/admin 下执行构建，或确认 dist 已随仓库提供。`)
   }
@@ -201,6 +295,7 @@ function collectAdmin() {
   if (missing.length) {
     fail('管理后台 index.html 引用的资源缺失，部署后仍会白屏：\n  - ' + missing.join('\n  - '))
   }
+  verifyManifest(ROOT, dist)
   return { dist, referenced }
 }
 
@@ -216,12 +311,12 @@ function main() {
 
   // 0) 管理后台静态站点：与后端发布流程解耦，独立同步
   //    先做本地校验，产物不完整时不会走到后端上传，避免只部署一半。
-  const adminInfo = collectAdmin()
+  const adminInfo = ['check', 'rollback'].includes(mode) ? null : collectAdmin()
   for (const file of SHARE_LANDING.files) {
     if (!fs.existsSync(path.join(ROOT, file))) fail(`匿名下载页缺少文件：${file}`)
   }
   log(`\n管理后台 ${ADMIN.source} → ${SERVER.siteRoot}/${ADMIN.target}`)
-  adminInfo.referenced.forEach(name => log('  assets/' + name))
+  adminInfo?.referenced.forEach(name => log('  assets/' + name))
   log(`站点    ${SERVER.siteRoot}`)
   log(`版本    ${version}`)
   log(`模式    ${mode}`)
@@ -230,13 +325,15 @@ function main() {
     const out = runRemote(
       `systemctl is-active ${SERVER.service}; readlink ${SERVER.siteRoot}/current; ` +
       `cat ${SERVER.siteRoot}/previous-release 2>/dev/null; ` +
-      `curl -s -o /dev/null -w 'local=%{http_code}\\n' http://127.0.0.1:${SERVER.localPort}/api/v1/capabilities`,
+      `curl -s -o /dev/null -w 'local=%{http_code}\\n' http://127.0.0.1:${SERVER.localPort}/v1/capabilities; ` +
+      `curl -s -o /dev/null -w 'updates=%{http_code}\\n' 'http://127.0.0.1:${SERVER.localPort}/v1/updates/latest?platform=windows&version=${version}'`,
       { password, check: true },
     )
     log('\n--- 只读体检 ---')
     log(out.out.trim())
     log(`公网 ${SERVER.publicUrl}`)
-    log(execFileSync('curl', ['-s', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', '-w', 'http=%{http_code}', SERVER.publicUrl], { encoding: 'utf8' }).trim())
+    const probeScript = `(${probeDeployment.toString()})(${JSON.stringify({ baseUrl: new URL(SERVER.publicUrl).origin, version })}).then(result=>console.log(JSON.stringify(result))).catch(error=>{console.error(error.message);process.exitCode=1})`
+    log(execFileSync(process.execPath, ['-e', probeScript], { encoding: 'utf8', windowsHide: true }).trim())
     return
   }
 
@@ -276,6 +373,37 @@ function main() {
   ], { encoding: 'utf8', windowsHide: true, env: { ...process.env, ...installAskpass(password) } })
   if (scp.status !== 0) fail('上传失败：' + (scp.stderr || scp.stdout))
 
+  // 候选后端在独立临时数据库上真正启动并请求接口，通过后才触碰线上指针与后台。
+  const expectedIndexSha = createHash('sha256').update(fs.readFileSync(path.join(OUT, 'index.cjs'))).digest('hex')
+  const candidateCheck = `
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const directory=fs.mkdtempSync(path.join(os.tmpdir(),'seal-deploy-check-'));
+let cloud;
+(async()=>{try{
+  cloud=await require('./index.cjs').createCloud({directory,env:{},sms:{configured:false,send:async()=>{throw new Error('验收环境不发送短信')}}});
+  await new Promise(resolve=>cloud.server.listen(${SERVER.verifyPort},'127.0.0.1',resolve));
+  for(const route of ['/v1/capabilities','/v1/updates/latest?platform=windows&version=${version}','/v1/updates/latest?platform=linux&version=${version}']){
+    const response=await fetch('http://127.0.0.1:${SERVER.verifyPort}'+route);
+    if(response.status!==200)throw new Error('候选接口校验失败：'+route+' '+response.status);
+    const value=await response.json();if(route.includes('/updates/')&&typeof value.hasUpdate!=='boolean')throw new Error('候选更新协议不完整');
+  }
+  console.log('CANDIDATE_VERIFIED');
+}finally{if(cloud)await cloud.close();fs.rmSync(directory,{recursive:true,force:true})}})().catch(error=>{console.error(error.message);process.exitCode=1});`
+  runRemote([
+    'set -e', `cd ${SERVER.siteRoot}`, `mkdir -p ${release}`, `cp -a current/. ${release}/`,
+    `unzip -oq /tmp/deploy-server.zip -d ${release}`, `test -f ${release}/myShares.cjs`, `test -f ${release}/releases.cjs`, `test -f ${release}/releaseAssets.cjs`,
+    `test "$(sha256sum ${release}/index.cjs | cut -d ' ' -f1)" = '${expectedIndexSha}'`, `cd ${release}`,
+    'for f in *.cjs; do node --check "$f"; done', "node - <<'SEAL_CANDIDATE_CHECK'", candidateCheck, 'SEAL_CANDIDATE_CHECK',
+  ].join('\n'), { password })
+  log('候选服务已在隔离数据目录启动，匿名更新与平台查询均通过')
+
+  const previous = runRemote(`readlink -f ${SERVER.siteRoot}/current`, { password }).trim()
+  if (!previous.startsWith(SERVER.siteRoot + '/releases/') || !/^[A-Za-z0-9/_.-]+$/.test(previous)) fail('服务器当前版本指针无效，拒绝切换')
+  const configBackup = createDeploymentConfigBackup({ siteRoot: SERVER.siteRoot, release, stamp, targets: NGINX_PATCHES.map(patch => patch.target) })
+  const adminBackup = `${ADMIN.target}.backup-${stamp}`
+  const backupCommand = `node - <<'SEAL_CONFIG_BACKUP'\n(${backupDeploymentFiles.toString()})(${JSON.stringify(configBackup)});\nSEAL_CONFIG_BACKUP`
+  runRemote(backupCommand, { password })
+  try {
   // 2) 管理后台：先打包上传，再解压到站点根下的 admin 目录。
   //    解压前先清空旧目录，避免上一版的 assets 残留导致页面引用错版本而白屏。
   if (mode === 'deploy') {
@@ -296,72 +424,39 @@ function main() {
       `rm -rf ${ADMIN.target}.next && mkdir -p ${ADMIN.target}.next`,
       `unzip -oq /tmp/deploy-admin.zip -d ${ADMIN.target}.next`,
       // 原子替换：先建新目录再换名，避免替换中突出现短暂 404
-      `rm -rf ${ADMIN.target}.old && mv ${ADMIN.target} ${ADMIN.target}.old 2>/dev/null || true`,
+      `test ! -e ${adminBackup}`,
+      `if [ -e ${ADMIN.target} ]; then mv ${ADMIN.target} ${adminBackup}; fi`,
       `mv ${ADMIN.target}.next ${ADMIN.target}`,
-      `rm -rf ${ADMIN.target}.old`,
     ].join(' && '), { password })
     log('管理后台已同步到 ' + SERVER.siteRoot + '/' + ADMIN.target)
 
-    // 匿名下载页使用独立目录；先写临时文件，再切换并启用 Nginx 路由。
-    runRemote(`mkdir -p ${SERVER.siteRoot}/${SHARE_LANDING.target}`, { password })
-    for (const file of SHARE_LANDING.files) {
-      const name = path.basename(file)
-      const uploaded = spawnSync('scp', [
-        '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password',
-        '-o', 'PubkeyAuthentication=no', '-P', String(SERVER.port),
-        path.join(ROOT, file), `${SERVER.user}@${SERVER.host}:${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}.next`,
-      ], { encoding: 'utf8', windowsHide: true, env: { ...process.env, ...installAskpass(password) } })
-      if (uploaded.status !== 0) fail(`匿名下载页上传失败：${file}：${uploaded.stderr || uploaded.stdout}`)
-    }
-    runRemote(SHARE_LANDING.files.map(file => {
-      const name = path.basename(file)
-      return `mv -f ${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}.next ${SERVER.siteRoot}/${SHARE_LANDING.target}/${name}`
-    }).join(' && '), { password })
-    log('匿名下载页已同步到 ' + SERVER.siteRoot + '/' + SHARE_LANDING.target)
+    // 本轮匿名下载页没有变化，保留线上文件，避免扩大部署与回滚范围。
 
     // 同步 nginx 资源规则补丁并重载，避免改完产物仍因 location 缺 root 而 404
-    const patchFile = path.join(ROOT, ADMIN.nginxPatch)
-    if (fs.existsSync(patchFile)) {
+    for (const patch of NGINX_PATCHES) {
+      const patchFile = path.join(ROOT, patch.source)
+      if (!fs.existsSync(patchFile)) fail('nginx 必要配置缺失：' + patch.source)
       const patchScp = spawnSync('scp', [
         '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password',
         '-o', 'PubkeyAuthentication=no', '-P', String(SERVER.port),
-        patchFile, `${SERVER.user}@${SERVER.host}:${ADMIN.nginxTarget}`,
+        patchFile, `${SERVER.user}@${SERVER.host}:${patch.target}`,
       ], { encoding: 'utf8', windowsHide: true, env: { ...process.env, ...installAskpass(password) } })
       if (patchScp.status !== 0) fail('nginx 资源规则上传失败：' + (patchScp.stderr || patchScp.stdout))
-      const reload = runRemote('nginx -t && systemctl reload nginx && echo NGINX_RELOADED', { password })
-      if (!/NGINX_RELOADED/.test(reload)) fail('nginx 重载失败：' + reload)
-      log('nginx 资源规则已更新并重载')
-    } else {
-      log('未找到 nginx 资源规则补丁，跳过：' + ADMIN.nginxPatch)
     }
+    const reload = runRemote('nginx -t && systemctl reload nginx && echo NGINX_RELOADED', { password })
+    if (!/NGINX_RELOADED/.test(reload)) fail('nginx 重载失败：' + reload)
+    log('nginx 后台资源与大文件上传规则已更新并重载')
   }
-
-  // 3) 建版本目录、解压、校验上传内容并加载验证（不碰 current）。
-  // 命令逐行执行，避免行尾注释吞掉后面的解压与验证。
-  const expectedIndexSha = createHash('sha256').update(fs.readFileSync(path.join(OUT, 'index.cjs'))).digest('hex')
-  runRemote([
-    'set -e',
-    `cd ${SERVER.siteRoot}`,
-    `mkdir -p ${release}`,
-    `cp -a current/. ${release}/`,
-    `unzip -oq /tmp/deploy-server.zip -d ${release}`,
-    `test -f ${release}/myShares.cjs`,
-    `test "$(sha256sum ${release}/index.cjs | cut -d ' ' -f1)" = '${expectedIndexSha}'`,
-    `cd ${release}`,
-    'for f in *.cjs; do node --check "$f"; done',
-    `PORT=${SERVER.verifyPort} SEAL_DATA_DIR=${SERVER.siteRoot}/data node -e "require('./index.cjs')" >/tmp/verify-load.log 2>&1 || (cat /tmp/verify-load.log; exit 1)`,
-  ].join('\n'), { password })
-  log('新版本语法检查与加载验证通过')
 
   // 4) 切换并重启
   //    重启后一并校验后台首屏与它引用的脚本，避免「服务是活的但页面白屏」被当成成功。
   //    用 nginx 实际服务的地址探测，而不是只看后端进程状态。
-  const adminProbe = [
-    "curl -s -o /dev/null -w 'admin=%{http_code}\\n' http://127.0.0.1/",
-    "curl -s -o /dev/null -w 'share=%{http_code}\\n' http://127.0.0.1/share/",
-    ...adminInfo.referenced.map((name) =>
-      `curl -s -o /dev/null -w 'asset-${name}=%{http_code}\\n' http://127.0.0.1/assets/${name}`),
-  ].join('; ')
+  const publicProbeOptions = {
+    baseUrl: new URL(SERVER.publicUrl).origin, version,
+    adminSha256: createHash('sha256').update(fs.readFileSync(path.join(adminInfo.dist, 'index.html'))).digest('hex'),
+    assets: adminInfo.referenced.map(name => ({ path: '/assets/' + name, kind: name.endsWith('.css') ? 'css' : 'javascript', sha256: createHash('sha256').update(fs.readFileSync(path.join(adminInfo.dist, 'assets', name))).digest('hex') })),
+  }
+  const publicProbe = `node - <<'SEAL_PUBLIC_PROBE'\n(${probeDeployment.toString()})(${JSON.stringify(publicProbeOptions)}).then(result=>console.log(JSON.stringify(result))).catch(error=>{console.error(error.message);process.exitCode=1});\nSEAL_PUBLIC_PROBE`
   runRemote([
     `set -e`,
     `cd ${SERVER.siteRoot}`,
@@ -371,10 +466,28 @@ function main() {
     `systemctl restart ${SERVER.service}`,
     `sleep 5`,
     `systemctl is-active ${SERVER.service}`,
-    `curl -s http://127.0.0.1:${SERVER.localPort}/api/v1/capabilities`,
-    adminProbe,
-  ].join(' && '), { password })
+    `curl -fsS http://127.0.0.1:${SERVER.localPort}/v1/capabilities`,
+    publicProbe,
+    `rm -rf ${adminBackup}`,
+  ].join('\n'), { password })
   log('切换完成')
+  } catch (error) {
+    const restoreCommand = `node - <<'SEAL_CONFIG_RESTORE'\n(${restoreDeploymentFiles.toString()})(${JSON.stringify(configBackup)});\nSEAL_CONFIG_RESTORE`
+    const configRestore = runRemote(restoreCommand, { password, check: true })
+    const nginxRestore = configRestore.code === 0 ? runRemote('nginx -t && systemctl reload nginx', { password, check: true }) : configRestore
+    const adminRestoreCommand = `node - <<'SEAL_ADMIN_RESTORE'\n(${restoreAdminDirectory.toString()})(${JSON.stringify({ siteRoot: SERVER.siteRoot, backupName: adminBackup, failedName: `${ADMIN.target}.failed-${stamp}` })});\nSEAL_ADMIN_RESTORE`
+    const adminRestore = runRemote(adminRestoreCommand, { password, check: true })
+    const rollback = runRemote([
+      `cd ${SERVER.siteRoot}`, `ln -sfn ${previous} current`,
+      `systemctl restart ${SERVER.service}`, `systemctl is-active ${SERVER.service}`,
+    ].join(' && '), { password, check: true })
+    if (rollback.code !== 0 || nginxRestore.code !== 0 || adminRestore.code !== 0) fail('部署验收失败且自动恢复失败，请检查服务状态：' + error.message + '\n' + rollback.out + '\n' + nginxRestore.out + '\n' + adminRestore.out)
+    fail('部署验收失败，已恢复原后端、后台与 Nginx 配置：' + error.message)
+  }
 }
 
-try { main() } catch (error) { console.error('\n部署中止：' + error.message); process.exitCode = 1 }
+if (require.main === module) {
+  try { main() } catch (error) { console.error('\n部署中止：' + error.message); process.exitCode = 1 }
+  finally { fs.rmSync(path.join(ROOT, '.upgrade-private/ask.cmd'), { force: true }) }
+}
+module.exports = { REQUIRED_FILES, SERVER, collectAdmin, collect, createDeploymentConfigBackup, backupDeploymentFiles, restoreDeploymentFiles, restoreAdminDirectory, probeDeployment }

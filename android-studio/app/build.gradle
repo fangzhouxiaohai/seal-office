@@ -20,8 +20,8 @@ android {
         applicationId 'com.sealoffice.mobile'
         minSdk 28
         targetSdk 36
-        versionCode 20701
-        versionName '2.7.1'
+        versionCode 20702
+        versionName '2.7.2'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         manifestPlaceholders = [appLabel: '海豹办公']
     }
@@ -89,7 +89,7 @@ tasks.register('prepareOfficeAssets', Sync) {
             throw new GradleException('安卓编辑器资源不完整，请先在仓库根目录运行 npm --prefix mobile run build:android')
         }
         def version = new groovy.json.JsonSlurper().parse(info)
-        if (version.platform != 'android' || version.desktopVersion != '2.7.1') {
+        if (version.platform != 'android' || version.desktopVersion != '2.7.2') {
             throw new GradleException('安卓编辑器资源的平台或版本不匹配')
         }
     }

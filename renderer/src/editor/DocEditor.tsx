@@ -52,7 +52,7 @@ import PrintPreview from '../components/PrintPreview'
 import type { 菜单节点 } from '../components/ContextMenu'
 import type { 文字页面设置 } from '../office/docModel'
 import { 读取插入图片, 准备图片保存内容 } from '../office/docImages'
-import { 默认文件缩放, use滚轮缩放, 文字缩放范围 } from './wheelZoom'
+import { 默认文件缩放, use文件缩放, use滚轮缩放, 文字缩放范围 } from './wheelZoom'
 import { 构建文字浮窗按钮, 构建颜色菜单组, 构建AI菜单组, 处理颜色菜单命令, 处理AI菜单命令 } from './floatActions'
 import { use选区浮窗 } from '../components/SelectionFloatPanel'
 import SelectionFloatPanel from '../components/SelectionFloatPanel'
@@ -132,7 +132,9 @@ const DocEditor = () => {
   } = useAppStore()
 
   const [当前标签, set当前标签] = useState('start')
-  const [视图, set视图] = useState<ViewState>(默认视图)
+  const [缩放, set缩放] = use文件缩放(activeDocumentId)
+  const [页面视图, set视图] = useState<ViewState>(默认视图)
+  const 视图 = { ...页面视图, 缩放 }
   const [查找打开, set查找打开] = useState(false)
   const 查找位置 = useRef({ 关键词: '', 区分大小写: false, html: '', 序号: -1 })
   const [导航打开, set导航打开] = useState(false)
@@ -160,7 +162,7 @@ const DocEditor = () => {
   }, [网格打开, 查找打开, 导航打开])
 
   // Ctrl+滚轮缩放页面内容，与状态栏的缩放按钮共用同一个视图状态
-  use滚轮缩放(视图.缩放, (值) => set视图((当前) => ({ ...当前, 缩放: 值 })), 文字缩放范围)
+  use滚轮缩放(缩放, set缩放, 文字缩放范围)
   /** 右键菜单状态 */
   const [菜单可见, set菜单可见] = useState(false)
   const [菜单坐标, set菜单坐标] = useState({ x: 0, y: 0 })
@@ -261,7 +263,7 @@ const DocEditor = () => {
     格式编辑区.current = null
     待输入字号.current = null
     选区快照.current = null
-    set视图((当前) => ({ ...当前, 缩放: 默认文件缩放, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
+    set视图((当前) => ({ ...当前, ...提取页面设置(默认视图), 原始纸张: undefined, 原始页边距: undefined, 页眉Html: undefined, 页脚Html: undefined, ...(当前文档?.页面设置 ?? {}) }))
   }, [文档标识])
 
   // 助手等外部更新直接写入状态层；把新内容加入当前文档历史，保留撤销入口。
@@ -1057,6 +1059,7 @@ const DocEditor = () => {
     },
     view: 视图,
     setView: (部分) => {
+      if (部分.缩放 !== undefined) set缩放(部分.缩放)
       const 下一个 = { ...视图, ...部分 }
       if (部分.纸张 !== undefined) 下一个.原始纸张 = undefined
       if (部分.页边距 !== undefined) 下一个.原始页边距 = undefined
@@ -1673,7 +1676,7 @@ const DocEditor = () => {
       字数: 统计.词数,
       缩放: 视图.缩放,
       视图模式: 视图.视图模式,
-      on缩放变化: (值: number) => set视图((当前) => ({ ...当前, 缩放: 值 })),
+      on缩放变化: set缩放,
     }),
     打印预览 ? React.createElement(PrintPreview, { 内容: 打印预览.内容, 格式: 'pdf', 标题: 打印预览.标题, onClose: () => set打印预览(null) }) : null
   )

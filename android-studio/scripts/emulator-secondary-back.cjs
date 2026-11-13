@@ -73,8 +73,8 @@ async function main() {
       const editing = await evaluate("({hint:document.querySelector('.seal-reading-toolbar__hint').textContent.trim(),status:getComputedStyle(document.querySelector('.wps-editor-status__left'),'::before').content})")
       assert.equal(editing.hint, 'Editable', '英文编辑状态应显示英文')
       assert.match(editing.status, /Mobile editing view/, '英文底部状态应显示英文')
-      const banner = await evaluate("(()=>{const b=document.querySelector('.seal-cloud-banner'),t=b.querySelector(':scope > span'),r=b.getBoundingClientRect(),tr=t.getBoundingClientRect();return {width:r.width,height:r.height,textWidth:tr.width,overflow:b.scrollWidth>b.clientWidth+1}})()")
-      assert.ok(banner.textWidth >= banner.width - 32 && banner.height <= 150 && !banner.overflow, '窄屏英文提示条应完整显示')
+      const banner = await evaluate("(()=>{const b=document.querySelector('.seal-cloud-banner');if(!b)return {compact:document.querySelector('.wps-app')?.dataset.compactWorkspace==='true'};const t=b.querySelector(':scope > span'),r=b.getBoundingClientRect(),tr=t.getBoundingClientRect();return {width:r.width,height:r.height,textWidth:tr.width,overflow:b.scrollWidth>b.clientWidth+1}})()")
+      assert.ok(banner.compact || (banner.textWidth >= banner.width - 32 && banner.height <= 150 && !banner.overflow), '简洁模式收起常驻云提示；完整模式下窄屏英文提示应完整显示')
     }
     await evaluate("document.querySelector('.seal-reading-toolbar__modes button').click()")
     if (language === 'en-US') {
@@ -93,8 +93,8 @@ async function main() {
     await backFrom('.pdf-viewer--fullscreen', 'PDF 全屏阅读')
     await create('ppt', '.wps-ppt-canvas')
     await evaluate("[...document.querySelectorAll('.wps-ribbon-tabs button')].find(x=>/幻灯片放映|Slide Show/.test(x.textContent)).click()")
-    await until("[...document.querySelectorAll('.wps-ribbon-panel button')].some(x=>/从头开始|From Beginning/.test(x.textContent))", '演示放映入口')
-    await evaluate("[...document.querySelectorAll('.wps-ribbon-panel button')].find(x=>/从头开始|From Beginning/.test(x.textContent)).click()")
+    await until("[...document.querySelectorAll('.wps-ribbon-panel button')].some(x=>/从头开始|From Beginning/.test(x.getAttribute('aria-label')||x.textContent))", '演示放映入口')
+    await evaluate("[...document.querySelectorAll('.wps-ribbon-panel button')].find(x=>/从头开始|From Beginning/.test(x.getAttribute('aria-label')||x.textContent)).click()")
     await until("Boolean(document.querySelector('.wps-slideshow'))", '演示放映')
     await backFrom('.wps-slideshow', '演示放映')
   } finally {

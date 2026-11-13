@@ -52,7 +52,7 @@ async function 验收() {
       await 等待片刻(100)
     }
     const 弹窗标题 = await 执行("[...document.querySelectorAll('.ant-modal')].filter(项=>项.getClientRects().length>0).map(项=>项.querySelector('.ant-modal-title,.ant-modal-confirm-title')?.textContent||项.textContent?.slice(0,100))")
-    const 编辑状态 = await 执行("({标题:document.querySelector('.wps-titlebar__doc')?.textContent,编辑框:document.querySelector('.wps-ppt-box__editor')?.value,焦点:document.activeElement?.className,文本框:[...document.querySelectorAll('.wps-ppt-box')].map(项=>项.textContent)})")
+    const 编辑状态 = await 执行("({标题:document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent,编辑框:document.querySelector('.wps-ppt-box__editor')?.value,焦点:document.activeElement?.className,文本框:[...document.querySelectorAll('.wps-ppt-box')].map(项=>项.textContent)})")
     throw new Error('成品未达到预期状态：' + 表达式 + '；可见弹窗：' + JSON.stringify(弹窗标题) + '；验收编辑状态：' + JSON.stringify(编辑状态))
   }
   const 找按钮 = 名称 => `[...document.querySelectorAll('button')].find(项=>项.getClientRects().length>0&&(项.textContent.trim()===${JSON.stringify(名称)}||项.getAttribute('aria-label')===${JSON.stringify(名称)}))`
@@ -66,11 +66,11 @@ async function 验收() {
     await 主.执行(`(async()=>{const 图=await globalThis.验收窗口.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});if(图.isEmpty())throw new Error('成品截图为空');process.mainModule.require('fs').writeFileSync(${JSON.stringify(path.join(截图目录, 名称 + '.png'))},图.toPNG());return 图.getSize()})()`)
   }
   try {
-    await 等待("Boolean(document.querySelector('.wps-titlebar'))")
+    await 等待("Boolean(document.querySelector('.wps-titlebar, .wps-workspace-navigation'))")
     const 初始 = await 执行('window.electronAPI.checkDefaultAppPrompt()')
     检查(初始.成功 && !初始.需要询问, '成品启动后的首次提醒状态可正常查询')
     if (关联打开文件 !== '-' && 阶段 === 'first') {
-      await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(path.basename(关联打开文件))}`)
+      await 等待(`document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent===${JSON.stringify(path.basename(关联打开文件))}`)
       检查(!await 执行("Boolean(document.querySelector('.wps-global-tab__dirty'))||Boolean(document.querySelector('.ant-modal-confirm-error'))"), '真实安装程序冷启动通过文件关联命令打开系统新建文件')
       // 首次安装询问可能覆盖文档；随后重新加载会按隔离状态重新验收。
     }
@@ -113,7 +113,7 @@ async function 验收() {
     检查(安装.图标一致, '四种外置文件图标与应用内可信资源一致')
     检查(安装.图标路径正确, '安装版图标位于稳定资源目录，便携版图标位于持久数据目录')
     await 执行('location.reload()')
-    await 等待("Boolean(document.querySelector('.wps-titlebar'))")
+    await 等待("Boolean(document.querySelector('.wps-titlebar, .wps-workspace-navigation'))")
     await 执行("document.querySelector('.wps-global-tabs__home').click()")
     await 等待("Boolean(document.querySelector('.wps-recommend__cell'))")
     检查((await 执行("[...document.querySelectorAll('.wps-recommend__cell [data-file-type]')].map(图=>图.dataset.fileType)")).join(',') === 'word,table,ppt,pdf', '首页四类快捷入口显示专属文件图标')
@@ -170,7 +170,7 @@ async function 验收() {
         if (关联打开文件 !== '-') {
           await 主.执行(`new Promise((resolve,reject)=>{const electron=process.mainModule.require('electron');process.mainModule.require('child_process').execFile(electron.app.getPath('exe'),['--user-data-dir='+electron.app.getPath('userData'),${JSON.stringify(文件)}],{windowsHide:true,timeout:15000},error=>error?reject(error):resolve(true))})`)
         } else await 点击('打开')
-        await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
+        await 等待(`document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent===${JSON.stringify(名称)}`)
         await 等待片刻(300)
         检查(!await 执行(`(${可见弹窗})||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))`), `${扩展} ${实际新建 ? '资源管理器实际新建文件' : '空白模板'}打开无警告且未误标修改`)
         const 打印名称 = 扩展 === 'xlsx' ? '打印当前工作表' : 扩展 === 'pdf' ? '打印 PDF' : '打印'
@@ -206,7 +206,7 @@ async function 验收() {
           检查(!await 执行(可见弹窗), `${扩展} 实际编辑后保存成功`)
           await 点击(`关闭 ${名称}`)
           await 执行("document.querySelector('.wps-global-tabs__home').click()")
-          await 点击('打开'); await 等待(`document.querySelector('.wps-titlebar__doc')?.textContent===${JSON.stringify(名称)}`)
+          await 点击('打开'); await 等待(`document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent===${JSON.stringify(名称)}`)
           检查(!await 执行(`(${可见弹窗})||Boolean(document.querySelector('.wps-global-tab--active .wps-global-tab__dirty'))`), `${扩展} 保存重开无导入及未保存误报`)
           if (扩展 === 'pptx') console.log('PPTX 验收：等待保存重开的文本内容')
           await 等待(内容表达式)
@@ -217,7 +217,7 @@ async function 验收() {
       const 零页文件 = path.join(数据目录, '合法零页演示.pptx')
       await 主.执行(`(async()=>{const path=process.mainModule.require('path'),fs=process.mainModule.require('fs'),electron=process.mainModule.require('electron');const codec=process.mainModule.require(path.join(electron.app.getAppPath(),'main','office','pptxCodec.js'));fs.writeFileSync(${JSON.stringify(零页文件)},await codec.写入pptx({幻灯片:[]}));globalThis.验收打开路径=${JSON.stringify(零页文件)};return true})()`)
       await 执行("document.querySelector('.wps-global-tabs__home').click()")
-      await 点击('打开'); await 等待("document.querySelector('.wps-titlebar__doc')?.textContent==='合法零页演示.pptx'")
+      await 点击('打开'); await 等待("document.querySelector('.wps-global-tab--active .wps-global-tab__name')?.textContent==='合法零页演示.pptx'")
       await 等待("document.body.textContent.includes('第 0 张')")
       await 截图('zero-slide-presentation')
       await 执行("document.dispatchEvent(new KeyboardEvent('keydown',{key:'F5',bubbles:true}));true")

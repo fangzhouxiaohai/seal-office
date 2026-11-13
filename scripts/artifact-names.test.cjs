@@ -13,6 +13,7 @@ test('all distribution names use the requested English convention, including Sto
     windowsPortable: 'seal-office-2.0.0-portable.exe',
     windowsStore: 'seal-office-2.0.0-microsoft-store-x64.msix',
     ubuntu: 'seal-office-2.0.0-amd64.deb',
+    macos: 'seal-office-2.0.0-macos.dmg',
     web: 'seal-office-2.0.0-web.zip',
     android: 'seal-office-2.0.0-android.apk',
     harmony: 'seal-office-2.0.0-harmony.hap',

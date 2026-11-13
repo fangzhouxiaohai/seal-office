@@ -61,7 +61,7 @@ import { 合并文字草稿 } from './textDraft'
 import { 构建演示浮窗按钮, 构建演示颜色菜单组, 处理演示颜色命令, 处理演示AI命令 } from './pptFloatActions'
 import { 通用AI指令 } from '../assistant/quickActions'
 import SelectionFloatPanel, { 从元素计算浮窗位置 } from '../components/SelectionFloatPanel'
-import { 默认文件缩放, 放大一档, 缩小一档, use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
+import { 放大一档, 缩小一档, use文件缩放, use滚轮缩放, 演示缩放范围 } from '../editor/wheelZoom'
 import type { 图片地址表 } from './render/SlideObjects'
 import ObjectPropertiesPanel from './panels/ObjectPropertiesPanel'
 import CommentsPanel from './panels/CommentsPanel'
@@ -154,8 +154,7 @@ const PptEditor = () => {
   const [便捷工具打开, set便捷工具打开] = useState(false)
   const 会话引用 = useRef<会话同步 | null>(null)
   const [当前视图, set当前视图] = useState<'普通' | '浏览' | '备注'>('普通')
-  const [缩放, set缩放] = useState(默认文件缩放)
-  useEffect(() => { set缩放(默认文件缩放) }, [activeDocumentId])
+  const [缩放, set缩放] = use文件缩放(activeDocumentId)
   const [显示网格线, set显示网格线] = useState(false)
   const [图片地址, set图片地址] = useState<图片地址表>({})
   // 导出面板：范围、格式与分辨率，写盘完成后才报告成功
@@ -177,6 +176,7 @@ const PptEditor = () => {
   const [预览主题候选, set预览主题候选] = useState<主题定义 | null>(null)
   const [参考线, set参考线] = useState({ 垂直: [] as number[], 水平: [] as number[] })
   const [适应, set适应] = useState(false)
+  useEffect(() => { set适应(false) }, [activeDocumentId])
   const 适应比例 = useRef(1)
   const 图片输入 = useRef<HTMLInputElement>(null)
   const 附件输入 = useRef<HTMLInputElement>(null)

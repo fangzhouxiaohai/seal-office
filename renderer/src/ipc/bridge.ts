@@ -13,8 +13,8 @@ export interface 最近文档记录 {
   置顶?: boolean
   时间?: number
 }
-/** 版本更新：平台取值与服务端发布表一致；unsupported 表示当前运行方式不支持在线更新（便携版、非 Windows 桌面）。 */
-export type 更新平台 = 'windows' | 'windows-store' | 'web' | 'android' | 'harmony' | 'unsupported'
+/** 版本更新：平台取值与服务端发布表一致；unsupported 表示便携版等不支持在线更新的运行方式。 */
+export type 更新平台 = 'windows' | 'windows-store' | 'linux' | 'macos' | 'web' | 'android' | 'harmony' | 'unsupported'
 export interface 版本发布 { hasUpdate: boolean; version?: string; mandatory?: boolean; notes?: string; url?: string | null; sha256?: string | null; bytes?: number | null; publishedAt?: number }
 export interface 更新操作结果<T> { 成功: boolean; 数据?: T; 错误?: string; 状态码?: number; 不支持?: boolean }
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
@@ -256,7 +256,7 @@ export interface 电子接口 {
   update?: {
     info: () => Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }>
     check: (通道: 'stable' | 'beta') => Promise<更新操作结果<版本发布>>
-    install: (发布: 版本发布) => Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean }>>
+    install: (发布: 版本发布) => Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean; 已打开下载?: boolean }>>
   }
   cloud?: { invoke: (action: string, input?: unknown) => Promise<云端响应<any>> }
   zotero?: { invoke: (动作: string, 输入?: unknown) => Promise<云端响应<any>> }
@@ -452,7 +452,7 @@ export const 桥接 = {
     get 可用() { return typeof 取后端()?.update?.check === 'function' },
     info: (): Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }> => 取后端()?.update?.info() ?? 失败('当前环境不支持检查更新'),
     check: (通道: 'stable' | 'beta' = 'stable'): Promise<更新操作结果<版本发布>> => 取后端()?.update?.check(通道) ?? 失败('当前环境不支持检查更新'),
-    install: (发布: 版本发布): Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean }>> => 取后端()?.update?.install(发布) ?? 失败('当前环境不支持在线更新'),
+    install: (发布: 版本发布): Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean; 已打开下载?: boolean }>> => 取后端()?.update?.install(发布) ?? 失败('当前环境不支持在线更新'),
   },
   getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务' }),
   ai: {

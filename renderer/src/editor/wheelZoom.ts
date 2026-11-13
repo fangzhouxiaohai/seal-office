@@ -1,9 +1,38 @@
 // Ctrl+滚轮缩放：把滚轮的滚动量按档位折算成页面缩放，并拦下浏览器的整页缩放。
 // 缩放按固定百分比档位行走：最小 8.33%，最大 6400%，避免高倍时需要滚上百次。
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useReducer, useRef, type Dispatch, type SetStateAction } from 'react'
+import { use显示偏好, use文件缩放缓存, type 文档缩放记录 } from '../store/settingsStore'
 
-/** 桌面四类文件首次打开使用 150%；打印与导出尺寸不受影响。 */
-export const 默认文件缩放 = 1.5
+export const 默认文件缩放 = 1
+
+/** 同一打开的文件在工作区和设置页之间切换时保留比例，重开则采用当前偏好。 */
+export function use文件缩放(文件标识?: string | null, 视图标识 = '', 独立文件标识?: string) {
+  const 默认放大 = use显示偏好()?.默认放大
+  const 缓存 = use文件缩放缓存()
+  const 独立标识 = 独立文件标识 ?? 文件标识
+  const 本地文件 = useRef<{ 标识: typeof 独立标识; 记录: 文档缩放记录 } | null>(null)
+  const [, 刷新] = useReducer((版本: number) => 版本 + 1, 0)
+  const 已存记录 = 文件标识 && 缓存
+    ? 缓存.get(文件标识)
+    : 本地文件.current?.标识 === 独立标识 ? 本地文件.current?.记录 : undefined
+  const 记录: 文档缩放记录 = 已存记录 ?? {
+    初始: 默认放大 ? 1.5 : 默认文件缩放,
+    手动比例: new Map(),
+  }
+  useLayoutEffect(() => {
+    if (文件标识 && 缓存) 缓存.set(文件标识, 记录)
+    else 本地文件.current = { 标识: 独立标识, 记录 }
+  }, [文件标识, 独立标识, 缓存, 记录])
+
+  const set缩放: Dispatch<SetStateAction<number>> = 更新 => {
+    const 原值 = 记录.手动比例.get(视图标识) ?? 记录.初始
+    const 新值 = typeof 更新 === 'function' ? 更新(原值) : 更新
+    if (!Number.isFinite(新值) || 新值 <= 0 || 新值 === 原值) return
+    记录.手动比例.set(视图标识, 新值)
+    刷新()
+  }
+  return [记录.手动比例.get(视图标识) ?? 记录.初始, set缩放, 记录.初始] as const
+}
 
 export interface 缩放范围 {
   下限: number

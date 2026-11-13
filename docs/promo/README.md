@@ -2,9 +2,11 @@
 
 当前入口为 `npm run promo:build`，版本读取根目录 `package.json`，分镜读取 [current-storyboard.json](current-storyboard.json)。每版制作 1920×1080 PC 横版与 1080×1920 Android 竖版，使用英文 `seal-office-<版本>-pc-intro-1080p.mp4` / `seal-office-<版本>-android-intro-1080p.mp4`，输出到 `release/promo/`，并清理旧成片及过期素材。完整规则见[打包规范](../打包规范.md)。
 
-2.1.0 两条片长均约 109 秒，附普通话配音、中文字幕、封面、联系表与 SHA-256 核验。画面来自最终 Web 构建与冻结的 Android IIFE，采用真实界面静帧剪辑；PC 为响应式网页版实录，Android 明确标注“移动布局演示”，不是 APK 真机录像。`current-capture.cjs` 等待摄影配图和瞬时提示完成后取帧；`current-video.py` 执行整片响度校正、完整解码、画幅、时长、音轨及二维码核验。制作环境使用 Windows 本机普通话语音，依赖见 `scripts/promo/requirements.txt`。
+2.7.2 横版展示文字保存、简洁模式、同一份文件以 100% 和 150% 打开、表格求和、演示模板和手动检查更新。竖版展示文字保存、简洁模式、全屏阅读手势、表格求和和手动检查更新。使用真实点击、逐字输入和紫色目标轮廓。配音沿用用户确认的晓晓女声，语速 +5%、音调 +4 Hz，字幕使用配音返回的句子时间戳。
 
-当前下载：[PC 横版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-pc-intro-1080p.mp4) · [Android 竖版](https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.1.0/seal-office-2.1.0-android-intro-1080p.mp4)。
+运行前把同版本正式 Web ZIP 和安卓 APK 归档到 `release/v<版本>/`，并确认生产更新接口对这两个平台的当前版本返回已最新。录制程序逐文件核对 Web 和 Android 界面资源与成品的一致性。若使用冻结副本，通过 `SEAL_PROMO_WEB_ROOT` 或 `SEAL_PROMO_ANDROID_ROOT` 指定。两端点击检查更新时只转发匿名查询到生产更新服务。Android 画面为生产构建的移动浏览器布局。
+
+构建后查看两端联系表和代表帧，再执行 `python scripts/promo/tutorial-finalize.py --record-visual-review --clean` 归档实际操作、截图、成片规格与校验值。
 
 2.1.2 另有一条 36 秒横版功能短片（1920×1080、30 fps、7 段字幕），使用用户指定试听样音的同一晓晓声线重录文案，制作与核验记录见 [short-promo-2.1.2.md](short-promo-2.1.2.md)。它不替代每版常规的双画幅介绍片。
 

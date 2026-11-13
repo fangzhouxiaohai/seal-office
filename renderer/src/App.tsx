@@ -32,12 +32,13 @@ import AssociatedFileOpener from './components/AssociatedFileOpener'
 import DefaultAppPrompt from './components/DefaultAppPrompt'
 import UpdateCard from './components/UpdateCard'
 import ErrorBoundary from './components/ErrorBoundary'
+import Icon from './components/Icon'
 import {CloudProvider,useCloud} from './cloud/CloudProvider'
 import CloudAutosave from './cloud/CloudAutosave'
 import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
 import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
-import { SettingsErrorFeedback, SettingsProvider, useSettings } from './store/settingsStore'
+import { SettingsErrorFeedback, SettingsProvider, use文件缩放缓存, useSettings } from './store/settingsStore'
 import { 默认皮肤标识, 皮肤主题令牌, type 皮肤定义 } from './styles/themes'
 import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
 import './fonts/fonts.css'
@@ -90,10 +91,19 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   useEffect(() => 注册最近文档错误弹窗((选项) => { modal.warning(选项) }), [modal])
   useEffect(() => 注册导入确认弹窗(选项 => modal.confirm(选项)), [modal])
   const { module, navKey, handleNav, docs, documents, activeDocumentId, PDF待预览, pdfDocuments, 保存PDF文档, workspaceTabs, showSettings, showHelp, goHome, createDoc, refreshRecents, 刷新工作状态备份, 备份恢复提示, 清除备份提示, 搜索词, set搜索词, 表格文档模型, 演示文档模型, 准备编辑草稿, markDocumentSaved, set文档路径, 更新文件指纹 } = useAppStore()
-  const { 主题, 切换主题, 语言, 设置语言 } = useSettings()
+  const { 主题, 切换主题, 语言, 设置语言, 简洁模式 } = useSettings()
+  const 文件缩放缓存 = use文件缩放缓存()
   const cloud = useCloud()
 
   const 是首页 = module === 'home'
+  const 简洁工作区 = 简洁模式 && (module === 'word' || module === 'table' || module === 'ppt' || module === 'pdf')
+  useEffect(() => {
+    if (!文件缩放缓存) return
+    const 已打开 = new Set(workspaceTabs.map(标签 => 标签.id))
+    for (const 文件标识 of 文件缩放缓存.keys()) {
+      if (!已打开.has(文件标识)) 文件缩放缓存.delete(文件标识)
+    }
+  }, [文件缩放缓存, workspaceTabs])
   // 帮助手册以独立弹窗打开，不再切换整页
   const [帮助弹窗打开, set帮助弹窗打开] = useState(false)
   // 关于我们弹窗
@@ -387,8 +397,13 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
 
   return React.createElement(
     'div',
-    { className: 'wps-app', 'data-module': module },
-    React.createElement(TitleBar, {
+    { className: 'wps-app', 'data-module': module, 'data-compact-workspace': 简洁工作区 || undefined },
+    简洁工作区 ? React.createElement(
+      'nav',
+      { className: 'wps-workspace-navigation', 'aria-label': '工作区导航' },
+      React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '返回首页', title: '返回首页', onClick: goHome }, React.createElement(Icon, { name: 'home', size: 18 })),
+      React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '设置中心', title: '设置中心', onClick: showSettings }, React.createElement(Icon, { name: 'sliders', size: 18 })),
+    ) : React.createElement(TitleBar, {
       pageName: 当前模块.label,
       documentName: 当前文档名,
       onHelp: () => set帮助弹窗打开(true),
@@ -407,7 +422,7 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       语言,
       on切换语言: 设置语言,
     }),
-    React.createElement(CloudAutosave),
+    React.createElement<{ 简洁模式?: boolean }>(CloudAutosave, { 简洁模式: 简洁工作区 }),
     React.createElement(CollaborationLinkEntry),
     React.createElement(CollaborationSaveBanner),
     是首页

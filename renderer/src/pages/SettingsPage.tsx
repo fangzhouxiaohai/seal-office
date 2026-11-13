@@ -21,6 +21,7 @@ const SettingsPage = () => {
   const 桌面系统功能 = !document.documentElement.dataset.sealPlatform
   const { message, modal } = AntdApp.useApp()
   const { 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序, 自动检查更新, 设置自动检查更新 } = useSettings()
+  const { 简洁模式, 设置简洁模式, 默认放大, 设置默认放大, 恢复默认显示设置 } = useSettings()
   const [当前版本, 设当前版本] = useState<string>(__APP_VERSION__)
   const [检查中, 设检查中] = useState(false)
   const [检查状态, 设检查状态] = useState<{ 文字: string; 可重试: boolean } | null>(null)
@@ -162,6 +163,7 @@ const SettingsPage = () => {
       保存提醒目录(null)
       await 清除翻译配置()
       await window.sealDocumentConversion?.clear()
+      恢复默认显示设置()
     } catch (错误) {
       if (模型配置已清除) window.dispatchEvent(new Event('seal-ai-setting-changed'))
       modal.error({ title: '恢复设置失败', content: `${模型配置已清除 ? '模型设置已清除，' : ''}部分本地设置可能已恢复，请检查当前选项。${错误 instanceof Error ? 错误.message : '本地设置无法写入'}`, okText: '确定' })
@@ -217,6 +219,7 @@ const SettingsPage = () => {
       else if (结果.类型 === '已最新') 设检查状态({ 文字: `已是最新版本（${结果.版本}）`, 可重试: false })
       else if (结果.类型 === '商店版') 设检查状态({ 文字: '当前为商店版本，请到微软商店更新', 可重试: false })
       else if (结果.类型 === '不支持') 设检查状态({ 文字: '当前运行方式不支持在线更新', 可重试: false })
+      else if ([401, 403, 404].includes(结果.状态码 ?? -1)) 设检查状态({ 文字: '更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', 可重试: true })
       else if (结果.状态码 === 429) 设检查状态({ 文字: '检查过于频繁，请稍后重试', 可重试: true })
       else if (结果.状态码 !== undefined && 结果.状态码 >= 500) 设检查状态({ 文字: '更新服务暂时不可用，请稍后重试', 可重试: true })
       else 设检查状态({ 文字: '检查更新失败，请检查网络后重试', 可重试: true })
@@ -263,6 +266,10 @@ const SettingsPage = () => {
             `当前主题：${主题}；切换浅色或深色界面主题，立即生效并自动保存`,
             <Switch checked={主题 === '深色'} onChange={切换主题} checkedChildren="深色" unCheckedChildren="浅色" aria-label="外观设置" />
           )}
+          {设置行('简洁模式', '收起文件工作区的标题、常驻同步说明和工具文字，保留工具图标与功能标签',
+            <Switch aria-label="简洁模式" checked={简洁模式} onChange={设置简洁模式} />)}
+          {设置行('默认放大至 150%', '新打开的文件以 150% 查看。关闭后以 100% 查看，已打开文件保持当前比例',
+            <Switch aria-label="默认放大至 150%" checked={默认放大} onChange={设置默认放大} />)}
           {设置行(
             '界面语言',
             '切换软件菜单、按钮、提示和组件语言；不会翻译文档正文或文件名',

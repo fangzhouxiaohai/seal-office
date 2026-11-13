@@ -11,10 +11,13 @@ import {registerCloudFlush} from './autosaveLifecycle'
 import {文字文本输出} from '../editor/exportDoc'
 import {getFileBinding} from '../collaboration/fileAccess'
 const binaryText=(text:string)=>{const data=new TextEncoder().encode(text);let result='';for(let i=0;i<data.length;i+=16384)result+=String.fromCharCode(...data.subarray(i,i+16384));return btoa(result)}
-export default function CloudAutosave(){
+const 常规同步状态 = new Set(['离线待同步', '加密上传中', '云端已保存'])
+export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?: boolean } = {}){
   const store=useAppStore(),{state,refresh,configure}=useCloud(),[dismissed,setDismissed]=useState<string|null>(null),[status,setStatus]=useState<Record<string,string>>({}),latest=useRef(store),seen=useRef(new Map<string,string>()),timers=useRef(new Map<string,ReturnType<typeof setTimeout>>())
   const owner=useRef(state.account?.id);owner.current=state.account?.id
   const [draftErrors,setDraftErrors]=useState<Record<string,string>>({})
+  const [saveErrors,setSaveErrors]=useState<Record<string,string>>({})
+  const [syncErrors,setSyncErrors]=useState<Record<string,string>>({})
   latest.current=store
   const scheduled=useRef(new Map<string,string>()),cloudIds=useRef(new Map<string,string>()),dismissedIds=useRef(new Set<string>())
   const lastDraftVersion=useRef(store.草稿版本??0)
@@ -33,7 +36,7 @@ export default function CloudAutosave(){
   }
   const saveRef=useRef<(id:string,snapshot:string)=>Promise<void>>(async()=>{})
   const ongoing=useRef(new Map<string,{snapshot:string;task:Promise<void>}>())
-  useEffect(()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();seen.current.clear();cloudIds.current.clear();ongoing.current.clear();setStatus({});setDraftErrors({})},[state.account?.id])
+  useEffect(()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();scheduled.current.clear();seen.current.clear();cloudIds.current.clear();ongoing.current.clear();setStatus({});setDraftErrors({});setSaveErrors({});setSyncErrors({})},[state.account?.id])
   const current=store.activeWorkspaceTabId||'',editing=['word','table','ppt','pdf'].includes(store.module),dirty=store.workspaceTabs.some(t=>t.id===current&&t.dirty)
   useEffect(()=>{if(!state.account)return;const timer=window.setInterval(()=>{void cloudCall('refresh').then(refresh).catch(()=>{});if(state.account?.enabled&&state.unlocked)void cloudCall('flush').then(refresh).catch(()=>{})},15000);return()=>clearInterval(timer)},[state.account?.id,state.account?.enabled,state.unlocked,refresh])
   useEffect(()=>{
@@ -59,9 +62,11 @@ export default function CloudAutosave(){
         if(owner.current!==accountId)return
         const saved=await cloudCall('save',{linkId:originalName&&name!==originalName?path+'|'+name:path,name,data:result.数据,automatic:true,queueOnly:true})
         if(owner.current!==accountId)return
-        seen.current.set(id,snapshot);cloudIds.current.set(id,saved.id);setStatus(previous=>({...previous,[id]:saved.statuses[saved.id]||'离线待同步'}));await refresh()
+        seen.current.set(id,snapshot);cloudIds.current.set(id,saved.id);setStatus(previous=>({...previous,[id]:saved.statuses[saved.id]||'离线待同步'}))
+        setSaveErrors(previous=>{if(!previous[id])return previous;const next={...previous};delete next[id];return next})
+        await refresh()
         void cloudCall('flush').then(refresh).catch(()=>{})
-      }catch(e){if(owner.current!==accountId)return;setStatus(previous=>({...previous,[id]:e instanceof Error?e.message:'云端保存失败'}))}
+      }catch(e){if(owner.current!==accountId)return;setSaveErrors(previous=>({...previous,[id]:e instanceof Error?e.message:'云端保存失败'}))}
     }
     const save=(id:string,_requestedSnapshot:string)=>{
       const active=prepare(latest.current,id)
@@ -98,8 +103,25 @@ export default function CloudAutosave(){
     }
   }),[state.account?.enabled,state.account?.autosave,state.unlocked])
   useEffect(()=>()=>{for(const timer of timers.current.values())clearTimeout(timer)},[])
+  const 立即同步=async()=>{
+    const accountId=owner.current
+    if(!state.account?.enabled||!state.unlocked){setSyncErrors(previous=>({...previous,[current]:'云空间尚未启用或解锁，请先完成设置后再同步'}));return}
+    try{
+      // 先重做当前快照；空上传队列成功不能代表失败的本机快照已经保存。
+      await saveRef.current(current,snapshotFor(latest.current,current))
+      if(owner.current!==accountId)return
+      await cloudCall('flush');await refresh()
+      if(owner.current!==accountId)return
+      setSyncErrors(previous=>{if(!previous[current])return previous;const next={...previous};delete next[current];return next})
+    }catch(e){if(owner.current===accountId)setSyncErrors(previous=>({...previous,[current]:e instanceof Error?e.message:'云端同步失败'}))}
+  }
   if(!editing||getFileBinding(store.pdfDocuments.find(doc=>doc.id===current)?.path||store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))return null
-  if(state.account?.autosave)return <div className="seal-cloud-banner" role="status"><span>{draftErrors[current]||state.statuses[cloudIds.current.get(current)||'']||status[current]||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void cloudCall('flush').then(refresh).catch(e=>setStatus(previous=>({...previous,[current]:e.message})))}}>立即同步</Button></div>
-  if(!dirty||dismissed===current||dismissedIds.current.has(current))return null
+  if(state.account?.autosave){
+    const 同步状态=state.statuses[cloudIds.current.get(current)||'']||status[current]
+    const 错误=draftErrors[current]||saveErrors[current]||syncErrors[current]||(同步状态&&!常规同步状态.has(同步状态)?同步状态:undefined)
+    if(简洁模式&&!错误)return null
+    return <div className="seal-cloud-banner" role="status"><span>{错误||同步状态||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void 立即同步()}}>立即同步</Button></div>
+  }
+  if(简洁模式||!dirty||dismissed===current||dismissedIds.current.has(current))return null
   return <div className="seal-cloud-banner"><span>开启云文档自动保存，在不同设备继续编辑；文件加密上传，由你决定是否开启。</span><Button size="small" onClick={configure}>开启云端能力</Button><Button size="small" type="text" aria-label="关闭云端提示" onClick={()=>{dismissedIds.current.add(current);setDismissed(current)}}>关闭</Button></div>
 }

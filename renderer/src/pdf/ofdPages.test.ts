@@ -1,9 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createElement } from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { AppProvider } from '../store'
+import { SettingsProvider, useSettings } from '../store/settingsStore'
 import { 净化OFD页面, OFD打印页面 } from './ofdPages'
-import { 检查OFD文件 } from './OfdViewer'
+import OfdViewer, { 检查OFD文件 } from './OfdViewer'
 import JSZip from 'jszip'
 function 页面(html: string) { const box = document.createElement('div'); box.innerHTML = html; box.style.width = '1191px'; box.style.height = '1684px'; return box }
 describe('OFD 阅读与打印', () => {
+  it('新文件采用查看偏好，当前手动比例保持不变', () => {
+    function 偏好按钮() {
+      const 设置 = useSettings()
+      return createElement('button', { onClick: () => 设置.设置默认放大?.(true) }, '启用 150%')
+    }
+    const 挂载 = (数据: string) => createElement(SettingsProvider, null, createElement(AppProvider, null,
+      createElement(偏好按钮), createElement(OfdViewer, { 名称: '资料.ofd', 数据 }),
+    ))
+    try {
+      const view = render(挂载(btoa('first')))
+      const 输入 = () => screen.getByRole('spinbutton', { name: 'OFD 缩放' })
+      expect(输入()).toHaveValue('100')
+      fireEvent.change(输入(), { target: { value: '125' } })
+      fireEvent.click(screen.getByRole('button', { name: '启用 150%' }))
+      expect(输入()).toHaveValue('125')
+      view.rerender(挂载(btoa('second')))
+      expect(输入()).toHaveValue('150')
+    } finally {
+      localStorage.removeItem('seal-display-preferences')
+    }
+  })
   it('canvas 图形与签章转换为含原像素的 PNG，保留位置与尺寸', () => {
     const page = 页面('<canvas width="200" height="100" style="position:absolute;left:20px;top:30px;width:100px;height:50px"></canvas>')
     const canvas = page.querySelector('canvas')!

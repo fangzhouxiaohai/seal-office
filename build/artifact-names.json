@@ -3,6 +3,7 @@
   "windowsPortable": "seal-office-${version}-portable.exe",
   "windowsStore": "seal-office-${version}-microsoft-store-x64.msix",
   "ubuntu": "seal-office-${version}-amd64.deb",
+  "macos": "seal-office-${version}-macos.dmg",
   "web": "seal-office-${version}-web.zip",
   "android": "seal-office-${version}-android.apk",
   "harmony": "seal-office-${version}-harmony.hap",

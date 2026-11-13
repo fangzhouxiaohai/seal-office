@@ -29,6 +29,7 @@ CANDIDATES = [
     f'seal-office-setup-{VERSION}.exe',
     f'seal-office-{VERSION}-microsoft-store-x64.msix',
     f'seal-office-{VERSION}-amd64.deb',
+    f'seal-office-{VERSION}-macos.dmg',
     f'seal-office-{VERSION}-android.apk',
     f'seal-office-{VERSION}-harmony.hap',
     f'seal-office-{VERSION}-web.zip',
@@ -169,10 +170,8 @@ def gitcode_publish(rows, title, body):
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         for result in pool.map(upload, rows):
             print(json.dumps({'gitcode': result}, ensure_ascii=False), flush=True)
-    # 小文件做匿名下载核对字节
+    # 所有正式附件都匿名下载核对全部字节，大型安装程序与商店包也必须验证。
     for row in rows:
-        if row['bytes'] > 120_000_000:
-            continue
         url = GC + '/releases/' + TAG + '/attach_files/' + quote(row['name']) + '/download'
         digest, size = hashlib.sha256(), 0
         with requests.get(url, stream=True, timeout=(30, 600)) as response:

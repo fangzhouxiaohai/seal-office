@@ -1,6 +1,6 @@
 {
   "name": "seal-office-uniapp-x",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "private": true,
   "description": "海豹办公 uni-app x：Android、iOS、HarmonyOS、移动 H5 与 PC Web",
   "type": "module",
@@ -11,8 +11,8 @@
     "build:web": "node scripts/build.mjs web",
     "build:ios": "node scripts/build.mjs ios",
     "build:harmony": "node scripts/build.mjs harmony",
-    "pack": "node scripts/pack.mjs",
-    "pack:android": "node scripts/pack.mjs",
+    "pack": "node scripts/pack-android-local.mjs",
+    "pack:android": "node scripts/pack-android-local.mjs",
     "pack:harmony": "node scripts/pack-harmony.mjs",
     "check": "node scripts/check.mjs",
     "typecheck": "node ../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
@@ -34,6 +34,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "acorn": "8.18.0",
     "esbuild": "0.28.2",
     "fake-indexeddb": "6.2.5"
   }

@@ -1155,6 +1155,97 @@ button {
   border-top: 4px solid currentColor;
 }
 
+.wps-workspace-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 0 10px;
+  background: var(--bg-card);
+}
+
+.wps-workspace-navigation .wps-icon-button {
+  width: 28px;
+  height: 28px;
+}
+
+.wps-workspace-navigation button:focus-visible,
+.wps-ribbon-panel--compact .wps-ribbon-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.wps-app .wps-ribbon-panel--compact {
+  min-height: 0;
+  padding: 3px 6px;
+}
+
+.wps-ribbon-panel--compact .wps-ribbon-group {
+  padding-inline: 5px;
+}
+
+.wps-ribbon-panel--compact .wps-ribbon-group__body {
+  min-height: 0;
+}
+
+.wps-ribbon-panel--compact .wps-ribbon-button {
+  min-width: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+}
+
+.wps-ribbon-panel--compact .wps-ribbon-button--large {
+  flex-direction: row;
+  gap: 2px;
+  padding: 2px 4px;
+}
+
+.wps-ribbon-panel--compact .seal-font-trigger .wps-ribbon-button__value {
+  display: none;
+}
+
+.wps-ribbon-panel--compact .seal-font-trigger {
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+@media (pointer: coarse), (max-width: 820px) {
+  .wps-workspace-navigation .wps-icon-button,
+  .wps-ribbon-panel--compact .wps-ribbon-button,
+  .wps-app[data-compact-workspace] .wps-ribbon-tab,
+  .wps-app[data-compact-workspace] .wps-global-tabs button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .wps-app[data-compact-workspace] .wps-global-tabs {
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  .wps-app[data-compact-workspace] .wps-global-tabs__home,
+  .wps-app[data-compact-workspace] .wps-global-tabs__create {
+    margin-block: 0;
+  }
+
+  .wps-app[data-compact-workspace] .wps-global-tab {
+    height: 44px;
+    min-width: 130px;
+  }
+
+  .wps-app[data-compact-workspace] .wps-ribbon-tabs {
+    height: auto;
+    min-height: 44px;
+    overflow-x: auto;
+  }
+
+  .wps-app[data-compact-workspace] .wps-ribbon-tab {
+    flex-shrink: 0;
+  }
+}
+
 /* 水平标尺 */
 .wps-ruler {
   position: relative;

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { 载入PDF } from './pdfLoader'
 import Icon from '../components/Icon'
-import { 默认文件缩放, use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
+import { use文件缩放, use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
 import ContextMenu, { type 菜单节点 } from '../components/ContextMenu'
 import { 通用AI指令, 交给助手 } from '../assistant/quickActions'
@@ -18,6 +18,7 @@ import '../editor/reading.css'
 
 interface Props {
   数据?: string
+  工作区文件标识?: string | null
   文件名?: string
   onError?: (文本: string) => void
   /**
@@ -34,10 +35,11 @@ interface PDF页面尺寸 { 宽: number; 高: number }
 const 短文档完整渲染页数 = 8
 
 /** 只在页面进入阅读区附近时创建画布；离开后释放画布内存。 */
-function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError, 命中标记 = [], 编辑模式 = false, on页面点选 }: {
+function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on尺寸, onError, 命中标记 = [], 编辑模式 = false, on页面点选 }: {
   文档: PDFDocumentProxy
   页码: number
   缩放: number
+  初始缩放: number
   可用宽度: number | null
   on尺寸: (页码: number, 尺寸: PDF页面尺寸) => void
   onError: (页码: number, 错误: unknown) => void
@@ -68,8 +70,8 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
         const 原始高度 = 视口.height / 缩放
         原始尺寸.current = { 宽: 原始宽度, 高: 原始高度 }
         on尺寸(页码, { 宽: 原始宽度, 高: 原始高度 })
-        const 默认适配宽度 = Math.min(原始宽度 * 默认文件缩放, 可用宽度 ?? Infinity)
-        const 显示宽度 = 默认适配宽度 * 缩放 / 默认文件缩放
+        const 默认适配宽度 = Math.min(原始宽度 * 初始缩放, 可用宽度 ?? Infinity)
+        const 显示宽度 = 默认适配宽度 * 缩放 / 初始缩放
         const 显示高度 = 原始高度 * 显示宽度 / 原始宽度
         const 节点 = 画布.current
         const 画笔 = 节点?.getContext('2d')
@@ -116,7 +118,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
       }
     })()
     return () => { 已取消 = true; 渲染任务?.cancel() }
-  }, [文档, 页码, 缩放, 可用宽度, on尺寸, onError, 画布尝试])
+  }, [文档, 页码, 缩放, 初始缩放, 可用宽度, on尺寸, onError, 画布尝试])
 
   return <>
     <canvas key={画布尝试.代次} ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${页码} 页`} />
@@ -159,12 +161,12 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 可用宽度, on尺寸, onError
   </>
 }
 
-const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = false, on页面点选 }: Props) => {
+const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', onError, 编辑模式 = false, on页面点选 }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
   const [跳转页码, set跳转页码] = useState('1')
-  const [缩放, set缩放] = useState(默认文件缩放)
+  const [缩放, set缩放, 初始缩放] = use文件缩放(工作区文件标识, '', 数据)
   const [可用宽度, set可用宽度] = useState<number | null>(null)
   const [页面尺寸, set页面尺寸] = useState<Record<number, PDF页面尺寸>>({})
   const 页面尺寸引用 = useRef<Record<number,PDF页面尺寸>>({})
@@ -279,7 +281,6 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
     set文档(null)
     set当前页(1)
     set跳转页码('1')
-    set缩放(默认文件缩放)
     set页面尺寸({})
     页面尺寸引用.current={}
     set分页模式(false);set全屏(false);进入前.current=null;待恢复.current=false;待切换页.current=null
@@ -495,12 +496,12 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
     const 区域 = 阅读区.current
     const 尺寸 = 页面尺寸引用.current[当前页] ?? 页面尺寸引用.current[1]
     if (!区域 || !尺寸 || !页面可用宽度) return false
-    const 默认宽度 = Math.min(尺寸.宽 * 默认文件缩放, 页面可用宽度)
+    const 默认宽度 = Math.min(尺寸.宽 * 初始缩放, 页面可用宽度)
     const 样式 = window.getComputedStyle(区域)
     const 可用高度 = 区域.clientHeight - (Number.parseFloat(样式.paddingTop) || 0) - (Number.parseFloat(样式.paddingBottom) || 0) - (分页模式?24:0)
     const 比例 = 模式 === '实际' ? 1 : 模式 === '页宽' ? 页面可用宽度 / 尺寸.宽 : Math.min(页面可用宽度 / 尺寸.宽, 可用高度 / 尺寸.高)
     if (!Number.isFinite(比例) || 比例 <= 0 || 默认宽度 <= 0) return false
-    set缩放(Math.min(阅读缩放范围.上限, Math.max(阅读缩放范围.下限, 尺寸.宽 * 比例 / 默认宽度 * 默认文件缩放)))
+    set缩放(Math.min(阅读缩放范围.上限, Math.max(阅读缩放范围.下限, 尺寸.宽 * 比例 / 默认宽度 * 初始缩放)))
     return true
   }
   useShortcuts('pdf', (标识) => {
@@ -511,7 +512,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
       case 'view.lastPage': 跳转到页(总页数); break
       case 'view.zoomIn': 调整缩放('放大'); break
       case 'view.zoomOut': 调整缩放('缩小'); break
-      case 'view.zoomReset': set缩放(默认文件缩放); break
+      case 'view.zoomReset': set缩放(初始缩放); break
       case 'view.actualSize': return 适应阅读区('实际')
       case 'view.fitWidth': return 适应阅读区('页宽')
       case 'view.fitPage': return 适应阅读区('整页')
@@ -615,8 +616,8 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
           {Array.from({ length: 总页数 }, (_, 索引) => {
             const 页码 = 索引 + 1
             const 原始尺寸 = 页面尺寸[页码] ?? 页面尺寸[1] ?? { 宽: 600, 高: 800 }
-            const 默认适配宽度 = Math.min(原始尺寸.宽 * 默认文件缩放, 页面可用宽度 ?? Infinity)
-            const 宽 = 默认适配宽度 * 缩放 / 默认文件缩放
+            const 默认适配宽度 = Math.min(原始尺寸.宽 * 初始缩放, 页面可用宽度 ?? Infinity)
+            const 宽 = 默认适配宽度 * 缩放 / 初始缩放
             const 高 = 原始尺寸.高 * 宽 / 原始尺寸.宽
             const 页面 = <div
               key={页码}
@@ -626,7 +627,7 @@ const PdfViewer = ({ 数据, 文件名 = 'PDF 文件', onError, 编辑模式 = f
               aria-label={`第 ${页码} 页`}
               style={{ width: 宽, height: 高 }}
             >
-              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} 命中标记={本页命中(页码)} 编辑模式={编辑模式} on页面点选={on页面点选} />}
+              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 初始缩放={初始缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} 命中标记={本页命中(页码)} 编辑模式={编辑模式} on页面点选={on页面点选} />}
             </div>
             return 分页模式?<div key={页码} className="pdf-viewer__slide" data-pdf-slide={页码} style={{width:可用宽度??'100vw',height:阅读区.current?.clientHeight||'100%'}}>{页面}</div>:页面
           })}

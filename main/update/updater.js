@@ -7,8 +7,10 @@ const { createHash, randomUUID } = require('crypto')
 const 必要字段 = ['hasUpdate', 'version', 'mandatory', 'notes', 'url', 'sha256', 'bytes', 'publishedAt']
 const 安装包上限 = 1024 * 1024 * 1024
 
-/** 根据运行环境判定更新平台：商店版走微软商店；便携版与非 Windows 不支持在线更新。 */
+/** 根据运行环境判定更新平台：商店版走微软商店，Ubuntu 与 macOS 领取各自安装包，便携版不自动安装。 */
 function 判定更新平台({ platform = process.platform, windowsStore = Boolean(process.windowsStore), env = process.env } = {}) {
+  if (platform === 'linux') return 'linux'
+  if (platform === 'darwin') return 'macos'
   if (platform !== 'win32') return 'unsupported'
   if (windowsStore) return 'windows-store'
   if (env.PORTABLE_EXECUTABLE_DIR) return 'unsupported'
@@ -19,12 +21,13 @@ const 失败 = (消息, 附加 = {}) => Object.assign(new Error(消息), 附加)
 
 function 创建更新服务({ 当前版本, 平台, 获取服务地址, 请求 = globalThis.fetch, 临时目录, 启动安装程序, 退出, 打开外部, 退出延迟 = 800, 超时 = 15000 }) {
   async function 检查(通道 = 'stable') {
-    if (平台 !== 'windows' && 平台 !== 'windows-store') throw 失败('当前平台暂不支持在线更新', { code: 'UNSUPPORTED' })
+    if (!['windows', 'windows-store', 'linux', 'macos'].includes(平台)) throw 失败('当前平台暂不支持在线更新', { code: 'UNSUPPORTED' })
     if (通道 !== 'stable' && 通道 !== 'beta') throw 失败('发布通道无效')
     const 地址 = `${String(获取服务地址()).replace(/\/$/, '')}/v1/updates/latest?platform=${encodeURIComponent(平台)}&version=${encodeURIComponent(当前版本)}&channel=${通道}`
     let 响应
     try { 响应 = await 请求(地址, { signal: AbortSignal.timeout(超时), headers: { Accept: 'application/json' } }) }
     catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
+    if ([401, 403, 404].includes(响应.status)) throw 失败('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', { status: 响应.status })
     let 数据
     try { 数据 = await 响应.json() } catch { throw 失败('更新服务返回内容无效', { status: 响应.status }) }
     if (!响应.ok) throw 失败(数据?.error || '更新服务暂时不可用', { status: 响应.status })
@@ -67,6 +70,15 @@ function 创建更新服务({ 当前版本, 平台, 获取服务地址, 请求 =
 
   async function 安装(发布) {
     if (!发布 || typeof 发布 !== 'object') throw 失败('发布信息无效')
+    if (平台 === 'linux' || 平台 === 'macos') {
+      const 扩展名 = 平台 === 'macos' ? '.dmg' : '.deb'
+      const 提示 = 平台 === 'macos' ? 'macOS 更新地址必须指向 DMG 安装包' : 'Ubuntu 更新地址必须指向 DEB 安装包'
+      let 网址
+      try { 网址 = new URL(发布.url) } catch { throw 失败(提示) }
+      if (网址.protocol !== 'https:' || 网址.username || 网址.password || !网址.pathname.toLowerCase().endsWith(扩展名)) throw 失败(提示)
+      await 打开外部(网址.toString())
+      return { 已打开下载: true }
+    }
     if (平台 === 'windows-store') {
       let 网址
       try { 网址 = new URL(发布.url) } catch { throw 失败('无法打开微软商店，请手动在商店中搜索海豹办公') }

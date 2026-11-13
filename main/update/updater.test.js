@@ -22,11 +22,12 @@ function 准备(选项 = {}) {
 }
 
 describe('更新服务', () => {
-  it('按平台判定：商店版、便携版与非 Windows 不走安装包更新', () => {
+  it('按平台判定：商店版独立识别，Ubuntu 使用自己的发布平台', () => {
     expect(判定更新平台({ platform: 'win32', windowsStore: false, env: {} })).toBe('windows')
     expect(判定更新平台({ platform: 'win32', windowsStore: true, env: {} })).toBe('windows-store')
     expect(判定更新平台({ platform: 'win32', windowsStore: false, env: { PORTABLE_EXECUTABLE_DIR: 'D:\\a' } })).toBe('unsupported')
-    expect(判定更新平台({ platform: 'linux', windowsStore: false, env: {} })).toBe('unsupported')
+    expect(判定更新平台({ platform: 'linux', windowsStore: false, env: {} })).toBe('linux')
+    expect(判定更新平台({ platform: 'darwin', windowsStore: false, env: {} })).toBe('macos')
   })
 
   it('查询使用云服务地址、当前平台与版本，并只保留必要字段', async () => {
@@ -45,11 +46,51 @@ describe('更新服务', () => {
     } finally { 环境.清理() }
   })
 
+  it('旧服务把匿名更新当作登录请求时明确提示服务尚未部署', async () => {
+    const 环境 = 准备({ 状态码: 401, 查询结果: { error: '登录已过期，请重新登录' } })
+    try { await expect(环境.服务.检查()).rejects.toMatchObject({ status: 401, message: '更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试' }) }
+    finally { 环境.清理() }
+  })
+
+  it('Ubuntu 查询独立平台并打开 DEB 下载地址，不启动 Windows 安装程序', async () => {
+    const 环境 = 准备({ 平台: 'linux' })
+    try {
+      await 环境.服务.检查()
+      expect(环境.请求.mock.calls[0][0]).toContain('platform=linux')
+      await 环境.服务.安装({ ...新版, url: 'https://seal.xingmasoft.com/seal-office-2.7.1-amd64.deb' })
+      expect(环境.打开外部).toHaveBeenCalledWith('https://seal.xingmasoft.com/seal-office-2.7.1-amd64.deb')
+      expect(环境.启动安装程序).not.toHaveBeenCalled()
+      await expect(环境.服务.安装(新版)).rejects.toThrow('Ubuntu 更新地址必须指向 DEB 安装包')
+    } finally { 环境.清理() }
+  })
+
   it('不支持在线更新的平台直接拒绝，不发请求', async () => {
     const 环境 = 准备({ 平台: 'unsupported' })
     try {
       await expect(环境.服务.检查('stable')).rejects.toThrow('当前平台暂不支持在线更新')
       expect(环境.请求).not.toHaveBeenCalled()
+    } finally { 环境.清理() }
+  })
+
+  it('macOS 查询独立平台并打开 DMG 下载地址，保持当前应用运行', async () => {
+    const 环境 = 准备({ 平台: 'macos' })
+    try {
+      await 环境.服务.检查()
+      expect(环境.请求.mock.calls[0][0]).toContain('platform=macos')
+      expect(await 环境.服务.安装({ ...新版, url: 'https://seal.xingmasoft.com/seal-office-2.7.1-macos.dmg' })).toEqual({ 已打开下载: true })
+      expect(环境.打开外部).toHaveBeenCalledWith('https://seal.xingmasoft.com/seal-office-2.7.1-macos.dmg')
+      expect(环境.启动安装程序).not.toHaveBeenCalled()
+      expect(环境.退出).not.toHaveBeenCalled()
+    } finally { 环境.清理() }
+  })
+
+  it('macOS 拒绝其他平台、明文或带凭据的安装包地址', async () => {
+    const 环境 = 准备({ 平台: 'macos' })
+    try {
+      for (const url of [新版.url, 'http://example.com/app.dmg', 'https://admin:password@example.com/app.dmg', 'file:///tmp/app.dmg']) {
+        await expect(环境.服务.安装({ ...新版, url })).rejects.toThrow('macOS 更新地址必须指向 DMG 安装包')
+      }
+      expect(环境.打开外部).not.toHaveBeenCalled()
     } finally { 环境.清理() }
   })
 

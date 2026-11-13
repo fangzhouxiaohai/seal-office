@@ -2,15 +2,27 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 const fs = require('node:fs')
+const os = require('node:os')
 const { loadPlan, cleanupOldAfterVerification } = require('./pc-current-plan.cjs')
 
-test('电脑分镜只描述当前版本与真实操作', () => {
+test('历史电脑分镜只在其对应的版本中启用', () => {
   const root = path.resolve(__dirname, '../..')
-  const plan = loadPlan(root)
-  assert.equal(plan.version, require('../../package.json').version)
-  assert.equal(plan.voice.name, 'zh-CN-XiaoxiaoNeural')
-  assert.deepEqual(plan.pc.slice(-6).map((item) => item.id), ['pdf-find', 'pdf-next', 'pdf-copy', 'pdf-locate', 'pdf-edit', 'outro'])
-  assert.ok(plan.pc.every((item) => !item.narration.includes('二点四')))
+  const file = 'docs/promo/pc-current-storyboard.json'
+  const history = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'))
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-pc-promo-'))
+  try {
+    fs.mkdirSync(path.join(fixture, 'docs/promo'), { recursive: true })
+    fs.copyFileSync(path.join(root, file), path.join(fixture, file))
+    fs.writeFileSync(path.join(fixture, 'package.json'), JSON.stringify({ version: history.version }))
+    const plan = loadPlan(fixture)
+    assert.equal(plan.version, history.version)
+    assert.equal(plan.voice.name, 'zh-CN-XiaoxiaoNeural')
+    assert.deepEqual(plan.pc.slice(-6).map((item) => item.id), ['pdf-find', 'pdf-next', 'pdf-copy', 'pdf-locate', 'pdf-edit', 'outro'])
+    assert.ok(plan.pc.every((item) => !item.narration.includes('二点四')))
+    if (require('../../package.json').version !== history.version) assert.throws(() => loadPlan(root), /版本/)
+  } finally {
+    fs.rmSync(fixture, { recursive: true, force: true })
+  }
 })
 
 test('成片未验收时保留旧视频', () => {

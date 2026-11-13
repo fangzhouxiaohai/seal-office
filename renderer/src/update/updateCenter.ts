@@ -49,7 +49,7 @@ export async function 检查更新(通道: 'stable' | 'beta' = 'stable'): Promis
   if (平台 === 'unsupported') return { 类型: '不支持' }
   let 响应: { 成功: boolean; 数据?: 版本发布; 错误?: string; 状态码?: number; 不支持?: boolean }
   try {
-    if (平台 === 'windows' || 平台 === 'windows-store') 响应 = await 桥接.update.check(通道)
+    if (平台 === 'windows' || 平台 === 'windows-store' || 平台 === 'linux' || 平台 === 'macos') 响应 = await 桥接.update.check(通道)
     else {
       const 云端 = typeof window !== 'undefined' ? window.electronAPI?.cloud : undefined
       if (!云端) return { 类型: '不支持' }
@@ -61,7 +61,10 @@ export async function 检查更新(通道: 'stable' | 'beta' = 'stable'): Promis
   if (!响应.成功) return 响应.不支持 ? { 类型: '不支持' } : { 类型: '失败', 错误: 响应.错误 || '检查更新失败', ...(响应.状态码 !== undefined ? { 状态码: 响应.状态码 } : {}) }
   const 数据 = 响应.数据
   if (!数据 || typeof 数据.hasUpdate !== 'boolean') return { 类型: '失败', 错误: '更新服务返回内容无效' }
-  if (数据.hasUpdate && typeof 数据.version === 'string') return { 类型: '有新版', 发布: { ...数据, hasUpdate: true, version: 数据.version } }
+  if (数据.hasUpdate) {
+    if (typeof 数据.version !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(数据.version)) return { 类型: '失败', 错误: '更新服务返回的版本号无效，请稍后重试' }
+    return { 类型: '有新版', 发布: { ...数据, hasUpdate: true, version: 数据.version } }
+  }
   // 商店版的实际更新由微软商店负责，后台未登记新版本时不能断言「已是最新」
   if (平台 === 'windows-store') return { 类型: '商店版' }
   return { 类型: '已最新', 版本 }
@@ -104,22 +107,26 @@ export function 重置更新状态(): void {
 
 export type 更新执行结果 = { 成功: true; 提示?: string } | { 成功: false; 错误: string }
 
-/** 「立即更新」：Windows 安装版下载校验后安装；商店版打开商店；Web 刷新；Android / HarmonyOS 打开下载或应用市场地址 */
+/** 「立即更新」：Windows 下载校验后安装；商店版打开商店；Ubuntu 与 macOS 打开安装包下载；Web 刷新；移动端打开下载或市场地址。 */
 export async function 执行更新(发布: 有效发布, 刷新页面: () => void = () => window.location.reload()): Promise<更新执行结果> {
   let 平台: 更新平台
   try { ({ 平台 } = await 读取更新平台()) }
   catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '无法读取版本信息' } }
-  if (平台 === 'windows' || 平台 === 'windows-store') {
+  if (平台 === 'windows' || 平台 === 'windows-store' || 平台 === 'linux' || 平台 === 'macos') {
     const 结果 = await 桥接.update.install(发布)
     if (!结果.成功) return { 成功: false, 错误: 结果.错误 || '更新失败' }
-    return { 成功: true, 提示: 结果.数据?.已打开商店 ? '已打开微软商店，请在商店中完成更新' : '安装包校验通过，正在启动安装程序，海豹办公即将退出' }
+    const 操作已完成 = 平台 === 'windows-store' ? 结果.数据?.已打开商店 === true
+      : 平台 === 'linux' || 平台 === 'macos' ? 结果.数据?.已打开下载 === true : 结果.数据?.已启动安装 === true
+    if (!操作已完成) return { 成功: false, 错误: '更新操作未返回有效结果，请重试' }
+    const 下载提示 = 平台 === 'macos' ? '已打开 macOS 安装包下载地址，下载完成后请打开 DMG 并按提示安装' : '已打开 Ubuntu 安装包下载地址，下载完成后请按系统提示安装'
+    return { 成功: true, 提示: 结果.数据?.已打开商店 ? '已打开微软商店，请在商店中完成更新' : 结果.数据?.已打开下载 ? 下载提示 : '安装包校验通过，正在启动安装程序，海豹办公即将退出' }
   }
   if (平台 === 'web') { 刷新页面(); return { 成功: true } }
   if (平台 === 'android' || 平台 === 'harmony') {
     if (!发布.url) return { 成功: false, 错误: '发布记录缺少下载地址，请稍后再试' }
     const 结果 = await 桥接.openExternal(发布.url)
     if (!结果.成功) return { 成功: false, 错误: 结果.错误 || '无法打开下载地址' }
-    return { 成功: true, 提示: 平台 === 'harmony' ? '已打开应用市场，请在应用市场中完成更新' : '已打开下载地址，下载完成后请按系统提示安装' }
+    return { 成功: true, 提示: '已打开更新地址，请根据页面与系统提示完成安装' }
   }
   return { 成功: false, 错误: '当前运行方式不支持在线更新，请手动下载新版安装程序' }
 }

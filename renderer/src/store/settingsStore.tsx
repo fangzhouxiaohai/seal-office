@@ -29,13 +29,23 @@ export interface SettingsState {
   /** 自动检查更新：默认开启；开启时启动检查一次并每 4 小时检查一次，关闭后不发任何自动请求 */
   自动检查更新: boolean
   设置自动检查更新: (开启: boolean) => void
+  简洁模式: boolean
+  设置简洁模式: (开启: boolean) => void
+  默认放大: boolean
+  设置默认放大: (开启: boolean) => void
+  恢复默认显示设置: () => void
 }
 
 const SettingsContext = createContext<SettingsState | null>(null)
+interface 显示偏好 { 简洁模式: boolean; 默认放大: boolean }
+const 默认显示偏好: 显示偏好 = { 简洁模式: true, 默认放大: false }
+const 显示偏好存储键 = 'seal-display-preferences'
+export interface 文档缩放记录 { 初始: number; 手动比例: Map<string, number> }
+const 文件缩放上下文 = createContext<Map<string, 文档缩放记录> | null>(null)
 interface 设置错误 { 标题: string; 内容: string }
 const 设置错误上下文 = createContext<{ 错误: 设置错误 | null; 清除错误: () => void } | null>(null)
 
-/** 放在应用的 AntdApp 内，确保主题设置的错误弹窗沿用当前界面主题。 */
+/** 放在应用的 AntdApp 内，确保设置错误弹窗沿用当前界面主题。 */
 export function SettingsErrorFeedback() {
   const { modal } = AntdApp.useApp()
   const 状态 = useContext(设置错误上下文)
@@ -62,6 +72,45 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [主题, set主题] = useState<主题名>(初始主题.值)
   const [错误, set错误] = useState<设置错误 | null>(初始主题.错误
     ? { 标题: '读取主题设置失败', 内容: 初始主题.错误 } : null)
+
+  const [文件缩放] = useState(() => new Map<string, 文档缩放记录>())
+  const [初始显示偏好] = useState(() => {
+    try {
+      const 记录 = localStorage.getItem(显示偏好存储键)
+      if (记录 === null) return { 值: 默认显示偏好, 错误: null }
+      const 值 = JSON.parse(记录) as Partial<显示偏好> | null
+      if (!值 || typeof 值.简洁模式 !== 'boolean' || typeof 值.默认放大 !== 'boolean') {
+        throw new Error('本机显示设置格式无效')
+      }
+      return { 值: { 简洁模式: 值.简洁模式, 默认放大: 值.默认放大 }, 错误: null }
+    } catch (原因) {
+      return { 值: 默认显示偏好, 错误: 原因 instanceof Error ? 原因.message : '无法读取本机显示设置' }
+    }
+  })
+  const [当前显示偏好, 设置当前显示偏好] = useState(初始显示偏好.值)
+  const 显示偏好引用 = useRef(当前显示偏好)
+  useEffect(() => {
+    if (初始显示偏好.错误) set错误({ 标题: '读取显示设置失败', 内容: 初始显示偏好.错误 })
+  }, [初始显示偏好.错误])
+
+  const 保存显示设置 = (更新: Partial<显示偏好>) => {
+    const 下一个 = { ...显示偏好引用.current, ...更新 }
+    try {
+      localStorage.setItem(显示偏好存储键, JSON.stringify(下一个))
+    } catch (原因) {
+      set错误({ 标题: '保存显示设置失败', 内容: 原因 instanceof Error ? 原因.message : '无法写入本机显示设置' })
+      return
+    }
+    显示偏好引用.current = 下一个
+    设置当前显示偏好(下一个)
+  }
+
+  // 由设置页的全局恢复流程统一捕获存储错误，失败时保留当前两个开关。
+  const 恢复默认显示设置 = () => {
+    localStorage.removeItem(显示偏好存储键)
+    显示偏好引用.current = 默认显示偏好
+    设置当前显示偏好(默认显示偏好)
+  }
 
   const [初始语言] = useState<{ 值: 界面语言; 错误: string | null }>(() => {
     try {
@@ -196,11 +245,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   return (
     <设置错误上下文.Provider value={{ 错误, 清除错误: () => set错误(null) }}>
-      <SettingsContext.Provider value={{ 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 皮肤, 已安装皮肤, 设置皮肤, 安装皮肤, 卸载皮肤, 预览皮肤: set预览, 启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查, 自动检查更新, 设置自动检查更新: 保存自动检查更新 }}>
-        {children}
+      <SettingsContext.Provider value={{
+        主题, 切换主题, 恢复默认主题, 语言, 设置语言, 皮肤, 已安装皮肤, 设置皮肤, 安装皮肤, 卸载皮肤, 预览皮肤: set预览,
+        启动时检查默认程序, 设置启动时检查默认程序: 保存启动检查, 自动检查更新, 设置自动检查更新: 保存自动检查更新,
+        ...当前显示偏好, 设置简洁模式: 开启 => 保存显示设置({ 简洁模式: 开启 }),
+        设置默认放大: 开启 => 保存显示设置({ 默认放大: 开启 }), 恢复默认显示设置,
+      }}>
+        <文件缩放上下文.Provider value={文件缩放}>{children}</文件缩放上下文.Provider>
       </SettingsContext.Provider>
     </设置错误上下文.Provider>
   )
+}
+
+export function use显示偏好(): 显示偏好 | undefined {
+  return useContext(SettingsContext) ?? undefined
+}
+
+export function use文件缩放缓存() {
+  return useContext(文件缩放上下文)
 }
 
 export function useSettings() {

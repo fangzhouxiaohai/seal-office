@@ -30,7 +30,7 @@ const PdfPage = () => {
     }
   }
 
-  if (PDF待预览 && /\.ofd$/i.test(PDF待预览.名称)) return <OfdViewer key={activeWorkspaceTabId} 名称={PDF待预览.名称} 数据={PDF待预览.数据} />
+  if (PDF待预览 && /\.ofd$/i.test(PDF待预览.名称)) return <OfdViewer key={activeWorkspaceTabId} 工作区文件标识={activeWorkspaceTabId} 名称={PDF待预览.名称} 数据={PDF待预览.数据} />
   return <PdfWorkbench
     key={activeWorkspaceTabId}
     初始文件={PDF待预览}

@@ -1,8 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import { SettingsErrorFeedback, SettingsProvider, useSettings } from './settingsStore'
+
+describe('显示偏好存储错误', () => {
+  const 探针 = () => {
+    const 设置 = useSettings()
+    return <button aria-pressed={设置.简洁模式} onClick={() => 设置.设置简洁模式?.(false)}>切换简洁模式</button>
+  }
+  const 挂载 = () => render(<SettingsProvider><AntdApp><SettingsErrorFeedback /><探针 /></AntdApp></SettingsProvider>)
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('读取失败时显示错误弹窗', async () => {
+    const 原读取 = Storage.prototype.getItem
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, 键: string) {
+      if (键 === 'seal-display-preferences') throw new Error('显示记录不可读')
+      return 原读取.call(this, 键)
+    })
+    挂载()
+    expect(await screen.findByRole('dialog', { name: '读取显示设置失败' })).toHaveTextContent('显示记录不可读')
+  })
+
+  it('保存失败时保留原设置并显示错误弹窗', async () => {
+    const 原写入 = Storage.prototype.setItem
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, 键: string, 值: string) {
+      if (键 === 'seal-display-preferences') throw new Error('显示记录不可写')
+      return 原写入.call(this, 键, 值)
+    })
+    挂载()
+    const 开关 = screen.getByRole('button', { name: '切换简洁模式' })
+    fireEvent.click(开关)
+    expect(await screen.findByRole('dialog', { name: '保存显示设置失败' })).toHaveTextContent('显示记录不可写')
+    expect(开关).toHaveAttribute('aria-pressed', 'true')
+  })
+})
 
 const 主题探针 = () => {
   const { 主题, 切换主题 } = useSettings()

@@ -6,6 +6,8 @@ import { 桥接 } from '../ipc/bridge'
 import { useAppStore } from '../store'
 import { 通过对话框打开文件 } from '../fileOpen'
 import PrintPreview from '../components/PrintPreview'
+import { useIconPlatform } from '../components/IconPlatform'
+import { use文件缩放 } from '../editor/wheelZoom'
 import './ofd.css'
 
 export async function 检查OFD文件(数据: string) {
@@ -41,17 +43,37 @@ export async function 检查OFD文件(数据: string) {
   return { 字节, 页面尺寸 }
 }
 
-export default function OfdViewer({ 名称, 数据 }: { 名称: string; 数据: string }) {
+export default function OfdViewer({ 名称, 数据, 工作区文件标识 }: { 名称: string; 数据: string; 工作区文件标识?: string | null }) {
   const { message, modal } = AntdApp.useApp()
   const { createDoc, 查找保存路径占用 } = useAppStore()
   const 容器 = useRef<HTMLDivElement>(null)
-  const [缩放, set缩放] = useState(150)
+  const [缩放, set缩放, 初始缩放] = use文件缩放(工作区文件标识, '', 数据)
+  const 移动端 = useIconPlatform() === 'mobile'
+  const [可用宽度, 设置可用宽度] = useState<number | null>(null)
   const [页数, set页数] = useState(0)
   const [加载中, set加载中] = useState(true)
   const [错误, set错误] = useState('')
   const [处理中, set处理中] = useState(false)
   const [打印内容, set打印内容] = useState<string | null>(null)
   const 打印HTML = useRef('')
+  useEffect(() => {
+    const 节点 = 容器.current
+    if (!移动端 || !节点) return
+    const 更新宽度 = () => {
+      const 样式 = getComputedStyle(节点)
+      const 宽度 = 节点.clientWidth - (parseFloat(样式.paddingLeft) || 0) - (parseFloat(样式.paddingRight) || 0)
+      if (宽度 > 0) 设置可用宽度(宽度)
+    }
+    更新宽度()
+    window.addEventListener('resize', 更新宽度)
+    const 观察器 = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(更新宽度)
+    观察器?.observe(节点)
+    return () => {
+      window.removeEventListener('resize', 更新宽度)
+      观察器?.disconnect()
+    }
+  }, [移动端])
+  const 渲染宽度 = Math.min(794 * 初始缩放, 移动端 ? 可用宽度 ?? Infinity : Infinity) * 缩放 / 初始缩放
   useEffect(() => {
     let 取消 = false
     set加载中(true); set错误(''); set页数(0); 打印HTML.current = ''
@@ -73,7 +95,7 @@ export default function OfdViewer({ 名称, 数据 }: { 名称: string; 数据: 
       文档列表.forEach(文档 => { 收集(文档.multiMediaResObj); 收集((文档 as unknown as { stampAnnot: unknown }).stampAnnot) })
       await Promise.all([...图片源].map(async src => { const img = new Image(); img.src = src; await img.decode() }))
       if (取消) return
-      const 页面 = 文档列表.flatMap(文档 => renderOfd(794 * 缩放 / 100, 文档))
+      const 页面 = 文档列表.flatMap(文档 => renderOfd(渲染宽度, 文档))
       if (!页面.length) throw new Error('OFD 页面渲染失败')
       await document.fonts?.ready
       await Promise.all(页面.flatMap(page => Array.from(page.querySelectorAll('img'))).map(img => img.decode()))
@@ -82,10 +104,10 @@ export default function OfdViewer({ 名称, 数据 }: { 名称: string; 数据: 
       if (取消 || !容器.current) return
       容器.current.innerHTML = 安全页面.join('')
       set页数(页面.length)
-      打印HTML.current = OFD打印页面(页面, 安全页面, 页面尺寸, 缩放)
+      打印HTML.current = OFD打印页面(页面, 安全页面, 页面尺寸, 渲染宽度 / 794 * 100)
     })().catch(err => { if (!取消) set错误(err instanceof Error ? err.message : 'OFD 解析失败') }).finally(() => { if (!取消) set加载中(false) })
     return () => { 取消 = true }
-  }, [数据, 缩放])
+  }, [数据, 渲染宽度])
   const 执行保存 = async (导出PDF: boolean) => {
     set处理中(true)
     try {
@@ -109,13 +131,13 @@ export default function OfdViewer({ 名称, 数据 }: { 名称: string; 数据: 
       <Button disabled={加载中 || Boolean(错误)} loading={处理中} onClick={() => void 执行保存(false)}>保存 OFD 副本</Button>
       <Button disabled={加载中 || Boolean(错误)} loading={处理中} onClick={() => void 执行保存(true)}>导出 PDF</Button>
       <Button disabled={加载中 || Boolean(错误)} onClick={() => set打印内容(打印HTML.current)}>打印预览</Button>
-      <label>缩放 <InputNumber aria-label="OFD 缩放" min={50} max={250} step={25} value={缩放} onChange={值 => 值 !== null && set缩放(值)} /> %</label>
+      <label>缩放 <InputNumber aria-label="OFD 缩放" min={50} max={250} step={25} value={Math.round(缩放 * 100)} onChange={值 => 值 !== null && set缩放(值 / 100)} /> %</label>
       <span>{页数} 页</span>
     </div>
     <Alert type="info" showIcon message="OFD 版式阅读：支持预览、打印和保存完整副本；导出 PDF 用于后续编辑，签章的证书有效性需在专用验签软件核验。" />
     {错误 && <Alert type="error" showIcon message="OFD 打开失败" description={错误} />}
     {加载中 && <Spin tip="正在加载 OFD 页面" />}
-    <div className="ofd-viewer__pages" ref={容器} hidden={加载中 || Boolean(错误)} />
+    <div className="ofd-viewer__pages" ref={容器} style={{ visibility: 加载中 || 错误 ? 'hidden' : undefined }} />
     {打印内容 && <PrintPreview 内容={打印内容} 格式="html" 标题={名称} onClose={() => set打印内容(null)} />}
   </section>
 }

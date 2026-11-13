@@ -1,8 +1,8 @@
 # 海豹办公 uni-app x
 
-当前移动源码版本为 **2.7.0 / 20700**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。系统字体读取、自定义字体导入、专属格式字体嵌入和 DOCX/WPS 回退见[字体与跨平台兼容](../docs/字体与跨平台兼容.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
+当前移动源码版本为 **2.7.2 / 20702**，与桌面版同步。每次构建读取根目录版本，并直接打包现有 `renderer/src` 编辑器和 `main` 中可移植的 Office、AI、云端逻辑，后续桌面升级进入同一构建链路。系统字体读取、自定义字体导入、专属格式字体嵌入和 DOCX/WPS 回退见[字体与跨平台兼容](../docs/字体与跨平台兼容.md)。四种短后缀 `.sldoc/.slxls/.slppt/.spdf` 在两种原生宿主和 Web 共用同一协议，旧三种后缀继续兼容。
 
-应用界面继续显示“海豹办公”，发行文件统一使用英文名。`mobile/` 为移动工作源码，`android-studio/` 为安卓 Java 本机工程，`android-mobile/` 保留原 HBuilderX 工程，`harmony-mobile/` 为鸿蒙项目；各工程均只有一个明确入口。两份旧云打包源码 ZIP、安装成品和校验记录位于 `release/v2.7.0/mobile-web/`。HBuilderX 安卓云源码仍受 60,000,000 字节限制；Java 本机打包不受该云服务收费门槛约束，完整字库与编辑器资源不得删减。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
+应用界面继续显示“海豹办公”，发行文件统一使用英文名。`mobile/` 为移动工作源码，`android-studio/` 为安卓 Java 本机工程，`android-mobile/` 保留原 HBuilderX 工程，`harmony-mobile/` 为鸿蒙项目；各工程均只有一个明确入口。本次正式安装成品和校验记录位于 `release/v2.7.2/`，旧云打包源码归档位于该版本的 `mobile-web/`。HBuilderX 安卓云源码仍受 60,000,000 字节限制；Java 本机打包不受该云服务收费门槛约束，完整字库与编辑器资源不得删减。历史 2.1.1 成品与验收保持不变，见[历史成品报告](../docs/verification/v2.1.1/mobile-native-packages.json)。
 
 鸿蒙本地打包生成已签名 HAP 和 App Pack，独立验签后 HAP 可作为发行安装附件，App Pack 仅用于应用市场，不作为直接安装包对外分发。云服务返回的安卓文件名不由本仓库控制；下载后用 `npm --prefix mobile run check:apk -- "APK路径" --require-current --archive "归档目录"`，或 `npm --prefix mobile run check:hap -- "HAP路径" --archive "归档目录"` 校验并原字节复制归档。两条命令保留下载原文件，拒绝覆盖不同内容的同名归档；签名与设备安装还需独立验证。
 
@@ -31,14 +31,14 @@ npm run mobile:check
 npm --prefix mobile run typecheck
 npm --prefix mobile run check:android
 
-# 已配置本项目 AppID，只提交 Android 云打包
+# 已在本机设置原证书和四个签名环境变量，使用 Java 工程打正式 APK
 npm run pack
 # npm run dist / npm run mobile:pack 也只打包 Android
 ```
 
-`static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是 UTS 检查输出，两者都不是 APK。打包脚本只传 `--platform android`，不同时提交 iOS、鸿蒙或 Web。云打包后以 HBuilderX 实际返回的 APK 下载结果为准。
+`static/office/` 是原生安装包内资源，`unpackage/native-check/android/` 是历史 UTS 检查输出，两者都不是 APK。默认打包入口使用 `android-studio/` Java 工程，校验签名、版本和资源后归档正式 APK。缺少签名配置时停止，不会调用旧安卓云打包。
 
-如果使用 HBuilderX 界面手动云打包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.1.1 发行准备](releases/2.1.1.md)。正式交付优先使用独立冻结目录，打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
+以下仅为历史 HBuilderX 操作记录，不用于新版正式安卓包：先在仓库根目录执行 `npm run mobile:build`，确认生成 `mobile/static/office/office.js`；然后用 HBuilderX 打开 `E:\seal-office\mobile`，在“发行 → 原生 App-云打包”中选择 Android。切换到鸿蒙前执行 `npm --prefix mobile run build:harmony` 并在 HBuilderX 选择对应鸿蒙发行入口。两端分别构建并提交，完整步骤见 [2.1.1 发行准备](releases/2.1.1.md)。正式交付优先使用独立冻结目录，打包完成后再核对版本、签名和包内资源；`static/office/` 是编辑器资源。
 
 当前 AppID 为用户配置的 `__UNI__B52B65B`。本次源码及已验签的 Android / 鸿蒙成品均为 `2.1.1 / 20101`；新版雷电已安装 APK 完整哈希一致，仅做只读包信息核验，不能代替新版原生功能完整验收。历史补充云包 `1.9.12 / 10912` 曾核验并用于替换发布页的 [SealOfficeAndroid1.9.12.apk](https://github.com/fangzhouxiaohai/seal-office/releases/download/v1.9.12/SealOfficeAndroid1.9.12.apk)：其包内编辑器与当时修复后源码逐字节一致、签名相同，Android 14 模拟器验证了轻点打开、保存不弹分享、强制停止后正文仍在。历史结果不代表新版已通过真机验证。其他项目不要复用此 AppID。私有配置和证书不纳入 Git。
 
