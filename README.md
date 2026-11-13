@@ -25,9 +25,13 @@
 
 同版本更新流程支持下载进度、后台下载和待安装恢复；本轮新安装包仍在最终验收中。已经安装 2.7.2 的旧客户端按版本号检查更新，不会自动发现同版本修复包；新包完成发布后需要手动重新安装。鸿蒙通过华为应用市场提供的更新界面处理商店更新。
 
+macOS 本机交叉打包与 iOS 云打包的调查、实际限制及测试状态见 [macOS 测试包说明](docs/macOS测试包说明.md)；当前尚无经过实机验收的 macOS 安装包或 iOS IPA。
+
 新后台增加用户管理、管理员管理、角色管理和菜单管理，并适配浅色与暗色主题。新增管理员的权限由服务端逐请求校验，角色变更和停用会限制实际接口；菜单仅允许管理已注册的业务页面。原环境超管和既有业务数据继续保留。上述后台改动以实际部署与验收状态为准。
 
 本版 Windows 解包成品运行 64 项、Android 原生宿主 9 项、Android / HarmonyOS / Web 各 45 项浏览器检查通过；Ubuntu 22.04 与 24.04 各 77 项实际安装运行检查通过，正式 DEB 取自该次验证产物。详细结果与环境边界见[本版验收](docs/verification/v2.7.2-release.md)和[Ubuntu 自动验收](docs/verification/v2.7.2/ubuntu-ci.md)。
+
+安卓正式签名候选包已在隔离模拟器覆盖旧版，测试文档、深色设置及最近记录保留，文档可修改保存并在重启后重开。验证中发现旧有的最近文档大小显示为 0 B、按大小排序不准确，尚未修复；上述验证不代表真机和其他格式均已完成验收。
 
 各端安装包见 [GitHub 2.7.2 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2) 或 [GitCode 2.7.2 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2)；文件校验以 `release/v2.7.2/SHA256SUMS.txt` 为准。微软商店 MSIX 用于商店上传；鸿蒙 HAP 使用 Release Profile，需经 AppGallery 正式或测试渠道安装，App Pack 不在仓库发行页分发。
 
