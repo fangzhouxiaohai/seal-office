@@ -375,7 +375,7 @@ const SettingsPage = () => {
           )}
           {设置行(
             '当前版本',
-            '手动检查不受自动检查开关影响；发现新版本时弹出更新卡片',
+            '手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始',
             <div className="settings-update-control">
               <span className="settings-wps-row__status">{当前版本}</span>
               {检查状态 ? <span className="settings-wps-row__status" role="status">{检查状态.文字}</span> : null}

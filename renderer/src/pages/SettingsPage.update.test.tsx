@@ -9,6 +9,7 @@ import { AppProvider } from '../store'
 import { SettingsProvider } from '../store/settingsStore'
 import { 桥接 } from '../ipc/bridge'
 import { 重置更新状态, 自动检查间隔, 启动检查延迟 } from '../update/updateCenter'
+import { 英文界面271Update } from '../i18n/surfaceEnglish271Update'
 
 const 新版 = { hasUpdate: true, version: '2.7.1', mandatory: false, notes: '修复表格筛选\n新增版本检查', url: 'https://seal.xingmasoft.com/download/seal-office-setup-2.7.1.exe', sha256: 'a'.repeat(64), bytes: 10, publishedAt: new Date(2026, 10, 8).getTime() }
 
@@ -41,6 +42,8 @@ describe('设置页关于与更新', () => {
     渲染设置页()
     expect(screen.getByText('关于与更新')).toBeInTheDocument()
     expect(screen.getByText('当前版本')).toBeInTheDocument()
+    expect(screen.getByText('手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始')).toBeInTheDocument()
+    expect(英文界面271Update['手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始']).toBe('Manual checks work even when automatic checks are off. Optional updates appear at the bottom right; mandatory updates start automatically.')
     expect(await screen.findByText('2.7.0')).toHaveClass('settings-wps-row__status')
     const 开关 = screen.getByRole('switch', { name: '自动检查更新' })
     expect(开关).toHaveAttribute('aria-checked', 'true')

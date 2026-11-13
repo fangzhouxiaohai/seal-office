@@ -67,6 +67,35 @@ describe('界面中英文适配', () => {
     expect(翻译界面文本('版本 2.7.3', 'en-US')).toBe('Version 2.7.3')
   })
 
+  it('英文界面覆盖普通、强制和安卓更新失败重试的新增文案', () => {
+    const 文案 = [
+      '手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始',
+      '必须更新','当前版本需要更新后才能继续使用。','请在应用市场完成更新。','重试更新','未找到可下载的更新，请重新检查',
+      '更新下载失败','安装包已校验，请按系统提示完成安装。','安装包已校验，正在启动安装。','通知权限未开启，后台下载进度可能不会显示。','查看更新说明','重试下载','重试安装',
+      '原生更新操作失败','无法打开应用市场更新','更新操作失败，请重试','更新服务或安装包下载失败，请稍后重试',
+      '无法保存安装状态，未启动系统安装程序','无法清理更新安装包','无法清理已安装的更新状态','发布信息或安装包地址无效，已拒绝更新','更新服务响应过大',
+      '更新已变更或下架，请重新检查版本','更新服务未返回有效的强制更新状态','系统后台下载时间达到上限，请重新开始更新','无法保存更新下载状态',
+      '已下载安装包大小不正确，请重新下载','已下载安装包校验失败，请重新下载','安装包身份或版本不匹配，已拒绝安装','安装包签名不匹配，已拒绝安装',
+      '待安装更新任务无效，请重新检查更新','待安装更新记录无效，请重新检查更新','待安装文件无法读取，请重新下载','无法清理已完成更新状态',
+      '已有更新正在下载或安装','无法创建更新任务，请重试','无法保存更新下载状态，请重试','系统安装程序正在运行，请先完成或取消安装',
+      '无法清除之前的待安装状态','无法创建更新目录','更新下载已取消','无法保存已校验安装包','无法保存更新状态且无法清理临时安装包',
+      '无法保存待安装更新状态','无法清除下载状态，请重试','无法启动下载任务，请重试','当前版本要求强制更新，无法取消','正在核实更新信息，请稍后再试',
+      '无法清除待安装状态','无法清理未完成的下载文件','无法清除中断的下载状态','更新下载意外中断，请重新开始下载','下载失败记录无效，请重新检查更新',
+      '安装包正在下载或安装，请稍后再试','没有可安装的更新，请重新检查','请回到海豹办公并点击通知安装更新','请允许海豹办公安装未知应用，返回后再次点击更新',
+      '未找到可信的系统安装器，请检查设备设置','无法打开系统安装程序，请检查系统设置','正在等待通知权限，请先处理系统提示','无法请求通知权限，请检查系统设置后重试','无法启动后台下载，请检查系统设置后重试','无法启动下载','无法保存下载失败记录',
+    ]
+    expect(文案.filter(文本 => /[\u3400-\u9fff]/u.test(翻译界面文本(文本, 'en-US')))).toEqual([])
+    expect(翻译界面文本('更新下载意外中断，请重新开始下载；无法保存下载失败记录', 'en-US')).toBe('The update download was interrupted. Restart the download. Could not save the failed download record.')
+  })
+
+  it('英文界面实际翻译强制更新提示、重试按钮与安卓组合错误', async () => {
+    render(<SettingsProvider><InterfaceLanguageAdapter /><div role="dialog" aria-label="更新下载失败"><p>当前版本需要更新后才能继续使用。</p><p>更新下载意外中断，请重新开始下载；无法保存下载失败记录</p><button aria-label="重试下载">重试下载</button></div></SettingsProvider>)
+    expect(await screen.findByRole('dialog', {name:'Update download failed'})).toBeInTheDocument()
+    expect(screen.getByText('Update this version to continue using the app.')).toBeInTheDocument()
+    expect(screen.getByText('The update download was interrupted. Restart the download. Could not save the failed download record.')).toBeInTheDocument()
+    expect(screen.getByRole('button', {name:'Retry download'})).toBeInTheDocument()
+  })
+
   it('翻译助手文本框的提示和无障碍名称，但保留用户输入和被排除区域', async () => {
     render(<SettingsProvider><InterfaceLanguageAdapter /><textarea aria-label="发送给智能助手的消息" placeholder="描述修改或写作需求，也可以提问…" defaultValue="我的原始输入" /><div data-ui-language-ignore="true"><textarea placeholder="保存" defaultValue="保留原文" /></div></SettingsProvider>)
     const 输入 = await screen.findByRole('textbox', { name: 'Message to assistant' })

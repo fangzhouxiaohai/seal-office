@@ -988,6 +988,7 @@ const 英文界面: Record<string, string> = {
 }
 
 const 动态翻译: Array<[RegExp, (...匹配: string[]) => string]> = [
+  [/^(.+)；无法保存下载失败记录$/, (_全部, 错误) => `${翻译界面文本(错误, 'en-US')} Could not save the failed download record.`],
   [/^向(上|下|左|右)(移动|扩展选区|跳到数据边界|扩展到数据边界|微移对象|移动对象)$/, (_全部, 方向, 动作) => `${({移动:'Move',扩展选区:'Extend selection',跳到数据边界:'Go to data edge',扩展到数据边界:'Extend selection to data edge',微移对象:'Nudge object',移动对象:'Move object'} as Record<string,string>)[动作]} ${({上:'up',下:'down',左:'left',右:'right'} as Record<string,string>)[方向]}`],
   [/^(.+)快捷键列表$/, (_全部, 分类) => `${翻译界面文本(分类, 'en-US')} shortcuts`],
   [/^恢复(.+)默认快捷键$/, (_全部, 名称) => `Restore default shortcut for ${翻译界面文本(名称, 'en-US')}`],
