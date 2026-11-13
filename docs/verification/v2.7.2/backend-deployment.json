@@ -36,6 +36,12 @@
     "remoteSourceHashesMatchLocal": true,
     "repeatDeploymentSucceeded": true
   },
-  "finalPointerRecheckedAt": "2026-11-13T14:30:28.281Z",
-  "finalPointerRechecked": true
+  "finalPointerRecheckedAt": "2026-11-13T15:17:17.864Z",
+  "finalPointerRechecked": true,
+  "postPublishRangeFix": {
+    "passed": true,
+    "report": "backend-range-fix.json",
+    "backendPointerUnchanged": true,
+    "nginxReloaded": true
+  }
 }

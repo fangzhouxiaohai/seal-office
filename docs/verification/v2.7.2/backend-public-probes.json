@@ -114,5 +114,7 @@
   "transientFailure": {
     "cause": "此前一次连接超时，未关闭 TLS 校验",
     "resolution": "随后单次能力接口及本次完整公网复核均成功"
-  }
+  },
+  "historicalPhase": "六平台正式附件发布之前的部署探针快照，保留原观察值",
+  "currentPublishedUpdatesReport": "backend-update-external.json"
 }

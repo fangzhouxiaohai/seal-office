@@ -1,0 +1,126 @@
+{
+  "version": "2.7.2",
+  "recordedAt": "2026-11-13T15:02:40.781781+00:00",
+  "mode": "read-only-transfer-investigation",
+  "readOnly": true,
+  "productionModified": false,
+  "tasksCancelledByThisInvestigation": false,
+  "businessRecordsModified": false,
+  "credentialsDisclosed": false,
+  "scope": {
+    "sshHostKeyVerified": true,
+    "connectionHelper": "scripts/deploy-web.py connection()",
+    "nodeVersion": "20.19.5",
+    "tlsVerification": "Node 默认 TLS 证书校验，无关闭证书验证或自签信任替换",
+    "configurationRead": "通过 systemctl show seal-cloud -p MainPID 读取服务进程；从进程 SEAL_ENV_FILE 指向的文件中只提取 SEAL_DATA_DIR。未输出其他配置或凭据。",
+    "remoteWrites": false,
+    "fullPackageDownloadedByProbe": false
+  },
+  "passiveBackendUpload": {
+    "firstAt": "2026-11-13T14:57:17.883Z",
+    "secondAt": "2026-11-13T14:57:47.909Z",
+    "observedFileType": ".part",
+    "platformInActivePublisher": "windows",
+    "expectedPackageBytes": 556125494,
+    "firstBytes": 242171904,
+    "secondBytes": 258637824,
+    "elapsedSeconds": 30.026,
+    "deltaBytes": 16465920,
+    "bytesPerSecond": 548388.7297675348,
+    "decimalMBPerSecond": 0.5483887297675347,
+    "mebibytesPerSecond": 0.5229842469859455,
+    "remainingBytesAtSecondSample": 297487670,
+    "linearRemainingSecondsEstimate": 542.4759004914393,
+    "estimateCaveat": "仅按30秒窗口线性估算当时尚未完成的Windows文件，不是持续吞吐保证。",
+    "networkRates": {
+      "eth0ReceivedBytesPerSecond": 570194.7312329315,
+      "eth0SentBytesPerSecond": 110462.93212549124
+    },
+    "networkCaveat": "网卡计数包含该窗口内其他并行传输，不等同于运营商带宽上限。"
+  },
+  "remotePublicDownloadSamples": [
+    {
+      "label": "gitcode-current-windows-first",
+      "publicUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-setup-2.7.2.exe/download",
+      "anonymous": true,
+      "range": "bytes=0-1048575",
+      "status": 206,
+      "contentRange": "bytes 0-1048575/556125494",
+      "finalHost": "file-cdn.gitcode.com",
+      "readBytes": 1048576,
+      "elapsedMs": 928,
+      "headersMs": 797,
+      "firstByteMs": 799,
+      "overallBytesPerSecond": 1129841.31558579,
+      "payloadBytesPerSecond": 8130444.783657531
+    },
+    {
+      "label": "gitcode-current-windows-repeat",
+      "anonymous": true,
+      "range": "bytes=0-1048575",
+      "status": 206,
+      "contentRange": "bytes 0-1048575/556125494",
+      "finalHost": "file-cdn.gitcode.com",
+      "readBytes": 1048576,
+      "elapsedMs": 680,
+      "firstByteMs": 543,
+      "overallBytesPerSecond": 1541997.6714714004,
+      "payloadBytesPerSecond": 7637393.599006795,
+      "firstMiBSha256": "83a389efffb528f2170b19a2cb8311f5ee82e3c3e2376510cfa4ed1ed24185a3",
+      "matchesLocalFirstMiB": true
+    },
+    {
+      "label": "github-history-android",
+      "publicUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.1/seal-office-2.7.1-android.apk",
+      "anonymous": true,
+      "range": "bytes=0-1048575",
+      "readBytes": 228428,
+      "elapsedMs": 25003,
+      "outcome": "25秒上限到达，未完成首1MiB读取",
+      "errorCode": 23,
+      "approximateBytesPerSecond": 9136.02367715874
+    },
+    {
+      "label": "server-public-https-web",
+      "anonymous": true,
+      "siteDnsAddress": "192.140.178.117",
+      "range": "bytes=0-1048575",
+      "status": 200,
+      "bodyReadBytes": 0,
+      "speedConclusion": null,
+      "outcome": "期望范围响应206，实际收到200，探针未读取正文；此项未形成下载速度或范围请求通过结论。"
+    }
+  ],
+  "transferStagesObserved": {
+    "github": "最初正式v2.7.2资产列表为空；之后日志显示Windows EXE uploaded，后续附件继续。",
+    "gitcode": "后续日志显示六个成品及SHA256SUMS.txt全部uploaded，发布脚本进入匿名全字节下载核验阶段。",
+    "backendApps": "采样时仍在第一个Windows附件流式上传，服务端.part持续增长，未到批量上架步骤。",
+    "backendWeb": "日志已显示上传、公开全字节下载和旧版/当前版本查询均验证通过；正式记录为docs/verification/v2.7.2/backend-update-web.json。"
+  },
+  "sourceReview": {
+    "backendPublisher": "scripts/publish-backend-update.py upload_and_publish()/verify()",
+    "uploadApi": "POST /api/v1/admin/release-assets",
+    "publishApi": "POST /api/v1/admin/releases/batch",
+    "serverValidation": "server/releaseAssets.cjs 按流写盘、检查准确Content-Length和1GiB上限、计算服务端SHA-256并验证平台包结构；未上架附件不公开。",
+    "authentication": "沿用原管理员登录与Bearer会话鉴权，不能通过直接复制到数据目录或直接写库替代。"
+  },
+  "recommendation": {
+    "worthSwitching": true,
+    "preferredDownloadSource": "GitCode已发布的当前版本公开附件",
+    "basis": "当前后台实际上传约0.548MB/s；服务器从GitCode读取前1MiB的整体速度约1.13至1.54MB/s，扣除连接及响应等待的载荷阶段约7.64至8.13MB/s；两次范围响应正确，其中一次内容前缀与本地同字节。GitHub备用路线25秒未完成首1MiB。",
+    "sampleLimitation": "首1MiB仅反映小样本链路，不能保证整个大文件同速，也不能代替全文件SHA-256。",
+    "safeSequence": [
+      "从GitCode公开URL拉取已发布的当前版本成品到隔离临时位置，逐个核对完整大小与预期SHA-256。",
+      "经原管理员鉴权及同一release-assets上传API提交这些确定字节；核对服务端返回的平台、文件名、大小和SHA-256。",
+      "所有拟发布平台附件一致后，走原releases/batch接口完成发布；不直接写数据库或构造存储元数据。",
+      "在服务器使用完整公开HTTPS URL匿名读取全部字节核对SHA-256，报告明确验证位置；本机外部再验证首尾Range、旧版发现更新与当前版无更新。"
+    ],
+    "execution": "本调查只提供依据，未执行上述迁移、上传或发布。原任务是否停止及后续服务器操作由主任务另行决定。"
+  },
+  "logsRead": [
+    ".upgrade-private/v2.7.2-logs/github-release-publish.log",
+    ".upgrade-private/v2.7.2-logs/gitcode-release-publish.log",
+    ".upgrade-private/v2.7.2-logs/backend-publish-apps.log",
+    ".upgrade-private/v2.7.2-logs/backend-publish-web.log"
+  ]
+}

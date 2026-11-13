@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "observedAt": "2026-11-13T14:21:00.272Z",
+  "observedAt": "2026-11-13T15:11:02.082Z",
   "environment": "正式环境，只读",
   "origin": "https://seal.xingmasoft.com",
   "allowedMutations": [
@@ -9,10 +9,69 @@
   "businessMutations": 0,
   "checks": [
     "正式页面默认仅展示版本列表",
+    "真实 2.7.2 稳定版六个平台均已上架并绑定附件，列表按版本显示全部六个平台",
     "点击发布版本打开弹窗，七个平台默认未选",
     "1440 与 390 宽度无页面横向溢出",
     "取消弹窗不发送发布请求"
   ],
+  "releaseRecords": [
+    {
+      "platform": "android",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-2.7.2-android.apk",
+      "bytes": 41206228,
+      "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf"
+    },
+    {
+      "platform": "harmony",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-2.7.2-harmony.hap",
+      "bytes": 66487475,
+      "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29"
+    },
+    {
+      "platform": "linux",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-2.7.2-amd64.deb",
+      "bytes": 168906560,
+      "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126"
+    },
+    {
+      "platform": "web",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-2.7.2-web.zip",
+      "bytes": 49915274,
+      "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883"
+    },
+    {
+      "platform": "windows",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-setup-2.7.2.exe",
+      "bytes": 556125494,
+      "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef"
+    },
+    {
+      "platform": "windows-store",
+      "version": "2.7.2",
+      "channel": "stable",
+      "withdrawn": false,
+      "filename": "seal-office-2.7.2-microsoft-store-x64.msix",
+      "bytes": 782852774,
+      "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2"
+    }
+  ],
+  "publishedPlatformCount": 6,
+  "macosPublished": false,
   "widths": [
     {
       "width": 1440,
@@ -62,8 +121,6 @@
     }
   ],
   "blockedRequests": [],
-  "captureRelease": "2.7.2-backend-20261113141911",
-  "latestDeploymentRelease": "2.7.2-backend-20261113142454",
-  "sameAdminBuildVerifiedByFinalPublicProbe": true,
-  "captureNote": "最后一次部署只改服务端 macOS 新建附件约束，后台界面构建未变；最终公网复核再次核对 HTML、脚本和样式摘要。"
+  "captureRelease": "2.7.2-backend-20261113142454",
+  "captureNote": "正式六平台上架后的只读截图。六条平台记录按一个 2.7.2 稳定版本行分组展示；后续 Range 修复未改变界面构建。"
 }

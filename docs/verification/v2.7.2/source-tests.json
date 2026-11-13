@@ -1,6 +1,7 @@
 {
   "version": "2.7.2",
   "sourceCommit": "de6fbab9bfe0ebed8c80355add3c93d14059121c",
+  "sourceCommitScope": "应用构建源码；实际 Nginx 范围回归对应后续主分支的服务器配置修复，不改变冻结安装包与 Web 资源。",
   "passed": true,
   "checks": [
     {
@@ -79,6 +80,12 @@
       "files": 7,
       "passed": 121,
       "failed": 0
+    },
+    {
+      "scope": "实际Nginx代理缓存继承与范围请求",
+      "passed": 5,
+      "failed": 0,
+      "redBeforeFix": true
     }
   ],
   "note": "首次全量结果与修复后复验分别呈现；最后错误分支修复后未重复整套耗时全量扫描。实际安装包与各端浏览器验证见同目录对应报告。"

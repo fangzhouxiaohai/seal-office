@@ -1,0 +1,403 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "observedAt": "2026-11-13T15:19:33.656411+00:00",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.2.exe",
+      "bytes": 556125494,
+      "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a3773b25-bc0e-4c5c-89f2-630e7921fdac/seal-office-setup-2.7.2.exe",
+      "assetId": "a3773b25-bc0e-4c5c-89f2-630e7921fdac",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "bytes": 556125494,
+        "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a3773b25-bc0e-4c5c-89f2-630e7921fdac/seal-office-setup-2.7.2.exe"
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      },
+      "fullDownloadVerification": {
+        "passed": true,
+        "location": "正式服务器访问公开 HTTPS 地址，无管理员令牌，完整读取全部字节",
+        "tlsVerification": "default"
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.2-microsoft-store-x64.msix",
+      "bytes": 782852774,
+      "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/45f3592f-dee4-49b1-b203-4c3a41810b1c/seal-office-2.7.2-microsoft-store-x64.msix",
+      "assetId": "45f3592f-dee4-49b1-b203-4c3a41810b1c",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "bytes": 782852774,
+        "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3"
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      },
+      "fullDownloadVerification": {
+        "passed": true,
+        "location": "正式服务器访问公开 HTTPS 地址，无管理员令牌，完整读取全部字节",
+        "tlsVerification": "default"
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.2-amd64.deb",
+      "bytes": 168906560,
+      "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/84e14b7f-21a9-4352-9139-ae717a0d6fb0/seal-office-2.7.2-amd64.deb",
+      "assetId": "84e14b7f-21a9-4352-9139-ae717a0d6fb0",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "bytes": 168906560,
+        "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/84e14b7f-21a9-4352-9139-ae717a0d6fb0/seal-office-2.7.2-amd64.deb"
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      },
+      "fullDownloadVerification": {
+        "passed": true,
+        "location": "正式服务器访问公开 HTTPS 地址，无管理员令牌，完整读取全部字节",
+        "tlsVerification": "default"
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.2-android.apk",
+      "bytes": 41206228,
+      "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/e9a0a088-5139-4c8a-897a-d58cb17950d2/seal-office-2.7.2-android.apk",
+      "assetId": "e9a0a088-5139-4c8a-897a-d58cb17950d2",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "bytes": 41206228,
+        "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/e9a0a088-5139-4c8a-897a-d58cb17950d2/seal-office-2.7.2-android.apk"
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      },
+      "fullDownloadVerification": {
+        "passed": true,
+        "location": "正式服务器访问公开 HTTPS 地址，无管理员令牌，完整读取全部字节",
+        "tlsVerification": "default"
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.2-harmony.hap",
+      "bytes": 66487475,
+      "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/296c61a7-a8ed-4eb7-b808-f7ee9cabbee9/seal-office-2.7.2-harmony.hap",
+      "assetId": "296c61a7-a8ed-4eb7-b808-f7ee9cabbee9",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "bytes": 66487475,
+        "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/296c61a7-a8ed-4eb7-b808-f7ee9cabbee9/seal-office-2.7.2-harmony.hap"
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      },
+      "fullDownloadVerification": {
+        "passed": true,
+        "location": "正式服务器访问公开 HTTPS 地址，无管理员令牌，完整读取全部字节",
+        "tlsVerification": "default"
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.2-web.zip",
+      "bytes": 49915274,
+      "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a0cb7995-6483-4fa0-8248-eeb59aea558d/seal-office-2.7.2-web.zip",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.2\n\n本版围绕简洁模式、默认缩放与后台版本发布升级；移动构建号为 20702，应用身份与原签名保持不变。\n\n## 编辑与查看\n\n- 设置新增“简洁模式”，默认开启。文件工作区收起顶部标题及常驻同步提示，功能区按钮保留图标、中文悬停提示和辅助名称，隐藏按钮文字及底部分组名称。首页、设置入口和必要操作继续可用。\n- 简洁模式只影响显示，云自动保存继续运行；保存失败、冲突等需要处理的状态仍会显示。\n- 新打开的文字、表格、演示、PDF 与 OFD 默认按 100% 查看。设置新增“默认放大至 150%”，默认关闭，开启后作用于后续打开的文件。\n- 当前文件手动调整的比例不会被设置切换或返回设置页覆盖。查看比例不改变正文、导出或打印尺寸；表格原有文件视图信息继续保留。\n\n## 后台版本发布与更新检查\n\n- 修复服务器仍运行旧版后台导致“版本管理”入口缺失、匿名更新查询被登录校验拦截的问题，补齐部署清单与后台构建校验。\n- 版本页主要显示发布列表，点击“发布版本”后在大弹窗填写说明及分别上传附件；后台采用深色顶栏与侧栏、浅色内容区和紧凑表格。\n- 同一版本支持 Windows 安装程序、微软商店、Ubuntu、macOS、Android、HarmonyOS 与 Web 分别上传，平台均可选，可只发布部分平台。\n- macOS 使用独立更新通道及 `seal-office-2.7.2-macos.dmg` 命名，上传时校验 DMG 格式，客户端打开对应下载地址；没有真实安装包时不创建该平台发布记录。\n- 上传完成后由服务器计算大小与 SHA-256，核验平台、版本、文件名及包格式；批量发布全部校验通过后统一写入，避免部分成功。\n- 安装包只在发布后提供公开下载，下架后停止该附件的匿名下载；支持安装包的大文件上传和范围下载。\n- 更新检查按实际平台查询，异常提示区分服务未部署、连接失败等情况；微软商店版本继续进入既有商店页面。\n- 从本版开始，打包与验收完成后直接上传后台发布更新，再核验旧版发现新包、新版显示已是最新版本及公开下载字节一致性。\n\n## 安装包与发布流程\n\n- 安卓正式包由根目录 `android-studio/` 的 Java 工程本机编译，默认打包入口统一到该工程，发布前验证原证书、应用身份、构建号和内置资源。\n- 鸿蒙本机重打包同步原生版本与网页资源，HAP 和 App Pack 分别签名、分别验签。App Pack 仅保留作 AppGallery 上架，不上传仓库发行页。\n- Windows 交付安装程序和微软商店 MSIX，继续保留中文程序名“海豹办公”；发行文件统一使用 `seal-office` 前缀。\n- 安装包和 Web 发布到 GitHub 与 GitCode 的本版发行页，校验值以 `SHA256SUMS.txt` 为准。发布流程与验证记录见 `docs/verification/v2.7.2-release.md`。\n\n## 平台说明\n\n- 本轮新增 macOS 发布与客户端更新能力；当前 Windows 构建环境尚未生成及签名 DMG，因此本版不创建没有真实安装包的 macOS 发布记录。\n- 微软商店 MSIX 是商店上传包，商店审核和分发由微软处理；不能把本地生成或后台登记等同于商店审核通过。\n- 鸿蒙当前使用 Release Profile，HAP 需通过 AppGallery 正式或测试渠道安装；直接通过 hdc 安装还需要包含设备 UDID 的调试 Profile。\n- Ubuntu 22.04、24.04 已分别完成 77 项安装运行验收；正式 DEB 使用这份已验证产物。当前没有已连接的鸿蒙设备，浏览器与签名检查不代表真机安装；iOS 本轮未生成 IPA。\n- 第三方 Office 文件的既有格式兼容范围不变；本轮升级不代表已经覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a0cb7995-6483-4fa0-8248-eeb59aea558d/seal-office-2.7.2-web.zip",
+        "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+        "bytes": 49915274,
+        "publishedAt": 1794581511096
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ],
+  "externalVerification": {
+    "passed": true,
+    "version": "2.7.2",
+    "observedAt": "2026-11-13T15:18:09.206Z",
+    "verificationLocation": "本机外部网络，Node.js 默认 TLS，匿名请求",
+    "authorizationSent": false,
+    "checks": [
+      {
+        "platform": "windows",
+        "filename": "seal-office-setup-2.7.2.exe",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a3773b25-bc0e-4c5c-89f2-630e7921fdac/seal-office-setup-2.7.2.exe",
+        "head": {
+          "status": 200,
+          "contentLength": 556125494,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/556125494",
+            "bytes": 65536,
+            "sha256": "510710d9f8b09f0ca2877cc6d4c45585dd888a2f8f8971d88527f985af340d8b",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 556059958-556125493/556125494",
+            "bytes": 65536,
+            "sha256": "ad4d8151adeedcb531d0964d172569fcf968c8306a8eabb670f78a43cdb866d7",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 556125494,
+          "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef",
+          "url": "https://seal.xingmasoft.com/api/v1/release-assets/a3773b25-bc0e-4c5c-89f2-630e7921fdac/seal-office-setup-2.7.2.exe"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      },
+      {
+        "platform": "windows-store",
+        "filename": "seal-office-2.7.2-microsoft-store-x64.msix",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/45f3592f-dee4-49b1-b203-4c3a41810b1c/seal-office-2.7.2-microsoft-store-x64.msix",
+        "head": {
+          "status": 200,
+          "contentLength": 782852774,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/782852774",
+            "bytes": 65536,
+            "sha256": "f3f1fd3251580c2847bcbbb1a6f6eb63262e2eb9bee75b7be83a4da721fc3102",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 782787238-782852773/782852774",
+            "bytes": 65536,
+            "sha256": "46fdeebcb9e113ef2de272f7025db1cc6697481172056fb4d8c873dc06ac79fa",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 782852774,
+          "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2",
+          "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      },
+      {
+        "platform": "linux",
+        "filename": "seal-office-2.7.2-amd64.deb",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/84e14b7f-21a9-4352-9139-ae717a0d6fb0/seal-office-2.7.2-amd64.deb",
+        "head": {
+          "status": 200,
+          "contentLength": 168906560,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/168906560",
+            "bytes": 65536,
+            "sha256": "8d5952e726ab4ceeaafe2ff325d4c9c19f2a228d4d6043373f802c1292e00c4d",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 168841024-168906559/168906560",
+            "bytes": 65536,
+            "sha256": "50552dfe2487f219cc9caa1a28a03a2aca70a8c8fe823eb8c15a6becd5708c7f",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 168906560,
+          "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+          "url": "https://seal.xingmasoft.com/api/v1/release-assets/84e14b7f-21a9-4352-9139-ae717a0d6fb0/seal-office-2.7.2-amd64.deb"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      },
+      {
+        "platform": "android",
+        "filename": "seal-office-2.7.2-android.apk",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/e9a0a088-5139-4c8a-897a-d58cb17950d2/seal-office-2.7.2-android.apk",
+        "head": {
+          "status": 200,
+          "contentLength": 41206228,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/41206228",
+            "bytes": 65536,
+            "sha256": "e0df2c8602e6f0c50f842a2bcefd7d85b51d063a7d964bfa9dfc2cd60e7c9394",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 41140692-41206227/41206228",
+            "bytes": 65536,
+            "sha256": "b4d1ef1b4a2a86cc9daad206d1a2d12cfa4df07cbb9f0c59ab935c22ce4ad35a",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 41206228,
+          "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf",
+          "url": "https://seal.xingmasoft.com/api/v1/release-assets/e9a0a088-5139-4c8a-897a-d58cb17950d2/seal-office-2.7.2-android.apk"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      },
+      {
+        "platform": "harmony",
+        "filename": "seal-office-2.7.2-harmony.hap",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/296c61a7-a8ed-4eb7-b808-f7ee9cabbee9/seal-office-2.7.2-harmony.hap",
+        "head": {
+          "status": 200,
+          "contentLength": 66487475,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/66487475",
+            "bytes": 65536,
+            "sha256": "49830569ae05786ffb2ef3226013601985f2992ea1c6bc0e0ac3fa94bdf8848c",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 66421939-66487474/66487475",
+            "bytes": 65536,
+            "sha256": "c91f58a634587628e8e26ff7931a183ccd721f9eb2c4c67e2fce22fa6b0f7c45",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 66487475,
+          "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+          "url": "https://seal.xingmasoft.com/api/v1/release-assets/296c61a7-a8ed-4eb7-b808-f7ee9cabbee9/seal-office-2.7.2-harmony.hap"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      },
+      {
+        "platform": "web",
+        "filename": "seal-office-2.7.2-web.zip",
+        "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a0cb7995-6483-4fa0-8248-eeb59aea558d/seal-office-2.7.2-web.zip",
+        "head": {
+          "status": 200,
+          "contentLength": 49915274,
+          "acceptRanges": "bytes"
+        },
+        "ranges": [
+          {
+            "requestedRange": "bytes=0-65535",
+            "status": 206,
+            "contentRange": "bytes 0-65535/49915274",
+            "bytes": 65536,
+            "sha256": "fc3be13cd1915b5e0bc6634bf064b6b6bfc1cfa209eae912ed358cf13fc1b9cf",
+            "matchesFrozenArtifact": true
+          },
+          {
+            "requestedRange": "bytes=-65536",
+            "status": 206,
+            "contentRange": "bytes 49849738-49915273/49915274",
+            "bytes": 65536,
+            "sha256": "cd33a66c6bb5a637335b198a208c776dfdbb1f19d644066de29799e39bdf6fdd",
+            "matchesFrozenArtifact": true
+          }
+        ],
+        "oldVersion": "2.7.1",
+        "oldResponse": {
+          "hasUpdate": true,
+          "version": "2.7.2",
+          "bytes": 49915274,
+          "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+          "url": "https://seal.xingmasoft.com/api/v1/release-assets/a0cb7995-6483-4fa0-8248-eeb59aea558d/seal-office-2.7.2-web.zip"
+        },
+        "currentResponse": {
+          "hasUpdate": false
+        }
+      }
+    ],
+    "macosResponse": {
+      "hasUpdate": false
+    },
+    "boundary": "完整附件全部字节由服务器侧匿名 HTTPS 核验；本机独立核验 HEAD、首尾各 65536 字节与冻结成品一致，以及旧版/新版更新协议。"
+  },
+  "method": {
+    "apps": "服务器以公开HTTPS地址匿名下载全部字节并验SHA，本机另核HEAD、首尾206与旧/新版本查询",
+    "web": "本机匿名完整下载全部字节并验SHA，亦纳入最终外部HEAD/首尾206/旧新版本检查"
+  },
+  "macosPublished": false,
+  "appPackPublished": false,
+  "rangeFix": "backend-range-fix.json",
+  "protectedExistingRecordsUnchanged": true
+}

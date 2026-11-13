@@ -1,0 +1,164 @@
+{
+  "version": "2.7.2",
+  "recordedAt": "2026-11-13T15:06:35.687189+00:00",
+  "sourceCommit": "de6fbab9bfe0ebed8c80355add3c93d14059121c",
+  "tag": "v2.7.2",
+  "tagCommit": "4644c6bcdc0184275ac7be397118326daa1356ed",
+  "github": {
+    "passed": true,
+    "releaseId": 444354337,
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "seal-office-setup-2.7.2.exe",
+        "bytes": 556125494,
+        "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-setup-2.7.2.exe",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "seal-office-2.7.2-microsoft-store-x64.msix",
+        "bytes": 782852774,
+        "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-2.7.2-microsoft-store-x64.msix",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "seal-office-2.7.2-amd64.deb",
+        "bytes": 168906560,
+        "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-2.7.2-amd64.deb",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "seal-office-2.7.2-android.apk",
+        "bytes": 41206228,
+        "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-2.7.2-android.apk",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "seal-office-2.7.2-harmony.hap",
+        "bytes": 66487475,
+        "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-2.7.2-harmony.hap",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "seal-office-2.7.2-web.zip",
+        "bytes": 49915274,
+        "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/seal-office-2.7.2-web.zip",
+        "githubDigestVerified": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 581,
+        "sha256": "9a1ba803e3199c3666adef063a895f3a161819156cde7d9820790ad2cbc14e17",
+        "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.2/SHA256SUMS.txt",
+        "githubDigestVerified": true
+      }
+    ],
+    "verification": "GitHub上传完成状态、实际大小和服务端SHA-256逐项与本地冻结清单一致"
+  },
+  "gitcode": {
+    "passed": true,
+    "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2",
+    "assetCount": 7,
+    "platformGeneratedSourceArchives": 4,
+    "metadataSizesVerified": true,
+    "fullDownloadVerification": "正式服务器，默认 TLS 匿名下载全部字节",
+    "evidence": "gitcode-assets-verified.json",
+    "originalClientUploadComplete": true,
+    "duplicateClientDownloadStoppedAfterIndependentFullVerification": true,
+    "assets": [
+      {
+        "platform": "windows",
+        "filename": "seal-office-setup-2.7.2.exe",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-setup-2.7.2.exe/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:04:48.431Z",
+        "completedAt": "2026-11-13T15:05:48.661Z",
+        "elapsedMs": 60229,
+        "bytes": 556125494,
+        "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "windows-store",
+        "filename": "seal-office-2.7.2-microsoft-store-x64.msix",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-2.7.2-microsoft-store-x64.msix/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:05:48.661Z",
+        "completedAt": "2026-11-13T15:07:01.371Z",
+        "elapsedMs": 72710,
+        "bytes": 782852774,
+        "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "linux",
+        "filename": "seal-office-2.7.2-amd64.deb",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-2.7.2-amd64.deb/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:07:01.371Z",
+        "completedAt": "2026-11-13T15:07:43.296Z",
+        "elapsedMs": 41925,
+        "bytes": 168906560,
+        "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "android",
+        "filename": "seal-office-2.7.2-android.apk",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-2.7.2-android.apk/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:07:43.296Z",
+        "completedAt": "2026-11-13T15:07:47.857Z",
+        "elapsedMs": 4561,
+        "bytes": 41206228,
+        "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "harmony",
+        "filename": "seal-office-2.7.2-harmony.hap",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-2.7.2-harmony.hap/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:07:47.858Z",
+        "completedAt": "2026-11-13T15:07:54.287Z",
+        "elapsedMs": 6429,
+        "bytes": 66487475,
+        "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "web",
+        "filename": "seal-office-2.7.2-web.zip",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/seal-office-2.7.2-web.zip/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:07:54.287Z",
+        "completedAt": "2026-11-13T15:07:59.355Z",
+        "elapsedMs": 5068,
+        "bytes": 49915274,
+        "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      },
+      {
+        "platform": "checksums",
+        "filename": "SHA256SUMS.txt",
+        "sourceUrl": "https://api.gitcode.com/api/v5/repos/gcw_pGfMiWVg/seal-office/releases/v2.7.2/attach_files/SHA256SUMS.txt/download",
+        "httpStatus": 200,
+        "startedAt": "2026-11-13T15:07:59.355Z",
+        "completedAt": "2026-11-13T15:07:59.784Z",
+        "elapsedMs": 429,
+        "bytes": 581,
+        "sha256": "9a1ba803e3199c3666adef063a895f3a161819156cde7d9820790ad2cbc14e17",
+        "verificationLocation": "正式服务器从 GitCode 匿名完整下载，Node.js 默认 TLS"
+      }
+    ]
+  },
+  "passed": true
+}

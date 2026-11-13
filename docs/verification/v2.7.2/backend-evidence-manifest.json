@@ -1,15 +1,15 @@
 {
   "passed": true,
   "version": "2.7.2",
-  "checkedAt": "2026-11-13T14:30:28.309Z",
+  "checkedAt": "2026-11-13T15:21:26.810Z",
   "credentialValuesFound": false,
   "containsBrowserProfile": false,
   "containsRawLogs": false,
   "files": [
     {
       "file": "backend-deployment.json",
-      "bytes": 1652,
-      "sha256": "b9ab7e9a54e591fa382d29a28ab30112194fbb4cebd51a30e65a1444373bec61"
+      "bytes": 1807,
+      "sha256": "a042758bc106624a21221d574a6eab2c8d550bdcc3cd4841a56add3eff752c3c"
     },
     {
       "file": "backend-isolated-ui.json",
@@ -18,28 +18,58 @@
     },
     {
       "file": "backend-production-ui.json",
-      "bytes": 1732,
-      "sha256": "cd729530e5856ec1ad71744c405d15ca1e0324c007544b4232008c49d85582b2"
+      "bytes": 3501,
+      "sha256": "02fd16ee6972496828fc74a23ac11a03126cbb06a423385eb920b930b84640a3"
     },
     {
       "file": "backend-public-probes.json",
-      "bytes": 3194,
-      "sha256": "a3be58e6ee979b369f75479c1759b30c0139ddfc618d41845a4def5a29ff6040"
+      "bytes": 3361,
+      "sha256": "910a5b8cd2c5f8458212ccd71f997031e957e4b23999f9e581bc1464f7fb8969"
+    },
+    {
+      "file": "backend-range-fix.json",
+      "bytes": 1934,
+      "sha256": "b5a7c13a89188f40617f8e1c70204e576050f9fda1ba6f7f62dc374b46d0dbfe"
     },
     {
       "file": "backend-tests.json",
-      "bytes": 1689,
-      "sha256": "b9909836a952aec29c63d38a0898bd654292a2942a630a48185c48130ec55028"
+      "bytes": 2314,
+      "sha256": "008f32e85369f06a6767e6287ea860c683a90d55d27b6bee9b2c0928ce0a7144"
+    },
+    {
+      "file": "backend-update-apps.json",
+      "bytes": 16621,
+      "sha256": "ab3332b03a5339b1659217ce2ce64be9c569995a98b652c2fe12690c6914708b"
+    },
+    {
+      "file": "backend-update-external.json",
+      "bytes": 8839,
+      "sha256": "3ee46f089a8489dfafa1578bae22e421116c55e0d163383c70f8b092e169ca90"
+    },
+    {
+      "file": "backend-update-web.json",
+      "bytes": 4857,
+      "sha256": "d49c901fff94fe871661617d0f8149405ce292be008efcaeeebbeaec7746f86c"
+    },
+    {
+      "file": "backend-update.json",
+      "bytes": 19858,
+      "sha256": "e0af9015328afc39c59e60b2fb6025d9f717c8f68f96efbaa1b585323eb864d0"
     },
     {
       "file": "backend.md",
-      "bytes": 14993,
-      "sha256": "ec30e67cc4c9fb5639cd338a1978bdcc429a354a660d1f6d6fa82da776106e65"
+      "bytes": 19342,
+      "sha256": "9fa9b9c797f38bbb8ea4ffe81afff146f1985a55da0cdb0d5af31136dff5e257"
+    },
+    {
+      "file": "gitcode-assets-verified.json",
+      "bytes": 4620,
+      "sha256": "d52e86fa2ba65aa5212c021551064542cfd32be4ea05879d9c4576fb70eba14b"
     },
     {
       "file": "后台正式弹窗-1440.png",
-      "bytes": 101533,
-      "sha256": "11786be25d1dba60aa2884ce3970c1cc44d704600e93066e043899bc1d0ad5b1"
+      "bytes": 102409,
+      "sha256": "451588f5b0ecadfc72e251384b4843b62f3d3623f0e3f3c2d62712ae8e5bcdbf"
     },
     {
       "file": "后台正式弹窗-390.png",
@@ -48,13 +78,13 @@
     },
     {
       "file": "后台正式环境-1440.png",
-      "bytes": 52364,
-      "sha256": "a38fba1cd6dba91a0d9c21994af7800b69aa182ba2d8c2bc75e5e933dad68d9d"
+      "bytes": 57604,
+      "sha256": "f2b47a52b0cac23a06be3a71dac2ec244790cdbea087f6507b9a91884ad21dfb"
     },
     {
       "file": "后台正式环境-390.png",
-      "bytes": 29957,
-      "sha256": "31f9b048a67a47182b1b18cf1d1e3bc43fafb60e505b1cfe8f5a8abcc108b8d8"
+      "bytes": 31306,
+      "sha256": "cd4a5298e9e18d9adfc71b37dc4f2fdcf1abd752fe6613a9ae8cb767bd70bb14"
     },
     {
       "file": "后台隔离-发布弹窗-1440-底部.png",

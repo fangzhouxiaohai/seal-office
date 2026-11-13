@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "observedAt": "2026-11-13T15:17:17.864Z",
+  "backendRelease": "2.7.2-backend-20261113142454",
+  "backendPointerUnchanged": true,
+  "backup": "deployment-config-backups/2.7.2-range-20261113151750",
+  "nginxSyntaxPassed": true,
+  "nginxReloaded": true,
+  "beforeSha256": "f6dd7bc7f7cc0a5a18077828caf017f813a2014a0846f5b9d036a26b90f402f7",
+  "afterSha256": "3bbd099792160f273f02d148129b28033c744175c6466fa6fda8b46940686f39",
+  "normalTlsDirectProbe": {
+    "status": 206,
+    "contentRange": "bytes 0-65535/556125494",
+    "bytes": 65536,
+    "sha256": "510710d9f8b09f0ca2877cc6d4c45585dd888a2f8f8971d88527f985af340d8b"
+  },
+  "rollbackNeeded": false,
+  "cause": {
+    "configuration": "/www/server/nginx/conf/proxy.conf",
+    "line": 12,
+    "directive": "proxy_cache cache_one;",
+    "includeConfiguration": "/www/server/nginx/conf/nginx.conf",
+    "includeLine": 27,
+    "before": {
+      "upstreamLoopbackStatus": 206,
+      "publicHttpsStatus": 200,
+      "directHttpsWithOriginalHostAndSniStatus": 200
+    },
+    "explanation": "附件路由继承 http 级代理缓存，Nginx 默认不向上游传递 Range。"
+  },
+  "change": {
+    "repositoryFile": "server/deploy/nginx-release-assets.conf",
+    "scope": "location ^~ /api/v1/release-assets/",
+    "directive": "proxy_cache off;",
+    "otherRoutesUnchanged": true,
+    "applicationPackagesRebuilt": false
+  },
+  "testFirst": {
+    "red": "真实隔离 Nginx 复现 200 != 206",
+    "greenChecks": 5,
+    "deploymentRegressionPassed": 10,
+    "testCommand": "node scripts/verify-nginx-release-range.cjs <附件路由配置> <nginx可执行文件>"
+  },
+  "reference": "https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_set_header",
+  "externalSixPlatformChecks": {
+    "passed": true,
+    "report": "backend-update-external.json",
+    "headStatus": 200,
+    "prefixStatus": 206,
+    "suffixStatus": 206,
+    "allMatchFrozenBytes": true
+  }
+}

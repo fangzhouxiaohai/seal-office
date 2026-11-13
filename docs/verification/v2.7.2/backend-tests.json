@@ -1,7 +1,7 @@
 {
   "passed": true,
   "version": "2.7.2",
-  "observedAt": "2026-11-13T14:25:26.618Z",
+  "observedAt": "2026-11-13T15:20:28.570Z",
   "suites": [
     {
       "name": "服务端全量",
@@ -30,6 +30,16 @@
       "failed": 0,
       "cancelled": 0,
       "skipped": 0
+    },
+    {
+      "name": "真实 Nginx 附件范围回归",
+      "command": "node scripts/verify-nginx-release-range.cjs server/deploy/nginx-release-assets.conf /www/server/nginx/sbin/nginx",
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "verificationSource": "正式服务器运行独立 Nginx 实例、Unix 套接字和隔离源站，未连接生产业务接口"
     }
   ],
   "countingNote": "附件 13 项包含在服务端全量 85 项中，不能重复相加。此前 80/83 项全量属于追加检查之前的历史验证。",
@@ -38,7 +48,8 @@
     "真实浏览器先因默认展开表单失败，再实现弹窗与紧凑布局。",
     "上传结束的旧关闭保护提示先由失败断言暴露，再清除。",
     "重复部署先因继承上次备份而切换前中止，新增失败回归后改为独立备份目录。",
-    "单项和批量新建 macOS 仅填 URL 的 2 条回归先得到错误的 200，再约束新建必须绑定已校验附件；历史记录 PATCH 与绑定元数据保持兼容。"
+    "单项和批量新建 macOS 仅填 URL 的 2 条回归先得到错误的 200，再约束新建必须绑定已校验附件；历史记录 PATCH 与绑定元数据保持兼容。",
+    "继承全局 proxy_cache cache_one 时真实隔离 Nginx 返回 200 而非 206；下载 location 关闭继承缓存后 5 项通过，正式重载后外部六平台均返回准确首尾 206。"
   ],
   "independentReview": "已只读审查 UDIF、平台枚举、上传保护与批量发布，未发现阻断问题。"
 }
