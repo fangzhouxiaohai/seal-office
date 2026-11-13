@@ -1,0 +1,170 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "checkedAt": "2026-11-13T14:30:28.309Z",
+  "credentialValuesFound": false,
+  "containsBrowserProfile": false,
+  "containsRawLogs": false,
+  "files": [
+    {
+      "file": "backend-deployment.json",
+      "bytes": 1652,
+      "sha256": "b9ab7e9a54e591fa382d29a28ab30112194fbb4cebd51a30e65a1444373bec61"
+    },
+    {
+      "file": "backend-isolated-ui.json",
+      "bytes": 4354,
+      "sha256": "32530f64e9062b6292a04ab46b5fef6c87d26c04e6d07f8515daeeae473f4664"
+    },
+    {
+      "file": "backend-production-ui.json",
+      "bytes": 1732,
+      "sha256": "cd729530e5856ec1ad71744c405d15ca1e0324c007544b4232008c49d85582b2"
+    },
+    {
+      "file": "backend-public-probes.json",
+      "bytes": 3194,
+      "sha256": "a3be58e6ee979b369f75479c1759b30c0139ddfc618d41845a4def5a29ff6040"
+    },
+    {
+      "file": "backend-tests.json",
+      "bytes": 1689,
+      "sha256": "b9909836a952aec29c63d38a0898bd654292a2942a630a48185c48130ec55028"
+    },
+    {
+      "file": "backend.md",
+      "bytes": 14993,
+      "sha256": "ec30e67cc4c9fb5639cd338a1978bdcc429a354a660d1f6d6fa82da776106e65"
+    },
+    {
+      "file": "后台正式弹窗-1440.png",
+      "bytes": 101533,
+      "sha256": "11786be25d1dba60aa2884ce3970c1cc44d704600e93066e043899bc1d0ad5b1"
+    },
+    {
+      "file": "后台正式弹窗-390.png",
+      "bytes": 55031,
+      "sha256": "14c893d99d6ad021ec61b106b04e41fae9adece600673504667f22d15837e831"
+    },
+    {
+      "file": "后台正式环境-1440.png",
+      "bytes": 52364,
+      "sha256": "a38fba1cd6dba91a0d9c21994af7800b69aa182ba2d8c2bc75e5e933dad68d9d"
+    },
+    {
+      "file": "后台正式环境-390.png",
+      "bytes": 29957,
+      "sha256": "31f9b048a67a47182b1b18cf1d1e3bc43fafb60e505b1cfe8f5a8abcc108b8d8"
+    },
+    {
+      "file": "后台隔离-发布弹窗-1440-底部.png",
+      "bytes": 106409,
+      "sha256": "b8dee67bd357cf519324c9912bdd63b24d947810fd4cca17bc6c32d3d31a8185"
+    },
+    {
+      "file": "后台隔离-发布弹窗-1440.png",
+      "bytes": 105375,
+      "sha256": "b985e218611632279cbe3e37073f09a85ff4dc0e601384dffde93b7cf115aed4"
+    },
+    {
+      "file": "后台隔离-发布弹窗-390-底部.png",
+      "bytes": 50295,
+      "sha256": "a79d9f592a8c128f0952b7443047453e1b3bea92c5dd982003dcc739f1d24209"
+    },
+    {
+      "file": "后台隔离-发布弹窗-390.png",
+      "bytes": 57157,
+      "sha256": "04ff217469c2343ebcb0c8e2b8bb48af0a869e651fc6228f36b76bcfa1ca5363"
+    },
+    {
+      "file": "后台隔离-操作记录-1440.png",
+      "bytes": 52152,
+      "sha256": "9e5954ac5a4c86fe1b1655c4e1ad5193a03598ca01ca9ae4492310ec0c4c2578"
+    },
+    {
+      "file": "后台隔离-操作记录-390.png",
+      "bytes": 28420,
+      "sha256": "559c8e6fdfd1e1de36b0d76330e8b7fabcf390f5b0795bc23c0f261576eadaca"
+    },
+    {
+      "file": "后台隔离-文档转换-1440.png",
+      "bytes": 105928,
+      "sha256": "81655a1de9d53f33a0ed7eac5a438804607b2309484f90319d5b1a1b5d5c49ec"
+    },
+    {
+      "file": "后台隔离-文档转换-390.png",
+      "bytes": 52328,
+      "sha256": "92af770e44ea18177dd73bf9f02e67faf24412940e77a0d8a81e662f652f8d60"
+    },
+    {
+      "file": "后台隔离-演示模板审核-1440.png",
+      "bytes": 47293,
+      "sha256": "5e346e20f7307f66f7512c3f508f6f6ba39cbfb0d7a0394ebe6ac4b85ad9c178"
+    },
+    {
+      "file": "后台隔离-演示模板审核-390.png",
+      "bytes": 24308,
+      "sha256": "f55680fa22a2ce80ba9b526257cb2f4e74a07cceafb96cb435bb66541f6e9dc4"
+    },
+    {
+      "file": "后台隔离-登录-1440.png",
+      "bytes": 33402,
+      "sha256": "a0abc3a6c505eb811080024e13d067fbcf8f631441eec555be2ccf4fb60f3793"
+    },
+    {
+      "file": "后台隔离-登录-390.png",
+      "bytes": 27340,
+      "sha256": "e0743404cf67659a8991560b1b3ec0683203d8e360e0c20fc3d92917dd37944b"
+    },
+    {
+      "file": "后台隔离-皮肤审核-1440.png",
+      "bytes": 47349,
+      "sha256": "ed4c85526be14bb47d59d20bfeaa07da4cbf121e433c90547f0fe43df342ef9d"
+    },
+    {
+      "file": "后台隔离-皮肤审核-390.png",
+      "bytes": 24421,
+      "sha256": "91698203d78bdd3d222b0c4e43fbf10a9689a4420c788b7822b009dcecd3049b"
+    },
+    {
+      "file": "后台隔离-知识内容审核-1440.png",
+      "bytes": 46974,
+      "sha256": "5de184a129e2070820477074155762bc0b4c524d9a6241bd4f022b4de8276116"
+    },
+    {
+      "file": "后台隔离-知识内容审核-390.png",
+      "bytes": 23843,
+      "sha256": "513bed9690fdd819524b42689658237da701ce1e3f502b7489a08a967ef41880"
+    },
+    {
+      "file": "后台隔离-账号与用量-1440.png",
+      "bytes": 54926,
+      "sha256": "ba5ae2aefdfe15f60e71c94536b16e1a9167e4d5b22606fdb7cb9285c5b2fa3f"
+    },
+    {
+      "file": "后台隔离-账号与用量-390.png",
+      "bytes": 28580,
+      "sha256": "7dbfbdb7119afc0db2d51733e49bcdf0e462c4976524f5661bf7f56e513f8f4c"
+    },
+    {
+      "file": "后台隔离-运行概览-1440.png",
+      "bytes": 79337,
+      "sha256": "6fa8f7e76d3b82c261cb56f53a2ada79c36b44ca9eef6fc34a7a2d700492a2f3"
+    },
+    {
+      "file": "后台隔离-运行概览-390.png",
+      "bytes": 47933,
+      "sha256": "9f2efd2a94ad3660b4b22c32bcd8bd37c2f6834f5e507dfc12a0ab05a39c859a"
+    },
+    {
+      "file": "后台隔离验收-1440.png",
+      "bytes": 57815,
+      "sha256": "1d9e44c8f2c385d4a734ef2face7fbbca49175b5c803c5889c0f6de955763f76"
+    },
+    {
+      "file": "后台隔离验收-390.png",
+      "bytes": 33202,
+      "sha256": "f51d75f59ad11d86cf31a6fea40c36df8e14a0a66ea3e082e00d495b7c3d45a2"
+    }
+  ]
+}

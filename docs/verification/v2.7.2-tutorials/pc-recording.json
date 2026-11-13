@@ -1,0 +1,2040 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "platform": "pc",
+  "build": {
+    "platform": "web",
+    "desktopVersion": "2.7.2",
+    "builtAt": "2026-11-13T14:31:52.409Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "sourceArchive": {
+    "name": "seal-office-2.7.2-web.zip",
+    "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+    "files": 527
+  },
+  "bundleSha256": "186e1312e61121b2272187a02f68b2f46fad5f4fb8e3a80e49669247b0ad2c71",
+  "width": 1600,
+  "height": 820,
+  "fps": 20,
+  "frames": 2889,
+  "durationSeconds": 144.45,
+  "source": "Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.",
+  "nativeDeviceRecording": false,
+  "filePickerFixture": true,
+  "realFileSave": true,
+  "savedWordReopened": true,
+  "productionAccountsUsed": 0,
+  "modelRequests": 0,
+  "errors": [],
+  "assertions": [
+    {
+      "step": "word-title",
+      "label": "title entered",
+      "passed": true,
+      "frame": 307
+    },
+    {
+      "step": "word-body",
+      "label": "body entered in separate paragraphs",
+      "passed": true,
+      "frame": 509
+    },
+    {
+      "step": "word-save",
+      "label": "native format save succeeded",
+      "passed": true,
+      "path": "/seal/documents/eb015555-5614-468e-a7cd-e4b8632b9b4f/每周工作计划.sldoc"
+    },
+    {
+      "step": "word-save",
+      "label": "saved SLDOC tab clean",
+      "passed": true,
+      "frame": 615
+    },
+    {
+      "step": "display-default",
+      "label": "简洁工作区保留工具",
+      "passed": true,
+      "frame": 779
+    },
+    {
+      "step": "display-default",
+      "label": "显示比例为 100%",
+      "passed": true,
+      "frame": 803
+    },
+    {
+      "step": "display-full",
+      "label": "简洁模式默认开启",
+      "passed": true,
+      "frame": 983
+    },
+    {
+      "step": "display-full",
+      "label": "默认放大开关默认关闭",
+      "passed": true,
+      "frame": 983
+    },
+    {
+      "step": "display-full",
+      "label": "简洁模式已关闭",
+      "passed": true,
+      "frame": 1001
+    },
+    {
+      "step": "display-full",
+      "label": "完整标题和工具文字已恢复",
+      "passed": true,
+      "frame": 1044
+    },
+    {
+      "step": "display-zoom-option",
+      "label": "简洁模式已重新开启",
+      "passed": true,
+      "frame": 1248
+    },
+    {
+      "step": "display-zoom-option",
+      "label": "默认放大开关已开启",
+      "passed": true,
+      "frame": 1267
+    },
+    {
+      "step": "display-zoom-option",
+      "label": "同一文件恢复简洁工作区",
+      "passed": true,
+      "frame": 1309
+    },
+    {
+      "step": "display-zoom-option",
+      "label": "简洁工作区保留工具",
+      "passed": true,
+      "frame": 1309
+    },
+    {
+      "step": "display-zoom-option",
+      "label": "显示比例为 100%",
+      "passed": true,
+      "frame": 1309
+    },
+    {
+      "step": "word-reopen",
+      "label": "重新打开后正文完整",
+      "passed": true,
+      "frame": 1527
+    },
+    {
+      "step": "word-reopen",
+      "label": "显示比例为 150%",
+      "passed": true,
+      "frame": 1527
+    },
+    {
+      "step": "sheet-formula",
+      "label": "formula computed 2360",
+      "passed": true,
+      "frame": 1952
+    },
+    {
+      "step": "template-use",
+      "label": "selected template second slide",
+      "passed": true,
+      "frame": 2344
+    },
+    {
+      "step": "check-update",
+      "label": "界面显示线上更新检查结果",
+      "passed": true,
+      "frame": 2560
+    }
+  ],
+  "actions": [
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 8,
+      "seconds": 0.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 20,
+      "seconds": 1,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 32,
+      "seconds": 1.6,
+      "label": "新建",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 89
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 44,
+      "seconds": 2.2,
+      "label": "新建",
+      "x": 186.5,
+      "y": 89
+    },
+    {
+      "step": "new-word",
+      "type": "highlight",
+      "frame": 50,
+      "seconds": 2.5,
+      "label": "文字文档",
+      "rect": {
+        "x": 497.5716247558594,
+        "y": 135.83932495117188,
+        "width": 283.1520080566406,
+        "height": 143.57598876953125,
+        "cx": 639.1476287841797,
+        "cy": 207.6273193359375
+      }
+    },
+    {
+      "step": "new-word",
+      "type": "click",
+      "frame": 62,
+      "seconds": 3.1,
+      "label": "文字文档",
+      "x": 639.1476287841797,
+      "y": 207.6273193359375
+    },
+    {
+      "step": "word-title",
+      "type": "highlight",
+      "frame": 269,
+      "seconds": 13.45,
+      "label": "输入标题",
+      "rect": {
+        "x": 486,
+        "y": 134,
+        "width": 618,
+        "height": 686,
+        "cx": 795,
+        "cy": 477
+      }
+    },
+    {
+      "step": "word-title",
+      "type": "click",
+      "frame": 282,
+      "seconds": 14.1,
+      "label": "输入标题",
+      "x": 795,
+      "y": 477
+    },
+    {
+      "step": "word-title",
+      "type": "typing-start",
+      "frame": 291,
+      "seconds": 14.55,
+      "label": "输入标题",
+      "text": "每周工作计划"
+    },
+    {
+      "step": "word-title",
+      "type": "typing",
+      "frame": 299,
+      "seconds": 14.95,
+      "label": "输入标题",
+      "text": "每周工作计划"
+    },
+    {
+      "step": "word-body",
+      "type": "highlight",
+      "frame": 420,
+      "seconds": 21,
+      "label": "填写计划正文",
+      "rect": {
+        "x": 486,
+        "y": 134,
+        "width": 618,
+        "height": 686,
+        "cx": 795,
+        "cy": 477
+      }
+    },
+    {
+      "step": "word-body",
+      "type": "click",
+      "frame": 432,
+      "seconds": 21.6,
+      "label": "填写计划正文",
+      "x": 795,
+      "y": 477
+    },
+    {
+      "step": "word-body",
+      "type": "typing-start",
+      "frame": 441,
+      "seconds": 22.05,
+      "label": "填写计划正文",
+      "text": "本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。"
+    },
+    {
+      "step": "word-body",
+      "type": "typing",
+      "frame": 504,
+      "seconds": 25.2,
+      "label": "填写计划正文",
+      "text": "本周目标：整理产品资料，完成预算核对。\n周一梳理需求，周三准备汇报，周五完成交付。"
+    },
+    {
+      "step": "word-save",
+      "type": "highlight",
+      "frame": 588,
+      "seconds": 29.4,
+      "label": "保存",
+      "rect": {
+        "x": 58,
+        "y": 77,
+        "width": 38,
+        "height": 32,
+        "cx": 77,
+        "cy": 93
+      }
+    },
+    {
+      "step": "word-save",
+      "type": "click",
+      "frame": 600,
+      "seconds": 30,
+      "label": "保存",
+      "x": 77,
+      "y": 93
+    },
+    {
+      "step": "display-default",
+      "type": "highlight",
+      "frame": 779,
+      "seconds": 38.95,
+      "label": "当前工具区",
+      "rect": {
+        "x": 8,
+        "y": 68,
+        "width": 1584,
+        "height": 42,
+        "cx": 800,
+        "cy": 89
+      }
+    },
+    {
+      "step": "display-default",
+      "type": "display-layout",
+      "frame": 779,
+      "seconds": 38.95,
+      "compact": true,
+      "ribbon": {
+        "width": 1580,
+        "height": 38
+      },
+      "navigation": [
+        {
+          "label": "返回首页",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "设置中心",
+          "width": 28,
+          "height": 28
+        }
+      ],
+      "tools": [
+        {
+          "label": "打开",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "保存",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "另存为",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "打印",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为网页",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为文本",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为 PDF",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "粘贴",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "剪切",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "复制",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "格式刷",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "字体",
+          "width": 36,
+          "height": 28
+        },
+        {
+          "label": "字号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "增大字号",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "减小字号",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "加粗",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "斜体",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "下划线",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "删除线",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "下标",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "上标",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "字体颜色",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "突出显示",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "清除格式",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "项目符号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "编号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "减少缩进",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "增加缩进",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "左对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "居中",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "右对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "两端对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "行距",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "段落底纹",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "正文",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 1",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 2",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 3",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "查找",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "替换",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "全选",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "撤销",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "重做",
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "step": "display-default",
+      "type": "highlight",
+      "frame": 803,
+      "seconds": 40.15,
+      "label": "当前显示比例 100%",
+      "rect": {
+        "x": 1494.203125,
+        "y": 727.5,
+        "width": 59.796875,
+        "height": 26,
+        "cx": 1524.1015625,
+        "cy": 740.5
+      }
+    },
+    {
+      "step": "display-full",
+      "type": "highlight",
+      "frame": 964,
+      "seconds": 48.2,
+      "label": "设置中心",
+      "rect": {
+        "x": 1560,
+        "y": 0,
+        "width": 32,
+        "height": 30,
+        "cx": 1576,
+        "cy": 15
+      }
+    },
+    {
+      "step": "display-full",
+      "type": "click",
+      "frame": 976,
+      "seconds": 48.8,
+      "label": "设置中心",
+      "x": 1576,
+      "y": 15
+    },
+    {
+      "step": "display-full",
+      "type": "highlight",
+      "frame": 983,
+      "seconds": 49.15,
+      "label": "简洁模式",
+      "rect": {
+        "x": 1254,
+        "y": 280.5,
+        "width": 48,
+        "height": 26,
+        "cx": 1278,
+        "cy": 293.5
+      }
+    },
+    {
+      "step": "display-full",
+      "type": "click",
+      "frame": 995,
+      "seconds": 49.75,
+      "label": "简洁模式",
+      "x": 1278,
+      "y": 293.5
+    },
+    {
+      "step": "display-full",
+      "type": "highlight",
+      "frame": 1025,
+      "seconds": 51.25,
+      "label": "返回每周工作计划",
+      "rect": {
+        "x": 86,
+        "y": 756.5,
+        "width": 178,
+        "height": 32,
+        "cx": 175,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "display-full",
+      "type": "click",
+      "frame": 1037,
+      "seconds": 51.85,
+      "label": "返回每周工作计划",
+      "x": 175,
+      "y": 772.5
+    },
+    {
+      "step": "display-full",
+      "type": "highlight",
+      "frame": 1044,
+      "seconds": 52.2,
+      "label": "当前工具区",
+      "rect": {
+        "x": 8,
+        "y": 92,
+        "width": 1584,
+        "height": 127.75,
+        "cx": 800,
+        "cy": 155.875
+      }
+    },
+    {
+      "step": "display-full",
+      "type": "display-layout",
+      "frame": 1044,
+      "seconds": 52.2,
+      "compact": false,
+      "ribbon": {
+        "width": 1580,
+        "height": 123.75
+      },
+      "navigation": [],
+      "tools": [
+        {
+          "label": "打开",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "保存",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "另存为",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "打印",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "导出为网页",
+          "width": 78,
+          "height": 52.390625
+        },
+        {
+          "label": "导出为文本",
+          "width": 78,
+          "height": 52.390625
+        },
+        {
+          "label": "导出为 PDF",
+          "width": 80.421875,
+          "height": 52.390625
+        },
+        {
+          "label": "粘贴",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "剪切",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "复制",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "格式刷",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "字体",
+          "width": 128,
+          "height": 32
+        },
+        {
+          "label": "字号",
+          "width": 62,
+          "height": 64.84375
+        },
+        {
+          "label": "增大字号",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "减小字号",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "加粗",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "斜体",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "下划线",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "删除线",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "下标",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "上标",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "字体颜色",
+          "width": 62,
+          "height": 64.84375
+        },
+        {
+          "label": "突出显示",
+          "width": 62,
+          "height": 64.84375
+        },
+        {
+          "label": "清除格式",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "项目符号",
+          "width": 56,
+          "height": 64.84375
+        },
+        {
+          "label": "编号",
+          "width": 74,
+          "height": 83.6875
+        },
+        {
+          "label": "减少缩进",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "增加缩进",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "左对齐",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "居中",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "右对齐",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "两端对齐",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "行距",
+          "width": 56,
+          "height": 64.84375
+        },
+        {
+          "label": "段落底纹",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "正文",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "标题 1",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "标题 2",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "标题 3",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "查找",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "替换",
+          "width": 56,
+          "height": 52.390625
+        },
+        {
+          "label": "全选",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "撤销",
+          "width": 26,
+          "height": 26
+        },
+        {
+          "label": "重做",
+          "width": 26,
+          "height": 26
+        }
+      ]
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1192,
+      "seconds": 59.6,
+      "label": "全局设置",
+      "rect": {
+        "x": 1422,
+        "y": 8.5,
+        "width": 34,
+        "height": 34,
+        "cx": 1439,
+        "cy": 25.5
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "click",
+      "frame": 1204,
+      "seconds": 60.2,
+      "label": "全局设置",
+      "x": 1439,
+      "y": 25.5
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1210,
+      "seconds": 60.5,
+      "label": "打开全局设置",
+      "rect": {
+        "x": 1428,
+        "y": 48,
+        "width": 84.5625,
+        "height": 38,
+        "cx": 1470.28125,
+        "cy": 67
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "click",
+      "frame": 1223,
+      "seconds": 61.15,
+      "label": "打开全局设置",
+      "x": 1470.28125,
+      "y": 67
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1229,
+      "seconds": 61.45,
+      "label": "简洁模式",
+      "rect": {
+        "x": 1254,
+        "y": 280.5,
+        "width": 48,
+        "height": 26,
+        "cx": 1278,
+        "cy": 293.5
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "click",
+      "frame": 1241,
+      "seconds": 62.05,
+      "label": "简洁模式",
+      "x": 1278,
+      "y": 293.5
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1248,
+      "seconds": 62.4,
+      "label": "默认放大至 150%",
+      "rect": {
+        "x": 1254,
+        "y": 349.5,
+        "width": 48,
+        "height": 26,
+        "cx": 1278,
+        "cy": 362.5
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "click",
+      "frame": 1260,
+      "seconds": 63,
+      "label": "默认放大至 150%",
+      "x": 1278,
+      "y": 362.5
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1290,
+      "seconds": 64.5,
+      "label": "返回每周工作计划",
+      "rect": {
+        "x": 86,
+        "y": 756.5,
+        "width": 178,
+        "height": 32,
+        "cx": 175,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "click",
+      "frame": 1302,
+      "seconds": 65.1,
+      "label": "返回每周工作计划",
+      "x": 175,
+      "y": 772.5
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1309,
+      "seconds": 65.45,
+      "label": "当前工具区",
+      "rect": {
+        "x": 8,
+        "y": 68,
+        "width": 1584,
+        "height": 42,
+        "cx": 800,
+        "cy": 89
+      }
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "display-layout",
+      "frame": 1309,
+      "seconds": 65.45,
+      "compact": true,
+      "ribbon": {
+        "width": 1580,
+        "height": 38
+      },
+      "navigation": [
+        {
+          "label": "返回首页",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "设置中心",
+          "width": 28,
+          "height": 28
+        }
+      ],
+      "tools": [
+        {
+          "label": "打开",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "保存",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "另存为",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "打印",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为网页",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为文本",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "导出为 PDF",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "粘贴",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "剪切",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "复制",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "格式刷",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "字体",
+          "width": 36,
+          "height": 28
+        },
+        {
+          "label": "字号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "增大字号",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "减小字号",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "加粗",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "斜体",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "下划线",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "删除线",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "下标",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "上标",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "字体颜色",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "突出显示",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "清除格式",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "项目符号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "编号",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "减少缩进",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "增加缩进",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "左对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "居中",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "右对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "两端对齐",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "行距",
+          "width": 46,
+          "height": 28
+        },
+        {
+          "label": "段落底纹",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "正文",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 1",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 2",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "标题 3",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "查找",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "替换",
+          "width": 34,
+          "height": 28
+        },
+        {
+          "label": "全选",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "撤销",
+          "width": 28,
+          "height": 28
+        },
+        {
+          "label": "重做",
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "step": "display-zoom-option",
+      "type": "highlight",
+      "frame": 1309,
+      "seconds": 65.45,
+      "label": "当前显示比例 100%",
+      "rect": {
+        "x": 1494.203125,
+        "y": 727.5,
+        "width": 59.796875,
+        "height": 26,
+        "cx": 1524.1015625,
+        "cy": 740.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 1460,
+      "seconds": 73,
+      "label": "关闭已保存文档",
+      "rect": {
+        "x": 260,
+        "y": 758.5,
+        "width": 28,
+        "height": 28,
+        "cx": 274,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 1472,
+      "seconds": 73.6,
+      "label": "关闭已保存文档",
+      "x": 274,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 1478,
+      "seconds": 73.9,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 1490,
+      "seconds": 74.5,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 1502,
+      "seconds": 75.1,
+      "label": "打开 word",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "word-reopen",
+      "type": "click",
+      "frame": 1513,
+      "seconds": 75.65,
+      "label": "打开 word",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "word-reopen",
+      "type": "highlight",
+      "frame": 1527,
+      "seconds": 76.35,
+      "label": "当前显示比例 150%",
+      "rect": {
+        "x": 1494.203125,
+        "y": 727.5,
+        "width": 59.796875,
+        "height": 26,
+        "cx": 1524.1015625,
+        "cy": 740.5
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 1688,
+      "seconds": 84.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 1700,
+      "seconds": 85,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "sheet-open",
+      "type": "highlight",
+      "frame": 1712,
+      "seconds": 85.6,
+      "label": "打开 sheet",
+      "rect": {
+        "x": 86,
+        "y": 118,
+        "width": 201,
+        "height": 46,
+        "cx": 186.5,
+        "cy": 141
+      }
+    },
+    {
+      "step": "sheet-open",
+      "type": "click",
+      "frame": 1724,
+      "seconds": 86.2,
+      "label": "打开 sheet",
+      "x": 186.5,
+      "y": 141
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 1864,
+      "seconds": 93.2,
+      "label": "名称框选择 D5",
+      "rect": {
+        "x": 6,
+        "y": 116.5,
+        "width": 114,
+        "height": 26,
+        "cx": 63,
+        "cy": 129.5
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 1877,
+      "seconds": 93.85,
+      "label": "名称框选择 D5",
+      "x": 63,
+      "y": 129.5
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 1888,
+      "seconds": 94.4,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 1892,
+      "seconds": 94.6,
+      "label": "名称框选择 D5",
+      "text": "D5"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 1900,
+      "seconds": 95,
+      "label": "输入求和公式",
+      "rect": {
+        "x": 142.640625,
+        "y": 116.5,
+        "width": 1333.359375,
+        "height": 26,
+        "cx": 809.3203125,
+        "cy": 129.5
+      }
+    },
+    {
+      "step": "sheet-formula",
+      "type": "click",
+      "frame": 1912,
+      "seconds": 95.6,
+      "label": "输入求和公式",
+      "x": 809.3203125,
+      "y": 129.5
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing-start",
+      "frame": 1923,
+      "seconds": 96.15,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "typing",
+      "frame": 1944,
+      "seconds": 97.2,
+      "label": "输入求和公式",
+      "text": "=SUM(D2:D4)"
+    },
+    {
+      "step": "sheet-formula",
+      "type": "highlight",
+      "frame": 1952,
+      "seconds": 97.6,
+      "label": "查看合计 2360",
+      "rect": {
+        "x": 308,
+        "y": 198,
+        "width": 92,
+        "height": 24,
+        "cx": 354,
+        "cy": 210
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 2132,
+      "seconds": 106.6,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 2144,
+      "seconds": 107.2,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 2156,
+      "seconds": 107.8,
+      "label": "演示模板市场",
+      "rect": {
+        "x": 86,
+        "y": 420.0625,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 441.0625
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 2168,
+      "seconds": 108.4,
+      "label": "演示模板市场",
+      "x": 186.5,
+      "y": 441.0625
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 2174,
+      "seconds": 108.7,
+      "label": "精选推荐",
+      "rect": {
+        "x": 386,
+        "y": 475.171875,
+        "width": 92,
+        "height": 38,
+        "cx": 432,
+        "cy": 494.171875
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 2186,
+      "seconds": 109.3,
+      "label": "精选推荐",
+      "x": 432,
+      "y": 494.171875
+    },
+    {
+      "step": "template-open",
+      "type": "highlight",
+      "frame": 2193,
+      "seconds": 109.65,
+      "label": "预览演示模板",
+      "rect": {
+        "x": 386,
+        "y": 535.171875,
+        "width": 274,
+        "height": 155.875,
+        "cx": 523,
+        "cy": 613.109375
+      }
+    },
+    {
+      "step": "template-open",
+      "type": "click",
+      "frame": 2205,
+      "seconds": 110.25,
+      "label": "预览演示模板",
+      "x": 523,
+      "y": 613.109375
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 2307,
+      "seconds": 115.35,
+      "label": "使用并编辑副本",
+      "rect": {
+        "x": 1163,
+        "y": 783.734375,
+        "width": 134,
+        "height": 36.265625,
+        "cx": 1230,
+        "cy": 801.8671875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 2319,
+      "seconds": 115.95,
+      "label": "使用并编辑副本",
+      "x": 1230,
+      "y": 801.8671875
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 2325,
+      "seconds": 116.25,
+      "label": "可编辑的演示画布",
+      "rect": {
+        "x": 161,
+        "y": 159.84375,
+        "width": 1439,
+        "height": 660.15625,
+        "cx": 880.5,
+        "cy": 489.921875
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "highlight",
+      "frame": 2325,
+      "seconds": 116.25,
+      "label": "查看第二张幻灯片",
+      "rect": {
+        "x": 6,
+        "y": 280.6875,
+        "width": 153,
+        "height": 108.84375,
+        "cx": 82.5,
+        "cy": 335.109375
+      }
+    },
+    {
+      "step": "template-use",
+      "type": "click",
+      "frame": 2337,
+      "seconds": 116.85,
+      "label": "查看第二张幻灯片",
+      "x": 82.5,
+      "y": 335.109375
+    },
+    {
+      "step": "check-update",
+      "type": "highlight",
+      "frame": 2501,
+      "seconds": 125.05,
+      "label": "设置中心",
+      "rect": {
+        "x": 1560,
+        "y": 0,
+        "width": 32,
+        "height": 30,
+        "cx": 1576,
+        "cy": 15
+      }
+    },
+    {
+      "step": "check-update",
+      "type": "click",
+      "frame": 2513,
+      "seconds": 125.65,
+      "label": "设置中心",
+      "x": 1576,
+      "y": 15
+    },
+    {
+      "step": "check-update",
+      "type": "highlight",
+      "frame": 2519,
+      "seconds": 125.95,
+      "label": "关于与更新",
+      "rect": {
+        "x": 1190.40625,
+        "y": 726.8125,
+        "width": 111.59375,
+        "height": 29.5,
+        "cx": 1246.203125,
+        "cy": 741.5625
+      }
+    },
+    {
+      "step": "check-update",
+      "type": "highlight",
+      "frame": 2535,
+      "seconds": 126.75,
+      "label": "检查更新",
+      "rect": {
+        "x": 1226,
+        "y": 726.8125,
+        "width": 76,
+        "height": 29.5,
+        "cx": 1264,
+        "cy": 741.5625
+      }
+    },
+    {
+      "step": "check-update",
+      "type": "click",
+      "frame": 2547,
+      "seconds": 127.35,
+      "label": "检查更新",
+      "x": 1264,
+      "y": 741.5625
+    },
+    {
+      "step": "check-update",
+      "type": "public-update-response",
+      "frame": 2560,
+      "seconds": 128,
+      "endpoint": "https://seal.xingmasoft.com/api/v1/updates/latest",
+      "platform": "web",
+      "version": "2.7.2",
+      "channel": "stable",
+      "status": 200,
+      "hasUpdate": false,
+      "receivedAt": "2026-11-13T14:41:27.578Z"
+    },
+    {
+      "step": "check-update",
+      "type": "highlight",
+      "frame": 2560,
+      "seconds": 128,
+      "label": "已是最新版本 2.7.2",
+      "rect": {
+        "x": 1069.28125,
+        "y": 730.5625,
+        "width": 128.71875,
+        "height": 22,
+        "cx": 1133.640625,
+        "cy": 741.5625
+      }
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 2749,
+      "seconds": 137.45,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 756,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 772.5
+      }
+    },
+    {
+      "step": "outro",
+      "type": "click",
+      "frame": 2761,
+      "seconds": 138.05,
+      "label": "返回首页",
+      "x": 44,
+      "y": 772.5
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 2772,
+      "seconds": 138.6,
+      "label": "已打开文件与项目",
+      "rect": {
+        "x": 0,
+        "y": 752,
+        "width": 1600,
+        "height": 40,
+        "cx": 800,
+        "cy": 772
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "new-word",
+      "index": 0,
+      "title": "新建文字文档",
+      "chapter": "文字编辑",
+      "narration": "在海豹办公二点七点二，从首页点击新建，再选文字文档。文件默认打开简洁模式，工具图标和底部文件标签仍然可用。",
+      "startFrame": 0,
+      "endFrame": 261,
+      "start": 0,
+      "end": 13.05,
+      "audio": "pc-new-word.mp3",
+      "audioSeconds": 11.328,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-new-word-verified.png",
+      "endScreenshotSha256": "bf38f3cdad362a86588fefc341eeb7aee40708d73bd674f946c4d6ad8cd34c07"
+    },
+    {
+      "id": "word-title",
+      "index": 1,
+      "title": "输入计划标题",
+      "chapter": "文字编辑",
+      "narration": "点击正文，输入每周工作计划。按回车，开始填写正文。",
+      "startFrame": 261,
+      "endFrame": 412,
+      "start": 13.05,
+      "end": 20.6,
+      "audio": "pc-word-title.mp3",
+      "audioSeconds": 5.832,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-word-title-verified.png",
+      "endScreenshotSha256": "c085f77daaef4ae2c7bd35d0aa1c9511a53c30652b3a96431971cb692820e6e4"
+    },
+    {
+      "id": "word-body",
+      "index": 2,
+      "title": "填写计划正文",
+      "chapter": "文字编辑",
+      "narration": "写下本周目标，再另起一段记录需求、汇报和交付的时间。",
+      "startFrame": 412,
+      "endFrame": 580,
+      "start": 20.6,
+      "end": 29,
+      "audio": "pc-word-body.mp3",
+      "audioSeconds": 5.376,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-word-body-verified.png",
+      "endScreenshotSha256": "d9445b956bed462ebd621fb4f9508185e04d4cbd611e2fa4493a0769d497367b"
+    },
+    {
+      "id": "word-save",
+      "index": 3,
+      "title": "保存每周工作计划",
+      "chapter": "文字编辑",
+      "narration": "点击保存，将计划存为海豹文字文件。底部文件标签上的未保存标记随即消失。",
+      "startFrame": 580,
+      "endFrame": 771,
+      "start": 29,
+      "end": 38.55,
+      "audio": "pc-word-save.mp3",
+      "audioSeconds": 7.824,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-word-save-verified.png",
+      "endScreenshotSha256": "6c79ac9ff21d98b2dd97540efb1caa4e306b934c62bfc0c076c67c5bf7891da1"
+    },
+    {
+      "id": "display-default",
+      "index": 4,
+      "title": "确认默认显示比例",
+      "chapter": "显示设置",
+      "narration": "先看右下角，当前文档以百分之百显示。上方的简洁工具区保留了常用操作。",
+      "startFrame": 771,
+      "endFrame": 956,
+      "start": 38.55,
+      "end": 47.8,
+      "audio": "pc-display-default.mp3",
+      "audioSeconds": 7.536,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-display-default-verified.png",
+      "endScreenshotSha256": "bcd2b474aec4a25e274d3df73257292a8ff0161b73bb7e5c817eafcd4481af38"
+    },
+    {
+      "id": "display-full",
+      "index": 5,
+      "title": "关闭简洁模式",
+      "chapter": "显示设置",
+      "narration": "从工作区打开设置中心，关闭简洁模式。点回底部文件标签，标题栏和工具文字恢复显示。",
+      "startFrame": 956,
+      "endFrame": 1184,
+      "start": 47.8,
+      "end": 59.2,
+      "audio": "pc-display-full.mp3",
+      "audioSeconds": 9.072,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-display-full-verified.png",
+      "endScreenshotSha256": "ff2907f60654749718fe24174b6dc800f6b6ed0496cb806604343f387b2d69c4"
+    },
+    {
+      "id": "display-zoom-option",
+      "index": 6,
+      "title": "开启默认放大至百分之一百五十",
+      "chapter": "显示设置",
+      "narration": "在全局设置中重新开启简洁模式，再开启默认放大至百分之一百五十。切回这份已打开的文档，右下角依然显示百分之百。",
+      "startFrame": 1184,
+      "endFrame": 1452,
+      "start": 59.2,
+      "end": 72.6,
+      "audio": "pc-display-zoom-option.mp3",
+      "audioSeconds": 11.544,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-display-zoom-option-verified.png",
+      "endScreenshotSha256": "ceefb9cf2510ef7656d7300a83757fd6bd82667cee9e2b3cb11850ba908e9f21"
+    },
+    {
+      "id": "word-reopen",
+      "index": 7,
+      "title": "重新打开，按百分之一百五十查看",
+      "chapter": "显示设置",
+      "narration": "关闭已保存的文档，从首页重新打开。正文保留，右下角显示百分之一百五十。",
+      "startFrame": 1452,
+      "endFrame": 1680,
+      "start": 72.6,
+      "end": 84,
+      "audio": "pc-word-reopen.mp3",
+      "audioSeconds": 7.704,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-word-reopen-verified.png",
+      "endScreenshotSha256": "0cecbcf9f6e1eb3e65a6da084475f01d0bf9179c6f4602b0db9c2e21f0744c3a"
+    },
+    {
+      "id": "sheet-open",
+      "index": 8,
+      "title": "打开项目预算表",
+      "chapter": "表格计算",
+      "narration": "回到首页，打开准备好的项目预算表。预算列已经填写，合计单元格留空。",
+      "startFrame": 1680,
+      "endFrame": 1856,
+      "start": 84,
+      "end": 92.8,
+      "audio": "pc-sheet-open.mp3",
+      "audioSeconds": 7.08,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-sheet-open-verified.png",
+      "endScreenshotSha256": "ba01bbfa82e06856854120e7b0ca98a7502ebb1581b888053d1e9aa951d4db11"
+    },
+    {
+      "id": "sheet-formula",
+      "index": 9,
+      "title": "输入公式并核对结果",
+      "chapter": "表格计算",
+      "narration": "在名称框输入 D 五。点击公式栏，输入求和公式，选取 D 二到 D 四，按回车后得到两千三百六十。",
+      "startFrame": 1856,
+      "endFrame": 2124,
+      "start": 92.8,
+      "end": 106.2,
+      "audio": "pc-sheet-formula.mp3",
+      "audioSeconds": 9.624,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-sheet-formula-verified.png",
+      "endScreenshotSha256": "33f3afdb28733727bfdda5ffe2d831a79f4bb989f6e18ae05bed2bcbea037762"
+    },
+    {
+      "id": "template-open",
+      "index": 10,
+      "title": "预览演示模板",
+      "chapter": "演示模板",
+      "narration": "打开演示模板市场，在精选推荐中选择一套模板，先看页面布局和配图。",
+      "startFrame": 2124,
+      "endFrame": 2298,
+      "start": 106.2,
+      "end": 114.9,
+      "audio": "pc-template-open.mp3",
+      "audioSeconds": 6.984,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-template-open-verified.png",
+      "endScreenshotSha256": "f4ea397e50ac533d22ae4050ed5ed3b5492fa9ffb34f5bbd8c2c907a4e95ff11"
+    },
+    {
+      "id": "template-use",
+      "index": 11,
+      "title": "打开可编辑的演示副本",
+      "chapter": "演示模板",
+      "narration": "点击使用并编辑副本，再切到第二页。模板里的文字、图形和图片都可以继续编辑。",
+      "startFrame": 2299,
+      "endFrame": 2493,
+      "start": 114.95,
+      "end": 124.65,
+      "audio": "pc-template-use.mp3",
+      "audioSeconds": 7.968,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-template-use-verified.png",
+      "endScreenshotSha256": "5a60a6910ee290438e3d5404680de3871177e566d18d6486d6a7d16e3b7820c3"
+    },
+    {
+      "id": "check-update",
+      "index": 12,
+      "title": "手动检查当前版本",
+      "chapter": "版本更新",
+      "narration": "打开设置中心，在关于与更新中点击检查更新。服务器返回结果后，页面显示已是最新版本，二点七点二。",
+      "startFrame": 2493,
+      "endFrame": 2741,
+      "start": 124.65,
+      "end": 137.05,
+      "audio": "pc-check-update.mp3",
+      "audioSeconds": 10.248,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-check-update-verified.png",
+      "endScreenshotSha256": "2cb14b29b0bf69da614a71052ad1c4721a04764437036be8e1becf56259642b8"
+    },
+    {
+      "id": "outro",
+      "index": 13,
+      "title": "打开网页版开始编辑",
+      "chapter": "海豹办公 2.7.2",
+      "narration": "可以打开海豹办公网页版，试试简洁模式和显示比例。",
+      "startFrame": 2741,
+      "endFrame": 2889,
+      "start": 137.05,
+      "end": 144.45,
+      "audio": "pc-outro.mp3",
+      "audioSeconds": 5.28,
+      "endScreenshot": "release/promo/work-2.7.2-tutorial/pc-outro-verified.png",
+      "endScreenshotSha256": "4a82cddbe45862ed5584597fc267b0f057527177e1f6ac5bc50f547e63b7ae0e"
+    }
+  ],
+  "recording": "release/promo/work-2.7.2-tutorial/pc-operations.mp4",
+  "recordingSha256": "eb3f0526afd04b5f3b3cec8f4e02ad4818753189d5061e8d5aec05469b1a5c4f"
+}

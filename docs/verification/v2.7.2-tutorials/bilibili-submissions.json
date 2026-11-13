@@ -1,0 +1,42 @@
+{
+  "version": "2.7.2",
+  "status": "not-requested",
+  "published": false,
+  "reason": "本次未要求上传或投稿；仅生成本机成片、字幕、封面与投稿文案，未执行 B 站投稿。",
+  "submissions": [
+    {
+      "title": "海豹办公 2.7.2 安卓操作教程：简洁模式、全屏阅读与检查更新",
+      "video": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-android-intro-1080p.mp4",
+      "videoSha256": "c5c5305b03500c8e1f9a58bbfe343d2b0b49f5562f8907af7f4f7a99015d4470",
+      "cover": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-android-intro-1080p-cover.jpg",
+      "subtitles": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-android-intro-1080p.srt",
+      "description": "海豹办公 2.7.2 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n00:00 从服务页新建文字\n00:11 逐字输入工作计划\n00:23 保存工作计划\n00:33 关闭简洁模式\n00:44 重新开启简洁模式\n00:57 进入全屏阅读\n01:06 向左滑动翻到下一页\n01:13 双击唤出工具栏\n01:22 双指放大阅读内容\n01:33 打开项目预算表\n01:42 在手机上计算合计\n01:52 手动检查当前版本\n02:05 获取适合设备的安装包\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2\n\n画面为生产构建的移动浏览器布局及触摸输入演示，并非 APK 真机录屏。配音为经用户试听确认的合成语音。",
+      "tags": [
+        "海豹办公",
+        "办公软件",
+        "使用教程",
+        "效率工具",
+        "安卓应用"
+      ],
+      "published": false,
+      "url": null
+    },
+    {
+      "title": "海豹办公 2.7.2 电脑操作教程：简洁模式、显示比例与检查更新",
+      "video": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-pc-intro-1080p.mp4",
+      "videoSha256": "f5619979369336c17a95801ecf0dcc621adfac42059b4457864119713077188f",
+      "cover": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-pc-intro-1080p-cover.jpg",
+      "subtitles": "E:\\seal-office\\release\\promo\\seal-office-2.7.2-pc-intro-1080p.srt",
+      "description": "海豹办公 2.7.2 实际操作教程，包含逐字输入、鼠标点击提示和紫色目标轮廓。\n\n00:00 新建文字文档\n00:13 输入计划标题\n00:20 填写计划正文\n00:29 保存每周工作计划\n00:38 确认默认显示比例\n00:47 关闭简洁模式\n00:59 开启默认放大至百分之一百五十\n01:12 重新打开，按百分之一百五十查看\n01:24 打开项目预算表\n01:32 输入公式并核对结果\n01:46 预览演示模板\n01:54 打开可编辑的演示副本\n02:04 手动检查当前版本\n02:17 打开网页版开始编辑\n\n网页版：https://seal.xingmasoft.com/office/\n安卓和鸿蒙：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2\nWindows / Linux / MSIX：https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2\n\n画面为当前生产构建的 PC 网页布局，使用隔离的演示文件。配音为经用户试听确认的合成语音。",
+      "tags": [
+        "海豹办公",
+        "办公软件",
+        "使用教程",
+        "效率工具",
+        "电脑软件"
+      ],
+      "published": false,
+      "url": null
+    }
+  ]
+}

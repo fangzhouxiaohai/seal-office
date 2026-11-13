@@ -1,0 +1,35 @@
+{
+  "version": "2.7.2",
+  "files": [
+    {
+      "file": "seal-office-setup-2.7.2.exe",
+      "bytes": 556125494,
+      "sha256": "346f9d228093ee6c82f3426400402f6fadadb17e5faceacbef49ef519f18cfef"
+    },
+    {
+      "file": "seal-office-2.7.2-microsoft-store-x64.msix",
+      "bytes": 782852774,
+      "sha256": "f1b9b2c62d91974798042aee5a6dc3127f93ee9564a62e0e889d6c77727cf9e2"
+    },
+    {
+      "file": "seal-office-2.7.2-amd64.deb",
+      "bytes": 168906560,
+      "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126"
+    },
+    {
+      "file": "seal-office-2.7.2-android.apk",
+      "bytes": 41206228,
+      "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf"
+    },
+    {
+      "file": "seal-office-2.7.2-harmony.hap",
+      "bytes": 66487475,
+      "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29"
+    },
+    {
+      "file": "seal-office-2.7.2-web.zip",
+      "bytes": 49915274,
+      "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883"
+    }
+  ]
+}

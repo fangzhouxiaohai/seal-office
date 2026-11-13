@@ -21,6 +21,8 @@
 - 修复后台旧部署、部署清单遗漏及检查更新的错误提示；本版起，安装包验收后直接上传后台发布，并验证旧版检查更新和新版已最新状态。
 - 安卓默认打包入口切换到 Java 工程，鸿蒙重打包同步原生版本。详见[2.7.2 功能修改说明](docs/release-notes/v2.7.2.md)与[本版发行验收记录](docs/verification/v2.7.2-release.md)。
 
+本版 Windows 解包成品运行 64 项、Android 原生宿主 9 项、Android / HarmonyOS / Web 各 45 项浏览器检查通过；Ubuntu 22.04 与 24.04 各 77 项实际安装运行检查通过，正式 DEB 取自该次验证产物。详细结果与环境边界见[本版验收](docs/verification/v2.7.2-release.md)和[Ubuntu 自动验收](docs/verification/v2.7.2/ubuntu-ci.md)。
+
 各端安装包见 [GitHub 2.7.2 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2) 或 [GitCode 2.7.2 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2)；文件校验以 `release/v2.7.2/SHA256SUMS.txt` 为准。微软商店 MSIX 用于商店上传；鸿蒙 HAP 使用 Release Profile，需经 AppGallery 正式或测试渠道安装，App Pack 不在仓库发行页分发。
 
 ## 2.7.1 文件兼容、Access 改造、版本更新与拍照扫描

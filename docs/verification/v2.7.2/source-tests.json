@@ -1,0 +1,85 @@
+{
+  "version": "2.7.2",
+  "sourceCommit": "de6fbab9bfe0ebed8c80355add3c93d14059121c",
+  "passed": true,
+  "checks": [
+    {
+      "scope": "根项目类型检查",
+      "passed": true
+    },
+    {
+      "scope": "移动项目类型检查",
+      "passed": true
+    },
+    {
+      "scope": "主进程",
+      "files": 128,
+      "passed": 1265,
+      "failed": 0
+    },
+    {
+      "scope": "首次渲染层全量扫描",
+      "files": 331,
+      "passed": 3089,
+      "failed": 6,
+      "skipped": 1,
+      "followUp": "失败项修复后按完整文件复验"
+    },
+    {
+      "scope": "渲染层修复后完整文件复验",
+      "files": 5,
+      "passed": 100,
+      "failed": 0
+    },
+    {
+      "scope": "最后更新响应专项",
+      "files": 2,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "scope": "服务端",
+      "passed": 85,
+      "failed": 0
+    },
+    {
+      "scope": "部署恢复",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "scope": "后台浏览器",
+      "passed": 13,
+      "errors": 0
+    },
+    {
+      "scope": "移动单元测试",
+      "passed": 78,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "私有BIFF样本未提供"
+    },
+    {
+      "scope": "打包",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "scope": "后台发布工具",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "scope": "仓库发布工具",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "scope": "Ubuntu平台集成",
+      "files": 7,
+      "passed": 121,
+      "failed": 0
+    }
+  ],
+  "note": "首次全量结果与修复后复验分别呈现；最后错误分支修复后未重复整套耗时全量扫描。实际安装包与各端浏览器验证见同目录对应报告。"
+}

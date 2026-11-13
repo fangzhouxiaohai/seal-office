@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "observedAt": "2026-11-13T14:25:26.618Z",
+  "suites": [
+    {
+      "name": "服务端全量",
+      "command": "npm --prefix server test",
+      "tests": 85,
+      "passed": 85,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "发布附件专项（含 macOS）",
+      "command": "node --test server/test/releaseAssets.test.cjs",
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "verificationSource": "最新服务端全量中的 13 项附件用例"
+    },
+    {
+      "name": "部署专项（含重复部署）",
+      "command": "node --test scripts/deploy-server.test.cjs",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ],
+  "countingNote": "附件 13 项包含在服务端全量 85 项中，不能重复相加。此前 80/83 项全量属于追加检查之前的历史验证。",
+  "testFirstEvidence": [
+    "macOS 新增 3 项先失败，再实现七平台与完整 UDIF 尾部检查。",
+    "真实浏览器先因默认展开表单失败，再实现弹窗与紧凑布局。",
+    "上传结束的旧关闭保护提示先由失败断言暴露，再清除。",
+    "重复部署先因继承上次备份而切换前中止，新增失败回归后改为独立备份目录。",
+    "单项和批量新建 macOS 仅填 URL 的 2 条回归先得到错误的 200，再约束新建必须绑定已校验附件；历史记录 PATCH 与绑定元数据保持兼容。"
+  ],
+  "independentReview": "已只读审查 UDIF、平台枚举、上传保护与批量发布，未发现阻断问题。"
+}

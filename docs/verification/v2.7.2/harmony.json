@@ -1,0 +1,614 @@
+{
+  "checkedAt": "2026-11-13T14:32:54.821852+00:00",
+  "version": "2.7.2",
+  "versionCode": 20702,
+  "bundleName": "com.sealoffice.mobile",
+  "appEmbeddedHap": {
+    "bytes": 66342762,
+    "sha256": "e757dd69e1a50995e2a6fb456d9f97df4c71d7bac2269311394b905f1197b9a6",
+    "signatureVerified": false,
+    "signatureStatus": "官方工具实测无内层签名；保留标准 AppGallery 容器，不将内层 HAP 用作发行附件",
+    "allApplicationFileBytesMatchStandaloneHap": true,
+    "packInfoSemanticallyMatches": true,
+    "standaloneOnlySignatureMetadata": [
+      ".pages.info"
+    ],
+    "crcPassed": true
+  },
+  "resources": {
+    "embeddedOfficeFiles": 31,
+    "generatedWwwFiles": 57,
+    "allWwwBytesMatchGenerated": true,
+    "allOfficeBytesMatchFrozenSource": true,
+    "excludedEmptyMarker": ".gitkeep",
+    "files": [
+      {
+        "path": "assets/index-5d4613ca.css",
+        "bytes": 272940,
+        "sha256": "5d4613ca45698403b7dde90bac6d045caec74d77e266838e769eab0965144411"
+      },
+      {
+        "path": "assets/logo-da820085.png",
+        "bytes": 16518,
+        "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+      },
+      {
+        "path": "assets/scan-fe515c4d.css",
+        "bytes": 8264,
+        "sha256": "fe515c4d5306a9429bb53d3e50af90943bb9a3d9b17b1caa542a2a564cfc6104"
+      },
+      {
+        "path": "assets/SkinMarketPage-d0ef2377.css",
+        "bytes": 3327,
+        "sha256": "d0ef237725a69e374eb0bea8fad070e89c509b2e176486ec3540df76fc5b9ae1"
+      },
+      {
+        "path": "assets/TemplateLibrary-d5e988b9.css",
+        "bytes": 3623,
+        "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
+      },
+      {
+        "path": "build-info.json",
+        "bytes": 182,
+        "sha256": "2b550e541ab4cab9c0e28c752e4e204835f1ca79d60ca6b041eebe6e300f7124"
+      },
+      {
+        "path": "compatibility.js",
+        "bytes": 2514,
+        "sha256": "fed8d72d9d376b209fbcc6349d8d354ae7b7c9e6386bf88e8a3d0e1af389e516"
+      },
+      {
+        "path": "fonts/NotoSansSC.ttf",
+        "bytes": 17772300,
+        "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+      },
+      {
+        "path": "fonts/NotoSerif-LICENSE.txt",
+        "bytes": 4301,
+        "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+      },
+      {
+        "path": "fonts/NotoSerifCJKsc-Regular.otf",
+        "bytes": 24543080,
+        "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+      },
+      {
+        "path": "fonts/OFL.txt",
+        "bytes": 4387,
+        "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+      },
+      {
+        "path": "icons/icon180.png",
+        "bytes": 9295,
+        "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed"
+      },
+      {
+        "path": "icons/icon192.png",
+        "bytes": 11868,
+        "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78"
+      },
+      {
+        "path": "icons/icon32.png",
+        "bytes": 1592,
+        "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9"
+      },
+      {
+        "path": "icons/icon512.png",
+        "bytes": 26134,
+        "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8"
+      },
+      {
+        "path": "icons/startup-logo.png",
+        "bytes": 16518,
+        "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+      },
+      {
+        "path": "index.html",
+        "bytes": 1787,
+        "sha256": "eec63e01cc1933f0d9af0d2d12567e7c59c417c902d60e5f847c3e3ec5363cc3"
+      },
+      {
+        "path": "licenses/bessel-LICENSE.txt",
+        "bytes": 589,
+        "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e"
+      },
+      {
+        "path": "licenses/formulajs-LICENSE.txt",
+        "bytes": 3320,
+        "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b"
+      },
+      {
+        "path": "licenses/frac-LICENSE.txt",
+        "bytes": 589,
+        "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193"
+      },
+      {
+        "path": "licenses/iconv-lite-0.6.3.txt",
+        "bytes": 1063,
+        "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c"
+      },
+      {
+        "path": "licenses/isomorphic.js-LICENSE.txt",
+        "bytes": 1108,
+        "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057"
+      },
+      {
+        "path": "licenses/jstat-LICENSE.txt",
+        "bytes": 1049,
+        "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800"
+      },
+      {
+        "path": "licenses/lib0-LICENSE.txt",
+        "bytes": 1108,
+        "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73"
+      },
+      {
+        "path": "licenses/OFD-1.0.6.txt",
+        "bytes": 10678,
+        "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17"
+      },
+      {
+        "path": "licenses/SheetJS-0.20.3.txt",
+        "bytes": 11355,
+        "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+      },
+      {
+        "path": "licenses/ssf-LICENSE.txt",
+        "bytes": 11355,
+        "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26"
+      },
+      {
+        "path": "licenses/yjs-LICENSE.txt",
+        "bytes": 1211,
+        "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff"
+      },
+      {
+        "path": "manifest.webmanifest",
+        "bytes": 377,
+        "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8"
+      },
+      {
+        "path": "office.js",
+        "bytes": 16965773,
+        "sha256": "8ac9ca5dc46fbaecc9cfa6dafec0c02ac54b17d03a271b3d14e7776f9c56aa87"
+      },
+      {
+        "path": "uni.webview.js",
+        "bytes": 6641,
+        "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8"
+      }
+    ]
+  },
+  "nativeWorkspaceSha256": "2995499161e5879a49348f0f1ccd8bf8f4ee7181a8624a2fefb7aae11b93940b",
+  "build": {
+    "platform": "harmony",
+    "desktopVersion": "2.7.2",
+    "builtAt": "2026-11-13T14:30:09.631Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "crcPassed": true,
+  "artifacts": [
+    {
+      "path": "release/v2.7.2/seal-office-2.7.2-harmony.hap",
+      "bytes": 66487475,
+      "sha256": "9089706f31b7a3fc18486041b488d15b8cfd18c5dcc8cc54f95d0128aa717d29",
+      "signatureVerified": true,
+      "publishToRepositories": true
+    },
+    {
+      "path": "release/v2.7.2/seal-office-2.7.2-harmony.app",
+      "bytes": 42133853,
+      "sha256": "539aae514ca6effd1431d7e58f305dc61071c40318e64246be873dabc82d900a",
+      "signatureVerified": true,
+      "publishToRepositories": false
+    }
+  ],
+  "profile": {
+    "type": "release",
+    "distributionType": "app_gallery",
+    "sha256": "1441d31f07044f357a3e1d3ca526e4be23bab662441f157cb07359671956f2b4",
+    "matchesOriginalProfileBytes": true,
+    "boundDebugDeviceCount": 0
+  },
+  "deviceVerified": false,
+  "appGallerySubmissionVerified": false,
+  "sourceArchive": {
+    "version": "2.7.2",
+    "versionCode": "20702",
+    "platform": "harmony",
+    "archive": "seal-office-2.7.2-harmony-cloud-source.zip",
+    "archiveBytes": 37988435,
+    "sourceBytes": 60017846,
+    "sizeLimitBytes": null,
+    "sha256": "217729ad17c3f6f40955fe542363b5e5f75594f30716258dfd5511ddc7250695",
+    "editorSha256": "8ac9ca5dc46fbaecc9cfa6dafec0c02ac54b17d03a271b3d14e7776f9c56aa87",
+    "crcAndAllPayloadHashesVerified": true,
+    "completeFontsUnchanged": true,
+    "generatedNativePackage": false,
+    "files": [
+      {
+        "path": "AndroidManifest.xml",
+        "bytes": 1465,
+        "sha256": "eb2a9051659bd618194fd74640ed8ac1c2f4a6df6a17752abd2294e0bffa922c"
+      },
+      {
+        "path": "App.uvue",
+        "bytes": 123,
+        "sha256": "b3b845f851b1f2bef770e63ec0e95ce57081f84671b33dc3c9021abd75a03792"
+      },
+      {
+        "path": "harmony-configs/entry/src/main/module.json5",
+        "bytes": 1164,
+        "sha256": "9cb2bfd71b488b4aaa4890334ef3806ee9177628e437b0e7343f9c4dfb0f9c06"
+      },
+      {
+        "path": "harmony-configs/entry/src/main/resources/base/element/seal_print.json",
+        "bytes": 108,
+        "sha256": "aedf2a79e05446baa34540e3bf63356c39c32ce2c0506a2b75ae78372c932007"
+      },
+      {
+        "path": "harmony-configs/entry/src/main/resources/base/element/seal_scan.json",
+        "bytes": 163,
+        "sha256": "52d6af9bbeb23859784ae47de2dbd0ee98dff17cc40ef73838e743a08b0d276b"
+      },
+      {
+        "path": "main.uts",
+        "bytes": 146,
+        "sha256": "e2b620ca5b9a2e5bb2622ff622d62e39f81c3a8fd6f8e9c12b37d429a8602ca7"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 2744,
+        "sha256": "c8dfe882fceaa4e1c5191acd366c6e23ab3f30a1f15b592fe5a5adb9a94f4d5f"
+      },
+      {
+        "path": "native/export.uts",
+        "bytes": 2348,
+        "sha256": "8b7eae00664b72773affc14b565cef0925cd3bcffda178d8720049fa4fde3835"
+      },
+      {
+        "path": "native/share.uts",
+        "bytes": 4692,
+        "sha256": "47fdbce8365798d4ddee488449fc177e13c60a2011db95c9ee81232e07a3b6a1"
+      },
+      {
+        "path": "native/workspace.uts",
+        "bytes": 1428,
+        "sha256": "43dc99f9e2a0c42973f4e33cb29941c99a8b314cbc63c753e6c1d2e1c83adce1"
+      },
+      {
+        "path": "nativeResources/android/res/drawable/icon_background.xml",
+        "bytes": 177,
+        "sha256": "9a9d1a377a2054e5d9afa0a97c617dac408ffae756483386142521126f47c178"
+      },
+      {
+        "path": "nativeResources/android/res/drawable-nodpi/icon_foreground.png",
+        "bytes": 19852,
+        "sha256": "de7a94eb55842121c3e577a2c4bc6feb68d6d4614fbc4d4fcd7a36f28b8c6045"
+      },
+      {
+        "path": "nativeResources/android/res/drawable-nodpi/icon_monochrome.png",
+        "bytes": 6546,
+        "sha256": "0dba563c5c0dbc5e3b91cfab1bcb2668c752c5110780b3b56df4e8d4482f53b3"
+      },
+      {
+        "path": "nativeResources/android/res/mipmap-anydpi-v26/icon.xml",
+        "bytes": 255,
+        "sha256": "0a46fa3a5de0ca4bd201f6a13ef67951b140946a890bdd25272139e339095e1b"
+      },
+      {
+        "path": "nativeResources/android/res/mipmap-anydpi-v33/icon.xml",
+        "bytes": 317,
+        "sha256": "3ee22a5e15db371261af50aaa4456b64c6a39f93165eb75c2d75a9a30230571b"
+      },
+      {
+        "path": "package.json",
+        "bytes": 1533,
+        "sha256": "3449108270ba3335bed9443b95bb3b09bb252b3e615fc1c5038b59656af3874e"
+      },
+      {
+        "path": "pages/workspace/workspace.uvue",
+        "bytes": 21665,
+        "sha256": "f2642631c889bc335c1a23db9d95d8d899c778e13330be25f23b18fa6645045f"
+      },
+      {
+        "path": "pages.json",
+        "bytes": 245,
+        "sha256": "72cfd276704f9ebad47740c0f27a752009d3e4e1b2ee02113487cad51e715743"
+      },
+      {
+        "path": "snapshot-info.json",
+        "bytes": 9776,
+        "sha256": "71d3fd8d3ec81fd874427681df9e950769c2229d21a85081e5f8251af356c051"
+      },
+      {
+        "path": "static/icon.png",
+        "bytes": 16518,
+        "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+      },
+      {
+        "path": "static/icons/harmony/background.png",
+        "bytes": 20555,
+        "sha256": "e58f83fa9ce5a13f3444d9bf1d0eebe471a3b40b559508bfd45ba05d33ebfafe"
+      },
+      {
+        "path": "static/icons/harmony/foreground.png",
+        "bytes": 84076,
+        "sha256": "1b81ab2bc7e7310d9133b5ad38420d7ff0038f42aae400ab31a073b3f8126eb6"
+      },
+      {
+        "path": "static/office/.gitkeep",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "static/office/assets/index-5d4613ca.css",
+        "bytes": 272940,
+        "sha256": "5d4613ca45698403b7dde90bac6d045caec74d77e266838e769eab0965144411"
+      },
+      {
+        "path": "static/office/assets/logo-da820085.png",
+        "bytes": 16518,
+        "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+      },
+      {
+        "path": "static/office/assets/scan-fe515c4d.css",
+        "bytes": 8264,
+        "sha256": "fe515c4d5306a9429bb53d3e50af90943bb9a3d9b17b1caa542a2a564cfc6104"
+      },
+      {
+        "path": "static/office/assets/SkinMarketPage-d0ef2377.css",
+        "bytes": 3327,
+        "sha256": "d0ef237725a69e374eb0bea8fad070e89c509b2e176486ec3540df76fc5b9ae1"
+      },
+      {
+        "path": "static/office/assets/TemplateLibrary-d5e988b9.css",
+        "bytes": 3623,
+        "sha256": "d5e988b9305d69b3bc7d021258362625bd41e6731524fc20039ce6ed8ecde331"
+      },
+      {
+        "path": "static/office/build-info.json",
+        "bytes": 182,
+        "sha256": "2b550e541ab4cab9c0e28c752e4e204835f1ca79d60ca6b041eebe6e300f7124"
+      },
+      {
+        "path": "static/office/compatibility.js",
+        "bytes": 2514,
+        "sha256": "fed8d72d9d376b209fbcc6349d8d354ae7b7c9e6386bf88e8a3d0e1af389e516"
+      },
+      {
+        "path": "static/office/fonts/NotoSansSC.ttf",
+        "bytes": 17772300,
+        "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+      },
+      {
+        "path": "static/office/fonts/NotoSerif-LICENSE.txt",
+        "bytes": 4301,
+        "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+      },
+      {
+        "path": "static/office/fonts/NotoSerifCJKsc-Regular.otf",
+        "bytes": 24543080,
+        "sha256": "2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca"
+      },
+      {
+        "path": "static/office/fonts/OFL.txt",
+        "bytes": 4387,
+        "sha256": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"
+      },
+      {
+        "path": "static/office/icons/icon180.png",
+        "bytes": 9295,
+        "sha256": "67d48174fd8857315f896db99a8ee1c6d90701b6d0eaae38685e3c6f6210c4ed"
+      },
+      {
+        "path": "static/office/icons/icon192.png",
+        "bytes": 11868,
+        "sha256": "63ed78e5a17bf99bd37059efae93e357fba5935018db7913edbdee0ff4f3ce78"
+      },
+      {
+        "path": "static/office/icons/icon32.png",
+        "bytes": 1592,
+        "sha256": "8325b4372f2d8771e8600f792751c05afcaf0dafe41f839c7490bc6bebf4f2d9"
+      },
+      {
+        "path": "static/office/icons/icon512.png",
+        "bytes": 26134,
+        "sha256": "050c9b2aef2c84b744bca2b13f8e4e785756dd18b63a22d4b7f8f948e83533f8"
+      },
+      {
+        "path": "static/office/icons/startup-logo.png",
+        "bytes": 16518,
+        "sha256": "da8200857c2f2ede51698bc77d3cf95aa04592efe04d3b4bfd1e31c0e38a45a1"
+      },
+      {
+        "path": "static/office/index.html",
+        "bytes": 1787,
+        "sha256": "eec63e01cc1933f0d9af0d2d12567e7c59c417c902d60e5f847c3e3ec5363cc3"
+      },
+      {
+        "path": "static/office/licenses/bessel-LICENSE.txt",
+        "bytes": 589,
+        "sha256": "83954c3a13a34578887622094871f90a219e250cda5aa0c8fc443cfe5c1b935e"
+      },
+      {
+        "path": "static/office/licenses/formulajs-LICENSE.txt",
+        "bytes": 3320,
+        "sha256": "174950f43de64be376a36ce6f81c9da6242f59f86c5aad6371bff0fa30469a7b"
+      },
+      {
+        "path": "static/office/licenses/frac-LICENSE.txt",
+        "bytes": 589,
+        "sha256": "fc4d63efaee49af37d9036d8100a6e6bc311cfb98a08e834ff65b2d57bf5d193"
+      },
+      {
+        "path": "static/office/licenses/iconv-lite-0.6.3.txt",
+        "bytes": 1063,
+        "sha256": "f9c6da891840e8951696e472b3c7d6f6d3ab2c7325f1dd30c0813244c15b288c"
+      },
+      {
+        "path": "static/office/licenses/isomorphic.js-LICENSE.txt",
+        "bytes": 1108,
+        "sha256": "dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057"
+      },
+      {
+        "path": "static/office/licenses/jstat-LICENSE.txt",
+        "bytes": 1049,
+        "sha256": "854847b5c4375f52fbe73364fd13ba138e59a52c88938ed0bab7f940dd8dd800"
+      },
+      {
+        "path": "static/office/licenses/lib0-LICENSE.txt",
+        "bytes": 1108,
+        "sha256": "5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73"
+      },
+      {
+        "path": "static/office/licenses/OFD-1.0.6.txt",
+        "bytes": 10678,
+        "sha256": "16c2c8ebf19fef9a477fd6ecb098e5f589fd7c183d5a4f398dcd6e1dcca7ca17"
+      },
+      {
+        "path": "static/office/licenses/SheetJS-0.20.3.txt",
+        "bytes": 11355,
+        "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+      },
+      {
+        "path": "static/office/licenses/ssf-LICENSE.txt",
+        "bytes": 11355,
+        "sha256": "279ce5f639ecd1767f96948f9fbe6f0aa8145cb280cf98473fb366eab5e6de26"
+      },
+      {
+        "path": "static/office/licenses/yjs-LICENSE.txt",
+        "bytes": 1211,
+        "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff"
+      },
+      {
+        "path": "static/office/manifest.webmanifest",
+        "bytes": 377,
+        "sha256": "d1053c99a7966b4acb779548c8d12a76a1e25f145739294610495e34d5237ae8"
+      },
+      {
+        "path": "static/office/office.js",
+        "bytes": 16965773,
+        "sha256": "8ac9ca5dc46fbaecc9cfa6dafec0c02ac54b17d03a271b3d14e7776f9c56aa87"
+      },
+      {
+        "path": "static/office/uni.webview.js",
+        "bytes": 6641,
+        "sha256": "5ce885a6a9a3864d6fe63309a73a4d8275d3701a48160c9123f768402a3b4df8"
+      },
+      {
+        "path": "static/splash/android/icon-xhdpi.png",
+        "bytes": 21088,
+        "sha256": "d5b1e1a8efc0f3044b900693005e6ad8ded7ea8fe25d11a8c83d0336bd6cc8cc"
+      },
+      {
+        "path": "static/splash/android/icon-xxhdpi.png",
+        "bytes": 33740,
+        "sha256": "54bf37c8f7b8dccdcc64db53cae9b5b86904159573a08bd6084946957f2d53d5"
+      },
+      {
+        "path": "static/splash/android/icon-xxxhdpi.png",
+        "bytes": 52276,
+        "sha256": "2d9fed3009b950a0f2a5e9e3a837e2e2c49bb2a39515de4d69da92a623bef0ae"
+      }
+    ]
+  },
+  "sourceProjectSync": {
+    "sourceDirectory": "harmony-mobile",
+    "archive": "release/v2.7.2/mobile-web/seal-office-2.7.2-harmony-cloud-source.zip",
+    "archiveSha256": "217729ad17c3f6f40955fe542363b5e5f75594f30716258dfd5511ddc7250695",
+    "sourceFiles": 57,
+    "allSourceFileBytesMatchArchive": true,
+    "exactWholeDirectoryMatch": false,
+    "retainedExtraFileCount": 5142,
+    "retainedLegacyCacheFiles": 5141,
+    "retainedExtraStaticFiles": [
+      "static/office/assets/index-8983ec89.css"
+    ],
+    "wholeDirectoryRemovalRejected": true,
+    "historicalCacheNotDeleted": true,
+    "currentBuildArchiveFilesPreciselyReplaced": true
+  },
+  "frozenSource": "mobile/unpackage/cloud-ready/2.7.2/harmony-validated",
+  "certificate": {
+    "chainMatchesOriginal": true,
+    "chainSha256Fingerprints": [
+      "DF:21:A3:C0:9F:79:54:57:93:05:F8:5C:64:F8:0C:AD:86:F7:98:53:EE:3A:88:7C:1D:EC:95:D2:18:DF:3A:37",
+      "0D:AA:8A:96:5B:51:53:12:4F:79:D4:B4:23:78:D0:AC:2F:55:36:AC:B5:FC:E1:92:4F:43:72:3E:97:58:71:80",
+      "9C:1A:6D:76:D4:F1:83:67:FE:1A:8D:5D:D4:D7:EE:71:E2:01:DF:04:F6:CA:05:5A:56:88:35:28:45:8D:CE:CB"
+    ],
+    "leafSha256Fingerprint": "9C:1A:6D:76:D4:F1:83:67:FE:1A:8D:5D:D4:D7:EE:71:E2:01:DF:04:F6:CA:05:5A:56:88:35:28:45:8D:CE:CB"
+  },
+  "browser": {
+    "passed": true,
+    "checks": 45,
+    "errors": 0,
+    "groups": [
+      {
+        "name": "core",
+        "passed": true,
+        "checks": 20
+      },
+      {
+        "name": "reading",
+        "passed": true,
+        "checks": 2
+      },
+      {
+        "name": "editor",
+        "passed": true,
+        "checks": 5
+      },
+      {
+        "name": "workspace",
+        "passed": true,
+        "checks": 1
+      },
+      {
+        "name": "diagram",
+        "passed": true,
+        "checks": 8
+      },
+      {
+        "name": "assistant",
+        "passed": true,
+        "checks": 7
+      },
+      {
+        "name": "format-editing",
+        "passed": true,
+        "checks": 2
+      }
+    ],
+    "bundleSha256": "8ac9ca5dc46fbaecc9cfa6dafec0c02ac54b17d03a271b3d14e7776f9c56aa87",
+    "scheme": "file",
+    "host": "Electron 浏览器与模拟原生宿主；未替代鸿蒙真机",
+    "report": "harmony-browser.json",
+    "genericScreenshotsNotArchived": true
+  },
+  "signingTool": "DevEco Studio hap-sign-tool verify-app",
+  "buildTools": {
+    "uniAppX": "5.34",
+    "harmonySdk": "26.0.0.105",
+    "environment": "仅在构建子进程设置 DEVECO_SDK_HOME 与 NODE_HOME，未修改系统环境"
+  },
+  "deviceProbe": {
+    "command": "hdc list targets",
+    "result": "[Empty]"
+  },
+  "officialReferences": [
+    {
+      "url": "https://developer.huawei.com/consumer/cn/doc/harmonyos-faqs/appgallery-kit-faq-0005/",
+      "claim": "AppGallery 校验外层签名后拆包，为内层 HAP 签名"
+    },
+    {
+      "url": "https://developer.huawei.com/consumer/cn/doc/App/agc-help-releasefaq-0000001110342644/",
+      "claim": "APP 仅用于发布，调试设备安装需要匹配 UDID 的调试 Profile"
+    }
+  ],
+  "warnings": [
+    "本机无鸿蒙设备，未完成真机安装和 AppGallery 提交验收",
+    "harmony-mobile 中57个正式源码文件与归档一致，但历史缓存及1个旧CSS保留，不能声称整个目录与ZIP完全一致"
+  ]
+}

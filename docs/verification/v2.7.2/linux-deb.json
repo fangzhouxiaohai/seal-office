@@ -1,0 +1,17 @@
+{
+  "version": "2.7.2",
+  "passed": true,
+  "source": "GitHub Actions 双Ubuntu实际安装验收产物",
+  "sourceCommit": "de6fbab9bfe0ebed8c80355add3c93d14059121c",
+  "sha256": "fc0d27c7139ff6e1e58feb53c043683308f3b632e6a377ac011980a55dec2126",
+  "bytes": 168906560,
+  "runUrl": "https://github.com/fangzhouxiaohai/seal-office/actions/runs/43443974955",
+  "installedChecksPerSystem": 77,
+  "systems": [
+    "ubuntu-22.04",
+    "ubuntu-24.04"
+  ],
+  "sandboxBypassed": false,
+  "evidence": "ubuntu-ci.json",
+  "localBuildEvidence": "linux-deb-local.json"
+}

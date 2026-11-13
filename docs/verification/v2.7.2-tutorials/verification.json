@@ -1,0 +1,259 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "kind": "hands-on-tutorial",
+  "videos": [
+    {
+      "platform": "android",
+      "file": "seal-office-2.7.2-android-intro-1080p.mp4",
+      "bytes": 9278278,
+      "sha256": "c5c5305b03500c8e1f9a58bbfe343d2b0b49f5562f8907af7f4f7a99015d4470",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "durationSeconds": 135.06666666666666,
+      "videoAndAudioFullyDecoded": true,
+      "integratedLufs": -16.07,
+      "truePeakDb": -1.48,
+      "narrationVoice": "zh-CN-XiaoxiaoNeural",
+      "voiceRate": "+5%",
+      "voicePitch": "+4Hz",
+      "voiceConfirmedByUser": true,
+      "sourceReferenceSha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+      "steps": 13,
+      "actions": 76,
+      "functionalAssertions": 15,
+      "nativeDeviceRecording": false,
+      "sourceDisclosure": "正式 APK 界面资源在隔离 Electron 浏览器窗口录制，采用 Chromium 触摸输入模拟手机布局。",
+      "sourceBundleSha256": "46d4bd90785d2fb16cc3c749ac2373b1d3277d6d5a4af0f03175a634a492e39e",
+      "sourceArchive": {
+        "name": "seal-office-2.7.2-android.apk",
+        "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf"
+      },
+      "subtitles": 25,
+      "subtitleTiming": "语音服务句子边界，按每段配音实际开始时间放入成片。",
+      "purpleOutlineFrameChecks": [
+        {
+          "step": "new-word",
+          "seconds": 2.65,
+          "purplePixels": 11175
+        },
+        {
+          "step": "word-body",
+          "seconds": 13.95,
+          "purplePixels": 17949
+        },
+        {
+          "step": "word-save",
+          "seconds": 24.95,
+          "purplePixels": 8661
+        },
+        {
+          "step": "display-full",
+          "seconds": 37.9,
+          "purplePixels": 12272
+        },
+        {
+          "step": "display-compact",
+          "seconds": 51.35,
+          "purplePixels": 13602
+        },
+        {
+          "step": "reading-enter",
+          "seconds": 61.35,
+          "purplePixels": 4947
+        },
+        {
+          "step": "reading-swipe",
+          "seconds": 67.95,
+          "purplePixels": 4349
+        },
+        {
+          "step": "reading-controls",
+          "seconds": 74.55,
+          "purplePixels": 6190
+        },
+        {
+          "step": "reading-zoom",
+          "seconds": 85.95,
+          "purplePixels": 3322
+        },
+        {
+          "step": "sheet-open",
+          "seconds": 94.45,
+          "purplePixels": 7716
+        },
+        {
+          "step": "sheet-formula",
+          "seconds": 108.15,
+          "purplePixels": 6850
+        },
+        {
+          "step": "check-update",
+          "seconds": 117.95,
+          "purplePixels": 8547
+        },
+        {
+          "step": "outro",
+          "seconds": 126.2,
+          "purplePixels": 7707
+        }
+      ],
+      "typingFrameChanges": [
+        {
+          "step": "word-body",
+          "label": "填写计划正文",
+          "meanPixelChange": 3.5447
+        },
+        {
+          "step": "sheet-formula",
+          "label": "输入求和公式",
+          "meanPixelChange": 0.1618
+        }
+      ],
+      "preview": "seal-office-2.7.2-android-intro-1080p-preview.mp4",
+      "previewSha256": "a19b83f72f781b2f731fc200c83c43ff046fa0b9922e9120a35cced3a76fda93",
+      "sourceManifest": "android-recording.json",
+      "visualReview": {
+        "passed": true,
+        "reviewer": "Codex",
+        "method": "已查看两端完整联系表，以及正文输入、简洁模式、显示比例、更新检查和移动阅读的原尺寸代表帧。"
+      }
+    },
+    {
+      "platform": "pc",
+      "file": "seal-office-2.7.2-pc-intro-1080p.mp4",
+      "bytes": 6356489,
+      "sha256": "f5619979369336c17a95801ecf0dcc621adfac42059b4457864119713077188f",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "durationSeconds": 144.46666666666667,
+      "videoAndAudioFullyDecoded": true,
+      "integratedLufs": -16.18,
+      "truePeakDb": -1.48,
+      "narrationVoice": "zh-CN-XiaoxiaoNeural",
+      "voiceRate": "+5%",
+      "voicePitch": "+4Hz",
+      "voiceConfirmedByUser": true,
+      "sourceReferenceSha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+      "steps": 14,
+      "actions": 83,
+      "functionalAssertions": 20,
+      "nativeDeviceRecording": false,
+      "sourceDisclosure": "正式 Web ZIP 界面资源在隔离 Electron 浏览器窗口以电脑布局录制。",
+      "sourceBundleSha256": "186e1312e61121b2272187a02f68b2f46fad5f4fb8e3a80e49669247b0ad2c71",
+      "sourceArchive": {
+        "name": "seal-office-2.7.2-web.zip",
+        "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+        "files": 527
+      },
+      "subtitles": 25,
+      "subtitleTiming": "语音服务句子边界，按每段配音实际开始时间放入成片。",
+      "purpleOutlineFrameChecks": [
+        {
+          "step": "new-word",
+          "seconds": 2.65,
+          "purplePixels": 7245
+        },
+        {
+          "step": "word-title",
+          "seconds": 15.65,
+          "purplePixels": 10629
+        },
+        {
+          "step": "word-body",
+          "seconds": 23.15,
+          "purplePixels": 10619
+        },
+        {
+          "step": "word-save",
+          "seconds": 30.15,
+          "purplePixels": 6795
+        },
+        {
+          "step": "display-default",
+          "seconds": 40.3,
+          "purplePixels": 6719
+        },
+        {
+          "step": "display-full",
+          "seconds": 52.35,
+          "purplePixels": 16101
+        },
+        {
+          "step": "display-zoom-option",
+          "seconds": 65.6,
+          "purplePixels": 6708
+        },
+        {
+          "step": "word-reopen",
+          "seconds": 76.5,
+          "purplePixels": 6688
+        },
+        {
+          "step": "sheet-open",
+          "seconds": 85.15,
+          "purplePixels": 5666
+        },
+        {
+          "step": "sheet-formula",
+          "seconds": 98.7,
+          "purplePixels": 6460
+        },
+        {
+          "step": "template-open",
+          "seconds": 107.35,
+          "purplePixels": 5613
+        },
+        {
+          "step": "template-use",
+          "seconds": 116.1,
+          "purplePixels": 5511
+        },
+        {
+          "step": "check-update",
+          "seconds": 128.15,
+          "purplePixels": 6289
+        },
+        {
+          "step": "outro",
+          "seconds": 138.2,
+          "purplePixels": 5625
+        }
+      ],
+      "typingFrameChanges": [
+        {
+          "step": "word-title",
+          "label": "输入标题",
+          "meanPixelChange": 0.0444
+        },
+        {
+          "step": "word-body",
+          "label": "填写计划正文",
+          "meanPixelChange": 0.9082
+        },
+        {
+          "step": "sheet-formula",
+          "label": "输入求和公式",
+          "meanPixelChange": 0.0336
+        }
+      ],
+      "preview": "seal-office-2.7.2-pc-intro-1080p-preview.mp4",
+      "previewSha256": "88569f3758d40708239f7e289392976ece620ceb0c7b0744f709e79a4a87cd8f",
+      "sourceManifest": "pc-recording.json",
+      "visualReview": {
+        "passed": true,
+        "reviewer": "Codex",
+        "method": "已查看两端完整联系表，以及正文输入、简洁模式、显示比例、更新检查和移动阅读的原尺寸代表帧。"
+      }
+    }
+  ],
+  "runtimeChanges": false,
+  "visualReview": {
+    "passed": true,
+    "reviewer": "Codex",
+    "userVoicePreviewConfirmed": true
+  },
+  "recordedAt": "2026-11-13T14:42:54.523496+00:00"
+}

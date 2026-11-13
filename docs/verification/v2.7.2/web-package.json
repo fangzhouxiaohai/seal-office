@@ -1,0 +1,10 @@
+{
+  "releaseId": "2.7.2-web-20261113-223857",
+  "files": 527,
+  "webZip": "seal-office-2.7.2-web.zip",
+  "bytes": 49915274,
+  "sha256": "fee596591be86087f1a85b80d6a8fdf2a742b80c6f21daea9f061d8a64004883",
+  "mainJsSha256": "186e1312e61121b2272187a02f68b2f46fad5f4fb8e3a80e49669247b0ad2c71",
+  "passed": true,
+  "browserChecks": 45
+}

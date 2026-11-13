@@ -1,0 +1,69 @@
+{
+  "passed": true,
+  "observedAt": "2026-11-13T14:21:00.272Z",
+  "environment": "正式环境，只读",
+  "origin": "https://seal.xingmasoft.com",
+  "allowedMutations": [
+    "POST /api/v1/admin/login"
+  ],
+  "businessMutations": 0,
+  "checks": [
+    "正式页面默认仅展示版本列表",
+    "点击发布版本打开弹窗，七个平台默认未选",
+    "1440 与 390 宽度无页面横向溢出",
+    "取消弹窗不发送发布请求"
+  ],
+  "widths": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "horizontalOverflow": false,
+      "screenshot": "后台正式环境-1440.png"
+    },
+    {
+      "width": 390,
+      "height": 1000,
+      "horizontalOverflow": false,
+      "screenshot": "后台正式环境-390.png"
+    }
+  ],
+  "modalScreenshots": [
+    "后台正式弹窗-1440.png",
+    "后台正式弹窗-390.png"
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index-Dufu-x7S.js"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index-B5dRmVsV.css"
+    },
+    {
+      "method": "GET",
+      "path": "/seal-logo.png"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/login"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/overview"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/releases"
+    }
+  ],
+  "blockedRequests": [],
+  "captureRelease": "2.7.2-backend-20261113141911",
+  "latestDeploymentRelease": "2.7.2-backend-20261113142454",
+  "sameAdminBuildVerifiedByFinalPublicProbe": true,
+  "captureNote": "最后一次部署只改服务端 macOS 新建附件约束，后台界面构建未变；最终公网复核再次核对 HTML、脚本和样式摘要。"
+}

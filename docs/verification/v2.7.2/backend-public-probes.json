@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "observedAt": "2026-11-13T14:29:22.589Z",
+  "environment": "正式环境，只读",
+  "baseUrl": "https://seal.xingmasoft.com",
+  "buildVersion": "2.7.2",
+  "tlsVerification": "默认校验，未跳过证书验证",
+  "publicProbe": {
+    "passed": true,
+    "tlsVerification": "default",
+    "checks": [
+      {
+        "name": "能力接口",
+        "path": "/api/v1/capabilities",
+        "status": 200,
+        "contentType": "application/json; charset=utf-8"
+      },
+      {
+        "name": "更新接口",
+        "path": "/api/v1/updates/latest?platform=windows&version=2.7.2",
+        "status": 200,
+        "contentType": "application/json; charset=utf-8"
+      },
+      {
+        "name": "后台首页",
+        "path": "/",
+        "status": 200,
+        "contentType": "text/html",
+        "sha256": "69fe73f242c411f8ca77e6d891d42eb0115d70180bf00e73af3ad1fd4e734fbe"
+      },
+      {
+        "name": "分享页",
+        "path": "/share/",
+        "status": 200,
+        "contentType": "text/html"
+      },
+      {
+        "name": "后台资源 /assets/index-B5dRmVsV.css",
+        "path": "/assets/index-B5dRmVsV.css",
+        "status": 200,
+        "contentType": "text/css",
+        "sha256": "bf850dda312765d8873c216e415f66a08b59554da6154555ae7fd3a1a3d08a8c"
+      },
+      {
+        "name": "后台资源 /assets/index-Dufu-x7S.js",
+        "path": "/assets/index-Dufu-x7S.js",
+        "status": 200,
+        "contentType": "application/javascript",
+        "sha256": "80cf48f9b6b73a5fb479499619fb1195d16768db8089d6ae3ae1da02216d2e9e"
+      }
+    ]
+  },
+  "platformQueries": [
+    {
+      "platform": "windows",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "windows-store",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "macos",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "linux",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "web",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "android",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "harmony",
+      "currentVersion": "2.7.2",
+      "status": 200,
+      "hasUpdate": false
+    }
+  ],
+  "previousClients": [
+    {
+      "platform": "windows",
+      "currentVersion": "2.7.1",
+      "status": 200,
+      "hasUpdate": false
+    },
+    {
+      "platform": "macos",
+      "currentVersion": "2.7.1",
+      "status": 200,
+      "hasUpdate": false
+    }
+  ],
+  "releaseState": "能力支持七平台；本轮只有六种正式成品，macOS 没有真实 DMG，不发布该平台。正式包上架由主任务另行记录。",
+  "deployedRelease": "2.7.2-backend-20261113142454",
+  "collectionRuntime": "本机 Node.js 默认 TLS 公网请求",
+  "transientFailure": {
+    "cause": "此前一次连接超时，未关闭 TLS 校验",
+    "resolution": "随后单次能力接口及本次完整公网复核均成功"
+  }
+}

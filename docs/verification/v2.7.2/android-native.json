@@ -1,0 +1,58 @@
+{
+  "version": "2.7.2",
+  "versionCode": 20702,
+  "passed": true,
+  "environment": "本轮隔离安卓模拟器",
+  "releaseApk": {
+    "file": "seal-office-2.7.2-android.apk",
+    "bytes": 41206228,
+    "sha256": "c125257ffdc5d81f43787f387ef6c40023d23df6f80e435322bf2dead34f9ccf"
+  },
+  "nativeChecks": [
+    "旧版 file 来源的 IndexedDB 读写：通过",
+    "原生握手、剪贴板、匿名下载页联网：通过",
+    "系统选择器导入文件字节一致：通过",
+    "编辑器网页文件选择读取字节一致：通过",
+    "系统导入与保存选择器取消回传：通过",
+    "五个主导航单次返回系统桌面：通过",
+    "文字全屏阅读：系统返回键退出当前界面，应用保持前台",
+    "PDF 全屏阅读：系统返回键退出当前界面，应用保持前台",
+    "演示放映：系统返回键退出当前界面，应用保持前台"
+  ],
+  "releaseManualChecks": [
+    "同证书覆盖安装成功，版本2.7.2/20702",
+    "旧导入原件哈希不变，旧文档与语言偏好保留",
+    "简洁编辑器恢复成功",
+    "恢复时遇到陈旧指纹，明确阻止覆盖，另存新文件成功",
+    "另存文件解包正文与追加的verified一致",
+    "新文件再次追加saved，普通保存提示成功",
+    "等待落盘后强停重开，verified-saved完整保留"
+  ],
+  "exportedDocument": {
+    "file": "seal-response-272.sldoc",
+    "bytes": 732,
+    "sha256": "a205be46fea5a16bb5966d0b47da0dfb0564a1101af970096fae950b96416908"
+  },
+  "physicalDeviceTested": false,
+  "debugApk": {
+    "path": "android-studio/app/build/outputs/apk/debug/app-debug.apk",
+    "bytes": 43372223,
+    "sha256": "f9dec2eeb623ec463a656fed4d19abd9685ff335a9ad0f8213164fbcaef823d7",
+    "versionCode": 20702,
+    "editorFilesMatchFrozenSnapshot": 31,
+    "sourcePlaceholderOmitted": ".gitkeep",
+    "applicationId": "com.sealoffice.mobile.nativeqa",
+    "signatureVerified": true
+  },
+  "recoveryConflict": {
+    "observed": true,
+    "protectedFromOverwrite": true,
+    "resolution": "另存新测试文件后再次普通保存成功，等待落盘后强停重开正文完整。",
+    "timingEvidence": "此前保存后500至800毫秒强停，小于工作区1500毫秒备份延迟；时序与恢复指纹陈旧吻合，未直接读取该次内部指纹。"
+  },
+  "testEmulatorCleanup": {
+    "matchedName": "seal-office-v272-qa",
+    "removed": true,
+    "existingEmulatorsUntouched": true
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "passed": true,
+  "environment": "隔离数据库与真实后台构建",
+  "version": "2.7.2",
+  "observedAt": "2026-11-13T14:21:56.124Z",
+  "checks": [
+    "登录页在宽窄视口沿用统一顶栏和紧凑表单",
+    "版本管理默认列表，点击发布版本才显示弹窗",
+    "含 macOS 的七个平台独立可选且默认不发布",
+    "弹窗初始焦点、双向键盘限制、ESC 关闭和焦点返回可用",
+    "macOS 缺少安装包时拒绝发布并保留表单",
+    "上传中取消和 ESC 均不丢失进度，显示原因",
+    "真实上传完成并显示服务端校验值",
+    "宽窄弹窗限制尺寸，表单内部滚动且底部操作始终可达",
+    "仅写入所选平台记录",
+    "列表分组和服务端状态数量一致",
+    "发布成功关闭弹窗并刷新列表",
+    "桌面和手机宽度无页面横向溢出",
+    "全部八个后台页面沿用紧凑深灰框架，顶栏 60 像素与侧栏 200 像素"
+  ],
+  "errors": [],
+  "script": "scripts/verify-release-admin.cjs",
+  "productionConnected": false,
+  "screenshots": [
+    {
+      "file": "后台隔离-发布弹窗-1440-底部.png",
+      "sha256": "b8dee67bd357cf519324c9912bdd63b24d947810fd4cca17bc6c32d3d31a8185"
+    },
+    {
+      "file": "后台隔离-发布弹窗-1440.png",
+      "sha256": "b985e218611632279cbe3e37073f09a85ff4dc0e601384dffde93b7cf115aed4"
+    },
+    {
+      "file": "后台隔离-发布弹窗-390-底部.png",
+      "sha256": "a79d9f592a8c128f0952b7443047453e1b3bea92c5dd982003dcc739f1d24209"
+    },
+    {
+      "file": "后台隔离-发布弹窗-390.png",
+      "sha256": "04ff217469c2343ebcb0c8e2b8bb48af0a869e651fc6228f36b76bcfa1ca5363"
+    },
+    {
+      "file": "后台隔离-操作记录-1440.png",
+      "sha256": "9e5954ac5a4c86fe1b1655c4e1ad5193a03598ca01ca9ae4492310ec0c4c2578"
+    },
+    {
+      "file": "后台隔离-操作记录-390.png",
+      "sha256": "559c8e6fdfd1e1de36b0d76330e8b7fabcf390f5b0795bc23c0f261576eadaca"
+    },
+    {
+      "file": "后台隔离-文档转换-1440.png",
+      "sha256": "81655a1de9d53f33a0ed7eac5a438804607b2309484f90319d5b1a1b5d5c49ec"
+    },
+    {
+      "file": "后台隔离-文档转换-390.png",
+      "sha256": "92af770e44ea18177dd73bf9f02e67faf24412940e77a0d8a81e662f652f8d60"
+    },
+    {
+      "file": "后台隔离-演示模板审核-1440.png",
+      "sha256": "5e346e20f7307f66f7512c3f508f6f6ba39cbfb0d7a0394ebe6ac4b85ad9c178"
+    },
+    {
+      "file": "后台隔离-演示模板审核-390.png",
+      "sha256": "f55680fa22a2ce80ba9b526257cb2f4e74a07cceafb96cb435bb66541f6e9dc4"
+    },
+    {
+      "file": "后台隔离验收-1440.png",
+      "sha256": "1d9e44c8f2c385d4a734ef2face7fbbca49175b5c803c5889c0f6de955763f76"
+    },
+    {
+      "file": "后台隔离验收-390.png",
+      "sha256": "f51d75f59ad11d86cf31a6fea40c36df8e14a0a66ea3e082e00d495b7c3d45a2"
+    },
+    {
+      "file": "后台隔离-登录-1440.png",
+      "sha256": "a0abc3a6c505eb811080024e13d067fbcf8f631441eec555be2ccf4fb60f3793"
+    },
+    {
+      "file": "后台隔离-登录-390.png",
+      "sha256": "e0743404cf67659a8991560b1b3ec0683203d8e360e0c20fc3d92917dd37944b"
+    },
+    {
+      "file": "后台隔离-皮肤审核-1440.png",
+      "sha256": "ed4c85526be14bb47d59d20bfeaa07da4cbf121e433c90547f0fe43df342ef9d"
+    },
+    {
+      "file": "后台隔离-皮肤审核-390.png",
+      "sha256": "91698203d78bdd3d222b0c4e43fbf10a9689a4420c788b7822b009dcecd3049b"
+    },
+    {
+      "file": "后台隔离-知识内容审核-1440.png",
+      "sha256": "5de184a129e2070820477074155762bc0b4c524d9a6241bd4f022b4de8276116"
+    },
+    {
+      "file": "后台隔离-知识内容审核-390.png",
+      "sha256": "513bed9690fdd819524b42689658237da701ce1e3f502b7489a08a967ef41880"
+    },
+    {
+      "file": "后台隔离-账号与用量-1440.png",
+      "sha256": "ba5ae2aefdfe15f60e71c94536b16e1a9167e4d5b22606fdb7cb9285c5b2fa3f"
+    },
+    {
+      "file": "后台隔离-账号与用量-390.png",
+      "sha256": "7dbfbdb7119afc0db2d51733e49bcdf0e462c4976524f5661bf7f56e513f8f4c"
+    },
+    {
+      "file": "后台隔离-运行概览-1440.png",
+      "sha256": "6fa8f7e76d3b82c261cb56f53a2ada79c36b44ca9eef6fc34a7a2d700492a2f3"
+    },
+    {
+      "file": "后台隔离-运行概览-390.png",
+      "sha256": "9f2efd2a94ad3660b4b22c32bcd8bd37c2f6834f5e507dfc12a0ab05a39c859a"
+    }
+  ]
+}

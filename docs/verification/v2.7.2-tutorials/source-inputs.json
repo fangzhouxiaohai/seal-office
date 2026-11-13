@@ -1,0 +1,47 @@
+{
+  "version": "2.7.2",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "df043c71e51f8e4ed61acb2eece25ab085574cad3102faa7b505dd9dcbdbe188"
+    },
+    {
+      "path": "docs/打包规范.md",
+      "sha256": "69c098cc97474e6cc61fcda6530537796df8b13acc68c0777a9c8797597c6d51"
+    },
+    {
+      "path": "docs/promo/current-storyboard.json",
+      "sha256": "9a7c6b24b68ae046346d7dd1a8c325e07461072bf7862249f99bfd0118a9e85b"
+    },
+    {
+      "path": "scripts/promo/build-current.cjs",
+      "sha256": "9e791039af5db039ec853ea6d21ddd895878967b264d139a494f4b8119eeac30"
+    },
+    {
+      "path": "scripts/promo/tutorial-source.cjs",
+      "sha256": "35363ede5583ab285bb3f486c0b42ef58fe36e1f4cff0e5f9f8cc06f8bfbdd29"
+    },
+    {
+      "path": "scripts/promo/android-source.cjs",
+      "sha256": "11bb472ed9736696d68e7d2170e617642c040525572ceaa4b84fbcc771709aca"
+    },
+    {
+      "path": "scripts/promo/tutorial-record.cjs",
+      "sha256": "79a44f0f4d3296518ce47443da507a19b53c006d861e742237058a04b3e9fe56"
+    },
+    {
+      "path": "scripts/promo/tutorial-voice.py",
+      "sha256": "a415057b546eb0ab0aa95ffe78379a60212f025989e52ba771c5cfb45c28435f"
+    },
+    {
+      "path": "scripts/promo/tutorial-render.py",
+      "sha256": "3baecfa9653f63f1fb7b9df2bd9f11700c142fd4ef36b4c4d1388923d2be4865"
+    },
+    {
+      "path": "scripts/promo/tutorial-finalize.py",
+      "sha256": "d1803c7d6c5b25cde8e5929e8ad5725c2c34718d3d5ce0b983580cb92f7977b0"
+    }
+  ],
+  "runtimeChanged": false,
+  "sampleAudioPublished": false
+}

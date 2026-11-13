@@ -1,0 +1,525 @@
+{
+  "version": "2.7.2",
+  "clips": [
+    {
+      "platform": "pc",
+      "id": "new-word",
+      "text": "在海豹办公二点七点二，从首页点击新建，再选文字文档。文件默认打开简洁模式，工具图标和底部文件标签仍然可用。",
+      "file": "pc-new-word.mp3",
+      "seconds": 11.328,
+      "sha256": "103aada9ab47c70fab711ad10d335114fdf73ec78f055960d26d7d43bfa85ae8",
+      "sentences": [
+        {
+          "text": "在海豹办公二点七点二，从首页点击新建，再选文字文档。",
+          "start": 0.1,
+          "end": 5.4166669
+        },
+        {
+          "text": "文件默认打开简洁模式，工具图标和底部文件标签仍然可用。",
+          "start": 5.4166669,
+          "end": 11.27381
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "word-title",
+      "text": "点击正文，输入每周工作计划。按回车，开始填写正文。",
+      "file": "pc-word-title.mp3",
+      "seconds": 5.832,
+      "sha256": "735912277ad6a94a156d5220ebe01174ce08a5abc76d4c143befb1d915e887ba",
+      "sentences": [
+        {
+          "text": "点击正文，输入每周工作计划。",
+          "start": 0.1,
+          "end": 3.1428572
+        },
+        {
+          "text": "按回车，开始填写正文。",
+          "start": 3.1428572,
+          "end": 5.7857144
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "word-body",
+      "text": "写下本周目标，再另起一段记录需求、汇报和交付的时间。",
+      "file": "pc-word-body.mp3",
+      "seconds": 5.376,
+      "sha256": "49628b5da70a6d2b14677c7637eac0b6a903d26054362536879579d1ec635a77",
+      "sentences": [
+        {
+          "text": "写下本周目标，再另起一段记录需求、汇报和交付的时间。",
+          "start": 0.1,
+          "end": 5.3714288
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "word-save",
+      "text": "点击保存，将计划存为海豹文字文件。底部文件标签上的未保存标记随即消失。",
+      "file": "pc-word-save.mp3",
+      "seconds": 7.824,
+      "sha256": "321d32333020892094b47a2ae6948c844977e3d809f1988e67b9cd7cf642506a",
+      "sentences": [
+        {
+          "text": "点击保存，将计划存为海豹文字文件。",
+          "start": 0.1,
+          "end": 3.7976192
+        },
+        {
+          "text": "底部文件标签上的未保存标记随即消失。",
+          "start": 3.7976192,
+          "end": 7.7738098
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "display-default",
+      "text": "先看右下角，当前文档以百分之百显示。上方的简洁工具区保留了常用操作。",
+      "file": "pc-display-default.mp3",
+      "seconds": 7.536,
+      "sha256": "a17dd3b5e60f166937e1f0c787284d1496c8146e35fbed00568ea8cc6a6564d2",
+      "sentences": [
+        {
+          "text": "先看右下角，当前文档以百分之百显示。",
+          "start": 0.1,
+          "end": 4.0595239
+        },
+        {
+          "text": "上方的简洁工具区保留了常用操作。",
+          "start": 4.0595239,
+          "end": 7.4880954
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "display-full",
+      "text": "从工作区打开设置中心，关闭简洁模式。点回底部文件标签，标题栏和工具文字恢复显示。",
+      "file": "pc-display-full.mp3",
+      "seconds": 9.072,
+      "sha256": "5f37e3904301a9ad7c8a6915c8217c9a0903ebabd7c44f4008202dfa636af3a1",
+      "sentences": [
+        {
+          "text": "从工作区打开设置中心，关闭简洁模式。",
+          "start": 0.1,
+          "end": 4.1309525
+        },
+        {
+          "text": "点回底部文件标签，标题栏和工具文字恢复显示。",
+          "start": 4.1309525,
+          "end": 9.0119051
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "display-zoom-option",
+      "text": "在全局设置中重新开启简洁模式，再开启默认放大至百分之一百五十。切回这份已打开的文档，右下角依然显示百分之百。",
+      "file": "pc-display-zoom-option.mp3",
+      "seconds": 11.544,
+      "sha256": "dafeb1bd7d1e6a1c2dbb06cc6a7cccec6ceff1a36ece0c5bd326f319df158992",
+      "sentences": [
+        {
+          "text": "在全局设置中重新开启简洁模式，再开启默认放大至百分之一百五十。",
+          "start": 0.1,
+          "end": 6.7738098
+        },
+        {
+          "text": "切回这份已打开的文档，右下角依然显示百分之百。",
+          "start": 6.7738098,
+          "end": 11.4761909
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "word-reopen",
+      "text": "关闭已保存的文档，从首页重新打开。正文保留，右下角显示百分之一百五十。",
+      "file": "pc-word-reopen.mp3",
+      "seconds": 7.704,
+      "sha256": "e3752bb121475219a0ee628f846370fee19ee0d0cda8930025cf7a398b699581",
+      "sentences": [
+        {
+          "text": "关闭已保存的文档，从首页重新打开。",
+          "start": 0.1,
+          "end": 3.6190477
+        },
+        {
+          "text": "正文保留，右下角显示百分之一百五十。",
+          "start": 3.6190477,
+          "end": 7.6547621
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "sheet-open",
+      "text": "回到首页，打开准备好的项目预算表。预算列已经填写，合计单元格留空。",
+      "file": "pc-sheet-open.mp3",
+      "seconds": 7.08,
+      "sha256": "2710ee5b03690efa7ef67b40d8e735f02967a7f00a235c830f3441031980f699",
+      "sentences": [
+        {
+          "text": "回到首页，打开准备好的项目预算表。",
+          "start": 0.1,
+          "end": 3.5000001
+        },
+        {
+          "text": "预算列已经填写，合计单元格留空。",
+          "start": 3.5000001,
+          "end": 7.0238097
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "sheet-formula",
+      "text": "在名称框输入 D 五。点击公式栏，输入求和公式，选取 D 二到 D 四，按回车后得到两千三百六十。",
+      "file": "pc-sheet-formula.mp3",
+      "seconds": 9.624,
+      "sha256": "d180e5b70e65c71434907864e49d4f7c66de2ab59248c0232050e153360e451e",
+      "sentences": [
+        {
+          "text": "在名称框输入 D 五。",
+          "start": 0.1,
+          "end": 2.1666667
+        },
+        {
+          "text": "点击公式栏，输入求和公式，选取 D 二到 D 四，按回车后得到两千三百六十。",
+          "start": 2.1666667,
+          "end": 9.5714289
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "template-open",
+      "text": "打开演示模板市场，在精选推荐中选择一套模板，先看页面布局和配图。",
+      "file": "pc-template-open.mp3",
+      "seconds": 6.984,
+      "sha256": "e272883cf839edba7fdcfa01716ba30667d0f57a6d6a7eccb78a16f8eb907d5a",
+      "sentences": [
+        {
+          "text": "打开演示模板市场，在精选推荐中选择一套模板，先看页面布局和配图。",
+          "start": 0.1,
+          "end": 6.9785717
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "template-use",
+      "text": "点击使用并编辑副本，再切到第二页。模板里的文字、图形和图片都可以继续编辑。",
+      "file": "pc-template-use.mp3",
+      "seconds": 7.968,
+      "sha256": "d8435b32db65dfa9c20d713a1a069f4e4806900f0dea2c7f0c96d13470dc1571",
+      "sentences": [
+        {
+          "text": "点击使用并编辑副本，再切到第二页。",
+          "start": 0.1,
+          "end": 3.7619049
+        },
+        {
+          "text": "模板里的文字、图形和图片都可以继续编辑。",
+          "start": 3.7619049,
+          "end": 7.9047622
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "check-update",
+      "text": "打开设置中心，在关于与更新中点击检查更新。服务器返回结果后，页面显示已是最新版本，二点七点二。",
+      "file": "pc-check-update.mp3",
+      "seconds": 10.248,
+      "sha256": "b2ab4cd0c6f9dd18219a484505d62b2b36afcf13a02aeeea34c79aad97147e87",
+      "sentences": [
+        {
+          "text": "打开设置中心，在关于与更新中点击检查更新。",
+          "start": 0.1,
+          "end": 4.6190478
+        },
+        {
+          "text": "服务器返回结果后，页面显示已是最新版本，二点七点二。",
+          "start": 4.6190478,
+          "end": 10.2023813
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "outro",
+      "text": "可以打开海豹办公网页版，试试简洁模式和显示比例。",
+      "file": "pc-outro.mp3",
+      "seconds": 5.28,
+      "sha256": "cd7a73b45cd1e7e54c32abb18fe69024aacc845930b84c0d1a361ba0d770ab2f",
+      "sentences": [
+        {
+          "text": "可以打开海豹办公网页版，试试简洁模式和显示比例。",
+          "start": 0.1,
+          "end": 5.2642859
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "new-word",
+      "text": "海豹办公二点七点二，在手机上也能编辑文件。从底部进入服务，点击文字，新建一份工作计划。",
+      "file": "android-new-word.mp3",
+      "seconds": 9.264,
+      "sha256": "9244111135636fe470265e7ba0c6e627906584b4d267f58d3361072db5a1d283",
+      "sentences": [
+        {
+          "text": "海豹办公二点七点二，在手机上也能编辑文件。",
+          "start": 0.1,
+          "end": 4.6428573
+        },
+        {
+          "text": "从底部进入服务，点击文字，新建一份工作计划。",
+          "start": 4.6428573,
+          "end": 9.2023813
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "word-body",
+      "text": "输入每周工作计划，再填写本周目标和交付安排。光标所在的段落会用紫色轮廓标出。",
+      "file": "android-word-body.mp3",
+      "seconds": 8.448,
+      "sha256": "ec4103e9b13300fccadc414957f554fc4e9792e5f2fbe0c9b3614c7865b8f88f",
+      "sentences": [
+        {
+          "text": "输入每周工作计划，再填写本周目标和交付安排。",
+          "start": 0.1,
+          "end": 4.9166668
+        },
+        {
+          "text": "光标所在的段落会用紫色轮廓标出。",
+          "start": 4.9166668,
+          "end": 8.3809526
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "word-save",
+      "text": "点击保存，把工作计划存为海豹文字文件。文件标签上的未保存标记随即消失。",
+      "file": "android-word-save.mp3",
+      "seconds": 7.776,
+      "sha256": "eaac7ac04677482d96bc46d00fb3b43d909f32741e5ecf26d1b869b840957fc0",
+      "sentences": [
+        {
+          "text": "点击保存，把工作计划存为海豹文字文件。",
+          "start": 0.1,
+          "end": 4.0833335
+        },
+        {
+          "text": "文件标签上的未保存标记随即消失。",
+          "start": 4.0833335,
+          "end": 7.7261908
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "display-full",
+      "text": "打开编辑区的设置中心，关闭简洁模式。点回底部文件标签，就能看到带文字的工具区。",
+      "file": "android-display-full.mp3",
+      "seconds": 8.256,
+      "sha256": "47348eadc98ee51d2ec73f875b179e466d8ffbd0008b2d8b81a5398965b68f25",
+      "sentences": [
+        {
+          "text": "打开编辑区的设置中心，关闭简洁模式。",
+          "start": 0.1,
+          "end": 3.9166668
+        },
+        {
+          "text": "点回底部文件标签，就能看到带文字的工具区。",
+          "start": 3.9166668,
+          "end": 8.1904765
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "display-compact",
+      "text": "在首页进入我的，再打开应用设置。开启简洁模式，返回文件，工具区收起文字并保留图标。",
+      "file": "android-display-compact.mp3",
+      "seconds": 9.048,
+      "sha256": "e87a6a2a02c0ea5b26fc5d53fe26c4d71c54f275c600b563a330be3b3cefd2ff",
+      "sentences": [
+        {
+          "text": "在首页进入我的，再打开应用设置。",
+          "start": 0.1,
+          "end": 3.4404763
+        },
+        {
+          "text": "开启简洁模式，返回文件，工具区收起文字并保留图标。",
+          "start": 3.4404763,
+          "end": 9.0000003
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "reading-enter",
+      "text": "打开一份长文档，点击全屏左右翻页阅读。进入后，顶部和底部工具栏自动隐藏。",
+      "file": "android-reading-enter.mp3",
+      "seconds": 7.968,
+      "sha256": "fcc0e761f924ada11bcb8db294cca14a58e6bd65506e27f1d89e515ea9235edb",
+      "sentences": [
+        {
+          "text": "打开一份长文档，点击全屏左右翻页阅读。",
+          "start": 0.1,
+          "end": 4.107143
+        },
+        {
+          "text": "进入后，顶部和底部工具栏自动隐藏。",
+          "start": 4.107143,
+          "end": 7.9166669
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "reading-swipe",
+      "text": "在正文中向左滑动，切换到下一页。",
+      "file": "android-reading-swipe.mp3",
+      "seconds": 3.456,
+      "sha256": "cff1960efcd73d154c76051f674c13c7bcd7b986a278d49a0820ce340b4f95f1",
+      "sentences": [
+        {
+          "text": "在正文中向左滑动，切换到下一页。",
+          "start": 0.1,
+          "end": 3.4428572
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "reading-controls",
+      "text": "双击页面，顶部和底部的工具栏重新出现。停止操作约三秒，工具栏自动收起。",
+      "file": "android-reading-controls.mp3",
+      "seconds": 7.968,
+      "sha256": "946a38611e314f6f301845ce65284a4425b38cf8483f2891ae362324eba4615d",
+      "sentences": [
+        {
+          "text": "双击页面，顶部和底部的工具栏重新出现。",
+          "start": 0.1,
+          "end": 4.2976192
+        },
+        {
+          "text": "停止操作约三秒，工具栏自动收起。",
+          "start": 4.2976192,
+          "end": 7.9047622
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "reading-zoom",
+      "text": "双指向外展开，放大当前阅读内容。再次双击唤出工具栏，就可以点击退出全屏阅读。",
+      "file": "android-reading-zoom.mp3",
+      "seconds": 8.52,
+      "sha256": "e1ab655e853f8b5fe9725892f94d6241a058b9bfcc23864ef1416ecd354edd71",
+      "sentences": [
+        {
+          "text": "双指向外展开，放大当前阅读内容。",
+          "start": 0.1,
+          "end": 3.7142858
+        },
+        {
+          "text": "再次双击唤出工具栏，就可以点击退出全屏阅读。",
+          "start": 3.7142858,
+          "end": 8.4523812
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "sheet-open",
+      "text": "回到首页，导入项目预算表。底部标签可以在已打开的文档和表格之间切换。",
+      "file": "android-sheet-open.mp3",
+      "seconds": 7.224,
+      "sha256": "81aab00fa23e60d96be4d229c9142c4f1b3679210fdc0ff99091a9e884057650",
+      "sentences": [
+        {
+          "text": "回到首页，导入项目预算表。",
+          "start": 0.1,
+          "end": 2.8809525
+        },
+        {
+          "text": "底部标签可以在已打开的文档和表格之间切换。",
+          "start": 2.8809525,
+          "end": 7.1666669
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "sheet-formula",
+      "text": "选中 D 五，在公式栏输入求和公式，按回车。预算合计显示两千三百六十。",
+      "file": "android-sheet-formula.mp3",
+      "seconds": 7.704,
+      "sha256": "8183ddd1d1562e905ca02e6cf1adc86fda6b9eadd8e6ca9e74165ab7a0b16ed8",
+      "sentences": [
+        {
+          "text": "选中 D 五，在公式栏输入求和公式，按回车。",
+          "start": 0.1,
+          "end": 4.5000002
+        },
+        {
+          "text": "预算合计显示两千三百六十。",
+          "start": 4.5000002,
+          "end": 7.6547622
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "check-update",
+      "text": "从我的页面打开应用设置，在关于与更新中点击检查更新。页面显示已是最新版本，二点七点二。",
+      "file": "android-check-update.mp3",
+      "seconds": 9.576,
+      "sha256": "27b8086ad9e34b2b4427e9dd771c906e50c93036d14d636b58fb362dce357863",
+      "sentences": [
+        {
+          "text": "从我的页面打开应用设置，在关于与更新中点击检查更新。",
+          "start": 0.1,
+          "end": 5.6428573
+        },
+        {
+          "text": "页面显示已是最新版本，二点七点二。",
+          "start": 5.6428573,
+          "end": 9.511905
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "id": "outro",
+      "text": "这段操作来自当前安卓构建的移动布局。需要安装时，可以到项目发行页选择安卓安装包。",
+      "file": "android-outro.mp3",
+      "seconds": 8.28,
+      "sha256": "fa7084040e78bf072e4e004832b1d3750e1680cb8c66ac0115fc96c39fe31a17",
+      "sentences": [
+        {
+          "text": "这段操作来自当前安卓构建的移动布局。",
+          "start": 0.1,
+          "end": 3.7738096
+        },
+        {
+          "text": "需要安装时，可以到项目发行页选择安卓安装包。",
+          "start": 3.7738096,
+          "end": 8.2380955
+        }
+      ]
+    }
+  ]
+}

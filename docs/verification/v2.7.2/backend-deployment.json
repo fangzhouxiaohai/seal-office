@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "observedAt": "2026-11-13T14:25:55.256528+00:00",
+  "environment": "正式环境，只读",
+  "sshHostKeyVerified": true,
+  "state": {
+    "release": "2.7.2-backend-20261113142454",
+    "version": "2.7.2",
+    "nodeVersion": "v20.19.5",
+    "releaseModulePresent": true,
+    "assetModulePresent": true,
+    "macosPlatform": true,
+    "configurationBackupExists": true,
+    "tlsDisabled": false,
+    "releasesSha256": "9a3c49944659a6854c558ce14953c9d8e00f86aed3f1a34368cc68eba464a38d",
+    "assetsSha256": "e90a0e1b647506f3002088710d12e0fadba1c7c5617f939ad0576c3cfdf21d2a"
+  },
+  "initialAttempt": {
+    "result": "首次公网探针失败后已回滚",
+    "cause": "旧 curl 7.29.0 / NSS 3.90 的证书用途兼容检查报错 60",
+    "message": "Certificate key usage inadequate for attempted operation."
+  },
+  "repeatAttempt": {
+    "result": "复制候选后发现继承旧配置备份，EEXIST 使部署在切换前中止",
+    "productionChanged": false,
+    "fix": "本次配置备份改为 current/releases 之外的专用目录，旧回滚资料保持不动",
+    "regressionPassed": true
+  },
+  "finalAttempt": {
+    "result": "紧凑后台、发布弹窗、macOS UDIF 与新增附件强制绑定已部署成功",
+    "candidateStartedWithIsolatedData": true,
+    "nginxConfigurationReloaded": true,
+    "publicProbeRuntime": "Node.js 默认 TLS 校验",
+    "tlsVerificationDisabled": false,
+    "macosValidatedAssetRequiredOnCreate": true,
+    "remoteSourceHashesMatchLocal": true,
+    "repeatDeploymentSucceeded": true
+  },
+  "finalPointerRecheckedAt": "2026-11-13T14:30:28.281Z",
+  "finalPointerRechecked": true
+}
