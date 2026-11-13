@@ -1,0 +1,72 @@
+name: 苹果系统隔离测试包
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund
+      - name: 执行平台测试
+        run: npx vitest run --config vitest.main.config.js main/mac/platform.test.js main/fileAssociation.test.js main/fileAssociation.integration.test.js main/update/stagedUpdater.test.js
+      - name: 安装系统转换引擎
+        run: |
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            brew install --cask libreoffice
+          fi
+          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+      - name: 构建未签名隔离测试包
+        run: |
+          test "$(uname -m)" = arm64
+          npm run build
+          npx electron-builder --config build/electron-macos.cjs --mac dmg --arm64 --publish never
+          node -e "const fs=require('fs'),p=require('./package.json');if(!/^\d+\.\d+\.\d+$/.test(p.version))throw Error('版本无效');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+p.version+'\n')"
+      - name: 核对磁盘映像并验收隔离副本
+        run: |
+          set -euo pipefail
+          dmg="$RELEASE_DIR/seal-office-$(node -p "require('./package.json').version")-macos.dmg"
+          test -f "$dmg"
+          hdiutil verify "$dmg"
+          mountpoint="$RUNNER_TEMP/seal-macos-mount"
+          mkdir -p "$mountpoint" "$RUNNER_TEMP/seal-macos-copy"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mountpoint" "$dmg"
+          trap 'hdiutil detach "$mountpoint"' EXIT
+          cp -R "$mountpoint/海豹办公.app" "$RUNNER_TEMP/seal-macos-copy/"
+          app="$RUNNER_TEMP/seal-macos-copy/海豹办公.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          file "$app/Contents/MacOS/海豹办公" | grep arm64
+          python3 - "$app/Contents/Info.plist" <<'PY'
+          import json, plistlib, sys
+          with open(sys.argv[1], 'rb') as stream:
+              info = plistlib.load(stream)
+          with open('main/documentFormats.json', encoding='utf-8') as stream:
+              expected = {entry['extension'] for entry in json.load(stream)}
+          actual = {ext for entry in info.get('CFBundleDocumentTypes', []) for ext in entry.get('CFBundleTypeExtensions', [])}
+          if not expected.issubset(actual):
+              raise RuntimeError('应用文件关联不完整：' + ', '.join(sorted(expected - actual)))
+          PY
+          test ! -e "$app/Contents/Resources/office-runtime/program/soffice.com"
+          node scripts/verify-macos-candidate.cjs "$app"
+          shasum -a 256 "$dmg" > "$RELEASE_DIR/macos-test-sha256.txt"
+          printf '%s\n' '仅供隔离测试：未进行开发者签名、公证或真实访达、程序坞手工验收，不得作为正式发行包。' > "$RELEASE_DIR/macos-test-status.txt"
+      - name: 保存隔离测试附件
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-unsigned-test-only
+          path: |
+            ${{ env.RELEASE_DIR }}/*-macos.dmg
+            ${{ env.RELEASE_DIR }}/macos-test-sha256.txt
+            ${{ env.RELEASE_DIR }}/macos-test-status.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7

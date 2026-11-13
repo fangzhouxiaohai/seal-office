@@ -16,6 +16,17 @@ function 环境(平台 = 'linux') {
   return { 目录, 检查, 请求, 打开安装包, 更新, 创建, 清理: () => fs.rmSync(目录, { recursive: true, force: true }) }
 }
 describe('桌面更新暂存', () => {
+  it('苹果系统只打开已校验并持久暂存的磁盘映像', async () => {
+    const e = 环境('macos'); try {
+      const 信息 = { ...发布, url: 'https://example.com/a.dmg' }
+      e.检查.mockResolvedValue(信息)
+      await e.创建().下载(信息)
+      await e.创建().安装()
+      const 文件 = e.打开安装包.mock.calls[0][0]
+      expect(文件.endsWith('.dmg')).toBe(true)
+      expect(fs.readFileSync(文件)).toEqual(内容)
+    } finally { e.清理() }
+  })
   it('下载进度、摘要和大小通过后暂存，重启仍可查看并安装', async () => {
     const e = 环境()
     try {
