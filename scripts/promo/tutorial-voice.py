@@ -2,10 +2,11 @@
 import argparse, asyncio, hashlib, json, os, subprocess, sys
 from pathlib import Path
 import edge_tts, imageio_ffmpeg
+from candidate_paths import promo_output
 
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
-OUT=ROOT/'release/promo'
+OUT=promo_output(ROOT)
 WORK=OUT/('work-'+VERSION+'-tutorial')
 REFERENCE=Path('D:/yewu/女声配音试听.mp3')
 VOICE={'name':'zh-CN-XiaoxiaoNeural','rate':'+5%','pitch':'+4Hz'}

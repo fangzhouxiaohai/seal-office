@@ -104,8 +104,10 @@ test('同版本修复包可由管理员安全替换附件，校验平台与版�
   const id = created.body.item.id
   assert.equal((await f.request('/v1/admin/releases/' + id, {assetId:next.id}, '', 'PATCH')).status, 401)
   assert.equal((await f.request('/v1/admin/releases/' + id, {assetId:other.id}, f.token, 'PATCH')).status, 400)
+  assert.equal((await f.request('/v1/admin/releases/' + id, {assetId:next.id, expectedAssetId:'outdated'}, f.token, 'PATCH')).status, 409)
+  assert.equal((await f.request('/v1/admin/releases', null, f.token)).body.items[0].assetId, old.id)
   assert.equal((await f.download(old)).status, 200)
-  const changed = await f.request('/v1/admin/releases/' + id, {assetId:next.id, bytes:1, sha256:'a'.repeat(64)}, f.token, 'PATCH')
+  const changed = await f.request('/v1/admin/releases/' + id, {assetId:next.id, expectedAssetId:old.id, bytes:1, sha256:'a'.repeat(64)}, f.token, 'PATCH')
   assert.equal(changed.status, 200)
   assert.equal(changed.body.item.assetId, next.id)
   assert.equal(changed.body.item.sha256, createHash('sha256').update(second).digest('hex'))

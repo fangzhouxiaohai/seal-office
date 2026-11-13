@@ -1,4 +1,4 @@
-﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '', [ValidateSet('first','repeat','confirm')][string[]]$Phases = @('first','repeat','confirm'))
+﻿param([switch]$Portable, [string]$ShellFilesManifest = '-', [string]$InstalledExecutable = '', [string]$ReportDirectory = '', [string]$ScreenshotDirectory = '', [ValidateSet('first','repeat','confirm')][string[]]$Phases = @('first','repeat','confirm'))
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskVersion = (Get-Content -LiteralPath (Join-Path $taskRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
@@ -22,6 +22,8 @@ try {
   $taskMainListener.Stop()
 }
 New-Item -ItemType Directory -Path $taskDirectory | Out-Null
+if ($ReportDirectory) { New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null }
+if ($ScreenshotDirectory) { New-Item -ItemType Directory -Path $ScreenshotDirectory -Force | Out-Null }
 try {
   foreach ($taskPhase in $Phases) {
     # --skip-default-app-check：验收不得改动本机真实的文件关联，并保留首次询问弹窗供截图
@@ -34,8 +36,8 @@ try {
     }
     $taskProcess = Start-Process -FilePath $taskFile -ArgumentList $taskArguments -WindowStyle Hidden -PassThru -RedirectStandardError (Join-Path $taskDirectory "$taskPhase-stderr.log") -RedirectStandardOutput (Join-Path $taskDirectory "$taskPhase-stdout.log")
     try {
-      $taskReport = Join-Path $taskRelease "核验-$taskLabel-$taskPhase.json"
-      $taskScreenshots = if ($Portable -or $taskPhase -eq 'repeat') { '-' } else { Join-Path $taskRoot "docs\screenshots\v$taskVersion" }
+      $taskReport = Join-Path $(if ($ReportDirectory) { $ReportDirectory } else { $taskRelease }) "核验-$taskLabel-$taskPhase.json"
+      $taskScreenshots = if ($Portable -or $taskPhase -eq 'repeat') { '-' } elseif ($ScreenshotDirectory) { $ScreenshotDirectory } else { Join-Path $taskRoot "docs\screenshots\v$taskVersion" }
       node (Join-Path $PSScriptRoot 'verify-windows-release.cjs') $taskPagePort $taskMainPort $taskDirectory $taskRegistry $taskPhase $taskReport $taskScreenshots $ShellFilesManifest $taskAssociationFile
       if ($LASTEXITCODE -ne 0) { throw "成品 $taskPhase 核验失败" }
       if (-not $taskProcess.WaitForExit(10000)) { throw '程序没有正常退出' }

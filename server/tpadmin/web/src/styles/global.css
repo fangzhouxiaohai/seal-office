@@ -1,0 +1,249 @@
+/* 全局样式:TDesign 主题变量覆盖 + 布局/表格/弹窗统一微调 Author: qiufeng */
+
+/* ---------- 主题变量 ---------- */
+:root {
+  /* 品牌色:TDesign 以 7 号为主色,6 号 hover,8 号 active,1/2 号浅底 */
+  --td-brand-color-1: #e8f7f1;
+  --td-brand-color-2: #c6eddd;
+  --td-brand-color-3: #97dcc2;
+  --td-brand-color-4: #66c9a6;
+  --td-brand-color-5: #3db88e;
+  --td-brand-color-6: #26ad85;
+  --td-brand-color-7: #16a37a;
+  --td-brand-color-8: #0f8a66;
+  --td-brand-color-9: #0a6e51;
+  --td-brand-color-10: #06523c;
+
+  /* 中性色 */
+  --td-text-color-primary: #1f2937;
+  --td-text-color-secondary: #6b7280;
+  --td-text-color-placeholder: #9ca3af;
+  --td-bg-color-page: #f5f7f9;
+  --td-bg-color-container-hover: #f3f6f5;
+  --td-bg-color-secondarycontainer: #f7f9fa;
+  --td-component-stroke: #eef0f2;
+  --td-component-border: #dfe3e8;
+  --td-border-level-1-color: #eef0f2;
+  --td-border-level-2-color: #dfe3e8;
+
+  /* 圆角与阴影 */
+  --td-radius-default: 6px;
+  --td-radius-medium: 8px;
+  --td-radius-large: 10px;
+  --td-shadow-1: 0 1px 2px rgba(17, 24, 39, 0.04), 0 1px 6px rgba(17, 24, 39, 0.05);
+
+  /* 业务侧可直接使用的变量:引用 TDesign 变量,暗色模式下自动跟着变 */
+  --tl-primary: var(--td-brand-color);
+  --tl-primary-dark: var(--td-brand-color-active);
+  --tl-primary-light: var(--td-brand-color-light);
+  --tl-bg: var(--td-bg-color-page);
+  --tl-surface: var(--td-bg-color-container);
+  --tl-surface-2: var(--td-bg-color-secondarycontainer);
+  --tl-line: var(--td-component-stroke);
+  --tl-text-1: var(--td-text-color-primary);
+  --tl-text-2: var(--td-text-color-secondary);
+  --tl-text-3: var(--td-text-color-placeholder);
+  /* 介于一级和二级文字之间:菜单项、表头 */
+  --tl-text-sub: #4b5563;
+  --tl-hover: var(--td-bg-color-container-hover);
+  --tl-row-hover: #f3f8f6;
+  --tl-shadow: var(--td-shadow-1);
+  --tl-scrollbar: #d5dae0;
+  --tl-scrollbar-hover: #bfc6ce;
+}
+
+/*
+ * 暗色:<html theme-mode="dark">。TDesign 自带暗色中性色,这里只补品牌绿(它默认是蓝色)
+ * 和业务变量;主色 #1fa87b 在 #242424 卡片上对比度 >= 3:1。
+ */
+:root[theme-mode='dark'] {
+  --td-brand-color-1: #132b24;
+  --td-brand-color-2: #15352c;
+  --td-brand-color-3: #174437;
+  --td-brand-color-4: #145a44;
+  --td-brand-color-5: #127352;
+  --td-brand-color-6: #148b62;
+  --td-brand-color-7: #1b9a70;
+  --td-brand-color-8: #1fa87b;
+  --td-brand-color-9: #45bf95;
+  --td-brand-color-10: #7fd6b5;
+  /* 辅助说明、输入提示与空状态在暗色背景上保持可读；禁用文字仍用独立变量。 */
+  --td-text-color-secondary: #bfc6c3;
+  --td-text-color-placeholder: #adb6b2;
+  --tl-primary-solid: #0e6c50;
+  --tl-primary-solid-hover: #11775a;
+
+  --tl-text-sub: rgba(255, 255, 255, 0.72);
+  --tl-row-hover: #2a302e;
+  --td-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 6px rgba(0, 0, 0, 0.25);
+  --tl-scrollbar: #4b4b4b;
+  --tl-scrollbar-hover: #5e5e5e;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--td-text-color-primary);
+  background: var(--td-bg-color-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--tl-primary);
+  text-decoration: none;
+}
+
+/*
+ * 以下组件覆盖统一加 body 前缀:TDesign 按需引入后,组件样式随页面分包在 global.css 之后加载,
+ * 同等优先级会被它覆盖回去。
+ */
+
+/* ---------- 卡片 ---------- */
+body .t-card {
+  border-radius: 8px;
+  box-shadow: var(--tl-shadow);
+}
+
+/* 实心按钮使用白字；文字链接和导航继续使用亮色品牌变量。 */
+:root[theme-mode='dark'] body .t-button--variant-base.t-button--theme-primary:not(.t-is-disabled):not(.t-is-loading):not(.t-button--ghost) {
+  background-color: var(--tl-primary-solid);
+  border-color: var(--tl-primary-solid);
+}
+:root[theme-mode='dark'] body .t-button--variant-base.t-button--theme-primary:not(.t-is-disabled):not(.t-is-loading):not(.t-button--ghost):hover {
+  background-color: var(--tl-primary-solid-hover);
+  border-color: var(--tl-primary-solid-hover);
+}
+
+body .t-card__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* 页面内通用面板(与 t-card 同一观感,不想引入 t-card 时用) */
+.panel {
+  padding: 20px;
+  background: var(--tl-surface);
+  border-radius: 8px;
+  box-shadow: var(--tl-shadow);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.panel__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tl-text-1);
+}
+
+.panel__title small {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--tl-text-3);
+}
+
+/* ---------- 表格 ---------- */
+body .t-table {
+  font-size: 13px;
+}
+/* 空状态不是禁用控件，使用可读的辅助文字颜色。 */
+body .t-table__empty { color: var(--td-text-color-secondary); }
+
+body .t-table th {
+  height: 44px;
+  font-weight: 600;
+  color: var(--tl-text-sub);
+  background: var(--tl-surface-2);
+}
+
+body .t-table--hoverable tbody tr:hover {
+  background-color: var(--tl-row-hover);
+}
+
+/* ---------- 表单 ---------- */
+/* TDesign 带 help 的表单项底部间距只有 4px,提示文字会贴住下一行,这里补足间距 */
+body .t-form__item.t-form__item-with-help {
+  margin-bottom: 18px;
+}
+
+body .t-form__item .t-input__help {
+  margin-top: 4px;
+  line-height: 18px;
+}
+
+/* ---------- 弹窗 / 抽屉 ---------- */
+body .t-dialog {
+  border-radius: 10px;
+}
+
+body .t-dialog__header {
+  font-size: 16px;
+}
+
+body .t-drawer__header {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ---------- 标签 ---------- */
+body .t-tag {
+  border-radius: 4px;
+}
+:root[theme-mode='dark'] body .t-tag--success.t-tag--light { color: var(--td-success-color-8); }
+:root[theme-mode='dark'] body .t-tag--danger.t-tag--light { color: var(--td-error-color-8); }
+:root[theme-mode='dark'] body .t-tag--warning.t-tag--light { color: var(--td-warning-color-8); }
+:root[theme-mode='dark'] body .t-tag--primary.t-tag--light { color: var(--td-brand-color-10); }
+
+/* ---------- 路由切换过渡 ---------- */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--tl-scrollbar);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tl-scrollbar-hover);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

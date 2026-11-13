@@ -39,20 +39,26 @@ function createConverterAdmin({ directory, env = process.env, request = fetch } 
     try { await sync(); return { connected: true, config: publicConfig(), ...await worker('status') } }
     catch (error) { return { connected: false, config: publicConfig(), error: error.message, statistics: { active: 0, recent: [] }, engine: { ready: false } } }
   }
-  async function apply(input, rotate = false) {
+  async function apply(input, rotate = false, reauthorize = () => {}) {
     if (!input || typeof input !== 'object' || (!rotate && (typeof input.enabled !== 'boolean' || ![1, 2].includes(input.concurrency)))) throw Object.assign(new Error('启停或并发配置无效'), { status: 400 })
     const token = rotate ? randomBytes(32).toString('base64url') : ''
     const next = { ...settings, ...(rotate ? { tokenHash: createHash('sha256').update(token).digest('hex') } : { enabled: input.enabled, concurrency: input.concurrency }), updatedAt: Date.now(), revision: randomUUID() }
+    reauthorize()
     await worker('config', 'POST', next)
     try {
+      reauthorize()
       const temporary = filename + '.tmp'
       const fd = fs.openSync(temporary, 'w', 0o600)
       try { fs.writeFileSync(fd, JSON.stringify(next)); fs.fsyncSync(fd) } finally { fs.closeSync(fd) }
       fs.renameSync(temporary, filename); settings = next
-    } catch { await worker('config', 'POST', settings).catch(() => {}); throw Object.assign(new Error('转换配置未保存，请重试'), { status: 500 }) }
+    } catch (error) {
+      try { await worker('config', 'POST', settings) } catch { throw Object.assign(new Error('转换配置恢复失败，请联系管理员'), { status: 503 }) }
+      if ([401,403].includes(error.status)) throw error
+      throw Object.assign(new Error('转换配置未保存，请重试'), { status: 500 })
+    }
     return { config: publicConfig(), ...(rotate ? { token } : {}) }
   }
-  const update = (input, rotate = false) => exclusive(() => apply(input, rotate))
+  const update = (input, rotate = false, reauthorize = () => {}) => exclusive(() => apply(input, rotate, reauthorize))
   const accountWorker=async(route,method='GET',body,signal)=>{try{await sync();return await worker(route,method,body,100000,signal)}catch(error){if(signal?.aborted)throw signal.reason||error;if(error.status===401||error.status===404)throw Object.assign(new Error('转换工作进程尚未支持账号网关或管理通道配置不一致，请联系维护人员升级'),{status:503});throw error}}
   const timer = setInterval(() => { if (controlToken) void sync().catch(() => {}) }, 15000)
   timer.unref()

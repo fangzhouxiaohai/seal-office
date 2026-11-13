@@ -92,7 +92,7 @@ function normalizeRelease(input) {
   return { platform, version, channel, mandatory: input.mandatory === true, minVersion, notes, url, sha256, bytes, versionCode }
 }
 
-function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets }) {
+function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets, getActor = () => 'admin' }) {
   const allow = createRateLimiter({ capacity: 30, refillPerMinute: 30, ...rateLimit, clock })
   const find = id => db.one('SELECT * FROM releases WHERE id=?', [id])
   const presentRelease = row => ({ ...present(row), assetId: row.asset_id || null, asset: row.asset_id ? assets.get(row.asset_id) : null })
@@ -111,7 +111,7 @@ function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets })
   function insertRelease(release) {
     const id = randomUUID()
     db.run('INSERT INTO releases(id,platform,version,version_code,channel,mandatory,min_version,notes,url,sha256,bytes,published,created_by,withdrawn,asset_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)',
-      [id, release.platform, release.version, release.versionCode, release.channel, release.mandatory ? 1 : 0, release.minVersion, release.notes, release.url, release.sha256, release.bytes, clock(), 'admin', release.assetId])
+      [id, release.platform, release.version, release.versionCode, release.channel, release.mandatory ? 1 : 0, release.minVersion, release.notes, release.url, release.sha256, release.bytes, clock(), getActor(), release.assetId])
     audit('admin', 'release-create', JSON.stringify({ platform: release.platform, version: release.version, channel: release.channel, mandatory: release.mandatory }))
     return id
   }
@@ -183,10 +183,12 @@ function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets })
       if (!input || typeof input !== 'object') fail(400, '修改内容无效')
       if (input.withdrawn !== undefined && typeof input.withdrawn !== 'boolean') fail(400, '下架标记无效')
       if ('assetId' in input && (typeof input.assetId !== 'string' || !input.assetId)) fail(400, '替换附件必须提供已上传的安装包')
-      const current = presentRelease(existing)
+      if ('expectedAssetId' in input && (!('assetId' in input) || typeof input.expectedAssetId !== 'string' || !input.expectedAssetId)) fail(400, '原附件标识无效')
+      const current = presentRelease(find(existing.id))
       const merged = prepareRelease({ ...current, ...Object.fromEntries(['mandatory', 'minVersion', 'notes', 'url', 'sha256', 'bytes', 'versionCode', 'assetId'].filter(key => key in input).map(key => [key, input[key]])) })
       const withdrawn = input.withdrawn === undefined ? current.withdrawn : input.withdrawn
       db.transaction(() => {
+        if ('expectedAssetId' in input && find(existing.id)?.asset_id !== input.expectedAssetId) fail(409, '发布附件已变化，请刷新后重试')
         db.run('UPDATE releases SET mandatory=?,min_version=?,notes=?,url=?,sha256=?,bytes=?,version_code=?,withdrawn=?,asset_id=? WHERE id=?',
           [merged.mandatory ? 1 : 0, merged.minVersion, merged.notes, merged.url, merged.sha256, merged.bytes, merged.versionCode, withdrawn ? 1 : 0, merged.assetId, existing.id])
         audit('admin', 'release-update', JSON.stringify({ platform: current.platform, version: current.version, channel: current.channel, mandatory: merged.mandatory, withdrawn }))

@@ -118,7 +118,7 @@ function createReleaseAssets({ directory, db, env = process.env, clock = Date.no
     if (!fs.existsSync(fileFor(item)) || fs.statSync(fileFor(item)).size !== item.bytes) fail(503, '安装包文件不完整，请联系管理员重新上传')
     return { ...item, url: `${publicBase}/v1/release-assets/${item.id}/${item.filename}` }
   }
-  async function upload({ req, url, reply }) {
+  async function upload({ req, url, reply, reauthorize = () => {} }) {
     const platform = url.searchParams.get('platform'), version = url.searchParams.get('version'), filename = url.searchParams.get('filename')
     if (!Object.hasOwn(filenames, platform)) fail(400, '上传平台无效')
     if (!parseVersion(version)) fail(400, '上传版本号无效')
@@ -144,8 +144,10 @@ function createReleaseAssets({ directory, db, env = process.env, clock = Date.no
       if (received !== total || !req.complete) fail(400, '安装包上传不完整，请重新上传')
       await file.sync(); await file.close(); file = null
       await validatePackage(temp, platform, received)
+      reauthorize()
       const item = { id, platform, version, filename, bytes: received, sha256: digest.digest('hex'), createdAt: clock() }
       await fs.promises.rename(temp, target)
+      reauthorize()
       fs.writeFileSync(metadata, JSON.stringify(item), { flag: 'wx', mode: 0o600 })
       db.transaction(() => audit('admin', 'release-asset-upload', JSON.stringify({ platform, version, filename, bytes: received })))
       complete = true

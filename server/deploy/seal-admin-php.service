@@ -1,0 +1,17 @@
+[Unit]
+Description=海豹办公独立后台 PHP-FPM
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=www
+RuntimeDirectory=seal-admin-php
+RuntimeDirectoryMode=0750
+UMask=0077
+ExecStart=/www/server/php/82/sbin/php-fpm -F -y /www/wwwroot/seal.xingmasoft.com/seal-admin-php/fpm.conf
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

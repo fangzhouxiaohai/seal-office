@@ -60,7 +60,7 @@ function 读取部署密码() {
 /** 服务端运行时必需文件。缺任何一个都会在启动时 MODULE_NOT_FOUND。 */
 const REQUIRED_FILES = [
   // 核心
-  'index.cjs', 'store.cjs', 'sms.cjs', 'formats.cjs', 'passwords.cjs',
+  'index.cjs', 'store.cjs', 'adminAccess.cjs', 'sms.cjs', 'formats.cjs', 'passwords.cjs',
   // 云空间与分享
   'shareLinks.cjs', 'myShares.cjs', 'collaboration.cjs', 'realtime.cjs',
   // 账号与注销
