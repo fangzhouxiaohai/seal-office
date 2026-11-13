@@ -1,6 +1,23 @@
 name: 苹果系统隔离测试包
 on:
   workflow_dispatch:
+  push:
+    branches: ['codex/**']
+    paths:
+      - '.github/workflows/macos-test.yml'
+      - 'build/electron-macos.cjs'
+      - 'build/artifact-names.json'
+      - 'build/icon.png'
+      - 'build/third-party-notice.txt'
+      - 'main/**'
+      - 'scripts/verify-macos-candidate.cjs'
+      - 'scripts/generate-integrity.cjs'
+      - 'mobile/web/public/fonts/**'
+      - 'renderer/**'
+      - 'index.html'
+      - 'vite.config.*'
+      - 'package.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 jobs:

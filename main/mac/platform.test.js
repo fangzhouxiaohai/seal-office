@@ -30,4 +30,17 @@ describe('苹果系统平台支持', () => {
     expect(配置.fileAssociations.map(x => x.ext)).toEqual(格式.map(x => x.extension))
     expect(JSON.stringify(配置.extraResources)).not.toContain('office-runtime')
   })
+
+  it('苹果测试工作流只在受限分支和相关文件推送时触发，并且不发布', () => {
+    const yaml = require('js-yaml')
+    const 工作流 = yaml.load(fs.readFileSync(require('path').join(__dirname, '../../.github/workflows/macos-test.yml'), 'utf8'))
+    expect(工作流.on.push.branches).toEqual(['codex/**'])
+    expect(工作流.on.push.paths).toEqual(expect.arrayContaining([
+      '.github/workflows/macos-test.yml', 'build/electron-macos.cjs', 'build/artifact-names.json',
+      'main/**', 'scripts/verify-macos-candidate.cjs', 'renderer/**', 'package.json', 'package-lock.json',
+    ]))
+    expect(工作流.permissions).toEqual({ contents: 'read' })
+    expect(Object.keys(工作流.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(JSON.stringify(工作流.jobs)).not.toMatch(/actions\/create-release|gh release|--publish (?:always|onTag)/)
+  })
 })

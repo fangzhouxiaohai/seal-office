@@ -1,6 +1,6 @@
 # macOS 隔离测试包
 
-`build/electron-macos.cjs` 是独立的 Apple Silicon 测试配置，不包含 Windows 转换引擎。手动触发 `.github/workflows/macos-test.yml` 后，工作流只生成并保存未签名、未公证的临时测试附件，不上传仓库发布页，也不写入后台版本发布。测试附件保留七天。
+`build/electron-macos.cjs` 是独立的 Apple Silicon 测试配置，不包含 Windows 转换引擎。`.github/workflows/macos-test.yml` 可手动触发，也可通过向 `codex/**` 工作分支推送相关文件触发；工作流只生成并保存未签名、未公证的临时测试附件，不上传仓库发布页，也不写入后台版本发布。测试附件保留七天。能否启动仍取决于仓库 Actions 权限、账号和运行额度。
 
 工作流检查磁盘映像完整性、应用身份和架构，并在隔离副本中启动应用，测试沙箱、模拟文件打开事件、模拟程序坞重开以及通过系统 LibreOffice 将文稿实际转换为 PDF。模拟事件不能代替在真实设备上通过访达和程序坞操作的验收。未签名包可能被系统拒绝打开，也未完成公证或外部分发验证，不能作为正式可用安装包。
 
