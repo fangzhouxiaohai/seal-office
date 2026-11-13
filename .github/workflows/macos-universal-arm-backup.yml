@@ -27,7 +27,9 @@ jobs:
       - name: 检查验收脚本
         timeout-minutes: 3
         run: |
-          node --test scripts/verify-macos-candidate.test.cjs scripts/verify-macos-universal.test.cjs scripts/verify-macos-universal-retest.test.cjs
+          node scripts/verify-macos-candidate.test.cjs
+          node scripts/verify-macos-universal.test.cjs
+          node scripts/verify-macos-universal-retest.test.cjs
       - name: 安装系统文档转换器
         timeout-minutes: 25
         run: |
