@@ -40,14 +40,12 @@ python scripts/macos_cross_verify_test.py
 node --test scripts/macos_cross_build_test.cjs
 ```
 
-工作目录的 `构建输入.json` 只记录已核验的输入路径、目标及摘要，成功后还可读取 `验收记录.json` 和各步骤日志。构建过程首先检查输入摘要、两份构建清单、锁文件中的目标依赖版本、必需依赖是否缺失及原生架构；随后生成应用、核对资源与文件关联，将 ASAR 完整性路径修正为 `Resources/app.asar` 并校验头部摘要，按官方 ZIP 修复并检查框架链接，执行无证书临时签名，再核对代码页、封存资源、原始 Electron 数据段及资源、DMG 文件集合、字节、链接和 Mach-O 权限。目标依赖的版本检查不构成对安装后每个依赖文件的独立供应链认证。任何一步失败均退出并保留日志，不能把已生成文件视为通过验收。
+工作目录的 `构建输入.json` 记录输入路径、目标及摘要，`依赖内容清单.json` 冻结本次目标依赖文件的大小和摘要；成功后还可读取 `验收记录.json` 和各步骤日志。构建会比对归档内依赖的文件集合和内容，签名前包括原生模块；签名后对变化的原生模块单独核对签名页、架构、原始 Mach-O 头部、非签名加载命令和数据段。这个清单只能证明本次输入与输出的一致性，不能认证输入来源或证明依赖没有被预先篡改；仍须独立核验依赖来源及工具供应链。
 
-`macos_cross_verify.py` 也提供单独的 `signature`、`original` 和 `image` 校验命令，可运行 `python scripts/macos_cross_verify.py --help` 查看参数。临时签名工具对空 CMS 的检查可能报告失败；跨平台数据校验不判断苹果系统是否信任此签名。
+构建还检查两份构建清单、目标依赖版本、原生架构、资源和文件关联，将 ASAR 完整性路径修正为 `Resources/app.asar` 并校验头部摘要，按官方 ZIP 修复框架链接；临时签名后逐层核对各嵌套应用和框架自身的信息文件、资源封存、代码页、嵌套代码摘要，拒绝未封存的新增文件，并核对 DMG 文件集合、字节、链接和 Mach-O 权限。`PkgInfo` 按苹果封存规则未被签名，本工具仅允许其内容为固定的 `APPL????`。原始 Electron 比对涵盖 Mach-O 头部、除签名相关字段外的加载命令及全部数据段，并非声称两个二进制文件逐字节完全一致。任何一步失败均退出并保留日志，不能把已生成文件视为通过验收。
 
+签名会改变解包的原生模块，因此现有 ASAR 头部中该模块的文件摘要仍是签名前的值；不可把该字段用于证明签名后文件内容。Electron 25.9.8 的官方源码对解包文件在读取逐文件完整性字段前直接返回，本工具另行校验原生模块的签名和源文件一致性。此前两架构测试候选经 `@electron/fuses` 读取，完整性 fuse 为关闭状态；这不是本工具对未来产物 fuse 状态的保证。`rcodesign --shallow` 仍可能重签包内其他 Mach-O，因此不能据此保证重建 ASAR 后只重新封存外层且原生模块字节不变。此观察不替代目标 Mac 上的 canvas 加载、运行和系统验证，也不保证其他 Electron 版本行为相同。
 
+`macos_cross_verify.py` 也提供单独的 `signature`、`native`、`original` 和 `image` 校验命令，可运行 `python scripts/macos_cross_verify.py --help` 查看参数。`signature` 必须传入官方 Electron ZIP，以核对符号链接；跨平台校验不覆盖苹果签名验证全部语义，也不判断苹果系统是否信任此签名。
 
-ASAR 元数据格式依据 [Electron 官方文档](https://www.electronjs.org/docs/latest/tutorial/asar-integrity)。设置正确的元数据并不代表已启用运行时完整性 fuse。
-
-
-
-
+ASAR 元数据格式依据 [Electron 官方文档](https://www.electronjs.org/docs/latest/tutorial/asar-integrity)；解包文件处理可查阅 [Electron 25.9.8 源码](https://github.com/electron/electron/blob/v25.9.8/shell/common/asar/archive.cc)。设置正确的头部元数据并不代表已启用运行时完整性 fuse。

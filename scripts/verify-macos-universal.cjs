@@ -6,6 +6,7 @@ const { isDeepStrictEqual } = require('node:util')
 const { createHash } = require('node:crypto')
 const plist = require('plist')
 const asar = require('@electron/asar')
+const { 读取目标, 打开连接, 停止进程, 有界等待 } = require('./verify-macos-candidate.cjs')
 
 const 原生路径 = arch => `Contents/Resources/app.asar.unpacked/node_modules/@napi-rs/canvas-darwin-${arch}/skia.darwin-${arch}.node`
 
@@ -86,41 +87,75 @@ async function 合并(x64, arm64, 输出) {
   校验完整性(输出)
 }
 
+const 图形表达式 = () => `(()=>{if(typeof process==='undefined'||!process.mainModule)return {就绪:false};const e=process.mainModule.require('electron');if(!e.app.getAppPath().endsWith('app-'+process.arch+'.asar'))return {就绪:false};const p=process.mainModule.require('path');const c=process.mainModule.require(p.join(e.app.getAppPath(),'node_modules/@napi-rs/canvas'));return {就绪:true,架构:process.arch,签名:c.createCanvas(2,2).toBuffer('image/png').subarray(0,8).toString('hex')}})()`
+
+async function 运行图形验收(进程, { 端口 = 19332, 总时限 = 60000, 期望架构 } = {}) {
+  const 控制 = new AbortController(), 信号 = 控制.signal
+  const 计时 = setTimeout(() => 控制.abort(), 总时限)
+  let 套接字, 进程错误
+  const 启动错误 = 错误 => { 进程错误 = 错误 }
+  进程.on('error', 启动错误)
+  const 检查 = () => {
+    if (信号.aborted) throw new Error('图形模块验收超时或已取消')
+    if (进程错误) throw new Error('图形模块验收应用无法启动：' + 进程错误.message)
+    if (进程.exitCode !== null || 进程.signalCode !== null) throw new Error('图形模块验收时应用提前退出')
+  }
+  try {
+    console.log('图形验收：连接主进程')
+    let 目标
+    while (!目标) {
+      检查()
+      try { 目标 = (await 读取目标(端口, AbortSignal.any([信号, AbortSignal.timeout(2000)]))).find(x => x.webSocketDebuggerUrl) }
+      catch (错误) { if (信号.aborted) throw new Error('图形模块验收超时或已取消') }
+      if (!目标) await 有界等待(new Promise(resolve => setTimeout(resolve, 100)), 信号)
+    }
+    套接字 = await 打开连接(目标.webSocketDebuggerUrl, AbortSignal.any([信号, AbortSignal.timeout(5000)]))
+    console.log('图形验收：验证架构入口和原生模块')
+    let id = 0
+    while (true) {
+      检查()
+      const 序号 = ++id
+      const 结果 = await new Promise((resolve, reject) => {
+        const 局部信号 = AbortSignal.any([信号, AbortSignal.timeout(5000)])
+        const 清理 = () => { 局部信号.removeEventListener('abort', 超时); 套接字.removeListener('message', 收到); 套接字.removeListener('close', 关闭); 套接字.removeListener('error', 失败) }
+        const 超时 = () => { 清理(); reject(new Error('图形模块调试执行超时或已取消')) }
+        const 关闭 = () => { 清理(); reject(new Error('图形模块调试连接已关闭')) }
+        const 失败 = 错误 => { 清理(); reject(错误) }
+        const 收到 = 消息 => {
+          let 内容
+          try { 内容 = JSON.parse(String(消息)) } catch { 清理(); return reject(new Error('图形模块调试响应无效')) }
+          if (内容.id !== 序号) return
+          清理()
+          if (内容.error || 内容.result?.exceptionDetails) reject(new Error(JSON.stringify(内容.error || 内容.result.exceptionDetails)))
+          else resolve(内容.result?.result?.value)
+        }
+        局部信号.addEventListener('abort', 超时, { once: true }); 套接字.on('message', 收到); 套接字.once('close', 关闭); 套接字.once('error', 失败)
+        if (局部信号.aborted) return 超时()
+        try { 套接字.send(JSON.stringify({ id: 序号, method: 'Runtime.evaluate', params: { expression: 图形表达式(), returnByValue: true } })) } catch (错误) { 失败(错误) }
+      })
+      if (!结果 || typeof 结果.就绪 !== 'boolean') throw new Error('图形模块调试结果无效')
+      if (!结果.就绪) { await 有界等待(new Promise(resolve => setTimeout(resolve, 100)), 信号); continue }
+      if (!['x64', 'arm64'].includes(结果.架构) || 结果.签名 !== '89504e470d0a1a0a') throw new Error('原生图形模块未能生成有效 PNG')
+      if (期望架构 && 结果.架构 !== 期望架构) throw new Error('图形模块运行架构不符')
+      console.log('原生图形模块加载通过：' + 结果.架构)
+      return 结果
+    }
+  } finally {
+    clearTimeout(计时)
+    套接字?.terminate()
+    try { await 停止进程(进程) } finally { 进程.removeListener('error', 启动错误) }
+  }
+}
+
 async function 校验图形(应用) {
   if (process.platform !== 'darwin' || !path.isAbsolute(应用)) throw new Error('需要苹果系统上的应用绝对路径')
   const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-universal-canvas-'))
   const 进程 = spawn(path.join(应用, 'Contents/MacOS/海豹办公'), ['--inspect=127.0.0.1:19332', `--user-data-dir=${path.join(目录, 'profile')}`], { stdio: 'ignore' })
-  let 套接字
-  try {
-    let 目标
-    for (let 次数 = 0; 次数 < 300 && !目标; 次数++) {
-      if (进程.exitCode !== null) throw new Error('图形模块验收时应用提前退出')
-      try { 目标 = (await (await fetch('http://127.0.0.1:19332/json/list')).json()).find(x => x.webSocketDebuggerUrl) } catch {}
-      if (!目标) await new Promise(resolve => setTimeout(resolve, 100))
-    }
-    if (!目标) throw new Error('图形模块验收调试接口未就绪')
-    套接字 = new WebSocket(目标.webSocketDebuggerUrl)
-    await new Promise((resolve, reject) => { 套接字.addEventListener('open', resolve, { once: true }); 套接字.addEventListener('error', reject, { once: true }) })
-    const 结果 = await new Promise((resolve, reject) => {
-      const 计时 = setTimeout(() => reject(new Error('图形模块加载超时')), 30000)
-      套接字.addEventListener('message', 事件 => {
-        const 内容 = JSON.parse(String(事件.data))
-        if (内容.id !== 1) return
-        clearTimeout(计时)
-        if (内容.error || 内容.result?.exceptionDetails) reject(new Error(JSON.stringify(内容.error || 内容.result.exceptionDetails)))
-        else resolve(内容.result?.result?.value)
-      })
-      套接字.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: `(async()=>{let e;for(let i=0;i<200;i++){try{e=process.mainModule.require('electron');if(e.app.getAppPath().endsWith('app-'+process.arch+'.asar'))break}catch{}await new Promise(r=>setTimeout(r,100))}if(!e||!e.app.getAppPath().endsWith('app-'+process.arch+'.asar'))throw Error('架构应用入口未就绪');const p=process.mainModule.require('path');const c=process.mainModule.require(p.join(e.app.getAppPath(),'node_modules/@napi-rs/canvas'));return {arch:process.arch,bytes:c.createCanvas(2,2).toBuffer('image/png').length}})()`, awaitPromise: true, returnByValue: true } }))
-    })
-    if (!结果 || !['x64', 'arm64'].includes(结果.arch) || !(结果.bytes > 0)) throw new Error('原生图形模块未能生成图片')
-    console.log('原生图形模块加载通过：' + 结果.arch)
-  } finally {
-    套接字?.close()
-    if (进程.exitCode === null) 进程.kill('SIGTERM')
-  }
+  const 期望架构 = process.env.EXPECTED_ARCH === 'x86_64' ? 'x64' : process.env.EXPECTED_ARCH
+  await 运行图形验收(进程, { 期望架构 })
 }
 
-module.exports = { 对齐副本, 规范属性, 校验完整性 }
+module.exports = { 对齐副本, 规范属性, 校验完整性, 图形表达式, 运行图形验收 }
 if (require.main === module) {
   const 参数 = process.argv.slice(2)
   const 任务 = 参数[0] === '--canvas' ? 校验图形(参数[1]) : 合并(...参数)

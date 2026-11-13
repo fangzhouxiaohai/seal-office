@@ -241,10 +241,14 @@ def 修复链接(app, archive):
     return len(links)
 
 
-def 校验临时签名(app, arch):
+def 校验临时签名(app, arch, archive=None):
     import plistlib
     root = Path(app).resolve(strict=True)
     entries = 枚举应用(root)
+    if archive is not None:
+        校验原始链接(entries, archive)
+    elif any(kind == 'link' for kind, _ in entries.values()):
+        raise ValueError('验证符号链接需要原始 Electron 压缩包')
     pages, binaries = 0, 0
     for rel, (kind, _) in entries.items():
         if kind != 'file':
@@ -262,41 +266,75 @@ def 校验临时签名(app, arch):
             raise ValueError(f'不支持的通用二进制：{rel}')
     if not binaries:
         raise ValueError('应用不含签名二进制')
-    contents = root / 'Contents'
-    info = (contents / 'Info.plist').read_bytes()
-    metadata = plistlib.loads(info)
-    main = (contents / 'MacOS' / metadata['CFBundleExecutable']).read_bytes()
-    resources = (contents / '_CodeSignature' / 'CodeResources').read_bytes()
-    检查特殊槽(main, 1, info)
-    检查特殊槽(main, 3, resources)
-    seals = plistlib.loads(resources).get('files2', {})
-    if not seals:
-        raise ValueError('资源封存清单为空')
-    files = nested = 0
-    for name, value in seals.items():
-        if Path(name).is_absolute() or '..' in Path(name).parts:
-            raise ValueError('资源封存路径越界')
-        p = contents / name
-        if isinstance(value, dict) and 'hash2' in value:
-            if not p.is_file() or hashlib.sha256(p.read_bytes()).digest() != value['hash2']:
-                raise ValueError(f'资源封存不符：{name}')
-            files += 1
-        elif isinstance(value, dict) and 'cdhash' in value:
-            if p.suffix == '.app':
-                nested_info = plistlib.loads((p / 'Contents' / 'Info.plist').read_bytes())
-                binary = p / 'Contents' / 'MacOS' / nested_info['CFBundleExecutable']
-            elif p.suffix == '.framework':
-                binary = p / p.stem
-            else:
-                raise ValueError(f'未知嵌套组件：{name}')
-            if 代码目录摘要(binary.read_bytes()) != value['cdhash']:
-                raise ValueError(f'嵌套组件摘要不符：{name}')
-            nested += 1
-        else:
-            raise ValueError(f'不支持的资源封存项目：{name}')
-    return {'binaries': binaries, 'pages': pages, 'sealed_files': files, 'nested': nested,
-            'system_signature': '未在 macOS 验证', 'notarization': '未公证', 'launch': '未在 macOS 运行'}
+    covered, visited = set(), set()
+    sealed_files = nested_count = 0
 
+    def read_file(file):
+        file = Path(file)
+        if file.is_symlink() or not file.is_file() or not file.resolve(strict=True).is_relative_to(root):
+            raise ValueError(f'封存文件缺失或越界：{file}')
+        covered.add(file.relative_to(root).as_posix())
+        return file.read_bytes()
+
+    def verify_bundle(container, framework=False):
+        nonlocal sealed_files, nested_count
+        container = Path(container)
+        if container.is_symlink() or not container.resolve(strict=True).is_relative_to(root):
+            raise ValueError('嵌套组件路径越界')
+        key = str(container.resolve(strict=True))
+        if key in visited:
+            raise ValueError('嵌套组件重复或循环')
+        visited.add(key)
+        base = container / 'Versions' / 'A' if framework else container / 'Contents'
+        info_path = base / 'Resources' / 'Info.plist' if framework else base / 'Info.plist'
+        info = read_file(info_path)
+        metadata = plistlib.loads(info)
+        executable = metadata.get('CFBundleExecutable')
+        if not isinstance(executable, str) or not executable or Path(executable).name != executable or '\\' in executable:
+            raise ValueError('组件可执行文件名无效')
+        binary_path = base / executable if framework else base / 'MacOS' / executable
+        binary = read_file(binary_path)
+        resources = read_file(base / '_CodeSignature' / 'CodeResources')
+        检查特殊槽(binary, 1, info)
+        检查特殊槽(binary, 3, resources)
+        package_info = base / 'PkgInfo'
+        if package_info.exists():
+            if read_file(package_info) != b'APPL????':
+                raise ValueError('未签名的 PkgInfo 内容不符')
+        seals = plistlib.loads(resources).get('files2')
+        if not isinstance(seals, dict):
+            raise ValueError('资源封存清单无效')
+        for name, value in seals.items():
+            if not isinstance(name, str) or not name or Path(name).is_absolute() or '..' in Path(name).parts or '\\' in name:
+                raise ValueError('资源封存路径越界')
+            item = base / name
+            if isinstance(value, dict) and 'hash2' in value:
+                if hashlib.sha256(read_file(item)).digest() != value['hash2']:
+                    raise ValueError(f'资源封存不符：{name}')
+                sealed_files += 1
+            elif isinstance(value, dict) and 'cdhash' in value:
+                if item.suffix == '.app' and item.is_dir():
+                    nested_binary = verify_bundle(item)
+                    nested_count += 1
+                elif item.suffix == '.framework' and item.is_dir():
+                    nested_binary = verify_bundle(item, framework=True)
+                    nested_count += 1
+                elif item.is_file() and not item.is_symlink():
+                    nested_binary = read_file(item)
+                else:
+                    raise ValueError(f'未知嵌套组件：{name}')
+                if 代码目录摘要(nested_binary) != value['cdhash']:
+                    raise ValueError(f'嵌套组件摘要不符：{name}')
+            else:
+                raise ValueError(f'不支持的资源封存项目：{name}')
+        return binary
+
+    verify_bundle(root)
+    actual_files = {rel for rel, (kind, _) in entries.items() if kind == 'file'}
+    if actual_files != covered:
+        raise ValueError(f'存在未封存或多余文件：{sorted(actual_files - covered)}；缺失 {sorted(covered - actual_files)}')
+    return {'binaries': binaries, 'pages': pages, 'sealed_files': sealed_files, 'nested': nested_count,
+            'system_signature': '未在 macOS 验证', 'notarization': '未公证', 'launch': '未在 macOS 运行'}
 
 def 读取段(data):
     if len(data) < 32 or data[:4] != b'\xcf\xfa\xed\xfe':
@@ -333,7 +371,42 @@ def 读取段(data):
     return sections
 
 
+def 读取规范化命令(data):
+    if len(data) < 32 or data[:4] != b'\xcf\xfa\xed\xfe':
+        raise ValueError('不支持的 Mach-O 格式')
+    count = struct.unpack_from('<I', data, 16)[0]
+    if count > 10000:
+        raise ValueError('装载命令数量异常')
+    position, result, signatures = 32, [], 0
+    for _ in range(count):
+        if position + 8 > len(data):
+            raise ValueError('装载命令缺失')
+        command, size = struct.unpack_from('<II', data, position)
+        if size < 8 or position + size > len(data):
+            raise ValueError('装载命令范围无效')
+        record = bytearray(data[position:position + size])
+        if command == 0x19 and record[8:24].rstrip(b'\0') == b'__LINKEDIT':
+            if size < 72:
+                raise ValueError('链接段命令过短')
+            # 重签只允许改变链接段的内存大小与文件大小。
+            record[32:40] = bytes(8)
+            record[48:56] = bytes(8)
+        elif command == 0x1d:
+            if size != 16 or signatures:
+                raise ValueError('签名装载命令异常')
+            signatures += 1
+            position += size
+            continue
+        result.append(bytes(record))
+        position += size
+    header = bytearray(data[:32])
+    ncmds, sizeofcmds = struct.unpack_from('<II', header, 16)
+    struct.pack_into('<II', header, 16, ncmds - signatures, sizeofcmds - signatures * 16)
+    return bytes(header), result
+
 def 比较二进制段(original, signed):
+    if 读取规范化命令(original) != 读取规范化命令(signed):
+        raise ValueError('Mach-O 文件头或非签名装载命令不同')
     before, after = 读取段(original), 读取段(signed)
     if [(item[0], item[1]) for item in before] != [(item[0], item[1]) for item in after]:
         raise ValueError('数据段布局不同')
@@ -385,6 +458,15 @@ def 校验原始数据(app, archive, product):
         raise ValueError('没有可验证的 Electron 文件')
     return {'resources': regular, 'binaries': binaries, 'sections': sections, 'expected_changes_skipped': skipped}
 
+def 校验原生(source, target, arch):
+    original = Path(source).read_bytes()
+    signed = Path(target).read_bytes()
+    if 架构(original) != {arch} or 架构(signed) != {arch}:
+        raise ValueError('原生模块架构不符')
+    pages = 检查签名页(signed)
+    sections = 比较二进制段(original, signed)
+    return {'pages': pages, 'sections': sections}
+
 def main():
     import argparse
     import json
@@ -397,6 +479,11 @@ def main():
     sign = sub.add_parser('signature')
     sign.add_argument('--app', required=True)
     sign.add_argument('--arch', required=True, choices=['arm64', 'x64'])
+    sign.add_argument('--electron-zip', required=True)
+    native = sub.add_parser('native')
+    native.add_argument('--source', required=True)
+    native.add_argument('--target', required=True)
+    native.add_argument('--arch', required=True, choices=['arm64', 'x64'])
     original = sub.add_parser('original')
     original.add_argument('--app', required=True)
     original.add_argument('--electron-zip', required=True)
@@ -408,7 +495,9 @@ def main():
     if args.command == 'repair-links':
         result = {'links': 修复链接(确认隔离应用(args.app, args.work), args.electron_zip)}
     elif args.command == 'signature':
-        result = 校验临时签名(args.app, args.arch)
+        result = 校验临时签名(args.app, args.arch, args.electron_zip)
+    elif args.command == 'native':
+        result = 校验原生(args.source, args.target, args.arch)
     elif args.command == 'original':
         result = 校验原始数据(args.app, args.electron_zip, args.name)
     else:
@@ -418,11 +507,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-

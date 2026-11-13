@@ -4,7 +4,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const crypto = require('node:crypto')
-const { 验证工作目录, 校验散列, 检查目标依赖, 校验构建清单, 校验配置, 校验依赖版本, 构建忽略规则, 打包暂存路径, 校验ASAR元数据, 校验文件关联, 整理输入记录, 校验Electron版本 } = require('./macos_cross_build.cjs')
+const { 验证工作目录, 校验散列, 检查目标依赖, 校验构建清单, 校验配置, 校验依赖版本, 构建忽略规则, 打包暂存路径, 校验ASAR元数据, 校验文件关联, 整理输入记录, 校验Electron版本, 冻结依赖, 校验依赖归档 } = require('./macos_cross_build.cjs')
 
 test('工作目录必须全新且不能与输入目录重叠', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-mac-test-'))
@@ -170,4 +170,29 @@ test('真实入口预检后只在新工作目录记录输入并保留失败证�
     assert(!fs.existsSync(path.join(work, '验收记录.json')))
     assert.equal(fs.readFileSync(path.join(source, 'main/main.js'), 'utf8'), 'main')
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('依赖内容清单冻结输入并拒绝归档缺失、新增和篡改', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-deps-test-'))
+  try {
+    const base = path.join(dir, 'node_modules', 'pkg'); fs.mkdirSync(base, { recursive: true })
+    fs.writeFileSync(path.join(base, 'index.js'), 'original'); fs.writeFileSync(path.join(base, 'types.d.ts'), 'ignore')
+    const manifest = 冻结依赖(dir)
+    const name = 'node_modules/pkg/index.js'; const read = () => Buffer.from('original')
+    assert.deepEqual(Object.keys(manifest), [name])
+    校验依赖归档(manifest, [name], read)
+    assert.throws(() => 校验依赖归档(manifest, [], read))
+    assert.throws(() => 校验依赖归档(manifest, [name, 'node_modules/extra.js'], read))
+    assert.throws(() => 校验依赖归档(manifest, [name], () => Buffer.from('tampered')))
+    fs.writeFileSync(path.join(base, 'index.js'), 'mutated')
+    assert.throws(() => 校验依赖归档(manifest, [name], () => fs.readFileSync(path.join(base, 'index.js'))))
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('原生模块签名后变化须显式列出，不能影响普通依赖检查', () => {
+  const data = Buffer.from('before'), name = 'node_modules/example/binding.node'
+  const manifest = { [name]: { size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') } }
+  assert.throws(() => 校验依赖归档(manifest, [name], () => Buffer.from('after')))
+  assert.deepEqual(校验依赖归档(manifest, [name], () => Buffer.from('after'), true), [name])
+  assert.deepEqual(校验依赖归档(manifest, [name], () => data, true), [])
 })

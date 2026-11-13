@@ -126,7 +126,44 @@ function 校验ASAR元数据(info, expected) {
   const map = info?.ElectronAsarIntegrity
   if (!map || Object.keys(map).length !== 1 || !map['Resources/app.asar'] || map['Resources/app.asar'].algorithm !== 'SHA256' || map['Resources/app.asar'].hash !== expected) throw new Error('Electron ASAR 完整性路径或摘要无效')
 }
-const 构建忽略规则 = [/\.d\.ts$/, /\/main\/.*\.(test|spec)\.js$/, /\/main\/main-test\.js$/, /\/main\/.*\/(__fixtures__|node_modules|\.vitest)\//, /\/package-lock\.json$/]
+const 构建忽略规则 = [/\.d\.ts$/, /\/main\/.*\.(test|spec)\.js$/, /\/main\/main-test\.js$/, /\/main\/.*\/(__fixtures__|node_modules|\.vitest)\//, /\/package-lock\.json$/, /\/yarn\.lock$/, /\/pnpm-lock\.yaml$/, /\/\.git($|\/)/, /\/node_modules\/\.bin($|\/)/, /\.o(bj)?$/, /\/node_gyp_bins($|\/)/]
+function 排除路径(rel) {
+  return 构建忽略规则.some(rule => rule.test(rel))
+}
+
+function 冻结依赖(bundle) {
+  const manifest = Object.create(null)
+  function scan(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const absolute = path.join(dir, entry.name)
+      const rel = path.relative(bundle, absolute).split(path.sep).join('/')
+      if (排除路径(`/${rel}`)) continue
+      if (entry.isSymbolicLink()) throw new Error(`依赖文件不得为链接：${rel}`)
+      if (entry.isDirectory()) scan(absolute)
+      else if (entry.isFile()) {
+        const data = fs.readFileSync(absolute)
+        manifest[rel] = { size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') }
+      } else throw new Error(`不支持的依赖文件类型：${rel}`)
+    }
+  }
+  scan(path.join(bundle, 'node_modules'))
+  if (!Object.keys(manifest).length) throw new Error('目标依赖内容清单为空')
+  return manifest
+}
+
+function 校验依赖归档(manifest, files, read, signed = false) {
+  const expected = Object.keys(manifest), actual = new Set(files)
+  if (actual.size !== files.length || expected.length !== actual.size || expected.some(rel => !actual.has(rel))) throw new Error('ASAR 依赖文件集合不一致')
+  const changedNative = []
+  for (const rel of expected) {
+    const data = read(rel), entry = manifest[rel]
+    if (data.length !== entry.size || crypto.createHash('sha256').update(data).digest('hex') !== entry.sha256) {
+      if (signed && rel.endsWith('.node')) changedNative.push(rel)
+      else throw new Error(`ASAR 依赖文件内容不一致：${rel}`)
+    }
+  }
+  return changedNative
+}
 
 function 校验文件关联(formats, entries) {
   if (!Array.isArray(formats) || !formats.length || !Array.isArray(entries) || entries.length !== formats.length) throw new Error('文件关联数量不符')
@@ -163,7 +200,7 @@ function 校验配置(config) {
   return config
 }
 
-module.exports = { 验证工作目录, 校验散列, 检查目标依赖, 校验构建清单, 校验配置, 校验依赖版本, 构建忽略规则, 打包暂存路径, 校验ASAR元数据, 校验文件关联, 整理输入记录, 校验Electron版本 }
+module.exports = { 验证工作目录, 校验散列, 检查目标依赖, 校验构建清单, 校验配置, 校验依赖版本, 构建忽略规则, 打包暂存路径, 校验ASAR元数据, 校验文件关联, 整理输入记录, 校验Electron版本, 冻结依赖, 校验依赖归档 }
 
 
 
@@ -193,6 +230,7 @@ async function 构建(config) {
   校验Electron版本(lock, config.electronVersion)
   const lockedPackages = 校验依赖版本(bundle, lock)
   const nativeCount = 检查目标依赖(bundle, config.arch)
+  const dependencyManifest = 冻结依赖(bundle)
   const mac = require(path.join(source, 'build/electron-macos.cjs'))
   const formats = require(path.join(source, 'main/documentFormats.json'))
   if (!Array.isArray(mac.extraResources) || !mac.extraResources.length || !Array.isArray(formats) || !formats.length) throw new Error('资源或文件关联配置为空')
@@ -203,6 +241,7 @@ async function 构建(config) {
   const packagerPkg = JSON.parse(fs.readFileSync(path.resolve(path.dirname(config.packager.path), '../package.json'), 'utf8'))
   if (packagerPkg.name !== '@electron/packager' || !packagerPkg.version) throw new Error('Packager 模块无效')
   fs.mkdirSync(work)
+  fs.writeFileSync(path.join(work, '依赖内容清单.json'), JSON.stringify(dependencyManifest), { flag: 'wx' })
   fs.writeFileSync(path.join(work, '构建输入.json'), JSON.stringify(整理输入记录(config), null, 2), { flag: 'wx' })
   fs.writeFileSync(path.join(work, '.seal-macos-isolated'), 'macos-cross-test-only', { flag: 'wx' })
   function run(tool, args, label, json = false) {
@@ -219,7 +258,7 @@ async function 构建(config) {
   const head = Buffer.alloc(16); head.write('icns', 0); head.writeUInt32BE(png.length + 16, 4); head.write('ic09', 8); head.writeUInt32BE(png.length + 8, 12)
   const icon = path.join(work, 'icon.icns'); fs.writeFileSync(icon, Buffer.concat([head, png]), { flag: 'wx' })
   const apps = await packager({ dir: bundle, tmpdir: 打包暂存路径(work), out: path.join(work, 'packaged'), platform: 'darwin', arch: config.arch, electronVersion: config.electronVersion, electronZipDir: zipDir, name: pkg.build.productName, appBundleId: pkg.build.appId, appVersion: pkg.version, icon, asar: true, prune: false,
-    ignore: 构建忽略规则,
+    ignore: 排除路径, junk: false,
     extendInfo: { LSMinimumSystemVersion: '11.0.0', CFBundleDocumentTypes: formats.map(({ extension, label }) => ({ CFBundleTypeExtensions: [extension], CFBundleTypeName: label, CFBundleTypeRole: 'Editor' })) } })
   if (apps.length !== 1) throw new Error('未生成唯一应用，Packager 可能跳过目标')
   const app = path.join(apps[0], `${pkg.build.productName}.app`), resources = path.join(app, 'Contents', 'Resources')
@@ -240,7 +279,7 @@ async function 构建(config) {
   fs.writeFileSync(infoPath, plist.build(fixedInfo))
   const script = path.join(__dirname, 'macos_cross_verify.py')
   run(config.python.path, [script, 'repair-links', '--app', app, '--work', work, '--electron-zip', config.electronZip.path], 'links')
-  function 校验应用() {
+  function 校验应用(signed = false) {
     const info = plist.parse(fs.readFileSync(path.join(app, 'Contents/Info.plist'), 'utf8'))
     校验ASAR元数据(info, crypto.createHash('sha256').update(asar.getRawHeader(path.join(resources, 'app.asar')).headerString).digest('hex'))
     if (info.CFBundleIdentifier !== pkg.build.appId || info.CFBundleShortVersionString !== pkg.version || info.CFBundleExecutable !== pkg.build.productName || info.LSMinimumSystemVersion !== '11.0.0') throw new Error('应用身份、版本或最低系统版本不符')
@@ -259,7 +298,15 @@ async function 构建(config) {
       const data = asar.extractFile(archive, path.normalize(entry.路径))
       if (data.length !== entry.字节数 || crypto.createHash('sha256').update(data).digest('hex') !== entry.校验值) throw new Error(`ASAR 内容不符：${entry.路径}`)
     }
-    const native = asar.listPackage(archive, {}).map(x => x.replaceAll('\\', '/').replace(/^\/+/, '')).filter(x => x.endsWith('.node'))
+    const dependencyFiles = asar.listPackage(archive, {}).map(x => x.replaceAll('\\', '/').replace(/^\/+/, '')).filter(x => x.startsWith('node_modules/') && !asar.statFile(archive, path.normalize(x)).files)
+    const changedNative = 校验依赖归档(dependencyManifest, dependencyFiles, rel => asar.extractFile(archive, path.normalize(rel)), signed)
+    for (let i = 0; i < changedNative.length; i++) {
+      const rel = changedNative[i], input = path.join(bundle, ...rel.split('/'))
+      const output = path.join(resources, 'app.asar.unpacked', ...rel.split('/'))
+      校验散列(input, dependencyManifest[rel].sha256)
+      run(config.python.path, [script, 'native', '--source', input, '--target', output, '--arch', config.arch], `native-${i}`)
+    }
+    const native = dependencyFiles.filter(x => x.endsWith('.node'))
     if (native.length !== nativeCount || !native.includes(`node_modules/@napi-rs/canvas-darwin-${config.arch}/skia.darwin-${config.arch}.node`)) throw new Error('ASAR 原生模块集合不符')
     for (const rel of native) {
       const data = asar.extractFile(archive, path.normalize(rel))
@@ -274,8 +321,8 @@ async function 构建(config) {
   }
   校验应用()
   run(config.rcodesign.path, ['sign', app], 'adhoc-sign')
-  校验应用()
-  const signature = run(config.python.path, [script, 'signature', '--app', app, '--arch', config.arch], 'signature', true)
+  校验应用(true)
+  const signature = run(config.python.path, [script, 'signature', '--app', app, '--arch', config.arch, '--electron-zip', config.electronZip.path], 'signature', true)
   const original = run(config.python.path, [script, 'original', '--app', app, '--electron-zip', config.electronZip.path, '--name', pkg.build.productName], 'original', true)
   const dmg = path.join(work, imageName)
   run(config.zapp.path, ['dmg', '--no-config', '--no-sign', '--no-notarize', '--app', app, '--title', pkg.build.productName, '--out', dmg], 'dmg')
@@ -283,7 +330,7 @@ async function 构建(config) {
   const extracted = path.join(work, 'extracted')
   run(config.seven.path, ['x', dmg, `-o${extracted}`, '-y'], 'extract')
   const image = run(config.python.path, [script, 'image', '--app', app, '--extracted', path.join(extracted, pkg.build.productName, `${pkg.build.productName}.app`), '--dmg', dmg, '--electron-zip', config.electronZip.path, '--seven', config.seven.path, '--name', pkg.build.productName], 'image', true)
-  const report = { version: pkg.version, arch: config.arch, electron: config.electronVersion, packager: packagerPkg.version, appId: pkg.build.appId, app, dmg, size: fs.statSync(dmg).size, sha256: image.sha256, manifestFiles: count, nativeModules: nativeCount, lockedPackages, signature, original, image,
+  const report = { version: pkg.version, arch: config.arch, electron: config.electronVersion, packager: packagerPkg.version, appId: pkg.build.appId, app, dmg, size: fs.statSync(dmg).size, sha256: image.sha256, manifestFiles: count, nativeModules: nativeCount, lockedPackages, dependencyFiles: Object.keys(dependencyManifest).length, signature, original, image,
     releaseReady: false, systemVerification: '未在 macOS 执行系统签名、Gatekeeper、安装或启动验收', notarization: '未公证；仅供隔离测试，禁止发布' }
   fs.writeFileSync(path.join(work, '验收记录.json'), JSON.stringify(report, null, 2), { flag: 'wx' })
   return report
@@ -294,14 +341,3 @@ if (require.main === module) {
   if (process.argv.length !== 3) { console.error('用法：node scripts/macos_cross_build.cjs <配置 JSON 绝对路径>'); process.exitCode = 2 }
   else 构建(JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))).then(result => console.log(JSON.stringify(result, null, 2))).catch(error => { console.error(error.stack || error.message); process.exitCode = 1 })
 }
-
-
-
-
-
-
-
-
-
-
-

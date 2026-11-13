@@ -3,7 +3,74 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
-const { 对齐副本, 规范属性, 校验完整性 } = require('./verify-macos-universal.cjs')
+const { 对齐副本, 规范属性, 校验完整性, 图形表达式, 运行图形验收 } = require('./verify-macos-universal.cjs')
+
+test('两架构图形验收只加载对应的应用模块，未就绪等待且错误不隐藏', () => {
+  const vm = require('node:vm')
+  assert.equal(vm.runInNewContext(图形表达式(), {}).就绪, false)
+  for (const arch of ['arm64', 'x64']) {
+    const 应用路径 = `/app/Contents/Resources/app-${arch}.asar`
+    let loaded = ''
+    const process = { arch, mainModule: { require(name) {
+      if (name === 'electron') return { app: { getAppPath: () => 应用路径 } }
+      if (name === 'path') return path.posix
+      loaded = name
+      return { createCanvas: () => ({ toBuffer: () => Buffer.from('89504e470d0a1a0a', 'hex') }) }
+    } } }
+    const result = vm.runInNewContext(图形表达式(), { process })
+    assert.equal(result.架构, arch); assert.equal(result.签名, '89504e470d0a1a0a')
+    assert.equal(loaded, `${应用路径}/node_modules/@napi-rs/canvas`)
+  }
+  const process = { arch: 'arm64', mainModule: { require: () => { throw new Error('真实加载错误') } } }
+  assert.throws(() => vm.runInNewContext(图形表达式(), { process }), /真实加载错误/)
+})
+
+test('图形验收接口无响应时有界退出并清理应用', async t => {
+  const http = require('node:http'), { EventEmitter } = require('node:events')
+  const 客户端 = new Set(), 服务 = http.createServer(() => {})
+  服务.on('connection', c => { 客户端.add(c); c.on('close', () => 客户端.delete(c)) })
+  await new Promise(resolve => 服务.listen(0, '127.0.0.1', resolve))
+  t.after(() => { for (const c of 客户端) c.destroy(); 服务.close() })
+  const 进程 = new EventEmitter(); 进程.pid = 123; 进程.exitCode = null; 进程.signalCode = null
+  进程.kill = signal => { 进程.signalCode = signal; 进程.emit('exit', null, signal); return true }
+  await assert.rejects(运行图形验收(进程, { 端口: 服务.address().port, 总时限: 100 }), /超时|取消/)
+  assert.equal(进程.signalCode, 'SIGTERM')
+})
+
+test('图形验收握手无响应时有界退出并清理应用', async t => {
+  const http = require('node:http'), net = require('node:net'), { EventEmitter } = require('node:events')
+  const 客户端 = new Set(), ws = net.createServer(c => { 客户端.add(c); c.on('close', () => 客户端.delete(c)); c.on('data', () => {}) })
+  await new Promise(resolve => ws.listen(0, '127.0.0.1', resolve))
+  const 服务 = http.createServer((_, res) => res.end(JSON.stringify([{ webSocketDebuggerUrl: `ws://127.0.0.1:${ws.address().port}` }])))
+  await new Promise(resolve => 服务.listen(0, '127.0.0.1', resolve))
+  t.after(() => { for (const c of 客户端) c.destroy(); ws.close(); 服务.close() })
+  const 进程 = new EventEmitter(); 进程.pid = 123; 进程.exitCode = null; 进程.signalCode = null
+  进程.kill = signal => { 进程.signalCode = signal; 进程.emit('exit', null, signal); return true }
+  await assert.rejects(运行图形验收(进程, { 端口: 服务.address().port, 总时限: 100 }), /超时|取消/)
+  assert.equal(进程.signalCode, 'SIGTERM')
+})
+
+test('图形验收连接后等待架构入口并检查 PNG，连接和进程均被清理', async t => {
+  const http = require('node:http'), { EventEmitter } = require('node:events'), { WebSocketServer } = require('ws')
+  const 服务 = http.createServer((_, res) => res.end(JSON.stringify([{ webSocketDebuggerUrl: `ws://127.0.0.1:${服务.address().port}` }])))
+  const ws = new WebSocketServer({ server: 服务 })
+  let 请求数 = 0
+  ws.on('connection', socket => socket.on('message', message => {
+    const 内容 = JSON.parse(String(message)); 请求数++
+    const value = 请求数 === 1 ? { 就绪: false } : { 就绪: true, 架构: 'x64', 签名: '89504e470d0a1a0a' }
+    socket.send(JSON.stringify({ id: 内容.id, result: { result: { value } } }))
+  }))
+  await new Promise(resolve => 服务.listen(0, '127.0.0.1', resolve))
+  t.after(() => { for (const c of ws.clients) c.terminate(); ws.close(); 服务.close() })
+  const 进程 = new EventEmitter(); 进程.pid = 123; 进程.exitCode = null; 进程.signalCode = null
+  进程.kill = signal => { 进程.signalCode = signal; 进程.emit('exit', null, signal); return true }
+  const 结果 = await 运行图形验收(进程, { 端口: 服务.address().port, 总时限: 3000, 期望架构: 'x64' })
+  assert.equal(结果.架构, 'x64'); assert.equal(请求数, 2); assert.equal(进程.signalCode, 'SIGTERM')
+  const 再次 = new EventEmitter(); 再次.pid = 124; 再次.exitCode = null; 再次.signalCode = null
+  再次.kill = signal => { 再次.signalCode = signal; 再次.emit('exit', null, signal); return true }
+  await assert.rejects(运行图形验收(再次, { 端口: 服务.address().port, 总时限: 3000, 期望架构: 'arm64' }), /架构不符/)
+  assert.equal(再次.signalCode, 'SIGTERM')
+})
 
 test('通用包完整性键和每份 ASAR 头摘要均须准确', async t => {
   const plist = require('plist'), asar = require('@electron/asar'), crypto = require('node:crypto')
