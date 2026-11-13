@@ -203,6 +203,23 @@ describe('更新卡片', () => {
     expect(screen.queryByText(/修复表格筛选/)).toBeNull()
   })
 
+  it('更新说明解析 Markdown 标题和列表，保留文字与标点且不执行嵌入内容', async () => {
+    vi.useFakeTimers()
+    document.documentElement.dataset.sealPlatform = 'app'
+    const 说明 = '# 海豹办公 2.7.2\n\n## 编辑与查看\n\n- 支持 C#、3.14 与中文标点。\n- **重要**：修复问题！\n\n<script>危险脚本</script>'
+    模拟桌面().mockResolvedValue({ 成功: true, 数据: { ...新版, notes: 说明 } })
+    渲染卡片()
+    await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
+    const 内容 = screen.getByRole('dialog', { name: '发现新版本 2.7.1' }).querySelector('.seal-update-card__notes')!
+    expect(内容.querySelector('h1')?.textContent).toBe('海豹办公 2.7.2')
+    expect(内容.querySelector('h2')?.textContent).toBe('编辑与查看')
+    expect(内容.querySelectorAll('li')).toHaveLength(2)
+    expect(内容.textContent).toContain('支持 C#、3.14 与中文标点。')
+    expect(内容.textContent).toContain('重要：修复问题！')
+    expect(内容.textContent).not.toContain('## 编辑与查看')
+    expect(内容.querySelector('script')).toBeNull()
+  })
+
   it('英文界面下中文更新说明提示原文为中文并保留原文', async () => {
     vi.useFakeTimers()
     localStorage.setItem('seal-language', 'en-US')

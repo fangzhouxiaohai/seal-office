@@ -94,6 +94,30 @@ test('只发布所选平台，旧版单条接口仍可用，公开下载与范�
   assert.equal((await f.download(asset)).status, 404)
 })
 
+test('同版本修复包可由管理员安全替换附件，校验平台与版本并保留其他发布信息', async t => {
+  const f = await fixture(t), first = installer(), second = installer()
+  second[200] = 8
+  const old = (await f.upload('windows', '2.7.2', 'seal-office-setup-2.7.2.exe', first)).body.item
+  const next = (await f.upload('windows', '2.7.2', 'seal-office-setup-2.7.2.exe', second)).body.item
+  const other = (await f.upload('windows', '2.7.3', 'seal-office-setup-2.7.3.exe', installer())).body.item
+  const created = await f.request('/v1/admin/releases', { platform:'windows', version:'2.7.2', notes:'原说明', assetId:old.id }, f.token)
+  const id = created.body.item.id
+  assert.equal((await f.request('/v1/admin/releases/' + id, {assetId:next.id}, '', 'PATCH')).status, 401)
+  assert.equal((await f.request('/v1/admin/releases/' + id, {assetId:other.id}, f.token, 'PATCH')).status, 400)
+  assert.equal((await f.download(old)).status, 200)
+  const changed = await f.request('/v1/admin/releases/' + id, {assetId:next.id, bytes:1, sha256:'a'.repeat(64)}, f.token, 'PATCH')
+  assert.equal(changed.status, 200)
+  assert.equal(changed.body.item.assetId, next.id)
+  assert.equal(changed.body.item.sha256, createHash('sha256').update(second).digest('hex'))
+  assert.equal(changed.body.item.bytes, second.length)
+  assert.equal(changed.body.item.notes, '原说明')
+  assert.deepEqual(Buffer.from(await (await f.download(next)).arrayBuffer()), second)
+  assert.equal((await f.download(old)).status, 404)
+  const latest = await f.request('/v1/updates/latest?platform=windows&version=2.7.1')
+  assert.equal(latest.body.sha256, changed.body.item.sha256)
+  assert.deepEqual((await f.request('/v1/updates/latest?platform=windows&version=2.7.2')).body, {hasUpdate:false})
+})
+
 test('批量发布先校验全部平台，错配、重复和旧记录冲突均不会写入任何新记录', async t => {
   const f = await fixture(t)
   const asset = (await f.upload('windows', '2.7.2', 'seal-office-setup-2.7.2.exe', installer())).body.item

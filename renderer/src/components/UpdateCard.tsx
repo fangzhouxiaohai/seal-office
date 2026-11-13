@@ -3,6 +3,8 @@
 // 非强制更新可「稍后」（本次运行内不再提醒）；强制更新只保留「立即更新」，无关闭按钮，点遮罩不关闭。
 import { useEffect, useId, useState } from 'react'
 import { App as AntdApp, Button } from 'antd'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useSettings } from '../store/settingsStore'
 import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, type 有效发布 } from '../update/updateCenter'
 import '../update/updateCard.css'
@@ -81,7 +83,7 @@ function 卡片({ 发布 }: { 发布: 有效发布 }) {
       </div>
       {!说明 ? <p className="seal-update-card__empty">本次更新未填写说明</p> : 展开说明 ? <>
         {语言 === 'en-US' && 含中文(说明) ? <p className="seal-update-card__hint">更新说明原文为中文</p> : null}
-        <div className="seal-update-card__notes" data-ui-language-ignore="true">{说明}</div>
+        <div className="seal-update-card__notes" data-ui-language-ignore="true"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ a: ({ children }) => <span>{children}</span>, img: ({ alt }) => <span>{alt}</span> }}>{说明}</ReactMarkdown></div>
       </> : null}
       <div className="seal-update-card__actions">
         {发布.mandatory ? null : <Button disabled={更新中} onClick={稍后提醒}>稍后</Button>}

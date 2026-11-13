@@ -56,12 +56,18 @@
   min-height: 0;
   max-height: 220px;
   overflow: auto;
-  white-space: pre-wrap;
+  white-space: normal;
   overflow-wrap: anywhere;
   font-size: 13px;
   line-height: 1.7;
   color: var(--text-2);
 }
+.seal-update-card__notes p { white-space: pre-line; margin: 0 0 0.65em; }
+.seal-update-card__notes h1, .seal-update-card__notes h2, .seal-update-card__notes h3, .seal-update-card__notes h4, .seal-update-card__notes h5, .seal-update-card__notes h6 { font-size: 1em; line-height: 1.5; color: var(--text-1); margin: 0.7em 0 0.3em; }
+.seal-update-card__notes > :first-child { margin-top: 0; }
+.seal-update-card__notes ul, .seal-update-card__notes ol { padding-left: 1.5em; margin: 0 0 0.65em; }
+.seal-update-card__notes li > p { margin: 0; }
+.seal-update-card__notes pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .seal-update-card__actions { display: flex; justify-content: flex-end; gap: var(--space-2, 8px); margin-top: 4px; }
 /* 设置页「当前版本」行的控件区：状态文字 + 按钮 */
 .settings-update-control { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2, 8px); }

@@ -182,12 +182,13 @@ function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets })
       if (!existing) fail(404, '发布记录不存在')
       if (!input || typeof input !== 'object') fail(400, '修改内容无效')
       if (input.withdrawn !== undefined && typeof input.withdrawn !== 'boolean') fail(400, '下架标记无效')
+      if ('assetId' in input && (typeof input.assetId !== 'string' || !input.assetId)) fail(400, '替换附件必须提供已上传的安装包')
       const current = presentRelease(existing)
-      const merged = prepareRelease({ ...current, ...Object.fromEntries(['mandatory', 'minVersion', 'notes', 'url', 'sha256', 'bytes', 'versionCode'].filter(key => key in input).map(key => [key, input[key]])) })
+      const merged = prepareRelease({ ...current, ...Object.fromEntries(['mandatory', 'minVersion', 'notes', 'url', 'sha256', 'bytes', 'versionCode', 'assetId'].filter(key => key in input).map(key => [key, input[key]])) })
       const withdrawn = input.withdrawn === undefined ? current.withdrawn : input.withdrawn
       db.transaction(() => {
-        db.run('UPDATE releases SET mandatory=?,min_version=?,notes=?,url=?,sha256=?,bytes=?,version_code=?,withdrawn=? WHERE id=?',
-          [merged.mandatory ? 1 : 0, merged.minVersion, merged.notes, merged.url, merged.sha256, merged.bytes, merged.versionCode, withdrawn ? 1 : 0, existing.id])
+        db.run('UPDATE releases SET mandatory=?,min_version=?,notes=?,url=?,sha256=?,bytes=?,version_code=?,withdrawn=?,asset_id=? WHERE id=?',
+          [merged.mandatory ? 1 : 0, merged.minVersion, merged.notes, merged.url, merged.sha256, merged.bytes, merged.versionCode, withdrawn ? 1 : 0, merged.assetId, existing.id])
         audit('admin', 'release-update', JSON.stringify({ platform: current.platform, version: current.version, channel: current.channel, mandatory: merged.mandatory, withdrawn }))
       })
       reply({ item: presentRelease(find(existing.id)) })
