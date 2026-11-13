@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import java.util.UUID;
 import org.json.JSONObject;
 import androidx.core.app.NotificationManagerCompat;
@@ -24,6 +25,8 @@ public final class UpdateService extends Service {
     private static NativeUpdater updater;
     private static volatile UpdateService running;
     private final Handler ui = new Handler(Looper.getMainLooper());
+    private final UpdateProgressGate notificationGate = new UpdateProgressGate(1000);
+    private int notificationGeneration;
 
     static synchronized NativeUpdater attach(Activity activity, NativeUpdater.Listener listener) {
         if (updater == null) updater = new NativeUpdater(activity.getApplicationContext());
@@ -58,6 +61,8 @@ public final class UpdateService extends Service {
         }
         UpdateService service = running;
         if (service == null) return;
+        boolean terminal = "已就绪".equals(phase) || "失败".equals(phase) || "已取消".equals(phase) || "安装中".equals(phase);
+        if (!service.notificationGate.allow(terminal, SystemClock.elapsedRealtime())) return;
         JSONObject copy;
         try { copy = new JSONObject(state.toString()); }
         catch (Exception ignored) { return; }
@@ -98,16 +103,27 @@ public final class UpdateService extends Service {
     }
     private void show(JSONObject state) {
         String phase = state.optString("阶段", "");
+        int generation = ++notificationGeneration;
         if ("已取消".equals(phase) || "安装中".equals(phase)) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return; }
         Notification value = notification(state);
-        ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(NOTIFICATION, value);
-        if ("已就绪".equals(phase) || "失败".equals(phase) || "安装中".equals(phase)) {
-            stopForeground(STOP_FOREGROUND_DETACH); stopSelf();
+        NotificationManager manager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        manager.notify(NOTIFICATION, value);
+        if ("已就绪".equals(phase) || "失败".equals(phase)) {
+            // 再次发布终态，避免系统在短时通知高峰丢掉最后一次更新。
+            ui.postDelayed(() -> {
+                if (running != this || notificationGeneration != generation) return;
+                manager.notify(NOTIFICATION, value);
+                stopForeground(STOP_FOREGROUND_DETACH); stopSelf();
+            }, 2000);
         }
     }
     @Override public void onTimeout(int startId, int fgsType) {
-        updater(this).cancel(value -> {});
-        stopForeground(STOP_FOREGROUND_REMOVE);
+        JSONObject failed = updater(this).systemTimeout();
+        JSONObject finalState = failed != null ? failed : updater(this).current();
+        notificationGeneration++;
+        stopForeground(failed == null ? STOP_FOREGROUND_DETACH : STOP_FOREGROUND_REMOVE);
+        if ("失败".equals(finalState.optString("阶段")) || "已就绪".equals(finalState.optString("阶段")))
+            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(NOTIFICATION, notification(finalState));
         stopSelf();
     }
     @Override public void onDestroy() { if (running == this) running = null; super.onDestroy(); }

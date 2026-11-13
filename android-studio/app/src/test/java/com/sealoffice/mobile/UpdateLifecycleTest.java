@@ -75,4 +75,28 @@ public class UpdateLifecycleTest {
         assertFalse(UpdateLifecycle.wasInterrupted(false, false));
         assertFalse(UpdateLifecycle.wasInterrupted(true, true));
     }
+    @Test public void 系统超时强制中断并禁止自动安装但允许新任务重试() {
+        UpdateLifecycle flow=new UpdateLifecycle();
+        flow.begin(); flow.setVisible(true);
+        assertTrue(flow.systemTimeout()); assertTrue(flow.isSystemTimeout());
+        assertFalse(flow.shouldAutoInstall()); assertFalse(flow.commitIfActive());
+        flow.begin(); assertFalse(flow.isSystemTimeout()); assertTrue(flow.commitIfActive());
+    }
+    @Test public void 已提交安装包后的迟到超时不能覆盖完成状态() {
+        UpdateLifecycle flow=new UpdateLifecycle();
+        flow.begin(); assertTrue(flow.commitIfActive());
+        assertFalse(flow.systemTimeout()); assertFalse(flow.isSystemTimeout());
+    }
+    @Test public void 系统超时与下载提交并发时只能有一个结果生效() throws Exception {
+        for (int attempt=0; attempt<100; attempt++) {
+            UpdateLifecycle flow=new UpdateLifecycle(); flow.begin();
+            java.util.concurrent.CountDownLatch start=new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.ExecutorService workers=java.util.concurrent.Executors.newFixedThreadPool(2);
+            try {
+                java.util.concurrent.Future<Boolean> timeout=workers.submit(()->{start.await();return flow.systemTimeout();});
+                java.util.concurrent.Future<Boolean> commit=workers.submit(()->{start.await();return flow.commitIfActive();});
+                start.countDown(); assertNotEquals(timeout.get(),commit.get());
+            } finally {workers.shutdownNow();}
+        }
+    }
 }

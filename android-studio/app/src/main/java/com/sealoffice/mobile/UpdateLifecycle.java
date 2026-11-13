@@ -18,8 +18,19 @@ final class UpdateLifecycle {
     static boolean wasInterrupted(boolean marker, boolean hasPending) { return marker && !hasPending; }
     private boolean visible;
     private boolean cancelled;
-    synchronized String begin() { cancelled = false; return UpdatePolicy.newTaskId(); }
+    private boolean systemTimeout;
+    private boolean committed;
+    synchronized String begin() { cancelled = false; systemTimeout = false; committed = false; return UpdatePolicy.newTaskId(); }
     synchronized void cancel() { cancelled = true; }
+    synchronized boolean systemTimeout() {
+        if (committed || cancelled) return false;
+        systemTimeout = true; cancelled = true; return true;
+    }
+    synchronized boolean isSystemTimeout() { return systemTimeout; }
+    synchronized boolean commitIfActive() {
+        if (cancelled) return false;
+        committed = true; return true;
+    }
     synchronized void setVisible(boolean value) { visible = value; }
     synchronized boolean shouldAutoInstall() { return visible && !cancelled; }
 }

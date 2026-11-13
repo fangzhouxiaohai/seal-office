@@ -2,15 +2,19 @@ package com.sealoffice.mobile;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.ResolveInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import java.lang.ref.WeakReference;
 import android.provider.Settings;
 import androidx.core.content.FileProvider;
@@ -52,6 +56,7 @@ final class NativeUpdater {
     private volatile boolean mandatoryTask;
     private volatile boolean metadataVerified = true;
     private volatile boolean waitingInstallPermission;
+    private volatile Uri grantedUri;
     private volatile String taskId = "";
     private JSONObject state;
 
@@ -87,6 +92,7 @@ final class NativeUpdater {
         return result;
     }
     private synchronized void emit(String phase, long done, long total, String version, String error) {
+        if(lifecycle.isSystemTimeout() && !"失败".equals(phase)) return;
         state = state(phase, done, total, version, error);
         try { if (!taskId.isEmpty()) state.put("任务标识", taskId); state.put("强制", mandatoryTask); state.put("通知可见", UpdateService.notificationsVisible(context)); } catch (Exception ignored) { }
         if ("失败".equals(phase) && !preferences.edit().putString("failure", state.toString()).commit()) {
@@ -131,10 +137,13 @@ final class NativeUpdater {
             JSONObject latest=new JSONObject(output.toString("UTF-8"));
             if (!UpdatePolicy.matches(latest.optBoolean("hasUpdate",false),latest.optString("version"),latest.optString("url"),latest.optString("sha256"),latest.optLong("bytes",0),version,url,sha,bytes)) throw new IOException("更新已变更或下架，请重新检查版本");
             if (!(latest.opt("mandatory") instanceof Boolean)) throw new IOException("更新服务未返回有效的强制更新状态");
-            mandatoryTask = latest.optBoolean("mandatory");
-            release.put("mandatory", mandatoryTask);
-            if (active && !preferences.edit().putString("in-progress", release.toString()).commit()) throw new IOException("无法保存更新下载状态");
-            metadataVerified = true;
+            synchronized (this) {
+                if(lifecycle.isSystemTimeout()) throw new IOException("系统后台下载时间达到上限，请重新开始更新");
+                mandatoryTask = latest.optBoolean("mandatory");
+                release.put("mandatory", mandatoryTask);
+                if (active && !preferences.edit().putString("in-progress", release.toString()).commit()) throw new IOException("无法保存更新下载状态");
+                metadataVerified = true;
+            }
         } finally { request.disconnect(); connection=null; }
     }
     private void verifyPackage(File file, JSONObject release) throws Exception {
@@ -201,21 +210,28 @@ final class NativeUpdater {
                 if(!directory.exists()&&!directory.mkdirs())throw new IOException("无法创建更新目录");
                 emit("下载中",0,total,version,"");verifyRelease(release);if(cancelled.get())throw new IOException("更新下载已取消");
                 HttpURLConnection request=open(url);
-                try { UpdateTransfer.write(request.getInputStream(),part,total,release.optString("sha256"),cancelled,done->emit("下载中",done,total,version,"")); }
+                UpdateProgressGate progress = new UpdateProgressGate(250);
+                try { UpdateTransfer.write(request.getInputStream(),part,total,release.optString("sha256"),cancelled,done->{
+                    if(!cancelled.get() && progress.allow(done==total, SystemClock.elapsedRealtime())) emit("下载中",done,total,version,"");
+                }); }
                 finally { request.disconnect();connection=null; }
                 if(cancelled.get())throw new IOException("更新下载已取消");
                 emit("校验中",total,total,version,"");verifyPackage(part,release);
-                if(cancelled.get())throw new IOException("更新下载已取消");
-                File destination=pendingFile(release);
-                if(!part.renameTo(destination))throw new IOException("无法保存已校验安装包");
-                if(!preferences.edit().putString("pending",release.toString()).commit()){
-                    if(destination.exists()&&!destination.delete())throw new IOException("无法保存更新状态且无法清理临时安装包");
-                    throw new IOException("无法保存待安装更新状态");
+                synchronized (this) {
+                    if(cancelled.get() || !lifecycle.commitIfActive())throw new IOException("更新下载已取消");
+                    File destination=pendingFile(release);
+                    if(!part.renameTo(destination))throw new IOException("无法保存已校验安装包");
+                    if(!preferences.edit().putString("pending",release.toString()).commit()){
+                        if(destination.exists()&&!destination.delete())throw new IOException("无法保存更新状态且无法清理临时安装包");
+                        throw new IOException("无法保存待安装更新状态");
+                    }
+                    emit("已就绪",total,total,version,"");readyToInstall=true;
                 }
-                emit("已就绪",total,total,version,"");readyToInstall=true;
             } catch(Exception error) {
                 if(part.exists()&&!part.delete())part.deleteOnExit();
-                String phase=cancelled.get()?"已取消":"失败";emit(phase,0,total,version,message(error));
+                boolean timeout=lifecycle.isSystemTimeout();
+                String phase=cancelled.get() && !timeout ? "已取消":"失败";
+                emit(phase,0,total,version,timeout ? "系统后台下载时间达到上限，请重新开始更新" : message(error));
             } finally {
                 active=false;connection=null;metadataVerified=true;
                 if(!preferences.edit().remove("in-progress").commit()) { readyToInstall=false; emit("失败",0,total,version,"无法清除下载状态，请重试"); }
@@ -229,13 +245,25 @@ final class NativeUpdater {
             callback.finish(result(false,current(),"无法启动下载任务，请重试"));
         }
     }
-    void cancel(Callback callback) {
+    synchronized void cancel(Callback callback) {
         if(!UpdateLifecycle.canCancel(metadataVerified, mandatoryTask, installing)) {
             String reason = installing ? "系统安装程序正在运行，请先完成或取消安装" : mandatoryTask ? "当前版本要求强制更新，无法取消" : "正在核实更新信息，请稍后再试";
             callback.finish(result(false,current(),reason));return;
         }
         lifecycle.cancel();waitingInstallPermission=false;cancelled.set(true);HttpURLConnection current=connection;if(current!=null)current.disconnect();
         executor.execute(()->{try {if(installing)throw new IOException("系统安装程序正在运行，请先完成或取消安装");String raw=preferences.getString("pending","");JSONObject old=raw==null||raw.isEmpty()?null:new JSONObject(raw);if(!preferences.edit().remove("pending").remove("failure").remove("in-progress").commit())throw new IOException("无法清除待安装状态");if(old!=null)discard(old,false);emit("已取消",0,0,"","");callback.finish(result(true,current(),"")); }catch(Exception error){callback.finish(result(false,current(),message(error)));}});
+    }
+    synchronized JSONObject systemTimeout() {
+        if(!active || !lifecycle.systemTimeout()) return null;
+        cancelled.set(true);
+        HttpURLConnection request=connection;
+        if(request!=null) {
+            Thread closer=new Thread(request::disconnect,"seal-update-timeout");
+            closer.setDaemon(true);closer.start();
+        }
+        JSONObject before=current();
+        emit("失败",before.optLong("已下载"),before.optLong("总大小"),before.optString("版本"),"系统后台下载时间达到上限，请重新开始更新");
+        return current();
     }
     void status(Callback callback) {
         if(active||installing){callback.finish(result(true,current(),""));return;}
@@ -296,12 +324,25 @@ final class NativeUpdater {
                     callback.finish(result(false,current(),"请允许海豹办公安装未知应用，返回后再次点击更新"));return;
                 }
                 Uri uri=FileProvider.getUriForFile(context,context.getPackageName()+".updates",pending);
-                Intent intent=new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(uri).putExtra(Intent.EXTRA_RETURN_RESULT,true).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent intent=new Intent(Intent.ACTION_INSTALL_PACKAGE).setDataAndType(uri,"application/vnd.android.package-archive")
+                        .putExtra(Intent.EXTRA_RETURN_RESULT,true).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.setClipData(ClipData.newRawUri("更新安装包",uri));
+                ResolveInfo resolved=context.getPackageManager().resolveActivity(intent,PackageManager.MATCH_DEFAULT_ONLY);
+                ApplicationInfo info=resolved == null || resolved.activityInfo == null ? null : resolved.activityInfo.applicationInfo;
+                String installer=resolved == null || resolved.activityInfo == null ? null : resolved.activityInfo.packageName;
+                if(info == null || !UpdateInstallPolicy.mayGrant(installer,(info.flags & ApplicationInfo.FLAG_SYSTEM)!=0,(info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)!=0))
+                    throw new IOException("未找到可信的系统安装器，请检查设备设置");
+                intent.setPackage(installer);
+                context.grantUriPermission(installer,uri,Intent.FLAG_GRANT_READ_URI_PERMISSION); grantedUri=uri;
                 markHanded(data);
                 target.startActivityForResult(intent,INSTALL_REQUEST);emit("安装中",data.optLong("bytes"),data.optLong("bytes"),data.optString("version"),"");callback.finish(result(true,current(),""));
-            }catch(Exception error){installing=false;callback.finish(result(false,current(),error instanceof IOException?message(error):"无法打开系统安装程序，请检查系统设置"));}});
+            }catch(Exception error){revokeGrantedUri();installing=false;callback.finish(result(false,current(),error instanceof IOException?message(error):"无法打开系统安装程序，请检查系统设置"));}});
         }catch(Exception error){installing=false;callback.finish(result(false,current(),message(error)));}});
     }
-    void installReturned(){installing=false;status(value -> {});}
+    private void revokeGrantedUri() {
+        Uri uri=grantedUri;grantedUri=null;
+        if(uri!=null)context.revokeUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    }
+    void installReturned(){installing=false;revokeGrantedUri();status(value -> {});}
     void close(){cancelled.set(true);HttpURLConnection current=connection;if(current!=null)current.disconnect();executor.shutdownNow();}
 }

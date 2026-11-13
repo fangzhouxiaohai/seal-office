@@ -9,6 +9,12 @@
     <!-- 2.7.1 拍照扫描：仅在用户点“拍照”并确认授权说明后申请，用于拍摄文档与单据；拒绝后仍可相册或文件导入。 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+    </queries>
     <application
         android:label="${appLabel}"
         android:icon="@drawable/seal_logo"
@@ -36,7 +42,7 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/scan_files" />
         </provider>
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name=".UpdateFileProvider"
             android:authorities="${applicationId}.updates"
             android:exported="false"
             android:grantUriPermissions="true">
