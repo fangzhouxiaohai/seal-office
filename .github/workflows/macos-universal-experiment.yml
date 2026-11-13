@@ -1,0 +1,166 @@
+name: 苹果双架构隔离合并试验
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/**']
+    paths:
+      - '.github/workflows/macos-universal-experiment.yml'
+      - 'scripts/verify-macos-universal.cjs'
+      - 'scripts/verify-macos-universal.test.cjs'
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: 下载草稿附件并核对固定摘要
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/seal-universal-inputs"
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/octet-stream' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/assets/744643531' \
+            --output "$RUNNER_TEMP/seal-universal-inputs/arm64.dmg"
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/octet-stream' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/assets/744660905' \
+            --output "$RUNNER_TEMP/seal-universal-inputs/x64.dmg"
+          test "$(stat -c %s "$RUNNER_TEMP/seal-universal-inputs/arm64.dmg")" = 232607241
+          test "$(stat -c %s "$RUNNER_TEMP/seal-universal-inputs/x64.dmg")" = 238864274
+          printf '%s  %s\n' '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e' "$RUNNER_TEMP/seal-universal-inputs/arm64.dmg" | sha256sum -c -
+          printf '%s  %s\n' 'ba2d413092f604d58a6de671e44d4788b6ceac15ff9ea2c85ebf01173f22d2c3' "$RUNNER_TEMP/seal-universal-inputs/x64.dmg" | sha256sum -c -
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal-input
+          path: ${{ runner.temp }}/seal-universal-inputs/*.dmg
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+  merge:
+    needs: fetch
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test scripts/verify-macos-universal.test.cjs
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal-input
+          path: ${{ runner.temp }}/seal-universal/inputs
+      - name: 核验隔离候选
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/seal-universal/inputs" "$RUNNER_TEMP/seal-universal/mount-arm" "$RUNNER_TEMP/seal-universal/mount-x64" "$RUNNER_TEMP/seal-universal/x64" "$RUNNER_TEMP/seal-universal/arm64" "$RUNNER_TEMP/seal-universal/out"
+          echo '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e  '"$RUNNER_TEMP/seal-universal/inputs/arm64.dmg" | shasum -a 256 -c
+          echo 'ba2d413092f604d58a6de671e44d4788b6ceac15ff9ea2c85ebf01173f22d2c3  '"$RUNNER_TEMP/seal-universal/inputs/x64.dmg" | shasum -a 256 -c
+          test "$(stat -f %z "$RUNNER_TEMP/seal-universal/inputs/arm64.dmg")" = 232607241
+          test "$(stat -f %z "$RUNNER_TEMP/seal-universal/inputs/x64.dmg")" = 238864274
+          hdiutil verify "$RUNNER_TEMP/seal-universal/inputs/arm64.dmg"
+          hdiutil verify "$RUNNER_TEMP/seal-universal/inputs/x64.dmg"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/seal-universal/mount-arm" "$RUNNER_TEMP/seal-universal/inputs/arm64.dmg"
+          trap 'hdiutil detach "$RUNNER_TEMP/seal-universal/mount-arm" || true; hdiutil detach "$RUNNER_TEMP/seal-universal/mount-x64" || true' EXIT
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/seal-universal/mount-x64" "$RUNNER_TEMP/seal-universal/inputs/x64.dmg"
+          ditto "$RUNNER_TEMP/seal-universal/mount-arm/海豹办公.app" "$RUNNER_TEMP/seal-universal/arm64/海豹办公.app"
+          ditto "$RUNNER_TEMP/seal-universal/mount-x64/海豹办公.app" "$RUNNER_TEMP/seal-universal/x64/海豹办公.app"
+      - name: 合并、签名及核验结构
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/seal-universal/out/海豹办公.app"
+          node scripts/verify-macos-universal.cjs "$RUNNER_TEMP/seal-universal/x64/海豹办公.app" "$RUNNER_TEMP/seal-universal/arm64/海豹办公.app" "$app"
+          node - "$app" <<'NODE'
+          const { signApp } = require('@electron/osx-sign')
+          signApp({ app: process.argv[2], platform: 'darwin', identity: '-', identityValidation: false, hardenedRuntime: false, preEmbedProvisioningProfile: false }).catch(error => { console.error(error); process.exitCode = 1 })
+          NODE
+          codesign --verify --deep --strict --verbose=2 "$app"
+          while IFS= read -r -d '' file; do
+            if file -b "$file" | grep -q 'Mach-O'; then
+              case "$file" in
+                */canvas-darwin-arm64/skia.darwin-arm64.node) lipo -verify_arch arm64 "$file" ;;
+                */canvas-darwin-x64/skia.darwin-x64.node) lipo -verify_arch x86_64 "$file" ;;
+                *) lipo -verify_arch x86_64 arm64 "$file" ;;
+              esac
+            fi
+          done < <(find "$app/Contents" -type f -print0)
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 2.7.2
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0.0
+          mkdir "$RUNNER_TEMP/seal-universal/image"
+          ditto "$app" "$RUNNER_TEMP/seal-universal/image/海豹办公.app"
+          ln -s /Applications "$RUNNER_TEMP/seal-universal/image/Applications"
+          hdiutil create -srcfolder "$RUNNER_TEMP/seal-universal/image" -format UDZO -volname '海豹办公' "$RUNNER_TEMP/seal-universal/seal-office-2.7.2-macos-universal-test-only.dmg"
+          hdiutil verify "$RUNNER_TEMP/seal-universal/seal-office-2.7.2-macos-universal-test-only.dmg"
+          (cd "$RUNNER_TEMP/seal-universal" && shasum -a 256 seal-office-2.7.2-macos-universal-test-only.dmg > SHA256.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal-test-only
+          path: |
+            ${{ runner.temp }}/seal-universal/*-test-only.dmg
+            ${{ runner.temp }}/seal-universal/SHA256.txt
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: error
+  verify:
+    needs: merge
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal-test-only
+          path: ${{ runner.temp }}/seal-universal-download
+      - name: 挂载并执行两架构运行验收
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          cd "$RUNNER_TEMP/seal-universal-download"
+          shasum -a 256 -c SHA256.txt
+          mkdir mount copy
+          hdiutil verify ./*-test-only.dmg
+          hdiutil attach -readonly -nobrowse -mountpoint "$PWD/mount" ./*-test-only.dmg
+          trap 'hdiutil detach "$RUNNER_TEMP/seal-universal-download/mount" || true' EXIT
+          ditto "$PWD/mount/海豹办公.app" "$PWD/copy/海豹办公.app"
+          app="$PWD/copy/海豹办公.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          lipo -verify_arch x86_64 arm64 "$app/Contents/MacOS/海豹办公"
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            if [ "$EXPECTED_ARCH" = x86_64 ]; then brew update; fi
+            brew install --cask libreoffice
+          fi
+          cd "$GITHUB_WORKSPACE"
+          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-universal.cjs --canvas "$app"
+          printf '%s\n' '隔离试验：临时签名、未公证；未完成真实访达、程序坞和安装更新验收。'
