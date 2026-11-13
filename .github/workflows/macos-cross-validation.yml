@@ -20,10 +20,10 @@ jobs:
             --header "Authorization: Bearer $GH_TOKEN" \
             --header 'Accept: application/octet-stream' \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
-            'https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/assets/744643531' \
+            'https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/assets/744738429' \
             --output "$RUNNER_TEMP/seal-macos-cross-test.dmg"
-          test "$(stat -c '%s' "$RUNNER_TEMP/seal-macos-cross-test.dmg")" = 232607241
-          printf '%s  %s\n' '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | sha256sum -c -
+          test "$(stat -c '%s' "$RUNNER_TEMP/seal-macos-cross-test.dmg")" = 229770761
+          printf '%s  %s\n' '0a6637557f66f912d79f668bd40855722b1220f8508cff534b8b670c3695de80' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | sha256sum -c -
       - uses: actions/upload-artifact@v4
         with:
           name: macos-cross-validation-input
@@ -59,9 +59,10 @@ jobs:
       - name: 再次核对本机测试包摘要
         run: |
           set -euo pipefail
-          test "$(stat -f '%z' "$RUNNER_TEMP/seal-macos-cross-test.dmg")" = 232607241
-          printf '%s  %s\n' '60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | shasum -a 256 -c -
+          test "$(stat -f '%z' "$RUNNER_TEMP/seal-macos-cross-test.dmg")" = 229770761
+          printf '%s  %s\n' '0a6637557f66f912d79f668bd40855722b1220f8508cff534b8b670c3695de80' "$RUNNER_TEMP/seal-macos-cross-test.dmg" | shasum -a 256 -c -
       - name: 验证本机测试包并启动应用
+        timeout-minutes: 8
         run: |
           set -euxo pipefail
           dmg="$RUNNER_TEMP/seal-macos-cross-test.dmg"
@@ -75,6 +76,15 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 2.7.2
           test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0.0
+          node - "$app" <<'NODE'
+          const fs = require('fs'), path = require('path'), plist = require('plist'), asar = require('@electron/asar'), crypto = require('crypto')
+          const root = path.join(process.argv[2], 'Contents'), info = plist.parse(fs.readFileSync(path.join(root, 'Info.plist'), 'utf8'))
+          const entry = info.ElectronAsarIntegrity, key = 'Resources/app.asar'
+          if (!entry || Object.keys(entry).length !== 1 || !entry[key]) throw Error('ASAR 完整性路径不正确')
+          const hash = crypto.createHash('sha256').update(asar.getRawHeader(path.join(root, key)).headerString).digest('hex')
+          if (entry[key].algorithm !== 'SHA256' || entry[key].hash !== hash) throw Error('ASAR 完整性摘要不正确')
+          console.log('ASAR 完整性路径和摘要通过')
+          NODE
           file "$app/Contents/MacOS/海豹办公" | grep arm64
           codesign --display --verbose=2 "$app"
           codesign --verify --deep --strict --verbose=2 "$app"

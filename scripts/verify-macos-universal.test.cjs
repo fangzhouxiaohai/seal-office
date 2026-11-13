@@ -67,7 +67,7 @@ test('草稿下载权限只授予不检出代码的独立任务', () => {
   assert.ok(下载.steps.every(step => !step.run || !/checkout|npm|node |python |bash |\.\/scripts\//.test(step.run)))
   assert.ok(下载.steps.some(step => step.uses === 'actions/upload-artifact@v4'))
   assert.ok(流程.jobs.merge.steps.some(step => step.uses === 'actions/download-artifact@v4'))
-  assert.ok(下载.steps.some(step => step.run?.includes('60ba1e86ab11833c07033087c82ed2374ab1181687545c0c9cc90257e0ebe53e') && step.run?.includes('ba2d413092f604d58a6de671e44d4788b6ceac15ff9ea2c85ebf01173f22d2c3')))
+  assert.ok(下载.steps.some(step => step.run?.includes('0a6637557f66f912d79f668bd40855722b1220f8508cff534b8b670c3695de80') && step.run?.includes('2d48f28992e721cd180e48ff0218142958b3238e315b46c78f57143420df8d16')))
 })
 
 test('只在隔离副本补齐两种原生模块并移除旧签名资源', t => {
