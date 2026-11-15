@@ -20,7 +20,8 @@
 - 云文档自动保存改为先生成文件字节并写回本机原文件，再加密上传云端；写回失败或文件已被其他程序修改时停止上传并显示中文原因，成功后更新文档指纹并清除未保存标记。云端文件已被删除时自动清除失效映射并按新文件重新上传，不再卡在“上传失败”。
 - Word 转 PDF 补齐与编辑区一致的正文样式（字体、14px 字号、1.75 行距、段距、A4 版心与页边距），打印前等待字体与图片就绪，`scale` 固定为 1 并按 CSS 纸张排版；系统打印栅格化分辨率提升到 300 DPI。实测导出为矢量文字并内嵌字体，页面无整图。
 - 新增 macOS arm64 DMG（`seal-office-2.7.3-macos.dmg`）：Windows 本机交叉构建，ad-hoc 临时签名、未公证，首次打开需在“系统设置 → 隐私与安全性”里选择“仍要打开”；未做真机 Gatekeeper 与安装验收，详见[本版发行验收记录](docs/verification/v2.7.3-release.md)。
-- 详见[2.7.3 功能修改说明](功能修改说明-v2.7.3.md)、[2.7.3 更新说明](docs/release-notes/v2.7.3.md)与[本版发行验收记录](docs/verification/v2.7.3-release.md)。
+- 各端安装包见 [GitHub 2.7.3 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.3) 与 [GitCode 2.7.3 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.3)，文件校验以 `release/v2.7.3/SHA256SUMS.txt` 为准；GitCode 的 8 个附件已逐个匿名下载核对字节，报告见[GitCode 发行校验](docs/verification/v2.7.3/gitcode-release.json)。
+- 详见[2.7.3 功能修改说明](功能修改说明-v2.7.3.md)、[2.7.3 更新说明](docs/release-notes/v2.7.3.md)、[2.7.3 功能特性介绍](docs/release-notes/v2.7.3-功能特性介绍.md)与[本版发行验收记录](docs/verification/v2.7.3-release.md)。
 
 ## 2.7.2 简洁模式、默认缩放与后台分平台更新
 
@@ -291,15 +292,17 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 ## 下载与平台交付
 
-当前源码为 **2.7.2 / 20702**。本次各平台产物、签名及交互验收状态见[2.7.2 发行验收](docs/verification/v2.7.2-release.md)。正式下载以 [GitHub 2.7.2 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.2)和 [GitCode 2.7.2 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.2)中的实际文件和校验清单为准。
+当前源码为 **2.7.3 / 20703**。本次各平台产物、签名及交互验收状态见[2.7.3 发行验收](docs/verification/v2.7.3-release.md)，功能与升级说明见[2.7.3 更新说明](docs/release-notes/v2.7.3.md)与[2.7.3 功能特性介绍](docs/release-notes/v2.7.3-功能特性介绍.md)。正式下载以 [GitHub 2.7.3 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.3)和 [GitCode 2.7.3 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.3)中的实际文件和校验清单为准。
 
-新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.2/`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Android APK、HarmonyOS HAP 和 Web ZIP。Android 正式包由根目录 Java 工程本机构建，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS 通用 DMG 支持 Apple Silicon 和 Intel，已上传到两个发行页，校验值见独立的 `SHA256SUMS-macos.txt`。包使用临时签名且未经苹果公证；首次打开可能需要在系统设置中确认。实体 Mac 的手工安装及更新流程尚未验收。后台已发布 macOS 更新，2.7.1 可检测到 2.7.2；已安装 2.7.2 的用户需要手动下载安装同号修订。安装运行、浏览器模拟和静态验包的范围分别记录。
+新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.3/`，校验值见同目录 `SHA256SUMS.txt`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 和 macOS arm64 DMG。Android 正式包由根目录 Java 工程本机构建并核对旧证书，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS DMG 由 Windows 本机交叉构建，只提供 Apple Silicon 架构，使用临时签名且未经苹果公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；本轮未做实体 Mac 安装与更新验收，后台暂未登记 macOS 更新记录。安装运行、浏览器模拟和静态验包的范围分别记录在验收报告中。
+
+GitCode 2.7.3 发行页的 8 个附件已逐个匿名下载核对字节，报告见[GitCode 发行校验](docs/verification/v2.7.3/gitcode-release.json)。同版本重装不会触发客户端自动更新，已安装旧版 2.7.3 的用户需要手动安装本次安装包；如需让客户端自动发现后续修复，请使用更高版本号发布。
 
 历史下载与设备核验保留在对应发行及报告中：[1.9.15 发布说明](docs/v1.9.15-发布与移动平台上架说明.md)、[Android 备案包信息](docs/v1.9.15-APP备案包信息.md)、[Ubuntu 版说明](docs/Ubuntu版安装与发布.md)、[Packages 说明](docs/GitHub-Packages发布.md)。历史成品的签名和平台状态不代表当前版本。
 
 ### 最新版介绍视频
 
-2.7.2 两条操作视频已在本机 `release/promo/` 交付：电脑横版 `seal-office-2.7.2-pc-intro-1080p.mp4` 为 1920×1080，安卓竖版 `seal-office-2.7.2-android-intro-1080p.mp4` 为 1080×1920。分镜见[当前版本分镜](docs/promo/current-storyboard.json)，来源、SHA-256 和完整验收见[本版视频记录](docs/verification/v2.7.2-tutorials/README.md)，制作入口为 `npm run promo:build`。两条均按最终 Web ZIP 和 APK 内资源重新录制，展示实际输入、编辑保存、简洁模式、默认缩放和更新检查；分别通过 20 项和 15 项功能断言，完整解码、字幕、音轨与代表画面检查通过。配音沿用晓晓、语速 +5%、音调 +4Hz。画面来自隔离浏览器宿主中的真实操作，未使用用户文档，不作为手机真机验收证明。
+2.7.3 本轮未重制介绍视频，`release/promo/` 仍为上一版 2.7.2 素材：电脑横版 `seal-office-2.7.2-pc-intro-1080p.mp4` 为 1920×1080，安卓竖版 `seal-office-2.7.2-android-intro-1080p.mp4` 为 1080×1920。分镜见[当前版本分镜](docs/promo/current-storyboard.json)，来源、SHA-256 和完整验收见[本版视频记录](docs/verification/v2.7.2-tutorials/README.md)，制作入口为 `npm run promo:build`。两条均按最终 Web ZIP 和 APK 内资源重新录制，展示实际输入、编辑保存、简洁模式、默认缩放和更新检查；分别通过 20 项和 15 项功能断言，完整解码、字幕、音轨与代表画面检查通过。配音沿用晓晓、语速 +5%、音调 +4Hz。画面来自隔离浏览器宿主中的真实操作，未使用用户文档，不作为手机真机验收证明。
 
 ### 右键新建与默认程序
 
@@ -596,7 +599,7 @@ renderer/src/
 
 ## 版本
 
-当前源码版本：2.7.2，移动构建号 20702。升级内容见上方“2.7.2 简洁模式、默认缩放与后台分平台更新”，实测范围见[本版发行验收](docs/verification/v2.7.2-release.md)；以下为仓库保留的历史版本记录。
+当前源码版本：2.7.3，移动构建号 20703。升级内容见上方“2.7.3 编辑区空间优化、简洁模式修正与 PDF 清晰度”，实测范围见[本版发行验收](docs/verification/v2.7.3-release.md)；以下为仓库保留的历史版本记录。
 
 ### v1.9.15（历史记录）
 
