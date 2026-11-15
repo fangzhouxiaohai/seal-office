@@ -20,7 +20,7 @@
 - 云文档自动保存改为先生成文件字节并写回本机原文件，再加密上传云端；写回失败或文件已被其他程序修改时停止上传并显示中文原因，成功后更新文档指纹并清除未保存标记。云端文件已被删除时自动清除失效映射并按新文件重新上传，不再卡在“上传失败”。
 - Word 转 PDF 补齐与编辑区一致的正文样式（字体、14px 字号、1.75 行距、段距、A4 版心与页边距），打印前等待字体与图片就绪，`scale` 固定为 1 并按 CSS 纸张排版；系统打印栅格化分辨率提升到 300 DPI。实测导出为矢量文字并内嵌字体，页面无整图。
 - 新增 macOS arm64 DMG（`seal-office-2.7.3-macos.dmg`）：Windows 本机交叉构建，ad-hoc 临时签名、未公证，首次打开需在“系统设置 → 隐私与安全性”里选择“仍要打开”；未做真机 Gatekeeper 与安装验收，详见[本版发行验收记录](docs/verification/v2.7.3-release.md)。
-- 各端安装包见 [GitHub 2.7.3 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.3) 与 [GitCode 2.7.3 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.3)，文件校验以 `release/v2.7.3/SHA256SUMS.txt` 为准；GitCode 的 8 个附件已逐个匿名下载核对字节，报告见[GitCode 发行校验](docs/verification/v2.7.3/gitcode-release.json)。
+- 各端安装包见 [GitHub 2.7.3 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.3) 与 [GitCode 2.7.3 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.3)，文件校验以 `release/v2.7.3/SHA256SUMS.txt` 为准；两个发行页的 8 个附件均已核对大小与 SHA-256：GitCode 逐个匿名下载比对字节，GitHub 以登记摘要与公开下载响应核对，报告见[GitCode 发行校验](docs/verification/v2.7.3/gitcode-release.json)与[GitHub 发行校验](docs/verification/v2.7.3/github-release.json)。
 - 详见[2.7.3 功能修改说明](功能修改说明-v2.7.3.md)、[2.7.3 更新说明](docs/release-notes/v2.7.3.md)、[2.7.3 功能特性介绍](docs/release-notes/v2.7.3-功能特性介绍.md)与[本版发行验收记录](docs/verification/v2.7.3-release.md)。
 
 ## 2.7.2 简洁模式、默认缩放与后台分平台更新
