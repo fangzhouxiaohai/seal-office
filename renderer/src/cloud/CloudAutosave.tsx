@@ -67,14 +67,35 @@ export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?:
           const 本地=await 桥接.saveToFile(本地路径,result.数据,'二进制',指纹)
           if(!本地?.成功)throw new Error(本地?.错误||'本机文件保存失败，已暂停云端同步')
           if(本地.文件指纹)active.更新文件指纹?.(id,本地.文件指纹)
+          // 本机文件已写入与快照一致的内容，保存标记应在此时清除；
+          // 写入期间若又有新修改（快照已不同）则保留未保存状态。
+          if(snapshotFor(latest.current,id)===snapshot){
+            try{
+              if(pdf){const 保存PDF=active.保存PDF文档;if(typeof 保存PDF==='function'&&pdf.path)保存PDF(id,pdf.path,pdf.data??'',pdf.文件指纹,pdf.警告)}
+              else if(doc){const 模型=doc.type==='table'?latest.current.表格文档模型[id]:doc.type==='ppt'?latest.current.演示文档模型[id]:undefined;active.markDocumentSaved?.(id,doc.html,模型===undefined?undefined:JSON.stringify(模型),{页面设置:doc.页面设置})}
+            }catch{}
+          }
         }
         if(owner.current!==accountId)return
-        const saved=await cloudCall('save',{linkId:originalName&&name!==originalName?path+'|'+name:path,name,data:result.数据,automatic:true,queueOnly:true})
+        const 链接标识=originalName&&name!==originalName?path+'|'+name:path
+        const 参数={linkId:链接标识,name,data:result.数据,automatic:true,queueOnly:true}
+        let saved=await cloudCall('save',参数)
         if(owner.current!==accountId)return
-        seen.current.set(id,snapshot);cloudIds.current.set(id,saved.id);setStatus(previous=>({...previous,[id]:saved.statuses[saved.id]||'离线待同步'}))
+        let 同步结果=await cloudCall('flush')
+        // 云端文件已被删除时，旧节点映射无法再上传；清掉映射后按新文件重新上传一次，
+        // 本地内容照常保留，不会一直停在“上传失败”。
+        if(同步结果?.errors?.some((项:{error?:string})=>String(项?.error||'').includes('云文件不存在或已删除'))){
+          await cloudCall('forget',{linkId:链接标识})
+          if(owner.current!==accountId)return
+          saved=await cloudCall('save',参数)
+          if(owner.current!==accountId)return
+          同步结果=await cloudCall('flush')
+        }
+        if(owner.current!==accountId)return
+        const 状态表=同步结果?.statuses??{}
+        seen.current.set(id,snapshot);cloudIds.current.set(id,saved.id);setStatus(previous=>({...previous,[id]:状态表[saved.id]||'离线待同步'}))
         setSaveErrors(previous=>{if(!previous[id])return previous;const next={...previous};delete next[id];return next})
         await refresh()
-        void cloudCall('flush').then(refresh).catch(()=>{})
       }catch(e){if(owner.current!==accountId)return;setSaveErrors(previous=>({...previous,[id]:e instanceof Error?e.message:'云端保存失败'}))}
     }
     const save=(id:string,_requestedSnapshot:string)=>{

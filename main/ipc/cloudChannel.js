@@ -42,7 +42,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     loginPassword:i=>service().loginPassword(i.phone,i.password),setPassword:i=>service().setPassword(i),
     deleteAccount:i=>service().deleteAccount(i),deletionStatus:()=>service().deletionStatus(),
     enable:i=>service().enable(i.consent),ackRecovery:()=>service().ackRecovery(),unlock:i=>service().unlock(i.recovery),autosave:i=>service().setAutosave(i.enabled),purge:i=>service().purge(i.code),
-    list:()=>service().list(),folder:i=>service().folder(i.name,i.parent,i.kind),save:i=>service().save(i),flush:()=>service().flush(),
+    list:()=>service().list(),folder:i=>service().folder(i.name,i.parent,i.kind),save:i=>service().save(i),flush:()=>service().flush(),forget:i=>service().forget(i.linkId),
     pending:()=>service().pending(),keepConflict:i=>service().keepConflict(i.id),discardPending:i=>service().discardPending(i.id),counts:()=>service().request('/v1/space/counts'),
     exportPending:async i=>{const file=service().pendingFile(i.id),selected=await dialog.showSaveDialog({title:'导出待同步文件',defaultPath:path.basename(file.name)});if(selected.canceled||!selected.filePath)return {cancelled:true};fs.writeFileSync(selected.filePath,Buffer.from(file.data,'base64'));return {path:selected.filePath}},
     update:i=>service().update(i.id,i.changes),remove:i=>service().remove(i.id,i.destroy),restore:i=>service().restore(i.id),copy:i=>service().copy(i.id,i.parent),versions:i=>service().versions(i.id),
