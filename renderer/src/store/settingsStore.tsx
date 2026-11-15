@@ -38,8 +38,11 @@ export interface SettingsState {
 
 const SettingsContext = createContext<SettingsState | null>(null)
 interface 显示偏好 { 简洁模式: boolean; 默认放大: boolean }
-const 默认显示偏好: 显示偏好 = { 简洁模式: true, 默认放大: false }
+const 默认显示偏好: 显示偏好 = { 简洁模式: false, 默认放大: false }
 const 显示偏好存储键 = 'seal-display-preferences'
+/** 显示偏好记录版本：2.7.3 起简洁模式默认关闭，旧记录一次性迁移到关闭 */
+const 显示偏好版本 = 2
+interface 显示偏好记录 extends 显示偏好 { 版本?: number }
 export interface 文档缩放记录 { 初始: number; 手动比例: Map<string, number> }
 const 文件缩放上下文 = createContext<Map<string, 文档缩放记录> | null>(null)
 interface 设置错误 { 标题: string; 内容: string }
@@ -78,9 +81,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     try {
       const 记录 = localStorage.getItem(显示偏好存储键)
       if (记录 === null) return { 值: 默认显示偏好, 错误: null }
-      const 值 = JSON.parse(记录) as Partial<显示偏好> | null
+      const 值 = JSON.parse(记录) as Partial<显示偏好记录> | null
       if (!值 || typeof 值.简洁模式 !== 'boolean' || typeof 值.默认放大 !== 'boolean') {
         throw new Error('本机显示设置格式无效')
+      }
+      // 旧版本默认开启简洁模式，升级后按新默认一次性关闭；默认放大偏好保留不动。
+      if (值.版本 !== 显示偏好版本) {
+        const 迁移后: 显示偏好 = { 简洁模式: false, 默认放大: 值.默认放大 }
+        try {
+          localStorage.setItem(显示偏好存储键, JSON.stringify({ ...迁移后, 版本: 显示偏好版本 }))
+        } catch {
+          // 写入失败时本次仍按新默认运行，下次启动重新尝试迁移
+        }
+        return { 值: 迁移后, 错误: null }
       }
       return { 值: { 简洁模式: 值.简洁模式, 默认放大: 值.默认放大 }, 错误: null }
     } catch (原因) {
@@ -96,7 +109,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const 保存显示设置 = (更新: Partial<显示偏好>) => {
     const 下一个 = { ...显示偏好引用.current, ...更新 }
     try {
-      localStorage.setItem(显示偏好存储键, JSON.stringify(下一个))
+      localStorage.setItem(显示偏好存储键, JSON.stringify({ ...下一个, 版本: 显示偏好版本 }))
     } catch (原因) {
       set错误({ 标题: '保存显示设置失败', 内容: 原因 instanceof Error ? 原因.message : '无法写入本机显示设置' })
       return

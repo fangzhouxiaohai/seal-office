@@ -59,6 +59,15 @@ export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?:
         else{const model=htmlToDocxModel(doc.html,doc.页面设置);if(model.未覆盖.length)throw new Error('文档含无法完整写回的内容，请先另存副本');result=await 桥接.office.writeDocx(model);if(!/\.docx$/i.test(name))name=name.replace(/\.[^.]+$/,'')+'.docx'}
         if(!result?.成功||!result.数据)throw new Error(result?.错误||'文件转换失败')
         const path=pdf?.path||active.文档路径[id]||id,originalName=doc?.name||pdf?.name
+        // 开启云端自动保存时先把这份快照写回本机文件，再上传云端。
+        // 本机写入失败或文件已被其他程序修改时停止上传，避免云端与本机内容不一致。
+        const 本地路径=pdf?.path||active.文档路径[id]||doc?.来源路径
+        if(本地路径&&桥接.可用){
+          const 指纹=pdf?.文件指纹??doc?.文件指纹
+          const 本地=await 桥接.saveToFile(本地路径,result.数据,'二进制',指纹)
+          if(!本地?.成功)throw new Error(本地?.错误||'本机文件保存失败，已暂停云端同步')
+          if(本地.文件指纹)active.更新文件指纹?.(id,本地.文件指纹)
+        }
         if(owner.current!==accountId)return
         const saved=await cloudCall('save',{linkId:originalName&&name!==originalName?path+'|'+name:path,name,data:result.数据,automatic:true,queueOnly:true})
         if(owner.current!==accountId)return
@@ -120,7 +129,7 @@ export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?:
     const 同步状态=state.statuses[cloudIds.current.get(current)||'']||status[current]
     const 错误=draftErrors[current]||saveErrors[current]||syncErrors[current]||(同步状态&&!常规同步状态.has(同步状态)?同步状态:undefined)
     if(简洁模式&&!错误)return null
-    return <div className="seal-cloud-banner" role="status"><span>{错误||同步状态||'云文档自动保存已开启，内容变动后加密同步'}</span><Button size="small" onClick={()=>{void 立即同步()}}>立即同步</Button></div>
+    return <div className="seal-cloud-banner" role="status"><span>{错误||同步状态||'云文档自动保存已开启，先保存本机文件再加密同步'}</span><Button size="small" onClick={()=>{void 立即同步()}}>立即同步</Button></div>
   }
   if(简洁模式||!dirty||dismissed===current||dismissedIds.current.has(current))return null
   return <div className="seal-cloud-banner"><span>开启云文档自动保存，在不同设备继续编辑；文件加密上传，由你决定是否开启。</span><Button size="small" onClick={configure}>开启云端能力</Button><Button size="small" type="text" aria-label="关闭云端提示" onClick={()=>{dismissedIds.current.add(current);setDismissed(current)}}>关闭</Button></div>

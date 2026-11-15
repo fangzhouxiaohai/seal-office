@@ -8,7 +8,7 @@ import { 载入PDF } from '../pdf/pdfLoader'
  * 这里改为在渲染层用 pdf.js 画出每一页，再交给普通 HTML 打印，保证与预览一致。
  */
 export interface 打印页面选项 {
-  /** 打印分辨率，默认 200 DPI；超长文档自动降到 150 DPI 控制内存。 */
+  /** 打印分辨率，默认 300 DPI；超长文档自动降到 200 DPI 控制内存。 */
   dpi?: number
   on进度?: (当前: number, 总数: number) => void
   是否取消?: () => boolean
@@ -53,7 +53,7 @@ export async function 生成打印页面HTML(pdf数据: string, 标题 = '打印
   const { 文档, 关闭 } = await 载入PDF(pdf数据)
   try {
     const 总数 = 文档.numPages
-    const dpi = 选项.dpi ?? (总数 > 80 ? 150 : 200)
+    const dpi = 选项.dpi ?? (总数 > 80 ? 200 : 300)
     const 页面: Array<{ 图片: string; 宽pt: number; 高pt: number }> = []
     for (let 页码 = 1; 页码 <= 总数; 页码 += 1) {
       if (选项.是否取消?.()) throw new Error('打印已取消')

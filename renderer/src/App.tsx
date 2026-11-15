@@ -4,7 +4,7 @@ import { 页面设置相同 } from './office/docModel'
 import { 演示内容快照 } from './ppt/model/migrations'
 import CollaborationSaveBanner from './collaboration/CollaborationSaveBanner'
 import CollaborationLinkEntry from './collaboration/CollaborationLinkEntry'
-import { App as AntdApp, ConfigProvider, Modal, theme as antdTheme } from 'antd'
+import { App as AntdApp, ConfigProvider, Modal, Tooltip, theme as antdTheme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import enUS from 'antd/locale/en_US'
 import { AppProvider, useAppStore } from './store'
@@ -40,7 +40,7 @@ import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, use文件缩放缓存, useSettings } from './store/settingsStore'
 import { 默认皮肤标识, 皮肤主题令牌, type 皮肤定义 } from './styles/themes'
-import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
+import { InterfaceLanguageAdapter, 翻译界面文本 } from './i18n/interfaceLanguage'
 import { RibbonActionsContext } from './editor/ribbon/RibbonActionsContext'
 import './fonts/fonts.css'
 
@@ -132,8 +132,12 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   const 页面组件 = 当前模块.page
 
   // 桌面端编辑器删除顶栏后，五个图标迁入 RibbonTabs 右侧。
-  // 移动端保留顶栏，不注入此 Context 值；首页和简洁工作区同理。
-  const 是桌面编辑器 = !是首页 && !是移动端 && !简洁工作区
+  // 移动端保留顶栏，不注入此 Context 值；首页和非编辑页（设置中心、帮助手册）仍用顶栏。
+  const 是编辑模块 = module === 'word' || module === 'table' || module === 'ppt' || module === 'pdf'
+  // 桌面端编辑模块（含简洁模式）一律不渲染独立顶栏；PDF 没有 Ribbon，因此不显示任何顶部按钮。
+  const 是桌面编辑器 = 是编辑模块 && !是移动端
+  // 设置中心、帮助手册等非编辑页保留桌面顶栏，编辑器以外的页面不受本次改动影响。
+  const 显示桌面顶栏 = !是首页 && !是移动端 && !是编辑模块
   const 编辑器图标道具 = React.useMemo<EditorRibbonActionsProps>(() => ({
     onCloud: cloud.configure,
     onShowSettings: showSettings,
@@ -145,9 +149,35 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
     on切换语言: 设置语言,
   }), [cloud.configure, showSettings, 主题, 切换主题, 语言, 设置语言])
 
-  const 编辑器图标节点 = 是桌面编辑器
-    ? React.createElement(EditorRibbonActions, 编辑器图标道具)
-    : undefined
+  // 简洁模式只保留「返回首页」「设置中心」两个按钮，与普通模式一样放在 Ribbon 标签行右侧；
+  // PDF 没有 Ribbon 标签行，因此无论是否简洁模式都不显示这些按钮。
+  const 简洁导航按钮 = (标签: string, 图标: string, 点击: () => void) =>
+    React.createElement(
+      Tooltip,
+      { title: 翻译界面文本(标签, 语言) },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button',
+          'aria-label': 翻译界面文本(标签, 语言),
+          title: 翻译界面文本(标签, 语言),
+          onClick: 点击,
+        },
+        React.createElement(Icon, { name: 图标, size: 18 })
+      )
+    )
+  const 编辑器图标节点 = React.useMemo(() => !是桌面编辑器 || module === 'pdf'
+    ? undefined
+    : 简洁工作区
+      ? React.createElement(
+          React.Fragment,
+          null,
+          简洁导航按钮('返回首页', 'home', goHome),
+          简洁导航按钮('设置中心', 'sliders', showSettings),
+        )
+      : React.createElement(EditorRibbonActions, 编辑器图标道具),
+  [是桌面编辑器, module, 简洁工作区, 语言, 编辑器图标道具, goHome, showSettings])
 
   useEffect(() => {
     const 打开字体设置 = () => showSettings()
@@ -421,12 +451,9 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
     React.createElement(
     'div',
     { className: 'wps-app', 'data-module': module, 'data-compact-workspace': 简洁工作区 || undefined },
-    简洁工作区 ? React.createElement(
-      'nav',
-      { className: 'wps-workspace-navigation', 'aria-label': '工作区导航' },
-      React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '返回首页', title: '返回首页', onClick: goHome }, React.createElement(Icon, { name: 'home', size: 18 })),
-      React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '设置中心', title: '设置中心', onClick: showSettings }, React.createElement(Icon, { name: 'sliders', size: 18 })),
-    ) : 是首页 ? React.createElement(TitleBar, {
+    // 简洁模式原有「返回首页/设置中心」导航行已彻底删除，两个按钮迁入
+    // RibbonTabs 右侧（随编辑器图标节点一起注入），不再独占顶部一整行。
+    是首页 ? React.createElement(TitleBar, {
       pageName: 当前模块.label,
       onHelp: () => set帮助弹窗打开(true),
       onShowSettings: showSettings,
@@ -444,6 +471,20 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       语言,
       on切换语言: 设置语言,
     }) : 是移动端 ? React.createElement(TitleBar, {
+      pageName: 当前模块.label,
+      documentName: 当前文档名,
+      onHelp: () => set帮助弹窗打开(true),
+      onShowSettings: showSettings,
+      onShowHelp: () => set帮助弹窗打开(true),
+      onCloud: cloud.configure,
+      onLogin: cloud.configure,
+      homeMode: false,
+      on关于: () => set关于弹窗打开(true),
+      主题深色: 主题 === '深色',
+      on切换主题: 切换主题,
+      语言,
+      on切换语言: 设置语言,
+    }) : 显示桌面顶栏 ? React.createElement(TitleBar, {
       pageName: 当前模块.label,
       documentName: 当前文档名,
       onHelp: () => set帮助弹窗打开(true),

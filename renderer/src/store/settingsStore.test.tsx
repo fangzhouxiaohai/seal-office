@@ -23,6 +23,7 @@ describe('显示偏好存储错误', () => {
   })
 
   it('保存失败时保留原设置并显示错误弹窗', async () => {
+    localStorage.setItem('seal-display-preferences', JSON.stringify({ 简洁模式: true, 默认放大: false, 版本: 2 }))
     const 原写入 = Storage.prototype.setItem
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, 键: string, 值: string) {
       if (键 === 'seal-display-preferences') throw new Error('显示记录不可写')
@@ -33,6 +34,28 @@ describe('显示偏好存储错误', () => {
     fireEvent.click(开关)
     expect(await screen.findByRole('dialog', { name: '保存显示设置失败' })).toHaveTextContent('显示记录不可写')
     expect(开关).toHaveAttribute('aria-pressed', 'true')
+    localStorage.removeItem('seal-display-preferences')
+  })
+
+  it('没有本机记录时简洁模式默认关闭', () => {
+    localStorage.removeItem('seal-display-preferences')
+    挂载()
+    expect(screen.getByRole('button', { name: '切换简洁模式' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('旧版本记录一次性迁移为简洁模式关闭并保留默认放大偏好', () => {
+    localStorage.setItem('seal-display-preferences', JSON.stringify({ 简洁模式: true, 默认放大: true }))
+    挂载()
+    expect(screen.getByRole('button', { name: '切换简洁模式' })).toHaveAttribute('aria-pressed', 'false')
+    expect(JSON.parse(localStorage.getItem('seal-display-preferences') ?? '{}')).toEqual({ 简洁模式: false, 默认放大: true, 版本: 2 })
+    localStorage.removeItem('seal-display-preferences')
+  })
+
+  it('新版本记录里手动开启的简洁模式重启后保持开启', () => {
+    localStorage.setItem('seal-display-preferences', JSON.stringify({ 简洁模式: true, 默认放大: false, 版本: 2 }))
+    挂载()
+    expect(screen.getByRole('button', { name: '切换简洁模式' })).toHaveAttribute('aria-pressed', 'true')
+    localStorage.removeItem('seal-display-preferences')
   })
 })
 

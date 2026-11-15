@@ -57,7 +57,9 @@ export default function MobileNavigation() {
     const frames: number[] = []
     const workspacePainted = () => {
       if (document.querySelector('.startup-screen') || !document.querySelector('.seal-mobile-nav')) return false
-      const header = document.querySelector('.wps-app .wps-titlebar, .wps-app[data-compact-workspace="true"] .wps-workspace-navigation')
+      // 简洁模式的顶部操作已并入功能区标签行，不再有独立导航行；PDF 等无功能区的页面
+      // 以主内容区作为已绘制标志，避免原生启动画面一直等待已删除的元素。
+      const header = document.querySelector('.wps-app .wps-titlebar, .wps-app[data-compact-workspace="true"] .wps-ribbon-tabs, .wps-app[data-compact-workspace="true"] .wps-main')
       return header !== null && visible(header)
     }
     const report = () => {

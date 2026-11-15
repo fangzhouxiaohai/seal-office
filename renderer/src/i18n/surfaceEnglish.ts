@@ -12,7 +12,7 @@ export const 补充英文界面: Record<string, string> = {
   'Enter 发送 · Shift+Enter 换行': 'Enter to send · Shift+Enter for a new line',
   'Ctrl+Enter 发送': 'Ctrl+Enter to send',
   '保存设置': 'Save settings',
-  '云文档自动保存已开启，内容变动后加密同步': 'Cloud autosave is on. Changes are encrypted and synced.',
+  '云文档自动保存已开启，先保存本机文件再加密同步': 'Cloud autosave is on. Each change is saved to the local file first, then encrypted and synced.',
   '办公服务': 'Office services',
   '常用工具': 'Popular tools',
   '协作与资料': 'Collaboration and resources',
