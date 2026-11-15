@@ -345,16 +345,18 @@ describe('编辑器容器', () => {
 
   it('默认展示开始标签的功能组', () => {
     渲染编辑器()
-    expect(screen.getByText('剪贴板')).toBeInTheDocument()
-    expect(screen.getByText('字体')).toBeInTheDocument()
+    // 分组名称行已删除，改为验证功能按钮而非分组文字
+    expect(screen.getByRole('button', { name: '粘贴' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '加粗' })).toBeInTheDocument()
   })
 
   it('点击插入标签后功能区切换', async () => {
     渲染编辑器()
     await userEvent.click(screen.getByRole('tab', { name: '插入' }))
     const 功能区 = document.querySelector('.wps-ribbon-panel') as HTMLElement
-    expect(within(功能区).queryByText('剪贴板')).toBeNull()
-    expect(within(功能区).getByText('插图')).toBeInTheDocument()
+    // 分组名称行已删除，改为通过功能按钮区分标签内容
+    expect(within(功能区).queryByRole('button', { name: '粘贴' })).toBeNull()
+    expect(within(功能区).getByRole('button', { name: '图片' })).toBeInTheDocument()
   })
 
   it('点击翻译命令打开翻译面板', async () => {

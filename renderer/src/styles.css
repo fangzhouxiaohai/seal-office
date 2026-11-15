@@ -1020,7 +1020,7 @@ button {
 /* Ribbon 标签行 */
 .wps-ribbon-tabs {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   flex: 0 0 auto;
   height: 36px;
   padding: 0 8px;
@@ -1080,12 +1080,16 @@ button {
   min-height: 62px;
 }
 
-.wps-ribbon-group__name {
-  flex: 0 0 auto;
-  padding: 2px 0 4px;
-  text-align: center;
-  color: var(--text-3);
-  font-size: 12px;
+/* wps-ribbon-group__name 已彻底删除，桌面端与移动端均不渲染 */
+
+/* Ribbon 标签行右侧图标区 */
+.wps-ribbon-tabs__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex-shrink: 0;
 }
 
 /* Ribbon 按钮 */

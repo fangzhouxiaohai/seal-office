@@ -10,7 +10,7 @@ import enUS from 'antd/locale/en_US'
 import { AppProvider, useAppStore } from './store'
 import { MODULES } from './routes'
 import { NEW_DOC_NAMES } from './navConfig'
-import TitleBar from './components/TitleBar'
+import TitleBar, { EditorRibbonActions, type EditorRibbonActionsProps } from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import HomeRail from './components/HomeRail'
 import HomeSidebar from './components/HomeSidebar'
@@ -41,6 +41,7 @@ import { useIconPlatform } from './components/IconPlatform'
 import { SettingsErrorFeedback, SettingsProvider, use文件缩放缓存, useSettings } from './store/settingsStore'
 import { 默认皮肤标识, 皮肤主题令牌, type 皮肤定义 } from './styles/themes'
 import { InterfaceLanguageAdapter } from './i18n/interfaceLanguage'
+import { RibbonActionsContext } from './editor/ribbon/RibbonActionsContext'
 import './fonts/fonts.css'
 
 /** 动态 Ant Design 主题配置 */
@@ -94,6 +95,7 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   const { 主题, 切换主题, 语言, 设置语言, 简洁模式 } = useSettings()
   const 文件缩放缓存 = use文件缩放缓存()
   const cloud = useCloud()
+  const 是移动端 = useIconPlatform() === 'mobile'
 
   const 是首页 = module === 'home'
   const 简洁工作区 = 简洁模式 && (module === 'word' || module === 'table' || module === 'ppt' || module === 'pdf')
@@ -128,6 +130,24 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   }, [module, documents, activeDocumentId, PDF待预览])
 
   const 页面组件 = 当前模块.page
+
+  // 桌面端编辑器删除顶栏后，五个图标迁入 RibbonTabs 右侧。
+  // 移动端保留顶栏，不注入此 Context 值；首页和简洁工作区同理。
+  const 是桌面编辑器 = !是首页 && !是移动端 && !简洁工作区
+  const 编辑器图标道具 = React.useMemo<EditorRibbonActionsProps>(() => ({
+    onCloud: cloud.configure,
+    onShowSettings: showSettings,
+    onShowHelp: () => set帮助弹窗打开(true),
+    on关于: () => set关于弹窗打开(true),
+    主题深色: 主题 === '深色',
+    on切换主题: 切换主题,
+    语言,
+    on切换语言: 设置语言,
+  }), [cloud.configure, showSettings, 主题, 切换主题, 语言, 设置语言])
+
+  const 编辑器图标节点 = 是桌面编辑器
+    ? React.createElement(EditorRibbonActions, 编辑器图标道具)
+    : undefined
 
   useEffect(() => {
     const 打开字体设置 = () => showSettings()
@@ -396,6 +416,9 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   }
 
   return React.createElement(
+    RibbonActionsContext.Provider,
+    { value: 编辑器图标节点 },
+    React.createElement(
     'div',
     { className: 'wps-app', 'data-module': module, 'data-compact-workspace': 简洁工作区 || undefined },
     简洁工作区 ? React.createElement(
@@ -403,15 +426,14 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       { className: 'wps-workspace-navigation', 'aria-label': '工作区导航' },
       React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '返回首页', title: '返回首页', onClick: goHome }, React.createElement(Icon, { name: 'home', size: 18 })),
       React.createElement('button', { type: 'button', className: 'wps-icon-button', 'aria-label': '设置中心', title: '设置中心', onClick: showSettings }, React.createElement(Icon, { name: 'sliders', size: 18 })),
-    ) : React.createElement(TitleBar, {
+    ) : 是首页 ? React.createElement(TitleBar, {
       pageName: 当前模块.label,
-      documentName: 当前文档名,
       onHelp: () => set帮助弹窗打开(true),
       onShowSettings: showSettings,
       onShowHelp: () => set帮助弹窗打开(true),
       onCloud: cloud.configure,
       onLogin: cloud.configure,
-      homeMode: 是首页,
+      homeMode: true,
       搜索词,
       on搜索变化: set搜索词,
       on通知: () => set通知弹窗打开(true),
@@ -421,7 +443,21 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       on切换主题: 切换主题,
       语言,
       on切换语言: 设置语言,
-    }),
+    }) : 是移动端 ? React.createElement(TitleBar, {
+      pageName: 当前模块.label,
+      documentName: 当前文档名,
+      onHelp: () => set帮助弹窗打开(true),
+      onShowSettings: showSettings,
+      onShowHelp: () => set帮助弹窗打开(true),
+      onCloud: cloud.configure,
+      onLogin: cloud.configure,
+      homeMode: false,
+      on关于: () => set关于弹窗打开(true),
+      主题深色: 主题 === '深色',
+      on切换主题: 切换主题,
+      语言,
+      on切换语言: 设置语言,
+    }) : null,  // 桌面端编辑器：顶栏整行删除，图标已迁入 RibbonTabs 右侧
     React.createElement<{ 简洁模式?: boolean }>(CloudAutosave, { 简洁模式: 简洁工作区 }),
     React.createElement(CollaborationLinkEntry),
     React.createElement(CollaborationSaveBanner),
@@ -547,7 +583,7 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
     React.createElement(AssociatedFileOpener, null),
     React.createElement(DefaultAppPrompt, null),
     React.createElement(UpdateCard, null)
-  )
+  ))
 }
 
 /** 在当前主题下创建组件库上下文，使弹窗和表单也随主题切换。 */

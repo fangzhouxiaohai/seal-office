@@ -5,6 +5,7 @@ import { App as AntdApp } from 'antd'
 import { HistoryStack } from '../editor/history'
 import { 桥接 } from '../ipc/bridge'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
+import { useRibbonActions } from '../editor/ribbon/RibbonActionsContext'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 表格标签 } from './ribbonSpecs'
 import { 查找表格命令, type 表格命令上下文, type 选区范围 } from './sheetCommands'
@@ -140,6 +141,7 @@ const SheetEditor = () => {
     }
   }
   const [当前标签, set当前标签] = useState('start')
+  const 右侧图标 = useRibbonActions()
   const [图表打开, set图表打开] = useState(false)
   useEffect(() => set图表打开(false), [activeDocumentId, 当前索引])
   const [打印预览, set打印预览] = useState<{ 内容: string; 标题: string } | null>(null)
@@ -1202,6 +1204,7 @@ const SheetEditor = () => {
       activeKey: 当前标签,
       onChange: set当前标签,
       tabs: 表格标签,
+      右侧图标,
     }),
     React.createElement(RibbonPanel, {
       缩放,

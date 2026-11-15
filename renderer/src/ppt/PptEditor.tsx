@@ -25,6 +25,7 @@ import { 可保存扩展, 原生文档类型 } from '../fileFormats'
 import { 写出办公文档 } from '../office/writeDocument'
 import { 下载文本 } from '../editor/exportDoc'
 import RibbonTabs from '../editor/ribbon/RibbonTabs'
+import { useRibbonActions } from '../editor/ribbon/RibbonActionsContext'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 演示标签 } from './ribbonSpecs'
 import { 查找演示命令, type 演示命令上下文 } from './pptCommands'
@@ -143,6 +144,7 @@ const PptEditor = () => {
   const [编辑值, set编辑值] = useState('')
   const 文字草稿 = useRef<{ 标识: string; 页标识: string; 值: string; 组合中: boolean } | null>(null)
   const [当前标签, set当前标签] = useState('start')
+  const 右侧图标 = useRibbonActions()
   const 对象剪贴板 = useRef<{ documentId: string; page: import('./deck').幻灯片 } | null>(null)
   const [工具区, set工具区] = useState<工具区>('截屏')
   const [识别状态, set识别状态] = useState<{ 可用: boolean; 原因?: string }>({ 可用: false, 原因: '正在读取识别服务状态' })
@@ -1372,7 +1374,7 @@ const PptEditor = () => {
     React.createElement('input', { ref: 媒体输入, type: 'file', accept: 媒体选择类型, hidden: true, 'aria-label': '选择音频或视频文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 插入媒体(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     React.createElement('input', { ref: 音效输入, type: 'file', accept: 音频选择类型, hidden: true, 'aria-label': '选择切换音效文件', onChange: (事件: React.ChangeEvent<HTMLInputElement>) => { void 更换音效(Array.from(事件.target.files ?? [])); 事件.target.value = '' } }),
     保护查看 ? React.createElement(仅查看提示条, { 警告: 当前文档?.警告, 另存副本: () => 执行命令('file.saveAs') }) : null,
-    React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签 }),
+    React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, tabs: 演示标签, 右侧图标 }),
     React.createElement(RibbonPanel, {
       缩放,
       activeKey: 当前标签,
