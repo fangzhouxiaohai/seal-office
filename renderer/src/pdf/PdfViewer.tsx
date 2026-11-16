@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
-import { 载入PDF } from './pdfLoader'
+import { 载入PDF, 解码PDF数据, 编码PDF数据 } from './pdfLoader'
+import { 优化PDF大图 } from './pdfOptimize'
 import Icon from '../components/Icon'
 import { use文件缩放, use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
@@ -291,10 +292,19 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
       return
     }
     set状态('加载中')
-    void 载入PDF(数据).then((结果) => {
-      if (已取消) {
+    void (async () => {
+      // 超大扫描页（单页面积或单边远超常规纸张）先缩小位图再交给渲染器：
+      // 这类文件的原图常超过浏览器单边 32767 像素上限，pdf.js 解码失败会显示空白。
+      let 结果 = await 载入PDF(数据)
+      if (已取消) { 结果.关闭(); return }
+      const 首尺寸 = await 结果.文档.getPage(1).then((首) => 首.getViewport({ scale: 1 })).catch(() => null)
+      const 超大 = Boolean(首尺寸) && (首尺寸!.width * 首尺寸!.height > 30_000_000 || Math.max(首尺寸!.width, 首尺寸!.height) > 16000)
+      if (超大) {
         结果.关闭()
-        return
+        const 优化 = await 优化PDF大图(解码PDF数据(数据)).catch(() => null)
+        if (已取消) return
+        结果 = await 载入PDF(优化?.已优化 ? 编码PDF数据(优化.数据) : 数据)
+        if (已取消) { 结果.关闭(); return }
       }
       关闭文档 = 结果.关闭
       set文档(结果.文档)
@@ -306,7 +316,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
         (_, 索引) => 索引 + 1,
       )))
       set状态('就绪')
-    }).catch((错误: unknown) => {
+    })().catch((错误: unknown) => {
       if (已取消) return
       set状态('失败')
       报错回调.current?.(`无法打开「${文件名引用.current}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)

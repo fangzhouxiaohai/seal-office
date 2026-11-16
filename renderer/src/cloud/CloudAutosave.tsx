@@ -10,9 +10,19 @@ import {桥接} from '../ipc/bridge'
 import {registerCloudFlush} from './autosaveLifecycle'
 import {文字文本输出} from '../editor/exportDoc'
 import {getFileBinding} from '../collaboration/fileAccess'
+import {注册云端重试,设置云端状态,type 云端状态} from './cloudStatus'
 const binaryText=(text:string)=>{const data=new TextEncoder().encode(text);let result='';for(let i=0;i<data.length;i+=16384)result+=String.fromCharCode(...data.subarray(i,i+16384));return btoa(result)}
 const 常规同步状态 = new Set(['离线待同步', '加密上传中', '云端已保存'])
-export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?: boolean } = {}){
+/** 把服务端状态与本地错误合并成徽标上的一句短语 */
+function 徽标状态(标识:string,错误?:string,同步状态?:string):云端状态{
+  if(错误)return {文档标识:标识,文本:'同步失败',级别:'错误',可重试:true,详情:错误}
+  if(同步状态==='云端已保存')return {文档标识:标识,文本:'云端已保存',级别:'正常',可重试:false}
+  if(同步状态==='加密上传中')return {文档标识:标识,文本:'正在同步',级别:'进行中',可重试:false}
+  if(同步状态==='离线待同步')return {文档标识:标识,文本:'待同步',级别:'进行中',可重试:false}
+  if(同步状态&&!常规同步状态.has(同步状态))return {文档标识:标识,文本:'同步失败',级别:'错误',可重试:true}
+  return {文档标识:标识,文本:'云端已开启',级别:'正常',可重试:false}
+}
+export default function CloudAutosave({ 简洁模式 = false, 状态徽标 = false }: { 简洁模式?: boolean; 状态徽标?: boolean } = {}){
   const store=useAppStore(),{state,refresh,configure}=useCloud(),[dismissed,setDismissed]=useState<string|null>(null),[status,setStatus]=useState<Record<string,string>>({}),latest=useRef(store),seen=useRef(new Map<string,string>()),timers=useRef(new Map<string,ReturnType<typeof setTimeout>>())
   const owner=useRef(state.account?.id);owner.current=state.account?.id
   const [draftErrors,setDraftErrors]=useState<Record<string,string>>({})
@@ -145,10 +155,27 @@ export default function CloudAutosave({ 简洁模式 = false }: { 简洁模式?:
       setSyncErrors(previous=>{if(!previous[current])return previous;const next={...previous};delete next[current];return next})
     }catch(e){if(owner.current===accountId)setSyncErrors(previous=>({...previous,[current]:e instanceof Error?e.message:'云端同步失败'}))}
   }
-  if(!editing||getFileBinding(store.pdfDocuments.find(doc=>doc.id===current)?.path||store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))return null
+  const 绑定文件 = Boolean(getFileBinding(store.pdfDocuments.find(doc=>doc.id===current)?.path||store.文档路径[current]||store.documents.find(doc=>doc.id===current)?.来源路径||''))
+  const 同步状态 = state.statuses[cloudIds.current.get(current)||'']||status[current]
+  const 错误 = draftErrors[current]||saveErrors[current]||syncErrors[current]||(同步状态&&!常规同步状态.has(同步状态)?同步状态:undefined)
+  const 自动保存开启 = Boolean(state.account?.autosave)
+  const 同步引用 = useRef(立即同步)
+  同步引用.current = 立即同步
+  // 桌面端编辑器：状态改由功能区标签行的圆角徽标显示，不再占用编辑区顶部一行
+  useEffect(()=>{
+    if(状态徽标&&editing&&!绑定文件&&自动保存开启) 设置云端状态(徽标状态(current,错误,同步状态))
+    else 设置云端状态(null)
+  },[状态徽标,editing,绑定文件,自动保存开启,current,错误,同步状态])
+  useEffect(()=>{
+    if(!状态徽标)return
+    注册云端重试(()=>{void 同步引用.current()})
+    return ()=>注册云端重试(null)
+  },[状态徽标])
+  useEffect(()=>()=>设置云端状态(null),[])
+  if(绑定文件)return null
+  if(状态徽标)return null
+  if(!editing)return null
   if(state.account?.autosave){
-    const 同步状态=state.statuses[cloudIds.current.get(current)||'']||status[current]
-    const 错误=draftErrors[current]||saveErrors[current]||syncErrors[current]||(同步状态&&!常规同步状态.has(同步状态)?同步状态:undefined)
     if(简洁模式&&!错误)return null
     return <div className="seal-cloud-banner" role="status"><span>{错误||同步状态||'云文档自动保存已开启，先保存本机文件再加密同步'}</span><Button size="small" onClick={()=>{void 立即同步()}}>立即同步</Button></div>
   }

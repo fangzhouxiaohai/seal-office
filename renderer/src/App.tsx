@@ -35,6 +35,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Icon from './components/Icon'
 import {CloudProvider,useCloud} from './cloud/CloudProvider'
 import CloudAutosave from './cloud/CloudAutosave'
+import CloudStatusPill from './cloud/CloudStatusPill'
 import {flushCloudBeforeClose} from './cloud/autosaveLifecycle'
 import './cloud/cloud.css'
 import { useIconPlatform } from './components/IconPlatform'
@@ -173,10 +174,16 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       ? React.createElement(
           React.Fragment,
           null,
+          React.createElement(CloudStatusPill),
           简洁导航按钮('返回首页', 'home', goHome),
           简洁导航按钮('设置中心', 'sliders', showSettings),
         )
-      : React.createElement(EditorRibbonActions, 编辑器图标道具),
+      : React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(CloudStatusPill),
+          React.createElement(EditorRibbonActions, 编辑器图标道具),
+        ),
   [是桌面编辑器, module, 简洁工作区, 语言, 编辑器图标道具, goHome, showSettings])
 
   useEffect(() => {
@@ -499,7 +506,7 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
       语言,
       on切换语言: 设置语言,
     }) : null,  // 桌面端编辑器：顶栏整行删除，图标已迁入 RibbonTabs 右侧
-    React.createElement<{ 简洁模式?: boolean }>(CloudAutosave, { 简洁模式: 简洁工作区 }),
+    React.createElement<{ 简洁模式?: boolean; 状态徽标?: boolean }>(CloudAutosave, { 简洁模式: 简洁工作区, 状态徽标: 是桌面编辑器 && module !== 'pdf' }),
     React.createElement(CollaborationLinkEntry),
     React.createElement(CollaborationSaveBanner),
     是首页

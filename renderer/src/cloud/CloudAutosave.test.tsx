@@ -149,6 +149,18 @@ describe('云端自动保存关闭链路',()=>{
     expect(fixture.saveToFile).not.toHaveBeenCalled()
     expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(1)
   })
+
+  it('桌面编辑器使用徽标时不再渲染整行提示条，并把状态写入徽标',async()=>{
+    vi.useRealTimers()
+    const Pill=(await import('./CloudStatusPill')).default
+    const {读取云端状态}=await import('./cloudStatus')
+    const view=render(<div><CloudAutosave 状态徽标 /><Pill /></div>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    expect(view.container.querySelector('.seal-cloud-banner')).toBeNull()
+    expect(读取云端状态()).toMatchObject({文档标识:'word',文本:'待同步',级别:'进行中'})
+    expect(screen.getByLabelText('云端状态：待同步')).toHaveTextContent('待同步')
+    view.unmount()
+  })
   it.each(['share','team'] as const)('%s 的海豹 PDF 只走整文件共享同步，不另上传个人自动副本',async(kind)=>{
     const path=`D:/${kind}-隔离.spdf`
     restoreFileBinding(path,{kind,id:kind,nodeId:kind==='team'?'node':undefined,accountId:'user',name:'共享.spdf',version:1,editable:true})
