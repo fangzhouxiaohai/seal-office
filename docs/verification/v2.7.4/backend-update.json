@@ -1,0 +1,153 @@
+{
+  "passed": true,
+  "version": "2.7.4",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.4.exe",
+      "bytes": 567073983,
+      "sha256": "2f6b2c4e10d497f2812ee4e8ce15f1b5f1a90ab3e029ba46019ac69c45564cd6",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/8f159a68-7923-472e-b231-1e5cb5b39e26/seal-office-setup-2.7.4.exe",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/8f159a68-7923-472e-b231-1e5cb5b39e26/seal-office-setup-2.7.4.exe",
+        "sha256": "2f6b2c4e10d497f2812ee4e8ce15f1b5f1a90ab3e029ba46019ac69c45564cd6",
+        "bytes": 567073983,
+        "publishedAt": 1794830105665
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.4-microsoft-store-x64.msix",
+      "bytes": 798493546,
+      "sha256": "848a30e20d36aca2921ec9cd77f719e13b67d5ddfee3028f8a04687a72573dc3",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/ea25da33-5271-4502-bbac-8251501a4622/seal-office-2.7.4-microsoft-store-x64.msix",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "848a30e20d36aca2921ec9cd77f719e13b67d5ddfee3028f8a04687a72573dc3",
+        "bytes": 798493546,
+        "publishedAt": 1794830105666
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.4-amd64.deb",
+      "bytes": 152314172,
+      "sha256": "1bd3c5999b75cdafe279cc971755bcc2c47af2e80cca372bb10c3fe7a574f313",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/389a6f0a-0d08-4959-94e7-a2e786eb9381/seal-office-2.7.4-amd64.deb",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/389a6f0a-0d08-4959-94e7-a2e786eb9381/seal-office-2.7.4-amd64.deb",
+        "sha256": "1bd3c5999b75cdafe279cc971755bcc2c47af2e80cca372bb10c3fe7a574f313",
+        "bytes": 152314172,
+        "publishedAt": 1794830105666
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "macos",
+      "filename": "seal-office-2.7.4-macos.dmg",
+      "bytes": 229704283,
+      "sha256": "0bf598d1aa93817d3972d5aa92c3f6630e1905bf036ce8f2b41281a1d12f644a",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/d65494b8-25f5-4460-b11a-73aa2beb9761/seal-office-2.7.4-macos.dmg",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/d65494b8-25f5-4460-b11a-73aa2beb9761/seal-office-2.7.4-macos.dmg",
+        "sha256": "0bf598d1aa93817d3972d5aa92c3f6630e1905bf036ce8f2b41281a1d12f644a",
+        "bytes": 229704283,
+        "publishedAt": 1794830105666
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.4-android.apk",
+      "bytes": 41249168,
+      "sha256": "ca7bb8d496fbc0edfcbdf98406186ebbcdbe88f796c946fb2dad005267de53af",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/fc07c385-ef19-4c95-a49a-168fd9969ad4/seal-office-2.7.4-android.apk",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/fc07c385-ef19-4c95-a49a-168fd9969ad4/seal-office-2.7.4-android.apk",
+        "sha256": "ca7bb8d496fbc0edfcbdf98406186ebbcdbe88f796c946fb2dad005267de53af",
+        "bytes": 41249168,
+        "publishedAt": 1794830105666
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.4-harmony.hap",
+      "bytes": 66534284,
+      "sha256": "6c4624733726be16d1831ada865c7e9010798585c7a26f8f057c3c1abbf7d0e8",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/118e83e5-1d4e-404f-932f-dd69da95c9fd/seal-office-2.7.4-harmony.hap",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/118e83e5-1d4e-404f-932f-dd69da95c9fd/seal-office-2.7.4-harmony.hap",
+        "sha256": "6c4624733726be16d1831ada865c7e9010798585c7a26f8f057c3c1abbf7d0e8",
+        "bytes": 66534284,
+        "publishedAt": 1794830105667
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.4-web.zip",
+      "bytes": 49853115,
+      "sha256": "d008d155fb76e6def92529ee7842a24b524d35d893b8518a468c5ea6b90d8701",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/ee811a0e-f760-449d-b931-4400b45b162d/seal-office-2.7.4-web.zip",
+      "oldVersion": "2.7.3",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.4",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.4\n\n本版修复超大扫描页 PDF 打开空白的问题，并把非 PDF 编辑器的云同步提示并入功能区标签行；移动构建号为 20704，应用身份与原签名保持不变。\n\n## PDF 阅读\n\n- 修复把整页做成一张超高位图的 PDF 打开后显示空白的问题。这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败后页面只剩白色背景。\n- 现在打开前会先判断页面尺寸，仅在单页面积超过 3000 万点或单边超过 16000 点时，把超大位图按整数因子等比缩小（最长边 8192 像素）后重新写回 PDF，再交给阅读器渲染。页面大小、内容位置与绘制矩阵都不变。\n- 常规 PDF 不触发优化，打开速度与之前一致；环境不支持压缩流接口时跳过优化并按原文件显示，不会把文件打开失败。\n- 实测示例文件：优化约 1.9 秒，位图 3117×38572 缩到 623×7714，文件由 2.35 MB 降到 0.39 MB，Chromium 中约 1.4 秒渲染出内容。\n\n## 界面与云同步\n\n- 文字、表格、演示编辑器的顶部不再有整行云同步提示条，改为功能区标签行右侧的圆角长方形状态徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”等简短状态。\n- 开启云端保存后本来就是自动保存并同步，因此徽标不再附带“立即同步”按钮；同步失败时徽标变红，点击即可重试，完整原因显示在悬浮提示中。\n- 打开 PDF 的界面保持原来的整行提示条与“立即同步”按钮；移动端同样保留整行提示，不受影响。\n- 简洁模式下徽标与“返回首页”“设置中心”并排显示在标签行，不会额外占一行。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 本次修复位于共享渲染层，桌面端、网页版与移动端同时更新；各端版本号与构建号一致，校验值见 `release/v2.7.4/SHA256SUMS.txt`。\n- macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；未做实体 Mac 安装验收。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变；本版不承诺覆盖所有复杂版式、宏、外部连接或图表对象。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/ee811a0e-f760-449d-b931-4400b45b162d/seal-office-2.7.4-web.zip",
+        "sha256": "d008d155fb76e6def92529ee7842a24b524d35d893b8518a468c5ea6b90d8701",
+        "bytes": 49853115,
+        "publishedAt": 1794830105667
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}
