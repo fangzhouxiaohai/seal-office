@@ -5,7 +5,7 @@ import { App as AntdApp, Button, Modal } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useSettings } from '../store/settingsStore'
-import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, 恢复下载状态, 取下载状态, 取下载发布, 正在下载或待安装, 开始下载更新, 取消下载更新, 安装已下载更新, 接收下载进度, 改变下载界面, use下载状态, type 有效发布 } from '../update/updateCenter'
+import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, 恢复下载状态, 取下载状态, 取下载发布, 开始下载更新, 取消下载更新, 安装已下载更新, 接收下载进度, 改变下载界面, use下载状态, type 有效发布 } from '../update/updateCenter'
 import { 桥接 } from '../ipc/bridge'
 import '../update/updateCard.css'
 
@@ -24,10 +24,17 @@ function use自动检查(开启: boolean) {
     let 有效 = true
     const 执行 = () => {
       void 恢复下载状态().then(() => {
-        if (!有效 || 正在下载或待安装()) return null
+        if (!有效) return null
+        const 当前 = 取下载状态().进度
+        // 正在下载或安装时不打断；已下载待安装时仍要检查，以便发现更新版本后切回“更新”
+        if (当前 && ['下载中', '校验中', '安装中'].includes(当前.阶段)) return null
         return 检查更新()
       }).then(结果 => {
-        if (有效 && !正在下载或待安装() && 结果?.类型 === '有新版') 展示更新(结果.发布, '自动')
+        if (!有效 || !结果 || 结果.类型 !== '有新版') return
+        const 当前 = 取下载状态().进度
+        // 已下载的就是最新版本：保持“安装”入口，不重复提示
+        if (当前?.阶段 === '已就绪' && 当前.版本 === 结果.发布.version) return
+        展示更新(结果.发布, '自动')
       }).catch(() => {})
     }
     const 启动计时 = setTimeout(执行, 启动检查延迟)
@@ -59,7 +66,8 @@ function 卡片({ 发布 }: { 发布: 有效发布 }) {
       const { 平台: 当前平台 } = await 读取更新平台()
       if (当前平台 !== 'web' && 当前平台 !== 'windows-store' && 当前平台 !== 'harmony' && 桥接.update.下载可用) {
         try {
-          await 开始下载更新(发布, 发布.mandatory && !移动端 ? '后台' : '前台', Boolean(发布.mandatory))
+          const 后台模式 = !移动端 && !发布.mandatory
+          await 开始下载更新(发布, 后台模式 ? '隐藏' : (发布.mandatory && !移动端 ? '后台' : '前台'), 后台模式 ? true : Boolean(发布.mandatory))
           if (发布.mandatory && 当前平台 !== 'android') await 安装已下载更新()
         } catch (错误) {
           改变下载界面('隐藏')
@@ -102,7 +110,8 @@ function 卡片({ 发布 }: { 发布: 有效发布 }) {
       </div>
     </div>
   </Modal>
-  return <aside className={`seal-update-entry${移动端 ? ' seal-update-entry--mobile' : ''}`} aria-live="polite"><Button type="primary" loading={更新中} onClick={()=>void 立即更新()}>更新</Button></aside>
+  // 桌面端的右下角入口由独立的「更新入口」组件承担（进度环 → 安装 → 更新），这里不再渲染。
+  return null
 }
 
 function 下载界面() {
@@ -196,10 +205,55 @@ function 下载界面() {
   </Modal>
 }
 
+/** 桌面端右下角更新入口：下载中显示进度环，下载完成显示“安装”，发现更新版本时回到“更新”。 */
+function 更新入口() {
+  const 卡片 = use更新卡片()
+  const { 进度 } = use下载状态()
+  const { modal } = AntdApp.useApp()
+  const [忙碌, 设忙碌] = useState(false)
+  if (document.documentElement.dataset.sealPlatform === 'app') return null
+  const 阶段 = 进度?.阶段
+  const 下载中 = 阶段 === '下载中' || 阶段 === '校验中'
+  const 百分比 = 进度 && 进度.总大小 > 0 ? Math.floor(进度.已下载 / 进度.总大小 * 100) : null
+  const 发布 = 卡片?.发布 ?? 取下载发布()
+  const 版本不一致 = Boolean(卡片 && 进度?.版本 && 进度.版本 !== 卡片.发布.version)
+  const 执行下载 = async (目标: 有效发布) => {
+    if (忙碌) return
+    设忙碌(true)
+    try {
+      await 开始下载更新(目标, '隐藏', true)
+    } catch (错误) {
+      modal.error({ title: '更新失败', content: 错误 instanceof Error ? 错误.message : '下载更新失败，请稍后重试', okText: '确定' })
+    } finally {
+      设忙碌(false)
+    }
+  }
+  const 安装 = async () => {
+    try {
+      await 安装已下载更新()
+    } catch (错误) {
+      modal.error({ title: '安装未启动', content: 错误 instanceof Error ? 错误.message : '安装程序未启动，请重试', okText: '确定' })
+    }
+  }
+  if (下载中) return <aside className="seal-update-entry" aria-live="polite">
+    <button type="button" className="seal-update-ring" title="正在下载更新，点击查看进度" aria-label={百分比 === null ? '正在下载更新' : '正在下载更新 ' + 百分比 + '%'} onClick={() => 改变下载界面('前台')}>
+      <svg viewBox="0 0 36 36" aria-hidden="true"><circle className="seal-update-ring__track" cx="18" cy="18" r="15" /><circle className={百分比 === null ? 'seal-update-ring__value is-indeterminate' : 'seal-update-ring__value'} cx="18" cy="18" r="15" pathLength="100" strokeDasharray={百分比 === null ? '25 75' : 百分比 + ' 100'} /></svg>
+      <span>{百分比 === null ? '…' : 百分比 + '%'}</span>
+    </button>
+  </aside>
+  if (阶段 === '已就绪' || 阶段 === '安装中') {
+    if (版本不一致 && 卡片) return <aside className="seal-update-entry" aria-live="polite"><Button type="primary" loading={忙碌} onClick={() => void 执行下载(卡片.发布)}>更新</Button></aside>
+    return <aside className="seal-update-entry" aria-live="polite"><Button type="primary" loading={阶段 === '安装中'} onClick={() => void 安装()}>安装</Button></aside>
+  }
+  if (阶段 === '失败' && 发布) return <aside className="seal-update-entry" aria-live="polite"><Button type="primary" loading={忙碌} onClick={() => void 执行下载(发布)}>重试更新</Button></aside>
+  if (卡片) return <aside className="seal-update-entry" aria-live="polite"><Button type="primary" loading={忙碌} onClick={() => void 执行下载(卡片.发布)}>更新</Button></aside>
+  return null
+}
+
 /** 只负责展示卡片，不发起自动检查（手动检查结果也经此展示） */
 export function 更新卡片宿主() {
   const 状态 = use更新卡片()
-  return <>{状态 ? <卡片 key={状态.发布.version} 发布={状态.发布} /> : null}<下载界面 /></>
+  return <>{状态 ? <卡片 key={状态.发布.version} 发布={状态.发布} /> : null}<下载界面 /><更新入口 /></>
 }
 
 /** 应用级挂载：展示卡片并按设置执行自动检查 */

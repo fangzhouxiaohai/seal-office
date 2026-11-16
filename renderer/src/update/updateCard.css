@@ -131,3 +131,27 @@
 .seal-update-mobile-prompt p { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
 .seal-update-mobile-prompt .seal-update-notes-details { margin-bottom: 0; }
 .seal-update-mobile-prompt .seal-update-card__notes { max-height: 180px; }
+
+/* 桌面端右下角更新入口的下载进度环：与按钮同尺寸，不遮挡状态栏 */
+.seal-update-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+.seal-update-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.seal-update-ring__track { fill: none; stroke: var(--border); stroke-width: 3; }
+.seal-update-ring__value { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray .2s linear; }
+.seal-update-ring__value.is-indeterminate { animation: seal-update-ring-spin 1.1s linear infinite; transform-origin: 50% 50%; }
+.seal-update-ring span { position: relative; font-size: 9px; font-weight: 600; color: var(--text-2); }
+.seal-update-ring:hover span { color: var(--brand); }
+.seal-update-ring:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@keyframes seal-update-ring-spin { to { transform: rotate(360deg); } }

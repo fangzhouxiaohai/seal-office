@@ -35,6 +35,8 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
     目录: path.join(app.getPath('userData'), 'verified-updates'),
     检查: (通道, 信号) => 服务().检查(通道, 信号),
     通知,
+    // 安装包下载同样走 Chromium 网络栈，代理环境下可用
+    请求: (地址, 选项) => net.fetch(地址, 选项),
     打开安装包: async (文件, 发布, 任务标识) => {
       if (服务().平台 !== 'windows') {
         const 错误 = await shell.openPath(文件)

@@ -118,10 +118,16 @@ export async function 恢复下载状态(): Promise<void> {
   try { await 请求 } finally { if (恢复请求 === 请求) 恢复请求 = null }
 }
 export async function 开始下载更新(发布: 有效发布, 界面: 下载界面状态['界面'] = '前台', 保留入口 = false): Promise<void> {
-  if (正在下载或待安装()) throw new Error('已有更新任务正在进行')
+  // 已下载旧版本但发现了更新版本时，允许直接改为下载新版本；下载中或安装中仍拒绝并发
+  const 已存 = 下载状态.进度
+  const 可替换 = 已存?.阶段 === '已就绪' && 已存.版本 !== 发布.version
+  if (正在下载或待安装() && !可替换) throw new Error('已有更新任务正在进行')
   已发起启动恢复 = true
   下载发布 = 发布
-  下载状态 = 更新下载界面(初始下载状态, 界面); if (!保留入口) 当前卡片 = null; 下载代次++; 通知()
+  // 先落一个 0% 的下载中状态，入口立刻显示进度环，不必等宿主第一条进度
+  下载状态 = 更新下载界面({ 进度: { 阶段: '下载中', 已下载: 0, 总大小: Number(发布.bytes) || 0, 版本: 发布.version }, 界面 }, 界面)
+  if (!保留入口) 当前卡片 = null
+  下载代次++; 通知()
   let 结果
   try { 结果 = await 桥接.update.download(发布) }
   catch (错误) { if (正在取消 || 下载状态.进度?.阶段 === '已取消') return; throw 错误 }

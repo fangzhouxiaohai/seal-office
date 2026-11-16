@@ -46,10 +46,16 @@ function 创建暂存更新({ 平台, 当前版本, 目录, 检查, 请求 = glo
       监听 = () => reject(错误('下载已取消'))
       if (信号.aborted) 监听(); else 信号.addEventListener('abort', 监听, { once:true })
     })
-    let 最新
+    let 最新 = null
     try { 最新 = await (信号 ? Promise.race([检查(通道, 信号), 取消]) : 检查(通道)) }
+    catch (错误) {
+      // 下载前的二次核对只是为了确认发布未变化；网络抖动时按已校验并校验过哈希的发布信息继续，
+      // 避免用户刚点“更新”就被“无法连接更新服务”打断。发布真的变化仍以比对结果为准。
+      if (错误 && Number.isInteger(错误.status) && 错误.status > 0) throw 错误
+      最新 = null
+    }
     finally { if (监听) 信号.removeEventListener('abort', 监听) }
-    if (!比对(最新, p)) throw 错误('发布信息已变化，请重新检查更新')
+    if (最新 && !比对(最新, p)) throw 错误('发布信息已变化，请重新检查更新')
   }
   function 读取() {
     let p
