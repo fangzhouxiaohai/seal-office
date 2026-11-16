@@ -1,4 +1,5 @@
 import './styles.css'
+import { SERVER_DOWNLOADS, SERVER_VERSION, detectPlatform } from './downloads.mjs'
 
 const toggle = document.querySelector('.menu-toggle')
 const navigation = document.querySelector('#navigation')
@@ -13,39 +14,22 @@ if (toggle && navigation) {
   window.addEventListener('resize', () => { if (window.innerWidth > 760) setMenu(false) })
 }
 
-import { selectDownloads, detectPlatform } from './downloads.mjs'
-
 const status = document.querySelector('.download-status')
 const primary = document.querySelector('.download-primary')
 const platformLinks = document.querySelectorAll('[data-platform]')
+const labels = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: '安卓版', harmony: '鸿蒙版' }
 
-fetch('https://api.github.com/repos/fangzhouxiaohai/seal-office/releases/latest')
-  .then(response => {
-    if (!response.ok) throw new Error('无法获取版本信息')
-    return response.json()
-  })
-  .then(release => {
-    const downloads = selectDownloads(release)
-    let available = 0
-    platformLinks.forEach(link => {
-      const url = downloads[link.dataset.platform]
-      if (url) {
-        link.href = url
-        link.classList.add('is-available')
-        available += 1
-      } else {
-        link.querySelector('small').textContent = '前往发布页查看'
-      }
-    })
-    const platform = detectPlatform(navigator.userAgent)
-    if (platform && downloads[platform]) {
-      const labels = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: '安卓版', harmony: '鸿蒙版' }
-      primary.href = downloads[platform]
-      primary.textContent = `下载 ${labels[platform]}`
-    }
-    status.textContent = available ? `最新发布 ${release.tag_name || ''}，选择适合设备的版本` : '暂无可识别的安装包，请前往发布页查看'
-  })
-  .catch(() => {
-    status.textContent = '暂时无法获取最新版本，请通过下方链接前往发布页下载'
-    platformLinks.forEach(link => { link.querySelector('small').textContent = '前往发布页查看' })
-  })
+platformLinks.forEach((link) => {
+  const platform = link.dataset.platform
+  const url = SERVER_DOWNLOADS[platform]
+  if (!url) return
+  link.href = url
+  link.classList.add('is-available')
+})
+
+const platform = detectPlatform(navigator.userAgent)
+if (platform && SERVER_DOWNLOADS[platform] && primary) {
+  primary.href = SERVER_DOWNLOADS[platform]
+  primary.textContent = `下载 ${labels[platform]}`
+}
+if (status) status.textContent = `最新版本 v${SERVER_VERSION}，安装包由海豹办公服务器提供`

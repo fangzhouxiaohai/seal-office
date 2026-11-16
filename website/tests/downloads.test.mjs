@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { selectDownloads, detectPlatform } from '../src/downloads.mjs'
+import { selectDownloads, detectPlatform, SERVER_DOWNLOADS } from '../src/downloads.mjs'
 
 const release = {
   tag_name: 'v3.0.0',
@@ -33,5 +33,17 @@ describe('最新版下载', () => {
     assert.equal(detectPlatform('Mozilla Macintosh'), 'macos')
     assert.equal(detectPlatform('Mozilla Linux'), 'linux')
     assert.equal(detectPlatform('unknown'), null)
+  })
+})
+
+
+describe('服务器安装包地址', () => {
+  it('五端下载均指向海豹办公服务器并包含当前版本', () => {
+    assert.deepEqual(Object.keys(SERVER_DOWNLOADS), ['windows', 'macos', 'linux', 'android', 'harmony'])
+    for (const url of Object.values(SERVER_DOWNLOADS)) {
+      assert.match(url, /^https:\/\/seal\.xingmasoft\.com\/api\/v1\/release-assets\//)
+      assert.match(url, /2\.7\.6/)
+    }
+    assert.doesNotMatch(Object.values(SERVER_DOWNLOADS).join('\n'), /github\.com/i)
   })
 })

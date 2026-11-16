@@ -11,3 +11,20 @@
 @keyframes screen-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:760px){.platform-list a{min-width:calc(33.333% - 8px);text-align:center}.hero-tags{margin:25px 0 38px}}
 @media(prefers-reduced-motion:reduce){.hero:before,.hero-copy,.hero-screen{animation:none}.platform-list a,.feature-card{transition:none}}
+
+
+/* 首屏动态背景：缓慢漂移的光晕与网格，降低视觉干扰并保留空间感。 */
+.hero{isolation:isolate;background:linear-gradient(120deg,#0a1429 0%,#17335a 44%,#0b1630 100%);background-size:180% 180%;animation:hero-background 18s ease-in-out infinite alternate}
+.hero-ambient{position:absolute;inset:-18%;z-index:0;overflow:hidden;pointer-events:none}
+.ambient-orb{position:absolute;display:block;border-radius:50%;filter:blur(12px);opacity:.55;mix-blend-mode:screen}
+.ambient-orb-one{width:42vw;height:42vw;left:7%;top:5%;background:radial-gradient(circle at 35% 35%,#6cb7ffb8 0%,#3b64e54d 44%,transparent 72%);animation:ambient-drift-one 16s ease-in-out infinite alternate}
+.ambient-orb-two{width:34vw;height:34vw;right:2%;top:15%;background:radial-gradient(circle at 60% 40%,#b68bff99 0%,#6450d33d 48%,transparent 72%);animation:ambient-drift-two 20s ease-in-out infinite alternate}
+.ambient-orb-three{width:30vw;height:30vw;left:34%;bottom:-10%;background:radial-gradient(circle at 50% 45%,#4ee0d47d 0%,#2570b52b 50%,transparent 74%);animation:ambient-drift-three 22s ease-in-out infinite alternate}
+.ambient-grid{position:absolute;inset:0;background-image:linear-gradient(#b5d3ff13 1px,transparent 1px),linear-gradient(90deg,#b5d3ff13 1px,transparent 1px);background-size:92px 92px;mask-image:radial-gradient(ellipse at 50% 42%,black 8%,transparent 72%);animation:grid-drift 26s linear infinite}
+.hero-copy,.hero-screen{z-index:1}
+@keyframes hero-background{from{background-position:0% 20%}to{background-position:100% 80%}}
+@keyframes ambient-drift-one{from{transform:translate3d(-4%,2%,0) scale(.92)}to{transform:translate3d(10%,10%,0) scale(1.12)}}
+@keyframes ambient-drift-two{from{transform:translate3d(8%,-6%,0) scale(1.05)}to{transform:translate3d(-12%,12%,0) scale(.88)}}
+@keyframes ambient-drift-three{from{transform:translate3d(-9%,8%,0) scale(.9)}to{transform:translate3d(8%,-10%,0) scale(1.1)}}
+@keyframes grid-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(46px,46px,0)}}
+@media(prefers-reduced-motion:reduce){.hero{animation:none}.ambient-orb,.ambient-grid{animation:none}}
