@@ -814,3 +814,4 @@ renderer/src/
 ## 官网下载入口
 
 官网首页从项目最新发布信息获取 Windows、macOS、Linux、安卓及鸿蒙安装包地址；获取失败时可通过发布页选择下载。官网位于 `website/`，在该目录运行 `npx vite build --config vite.config.js` 构建。
+官网构建完成后可使用 `node scripts/update-website.cjs` 发布更新；该脚本会保留旧版静态资源并在服务器本地验收失败时回滚官网。
