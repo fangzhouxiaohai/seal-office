@@ -25,8 +25,15 @@ function 创建更新服务({ 当前版本, 平台, 获取服务地址, 请求 =
     if (通道 !== 'stable' && 通道 !== 'beta') throw 失败('发布通道无效')
     const 地址 = `${String(获取服务地址()).replace(/\/$/, '')}/v1/updates/latest?platform=${encodeURIComponent(平台)}&version=${encodeURIComponent(当前版本)}&channel=${通道}`
     let 响应
-    try { 响应 = await 请求(地址, { signal: 信号 ? AbortSignal.any([信号, AbortSignal.timeout(超时)]) : AbortSignal.timeout(超时), headers: { Accept: 'application/json' } }) }
-    catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
+    const 发起 = () => 请求(地址, { signal: 信号 ? AbortSignal.any([信号, AbortSignal.timeout(超时)]) : AbortSignal.timeout(超时), headers: { Accept: 'application/json' } })
+    try { 响应 = await 发起() }
+    catch (首次) {
+      // 启动阶段网络或代理可能尚未就绪，稍等后重试一次，仍失败才提示无法连接
+      if (信号?.aborted) throw 失败('无法连接更新服务', { status: 0, cause: 首次 })
+      await new Promise(完成 => setTimeout(完成, 600))
+      try { 响应 = await 发起() }
+      catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
+    }
     if ([401, 403, 404].includes(响应.status)) throw 失败('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', { status: 响应.status })
     let 数据
     try { 数据 = await 响应.json() } catch { throw 失败('更新服务返回内容无效', { status: 响应.status }) }

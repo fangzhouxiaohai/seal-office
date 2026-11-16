@@ -1,5 +1,5 @@
 // 版本更新通道：版本号取 app.getVersion()，服务器地址沿用云服务当前配置。
-const { app, shell } = require('electron')
+const { app, shell, net } = require('electron')
 const { spawn } = require('child_process')
 const fs = require('fs')
 const path = require('path')
@@ -17,6 +17,8 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
     当前版本: app.getVersion(),
     平台: 判定更新平台(),
     获取服务地址: () => cloudService.status().url,
+    // 走 Chromium 网络栈：沿用系统代理与系统证书库，避免 Node fetch 在代理或企业证书环境下连不上更新服务
+    请求: (地址, 选项) => net.fetch(地址, 选项),
     临时目录: app.getPath('temp'),
     // 安装程序独立运行，主程序退出后由 NSIS 覆盖安装
     启动安装程序: 文件 => new Promise((resolve, reject) => {

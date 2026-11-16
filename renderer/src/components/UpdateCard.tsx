@@ -90,6 +90,18 @@ function 卡片({ 发布 }: { 发布: 有效发布 }) {
     if (平台 && 平台 !== 'harmony' && 平台 !== 'windows-store' && 平台 !== 'web' && 更新中) return null
     return <Modal open centered closable={false} maskClosable={false} keyboard={false} footer={null} title="必须更新"><p>当前版本需要更新后才能继续使用。{平台 === 'harmony' ? '请在应用市场完成更新。' : ''}</p><Button type="primary" loading={更新中} onClick={()=>void 立即更新()}>重试更新</Button></Modal>
   }
+  // 移动端按系统常规做法：发现新版本先弹出说明弹窗，用户点“更新”后才进入下载进度弹窗；
+  // 桌面端保留右下角轻量入口。下载完成后由原生宿主直接拉起系统安装程序，这里不再二次确认。
+  if (移动端) return <Modal open centered width={360} closable={false} maskClosable={false} keyboard={false} footer={null} title={`发现新版本 ${发布.version}`}>
+    <div className="seal-update-mobile-prompt">
+      <p>新版本已发布，是否立即更新？更新过程中可以继续使用，下载完成后会自动打开系统安装程序。</p>
+      {发布.notes?.trim() ? <details className="seal-update-notes-details"><summary>查看更新说明</summary><div className="seal-update-card__notes" data-ui-language-ignore="true"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ a: ({ children }) => <span>{children}</span>, img: ({ alt }) => <span>{alt}</span> }}>{发布.notes}</ReactMarkdown></div></details> : null}
+      <div className="seal-update-download-actions">
+        <Button onClick={() => 稍后提醒()}>稍后</Button>
+        <Button type="primary" loading={更新中} onClick={() => void 立即更新()}>更新</Button>
+      </div>
+    </div>
+  </Modal>
   return <aside className={`seal-update-entry${移动端 ? ' seal-update-entry--mobile' : ''}`} aria-live="polite"><Button type="primary" loading={更新中} onClick={()=>void 立即更新()}>更新</Button></aside>
 }
 
@@ -164,6 +176,9 @@ function 下载界面() {
   const 百分比 = 进度 && 进度.总大小 > 0 ? Math.floor(进度.已下载 / 进度.总大小 * 100) : null
   const 字节 = (数值: number) => 数值 >= 1048576 ? `${(数值 / 1048576).toFixed(1)} MB` : `${(数值 / 1024).toFixed(1)} KB`
   if (状态.界面 === '后台') return <aside className="seal-update-download-mini" aria-live="polite">{下载中 ? <><div className="seal-update-circle" role="progressbar" aria-label="后台下载进度" aria-valuemin={0} aria-valuemax={100} {...(百分比 === null ? {} : {'aria-valuenow':百分比})}><svg viewBox="0 0 40 40" aria-hidden="true"><circle className="seal-update-circle__track" cx="20" cy="20" r="17"/><circle className={百分比 === null ? 'seal-update-circle__value is-indeterminate' : 'seal-update-circle__value'} cx="20" cy="20" r="17" pathLength="100" strokeDasharray={百分比 === null ? '25 75' : `${百分比} 100`} /></svg><span>{百分比 === null ? '下载中' : `${百分比}%`}</span></div><div><strong>正在后台下载</strong>{进度?.版本 ? <span>版本 {进度.版本}</span> : null}<Button size="small" onClick={()=>改变下载界面('前台')}>查看进度</Button></div></> : 已就绪 ? <Button type="primary" loading={安装中} onClick={()=>void 安装()}>更新</Button> : 已启动 ? <strong>安装程序已启动</strong> : null}</aside>
+  // 安卓/鸿蒙原生宿主在下载校验完成后会自动拉起系统安装程序；这里不再弹“更新已下载/稍后安装”的二次确认。
+  // 安装失败（可重试安装）仍显示失败原因与重试入口。
+  if (移动端 && (已就绪 || 已启动) && !可重试安装 && !进度?.错误) return null
   return <Modal open centered width={440} closable={false} maskClosable={false} keyboard={false} footer={null} title={下载失败?'更新下载失败':已就绪?'更新已下载':已启动?'安装程序已启动':'正在下载更新'}>
     <div className="seal-update-download-dialog">
       <p>{进度?.错误 || (取消中 ? '正在取消下载' : 进度?.阶段 === '校验中' ? '正在校验安装包' : 已就绪 ? 移动端 ? '安装包已校验，请按系统提示完成安装。' : 强制 ? '安装包已校验，正在启动安装。' : '安装包已校验，请选择安装更新。' : 已启动 ? '请按系统提示完成安装。' : '请保持网络连接，下载期间可以继续使用应用。')}</p>
@@ -173,7 +188,7 @@ function 下载界面() {
       <div className="seal-update-download-actions">
         {下载失败 ? <>{!强制 ? <Button onClick={()=>改变下载界面('隐藏')}>关闭</Button> : null}<Button type="primary" loading={重试中} onClick={()=>void 重试()}>重试下载</Button></> : null}
         {下载中 && !强制 ? <><Button disabled={取消中} onClick={()=>void 取消()}>取消下载</Button><Button disabled={取消中} onClick={()=>改变下载界面(移动端 ? '隐藏' : '后台')}>后台下载</Button></> : null}
-        {已就绪 && 移动端 ? <>{!强制 ? <Button onClick={()=>改变下载界面('隐藏')}>稍后安装</Button> : null}<Button type="primary" loading={安装中} onClick={()=>void 安装()}>重试安装</Button></> : null}
+        {已就绪 && 移动端 ? <><Button onClick={()=>改变下载界面('隐藏')}>关闭</Button><Button type="primary" loading={安装中} onClick={()=>void 安装()}>重试安装</Button></> : null}
         {已就绪 && !强制 && !移动端 ? <><Button onClick={()=>改变下载界面('后台')}>稍后安装</Button><Button type="primary" loading={安装中} onClick={()=>void 安装()}>安装更新</Button></> : null}
         {已启动 && !强制 ? <Button onClick={()=>改变下载界面('隐藏')}>知道了</Button> : null}
       </div>

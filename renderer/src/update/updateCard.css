@@ -90,8 +90,44 @@
 /* 设置页「当前版本」行的控件区：状态文字 + 按钮 */
 .settings-update-control { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2, 8px); }
 
-.seal-update-entry { position: fixed; z-index: 994; right: 118px; bottom: 8px; }
-.seal-update-entry--mobile { right: 16px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+/* 更新入口：放进底部 28px 状态栏内，不再突出到栏外，与版本号并排 */
+.seal-update-entry {
+  position: fixed;
+  z-index: 994;
+  right: 132px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  height: 22px;
+}
+.seal-update-entry .ant-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: 11px;
+  font-size: 12px;
+  line-height: 20px;
+  box-shadow: none;
+}
+.seal-update-entry--mobile {
+  right: 16px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  height: auto;
+}
+.seal-update-entry--mobile .ant-btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 30px;
+}
 
 .seal-update-notes-details { margin-bottom: 14px; color: var(--text-2); }
 .seal-update-notes-details summary { cursor: pointer; margin-bottom: 8px; }
+
+/* 移动端“发现新版本”说明弹窗：与下载进度弹窗保持同一套间距 */
+.seal-update-mobile-prompt { display: flex; flex-direction: column; gap: 12px; }
+.seal-update-mobile-prompt p { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
+.seal-update-mobile-prompt .seal-update-notes-details { margin-bottom: 0; }
+.seal-update-mobile-prompt .seal-update-card__notes { max-height: 180px; }

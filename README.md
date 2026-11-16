@@ -8,16 +8,23 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.7.4**，移动构建号 **20704**。共用编辑器与服务；鸿蒙沿用 UTS 宿主，安卓新增 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，后续不再生成便携版；Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.7.5**，移动构建号 **20705**。共用编辑器与服务；鸿蒙沿用 UTS 宿主，安卓新增 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，后续不再生成便携版；Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
+
+## 2.7.5 更新入口样式与更新检查修复
+
+- 首页右下角的“更新”按钮收进底部状态栏内，按钮高度 22px、圆角胶囊形，与版本号并排，不再突出状态栏、盖住版本文字；移动端入口不变。
+- 更新检查改用 Electron 的 `net.fetch`，沿用 Windows 系统代理与系统证书库，解决开启系统代理或企业根证书时“无法连接更新服务”的问题；首次失败后会重试一次。
+- 安卓端不再显示浮动“更新”按钮：发现新版本先弹说明弹窗（稍后/更新），点更新后关闭并打开下载进度弹窗；下载完成由原生宿主直接拉起系统安装器，不再有应用内二次确认。
+- 已经安装旧版且在线更新失败的电脑，需要手动安装本次安装包一次，之后可正常收到后续更新提示。详见[2.7.5 功能修改说明](功能修改说明-v2.7.5.md)与[2.7.5 更新说明](docs/release-notes/v2.7.5.md)。
 
 ## 2.7.4 超大扫描页 PDF 修复与云端状态徽标
 
 - 修复把整页做成一张超高位图的 PDF 打开后空白的问题：这类文件的单页图片常达 3000×38000 像素，超过 Chromium 的位图单边上限，pdf.js 解码失败只剩白底。现在仅在页面超大时先把位图按整数因子等比缩小（最长边 8192）再写回 PDF，页面尺寸与内容位置不变；常规 PDF 不受影响，缺少压缩流接口时按原文件显示。
 - 文字、表格、演示编辑器顶部不再有整行云同步提示，改为功能区标签行右侧的圆角长方形徽标，显示“云端已保存”“正在同步”“待同步”“同步失败”；开启云端保存后本来就是自动同步，因此去掉了“立即同步”按钮，失败时点击徽标重试。
 - 打开 PDF 的界面保持原来的整行提示与“立即同步”按钮；移动端同样保留整行提示。
-- 本次修复位于共享渲染层，桌面端、网页版与移动端一并更新。详见[2.7.4 功能修改说明](功能修改说明-v2.7.4.md)与[2.7.4 更新说明](docs/release-notes/v2.7.4.md)。
+- 本次修复位于共享渲染层，桌面端、网页版与移动端一并更新。GitCode 2.7.4 发行页的 8 个附件已逐个匿名下载核对字节，报告见[GitCode 发行校验](docs/verification/v2.7.4/gitcode-release.json)。详见[2.7.4 功能修改说明](功能修改说明-v2.7.4.md)、[2.7.4 更新说明](docs/release-notes/v2.7.4.md)与[本版发行验收](docs/verification/v2.7.4-release.md)。
 
 ## 2.7.3 编辑区空间优化、简洁模式修正与 PDF 清晰度
 
@@ -299,9 +306,9 @@ Access 的依赖、边界和移动平台上架资料见 [1.9.15 发布与移动�
 
 ## 下载与平台交付
 
-当前源码为 **2.7.4 / 20704**。本次各平台产物、签名及交互验收状态见[2.7.4 发行验收](docs/verification/v2.7.4-release.md)，功能与升级说明见[2.7.4 更新说明](docs/release-notes/v2.7.4.md)与[2.7.4 功能修改说明](功能修改说明-v2.7.4.md)。正式下载以 [GitHub 2.7.4 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.4)和 [GitCode 2.7.4 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.4)中的实际文件和校验清单为准。
+当前源码为 **2.7.5 / 20705**。本次各平台产物、签名及交互验收状态见[2.7.5 发行验收](docs/verification/v2.7.5-release.md)，功能与升级说明见[2.7.5 更新说明](docs/release-notes/v2.7.5.md)与[2.7.5 功能修改说明](功能修改说明-v2.7.5.md)。正式下载以 [GitHub 2.7.5 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.5)和 [GitCode 2.7.5 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.5)中的实际文件和校验清单为准。
 
-新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.4/`，校验值见同目录 `SHA256SUMS.txt`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 和 macOS arm64 DMG。Android 正式包由根目录 Java 工程本机构建并核对旧证书，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS DMG 由 Windows 本机交叉构建，只提供 Apple Silicon 架构，使用临时签名且未经苹果公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；本轮未做实体 Mac 安装与更新验收，后台暂未登记 macOS 更新记录。安装运行、浏览器模拟和静态验包的范围分别记录在验收报告中。
+新发行统一使用 `seal-office` 文件名前缀，正式文件集中放入 `release/v2.7.5/`，校验值见同目录 `SHA256SUMS.txt`。Windows 只交付 NSIS 安装程序和微软商店 MSIX，不再生成便携版；本轮另有 Ubuntu DEB、Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 和 macOS arm64 DMG。Android 正式包由根目录 Java 工程本机构建并核对旧证书，鸿蒙由本机工具链打包验签；移动源码 ZIP 只是归档，不能当作安装包。鸿蒙 App Pack 仅保留本机供 AppGallery 使用。macOS DMG 由 Windows 本机交叉构建，只提供 Apple Silicon 架构，使用临时签名且未经苹果公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行；本轮未做实体 Mac 安装与更新验收，后台暂未登记 macOS 更新记录。安装运行、浏览器模拟和静态验包的范围分别记录在验收报告中。
 
 GitCode 2.7.3 发行页的 8 个附件已逐个匿名下载核对字节，报告见[GitCode 发行校验](docs/verification/v2.7.3/gitcode-release.json)。同版本重装不会触发客户端自动更新，已安装旧版 2.7.3 的用户需要手动安装本次安装包；如需让客户端自动发现后续修复，请使用更高版本号发布。
 
@@ -606,7 +613,7 @@ renderer/src/
 
 ## 版本
 
-当前源码版本：2.7.4，移动构建号 20704。升级内容见上方“2.7.4 超大扫描页 PDF 修复与云端状态徽标”，实测范围见[本版发行验收](docs/verification/v2.7.4-release.md)；以下为仓库保留的历史版本记录。
+当前源码版本：2.7.5，移动构建号 20705。升级内容见上方“2.7.5 更新入口样式与更新检查修复”，实测范围见[本版发行验收](docs/verification/v2.7.5-release.md)；以下为仓库保留的历史版本记录。
 
 ### v1.9.15（历史记录）
 
