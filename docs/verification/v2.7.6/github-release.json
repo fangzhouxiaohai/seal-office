@@ -1,0 +1,56 @@
+{
+  "tag": "v2.7.6",
+  "releaseUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.6",
+  "repository": "fangzhouxiaohai/seal-office",
+  "verified": true,
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 682,
+      "sha256": "f42ddb688c6e6b55cf2f5e7cb119eaa9efc2402feac3e39257128842a25f9c05",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/SHA256SUMS.txt"
+    },
+    {
+      "name": "seal-office-2.7.6-amd64.deb",
+      "size": 152307976,
+      "sha256": "9de69e37ce42fdc1d6daec89ccdd3029b6565cfcb8b7f3e550acb551c0149999",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-amd64.deb"
+    },
+    {
+      "name": "seal-office-2.7.6-android.apk",
+      "size": 41250260,
+      "sha256": "4328fea601e8b2213c4a9bae2ed771f0d6ba1e97a1e24484ad2e22b4faa8a766",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-android.apk"
+    },
+    {
+      "name": "seal-office-2.7.6-harmony.hap",
+      "size": 66538388,
+      "sha256": "bc6a077525b40ca15f4de4703bbdc8b091b0d4296ecf47b0a041e493936c23cc",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-harmony.hap"
+    },
+    {
+      "name": "seal-office-2.7.6-macos.dmg",
+      "size": 230058669,
+      "sha256": "b0b22309ad4b1f1f8e43ab7da1e6288016842a9eeacff50ae9ef5bcadd4134d6",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-macos.dmg"
+    },
+    {
+      "name": "seal-office-2.7.6-microsoft-store-x64.msix",
+      "size": 798502253,
+      "sha256": "b5380a21c19d4bfaeffa9fe6be306ce77ec082aa61511917d9237d9b3678a742",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-microsoft-store-x64.msix"
+    },
+    {
+      "name": "seal-office-2.7.6-web.zip",
+      "size": 49854431,
+      "sha256": "5d14c0f6c9b4ad9ea0ecfd2bfca4ee1047cc0cc0d277577b1830d96754402b7f",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-2.7.6-web.zip"
+    },
+    {
+      "name": "seal-office-setup-2.7.6.exe",
+      "size": 567073366,
+      "sha256": "d42d3cf73ada0b486637f3995891bc48a966cc2d7d36d3b3ffe2a8c8d75f2bf4",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.6/seal-office-setup-2.7.6.exe"
+    }
+  ]
+}
