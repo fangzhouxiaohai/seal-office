@@ -101,7 +101,7 @@ function main() {
       fs.writeFileSync(target, bytes)
     }
     fs.writeFileSync(ask, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n')
-    run('tar', ['-cf', archive, '-C', local, 'website'])
+    run('tar', ['--force-local', '-cf', archive, '-C', local, 'website'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
     run('scp', [...options, '-P', '22', archive, `root@192.140.178.117:${remote}/release.tar`], { env })
     process.stdout.write(ssh(makeActivationScript(id, assets)))

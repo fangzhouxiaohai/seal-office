@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#080b1a" />
+  <meta name="theme-color" content="#05070f" />
   <meta name="description" content="海豹办公汇集文字、表格、演示、PDF 和云空间，为个人与团队提供便捷的办公体验。" />
   <meta name="keywords" content="海豹办公,办公软件,在线办公,文档编辑,表格,演示文稿,PDF" />
   <meta property="og:title" content="海豹办公｜让每一份工作都清晰落地" />
@@ -23,10 +23,14 @@
   </header>
   <main id="main">
     <section class="hero">
+      <canvas class="stars stars-hero" data-stars aria-hidden="true"></canvas>
       <div class="hero-ambient" aria-hidden="true"><span class="ambient-orb ambient-orb-one"></span><span class="ambient-orb ambient-orb-two"></span><span class="ambient-orb ambient-orb-three"></span><span class="ambient-grid"></span></div>
       <div class="orbit orbit-one" aria-hidden="true"></div><div class="orbit orbit-two" aria-hidden="true"></div>
+      <svg class="sparkle sparkle-one" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6Z" /></svg>
+      <svg class="sparkle sparkle-two" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6Z" /></svg>
+      <svg class="sparkle sparkle-three" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6Z" /></svg>
       <div class="hero-copy">
-        <p class="eyebrow">为每一次认真工作而设计</p>
+        <p class="hero-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6Z" /></svg>全新版本 v2.7.6 已发布</p>
         <h1>让灵感展开<br /><span>让工作更简单</span></h1>
         <p class="lead">文字、表格、演示与 PDF，在一个熟悉的空间里从容完成。海豹办公，陪你把每一个想法变成成果。</p>
         <div class="actions hero-actions"><a class="button download-primary" href="#downloads">选择客户端下载</a><a class="button button-outline" href="/office/">在线办公</a></div>
@@ -46,18 +50,25 @@
     </section>
     <section class="intro"><p>一个工作空间，装下每一天的灵感与成果</p><div>文字 <span>·</span> 表格 <span>·</span> 演示 <span>·</span> PDF <span>·</span> 云空间</div></section>
     <section class="section" id="features">
-      <div class="section-heading"><p class="eyebrow">产品能力</p><h2>需要的工具，都在这里</h2><p>从起草文档到呈现创意，把常用的办公工具放在一起，让工作自然流转。</p></div>
+      <div class="section-heading" data-reveal><p class="eyebrow">产品能力</p><h2>需要的工具，都在这里</h2><p>从起草文档到呈现创意，把常用的办公工具放在一起，让工作自然流转。</p></div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="card-index">01 / 文字</span><h3>把想法写成好文章</h3><p>编辑文字、整理段落，让灵感从空白页面出发。</p><img src="/images/word-editor.png" alt="海豹办公文字编辑界面" loading="lazy" /></article>
-        <article class="feature-card"><span class="card-index">02 / 表格</span><h3>让数据清晰可见</h3><p>整理数据、编辑表格，把繁杂信息变得有条理。</p><img src="/images/sheet-editor.png" alt="海豹办公表格编辑界面" loading="lazy" /></article>
-        <article class="feature-card"><span class="card-index">03 / 演示</span><h3>让每个创意被看见</h3><p>用演示文稿组织内容，为分享和汇报做好准备。</p><img src="/images/slide-editor.png" alt="海豹办公演示编辑界面" loading="lazy" /></article>
-        <article class="feature-card"><span class="card-index">04 / PDF</span><h3>文档处理更加顺手</h3><p>查看和处理 PDF 文件，让日常文档工作更连贯。</p><img src="/images/pdf-tools.png" alt="海豹办公 PDF 工具界面" loading="lazy" /></article>
+        <article class="feature-card" data-reveal><span class="card-index">01 / 文字</span><h3>把想法写成好文章</h3><p>编辑文字、整理段落，让灵感从空白页面出发。</p><img src="/images/word-editor.png" alt="海豹办公文字编辑界面" loading="lazy" /></article>
+        <article class="feature-card" data-reveal><span class="card-index">02 / 表格</span><h3>让数据清晰可见</h3><p>整理数据、编辑表格，把繁杂信息变得有条理。</p><img src="/images/sheet-editor.png" alt="海豹办公表格编辑界面" loading="lazy" /></article>
+        <article class="feature-card" data-reveal><span class="card-index">03 / 演示</span><h3>让每个创意被看见</h3><p>用演示文稿组织内容，为分享和汇报做好准备。</p><img src="/images/slide-editor.png" alt="海豹办公演示编辑界面" loading="lazy" /></article>
+        <article class="feature-card" data-reveal><span class="card-index">04 / PDF</span><h3>文档处理更加顺手</h3><p>查看和处理 PDF 文件，让日常文档工作更连贯。</p><img src="/images/pdf-tools.png" alt="海豹办公 PDF 工具界面" loading="lazy" /></article>
       </div>
     </section>
-    <section class="section workflow" id="workflow"><div><p class="eyebrow">工作场景</p><h2>从想法到完成，<br />始终得心应手</h2><p class="section-lead">无论是整理资料、分析数据，还是准备下一次分享，都可以从海豹办公开始。</p><a class="text-link" href="/office/">进入在线办公</a></div><div class="steps"><article><span>01</span><div><h3>创建与编辑</h3><p>选择适合的文档类型，专注于手头的内容。</p></div></article><article><span>02</span><div><h3>整理与呈现</h3><p>用文字、表格和演示，清晰表达每一个想法。</p></div></article><article><span>03</span><div><h3>保存与分享</h3><p>让工作成果妥善保存，方便后续查看和分享。</p></div></article></div></section>
-    <section class="section download" id="downloads"><p class="eyebrow">开始使用</p><h2>让好的工作，从此刻开始</h2><p>在线打开海豹办公，或直接下载适合设备的最新版客户端。</p><div class="actions"><a class="button" href="/office/">在线使用</a><a class="button button-outline" href="#downloads">选择客户端</a></div></section>
+    <section class="section workflow" id="workflow">
+      <div data-reveal><p class="eyebrow">工作场景</p><h2>从想法到完成，<br />始终得心应手</h2><p class="section-lead">无论是整理资料、分析数据，还是准备下一次分享，都可以从海豹办公开始。</p><a class="text-link" href="/office/">进入在线办公</a></div>
+      <div class="steps" data-reveal><article><span>01</span><div><h3>创建与编辑</h3><p>选择适合的文档类型，专注于手头的内容。</p></div></article><article><span>02</span><div><h3>整理与呈现</h3><p>用文字、表格和演示，清晰表达每一个想法。</p></div></article><article><span>03</span><div><h3>保存与分享</h3><p>让工作成果妥善保存，方便后续查看和分享。</p></div></article></div>
+    </section>
+    <section class="section download" id="downloads" data-reveal><p class="eyebrow">开始使用</p><h2>让好的工作，从此刻开始</h2><p>在线打开海豹办公，或直接下载适合设备的最新版客户端。</p><div class="actions"><a class="button" href="/office/">在线使用</a><a class="button button-outline" href="#downloads">选择客户端</a></div></section>
   </main>
-  <footer><div class="footer-inner"><div><a class="brand" href="/"><img src="/images/seal-office.png" alt="" />海豹办公</a><p>让每一份工作都清晰落地。</p></div><div class="footer-links"><a href="#features">产品能力</a><a href="/office/">在线办公</a><a href="/admin/">管理后台</a><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">新ICP备2024014104号-7</a></div></div></footer>
+  <footer>
+    <canvas class="stars stars-footer" data-stars aria-hidden="true"></canvas>
+    <div class="footer-glow" aria-hidden="true"></div>
+    <div class="footer-inner"><div><a class="brand" href="/"><img src="/images/seal-office.png" alt="" />海豹办公</a><p>让每一份工作都清晰落地。</p></div><div class="footer-links"><a href="#features">产品能力</a><a href="/office/">在线办公</a><a href="/admin/">管理后台</a><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">新ICP备2024014104号-7</a></div></div>
+  </footer>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
