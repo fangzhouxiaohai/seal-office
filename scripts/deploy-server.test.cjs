@@ -141,3 +141,10 @@ test('公网探针拒绝回落 HTML 的脚本资源和内容不一致的旧资�
   const stale = await probeFixture(t, { '/assets/current.js': { type: 'application/javascript', body: '旧构建内容' } })
   await assert.rejects(probeDeployment(stale.options), /资源.*本次构建/)
 })
+
+test('官网启用后禁止旧后台部署覆盖新版入口，并拒绝无法核验的状态', () => {
+  const { assertLegacyAdminDeploymentAllowed } = deployment()
+  assert.doesNotThrow(() => assertLegacyAdminDeploymentAllowed(1))
+  assert.throws(() => assertLegacyAdminDeploymentAllowed(0), /官网|后台/)
+  assert.throws(() => assertLegacyAdminDeploymentAllowed(255), /核验|连接/)
+})

@@ -9,11 +9,11 @@ import type { RouteRecordRaw } from 'vue-router';
 import type { MenuNode } from '@/types/auth';
 
 /** pages 下全部页面组件(懒加载) */
-const views = import.meta.glob('@/pages/**/*.vue');
+const views = import.meta.glob('../pages/**/*.vue');
 
 function resolveComponent(component: string): (() => Promise<unknown>) | undefined {
   if (!component) return undefined;
-  const path = `/src/pages/${component.replace(/^\/+|\.vue$/g, '')}.vue`;
+  const path = `../pages/${component.replace(/^\/+|\.vue$/g, '')}.vue`;
   return views[path] as (() => Promise<unknown>) | undefined;
 }
 

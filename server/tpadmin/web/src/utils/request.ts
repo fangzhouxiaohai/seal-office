@@ -53,8 +53,9 @@ async function refreshToken(): Promise<boolean> {
 
 function gotoLogin(): void {
   clearToken();
-  if (!location.pathname.startsWith('/login')) {
-    location.href = `/login?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+  if (!location.pathname.startsWith('/admin/login')) {
+    const route = location.pathname.startsWith('/admin/') ? location.pathname.slice('/admin'.length) : '/';
+    location.href = `/admin/login?redirect=${encodeURIComponent(route + location.search)}`;
   }
 }
 

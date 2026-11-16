@@ -299,6 +299,11 @@ function collectAdmin(dist = path.join(ROOT, ADMIN.source)) {
   return { dist, referenced }
 }
 
+function assertLegacyAdminDeploymentAllowed(code) {
+  if (code === 0) fail('官网已启用，旧后台部署会覆盖新版后台，请使用适配官网的发布流程')
+  if (code !== 1) fail('无法核验官网部署状态，请检查服务器连接')
+}
+
 function main() {
   const args = process.argv.slice(2)
   const mode = args.includes('--check') ? 'check'
@@ -308,6 +313,11 @@ function main() {
   const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version
   const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
   const release = `releases/${version}-backend-${stamp}`
+
+  if (mode === 'deploy') {
+    const websiteStatus = runRemote(`test -e ${SERVER.siteRoot}/websitecurrent`, { password, check: true })
+    assertLegacyAdminDeploymentAllowed(websiteStatus.code)
+  }
 
   // 0) 管理后台静态站点：与后端发布流程解耦，独立同步
   //    先做本地校验，产物不完整时不会走到后端上传，避免只部署一半。
@@ -490,4 +500,4 @@ if (require.main === module) {
   try { main() } catch (error) { console.error('\n部署中止：' + error.message); process.exitCode = 1 }
   finally { fs.rmSync(path.join(ROOT, '.upgrade-private/ask.cmd'), { force: true }) }
 }
-module.exports = { REQUIRED_FILES, SERVER, collectAdmin, collect, createDeploymentConfigBackup, backupDeploymentFiles, restoreDeploymentFiles, restoreAdminDirectory, probeDeployment }
+module.exports = { REQUIRED_FILES, SERVER, collectAdmin, collect, createDeploymentConfigBackup, backupDeploymentFiles, restoreDeploymentFiles, restoreAdminDirectory, probeDeployment, assertLegacyAdminDeploymentAllowed }

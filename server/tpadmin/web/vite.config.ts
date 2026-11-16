@@ -8,6 +8,7 @@ import vue from '@vitejs/plugin-vue';
 import Components from 'unplugin-vue-components/vite';
 import { TDesignResolver } from 'unplugin-vue-components/resolvers';
 import { fileURLToPath, URL } from 'node:url';
+import { realpathSync } from 'node:fs';
 
 export default defineConfig({
   base: '/admin-assets/',
@@ -21,7 +22,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': realpathSync.native(fileURLToPath(new URL('./src', import.meta.url))),
     },
   },
   server: {
