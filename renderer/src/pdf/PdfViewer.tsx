@@ -85,7 +85,12 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
         }
         const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
         // 每页各自限制画布像素，长文档滚动时不会一次创建所有页的画布。
-        const 画布像素上限 = 16_000_000
+        // 超长扫描页（面积远超常规纸张）在放大阅读时需要更高的画布上限，否则画布被过度缩小、
+        // 再被 CSS 拉伸，即使原图已优化也会显得模糊。
+        const 超大页面 = 原始宽度 * 原始高度 > 30_000_000
+        // 移动端内存更紧，超大页面用更保守的画布上限，仍高于普通页面。
+        const 移动宿主 = document.documentElement.dataset.sealPlatform === 'app'
+        const 画布像素上限 = 超大页面 ? (移动宿主 ? 24_000_000 : 32_000_000) : 16_000_000
         const 期望像素 = 显示宽度 * 显示高度 * 像素比 * 像素比
         const 渲染比 = 期望像素 > 画布像素上限 ? Math.sqrt(画布像素上限 / 期望像素) : 1
         const 渲染视口 = 页面.getViewport({ scale: 显示宽度 / 原始宽度 * 渲染比 })

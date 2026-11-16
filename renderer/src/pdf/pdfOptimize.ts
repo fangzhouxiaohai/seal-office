@@ -5,7 +5,24 @@ import { PDFDocument, PDFDict, PDFName, PDFNumber, PDFRawStream, PDFArray, PDFRe
 
 export const 面积阈值 = 24_000_000
 export const 边长阈值 = 10_000
-export const 目标最长边 = 8192
+/** 同一份文档反复打开时复用优化结果，避免每次重新解码数秒 */
+const 优化缓存 = new Map<string, 优化结果>()
+const 缓存上限 = 3
+
+/** 采样计算轻量指纹：文件头尾与中部各取一段，避免整份数据哈希 */
+function 指纹(数据: Uint8Array): string {
+  const 段 = 512, 头 = 数据.subarray(0, Math.min(段, 数据.length))
+  const 中 = 数据.subarray(Math.floor(数据.length / 2), Math.floor(数据.length / 2) + 段)
+  const 尾 = 数据.subarray(Math.max(0, 数据.length - 段))
+  let 值 = 2166136261
+  for (const 块 of [头, 中, 尾]) for (const 字节 of 块) { 值 ^= 字节; 值 = Math.imul(值, 16777619) }
+  return String(数据.length) + ':' + String(值 >>> 0)
+}
+/** 缩放后最长边上限：Chromium 位图单边上限约 32767，Safari 约 16384 */
+export function 最长边上限(): number {
+  if (typeof navigator !== 'undefined' && /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|Edg|OPR/.test(navigator.userAgent)) return 16000
+  return 30000
+}
 
 export interface 优化条目 {
   原宽: number
@@ -151,7 +168,7 @@ async function 缩放图片(文档: PDFDocument, 引用: PDFRef, 记录: 优化�
   if (流.dict.get(PDFName.of('DecodeParms'))) return
   const 像素 = await 解压(流.getContents())
   if (!像素 || 像素.length !== 宽 * 高 * 通道) return
-  const 因子 = Math.max(1, Math.ceil(Math.max(宽, 高) / 目标最长边))
+  const 因子 = Math.max(1, Math.ceil(Math.max(宽, 高) / 最长边上限()))
   if (因子 <= 1) return
   const 缩放 = 缩放像素(像素, 宽, 高, 通道, 因子)
   const 新流 = await 构造缩小流(文档, 流, 缩放)
@@ -183,6 +200,9 @@ async function 缩放图片(文档: PDFDocument, 引用: PDFRef, 记录: 优化�
  */
 export async function 优化PDF大图(原数据: Uint8Array): Promise<优化结果> {
   if (!原数据 || 原数据.length === 0) return { 已优化: false, 数据: 原数据, 条目: [], 错误: 'PDF 数据为空' }
+  const 键 = 指纹(原数据)
+  const 命中 = 优化缓存.get(键)
+  if (命中) return 命中
   let 文档: PDFDocument
   try {
     文档 = await PDFDocument.load(原数据, { updateMetadata: false, ignoreEncryption: true })
@@ -205,10 +225,21 @@ export async function 优化PDF大图(原数据: Uint8Array): Promise<优化结�
         }
       }
     }
-    if (!记录.length) return { 已优化: false, 数据: 原数据, 条目: [] }
+    if (!记录.length) {
+      const 结果: 优化结果 = { 已优化: false, 数据: 原数据, 条目: [] }
+      写入缓存(键, 结果)
+      return 结果
+    }
     const 字节 = await 文档.save({ useObjectStreams: false })
-    return { 已优化: true, 数据: 字节, 条目: 记录 }
+    const 结果: 优化结果 = { 已优化: true, 数据: 字节, 条目: 记录 }
+    写入缓存(键, 结果)
+    return 结果
   } catch (错误) {
     return { 已优化: false, 数据: 原数据, 条目: [], 错误: 错误 instanceof Error ? 错误.message : 'PDF 优化失败' }
   }
+}
+
+function 写入缓存(键: string, 值: 优化结果): void {
+  优化缓存.set(键, 值)
+  while (优化缓存.size > 缓存上限) { const 最旧 = 优化缓存.keys().next().value; if (最旧 === undefined) break; 优化缓存.delete(最旧) }
 }

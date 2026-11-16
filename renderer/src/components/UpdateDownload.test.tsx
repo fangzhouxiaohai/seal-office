@@ -325,7 +325,7 @@ describe('更新下载界面', () => {
   it('安卓普通更新先弹说明弹窗，点更新后关闭并打开下载进度弹窗', async () => {
     document.documentElement.dataset.sealPlatform = 'app'
     vi.mocked(桥接.update.info).mockResolvedValue({成功:true,版本:'2.7.4',平台:'android'})
-    const 下载=vi.spyOn(桥接.update,'download').mockImplementation(()=>new Promise(()=>{}))
+    const 下载=vi.spyOn(桥接.update,'download').mockImplementation(()=>new Promise<更新操作结果<下载进度>>(()=>{}))
     render(<外壳><UpdateCard /></外壳>);act(()=>{展示更新(发布,'自动')})
     const 弹窗=await screen.findByRole('dialog',{name:'发现新版本 2.7.3'})
     expect(弹窗).toHaveTextContent('是否立即更新')
@@ -338,7 +338,7 @@ describe('更新下载界面', () => {
   it('安卓下载完成后不再弹二次确认，由原生宿主拉起系统安装', async () => {
     document.documentElement.dataset.sealPlatform = 'app'
     vi.mocked(桥接.update.info).mockResolvedValue({成功:true,版本:'2.7.4',平台:'android'})
-    const 下载=vi.spyOn(桥接.update,'download').mockImplementation(()=>new Promise(()=>{}))
+    const 下载=vi.spyOn(桥接.update,'download').mockImplementation(()=>new Promise<更新操作结果<下载进度>>(()=>{}))
     const 安装=vi.spyOn(桥接.update,'installReady')
     render(<外壳><UpdateCard /></外壳>);act(()=>{展示更新(发布,'自动')})
     fireEvent.click(await screen.findByRole('button',{name:'更新'}))

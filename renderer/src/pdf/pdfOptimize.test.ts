@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, PDFName, PDFRawStream } from 'pdf-lib'
-import { 优化PDF大图, 缩放像素, 面积阈值, 目标最长边 } from './pdfOptimize'
+import { 优化PDF大图, 缩放像素, 最长边上限 } from './pdfOptimize'
 
 /** jsdom 环境缺少 Web Streams，用 Node 自带实现补齐，测试真实解压与压缩路径 */
 async function 补齐流接口() {
@@ -34,7 +34,7 @@ async function 压缩(数据: Uint8Array): Promise<Uint8Array> {
 async function 构造大图PDF(): Promise<Uint8Array> {
   const 文档 = await PDFDocument.create()
   const 页 = 文档.addPage([595, 842])
-  const 宽 = 8200, 高 = Math.ceil(面积阈值 / 宽) + 10
+  const 宽 = 800, 高 = 30001
   const 像素 = new Uint8Array(宽 * 高).fill(0x80)
   const 压缩数据 = await 压缩(像素)
   const 字典 = 文档.context.obj({})
@@ -72,8 +72,8 @@ describe('PDF 超大位图优化', () => {
     expect(结果.已优化).toBe(true)
     expect(结果.条目).toHaveLength(1)
     const 条目 = 结果.条目[0]
-    expect(条目.原宽).toBe(8200)
-    expect(条目.新宽).toBeLessThanOrEqual(目标最长边)
+    expect(条目.原宽).toBe(800)
+    expect(条目.新宽).toBeLessThanOrEqual(最长边上限())
     expect(Math.abs(条目.原宽 / 条目.原高 - 条目.新宽 / 条目.新高)).toBeLessThan(0.01)
     // 页面尺寸与内容流保持不变，只是位图分辨率降低
     const 优化后 = await PDFDocument.load(结果.数据)
