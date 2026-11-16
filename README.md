@@ -810,3 +810,7 @@ renderer/src/
 作者：饮风一笑
 邮箱：24519660@qq.com
 许可证：MIT
+
+## 官网下载入口
+
+官网首页从项目最新发布信息获取 Windows、macOS、Linux、安卓及鸿蒙安装包地址；获取失败时可通过发布页选择下载。官网位于 `website/`，在该目录运行 `npx vite build --config vite.config.js` 构建。

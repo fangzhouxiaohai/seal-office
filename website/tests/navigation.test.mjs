@@ -8,7 +8,7 @@ const root = new URL('../', import.meta.url)
 describe('移动导航', () => {
   it('点击菜单后展开，选择链接后关闭', async () => {
     const html = await readFile(new URL('index.html', root), 'utf8')
-    const script = (await readFile(new URL('src/main.js', root), 'utf8')).replace("import './styles.css'", '')
+    const script = (await readFile(new URL('src/main.js', root), 'utf8')).split("import { selectDownloads")[0].replace("import './styles.css'", '')
     const dom = new JSDOM(html, { url: 'https://seal.xingmasoft.com/', runScripts: 'outside-only' })
     dom.window.eval(script)
     const toggle = dom.window.document.querySelector('.menu-toggle')
