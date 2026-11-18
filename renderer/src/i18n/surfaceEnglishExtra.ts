@@ -5,6 +5,26 @@
 // 3) JSX 表达式中拼接的片段文案（多为三段拼接，需按片段翻译才能得到通顺英文）。
 // 知识库正文、皮肤模板数据与帮助手册长文属于内容而不是界面，各自有独立英文来源，保持原语言，不在此表。
 export const 补充英文界面二: Record<string, string> = {
+  '新版本已发布，是否立即更新？更新过程中可以继续使用，下载完成后会自动打开系统安装程序。': 'An update is available. You can keep working while it downloads. The installer opens when the download finishes.',
+  '安装未启动': 'Installation did not start',
+  '正在下载更新，点击查看进度': 'Downloading update. View progress',
+  '安装': 'Install',
+  'PDF 操作模式': 'PDF interaction mode',
+  '拖拽查看': 'Pan',
+  '只读可复制': 'Read and copy',
+  '使用核对结果': 'Use reviewed text',
+  '取消转换': 'Cancel conversion',
+  '切换到编辑模式': 'Switch to edit mode',
+  '转换为': 'Convert to',
+  '转换目标格式': 'Output format',
+  'Word 可编辑文字（DOCX）': 'Editable Word document (DOCX)',
+  'Excel 表格（XLSX）': 'Excel workbook (XLSX)',
+  '纯文本（TXT）': 'Plain text (TXT)',
+  '逐页图片（PNG）': 'Page images (PNG)',
+  '转换页码范围': 'Pages to convert',
+  '全部页，或 1,3-5': 'All pages, or 1,3-5',
+  '转换并另存': 'Convert and save as',
+  '在线识别扫描页并核对': 'Recognize scanned pages online and review',
   // —— JSX 拼接片段与标点 ——
   '-底': '-bottom',
   '-分母': '-denominator',

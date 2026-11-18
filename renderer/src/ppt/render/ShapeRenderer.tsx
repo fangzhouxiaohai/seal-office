@@ -2,7 +2,13 @@ import type { 演示对象 } from '../deck'
 export function ShapeRenderer({ 对象 }: { 对象: 演示对象 }) {
   const 形 = 对象.形状
   if (!形) throw new Error('图形缺少几何数据')
-  const 样式 = { fill: 形.填充, stroke: 形.线条, strokeWidth: 形.线宽, vectorEffect: 'non-scaling-stroke' as const }
+  const 样式 = { fill: 形.无填充 ? 'none' : 形.填充, stroke: 形.线条, strokeWidth: 形.线宽, vectorEffect: 'non-scaling-stroke' as const }
+  if (形.种类 === '直线') {
+    const 垂直 = 形.方向 === '垂直', 水平 = 形.方向 === '水平', 上升 = 形.方向 === '上升'
+    return <svg width="100%" height="100%" aria-label="直线" style={{ overflow: 'visible' }}>
+      <line x1="0" y1={上升 ? '100%' : '0'} x2={垂直 ? '0' : '100%'} y2={水平 || 上升 ? '0' : '100%'} {...样式} />
+    </svg>
+  }
   const 几何 = 形.种类 === '椭圆' ? <ellipse cx="50" cy="50" rx="49" ry="49" {...样式} />
     : 形.种类 === '菱形' ? <polygon points="50,1 99,50 50,99 1,50" {...样式} />
     : 形.种类 === '三角形' ? <polygon points="50,1 99,99 1,99" {...样式} />
@@ -15,5 +21,5 @@ export function ShapeRenderer({ 对象 }: { 对象: 演示对象 }) {
     const 角 = Math.atan2(y2-y1,x2-x1), 长 = 10
     return <svg width="100%" height="100%" style={{ overflow: 'visible' }}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={形.线条} strokeWidth={形.线宽}/><path d={`M${x2-长*Math.cos(角-.4)} ${y2-长*Math.sin(角-.4)} L${x2} ${y2} L${x2-长*Math.cos(角+.4)} ${y2-长*Math.sin(角+.4)}`} fill="none" stroke={形.线条} strokeWidth={形.线宽}/></svg>
   }
-  return <><svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={形.种类}>{几何}</svg><div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, overflow: 'hidden', boxSizing: 'border-box', color: 形.颜色, fontFamily: 'Microsoft YaHei, sans-serif', fontSize: 形.字号, fontWeight: 形.加粗 ? 600 : 400, textAlign: 'center', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.3, ...(形.种类 === '艺术字' ? { WebkitTextStroke: `1px ${形.线条}` } : {}) }}>{形.文本}</div></>
+  return <><svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={形.种类}>{几何}</svg><div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 形.对齐 === 'left' ? 'flex-start' : 形.对齐 === 'right' ? 'flex-end' : 'center', padding: 8, overflow: 'hidden', boxSizing: 'border-box', color: 形.颜色, fontFamily: 形.字体 ?? 'Microsoft YaHei, sans-serif', fontSize: 形.字号, fontWeight: 形.加粗 ? 600 : 400, textAlign: 形.对齐 ?? 'center', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.3, ...(形.种类 === '艺术字' ? { WebkitTextStroke: `1px ${形.线条}` } : {}) }}>{形.文本}</div></>
 }

@@ -13,25 +13,7 @@ const 取文本 = (节点) => (节点 ? 规范数学字符(节点.子.filter((�
 const 转像素 = (值) => Number(值) / 12700
 const 属性 = (标签, 键) => 标签?.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
 
-function 解析Xml树(xml) {
-  const sax = require('sax')
-  const 根 = { 名称: '#root', 属性: {}, 子: [], 文本: '' }
-  const 栈 = [根]
-  const 解析器 = sax.parser(true)
-  解析器.onerror = () => { throw new Error('公式数学部件结构损坏') }
-  解析器.ondoctype = () => { throw new Error('公式数学部件结构损坏') }
-  解析器.onopentag = (标签) => {
-    const 节点 = { 名称: 标签.name, 属性: 标签.attributes, 子: [], 文本: '' }
-    栈[栈.length - 1].子.push(节点)
-    栈.push(节点)
-  }
-  解析器.onclosetag = () => { 栈.pop() }
-  解析器.ontext = (文本) => { 栈[栈.length - 1].文本 += 文本 }
-  解析器.oncdata = (文本) => { 栈[栈.length - 1].文本 += 文本 }
-  解析器.write(xml).close()
-  if (栈.length !== 1) throw new Error('公式数学部件结构损坏')
-  return 根
-}
+const { 解析Xml树 } = require('./xmlTree')
 
 function 查找数学根(节点) {
   for (const 子 of 节点.子) {

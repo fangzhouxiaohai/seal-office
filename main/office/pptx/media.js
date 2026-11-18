@@ -1,4 +1,5 @@
 const { 读取对象标识 } = require('./objectIds')
+const { 读取外部图形 } = require('./externalShapes')
 const { 准备图表, 图框Xml, 读取图表 } = require('./charts')
 const { 写入原生对象, 读取原生对象 } = require('./elements')
 const { 写入附件对象, 写入图示对象 } = require('./embeddedObjects')
@@ -232,11 +233,12 @@ async function 读取音效(包, 路径, xml) {
   }
 }
 
-async function 读取图片对象(包, 路径, xml) {
+async function 读取图片对象(包, 路径, xml, 页码 = Number(路径.match(/slide(\d+)\.xml$/)?.[1]) || 1) {
   const 关系 = await 读取关系(包, 路径)
-  const 原生 = 读取原生对象(xml)
-  const 图表 = await 读取图表(包, 路径, xml)
-  const 对象列表 = [...原生.对象列表,...图表.对象列表], 资源表 = new Map(), 警告 = [...原生.警告,...图表.警告]
+  const 外部 = 读取外部图形(xml, 路径, 页码)
+  const 原生 = 读取原生对象(外部.剩余)
+  const 图表 = await 读取图表(包, 路径, 外部.剩余)
+  const 对象列表 = [...外部.对象列表,...原生.对象列表,...图表.对象列表], 资源表 = new Map(), 警告 = [...外部.警告,...原生.警告,...图表.警告]
   const 已识别媒体片段 = []
   const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/g)).filter(项 => !项[0].includes('descr="seal-ink:')).map(项 => 项.index)
   if (首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)) 警告.push('图片与文字图层未完整导入')
@@ -292,11 +294,17 @@ async function 读取图片对象(包, 路径, xml) {
       continue
     }
     const 支持标签 = new Set(['p:pic','p:nvPicPr','p:cNvPr','p:cNvPicPr','p:nvPr','p:blipFill','p:spPr','a:picLocks','a:blip','a:srcRect','a:stretch','a:fillRect','a:xfrm','a:off','a:ext','a:prstGeom','a:avLst','a:hlinkClick'])
-    if (Array.from(内容.matchAll(/<([\w:]+)\b/g), 项 => 项[1]).some(标签 => !支持标签.has(标签))) 警告.push('图片效果未完整导入')
+    const 图片名称 = 属性(内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? '', 'name') || String(对象列表.length + 1)
+    const 定位 = '第 ' + 页码 + ' 页图片「' + 图片名称 + '」'
+    for (const 标签 of new Set(Array.from(内容.matchAll(/<([\w:]+)\b/g), 项 => 项[1]))) {
+      if (!支持标签.has(标签)) 警告.push(定位 + (标签 === 'a:alphaModFix' ? '的透明度未导入，图片按原始不透明度显示' : '的效果 ' + 标签 + ' 未导入'))
+    }
     const 支持属性 = { 'p:cNvPr': ['id','name'], 'a:picLocks': ['noMove','noResize'], 'a:blip': ['r:embed'], 'a:srcRect': ['l','t','r','b'], 'a:fillRect': ['l','t','r','b'], 'a:xfrm': ['rot','flipH','flipV'], 'a:off': ['x','y'], 'a:ext': ['cx','cy'], 'a:prstGeom': ['prst'] }
     const 属性解析器 = sax.parser(true)
     属性解析器.onopentag = 标签 => {
-      if (Object.keys(标签.attributes).some(键 => !(支持属性[标签.name] ?? []).includes(键))) 警告.push('图片属性未完整导入')
+      for (const 键 of Object.keys(标签.attributes)) {
+        if (支持标签.has(标签.name) && !(支持属性[标签.name] ?? []).includes(键)) 警告.push(定位 + '的属性 ' + 标签.name + '@' + 键 + ' 未完整导入')
+      }
       if (标签.name === 'a:xfrm' && ['flipH','flipV'].some(键 => 标签.attributes[键] !== undefined && !['0','false'].includes(标签.attributes[键]))) 警告.push('图片效果未完整导入')
     }
     属性解析器.write(`<p:pic>${内容}</p:pic>`).close()

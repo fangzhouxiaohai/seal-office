@@ -3,8 +3,8 @@ export { 图表配色 }
 import type { 演示对象, 幻灯片 } from '../deck'
 import { 要求对象可编辑 } from './objectPermissions'
 import { 校验媒体数据, 校验墨迹数据, 校验链接数据 } from './mediaObjects'
-export type 图形种类 = '矩形'|'圆角矩形'|'椭圆'|'菱形'|'三角形'|'箭头'|'星形'|'爱心'|'艺术字'|'连接线'
-export interface 形状数据 { 种类: 图形种类; 文本: string; 填充: string; 线条: string; 线宽: number; 颜色: string; 字号: number; 加粗: boolean }
+export type 图形种类 = '矩形'|'圆角矩形'|'椭圆'|'菱形'|'三角形'|'箭头'|'星形'|'爱心'|'艺术字'|'直线'|'连接线'
+export interface 形状数据 { 种类: 图形种类; 文本: string; 填充: string; 线条: string; 线宽: number; 颜色: string; 字号: number; 加粗: boolean; 字体?: string; 对齐?: 'left'|'center'|'right'; 无填充?: boolean; 方向?: '水平'|'垂直'|'上升'|'下降' }
 export interface 单元格 { 文本: string; 背景: string; 颜色: string; 字号: number; 加粗: boolean; 对齐: 'left'|'center'|'right' }
 export interface 合并范围 { 行: number; 列: number; 行数: number; 列数: number }
 export interface 表格数据 { 单元格: 单元格[][]; 行高: number[]; 列宽: number[]; 合并: 合并范围[] }
@@ -122,8 +122,9 @@ export function 校验原生元素(对象: 演示对象): void {
     字段(对象,['id','类型','x','y','width','height','旋转','锁定','形状','连接','子对象标识'])
     if (对象.子对象标识 !== undefined) throw new Error('图形不能携带组合成员')
     const 形 = 对象.形状
-    字段(形,['种类','文本','填充','线条','线宽','颜色','字号','加粗'])
-    if (!形 || !['矩形','圆角矩形','椭圆','菱形','三角形','箭头','星形','爱心','艺术字','连接线'].includes(形.种类) || typeof 形.文本 !== 'string' || typeof 形.加粗 !== 'boolean' || !Number.isFinite(形.字号) || 形.字号 <= 0 || !Number.isFinite(形.线宽) || 形.线宽 < 0 || ![形.填充,形.线条,形.颜色].every(颜色)) throw new Error('图形数据无效，已阻止有损保存')
+    字段(形,['种类','文本','填充','线条','线宽','颜色','字号','加粗','字体','对齐','无填充','方向'])
+    if (!形 || !['矩形','圆角矩形','椭圆','菱形','三角形','箭头','星形','爱心','艺术字','直线','连接线'].includes(形.种类) || typeof 形.文本 !== 'string' || typeof 形.加粗 !== 'boolean' || !Number.isFinite(形.字号) || 形.字号 <= 0 || !Number.isFinite(形.线宽) || 形.线宽 < 0 || ![形.填充,形.线条,形.颜色].every(颜色)) throw new Error('图形数据无效，已阻止有损保存')
+    if (形.字体 !== undefined && typeof 形.字体 !== 'string' || 形.对齐 !== undefined && !['left','center','right'].includes(形.对齐) || 形.无填充 !== undefined && typeof 形.无填充 !== 'boolean' || 形.方向 !== undefined && (形.种类 !== '直线' || !['水平','垂直','上升','下降'].includes(形.方向))) throw new Error('图形外观属性无效')
     if (形.种类 === '连接线' && !对象.连接) throw new Error('连接线缺少端点')
     if (对象.连接 && 形.种类 !== '连接线') throw new Error('非连接线对象不能携带端点')
     if (对象.连接) {

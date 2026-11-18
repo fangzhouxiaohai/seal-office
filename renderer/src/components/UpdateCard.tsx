@@ -221,7 +221,14 @@ function 更新入口() {
     if (忙碌) return
     设忙碌(true)
     try {
-      await 开始下载更新(目标, '隐藏', true)
+      const { 平台 } = await 读取更新平台()
+      if (!桥接.update.下载可用 || ['web', 'windows-store', 'harmony'].includes(平台)) {
+        const 结果 = await 执行更新(目标)
+        if (!结果.成功) throw new Error(结果.错误)
+        稍后提醒()
+      } else {
+        await 开始下载更新(目标, '隐藏', Boolean(目标.mandatory))
+      }
     } catch (错误) {
       modal.error({ title: '更新失败', content: 错误 instanceof Error ? 错误.message : '下载更新失败，请稍后重试', okText: '确定' })
     } finally {

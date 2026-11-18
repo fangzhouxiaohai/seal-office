@@ -53,7 +53,7 @@ describe('原生图片关系', () => {
     const xml=await 写入图片对象(包,路径,'<p:sld><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>',[{id:'图',类型:'图片',x:0,y:0,width:80,height:60,锁定:true,资源标识:标识}],[{标识,类型:'image/png',数据:图片.toString('base64')}])
     const 结果=await 读取图片对象(包,路径,xml.replace(/noMove="1"/g,'noMove="true"').replace(/noResize="1"/g,'noResize="true"').replace('<a:blip ','<a:blip cstate="print" '))
     expect(结果.对象列表[0].锁定).toBe(true)
-    expect(结果.警告).toContain('图片属性未完整导入')
+    expect(结果.警告).toEqual(expect.arrayContaining([expect.stringMatching(/第 1 页图片.*a:blip@cstate 未完整导入/)]))
   })
   it('真实文件填充区域偏移产生保真风险',async()=>{
     const 包=new JSZip();包.file('[Content_Types].xml','<Types></Types>')
