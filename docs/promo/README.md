@@ -1,6 +1,6 @@
 # 海豹办公当前介绍视频
 
-当前入口为 `npm run promo:build`，版本读取根目录 `package.json`，分镜读取 [current-storyboard.json](current-storyboard.json)。每版制作 1920×1080 PC 横版与 1080×1920 Android 竖版，使用英文 `seal-office-<版本>-pc-intro-1080p.mp4` / `seal-office-<版本>-android-intro-1080p.mp4`，输出到 `release/promo/`，并清理旧成片及过期素材。完整规则见[打包规范](../打包规范.md)。
+当前入口为 `npm run promo:build`，版本读取根目录 `package.json`，分镜读取 [current-storyboard.json](current-storyboard.json)。仅在用户明确要求制作视频时，制作 1920×1080 PC 横版与 1080×1920 Android 竖版，使用英文 `seal-office-<版本>-pc-intro-1080p.mp4` / `seal-office-<版本>-android-intro-1080p.mp4`，输出到 `release/promo/`，并清理旧成片及过期素材。常规程序更新与发版不生成视频。完整规则见[打包规范](../打包规范.md)。
 
 2.7.2 横版展示文字保存、简洁模式、同一份文件以 100% 和 150% 打开、表格求和、演示模板和手动检查更新。竖版展示文字保存、简洁模式、全屏阅读手势、表格求和和手动检查更新。使用真实点击、逐字输入和紫色目标轮廓。配音沿用用户确认的晓晓女声，语速 +5%、音调 +4 Hz，字幕使用配音返回的句子时间戳。
 

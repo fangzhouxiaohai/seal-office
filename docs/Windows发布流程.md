@@ -8,7 +8,7 @@
 - 安装版：`seal-office-setup-<版本>.exe`；便携版：`seal-office-<版本>-portable.exe`。
 - 微软商店包：`seal-office-<版本>-microsoft-store-x64.msix`；统一读取 `build/artifact-names.json`，应用内部显示名继续使用中文，商店清单显示名使用 `seal-office`。
 - 产物目录：`release/v<版本>/`。每次先执行 `npm run release:prepare`，本机 `release/` 顶层只保留当前版本目录和 `promo/`，安装包不放顶层。远端历史版本保留。完整规则见[打包规范](打包规范.md)。
-- 每次发布同步重制横版 PC 与竖版 Android 介绍视频，清理旧成片及过期素材；生成命令为 `npm run promo:build`，交付画面、音轨、字幕与来源核验。
+- 介绍视频仅在用户明确要求制作视频时生成，常规发版不重制、不因缺少视频阻塞发布；明确要求时再执行 `npm run promo:build`，交付画面、音轨、字幕与来源核验。
 
 ## 验证与构建
 
