@@ -4,10 +4,10 @@ describe('Windows 文件关联入口', () => {
     expect(配置.nsis.include).toBe('build/installer.nsh')
     expect(配置.extraResources.map(项 => 项.to)).toEqual(expect.arrayContaining(['office-runtime', 'shell-integration/shellIntegration.ps1', 'file-icons', 'shell-new']))
   })
-  it('所有登记格式都能经冷启动入口传递，排除 WPS 专属格式和可执行文件', () => {
+  it('所有登记格式都能经冷启动入口传递，排除可执行文件', () => {
     const { 提取关联路径 } = require('./fileAssociation')
     const 文件 = require('./documentFormats.json').map(项 => `D:\\验收 文件\\中文.${项.extension.toUpperCase()}`)
-    expect(提取关联路径([...文件, 'D:\\a.wps', 'D:\\a.wpt', 'D:\\a.et', 'D:\\a.ett', 'D:\\a.dps', 'D:\\a.dpt', 'D:\\a.exe'])).toEqual(文件)
+    expect(提取关联路径([...文件, 'D:\\a.exe'])).toEqual(文件)
   })
 
   it('只接收绝对路径及支持的扩展名，并保留中文和空格', () => {

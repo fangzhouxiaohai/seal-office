@@ -55,7 +55,7 @@ test('range, multi-sheet and cancel protections prevent truncated legacy output'
   await assert.rejects(转换文档(await 写入xlsx(model), 'xlsx', 'xls', 'table'), /取消/)
   let calls = 0
   configureConversion({ remote: async () => { calls++; return Buffer.from('synthetic') }, confirmLocal: async () => true })
-  await assert.rejects(转换文档(Buffer.from('x'), 'wps', 'docx', 'word'), /无效/)
+  await assert.rejects(转换文档(Buffer.from('x'), 'docx', 'wps', 'word'), /无效/)
   await assert.rejects(转换文档(Buffer.from('not an Excel workbook'), 'xls', 'xlsx', 'table'), /有效的 Excel/)
   await 转换文档(Buffer.from('synthetic'), 'doc', 'docx', 'word'); assert.equal(calls, 1)
 })

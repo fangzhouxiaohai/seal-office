@@ -3,9 +3,9 @@ const assert = require('node:assert/strict')
 const { createConverterServer, validateConversion, maximumBytes } = require('./index.cjs')
 const token = 'synthetic_test_token_' + 'x'.repeat(32)
 const input = { inputFormat: 'doc', outputFormat: 'docx', type: 'word', data: Buffer.from('synthetic document').toString('base64') }
-test('only supported, non-proprietary conversion pairs accept valid bytes', () => {
+test('only supported import and export pairs accept valid bytes', () => {
   assert.equal(validateConversion(input).bytes.toString(), 'synthetic document')
-  for (const value of [{ ...input, inputFormat: 'wps' }, { ...input, outputFormat: 'docm' }, { ...input, outputFormat: 'xlsx' }, { ...input, inputFormat: '../doc' }, { ...input, data: 'invalid%%%' }, { ...input, data: '' }, { ...input, data: 'c2VhbA==extra' }]) assert.throws(() => validateConversion(value))
+  for (const value of [{ ...input, outputFormat: 'wps' }, { ...input, outputFormat: 'docm' }, { ...input, outputFormat: 'xlsx' }, { ...input, inputFormat: '../doc' }, { ...input, data: 'invalid%%%' }, { ...input, data: '' }, { ...input, data: 'c2VhbA==extra' }]) assert.throws(() => validateConversion(value))
   const maximum = { ...input, data: Buffer.alloc(maximumBytes, 1).toString('base64') }
   assert.equal(validateConversion(maximum).bytes.length, maximumBytes)
   assert.throws(() => validateConversion({ ...input, data: Buffer.alloc(maximumBytes + 1).toString('base64') }), /20 MiB/)
@@ -19,7 +19,7 @@ test('server authenticates requests, handles CORS, preserves byte data and repor
   try {
     assert.equal((await fetch(url + '/v1/capabilities')).status, 401)
     const capabilities = await fetch(url + '/v1/capabilities', { headers }); assert.equal(capabilities.headers.get('access-control-allow-origin'), 'https://office.example.test')
-    const result = await capabilities.json(); assert.equal(result.protocol, 'seal-office-converter/1'); assert.ok(result.inputs.includes('ppt')); assert.ok(result.outputs.includes('odt')); assert.ok(!result.inputs.includes('wps'))
+    const result = await capabilities.json(); assert.equal(result.protocol, 'seal-office-converter/1'); assert.ok(result.inputs.includes('ppt')); assert.ok(result.outputs.includes('odt')); assert.ok(result.inputs.includes('wps')); assert.ok(!result.outputs.includes('wps'))
     assert.equal((await fetch(url + '/v1/capabilities', { headers: { ...headers, Origin: 'https://untrusted.example.test' } })).status, 403)
     assert.equal((await fetch(url + '/v1/convert', { method: 'OPTIONS', headers: { Origin: headers.Origin } })).status, 204)
     const converted = await fetch(url + '/v1/convert', { method: 'POST', headers, body: JSON.stringify(input) }); assert.equal(converted.status, 200)

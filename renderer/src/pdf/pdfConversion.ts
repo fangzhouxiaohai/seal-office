@@ -1,6 +1,46 @@
 import { 载入PDF } from './pdfLoader'
 import { 解析页码 } from './pdfCommands'
 import { 桥接 } from '../ipc/bridge'
+import JSZip from 'jszip'
+import type { PDFPageProxy } from 'pdfjs-dist'
+
+async function 渲染页面图片(page: PDFPageProxy) {
+  const canvas = document.createElement('canvas')
+  try {
+    const size = page.getViewport({scale: 1})
+    const scale = Math.min(2, 16384 / Math.max(size.width, size.height), Math.sqrt(16000000 / (size.width * size.height)))
+    const viewport = page.getViewport({scale})
+    canvas.width = Math.max(1, Math.ceil(viewport.width))
+    canvas.height = Math.max(1, Math.ceil(viewport.height))
+    await page.render({canvas, viewport}).promise
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value =>
+      value ? resolve(value) : reject(new Error('页面图片生成失败')), 'image/png'))
+    return new Uint8Array(await blob.arrayBuffer())
+  } finally {
+    canvas.width = 0
+    canvas.height = 0
+  }
+}
+
+export async function 转换PDF图片(data:string, range:string) {
+  const { 文档, 关闭 } = await 载入PDF(data)
+  try {
+    const permissions = await 文档.getPermissions()
+    if (permissions && !permissions.has(16)) throw new Error('此 PDF 限制复制内容')
+    const pages = range.trim() ? 解析页码(range) : Array.from({length:文档.numPages}, (_,i)=>i+1)
+    if (pages.some(n=>n>文档.numPages)) throw new Error(`文档共有 ${文档.numPages} 页，请检查范围`)
+    const zip = new JSZip()
+    for (const number of pages) {
+      const page = await 文档.getPage(number)
+      try {
+        const bytes = await 渲染页面图片(page)
+        if (pages.length===1) return {extension:'png',bytes}
+        zip.file(`第${String(number).padStart(String(文档.numPages).length,'0')}页.png`,bytes)
+      } finally { page.cleanup() }
+    }
+    return {extension:'zip',bytes:await zip.generateAsync({type:'uint8array'})}
+  } finally { 关闭() }
+}
 
 /** 按文字基线组成行，按字块间距区分表格列；保留编号的前导零。 */
 export function 提取文字行(items: Array<{ str:string; transform:number[]; width:number; height:number }>) {
@@ -25,7 +65,8 @@ export function 提取文字行(items: Array<{ str:string; transform:number[]; w
   })
 }
 
-export async function 转换PDF文字(data:string, format:'docx'|'xlsx'|'txt', range:string) {
+export async function 转换PDF文字(data:string, format:'docx'|'xlsx'|'txt', range:string,
+  识别扫描页?: (页码: number, 图片: Uint8Array) => Promise<string[][]>) {
   const { 文档, 关闭 } = await 载入PDF(data)
   try {
     const permissions = await 文档.getPermissions()
@@ -36,8 +77,9 @@ export async function 转换PDF文字(data:string, format:'docx'|'xlsx'|'txt', r
     for (const pageNumber of pages) {
       const page = await 文档.getPage(pageNumber)
       const content = await page.getTextContent()
-      const rows = 提取文字行(content.items.filter(item=>'str' in item))
-      if (!rows.length) throw new Error(`第 ${pageNumber} 页没有可提取的文字，请先进行 OCR 或选择其他页`)
+      let rows = 提取文字行(content.items.filter(item=>'str' in item))
+      if (!rows.length && 识别扫描页) rows = await 识别扫描页(pageNumber, await 渲染页面图片(page))
+      if (!rows.length) throw new Error(`第 ${pageNumber} 页没有可提取的文字，请启用扫描页识别、导出 PNG 或选择其他页`)
       const lines = rows.map(row=>row.join(' '))
       if (format==='xlsx') {
         if (!rows.some(row=>row.length>1)) throw new Error(`第 ${pageNumber} 页没有可识别的表格列`)

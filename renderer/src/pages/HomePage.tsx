@@ -49,10 +49,12 @@ interface HomePageProps {
   模板库打开?: boolean
   关闭模板库?: () => void
   新建Access请求?: number
+  打开Access路径?: string
+  on打开Access已处理?: () => void
   on新建Access已处理?: () => void
 }
 
-const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求 = 0, on新建Access已处理 }: HomePageProps) => {
+const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求 = 0, on新建Access已处理, 打开Access路径, on打开Access已处理 }: HomePageProps) => {
   const { message, modal } = AntdApp.useApp()
   const cloud = useCloud()
   const [类型筛选, 设类型筛选] = useState<'all' | DocType>('all')
@@ -224,6 +226,7 @@ const HomePage = ({ 模板库打开 = false, 关闭模板库, 新建Access请求
     : navKey === 'receipt' ? React.createElement(ErrorBoundary, null, React.createElement(React.Suspense, { fallback: React.createElement('div', { className: 'local-page', role: 'status' }, React.createElement(Spin), ' 正在加载单据转表格…') }, React.createElement(ReceiptPage)))
     : navKey === 'database' && navigationAvailable('database') ? React.createElement(DatabasePage, {
         初始新建请求: 新建Access请求 || undefined,
+        初始打开路径: 打开Access路径, on初始打开已处理: on打开Access已处理,
         on初始新建已处理: on新建Access已处理,
       })
     : navKey === 'mindmap' ? React.createElement(DiagramPage, { 类型: '脑图' })

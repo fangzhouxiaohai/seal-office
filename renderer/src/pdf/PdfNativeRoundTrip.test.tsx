@@ -138,6 +138,8 @@ it('原生 PDF 经真实批注、插图和插页后 Ctrl+S 保存原路径，重
   fireEvent.click(screen.getByText('打开原生测试'))
   await waitFor(() => expect(screen.getByTestId('native-pdf-preview')).toHaveAttribute('data-pdf', 初始PDF))
   fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
+  expect(screen.getByRole('button', { name: '编辑并另存' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
   fireEvent.mouseDown(screen.getByRole('combobox', { name: '编辑操作' }))
   fireEvent.click(await screen.findByText('添加可见批注'))
   fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'NEW_NOTE_2026' } })

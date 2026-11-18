@@ -31,7 +31,7 @@ test('账号gateway真实会话鉴权、上传授权、格式白名单与控制/
   assert.equal((await f.request('/v1/conversion/capabilities')).status,401)
   assert.equal((await f.request('/v1/conversion/capabilities',{token:f.serviceToken})).status,401)
   assert.equal((await f.request('/v1/admin/converter',{client:f.a})).status,401)
-  const caps=await f.a.conversionCapabilities();assert.equal(caps.protocol,'seal-office-converter/1');assert.ok(caps.inputs.includes('doc'));assert.ok(!caps.inputs.includes('wps'))
+  const caps=await f.a.conversionCapabilities();assert.equal(caps.protocol,'seal-office-converter/1');assert.ok(caps.inputs.includes('doc'));assert.ok(caps.inputs.includes('wps'));assert.ok(!caps.outputs.includes('wps'))
   const result=await f.a.convertDocument(payload);assert.equal(Buffer.from(result.data,'base64').toString(),'私有转换正文');assert.equal(result.outputFormat,'docx')
   assert.equal((await convert(f,f.b,{...payload,consent:false})).status,400)
   assert.equal((await convert(f,f.b,{...payload,inputFormat:'../doc'})).status,400)

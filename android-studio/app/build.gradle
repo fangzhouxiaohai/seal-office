@@ -20,8 +20,8 @@ android {
         applicationId 'com.sealoffice.mobile'
         minSdk 28
         targetSdk 36
-        versionCode 20706
-        versionName '2.7.6'
+        versionCode 20707
+        versionName '2.7.7'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         manifestPlaceholders = [appLabel: '海豹办公']
     }
@@ -89,7 +89,7 @@ tasks.register('prepareOfficeAssets', Sync) {
             throw new GradleException('安卓编辑器资源不完整，请先在仓库根目录运行 npm --prefix mobile run build:android')
         }
         def version = new groovy.json.JsonSlurper().parse(info)
-        if (version.platform != 'android' || version.desktopVersion != '2.7.6') {
+        if (version.platform != 'android' || version.desktopVersion != '2.7.7') {
             throw new GradleException('安卓编辑器资源的平台或版本不匹配')
         }
     }
@@ -99,6 +99,7 @@ tasks.matching { it.name == 'mergeDebugAssets' || it.name == 'mergeReleaseAssets
         .configureEach { dependsOn tasks.named('prepareOfficeAssets') }
 
 dependencies {
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
     implementation 'androidx.core:core-splashscreen:1.2.0'
     implementation 'androidx.webkit:webkit:1.16.0'
     // FileProvider：系统相机写入拍照结果（webkit 已间接依赖同一版本，此处显式声明）。

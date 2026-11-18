@@ -22,6 +22,11 @@ type 最近文档错误处理 = (选项: { title: string; content: string }) => 
 let 最近文档错误弹窗: 最近文档错误处理 | null = null
 type 导入确认处理 = (选项: Parameters<typeof Modal.confirm>[0]) => unknown
 let 导入确认弹窗: 导入确认处理 | null = null
+let 打开Access: ((路径: string) => void) | undefined
+export function 注册Access文件入口(处理: (路径: string) => void) {
+  打开Access = 处理
+  return () => { if (打开Access === 处理) 打开Access = undefined }
+}
 export function 注册导入确认弹窗(处理: 导入确认处理): () => void {
   导入确认弹窗 = 处理
   return () => { if (导入确认弹窗 === 处理) 导入确认弹窗 = null }
@@ -394,7 +399,7 @@ interface 消息接口 {
 }
 
 interface 弹窗接口 {
-  error: (选项: { title: string; content: string }) => void
+  error: (选项: { title: string; content: string; footer?: Parameters<typeof Modal.error>[0]['footer'] }) => void
 }
 
 /**
@@ -427,15 +432,22 @@ export async function 通过路径打开文件(
   modal: 弹窗接口,
   打开: (类型: 打开类型, 内容: unknown, 路径: string, 警告?: string[], 页面设置?: 文字页面设置, 文件指纹?: string) => void
 ): Promise<boolean> {
-  const 扩展 = 归一化扩展名(文件路径)
+  const 扩展 = typeof 文件路径 === 'string' ? 归一化扩展名(文件路径) : ''
+  let 阶段 = '读取并解析文件'
   const 格式 = 文档格式.find(项 => 项.extension === 扩展)
   const 收起提示 = 格式?.conversion && !('ooxml' in 格式 && 格式.ooxml) && !('text' in 格式 && 格式.text)
     ? 消息.loading?.('正在转换并打开文档，首次处理可能需要稍等…', 0) : undefined
   try {
     if (typeof 文件路径 !== 'string' || 文件路径.trim() === '') throw new Error('未提供有效的文件路径')
+    if (['accdb', 'mdb'].includes(扩展)) {
+      if (!打开Access || document.documentElement.dataset.sealPlatform) throw new Error('Access 数据库需要 Windows 桌面版及 Access Runtime')
+      打开Access(文件路径)
+      return true
+    }
     const 内容 = await 准备打开本地文件(文件路径)
     if (!内容) return false
     文件路径 = 内容.打开路径 ?? 文件路径
+    阶段 = '写入编辑器模型'
     if (内容.类型 === 'ppt') {
       if (内容.文件指纹) 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告, undefined, 内容.文件指纹)
       else 打开('ppt', 内容.演示文稿, 文件路径, 内容.警告)
@@ -451,7 +463,23 @@ export async function 通过路径打开文件(
     await 记录最近文档(文件路径, 基准文件名(文件路径), 内容.类型)
     return true
   } catch (错误) {
-    modal.error({ title: '打开文件失败', content: 错误 instanceof Error ? 错误.message : '未知错误' })
+    const 名称 = 文件路径 ? 基准文件名(String(文件路径)) : '未选择文件'
+    const 原因 = 错误 instanceof Error ? 错误.message : '无法解析文档'
+    const 摘要 = [`文件：${名称}`, `格式：${扩展 || '未知'}`, `阶段：${阶段}`].join('\n')
+    modal.error({
+      title: '打开文件失败', content: `${名称}（${阶段}）：${原因}`,
+      footer: (_原有, { OkBtn }) => createElement('div', null,
+        createElement('details', null, createElement('summary', null, '技术详情'),
+          createElement('pre', null, 摘要), createElement('p', null, 文件路径)),
+        createElement('button', { onClick: async () => {
+          try { await navigator.clipboard.writeText(摘要); 消息.success('已复制诊断详情') }
+          catch { 消息.info('剪贴板不可用，请在技术详情中选取文字') }
+        } }, '复制详情'),
+        文件路径 && createElement('button', { onClick: async () => {
+          const 结果 = await 桥接.revealInFolder(文件路径)
+          if (!结果.成功) 消息.info(结果.错误 || '文件已移动或所在目录无法打开')
+        } }, '打开所在文件夹'), createElement(OkBtn)),
+    })
     return false
   } finally {
     收起提示?.()

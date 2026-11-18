@@ -17,6 +17,12 @@
     "label": "演示文稿",
     "icon": "presentation"
   },
+  { "extension": "wps", "type": "word", "label": "WPS 文字", "icon": "word", "conversion": true, "readOnlySource": true, "legacyContainer": "doc" },
+  { "extension": "wpt", "type": "word", "label": "WPS 文字模板", "icon": "word", "conversion": true, "readOnlySource": true, "legacyContainer": "dot" },
+  { "extension": "et", "type": "table", "label": "WPS 表格", "icon": "table", "conversion": true, "readOnlySource": true, "legacyContainer": "xls" },
+  { "extension": "ett", "type": "table", "label": "WPS 表格模板", "icon": "table", "conversion": true, "readOnlySource": true, "legacyContainer": "xlt" },
+  { "extension": "dps", "type": "ppt", "label": "WPS 演示", "icon": "presentation", "conversion": true, "readOnlySource": true, "legacyContainer": "ppt" },
+  { "extension": "dpt", "type": "ppt", "label": "WPS 演示模板", "icon": "presentation", "conversion": true, "readOnlySource": true, "legacyContainer": "pot" },
   {
     "extension": "pdf",
     "type": "pdf",

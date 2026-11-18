@@ -15,13 +15,13 @@ describe('Ubuntu 文件打开与关联', () => {
     }
     expect(选择兼容过滤器('writer8', 'linux')).toBe('writer8')
   })
-  it('保留中文、空格和大小写不同的 Linux 文档，忽略参数、相对路径及 WPS 文件', async () => {
-    const 文件 = ['/home/a/中文 文件.csv', '/home/a/REPORT.docx', '/home/a/report.docx']
-    expect(提取关联路径([...文件, '--no-sandbox', 'relative.xls', '/home/a/a.wps'], 'linux')).toEqual(文件)
+  it('保留中文、空格、WPS 和大小写不同的 Linux 文档，忽略参数及相对路径', async () => {
+    const 文件 = ['/home/a/中文 文件.csv', '/home/a/REPORT.docx', '/home/a/report.docx', '/home/a/a.wps']
+    expect(提取关联路径([...文件, '--no-sandbox', 'relative.xls'], 'linux')).toEqual(文件)
     const sender = { send: vi.fn() }, 通道 = new Map()
     const 入口 = 创建关联文件入口(() => ({ webContents: sender }), 'linux')
     入口.注册读取通道({ handle: (名, 函数) => 通道.set(名, 函数) })
-    expect(入口.加入命令行([...文件, 文件[0]])).toBe(3)
+    expect(入口.加入命令行([...文件, 文件[0]])).toBe(文件.length)
     expect(await 通道.get('file.association.takePending')({ sender })).toEqual({ 成功: true, 路径列表: 文件 })
   })
   it('启动只查询，手动操作后核验实际默认应用', async () => {

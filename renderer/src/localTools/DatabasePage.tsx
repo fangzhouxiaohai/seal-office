@@ -79,10 +79,12 @@ function 新建表初始行(): 字段行[] {
 interface DatabasePageProps {
   /** 首页“新建 Access”每点击一次递增；同一请求只执行一次。 */
   初始新建请求?: number
+  初始打开路径?: string
+  on初始打开已处理?: () => void
   on初始新建已处理?: () => void
 }
 
-export default function DatabasePage({ 初始新建请求, on初始新建已处理 }: DatabasePageProps) {
+export default function DatabasePage({ 初始新建请求, on初始新建已处理, 初始打开路径, on初始打开已处理 }: DatabasePageProps) {
   const { message, modal } = AntdApp.useApp()
   const [状态, 设状态] = useState<Access数据库状态 | null>(null)
   const [数据库路径, 设数据库路径] = useState('')
@@ -180,6 +182,15 @@ export default function DatabasePage({ 初始新建请求, on初始新建已处�
       设忙碌(false)
     }
   }
+
+  const 正在打开路径 = useRef('')
+  useEffect(() => {
+    if (!初始打开路径) { 正在打开路径.current = ''; return }
+    if (!状态 || 正在打开路径.current === 初始打开路径) return
+    正在打开路径.current = 初始打开路径
+    on初始打开已处理?.()
+    if (驱动可用) void 读取结构(初始打开路径, '').catch(() => message.error('无法读取数据库结构'))
+  }, [初始打开路径, 状态])
 
   const 打开数据库 = async () => {
     const 选择 = await 桥接.database.pick()

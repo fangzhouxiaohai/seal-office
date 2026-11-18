@@ -43,6 +43,26 @@ export async function 检查OFD文件(数据: string) {
   return { 字节, 页面尺寸 }
 }
 
+async function 解析OFD页面(数据: string) {
+  const { 字节, 页面尺寸 } = await 检查OFD文件(数据)
+  const { parseOfdDocument, renderOfd } = await import('@ycsx/ofdjs')
+  const 解析结果 = await new Promise<import('@ycsx/ofdjs').OFDDocument | import('@ycsx/ofdjs').OFDDocument[]>((resolve, reject) =>
+    parseOfdDocument({ ofd: 字节.buffer as ArrayBuffer, success: resolve, fail: reject }))
+  // The distributed parser returns an array of DocBody documents although its declaration describes one object.
+  const 文档列表 = Array.isArray(解析结果) ? 解析结果 : [解析结果]
+  const 总页数 = 文档列表.reduce((总, 文档) => 总 + (文档.pages?.length ?? 0), 0)
+  if (!总页数 || 总页数 > 500) throw new Error('OFD 没有有效页面或超过 500 页，请拆分后打开')
+  const 图片源 = new Set<string>()
+  const 收集 = (值: unknown) => {
+    if (typeof 值 === 'string' && /^data:image\//i.test(值)) 图片源.add(值)
+    else if (Array.isArray(值)) 值.forEach(收集)
+    else if (值 && typeof 值 === 'object') Object.values(值).forEach(收集)
+  }
+  文档列表.forEach(文档 => { 收集(文档.multiMediaResObj); 收集((文档 as unknown as { stampAnnot: unknown }).stampAnnot) })
+  await Promise.all([...图片源].map(async src => { const img = new Image(); img.src = src; await img.decode() }))
+  return { 文档列表, 页面尺寸, renderOfd }
+}
+
 export default function OfdViewer({ 名称, 数据, 工作区文件标识 }: { 名称: string; 数据: string; 工作区文件标识?: string | null }) {
   const { message, modal } = AntdApp.useApp()
   const { createDoc, 查找保存路径占用 } = useAppStore()
@@ -56,6 +76,7 @@ export default function OfdViewer({ 名称, 数据, 工作区文件标识 }: { �
   const [处理中, set处理中] = useState(false)
   const [打印内容, set打印内容] = useState<string | null>(null)
   const 打印HTML = useRef('')
+  const 缓存 = useRef<{ 数据: string; 结果: ReturnType<typeof 解析OFD页面> }>()
   useEffect(() => {
     const 节点 = 容器.current
     if (!移动端 || !节点) return
@@ -78,22 +99,8 @@ export default function OfdViewer({ 名称, 数据, 工作区文件标识 }: { �
     let 取消 = false
     set加载中(true); set错误(''); set页数(0); 打印HTML.current = ''
     void (async () => {
-      const { 字节, 页面尺寸 } = await 检查OFD文件(数据)
-      const { parseOfdDocument, renderOfd } = await import('@ycsx/ofdjs')
-      const 解析结果 = await new Promise<import('@ycsx/ofdjs').OFDDocument | import('@ycsx/ofdjs').OFDDocument[]>((resolve, reject) =>
-        parseOfdDocument({ ofd: 字节.buffer as ArrayBuffer, success: resolve, fail: reject }))
-      // The distributed parser returns an array of DocBody documents although its declaration describes one object.
-      const 文档列表 = Array.isArray(解析结果) ? 解析结果 : [解析结果]
-      const 总页数 = 文档列表.reduce((总, 文档) => 总 + (文档.pages?.length ?? 0), 0)
-      if (!总页数 || 总页数 > 500) throw new Error('OFD 没有有效页面或超过 500 页，请拆分后打开')
-      const 图片源 = new Set<string>()
-      const 收集 = (值: unknown) => {
-        if (typeof 值 === 'string' && /^data:image\//i.test(值)) 图片源.add(值)
-        else if (Array.isArray(值)) 值.forEach(收集)
-        else if (值 && typeof 值 === 'object') Object.values(值).forEach(收集)
-      }
-      文档列表.forEach(文档 => { 收集(文档.multiMediaResObj); 收集((文档 as unknown as { stampAnnot: unknown }).stampAnnot) })
-      await Promise.all([...图片源].map(async src => { const img = new Image(); img.src = src; await img.decode() }))
+      if (缓存.current?.数据 !== 数据) 缓存.current = { 数据, 结果: 解析OFD页面(数据) }
+      const { 文档列表, 页面尺寸, renderOfd } = await 缓存.current.结果
       if (取消) return
       const 页面 = 文档列表.flatMap(文档 => renderOfd(渲染宽度, 文档))
       if (!页面.length) throw new Error('OFD 页面渲染失败')

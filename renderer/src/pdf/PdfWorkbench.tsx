@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { App as AntdApp, Button, Input, Select } from 'antd'
+import { App as AntdApp, Button, Checkbox, Input, Select } from 'antd'
 import { 桥接 } from '../ipc/bridge'
 import Icon from '../components/Icon'
 import PrintPreview from '../components/PrintPreview'
@@ -10,7 +10,7 @@ import { useShortcuts } from '../shortcuts/useShortcuts'
 import { 写出PDF文档 } from '../office/writeDocument'
 import { 读取本地文件内容 } from '../fileOpen'
 import './pdf.css'
-import { 转换PDF文字 } from './pdfConversion'
+import { 转换PDF图片, 转换PDF文字 } from './pdfConversion'
 
 interface 本地PDF文件 {
   标识: string
@@ -81,8 +81,9 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const [插入来源, set插入来源] = useState('')
   const [编辑类型, set编辑类型] = useState<'text' | 'note' | 'image' | 'cover' | 'replace'>('text')
   const [编辑文字, set编辑文字] = useState('')
-  const [转换格式, set转换格式] = useState<'docx'|'xlsx'|'txt'>('docx')
+  const [转换格式, set转换格式] = useState<'docx'|'xlsx'|'txt'|'png'>('docx')
   const [转换范围, set转换范围] = useState('')
+  const [扫描页识别, set扫描页识别] = useState(false)
   const [编辑页码, set编辑页码] = useState('1')
   const [编辑横坐标, set编辑横坐标] = useState('50')
   const [编辑纵坐标, set编辑纵坐标] = useState('50')
@@ -225,17 +226,37 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     if (!当前文件 || 正在处理) return
     set正在处理(true)
     try {
-      const data = await 转换PDF文字(当前文件.数据, 转换格式, 转换范围)
-      const name = 当前文件.名称.replace(/\.(?:s?pdf)$/i,'') + '.' + 转换格式
-      const path = await 桥接.showSaveDialog(name, 转换格式==='xlsx'?'table':'word')
+      const 识别并核对 = async (页: number, 图片: Uint8Array) => {
+        const { 识别图片文字 } = await import('../scan/recognition')
+        const [结果] = await 识别图片文字(modal, [{ 图片, 类型: 'image/png' }], { 表格: 转换格式 === 'xlsx' })
+        if (!结果?.文字?.trim()) throw new Error(结果?.错误 || `第 ${页} 页未识别出文字`)
+        let 文字 = 结果.文字
+        const 已确认 = await modal.confirm({
+          title: `核对第 ${页} 页识别结果`,
+          content: <Input.TextArea aria-label="识别结果" rows={12} defaultValue={文字} onChange={e => { 文字 = e.target.value }} />,
+          okText: '使用核对结果', cancelText: '取消转换',
+        })
+        if (!已确认) throw new DOMException('已取消转换', 'AbortError')
+        return 文字.split(/\r?\n/).filter(行 => 行.trim()).filter(行 =>
+          转换格式 !== 'xlsx' || !/^\s*\|?[\s:|-]+\|?\s*$/.test(行)).map(行 =>
+          转换格式 === 'xlsx' ? 行.trim().replace(/^\||\|$/g, '').split(/[|\t]/).map(格 => 格.trim()) : [行])
+      }
+      const {extension,bytes:data} = 转换格式==='png'
+        ? await 转换PDF图片(当前文件.数据,转换范围)
+        : {extension:转换格式,bytes:await 转换PDF文字(当前文件.数据,转换格式,转换范围,扫描页识别 ? 识别并核对 : undefined)}
+      const name = 当前文件.名称.replace(/\.(?:s?pdf)$/i,'') + '.' + extension
+      const path = await 桥接.showSaveDialog(name, 转换格式==='png'?undefined:转换格式==='xlsx'?'table':'word')
       if (!path) return
-      if (!path.toLowerCase().endsWith('.'+转换格式)) throw new Error('目标扩展名须为 .'+转换格式)
+      if (!path.toLowerCase().endsWith('.'+extension)) throw new Error('目标扩展名须为 .'+extension)
       const occupied = 校验保存路径?.(path, 当前文件.标识)
       if (occupied) throw new Error(occupied)
       const result = await 桥接.saveToFile(path,data,转换格式==='txt'?'文本':'二进制')
       if (!result.成功 && !result.已取消) throw new Error(result.错误 || '转换文件保存失败')
       if (result.成功) message.success('转换文件已保存')
-    } catch (error) { 显示错误('PDF 转换失败',error instanceof Error ? error.message : String(error)) }
+    } catch (error) {
+      if (!(error instanceof Error && ['AbortError', 'ScanConsentDeclined'].includes(error.name)))
+        显示错误('PDF 转换失败',error instanceof Error ? error.message : String(error))
+    }
     finally { set正在处理(false) }
   }
 
@@ -293,6 +314,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   }
 
   const 执行编辑 = async () => {
+    if (!编辑模式) return
     if (!当前文件) { 显示错误('请选择文件', '请先添加 PDF 文件。'); return }
     if (编辑类型 === 'image' && !编辑图片) { 显示错误('请选择图片', '请先选择 PNG 或 JPEG 图片。'); return }
     set正在处理(true)
@@ -305,6 +327,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   }
 
   const 执行 = async () => {
+    if (!编辑模式) return
     if (文件列表.length === 0 || 当前文件 === null) {
       显示错误('请选择文件', '请先添加需要处理的 PDF 文件。')
       return
@@ -416,6 +439,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         )}
         <div className="pdf-workbench__operation">
           <h2>页面处理</h2>
+          {当前文件 && !编辑模式 && <Button onClick={() => set文件模式(旧 => ({ ...旧, [当前文件.标识]: '编辑' }))}>切换到编辑模式</Button>}
           <label htmlFor="pdf-command">操作类型</label>
           <Select
             id="pdf-command"
@@ -438,13 +462,14 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           )}
           {['insertBlank', 'insertPages'].includes(命令) && <><label htmlFor="pdf-insert-position">插入到第几页之前</label><Input id="pdf-insert-position" aria-label="插入位置" type="number" min={1} value={插入位置} onChange={(事件) => set插入位置(事件.target.value)} /></>}
           {命令 === 'insertPages' && <><label htmlFor="pdf-insert-source">来源文件</label><Select id="pdf-insert-source" aria-label="来源 PDF" value={插入来源 || undefined} onChange={set插入来源} options={文件列表.filter((文件) => 文件.标识 !== 当前文件?.标识).map((文件) => ({ value: 文件.标识, label: 文件.名称 }))} /></>}
-          <Button type="primary" block onClick={执行} loading={正在处理} disabled={正在读取 || 正在保存}>执行并保存</Button>
+          <Button type="primary" block onClick={执行} loading={正在处理} disabled={!编辑模式 || 正在读取 || 正在保存}>执行并保存</Button>
         </div>
         <div className="pdf-workbench__operation">
           <h2>转换为</h2>
-          <Select aria-label="转换目标格式" value={转换格式} onChange={set转换格式} options={[{value:'docx',label:'Word 可编辑文字（DOCX）'},{value:'xlsx',label:'Excel 表格（XLSX）'},{value:'txt',label:'纯文本（TXT）'}]} />
+          <Select aria-label="转换目标格式" value={转换格式} onChange={set转换格式} options={[{value:'docx',label:'Word 可编辑文字（DOCX）'},{value:'xlsx',label:'Excel 表格（XLSX）'},{value:'txt',label:'纯文本（TXT）'},{value:'png',label:'逐页图片（PNG）'}]} />
           <Input aria-label="转换页码范围" placeholder="全部页，或 1,3-5" value={转换范围} onChange={事件 => set转换范围(事件.target.value)} />
           <Button onClick={() => void 导出文字()} disabled={!当前文件 || 正在处理}>转换并另存</Button>
+          {转换格式 !== 'png' && <Checkbox checked={扫描页识别} onChange={e => set扫描页识别(e.target.checked)}>在线识别扫描页并核对</Checkbox>}
           <h2>编辑内容</h2>
           <label htmlFor="pdf-edit-type">编辑操作</label>
           <Select id="pdf-edit-type" aria-label="编辑操作" value={编辑类型} onChange={set编辑类型} options={[{ value: 'text', label: '添加文字' }, { value: 'replace', label: '可见文字替换' }, { value: 'note', label: '添加可见批注' }, { value: 'image', label: '插入图片' }, { value: 'cover', label: '遮盖区域' }]} />

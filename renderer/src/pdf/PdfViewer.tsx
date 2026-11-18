@@ -214,6 +214,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
   const 页面尺寸引用 = useRef<Record<number,PDF页面尺寸>>({})
   const [活跃页, set活跃页] = useState<Set<number>>(() => new Set([1]))
   const [复制状态, set复制状态] = useState('')
+  const [允许复制, set允许复制] = useState(false)
   const [分页模式,set分页模式] = useState(false),[全屏,set全屏] = useState(false)
   // 查找：关键词由外部受控，命中列表在文字层就绪后算一次，变化时重算
   const [查找打开, set查找打开] = useState(false)
@@ -248,6 +249,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
 
   /** 选中 PDF 文字后的浮窗：复制、翻译、解释、总结与 AI 问答 */
   const 取选中文字 = (): string => {
+    if (!允许复制) return ''
     const 选择 = window.getSelection()
     const 区域 = 阅读区.current
     if (!选择 || !区域 || 选择.rangeCount === 0) return ''
@@ -272,6 +274,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
   /** 打开菜单时的选中文字快照：右键会改变焦点，命令要用当时的内容 */
   const 菜单选区 = useRef('')
   const 菜单项 = (): 菜单节点[] => {
+    if (!允许复制) return []
     const 选中 = (菜单选区.current || 取选中文字()).trim()
     const 项: 菜单节点[] = []
     if (选中 !== '') 项.push({ type: 'item', commandId: '__pdfCopySelection__', label: '复制选中文字', shortcut: 'Ctrl+C' })
@@ -288,6 +291,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
     return 项
   }
   const 处理菜单命令 = (命令标识: string): boolean => {
+    if (!允许复制) return false
     const 选中 = 菜单选区.current || 取选中文字()
     if (命令标识 === '__pdfCopySelection__') { void writeClipboardText(选中).then(() => set复制状态('已复制选中文字')).catch(() => set复制状态('复制失败，请检查剪贴板权限')); return true }
     if (命令标识 === '__pdfCopyPage__') { void 复制本页(右键页码.current); return true }
@@ -322,6 +326,9 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
     let 已取消 = false
     let 关闭文档: (() => void) | null = null
     set文档(null)
+    set允许复制(false)
+    菜单选区.current = ''
+    set菜单可见(false)
     set当前页(1)
     set跳转页码('1')
     set页面尺寸({})
@@ -335,10 +342,14 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
     }
     set状态('加载中')
     void (async () => {
-      // 超大扫描页（单页面积或单边远超常规纸张）先缩小位图再交给渲染器：
+      // 超大扫描页先拆分为保持原始分辨率的图像条带。
       // 这类文件的原图常超过浏览器单边 32767 像素上限，pdf.js 解码失败会显示空白。
       let 结果 = await 载入PDF(数据)
       if (已取消) { 结果.关闭(); return }
+      关闭文档 = 结果.关闭
+      const 权限 = await 结果.文档.getPermissions?.()
+      if (已取消) return
+      set允许复制(权限 == null || 权限.has(16))
       const 首尺寸 = await 结果.文档.getPage(1).then((首) => 首.getViewport({ scale: 1 })).catch(() => null)
       const 超大 = Boolean(首尺寸) && (首尺寸!.width * 首尺寸!.height > 30_000_000 || Math.max(首尺寸!.width, 首尺寸!.height) > 16000)
       if (超大) {
@@ -360,6 +371,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
       set状态('就绪')
     })().catch((错误: unknown) => {
       if (已取消) return
+      关闭文档?.()
       set状态('失败')
       报错回调.current?.(`无法打开「${文件名引用.current}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)
     })
@@ -582,7 +594,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
     }
   }, 状态 === '就绪')
   const 复制本页 = async (页码 = 当前页) => {
-    if (!文档) return
+    if (!文档 || !允许复制) return
     try {
       const 内容 = await (await 文档.getPage(页码)).getTextContent()
       const 文字 = 内容.items.map((项) => 'str' in 项 ? 项.str : '').join(' ').trim()
@@ -591,7 +603,8 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
       set复制状态('已复制本页文字')
     } catch { set复制状态('复制失败，请检查剪贴板权限') }
   }
-  const 复制全文 = async () => {    if (!文档) return
+  const 复制全文 = async () => {
+    if (!文档 || !允许复制) return
     try {
       const 页面: string[] = []
       for (let 页码 = 1; 页码 <= 文档.numPages; 页码 += 1) {
@@ -631,8 +644,8 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
           <button type="button" aria-label="缩小" title="缩小" disabled={状态 !== '就绪' || 缩小一档(缩放) === null} onClick={() => 调整缩放('缩小')}><Icon name="zoom-out" size={15} /></button>
           <span className="pdf-viewer__zoom" aria-live="polite">{缩放百分比文本(缩放)}</span>
           <button type="button" aria-label="放大" title="放大" disabled={状态 !== '就绪' || 放大一档(缩放) === null} onClick={() => 调整缩放('放大')}><Icon name="zoom-in" size={15} /></button>
-          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={状态 !== '就绪'} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
-          <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪'} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
+          <button type="button" aria-label="复制本页文字" title="复制本页文字" disabled={状态 !== '就绪' || !允许复制} onClick={() => void 复制本页()}><Icon name="copy-text" size={15} /></button>
+          <button type="button" aria-label="复制全文文字" title="复制全文文字" disabled={状态 !== '就绪' || !允许复制} onClick={() => void 复制全文()}><Icon name="copy-all" size={15} /></button>
           <button type="button" aria-label="查找" title="查找（Ctrl+F）" aria-pressed={查找打开} disabled={状态 !== '就绪'} onClick={() => set查找打开((值) => !值)}><Icon name="search" size={15} /></button>
         </div>
         <PdfFindBar
@@ -653,6 +666,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
         className={`pdf-viewer__stage${分页模式?' pdf-viewer__stage--paged':''}`}
         data-view-mode={分页模式?'pages':'continuous'}
         data-pan={拖拽模式 ? 'true' : undefined}
+        onCopyCapture={事件 => { if (!允许复制) 事件.preventDefault() }}
         onPointerDown={事件 => {
           // 触屏沿用浏览器原生平移与双指缩放。
           if (!拖拽模式 || 事件.pointerType === 'touch' || 事件.button !== 0 || (事件.target as HTMLElement).closest('button')) return

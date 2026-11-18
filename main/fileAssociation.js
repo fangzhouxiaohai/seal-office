@@ -7,7 +7,8 @@ function 提取关联路径(命令行, 平台 = 'win32') {
   const 路径 = 平台 === 'win32' ? path.win32 : path.posix
   if (!Array.isArray(命令行)) return []
   return 命令行.filter((参数) => typeof 参数 === 'string' &&
-    路径.isAbsolute(参数) && 关联扩展名.has(路径.extname(参数).toLowerCase()))
+    路径.isAbsolute(参数) && (关联扩展名.has(路径.extname(参数).toLowerCase()) ||
+      (平台 === 'win32' && /\.(?:accdb|mdb)$/i.test(参数))))
 }
 
 /** 文件路径保留到渲染层主动领取，避免首次加载时消息早于页面监听器。 */

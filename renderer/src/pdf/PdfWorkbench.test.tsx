@@ -20,6 +20,7 @@ describe('PDF 工作台', () => {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'D:/原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0=' }} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
       fireEvent.change(screen.getByRole('textbox', { name: '处理页码' }), { target: { value: '1,错误' } })
+      fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
       const 弹窗 = await screen.findByRole('dialog', { name: '页码无效' })
       expect(within(弹窗).getByText(/页码格式无效/)).toBeInTheDocument()
@@ -34,7 +35,8 @@ describe('PDF 工作台', () => {
     try{
       render(<AntdApp><PdfWorkbench 初始文件={{路径:'D:/原件.pdf',名称:'原件.pdf',数据:'JVBERi0='}} onEdited={编辑} onSaved={已保存}/></AntdApp>)
       const 初始预览实例 = screen.getByTestId('pdf-preview').getAttribute('data-instance')
-      fireEvent.click(screen.getByRole('button',{name:'展开 PDF 工具'}));fireEvent.click(screen.getByRole('button',{name:'执行并保存'}))
+      fireEvent.click(screen.getByRole('button',{name:'展开 PDF 工具'}));fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
+      fireEvent.click(screen.getByRole('button',{name:'执行并保存'}))
       await waitFor(()=>expect(编辑).toHaveBeenCalledWith('JVBERi1lZGl0', 'path:D:/原件.pdf'))
       await waitFor(()=>expect(screen.getByTestId('pdf-preview').getAttribute('data-instance')).not.toBe(初始预览实例))
       expect(保存).not.toHaveBeenCalled();expect(已保存).not.toHaveBeenCalled()
@@ -100,6 +102,7 @@ describe('PDF 工作台', () => {
     try {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0x' }} onSaved={已保存} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
+      fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
       await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.pdf', 'JVBERi0x', undefined, 'path:C:\\文档\\原件.pdf'))
       expect(保存).toHaveBeenCalledOnce()
@@ -118,6 +121,7 @@ describe('PDF 工作台', () => {
     try {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0x' }} onSaved={已保存} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
+      fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
       expect(await screen.findByRole('dialog', { name: 'PDF 保存失败' })).toBeInTheDocument()
       expect(保存).not.toHaveBeenCalled()
@@ -138,6 +142,7 @@ describe('PDF 工作台', () => {
     try {
       render(<AntdApp><PdfWorkbench 初始文件={{ 路径: 'C:\\文档\\原件.pdf', 名称: '原件.pdf', 数据: 'JVBERi0x' }} onSaved={已保存} /></AntdApp>)
       fireEvent.click(screen.getByRole('button', { name: '展开 PDF 工具' }))
+      fireEvent.click(screen.getByRole('button', { name: '切换到编辑模式' }))
       fireEvent.click(screen.getByRole('button', { name: '执行并保存' }))
       await waitFor(() => expect(已保存).toHaveBeenCalledWith('C:\\文档\\提取.spdf', 'JVBERi0x', undefined, 'path:C:\\文档\\原件.pdf'))
       expect(编码).toHaveBeenCalledWith('pdf', { PDF数据: 'JVBERi0x' })

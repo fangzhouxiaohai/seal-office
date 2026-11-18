@@ -16,7 +16,7 @@ import HomeRail from './components/HomeRail'
 import HomeSidebar from './components/HomeSidebar'
 import RecommendPanel from './components/RecommendPanel'
 import HomePage from './pages/HomePage'
-import { 基准文件名, 注册最近文档错误弹窗, 注册导入确认弹窗, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
+import { 基准文件名, 注册最近文档错误弹窗, 注册导入确认弹窗, 注册Access文件入口, 通过对话框打开文件, 通过路径打开文件 } from './fileOpen'
 import { 分组拖入文件, 在局部投放区, 携带文件, 读取拖入路径 } from './fileDrop'
 import { 桥接 } from './ipc/bridge'
 import type { 保存全部应答 } from './ipc/bridge'
@@ -117,6 +117,11 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
   const 通知序号 = React.useRef(0)
   const [模板库打开, set模板库打开] = useState(false)
   const [新建Access请求, set新建Access请求] = useState(0)
+  const [打开Access路径, set打开Access路径] = useState('')
+  useEffect(() => 注册Access文件入口(路径 => {
+    set打开Access路径(路径)
+    handleNav('database', 文本 => message.info(文本))
+  }), [handleNav, message])
   const 当前模块 = MODULES[module]
   const 星标数 = docs.filter((文档) => 文档.starred).length
 
@@ -446,6 +451,8 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
             模板库打开,
             关闭模板库: () => set模板库打开(false),
             新建Access请求,
+            打开Access路径,
+            on打开Access已处理: () => set打开Access路径(''),
             on新建Access已处理: () => set新建Access请求(0),
           })
         : React.createElement(页面组件, null))

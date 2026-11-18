@@ -169,10 +169,14 @@ const 打开过滤器映射 = {
   pdf: [{ name: '版式文档', extensions: ['spdf', 'pdf', 'ofd'] }],
 }
 
-const 兜底保存过滤器 = 文档格式.filter(项 => !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] }))
+const 兜底保存过滤器 = [
+  ...文档格式.filter(项 => !项.readOnlySource).map(项 => ({ name: 项.label, extensions: [项.extension] })),
+  { name: 'PNG 图片', extensions: ['png'] },
+  { name: 'ZIP 归档', extensions: ['zip'] },
+]
 
 const 兜底打开过滤器 = [
-  { name: '办公文档', extensions: 文档格式.map(项 => 项.extension) },
+  { name: '办公文档', extensions: [...文档格式.map(项 => 项.extension), ...(process.platform === 'win32' ? ['mdb', 'accdb'] : [])] },
   { name: '所有文件', extensions: ['*'] },
 ]
 

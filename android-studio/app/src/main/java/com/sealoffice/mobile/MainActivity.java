@@ -23,6 +23,9 @@ import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintDocumentInfo;
 import android.print.PrintManager;
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.pdmodel.PDPage;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Base64;
@@ -662,31 +665,63 @@ public final class MainActivity extends Activity {
 
     private void startPrint(String id, File file, String name) {
         try {
+            PDFBoxResourceLoader.init(getApplicationContext());
             PrintManager manager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
             manager.print(name, new PrintDocumentAdapter() {
                 @Override public void onLayout(PrintAttributes oldAttributes, PrintAttributes attributes,
                                                CancellationSignal cancellation, LayoutResultCallback callback, Bundle extras) {
                     if (cancellation.isCanceled()) { callback.onLayoutCancelled(); return; }
-                    callback.onLayoutFinished(new PrintDocumentInfo.Builder(name).setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT).build(), true);
+                    workers.submit(() -> {
+                        try (PDDocument source = PDDocument.load(file)) {
+                            if (cancellation.isCanceled()) { callback.onLayoutCancelled(); return; }
+                            callback.onLayoutFinished(new PrintDocumentInfo.Builder(name)
+                                    .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                                    .setPageCount(source.getNumberOfPages()).build(), !attributes.equals(oldAttributes));
+                        } catch (Exception error) { callback.onLayoutFailed("无法读取待打印 PDF 的页数"); }
+                    });
                 }
                 @Override public void onWrite(PageRange[] pages, ParcelFileDescriptor destination,
                                               CancellationSignal cancellation, WriteResultCallback callback) {
                     workers.submit(() -> {
-                        try (InputStream input = new java.io.FileInputStream(file);
-                             OutputStream output = new ParcelFileDescriptor.AutoCloseOutputStream(destination)) {
-                            byte[] chunk = new byte[65536]; int read;
-                            while ((read = input.read(chunk)) >= 0) {
-                                if (cancellation.isCanceled()) { callback.onWriteCancelled(); return; }
-                                output.write(chunk, 0, read);
+                        List<PageRange> written = new ArrayList<>();
+                        try (OutputStream output = new ParcelFileDescriptor.AutoCloseOutputStream(destination)) {
+                            if (pages.length == 1 && PageRange.ALL_PAGES.equals(pages[0])) {
+                                try (InputStream input = new java.io.FileInputStream(file)) {
+                                    byte[] chunk = new byte[65536];
+                                    int read;
+                                    while ((read = input.read(chunk)) >= 0) {
+                                        cancellation.throwIfCanceled();
+                                        output.write(chunk, 0, read);
+                                    }
+                                }
+                                written.add(PageRange.ALL_PAGES);
+                            } else {
+                                try (PDDocument source = PDDocument.load(file); PDDocument selected = new PDDocument()) {
+                                    for (PageRange range : pages) {
+                                        int end = Math.min(range.getEnd(), source.getNumberOfPages() - 1);
+                                        if (range.getStart() > end) continue;
+                                        for (int index = range.getStart(); index <= end; index++) {
+                                            cancellation.throwIfCanceled();
+                                            PDPage original = source.getPage(index);
+                                            PDPage copy = selected.importPage(original);
+                                            copy.setResources(original.getResources());
+                                        }
+                                        written.add(new PageRange(range.getStart(), end));
+                                    }
+                                    if (written.isEmpty()) throw new IOException("选页范围为空");
+                                    selected.save(output);
+                                }
                             }
-                            callback.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});
-                        } catch (IOException error) { callback.onWriteFailed("打印文件读取失败"); }
+                        } catch (android.os.OperationCanceledException error) { callback.onWriteCancelled(); return; }
+                        catch (Exception error) { callback.onWriteFailed("打印文件写入失败"); return; }
+                        if (cancellation.isCanceled()) callback.onWriteCancelled();
+                        else callback.onWriteFinished(written.toArray(new PageRange[0]));
                     });
                 }
                 @Override public void onFinish() { file.delete(); }
             }, new PrintAttributes.Builder().build());
             reply(result(id, "printed"));
-        } catch (Exception error) { replyError(id, "系统打印界面未能打开"); }
+        } catch (Exception error) { file.delete(); replyError(id, "系统打印界面未能打开"); }
         finally { saveId = null; saveFile = null; saveName = null; }
     }
 

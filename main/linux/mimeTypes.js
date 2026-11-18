@@ -1,5 +1,6 @@
 const 格式 = require('../documentFormats.json')
 const 映射 = {
+  wps:'application/wps-office.wps', wpt:'application/wps-office.wpt', et:'application/wps-office.et', ett:'application/wps-office.ett', dps:'application/wps-office.dps', dpt:'application/wps-office.dpt',
   sldoc:'application/vnd.seal-office.word',slxls:'application/vnd.seal-office.sheet',slppt:'application/vnd.seal-office.presentation',spdf:'application/vnd.seal-office.pdf',
   sealdoc:'application/vnd.seal-office.word',sealsheet:'application/vnd.seal-office.sheet',sealshow:'application/vnd.seal-office.presentation',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

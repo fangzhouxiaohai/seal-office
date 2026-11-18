@@ -1,4 +1,5 @@
 const mimeTypes: Record<string, string> = {
+  wps:'application/wps-office.wps', wpt:'application/wps-office.wpt', et:'application/wps-office.et', ett:'application/wps-office.ett', dps:'application/wps-office.dps', dpt:'application/wps-office.dpt',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
