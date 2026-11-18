@@ -28,8 +28,8 @@ export function selectDownloads(release) {
 }
 
 export function detectPlatform(agent) {
+  if (/harmonyos|openharmony/i.test(agent)) return 'harmony'
   if (/android/i.test(agent)) return 'android'
-  if (/harmonyos/i.test(agent)) return 'harmony'
   if (/windows/i.test(agent)) return 'windows'
   if (/macintosh|mac os/i.test(agent) && !/iphone|ipad/i.test(agent)) return 'macos'
   if (/linux/i.test(agent)) return 'linux'

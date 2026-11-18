@@ -3,7 +3,7 @@ const os = require('os')
 const path = require('path')
 const { 注册Access数据库通道, 检查目录可写, 允许操作 } = require('./databaseChannel')
 
-const 文档目录 = path.join('C:\\Users', '测试 用户', 'Documents')
+const 文档目录 = path.join(os.homedir(), '测试 用户', 'Documents')
 
 function 建环境({
   打开结果 = { canceled: false, filePaths: ['C:\\数据\\业务.accdb'] },
@@ -34,7 +34,7 @@ describe('Access 数据库 IPC 通道', () => {
     expect(配置.filters.flatMap((项) => 项.extensions)).toEqual(expect.arrayContaining(['mdb', 'accdb']))
   })
 
-  it('新建数据库固定 ACCDB 并经服务创建', async () => {
+  it('新建数据库默认 ACCDB 并经服务创建', async () => {
     const { 调用, 数据库服务 } = 建环境({ 保存结果: { canceled: false, filePath: 'C:\\数据\\业务库' } })
     const 结果 = await 调用('database.create', '业务库')
     expect(结果).toMatchObject({ 成功: true, 路径: 'C:\\数据\\业务库.accdb' })
@@ -45,6 +45,13 @@ describe('Access 数据库 IPC 通道', () => {
     const { 调用, 数据库服务 } = 建环境()
     expect(await 调用('database.invoke', 'runPowerShell', {})).toEqual({ 成功: false, 错误: '不支持的 Access 数据库操作' })
     expect(数据库服务.invoke).not.toHaveBeenCalled()
+  })
+
+  it('创建 MDB 后按同一路径回读', async () => {
+    const 路径 = path.join(文档目录, '库存.mdb')
+    const { 调用, 数据库服务 } = 建环境({ 保存结果: { canceled:false, filePath:路径 } })
+    expect(await 调用('database.create')).toMatchObject({ 成功:true, 路径 })
+    expect(数据库服务.invoke.mock.calls).toEqual([['create',{路径}],['inspect',{路径}]])
   })
 })
 

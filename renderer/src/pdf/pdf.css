@@ -377,6 +377,10 @@
 .pdf-viewer__text-layer { position: absolute; inset: 0; overflow: hidden; user-select: text; }
 .pdf-viewer__text-layer span { position: absolute; display: block; white-space: pre; color: transparent; line-height: 1; user-select: text; cursor: text; }
 .pdf-viewer__text-layer span::selection { background: rgba(61, 124, 220, .35); }
+.pdf-viewer__stage[data-pan] { cursor: grab; user-select: none; }
+.pdf-viewer__stage[data-pan]:active { cursor: grabbing; }
+.pdf-viewer__stage[data-pan] .pdf-viewer__text-layer { pointer-events: none; }
+.pdf-viewer__stage[data-pan] .pdf-viewer__text-layer span { user-select: none; }
 .pdf-viewer__copy-status { font-size: 12px; padding: 2px 16px; color: var(--brand); }
 
 /* 查找命中高亮层：不参与选中与点击，只做视觉标记 */

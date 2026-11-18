@@ -65,6 +65,7 @@ function 版式转母版参数(母版, 版式, 主题) {
 /** 读取版式部件中的占位符：类型、位置、字号与对齐。 */
 function 读取版式占位符(版式Xml) {
   const 结果 = []
+  const 已用标识 = new Set()
   for (const 匹配 of String(版式Xml ?? '').matchAll(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/gi)) {
     const 形状 = 匹配[0]
     const 占位符标签 = 形状.match(/<p:ph\b[^>]*\/?>/i)?.[0]
@@ -79,8 +80,16 @@ function 读取版式占位符(版式Xml) {
     const 字号值 = Number(属性(样式, 'sz') ?? 0) / 100
     const 对齐值 = 属性(形状.match(/<a:(?:lvl1pPr|pPr)\b[^>]*>/i)?.[0], 'algn')
     const 对齐 = 对齐值 === 'ctr' ? 'center' : 对齐值 === 'r' || 对齐值 === 'end' ? 'right' : 'left'
+    const 基名 = 占位符标识表[类型]
+    let 标识 = 基名
+    if (已用标识.has(标识)) {
+      const idx = 属性(占位符标签, 'idx')
+      let 序号 = idx && /^\d{1,9}$/.test(idx) ? Number(idx) : 2
+      do { 标识 = `${基名}-${序号++}` } while (已用标识.has(标识))
+    }
+    已用标识.add(标识)
     结果.push({
-      标识: 占位符标识表[类型],
+      标识,
       类型,
       x: EMU转像素(属性(位置, 'x')),
       y: EMU转像素(属性(位置, 'y')),

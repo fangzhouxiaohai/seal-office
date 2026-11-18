@@ -731,11 +731,13 @@ public final class MainActivity extends Activity {
             }
             Uri destination = data.getData();
             tasks.put(id, workers.submit(() -> {
-                try (InputStream input = new java.io.FileInputStream(file);
-                     OutputStream output = getContentResolver().openOutputStream(destination, "w")) {
-                    if (output == null) throw new IOException("系统拒绝写入");
-                    byte[] chunk = new byte[65536]; int read;
-                    while ((read = input.read(chunk)) >= 0) output.write(chunk, 0, read);
+                try {
+                    try (InputStream input = new java.io.FileInputStream(file);
+                         OutputStream output = getContentResolver().openOutputStream(destination, "w")) {
+                        if (output == null) throw new IOException("系统拒绝写入");
+                        byte[] chunk = new byte[65536]; int read;
+                        while ((read = input.read(chunk)) >= 0) output.write(chunk, 0, read);
+                    }
                     reply(result(id, "saved").put("path", destination.toString()));
                 } catch (Exception error) { replyError(id, "文件保存失败，请选择其他位置后重试"); }
                 finally { ui.post(this::clearSave); tasks.remove(id); }

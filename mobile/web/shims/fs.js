@@ -63,6 +63,7 @@ export function writeFileSync(name, bytes, options) {
 export function renameSync(source, target) {
   source = normalize(source); target = normalize(target)
   if (!files.has(source)) throw error('ENOENT', source)
+  if (source === target) return
   if (!directories.has(path.dirname(target))) throw error('ENOENT', target)
   const item = files.get(source); files.set(target, item); files.delete(source)
   mark(target, { ...item, bytes: new Uint8Array(item.bytes) }); mark(source, null)

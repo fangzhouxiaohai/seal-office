@@ -4,6 +4,7 @@ import {useAppStore} from '../store'
 import {useCloud,cloudCall} from './CloudProvider'
 import {htmlToDocxModel} from '../editor/commands'
 import {导出为Xlsx} from '../sheet/sheetExport'
+import {表格文本输出} from '../sheet/sheetSave'
 import {构建演示保存模型} from '../ppt/saveModel'
 import {收集演示资源标识,演示内容快照} from '../ppt/model/migrations'
 import {桥接} from '../ipc/bridge'
@@ -74,14 +75,19 @@ export default function CloudAutosave({ 简洁模式 = false, 状态徽标 = fal
         const 本地路径=pdf?.path||active.文档路径[id]||doc?.来源路径
         if(本地路径&&桥接.可用){
           const 指纹=pdf?.文件指纹??doc?.文件指纹
-          const 本地=await 桥接.saveToFile(本地路径,result.数据,'二进制',指纹)
+          const 本地文本=doc?.type==='table' ? 表格文本输出(本地路径,active.表格文档模型[id]??[]) : null
+          if(本地文本?.损失.length)throw new Error(`自动保存会丢失${本地文本.损失.join('、')}，请另存为 XLSX`)
+          if(!本地文本 && originalName!==name)throw new Error('当前格式需要转换，请先另存副本再开启自动保存')
+          const 本地=本地文本
+            ? await 桥接.saveToFile(本地路径,本地文本.内容,'文本',指纹,本地文本.编码)
+            : await 桥接.saveToFile(本地路径,result.数据,'二进制',指纹)
           if(!本地?.成功)throw new Error(本地?.错误||'本机文件保存失败，已暂停云端同步')
           if(本地.文件指纹)active.更新文件指纹?.(id,本地.文件指纹)
           // 本机文件已写入与快照一致的内容，保存标记应在此时清除；
           // 写入期间若又有新修改（快照已不同）则保留未保存状态。
           if(snapshotFor(latest.current,id)===snapshot){
             try{
-              if(pdf){const 保存PDF=active.保存PDF文档;if(typeof 保存PDF==='function'&&pdf.path)保存PDF(id,pdf.path,pdf.data??'',pdf.文件指纹,pdf.警告)}
+              if(pdf){const 保存PDF=active.保存PDF文档;if(typeof 保存PDF==='function'&&pdf.path)保存PDF(id,pdf.path,pdf.data??'',本地.文件指纹,pdf.警告)}
               else if(doc){const 模型=doc.type==='table'?latest.current.表格文档模型[id]:doc.type==='ppt'?latest.current.演示文档模型[id]:undefined;active.markDocumentSaved?.(id,doc.html,模型===undefined?undefined:JSON.stringify(模型),{页面设置:doc.页面设置})}
             }catch{}
           }

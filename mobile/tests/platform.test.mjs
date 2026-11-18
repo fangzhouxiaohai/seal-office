@@ -29,6 +29,7 @@ test('IndexedDB 原子重命名、二进制与安全记录重新初始化后可�
   fs.mkdirSync('/seal/private', { recursive: true })
   const secret = 'offline-test-secret-do-not-use'
   fs.writeFileSync('/seal/private/config.tmp', safeStorage.encryptString(secret)); fs.renameSync('/seal/private/config.tmp', '/seal/private/config.secure')
+  fs.renameSync('/seal/private/config.secure', '/seal/private/./config.secure')
   assert.equal(fs.readFileSync('/seal/private/config.secure').includes(Buffer.from(secret)), false)
   await fs.flushStorage()
   await fs.initializeStorage(indexedDB, database); await initializeVault()

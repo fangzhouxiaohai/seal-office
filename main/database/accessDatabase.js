@@ -109,6 +109,9 @@ function New-SealConnectionString($Request) {
   # 路径统一经构造器加引号转义：含分号、等号、单引号、空格或中文的路径
   # 不会被拆成额外的连接参数（2.7.0 新建时手工拼接连接串即在此出错）。
   $builder['Data Source'] = [string]$Request.path
+  if ($Request.action -eq 'create' -and [IO.Path]::GetExtension($Request.path) -ieq '.mdb') {
+    $builder['Jet OLEDB:Engine Type'] = 5
+  }
   if (-not [string]::IsNullOrEmpty([string]$Request.databasePassword)) {
     $builder['Jet OLEDB:Database Password'] = [string]$Request.databasePassword
   }
@@ -473,10 +476,10 @@ async function 执行PowerShell请求(请求, 候选, 依赖 = {}) {
   }
 }
 
-function 校验路径(文件路径, { 必须存在 = true, 只允许Accdb = false } = {}) {
+function 校验路径(文件路径, { 必须存在 = true } = {}) {
   if (typeof 文件路径 !== 'string' || !path.isAbsolute(文件路径) || 文件路径.includes('\0')) throw new Error('Access 数据库路径无效')
   const 扩展名 = path.extname(文件路径).toLowerCase()
-  if (!ACCESS_EXTENSIONS.has(扩展名) || (只允许Accdb && 扩展名 !== '.accdb')) throw new Error(只允许Accdb ? '新数据库必须使用 .accdb 格式' : '仅支持 .accdb 和 .mdb 数据库文件')
+  if (!ACCESS_EXTENSIONS.has(扩展名)) throw new Error('仅支持 .accdb 和 .mdb 数据库文件')
   if (必须存在) {
     const 状态 = fs.statSync(文件路径)
     if (!状态.isFile()) throw new Error('所选路径不是普通数据库文件')
@@ -576,14 +579,14 @@ function 分类Access错误(失败列表, { 动作, 扩展名 } = {}) {
 }
 
 function 提供者顺序(扩展名, 动作) {
-  if (动作 === 'create' || 扩展名 === '.accdb') return ['Microsoft.ACE.OLEDB.16.0', 'Microsoft.ACE.OLEDB.12.0']
+  if (扩展名 === '.accdb') return ['Microsoft.ACE.OLEDB.16.0', 'Microsoft.ACE.OLEDB.12.0']
   return ['Microsoft.ACE.OLEDB.16.0', 'Microsoft.ACE.OLEDB.12.0', 'Microsoft.Jet.OLEDB.4.0']
 }
 
 function 规范请求(动作, 输入 = {}) {
   if (!ALL_ACTIONS.has(动作)) throw new Error('不支持的 Access 数据库操作')
   if (动作 === 'status') return { action: 动作 }
-  const { 文件路径, 扩展名 } = 校验路径(输入.路径, { 必须存在: 动作 !== 'create', 只允许Accdb: 动作 === 'create' })
+  const { 文件路径, 扩展名 } = 校验路径(输入.路径, { 必须存在: 动作 !== 'create' })
   const 基础 = {
     action: 动作,
     path: 文件路径,

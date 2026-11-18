@@ -63,8 +63,15 @@ async function 读取模型响应(响应, 推送 = () => {}, 信号, 收到字�
     try { 数据 = JSON.parse(数据文本) } catch { throw new Error('模型服务流式数据格式无效') }
     处理消息(数据)
   }
+  let 上块末尾回车 = false
   const 接收 = (文本) => {
     if (已结束) return
+    if (流式 && 文本) {
+      const 末尾回车 = 文本.endsWith('\r')
+      if (上块末尾回车 && 文本.startsWith('\n')) 文本 = 文本.slice(1)
+      文本 = 文本.replace(/\r\n?/g, '\n')
+      上块末尾回车 = 末尾回车
+    }
     缓冲 += 文本
     if (!流式) return
     let 边界
@@ -84,7 +91,7 @@ async function 读取模型响应(响应, 推送 = () => {}, 信号, 收到字�
       // 逐行解码以便完成事件到达后直接丢弃剩余字节，避免后续垃圾污染有效回复。
       let 起点 = 0
       for (let 位置 = 0; 位置 < 字节.byteLength; 位置 += 1) {
-        if (字节[位置] !== 10) continue
+        if (字节[位置] !== 10 && 字节[位置] !== 13) continue
         接收(解码.decode(字节.subarray(起点, 位置 + 1), { stream: true }))
         if (已结束 || 信号?.aborted) return
         起点 = 位置 + 1

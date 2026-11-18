@@ -166,6 +166,58 @@ async function 缩放图片(文档: PDFDocument, 引用: PDFRef, 记录: 优化�
   const 过滤 = 读取过滤器(流.dict)
   if (过滤.length !== 1 || 过滤[0] !== '/FlateDecode') return
   if (流.dict.get(PDFName.of('DecodeParms'))) return
+  if (宽 <= 8192 && 高 > 最长边上限() && !流.dict.has(PDFName.of('Mask'))) {
+    const 蒙版引用 = 流.dict.get(PDFName.of('SMask'))
+    const 蒙版 = 蒙版引用 ? 图片流(文档.context.lookup(蒙版引用)) : null
+    if (蒙版引用 && (!蒙版 || 数字(蒙版.dict, 'Width') !== 宽 || 数字(蒙版.dict, 'Height') !== 高 ||
+      每像素字节数(蒙版.dict) !== 1 || 读取过滤器(蒙版.dict).join() !== '/FlateDecode' || 蒙版.dict.has(PDFName.of('DecodeParms')))) return
+    const 资源 = 文档.context.obj({})
+    const 指令: string[] = []
+    // 缓存条带的压缩字节，按行解压，避免在手机上同时分配整幅 RGB 和蒙版。
+    const 解码器 = (对象: PDFRawStream) => new Blob([new Uint8Array(对象.getContents())]).stream()
+      .pipeThrough(new DecompressionStream('deflate')).getReader()
+    const 分条 = async (对象: PDFRawStream, 通道数: number) => {
+      const reader = 解码器(对象)
+      const 条带: PDFRef[] = []
+      let 块: Uint8Array = new Uint8Array(0), 起点 = 0
+      try {
+        for (let y = 0; y < 高; y += 512) {
+          const 行数 = Math.min(512, 高 - y)
+          const bytes = new Uint8Array(行数 * 宽 * 通道数)
+          for (let pos = 0; pos < bytes.length;) {
+            if (起点 === 块.length) {
+              const next = await reader.read()
+              if (next.done) throw new Error('PDF 图像提前结束')
+              块 = next.value; 起点 = 0
+            }
+            const n = Math.min(bytes.length - pos, 块.length - 起点)
+            bytes.set(块.subarray(起点, 起点 + n), pos); pos += n; 起点 += n
+          }
+          const stream = await 构造缩小流(文档, 对象, { 数据: bytes, 新宽: 宽, 新高: 行数 })
+          if (!stream) throw new Error('无法编码 PDF 图块')
+          条带.push(文档.context.register(stream))
+        }
+        if (起点 !== 块.length || !(await reader.read()).done) throw new Error('PDF 图像尺寸不匹配')
+      } finally { await reader.cancel(); reader.releaseLock() }
+      return 条带
+    }
+    if (typeof Blob.prototype.stream === 'function') {
+      const 蒙版条带 = 蒙版 ? await 分条(蒙版, 1) : []
+      const 图块 = await 分条(流, 通道)
+      图块.forEach((ref, i) => {
+        if (蒙版) 图片流(文档.context.lookup(ref))!.dict.set(PDFName.of('SMask'), 蒙版条带[i])
+        资源.set(PDFName.of('Tile' + i), ref)
+        const bottom = Math.max(0, 高 - (i + 1) * 512)
+        const height = Math.min(512, 高 - i * 512)
+        指令.push(`q 1 0 0 ${(height / 高).toFixed(12)} 0 ${(bottom / 高).toFixed(12)} cm /Tile${i} Do Q`)
+      })
+      文档.context.assign(引用, 文档.context.flateStream(指令.join('\n'), {
+        Type:'XObject', Subtype:'Form', BBox:[0,0,1,1], Resources:{ XObject:资源 },
+      }))
+      记录.push({ 原宽:宽, 原高:高, 新宽:宽, 新高:高 })
+      return
+    }
+  }
   const 像素 = await 解压(流.getContents())
   if (!像素 || 像素.length !== 宽 * 高 * 通道) return
   const 因子 = Math.max(1, Math.ceil(Math.max(宽, 高) / 最长边上限()))
@@ -211,13 +263,17 @@ export async function 优化PDF大图(原数据: Uint8Array): Promise<优化结�
   }
   const 记录: 优化条目[] = []
   try {
+    const 蒙版引用 = new Set(文档.context.enumerateIndirectObjects().flatMap(([,对象]) => {
+      const ref = 图片流(对象)?.dict.get(PDFName.of('SMask'))
+      return ref instanceof PDFRef ? [ref] : []
+    }))
     for (const 页 of 文档.getPages()) {
       const 资源 = 页.node.Resources()
       const 组 = 资源 ? 资源.lookup(PDFName.of('XObject'), PDFDict) : undefined
       if (!组) continue
       for (const 名称 of 组.keys()) {
         const 引用 = 组.get(名称)
-        if (!(引用 instanceof PDFRef)) continue
+        if (!(引用 instanceof PDFRef) || 蒙版引用.has(引用)) continue
         try {
           await 缩放图片(文档, 引用, 记录)
         } catch {

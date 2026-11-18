@@ -2,6 +2,10 @@ const sax = require('sax')
 const path = require('path')
 
 const 表格命名空间 = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+const 绘图前缀 = new Map([
+  ['http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', 'xdr'],
+  ['http://schemas.openxmlformats.org/drawingml/2006/main', 'a'],
+])
 const 关系命名空间 = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 const 包关系命名空间 = 'http://schemas.openxmlformats.org/package/2006/relationships'
 const 声明命名空间 = 'http://www.w3.org/2000/xmlns/'
@@ -48,6 +52,7 @@ function 规范表格Xml命名空间(xml, 关系目录) {
       const uri = 规范Uri(对象.uri)
       let 前缀 = 对象.prefix
       if (!是属性 && [表格命名空间, 包关系命名空间].includes(uri)) 前缀 = ''
+      else if (!是属性 && 绘图前缀.has(uri)) 前缀 = 绘图前缀.get(uri)
       else if (是属性 && uri === 关系命名空间) 前缀 = 'r'
       // 同一节点上保留外部 r: 属性，避免它与规范化后的关系属性冲突。
       else if (前缀 === 'r' && uri !== 关系命名空间) {
@@ -106,8 +111,8 @@ async function 规范Xlsx命名空间(压缩包, 原始数据) {
   for (const 部件 of Object.values(压缩包.files)) {
     if (部件.dir || !/^(?:xl\/.*\.(?:xml|rels)|_rels\/\.rels)$/.test(部件.name)) continue
     const xml = await 部件.async('string')
-    // 绘图等部件的前缀由其解析器处理，不参与表格标签转换。
-    if (![表格命名空间, 严格表格命名空间, 包关系命名空间].some(uri => xml.includes(uri))) continue
+    const 是绘图 = /^xl\/drawings\/[^/]+\.xml$/i.test(部件.name)
+    if (!是绘图 && ![表格命名空间, 严格表格命名空间, 包关系命名空间].some(uri => xml.includes(uri))) continue
     const 关系匹配 = 部件.name.match(/^(.*\/)?_rels\/[^/]+\.rels$/)
     const 关系目录 = 部件.name === '_rels/.rels' ? '' : 关系匹配 ? (关系匹配[1] ?? '').replace(/\/$/, '') : undefined
     const 新Xml = 规范表格Xml命名空间(xml, 关系目录)

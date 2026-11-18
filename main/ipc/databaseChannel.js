@@ -26,7 +26,7 @@ async function 检查目录可写(目录) {
 function 规范默认文件名(默认名称) {
   const 原名 = typeof 默认名称 === 'string' ? path.win32.basename(path.posix.basename(默认名称.trim())) : ''
   const 文件名 = 原名.replace(/[<>:"|?*\x00-\x1f]/g, '').replace(/[. ]+$/g, '') || 默认文件名
-  return path.extname(文件名).toLowerCase() === '.accdb' ? 文件名 : `${文件名}.accdb`
+  return /\.(accdb|mdb)$/i.test(文件名) ? 文件名 : `${文件名}.accdb`
 }
 
 function 默认文档目录() {
@@ -87,11 +87,11 @@ function 注册Access数据库通道(ipcMain, 依赖 = {}) {
       const 结果 = await 对话框.showSaveDialog(取窗口(event), {
         title: '新建 Access 数据库',
         defaultPath: path.join(取文档目录(), 规范默认文件名(默认名称)),
-        filters: [{ name: 'Access 数据库', extensions: ['accdb'] }],
+        filters: [{ name: 'Access 数据库', extensions: ['accdb'] }, { name: 'Access 2000–2003 数据库', extensions: ['mdb'] }],
         properties: ['createDirectory', 'showOverwriteConfirmation'],
       })
       if (结果.canceled || !结果.filePath) return { 成功: true, 已取消: true }
-      const 路径 = path.extname(结果.filePath).toLowerCase() === '.accdb' ? 结果.filePath : `${结果.filePath}.accdb`
+      const 路径 = /\.(accdb|mdb)$/i.test(结果.filePath) ? 结果.filePath : `${结果.filePath}.accdb`
       if (!(await 目录可写(path.dirname(路径)))) return { 成功: false, 错误类别: '目录不可写', 错误: 目录不可写提示, 路径 }
 
       const 创建结果 = await 数据库服务.invoke('create', { 路径 })

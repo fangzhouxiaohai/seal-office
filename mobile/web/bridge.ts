@@ -34,9 +34,6 @@ async function pickRawFiles(accept = allDocuments, multiple = false): Promise<Fi
     input.addEventListener('cancel', () => finish([]), { once: true }); window.addEventListener('focus', focus, { once: true })
     document.body.appendChild(input); input.click()
   })
-  for (const file of files) {
-    if (file.size > 96 * 1024 * 1024) throw new Error('单个字体文件不能超过 96 MiB')
-  }
   return files
 }
 
@@ -71,6 +68,7 @@ function registerFonts() {
   })
   handle('font.import', async () => {
     const files = await pickRawFiles('.ttf,.otf,.ttc,font/ttf,font/otf,font/collection', false)
+    if (files.some(file => file.size > 96 * 1024 * 1024)) throw new Error('单个字体文件不能超过 96 MiB')
     const manifest = readFontManifest(), imported: ReturnType<typeof publicFont>[] = [], duplicate: string[] = [], failed: Array<{ 文件: string; 原因: string }> = []
     for (const file of files) {
       const extension = path.extname(file.name).toLowerCase()
@@ -115,7 +113,8 @@ function registerFonts() {
 const acceptFor = (kind?: string) => kind ? formats.filter(format => format.type === kind || kind === 'table' && ['json', 'xml'].includes(format.extension)).map(format => '.' + format.extension).join(',') : allDocuments
 async function save(filename: string, data: string | Uint8Array, format?: string, fingerprint?: string | null, encoding?: string) {
   if (!filename.startsWith('/seal/documents/')) throw new Error('请保存到应用文档空间')
-  if (fingerprint && storage.existsSync(filename) && hash(storage.readFileSync(filename)) !== fingerprint) throw new Error('文件已被其他操作修改，请另存为，避免覆盖')
+  if (fingerprint && !storage.existsSync(filename)) throw new Error('来源文件已移动或删除，请另存为')
+  if (fingerprint && hash(storage.readFileSync(filename)) !== fingerprint) throw new Error('文件已被其他操作修改，请另存为，避免覆盖')
   const content = typeof data === 'string' && format !== '二进制' ? core.textCodec.编码文本(data, encoding) : bytes(data, format)
   const previous = storage.existsSync(filename) ? storage.readFileSync(filename) : null
   const expected = previous ? hash(previous) : null

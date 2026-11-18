@@ -27,6 +27,8 @@ interface Props {
    * 与页面尺寸回传给工作台，用作编辑参数的默认位置。
    */
   编辑模式?: boolean
+  拖拽模式?: boolean
+  on模式切换?: (模式: string) => void
   on页面点选?: (位置: { 页码: number; x: number; y: number; 页宽: number; 页高: number }) => void
 }
 
@@ -51,6 +53,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
   on页面点选?: (位置: { 页码: number; x: number; y: number; 页宽: number; 页高: number }) => void
 }) {
   const 画布 = useRef<HTMLCanvasElement | null>(null)
+  const 局部容器 = useRef<HTMLDivElement | null>(null)
   const [文字项, set文字项] = useState<页面文字项[]>([])
   const [错误, set错误] = useState(false)
   const [画布尝试, set画布尝试] = useState({ 代次: 0, 自动重试次数: 0 })
@@ -60,6 +63,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
   useEffect(() => {
     let 已取消 = false
     let 渲染任务: RenderTask | null = null
+    let 清理局部 = () => {}
     set文字项([])
     set错误(false)
     void (async () => {
@@ -105,6 +109,37 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
           transform: 像素比 === 1 ? undefined : [像素比, 0, 0, 像素比, 0, 0],
         })
         await 渲染任务.promise
+        const 容器 = 局部容器.current
+        const 滚动区 = 节点.closest<HTMLElement>('.pdf-viewer__stage')
+        if (!已取消 && 渲染比 < 1 && 容器 && 滚动区) {
+          const 高清视口 = 页面.getViewport({ scale: 显示宽度 / 原始宽度 * 像素比 })
+          let 局部任务: RenderTask | undefined
+          let 帧 = 0
+          const 绘制 = () => {
+            const 区 = 滚动区.getBoundingClientRect(), 页 = 节点.getBoundingClientRect()
+            const x = Math.max(0, Math.floor(Math.max(0, 区.left - 页.left) * 像素比))
+            const y = Math.max(0, Math.floor(Math.max(0, 区.top - 页.top) * 像素比))
+            const width = Math.ceil((Math.min(区.right, 页.right) - 页.left) * 像素比) - x
+            const height = Math.ceil((Math.min(区.bottom, 页.bottom) - 页.top) * 像素比) - y
+            局部任务?.cancel()
+            if (width <= 0 || height <= 0) return
+            const tile = document.createElement('canvas')
+            tile.width = width; tile.height = height
+            Object.assign(tile.style, { position:'absolute', left:`${x / 像素比}px`, top:`${y / 像素比}px`, width:`${width / 像素比}px`, height:`${height / 像素比}px` })
+            const task = 页面.render({ canvas:tile, viewport:高清视口, transform:[1,0,0,1,-x,-y] })
+            局部任务 = task
+            void task.promise.then(() => { if (!已取消 && task === 局部任务) 容器.replaceChildren(tile) }).catch(() => {})
+          }
+          const 调度 = () => { cancelAnimationFrame(帧); 帧 = requestAnimationFrame(绘制) }
+          滚动区.addEventListener('scroll', 调度, true)
+          window.addEventListener('resize', 调度)
+          调度()
+          清理局部 = () => {
+            滚动区.removeEventListener('scroll', 调度, true)
+            window.removeEventListener('resize', 调度)
+            cancelAnimationFrame(帧); 局部任务?.cancel(); 容器.replaceChildren()
+          }
+        }
         const 文本内容 = await 页面.getTextContent()
         if (已取消) return
         const 比例 = 显示宽度 / 视口.width
@@ -123,11 +158,12 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
         onError(页码, 原因)
       }
     })()
-    return () => { 已取消 = true; 渲染任务?.cancel() }
+    return () => { 已取消 = true; 清理局部(); 渲染任务?.cancel() }
   }, [文档, 页码, 缩放, 初始缩放, 可用宽度, on尺寸, onError, 画布尝试])
 
   return <>
     <canvas key={画布尝试.代次} ref={画布} className="pdf-viewer__canvas" aria-label={`第 ${页码} 页`} />
+    <div ref={局部容器} aria-hidden="true" style={{ position:'absolute', inset:0, pointerEvents:'none' }} />
     <div className="pdf-viewer__text-layer" aria-label={`第 ${页码} 页可选择的 PDF 文字`}>
       {文字项.map((项, 索引) => <span key={索引} style={{ left: 项.x, top: 项.y, minWidth: 项.宽, height: 项.高, fontSize: 项.高 }}>{项.文本}</span>)}
     </div>
@@ -167,7 +203,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
   </>
 }
 
-const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', onError, 编辑模式 = false, on页面点选 }: Props) => {
+const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', onError, 编辑模式 = false, 拖拽模式 = false, on模式切换, on页面点选 }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
@@ -192,6 +228,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
   const 待恢复 = useRef(false)
   const 待切换页 = useRef<number|null>(null)
   const 阅读区 = useRef<HTMLDivElement | null>(null)
+  const 平移 = useRef<{ id:number; 目标:HTMLElement; x:number; y:number; left:number; top:number } | null>(null)
   const 页节点 = useRef<Array<HTMLDivElement | null>>([])
   const 页码输入 = useRef<HTMLInputElement | null>(null)
   const 右键页码 = useRef(1)
@@ -573,6 +610,9 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
       <div className="pdf-viewer__toolbar" data-reading-chrome hidden={!chrome.visible}>
         <span className="pdf-viewer__name" title={文件名}>{数据 ? 文件名 : '文档预览'}</span>
         <div className="pdf-viewer__controls">
+          {on模式切换 && <select aria-label="PDF 操作模式" value={编辑模式 ? '编辑' : 拖拽模式 ? '拖拽查看' : '只读可复制'} onChange={事件 => on模式切换(事件.target.value)}>
+            {['只读可复制', '拖拽查看', '编辑'].map(模式 => <option key={模式}>{模式}</option>)}
+          </select>}
           <button type="button" aria-label={分页模式?'切换连续阅读':'切换左右翻页'} title={分页模式?'当前为左右翻页，切换连续阅读':'当前为连续阅读，切换左右翻页'} disabled={状态!=='就绪'} aria-pressed={分页模式} onClick={切换分页}><Icon name="page-view" size={15}/></button>
           <button type="button" aria-label={全屏?'退出全屏阅读':'全屏左右翻页阅读'} title={全屏?'退出全屏阅读':'全屏阅读 · 左右翻页 · 双指缩放'} disabled={状态!=='就绪'} onClick={全屏?退出全屏:进入全屏}><Icon name="read-view" size={15}/></button>
           <button type="button" aria-label="上一页" title="上一页" disabled={状态 !== '就绪' || 当前页 <= 1} onClick={() => 翻页(-1)}><Icon name="arrow-left" size={15} /></button>
@@ -612,6 +652,22 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
         ref={阅读区}
         className={`pdf-viewer__stage${分页模式?' pdf-viewer__stage--paged':''}`}
         data-view-mode={分页模式?'pages':'continuous'}
+        data-pan={拖拽模式 ? 'true' : undefined}
+        onPointerDown={事件 => {
+          // 触屏沿用浏览器原生平移与双指缩放。
+          if (!拖拽模式 || 事件.pointerType === 'touch' || 事件.button !== 0 || (事件.target as HTMLElement).closest('button')) return
+          const 目标 = (事件.target as HTMLElement).closest<HTMLElement>('.pdf-viewer__slide') ?? 事件.currentTarget
+          事件.currentTarget.setPointerCapture(事件.pointerId)
+          平移.current = { id:事件.pointerId, 目标, x:事件.clientX, y:事件.clientY, left:目标.scrollLeft, top:目标.scrollTop }
+          事件.preventDefault()
+        }}
+        onPointerMove={事件 => {
+          const 起点 = 平移.current
+          if (!拖拽模式 || 起点?.id !== 事件.pointerId || !起点) return
+          起点.目标.scrollLeft = 起点.left + 起点.x - 事件.clientX
+          起点.目标.scrollTop = 起点.top + 起点.y - 事件.clientY
+        }}
+        onLostPointerCapture={() => { 平移.current = null }}
         tabIndex={0}
         aria-label={分页模式?'PDF 左右翻页阅读区':'PDF 连续滚动阅读区'}
         onScroll={更新可视页}

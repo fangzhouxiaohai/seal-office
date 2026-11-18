@@ -29,6 +29,8 @@ describe('最新版下载', () => {
 
   it('识别常见设备且不把安卓误判为 Linux', () => {
     assert.equal(detectPlatform('Mozilla Android Linux'), 'android')
+    assert.equal(detectPlatform('Mozilla Android HarmonyOS'), 'harmony')
+    assert.equal(detectPlatform('Mozilla OpenHarmony'), 'harmony')
     assert.equal(detectPlatform('Mozilla Windows NT'), 'windows')
     assert.equal(detectPlatform('Mozilla Macintosh'), 'macos')
     assert.equal(detectPlatform('Mozilla Linux'), 'linux')

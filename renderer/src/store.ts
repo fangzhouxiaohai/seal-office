@@ -872,6 +872,9 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
 
   const 更新文件指纹 = (标识: string, 指纹: string) => {
     setDocuments((当前) => 当前.map((文档) => 文档.id === 标识 ? { ...文档, 文件指纹: 指纹 } : 文档))
+    setPdfDocuments((当前) => 当前.some(文档 => 文档.id === 标识)
+      ? 当前.map(文档 => 文档.id === 标识 ? { ...文档, 文件指纹: 指纹 } : 文档)
+      : 当前)
   }
 
   const 查找保存路径占用 = (当前标识: string | null, 目标路径: string): WorkspaceTab | null =>

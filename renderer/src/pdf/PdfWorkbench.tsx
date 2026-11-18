@@ -10,6 +10,7 @@ import { useShortcuts } from '../shortcuts/useShortcuts'
 import { 写出PDF文档 } from '../office/writeDocument'
 import { 读取本地文件内容 } from '../fileOpen'
 import './pdf.css'
+import { 转换PDF文字 } from './pdfConversion'
 
 interface 本地PDF文件 {
   标识: string
@@ -80,6 +81,8 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const [插入来源, set插入来源] = useState('')
   const [编辑类型, set编辑类型] = useState<'text' | 'note' | 'image' | 'cover' | 'replace'>('text')
   const [编辑文字, set编辑文字] = useState('')
+  const [转换格式, set转换格式] = useState<'docx'|'xlsx'|'txt'>('docx')
+  const [转换范围, set转换范围] = useState('')
   const [编辑页码, set编辑页码] = useState('1')
   const [编辑横坐标, set编辑横坐标] = useState('50')
   const [编辑纵坐标, set编辑纵坐标] = useState('50')
@@ -89,7 +92,9 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
   const [编辑颜色, set编辑颜色] = useState('#111111')
   const [编辑图片, set编辑图片] = useState('')
   /** 编辑模式：开启后在页面上点选，直接把坐标填进编辑参数 */
-  const [编辑模式, set编辑模式] = useState(false)
+  const [文件模式, set文件模式] = useState<Record<string,string>>({})
+  const 模式 = 文件模式[预览标识 ?? ''] ?? '只读可复制'
+  const 编辑模式 = 模式 === '编辑'
   const [正在读取, set正在读取] = useState(false)
   const [正在处理, set正在处理] = useState(false)
   const [正在保存, set正在保存] = useState(false)
@@ -216,6 +221,24 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     set工具展开(true)
   }
 
+  const 导出文字 = async () => {
+    if (!当前文件 || 正在处理) return
+    set正在处理(true)
+    try {
+      const data = await 转换PDF文字(当前文件.数据, 转换格式, 转换范围)
+      const name = 当前文件.名称.replace(/\.(?:s?pdf)$/i,'') + '.' + 转换格式
+      const path = await 桥接.showSaveDialog(name, 转换格式==='xlsx'?'table':'word')
+      if (!path) return
+      if (!path.toLowerCase().endsWith('.'+转换格式)) throw new Error('目标扩展名须为 .'+转换格式)
+      const occupied = 校验保存路径?.(path, 当前文件.标识)
+      if (occupied) throw new Error(occupied)
+      const result = await 桥接.saveToFile(path,data,转换格式==='txt'?'文本':'二进制')
+      if (!result.成功 && !result.已取消) throw new Error(result.错误 || '转换文件保存失败')
+      if (result.成功) message.success('转换文件已保存')
+    } catch (error) { 显示错误('PDF 转换失败',error instanceof Error ? error.message : String(error)) }
+    finally { set正在处理(false) }
+  }
+
   const 写入PDF文件 = async (文件: 本地PDF文件, 另存为: boolean, 默认名称?: string) => {
     if (保存锁.current) return
     保存锁.current = true
@@ -332,6 +355,11 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
         文件名={当前文件?.名称}
         onError={(文本) => 显示错误('PDF 预览失败', 文本)}
         编辑模式={编辑模式 && 当前文件 !== null}
+        拖拽模式={模式 === '拖拽查看'}
+        on模式切换={当前文件 ? (值) => {
+          set文件模式(旧 => ({ ...旧, [当前文件.标识]: 值 }))
+          if (值 === '编辑') set工具展开(true)
+        } : undefined}
         on页面点选={({ 页码, x, y }) => {
           // 点选只负责定位，不自动提交，避免误点就改写文档
           set编辑页码(String(页码))
@@ -413,11 +441,11 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           <Button type="primary" block onClick={执行} loading={正在处理} disabled={正在读取 || 正在保存}>执行并保存</Button>
         </div>
         <div className="pdf-workbench__operation">
+          <h2>转换为</h2>
+          <Select aria-label="转换目标格式" value={转换格式} onChange={set转换格式} options={[{value:'docx',label:'Word 可编辑文字（DOCX）'},{value:'xlsx',label:'Excel 表格（XLSX）'},{value:'txt',label:'纯文本（TXT）'}]} />
+          <Input aria-label="转换页码范围" placeholder="全部页，或 1,3-5" value={转换范围} onChange={事件 => set转换范围(事件.target.value)} />
+          <Button onClick={() => void 导出文字()} disabled={!当前文件 || 正在处理}>转换并另存</Button>
           <h2>编辑内容</h2>
-          <p>坐标从页面左上角起、向下为正，单位为点。开启「点选定位」后直接在页面上点击即可填入坐标。</p>
-          <Button block type={编辑模式 ? 'primary' : 'default'} aria-pressed={编辑模式} onClick={() => set编辑模式((当前) => !当前)} disabled={!当前文件}>
-            {编辑模式 ? '点选定位：开（点页面取坐标）' : '点选定位：关'}
-          </Button>
           <label htmlFor="pdf-edit-type">编辑操作</label>
           <Select id="pdf-edit-type" aria-label="编辑操作" value={编辑类型} onChange={set编辑类型} options={[{ value: 'text', label: '添加文字' }, { value: 'replace', label: '可见文字替换' }, { value: 'note', label: '添加可见批注' }, { value: 'image', label: '插入图片' }, { value: 'cover', label: '遮盖区域' }]} />
           <label htmlFor="pdf-edit-page">页码</label><Input id="pdf-edit-page" aria-label="编辑页码" type="number" min={1} value={编辑页码} onChange={(事件) => set编辑页码(事件.target.value)} />
@@ -428,7 +456,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
           {编辑类型 === 'image' && <><input ref={图片选择器} type="file" accept="image/png,image/jpeg" aria-label="选择插入图片" onChange={(事件) => void 选择编辑图片(事件)} /><span>{编辑图片 ? '图片已就绪' : '请选择图片'}</span></>}
           {编辑类型 !== 'image' && <><label htmlFor="pdf-edit-color">颜色</label><Input id="pdf-edit-color" aria-label="颜色" type="color" value={编辑颜色} onChange={(事件) => set编辑颜色(事件.target.value)} /></>}
           {['cover', 'replace'].includes(编辑类型) && <p>遮盖或可见文字替换只改变显示，原文字仍可能被复制或搜索；请勿用于敏感信息脱敏。</p>}
-          <Button type="primary" block onClick={() => void 执行编辑()} loading={正在处理} disabled={!当前文件 || 正在保存}>编辑并另存</Button>
+          <Button type="primary" block onClick={() => void 执行编辑()} loading={正在处理} disabled={!编辑模式 || !当前文件 || 正在保存}>编辑并另存</Button>
         </div>
         </div>}
       </aside>
