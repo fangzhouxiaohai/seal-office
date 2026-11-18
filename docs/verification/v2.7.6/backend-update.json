@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "version": "2.7.6",
+  "replaced": true,
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.6.exe",
+      "bytes": 567073366,
+      "sha256": "d42d3cf73ada0b486637f3995891bc48a966cc2d7d36d3b3ffe2a8c8d75f2bf4",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/7be1d5a2-e79b-4590-bf9a-97c1c2add4ca/seal-office-setup-2.7.6.exe",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/7be1d5a2-e79b-4590-bf9a-97c1c2add4ca/seal-office-setup-2.7.6.exe",
+        "sha256": "d42d3cf73ada0b486637f3995891bc48a966cc2d7d36d3b3ffe2a8c8d75f2bf4",
+        "bytes": 567073366,
+        "publishedAt": 1794836227808
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.6-microsoft-store-x64.msix",
+      "bytes": 798502253,
+      "sha256": "b5380a21c19d4bfaeffa9fe6be306ce77ec082aa61511917d9237d9b3678a742",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/e79952df-76c0-4314-ab4e-a404cc9bb397/seal-office-2.7.6-microsoft-store-x64.msix",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "b5380a21c19d4bfaeffa9fe6be306ce77ec082aa61511917d9237d9b3678a742",
+        "bytes": 798502253,
+        "publishedAt": 1794836227809
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.6-amd64.deb",
+      "bytes": 152307976,
+      "sha256": "9de69e37ce42fdc1d6daec89ccdd3029b6565cfcb8b7f3e550acb551c0149999",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/f58c1c23-7af9-44d1-9792-c1409096b911/seal-office-2.7.6-amd64.deb",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/f58c1c23-7af9-44d1-9792-c1409096b911/seal-office-2.7.6-amd64.deb",
+        "sha256": "9de69e37ce42fdc1d6daec89ccdd3029b6565cfcb8b7f3e550acb551c0149999",
+        "bytes": 152307976,
+        "publishedAt": 1794836227809
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "macos",
+      "filename": "seal-office-2.7.6-macos.dmg",
+      "bytes": 230058669,
+      "sha256": "b0b22309ad4b1f1f8e43ab7da1e6288016842a9eeacff50ae9ef5bcadd4134d6",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a16bd326-b64e-4ba0-8492-2e62810f21fa/seal-office-2.7.6-macos.dmg",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a16bd326-b64e-4ba0-8492-2e62810f21fa/seal-office-2.7.6-macos.dmg",
+        "sha256": "b0b22309ad4b1f1f8e43ab7da1e6288016842a9eeacff50ae9ef5bcadd4134d6",
+        "bytes": 230058669,
+        "publishedAt": 1794836227809
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.6-android.apk",
+      "bytes": 41250260,
+      "sha256": "4328fea601e8b2213c4a9bae2ed771f0d6ba1e97a1e24484ad2e22b4faa8a766",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/ebb45e7a-01a8-4e50-a0c5-bde235abab21/seal-office-2.7.6-android.apk",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/ebb45e7a-01a8-4e50-a0c5-bde235abab21/seal-office-2.7.6-android.apk",
+        "sha256": "4328fea601e8b2213c4a9bae2ed771f0d6ba1e97a1e24484ad2e22b4faa8a766",
+        "bytes": 41250260,
+        "publishedAt": 1794836227809
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.6-harmony.hap",
+      "bytes": 66538388,
+      "sha256": "bc6a077525b40ca15f4de4703bbdc8b091b0d4296ecf47b0a041e493936c23cc",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/0b35dc76-5892-41fa-8830-1dbd0897dba4/seal-office-2.7.6-harmony.hap",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/0b35dc76-5892-41fa-8830-1dbd0897dba4/seal-office-2.7.6-harmony.hap",
+        "sha256": "bc6a077525b40ca15f4de4703bbdc8b091b0d4296ecf47b0a041e493936c23cc",
+        "bytes": 66538388,
+        "publishedAt": 1794836227810
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.6-web.zip",
+      "bytes": 49854431,
+      "sha256": "5d14c0f6c9b4ad9ea0ecfd2bfca4ee1047cc0cc0d277577b1830d96754402b7f",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/afd27636-2268-44ee-a65c-b5c22e302492/seal-office-2.7.6-web.zip",
+      "oldVersion": "2.7.4",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.6",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.6\n\n本版解决超大扫描页 PDF 放大后看不清的问题：提高位图缩放上限与超大页面的渲染画布上限；移动构建号为 20706。\n\n## PDF 阅读\n\n- 2.7.5 解决了这类 PDF 打开空白，但把整页位图缩小到最长边 8192 像素，只剩原分辨率五分之一，放大后文字无法辨认。\n- 现在位图最长边上限提高到 30000（Safari 为 16000），该类文件只缩小 2 倍，保留原分辨率的一半；示例文件由 3117×38572 变为 1558×19286。\n- 超大页面的渲染画布上限由 1600 万像素提高到 3200 万（移动端 2400 万），175% 缩放时可按 1:1 渲染，不会再被压缩后再拉伸。\n- 优化结果按文件指纹缓存，同一文件再次打开不重复解码；常规 PDF 不受影响。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP 与 macOS arm64 DMG。\n- 校验值见 `release/v2.7.6/SHA256SUMS.txt`；macOS DMG 仍为临时签名、未公证，首次打开需要在“系统设置 → 隐私与安全性”里允许运行。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/afd27636-2268-44ee-a65c-b5c22e302492/seal-office-2.7.6-web.zip",
+        "sha256": "5d14c0f6c9b4ad9ea0ecfd2bfca4ee1047cc0cc0d277577b1830d96754402b7f",
+        "bytes": 49854431,
+        "publishedAt": 1794836227810
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

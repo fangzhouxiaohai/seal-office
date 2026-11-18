@@ -3,10 +3,12 @@ import argparse, hashlib, importlib.util, json, os, re, shutil, subprocess, sys,
 from pathlib import Path
 from datetime import datetime,timezone
 import cv2
+from candidate_paths import promo_output, source_qualifier
 
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
-OUT=ROOT/'release/promo';WORK=OUT/('work-'+VERSION+'-tutorial');DOC=ROOT/'docs/verification'/('v'+VERSION+'-tutorials')
+OUT=promo_output(ROOT);WORK=OUT/('work-'+VERSION+'-tutorial');DOC=(OUT/'verification-evidence' if os.environ.get('SEAL_PROMO_OUTPUT') else ROOT/'docs/verification'/('v'+VERSION+'-tutorials'))
+SOURCE_KIND=source_qualifier()
 def read(p):return json.loads(p.read_text(encoding='utf-8-sig'))
 def write(p,x):p.write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 def sha(p):
@@ -75,8 +77,8 @@ def main():
     for v in report['videos']:
         assert sha(OUT/v['file'])==v['sha256']
         v['visualReview']={'passed':True,'reviewer':'Codex','method':'已查看两端完整联系表，以及正文输入、简洁模式、显示比例、更新检查和移动阅读的原尺寸代表帧。'}
-        v['sourceDisclosure']=('正式 APK 界面资源在隔离 Electron 浏览器窗口录制，采用 Chromium 触摸输入模拟手机布局。' if v['platform']=='android'
-                               else '正式 Web ZIP 界面资源在隔离 Electron 浏览器窗口以电脑布局录制。')
+        v['sourceDisclosure']=(SOURCE_KIND+' APK 界面资源在隔离 Electron 浏览器窗口录制，采用 Chromium 触摸输入模拟手机布局。' if v['platform']=='android'
+                               else SOURCE_KIND+' Web ZIP 界面资源在隔离 Electron 浏览器窗口以电脑布局录制。')
         source=read(WORK/(v['platform']+'-recording.json'));assert not source['errors']
         shutil.copy2(WORK/(v['platform']+'-recording.json'),DOC/(v['platform']+'-recording.json'))
         shutil.copy2(OUT/v['file'].replace('.mp4','-contact.jpg'),DOC/(v['platform']+'-contact.jpg'))
@@ -97,7 +99,7 @@ def main():
     write(OUT/'verification.json',report);write(DOC/'verification.json',report)
     voices=read(WORK/'voice.json');reference=voices['reference'];write(DOC/'voice-reference.json',reference)
     write(DOC/'voice-clips.json',{'version':VERSION,'clips':voices['clips']})
-    inputs=['AGENTS.md','docs/打包规范.md','docs/promo/current-storyboard.json','scripts/promo/build-current.cjs','scripts/promo/tutorial-source.cjs','scripts/promo/android-source.cjs','scripts/promo/tutorial-record.cjs','scripts/promo/tutorial-voice.py','scripts/promo/tutorial-render.py','scripts/promo/tutorial-finalize.py']
+    inputs=['AGENTS.md','docs/打包规范.md','docs/promo/current-storyboard.json','scripts/promo/build-current.cjs','scripts/promo/candidate-paths.cjs','scripts/promo/candidate_paths.py','scripts/promo/tutorial-source.cjs','scripts/promo/android-source.cjs','scripts/promo/tutorial-record.cjs','scripts/promo/tutorial-voice.py','scripts/promo/tutorial-render.py','scripts/promo/tutorial-finalize.py']
     write(DOC/'source-inputs.json',{'version':VERSION,'files':[{'path':p,'sha256':sha(ROOT/p)} for p in inputs],'runtimeChanged':False,'sampleAudioPublished':False})
     submissions=[]
     for v in report['videos']:
@@ -124,11 +126,11 @@ def main():
 - PC：{counts['pc'][0]} 个步骤、{counts['pc'][1]} 项实际结果断言：{titles['pc']}。
 - Android：{counts['android'][0]} 个步骤、{counts['android'][1]} 项实际结果断言：{titles['android']}。
 - 两端实录简洁模式的开关及工具区变化。PC 对同一份文档验证默认 100%、开启放大时保留当前比例、关闭后重新打开为 150%。手机端展示全屏阅读、左右翻页、双击显示工具栏及自动收起、双指缩放。
-- 两端手动点击检查更新，匿名请求由录制服务转发到生产更新接口，响应状态和结果记录在实际动作时间线。Web ZIP 和正式 APK 的录制资源逐文件校验，安装包哈希记录在验收报告。
+- 两端手动点击检查更新，匿名请求由录制服务转发到生产更新接口，响应状态和结果记录在实际动作时间线。{SOURCE_KIND} Web ZIP 和 APK 的录制资源逐文件校验，安装包哈希记录在验收报告。
 - 只使用隔离演示状态，无真实账号、云文件修改或模型请求。紫色光晕附着当前控件；鼠标指针、点击圆环和触摸点为录像标注，输入与执行结果来自真实应用。
 - 成片 1920×1080 / 1080×1920、30 fps，完整音视频解码、响度、字幕、紫色画面与逐字输入变化检查通过。字幕使用配音返回的句子时间戳。详细参数及 SHA-256 见 verification.json。
-- PC 使用正式 Web ZIP 的电脑布局，Android 使用正式 APK 中的界面资源。两端都在隔离 Electron 浏览器窗口录制，移动触摸由 Chromium 输入驱动。原生安装包验收见发行记录。
-- 正式文件位于 `release/promo/`，配套封面、SRT、预览与 SHA256SUMS.txt；不修改安装包或平台源码。
+- PC 使用{SOURCE_KIND} Web ZIP 的电脑布局，Android 使用{SOURCE_KIND} APK 中的界面资源。两端都在隔离 Electron 浏览器窗口录制，移动触摸由 Chromium 输入驱动。原生安装包验收见发行记录。
+- 视频文件位于 `{OUT}`，配套封面、SRT、预览与 SHA256SUMS.txt；不修改安装包或平台源码。
 
 B 站尚未投稿：本次未要求上传或投稿。已备好投稿文案和素材路径，见 bilibili-submissions.json。
 ''',encoding='utf-8')

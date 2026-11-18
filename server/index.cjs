@@ -16,6 +16,9 @@ const { createShareLinks } = require('./shareLinks.cjs')
 const { createMyShares } = require('./myShares.cjs')
 const { createReleases } = require('./releases.cjs')
 const { createReleaseAssets } = require('./releaseAssets.cjs')
+const { openAdminAccess } = require('./adminAccess.cjs')
+const { AsyncLocalStorage } = require('node:async_hooks')
+const { Transform } = require('node:stream')
 const QUOTA = 300000000
 const CHUNK = 1024 * 1024
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -37,7 +40,11 @@ const effectiveMethod = req => {
 
 async function createCloud({ directory, sms, env = process.env, quota = QUOTA, clock = Date.now,conversionTimeout=100000,updateRateLimit } = {}) {
   const root = directory || env.SEAL_DATA_DIR || path.join(__dirname, 'data')
-  const db = await openStore(root)
+  const adminAccess = await openAdminAccess(root, { clock, superuserConfigured:Boolean(env.SEAL_ADMIN_PASSWORD_HASH) })
+  let db
+  try {
+  db = await openStore(root)
+  const adminContext = new AsyncLocalStorage()
   const objects = path.join(root, 'objects'), incoming = path.join(root, 'incoming'), teamObjects = path.join(root,'team-objects')
   fs.mkdirSync(objects, { recursive: true, mode: 0o700 }); fs.mkdirSync(incoming, { recursive: true, mode: 0o700 })
   fs.mkdirSync(teamObjects,{recursive:true,mode:0o700})
@@ -51,7 +58,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const adminSalt = env.SEAL_ADMIN_SALT || 'seal-admin-v1'
   const adminHash = env.SEAL_ADMIN_PASSWORD_HASH || ''
   const codeHash = (phone, purpose, code) => createHmac('sha256', secret).update(`${phone}:${purpose}:${code}`).digest('hex')
-  const audit = (user, action, detail = '') => db.run('INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)', [user, action, clock(), detail])
+  const audit = (user, action, detail = '') => db.run('INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)', [user === 'admin' ? (adminContext.getStore()?.actor || 'admin') : user, action, clock(), detail])
   const converter = createConverterAdmin({ directory: root, env })
   const accountConversion=createAccountConversion({db,converter,clock,timeoutMs:conversionTimeout})
   const publicationMeta="LENGTH(CAST(COALESCE(text,'')||COALESCE(cover,'')||title||description||COALESCE(category,'')||COALESCE(name,'') AS BLOB))"
@@ -112,7 +119,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
     db.run('DELETE FROM session_devices WHERE session_hash NOT IN (SELECT hash FROM sessions)')
   })
   const cleanupTimer=setInterval(()=>{try{cleanup();db.transaction(()=>realtime.cleanup());clearOrphans()}catch{console.error('Cloud cleanup failed; retry on next maintenance cycle')}},3600000);cleanupTimer.unref()
-  function streamObject(blob,res){const filename=path.join(objects,blob);if(!fs.existsSync(filename))fail(503,'文件暂时不可用，请联系维护人员');const stream=fs.createReadStream(filename);stream.on('error',()=>res.destroy());return stream.pipe(res)}
+  function streamObject(blob,res,guard){const filename=path.join(objects,blob);if(!fs.existsSync(filename))fail(503,'文件暂时不可用，请联系维护人员');const stream=fs.createReadStream(filename);stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());if(!guard)return stream.pipe(res);const gate=new Transform({transform(chunk,_encoding,done){try{guard();done(null,chunk)}catch(error){done(error)}}});gate.on('error',()=>{stream.destroy();res.destroy()});return stream.pipe(gate).pipe(res)}
   async function body(req, limit = 2 * CHUNK) {
     const chunks = []; let size = 0
     for await (const chunk of req) { size += chunk.length; if (size > limit) fail(413, '请求内容过大'); chunks.push(chunk) }
@@ -124,7 +131,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const myShares = createMyShares({ db, clock, audit })
   // 版本发布：匿名更新查询按 IP 令牌桶限流，管理接口沿用管理员会话鉴权
   const releaseAssets = createReleaseAssets({ directory: root, db, env, clock, audit })
-  const releases = createReleases({ db, clock, audit, assets: releaseAssets, rateLimit: updateRateLimit })
+  const releases = createReleases({ db, clock, audit, assets: releaseAssets, rateLimit: updateRateLimit, getActor:()=>adminContext.getStore()?.actor || 'admin' })
   const realtime = createRealtime({ db, clock, authorize: collaboration.authorizeRealtime, usage, reservation, quota, ensureDisk })
   const issueSession = (row, input, action = 'login') => {
     const token = randomBytes(32).toString('base64url')
@@ -139,7 +146,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   }
   const passwords = createPasswords({ db, clock, secret, verifyCode, issueSession, account, audit })
   const erasure = await createAccountErasure({ db, directory: root, env, clock, verifyCode })
-  const server = http.createServer(async (req, res) => {
+  const server = http.createServer((req, res) => adminContext.run({ actor: 'admin' }, async () => {
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Content-Security-Policy', "default-src 'none'")
     try {
@@ -148,29 +155,78 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       const json = async limit => { const raw = await body(req, limit); if (!route.startsWith('/v1/admin/') && !route.startsWith('/v1/auth/') && !route.startsWith('/v1/devices') && !route.endsWith('/report') && route !== '/v1/space/enable' && user && !db.one('SELECT enabled FROM users WHERE id=?',[user.id])?.enabled) fail(403,'云空间已停用'); try { return JSON.parse(raw.toString('utf8')) } catch { fail(400, '请求数据无效') } }
       const reply = value => { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify(value)) }
       if(route==='/v1/admin/login'&&method==='POST'){
-        const input=await json(),ip=clientIp(req),item=adminAttempts.get(ip)||{count:0,time:clock()}
-        if(clock()-item.time>900000){item.count=0;item.time=clock()}
-        if(item.count>=5)fail(429,'登录尝试过多，请稍后再试');item.count++;adminAttempts.set(ip,item)
-        if(!adminHash||input.username!=='admin'||typeof input.password!=='string'||!safeEqual(scryptSync(input.password,adminSalt,32).toString('hex'),adminHash))fail(401,'管理员账号或密码不正确')
-        adminAttempts.delete(ip);const token=randomBytes(32).toString('base64url');adminSessions.set(hash(token),clock()+8*3600000);return reply({token})
+        const input=await json(),ip=clientIp(req),name=typeof input?.username==='string'?input.username.toLowerCase().slice(0,64):''
+        const keys=['ip:'+ip,'ip-account:'+ip+':'+hash(name)]
+        const attempts=keys.map(key=>{const item=adminAttempts.get(key)||{count:0,time:clock()};if(clock()-item.time>900000){item.count=0;item.time=clock()}return item})
+        if(attempts.some(item=>item.count>=5))fail(429,'登录尝试过多，请稍后再试')
+        const rootLogin=adminHash&&input?.username==='admin'&&typeof input?.password==='string'&&input.password.length<=128&&safeEqual(scryptSync(input.password,adminSalt,32).toString('hex'),adminHash)
+        const principal=rootLogin?adminAccess.superuser():adminAccess.authenticate(input?.username,input?.password)
+        if(!principal){for(let i=0;i<keys.length;i++){attempts[i].count++;adminAttempts.set(keys[i],attempts[i])}fail(401,'管理员账号或密码不正确')}
+        adminAttempts.delete(keys[1]);const token=randomBytes(32).toString('base64url');adminSessions.set(hash(token),{expires:clock()+8*3600000,id:principal.id,revision:principal.revision});return reply({token})
       }
       if(route.startsWith('/v1/admin/')){
         const token=/^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization||'')?.[1]
-        if(!token||!adminSessions.has(hash(token))||adminSessions.get(hash(token))<clock())fail(401,'请先登录管理后台')
+        const session=token&&adminSessions.get(hash(token))
+        if(!session||session.expires<clock())fail(401,'请先登录管理后台')
+        let principal=session.id==='admin'?adminAccess.superuser():adminAccess.principal(session.id)
+        if(!principal||principal.revision!==session.revision){adminSessions.delete(hash(token));fail(401,'管理员账号已变更或停用，请重新登录')}
+        const refreshPrincipal=()=>{principal=session.id==='admin'?adminAccess.superuser():adminAccess.principal(session.id);if(!principal||principal.revision!==session.revision||session.expires<clock()||!adminSessions.has(hash(token)))fail(401,'管理员账号已变更或停用，请重新登录')}
+        adminContext.getStore().actor=principal.id==='admin'?'admin':'admin:'+principal.id
+        const can=permission=>adminAccess.allowed(principal,permission)
+        const allowed=permission=>{if(!can(permission))fail(403,'没有执行此操作的权限')}
+        const reauthorize=()=>{
+          refreshPrincipal()
+          if(route.startsWith('/v1/admin/converter'))allowed(method==='GET'?'converter:read':'converter:write')
+          if(route==='/v1/admin/release-assets')allowed('releases:write')
+          if(route==='/v1/admin/releases'||route.startsWith('/v1/admin/releases/'))allowed(method==='GET'?'releases:read':'releases:write')
+          const target=/^\/v1\/admin\/publications\/([0-9a-f-]{36})(?:\/download)?$/.exec(route)
+          if(target){const item=db.one('SELECT kind FROM publications WHERE id=?',[target[1]]);if(!item)fail(404,'公开内容不存在');if(!['template','knowledge','skin'].includes(item.kind))fail(403,'没有执行此操作的权限');allowed(item.kind+(method==='PATCH'?':review':':read'))}
+        }
+        const adminJson=async()=>{const value=await json();reauthorize();return value}
         if(route==='/v1/admin/logout'&&method==='POST'){adminSessions.delete(hash(token));return reply({loggedOut:true})}
-        if(route==='/v1/admin/converter'&&method==='GET')return reply(await converter.status())
-        if(route==='/v1/admin/converter'&&method==='PATCH'){const result=await converter.update(await json());db.transaction(()=>audit('admin','converter-config',JSON.stringify({enabled:result.config.enabled,concurrency:result.config.concurrency})));return reply(result)}
-        if(route==='/v1/admin/converter/token'&&method==='POST'){const result=await converter.update({},true);db.transaction(()=>audit('admin','converter-token-reset',result.config.tokenFingerprint));return reply(result)}
-        if(route==='/v1/admin/converter/test'&&method==='POST'){const result=await converter.test();db.transaction(()=>audit('admin','converter-test',result.passed?'passed':'failed'));return reply(result)}
-        if(await releaseAssets.handleAdmin({route,method,url,req,reply}))return
-        if(await releases.handleAdmin({route,method,url,json,reply}))return
+        if(route==='/v1/admin/session'&&method==='GET')return reply(adminAccess.profile(principal))
+        if(route==='/v1/admin/access/menu-candidates'&&method==='GET')return reply({items:adminAccess.menuCandidates(principal)})
+        const access=/^\/v1\/admin\/access\/(admins|roles|menus)(?:\/([a-zA-Z0-9-]+))?$/.exec(route)
+        if(access){const type=access[1],id=access[2]
+          if(!id&&method==='GET')return reply({items:adminAccess[type](principal)})
+          if(method==='POST'||method==='PATCH'){const input=await adminJson()
+            if(type==='admins'&&!id&&method==='POST')return reply({item:adminAccess.createAdmin(principal,input)})
+            if(type==='roles'&&!id&&method==='POST')return reply({item:adminAccess.createRole(principal,input)})
+            if(type==='menus'&&!id&&method==='POST')return reply({item:adminAccess.registerMenu(principal,input)})
+            if(type==='admins'&&id&&method==='PATCH')return reply({item:adminAccess.updateAdmin(principal,id,input)})
+            if(type==='roles'&&id&&method==='PATCH')return reply({item:adminAccess.updateRole(principal,id,input)})
+            if(type==='menus'&&id&&method==='PATCH')return reply({item:adminAccess.updateMenu(principal,id,input)})
+          }
+          if(type==='admins'&&id&&method==='DELETE')return reply(adminAccess.deleteAdmin(principal,id))
+          if(type==='roles'&&id&&method==='DELETE')return reply(adminAccess.deleteRole(principal,id))
+          fail(404,'管理接口不存在')
+        }
+        if(route==='/v1/admin/converter'&&method==='GET')allowed('converter:read')
+        if(route.startsWith('/v1/admin/converter')&&method!=='GET')allowed('converter:write')
+        if(route==='/v1/admin/release-assets')allowed('releases:write')
+        if(route==='/v1/admin/releases'||route.startsWith('/v1/admin/releases/'))allowed(method==='GET'?'releases:read':'releases:write')
+        if(route==='/v1/admin/converter'&&method==='GET'){const result=await converter.status();reauthorize();return reply(result)}
+        if(route==='/v1/admin/converter'&&method==='PATCH'){const result=await converter.update(await adminJson(),false,reauthorize);db.transaction(()=>audit('admin','converter-config',JSON.stringify({enabled:result.config.enabled,concurrency:result.config.concurrency})));return reply(result)}
+        if(route==='/v1/admin/converter/token'&&method==='POST'){const result=await converter.update({},true,reauthorize);db.transaction(()=>audit('admin','converter-token-reset',result.config.tokenFingerprint));return reply(result)}
+        if(route==='/v1/admin/converter/test'&&method==='POST'){const result=await converter.test();reauthorize();db.transaction(()=>audit('admin','converter-test',result.passed?'passed':'failed'));return reply(result)}
+        if(await releaseAssets.handleAdmin({route,method,url,req,reply,reauthorize}))return
+        if(await releases.handleAdmin({route,method,url,json:adminJson,reply}))return
         if(route==='/v1/admin/overview'&&method==='GET'){
+          if(!['overview:read','users:read','template:read','knowledge:read','skin:read','audit:read'].some(can))fail(403,'没有查看管理概览的权限')
           const lastActions=new Map(db.query('SELECT user_id,MAX(time) time FROM audit WHERE user_id IS NOT NULL GROUP BY user_id').map(row=>[row.user_id,Number(row.time)||0]))
-          return reply({users:db.query('SELECT id,phone,enabled,autosave,created FROM users').map(u=>({...u,phone:maskPhone(u.phone),used:usage(u.id),lastAction:lastActions.get(u.id)||0})),publications:db.query('SELECT id,kind,title,description,cover,category,status,created FROM publications'),audit:db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200'),quota,smsConfigured:sender.configured,runtime:{diskFree:diskFree(),memory:process.memoryUsage().rss,uptime:process.uptime(),pendingUploads:db.one('SELECT COUNT(*) n FROM uploads').n},sms:{sign:env.SMS_SIGN_NAME||'',template:env.SMS_TEMPLATE_CODE||'',lastDay:db.one('SELECT COUNT(*) n FROM sends WHERE time>?',[clock()-86400000]).n}})
+          const users=db.query('SELECT id,phone,enabled,autosave,created FROM users').map(u=>({...u,phone:maskPhone(u.phone),used:usage(u.id),lastAction:lastActions.get(u.id)||0}))
+          const publications=db.query('SELECT id,kind,title,description,cover,category,status,created FROM publications')
+          const result={}
+          if(can('users:read'))Object.assign(result,{users,quota})
+          if(['template','knowledge','skin'].some(kind=>can(kind+':read')))result.publications=publications.filter(p=>can(p.kind+':read'))
+          if(can('audit:read'))result.audit=[...db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200'),...adminAccess.queryAudit().map(x=>({user_id:x.actor,action:x.action,detail:x.detail,time:x.time}))].sort((a,b)=>b.time-a.time).slice(0,200)
+          if(can('overview:read'))Object.assign(result,{overviewCounts:{users:users.length,used:users.reduce((sum,u)=>sum+u.used,0),pending:publications.filter(p=>p.status==='pending').length},smsConfigured:sender.configured,runtime:{diskFree:diskFree(),memory:process.memoryUsage().rss,uptime:process.uptime(),pendingUploads:db.one('SELECT COUNT(*) n FROM uploads').n},sms:{sign:env.SMS_SIGN_NAME||'',template:env.SMS_TEMPLATE_CODE||'',lastDay:db.one('SELECT COUNT(*) n FROM sends WHERE time>?',[clock()-86400000]).n}})
+          return reply(result)
         }
         const review=/^\/v1\/admin\/publications\/([0-9a-f-]{36})(?:\/(download))?$/.exec(route)
-        if(review?.[2]&&method==='GET'){const p=db.one("SELECT * FROM publications WHERE id=? AND status!='withdrawn'",[review[1]]);if(!p)fail(404,'公开内容不存在或已撤回');audit('admin','review-download',p.id);res.setHeader('Content-Type','application/octet-stream');return streamObject(p.blob,res)}
-        if(review&&method==='PATCH'){const input=await json();if(!['approved','rejected','withdrawn'].includes(input.status))fail(400,'审核状态无效');const existing=db.one('SELECT id,status FROM publications WHERE id=?',[review[1]]);if(!existing)fail(404,'公开内容不存在');if(existing.status==='withdrawn'&&input.status!=='withdrawn')fail(400,'撤回内容已清除，请由上传者重新申请');db.transaction(()=>{db.run('UPDATE publications SET status=? WHERE id=?',[input.status,review[1]]);if(input.status==='withdrawn'){const p=db.one('SELECT blob FROM publications WHERE id=?',[review[1]]);unlink(path.join(objects,p.blob));db.run("UPDATE publications SET text='',cover='',bytes=0 WHERE id=?",[review[1]])}audit('admin','review',review[1]+':'+input.status)});return reply({status:input.status})}
+        if(review){const item=db.one('SELECT kind FROM publications WHERE id=?',[review[1]]);if(!item)fail(404,'公开内容不存在');if(!['template','knowledge','skin'].includes(item.kind))fail(403,'没有执行此操作的权限');allowed(item.kind+(method==='PATCH'?':review':':read'))}
+        if(review?.[2]&&method==='GET'){const p=db.one("SELECT * FROM publications WHERE id=? AND status!='withdrawn'",[review[1]]);if(!p)fail(404,'公开内容不存在或已撤回');db.transaction(()=>audit('admin','review-download',p.id));res.setHeader('Content-Type','application/octet-stream');return streamObject(p.blob,res,reauthorize)}
+        if(review&&method==='PATCH'){const input=await adminJson();if(!['approved','rejected','withdrawn'].includes(input.status))fail(400,'审核状态无效');const existing=db.one('SELECT id,status FROM publications WHERE id=?',[review[1]]);if(!existing)fail(404,'公开内容不存在');if(existing.status==='withdrawn'&&input.status!=='withdrawn')fail(400,'撤回内容已清除，请由上传者重新申请');db.transaction(()=>{db.run('UPDATE publications SET status=? WHERE id=?',[input.status,review[1]]);if(input.status==='withdrawn'){const p=db.one('SELECT blob FROM publications WHERE id=?',[review[1]]);unlink(path.join(objects,p.blob));db.run("UPDATE publications SET text='',cover='',bytes=0 WHERE id=?",[review[1]])}audit('admin','review',review[1]+':'+input.status)});return reply({status:input.status})}
         if(review&&method==='GET'){const p=db.one('SELECT * FROM publications WHERE id=?',[review[1]]);if(!p)fail(404,'公开内容不存在');return reply({id:p.id,title:p.title,name:p.name,text:p.text,kind:p.kind})}
         fail(404,'管理接口不存在')
       }
@@ -326,10 +382,11 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       }
       fail(404,'接口不存在')
     } catch(error) { if(!res.headersSent){res.statusCode=error.status||500;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:error.status?error.message:'服务暂时不可用，请稍后重试',...(error.code==='AI_IDENTITY_REQUIRED'?{code:error.code}:{})}))}else res.destroy() }
-  })
+  }))
   // 大安装包允许持续上传；普通接口仍有独立的请求体限制和 30 秒空闲超时。
   server.requestTimeout=30*60*1000;server.headersTimeout=15000
-  return { server, db, root, usage, shareLinks, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();db.close()} }
+  return { server, db, root, usage, shareLinks, cleanup, close: async()=>{clearInterval(cleanupTimer);converter.close();await new Promise(resolve=>server.close(resolve));await erasure.close();await adminAccess.close();db.close()} }
+  } catch (error) { if(db)db.close();await adminAccess.close();throw error }
 }
 
 function clientIp(req){const remote=req.socket.remoteAddress;if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote)&&require('node:net').isIP(req.headers['x-real-ip']||''))return req.headers['x-real-ip'];return remote}

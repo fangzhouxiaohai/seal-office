@@ -44,3 +44,17 @@ describe('macOS 更新通道', () => {
     }
   })
 })
+
+describe('鸿蒙应用市场更新', () => {
+  beforeEach(() => { 重置更新状态(); vi.spyOn(桥接.update,'可用','get').mockReturnValue(true); vi.spyOn(桥接.update,'info').mockResolvedValue({成功:true,平台:'harmony',版本:'2.7.2'}) })
+  afterEach(() => { vi.restoreAllMocks(); 重置更新状态() })
+  it('调用官方市场弹窗并如实说明由市场处理', async () => {
+    const 打开 = vi.spyOn(桥接.update,'openStore').mockResolvedValue({成功:true,数据:{已显示:true}})
+    expect(await 执行更新({hasUpdate:true,version:'2.7.3'})).toEqual({成功:true,提示:'已打开应用市场更新弹窗，请按系统提示完成更新'})
+    expect(打开).toHaveBeenCalledOnce()
+  })
+  it('没有展示弹窗时不冒称已打开', async () => {
+    vi.spyOn(桥接.update,'openStore').mockResolvedValue({成功:true,数据:{已显示:false}})
+    expect(await 执行更新({hasUpdate:true,version:'2.7.3'})).toEqual({成功:false,错误:'应用市场未显示更新弹窗，请稍后重试'})
+  })
+})

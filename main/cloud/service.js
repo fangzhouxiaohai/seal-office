@@ -116,11 +116,37 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     if(old&&!locks.has(node.id)){if(old.upload){try{await request(`/v1/uploads/${old.upload}`,{method:'DELETE'})}catch{}}try{fs.unlinkSync(path.join(outbox,old.blob))}catch{}}
     if(!queueOnly)await flush();return {id:node.id,...status()}
   }
+  async function 丢弃已删除节点的记录(linkId){
+    // 云端文件被删除后，旧链接（节点标识、加密密钥与待同步队列）都无法再上传；
+    // 清掉它们才能按新文件重新加密上传，本地内容不会一直卡在“上传失败”。
+    const link=state.links[linkId]
+    if(!link)return
+    delete state.links[linkId]
+    const queueFile=path.join(outbox,link.id+'.json')
+    try{
+      const q=JSON.parse(fs.readFileSync(queueFile,'utf8'))
+      if(q.upload){try{await request(`/v1/uploads/${q.upload}`,{method:'DELETE'})}catch{}}
+      fs.unlinkSync(queueFile)
+      fs.unlinkSync(path.join(outbox,q.blob))
+    }catch(error){if(error.code!=='ENOENT')throw error}
+    delete state.statuses[link.id]
+    persist()
+  }
+  async function forget(linkId){
+    // 供客户端在“云端文件已被删除”后清除旧节点映射，下一次保存会按新文件重新上传。
+    if(typeof linkId!=='string'||!linkId)throw new Error('文件链接标识无效')
+    await 丢弃已删除节点的记录(linkId)
+    return status()
+  }
   async function save(input){
     if(typeof input.linkId!=='string'||!input.linkId)throw new Error('文件链接标识无效')
-    const previous=saveLocks.get(input.linkId)||Promise.resolve(),task=previous.catch(()=>{}).then(()=>saveContent(input))
-    saveLocks.set(input.linkId,task)
-    try{return await task}finally{if(saveLocks.get(input.linkId)===task)saveLocks.delete(input.linkId)}
+    const 执行=async()=>{const previous=saveLocks.get(input.linkId)||Promise.resolve(),task=previous.catch(()=>{}).then(()=>saveContent(input));saveLocks.set(input.linkId,task);try{return await task}finally{if(saveLocks.get(input.linkId)===task)saveLocks.delete(input.linkId)}}
+    try{return await 执行()}
+    catch(error){
+      // 云端文件已不存在（被删除或从回收站清空）时，按新文件重新上传一次。
+      if(error&&error.status===404){await 丢弃已删除节点的记录(input.linkId);return 执行()}
+      throw error
+    }
   }
   async function download(id,versionId){const nodes=await list(),node=nodes.find(n=>n.id===id);if(!node||node.deleted)throw new Error('文件不存在');const versions=await request(`/v1/nodes/${id}/versions`);const v=versionId?versions.items.find(v=>v.id===versionId):versions.items[0];if(!v)throw new Error('文件还没有已保存的版本');const raw=await request(`/v1/versions/${v.id}`,{binary:true});return {name:node.meta.filename||node.meta.name,data:unseal(keyFor(node),raw,`seal-data:${id}`).toString('base64'),version:v.version}}
   function pending(){return fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).map(filename=>{const q=JSON.parse(fs.readFileSync(path.join(outbox,filename),'utf8')),link=Object.values(state.links).find(l=>l.id===q.id);return {id:q.id,name:link?.meta?.name||'待同步文件',status:state.statuses[q.id]||'离线待同步',automatic:q.automatic}})}
@@ -165,7 +191,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     keyFor(node){if(!node||typeof node!=='object'||!node.id||!node.meta||!node.meta.key)throw new Error('云文件密钥不可用，请重新同步后再试');return keyFor(node)},
     async conversionCapabilities(){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/capabilities')},
     async convertDocument(input){if(!state.token||!state.account)throw new Error('请先登录云账号');if(!state.account.enabled)throw new Error('请先开通云空间');if(!input||input.consent!==true)throw new Error('请确认本次文档正文上传转换授权');const source=documentFormats.find(f=>f.extension===input.inputFormat),target=documentFormats.find(f=>f.extension===input.outputFormat),standard={word:'docx',table:'xlsx',ppt:'pptx'};if(!standard[input.type]||!source||!target||(source.type!==input.type&&source.extension!=='xml')||(target.type!==input.type&&target.extension!=='pdf')||target.readOnlySource||!target.outputFilter&&target.extension!==standard[input.type]&&target.extension!=='pdf'||['xml','mhtml','prn'].includes(target.outputFilter))throw new Error('转换格式不受支持');if(typeof input.data!=='string'||input.data.length>Math.ceil(20*1024*1024/3)*4)throw new Error('文档转换最多支持20 MiB');const raw=Buffer.from(input.data,'base64');if(!raw.length||raw.length>20*1024*1024||raw.toString('base64')!==input.data)throw new Error('转换文件数据无效或超过20 MiB');const c=await request('/v1/capabilities',{headers:{Authorization:''}});if(c.accountConversion!==1)throw new Error('当前云服务器尚未支持账号文档转换，请联系维护人员升级');return request('/v1/conversion/convert',{method:'POST',data:{inputFormat:input.inputFormat,outputFormat:input.outputFormat,type:input.type,data:input.data,consent:true},timeout:110000})},
-    status,refresh,requireAIIdentity,list,save,flush,download,request,pending,pendingFile,keepConflict,
+    status,refresh,requireAIIdentity,list,save,flush,forget,download,request,pending,pendingFile,keepConflict,
     async discardPending(id){requireSpace();if(locks.has(id))throw new Error('请等待当前同步结束');const file=queuePath(id),q=JSON.parse(fs.readFileSync(file,'utf8'));if(q.upload){try{await request(`/v1/uploads/${q.upload}`,{method:'DELETE'})}catch(error){if(error.status!==404)throw error}}fs.unlinkSync(file);fs.unlinkSync(path.join(outbox,q.blob));delete state.statuses[id];persist();return status()},
     async linkFile(id,localPath,data,version){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('云文件不存在');state.links[localPath]={id,meta:node.meta,created:true,version,digest:digest(Buffer.from(data,'base64')),parent:node.parent,kind:node.kind};persist()},
     async replaceTemplate(id,data){const node=(await list()).find(n=>n.id===id&&!n.deleted);if(!node||!node.meta.template)throw new Error('请选择自己的演示模板');const pubs=(await request('/v1/publications')).items;if(pubs.some(p=>p.node_id===id&&['pending','approved'].includes(p.status)))throw new Error('请先撤回此模板的公开申请，再替换版本并重新审核');const linkId='template:'+id;state.links[linkId]={id,meta:node.meta,created:true,version:node.version,digest:null,parent:node.parent,kind:node.kind};persist();return save({linkId,name:node.meta.name,data,template:true})},

@@ -218,6 +218,14 @@ function 建立窗口管理器() {
 if (!获得单实例锁) {
   app.quit()
 } else {
+  let 苹果初始化完成 = false
+  if (process.platform === 'darwin') {
+    app.on('open-file', (事件, 文件) => {
+      事件.preventDefault()
+      const 已加入 = 关联文件入口.加入命令行([文件])
+      if (已加入 && 苹果初始化完成 && (!主窗口 || 主窗口.isDestroyed?.())) 创建窗口()
+    })
+  }
   app.on('second-instance', (_事件, 命令行) => {
     if (['win32', 'linux'].includes(process.platform)) 关联文件入口.加入命令行(命令行)
     if (主窗口 !== null) {
@@ -226,7 +234,11 @@ if (!获得单实例锁) {
     }
   })
 
-  app.on('activate', () => { if (app.isWindowClosed) 创建窗口() })
+  app.on('activate', () => {
+    if (process.platform === 'darwin') {
+      if (苹果初始化完成 && (!主窗口 || 主窗口.isDestroyed?.())) 创建窗口()
+    } else if (app.isWindowClosed) 创建窗口()
+  })
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
   app.whenReady().then(() => {
     const 主进程通道 = require('electron').ipcMain
@@ -237,6 +249,7 @@ if (!获得单实例锁) {
       窗口身份表,
     })
     关联文件入口.注册读取通道(主进程通道)
+    苹果初始化完成 = true
     创建窗口()
   })
 }

@@ -580,19 +580,34 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(container.querySelector('.wps-editor-canvas__content')).not.toBeNull()
   })
 
-  it('简洁模式保留文件标签、工具提示、下拉和返回首页入口', async () => {
+  it('默认不开启简洁模式：编辑器没有独立顶栏，操作图标位于功能区标签行右侧', async () => {
     const { container } = render(<App 初始最近文档={[]} />)
     await 通过新建菜单创建('新建文字')
-    expect(container.querySelector('.wps-titlebar__doc')).toBeNull()
-    expect(screen.getByRole('tab', { name: /未命名文档\.sldoc/ })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: '插入' })).toBeInTheDocument()
+    expect(container.querySelector('.wps-titlebar')).toBeNull()
+    expect(container.querySelector('.wps-workspace-navigation')).toBeNull()
+    const 动作区 = container.querySelector('.wps-ribbon-tabs__actions')
+    expect(动作区).not.toBeNull()
+    expect(within(动作区 as HTMLElement).getByRole('button', { name: '云文档' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '返回首页' })).toBeNull()
     expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
+  })
+
+  it('简洁模式把返回首页与设置中心并入功能区标签行，不再独占顶部一行', async () => {
+    localStorage.setItem('seal-display-preferences', JSON.stringify({ 简洁模式: true, 默认放大: false, 版本: 2 }))
+    const { container } = render(<App 初始最近文档={[]} />)
+    await 通过新建菜单创建('新建文字')
+    expect(container.querySelector('.wps-titlebar')).toBeNull()
+    expect(container.querySelector('.wps-workspace-navigation')).toBeNull()
+    expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
+    const 动作区 = container.querySelector('.wps-ribbon-tabs__actions') as HTMLElement
+    expect(within(动作区).getByRole('button', { name: '返回首页' })).toBeInTheDocument()
+    expect(within(动作区).getByRole('button', { name: '设置中心' })).toBeInTheDocument()
+    // 工具文字收起，悬浮提示仍显示名称
     expect(screen.getByRole('button', { name: '保存' })).toHaveAttribute('title', '保存')
-    expect(within(screen.getByRole('button', { name: '保存' })).queryByText('保存')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '字号' }))
     expect((await screen.findAllByRole('menuitem')).length).toBeGreaterThan(0)
     fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
-    await userEvent.click(screen.getByRole('button', { name: '返回首页' }))
+    await userEvent.click(within(动作区).getByRole('button', { name: '返回首页' }))
     expect(container.querySelector('.wps-homebody')).not.toBeNull()
   })
 
@@ -604,13 +619,15 @@ describe('应用外壳（WPS 版式首页）', () => {
     expect(比例()).toHaveTextContent('100%')
     fireEvent(window, new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, cancelable: true }))
     expect(比例()).toHaveTextContent('110%')
-    await userEvent.click(screen.getByRole('button', { name: '设置中心' }))
+    await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: '全局设置' }))
     await userEvent.click(screen.getByRole('switch', { name: '默认放大至 150%' }))
     await userEvent.click(screen.getByRole('switch', { name: '简洁模式' }))
     await userEvent.click(screen.getByRole('tab', { name: 名称 => 名称.startsWith(原标签 ?? '') }))
     expect(比例()).toHaveTextContent('110%')
-    expect(container.querySelector('.wps-titlebar__doc')).toHaveTextContent(原标签 ?? '')
-    expect(container.querySelector('.wps-ribbon-group__name')).not.toBeNull()
+    // 简洁模式不再有独立顶栏与分组名称行
+    expect(container.querySelector('.wps-titlebar')).toBeNull()
+    expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
     await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     await 通过新建菜单创建(类型)
     expect(比例()).toHaveTextContent('150%')
@@ -644,7 +661,15 @@ describe('应用外壳（WPS 版式首页）', () => {
     else await 通过新建菜单创建(名称)
     expect(container.querySelector('.wps-homebody')).toBeNull()
     expect(container.querySelector('.wps-sidebar')).toBeNull()
-    expect(within(screen.getByRole('navigation', { name: '工作区导航' })).getByRole('button', { name: '返回首页' })).toBeInTheDocument()
+    expect(container.querySelector('.wps-titlebar')).toBeNull()
+    if (名称 === '新建 PDF') {
+      // PDF 没有功能区，打开后不显示返回首页、设置中心等顶部操作按钮
+      expect(container.querySelector('.wps-ribbon-tabs')).toBeNull()
+      expect(screen.queryByRole('button', { name: '返回首页' })).toBeNull()
+      expect(screen.queryByRole('button', { name: '设置中心' })).toBeNull()
+    } else {
+      expect(within(container.querySelector('.wps-ribbon-tabs__actions') as HTMLElement).getByRole('button', { name: '云文档' })).toBeInTheDocument()
+    }
     await userEvent.click(screen.getByRole('tab', { name: '首页' }))
     expect(container.querySelector('.wps-homebody')).not.toBeNull()
   })

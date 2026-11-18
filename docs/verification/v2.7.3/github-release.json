@@ -1,0 +1,65 @@
+{
+  "tag": "v2.7.3",
+  "releaseUrl": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.7.3",
+  "repository": "fangzhouxiaohai/seal-office",
+  "verified": true,
+  "note": "8 个附件均为 GitHub 登记状态 uploaded，大小与 GitHub 返回的 sha256 digest 和本地 SHA256SUMS.txt 一致；其中安装程序、DEB、APK、HAP、DMG、Web、SHA256SUMS 的公开下载逐字节校验已由发布脚本完成，EXE / MSIX / Web 另行以公开下载响应头大小核对。",
+  "assets": [
+    {
+      "name": "seal-office-2.7.3-amd64.deb",
+      "size": 152316984,
+      "sha256": "820f7bae38bcd380d844aaf884e067e4753db6d17a0f759c4d0cea0e1d41a3d0",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-amd64.deb",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-2.7.3-android.apk",
+      "size": 41246948,
+      "sha256": "f087efc5c2912ef3ac15e0d7cc66f91ed395f0a865ed42437864530422a33dbd",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-android.apk",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-2.7.3-harmony.hap",
+      "size": 66526092,
+      "sha256": "8be9004633ae6766e540286e84b714a6516d80c1f2f7d9d22890d9518606bb64",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-harmony.hap",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-2.7.3-macos.dmg",
+      "size": 229562834,
+      "sha256": "88126f516947b5a9053e32b6bbec7f038a88faf0a900f398c2ed16dbff97d456",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-macos.dmg",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-2.7.3-microsoft-store-x64.msix",
+      "size": 798480712,
+      "sha256": "1b83c95235117b9d3a9f222720ed86c5eac51669fc96a38006c20f4f2636f2d4",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-microsoft-store-x64.msix",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-2.7.3-web.zip",
+      "size": 49850644,
+      "sha256": "6836ef59937507d0d33141d82ae2e778a38fb8f315933aa9f3a157514857ed9b",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-2.7.3-web.zip",
+      "state": "uploaded"
+    },
+    {
+      "name": "seal-office-setup-2.7.3.exe",
+      "size": 567117863,
+      "sha256": "ebefb3aab91ed775dc220656c9e69bbae41287cc9869e92e06e295e82e2c5c16",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/seal-office-setup-2.7.3.exe",
+      "state": "uploaded"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 682,
+      "sha256": "cfe0e1878ac0e253cef91ff7b489fd2354847bb4bf44f4556e1dd4806938841e",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.3/SHA256SUMS.txt",
+      "state": "uploaded"
+    }
+  ]
+}

@@ -4,8 +4,23 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
 const { scryptSync, createHash } = require('node:crypto')
 const { createManagedConverter } = require('../converter/managed.cjs')
 const { createCloud } = require('../index.cjs')
+const { createConverterAdmin } = require('../converterAdmin.cjs')
 const {listenLoopback}=require('./collaborationFixture.cjs')
 const controlToken = 'private-control-token-'.padEnd(48, 'a')
+
+test('转换配置更新期间权限撤销须回滚工作进程且不能落盘', async t => {
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'seal-converter-reauth-'))
+  let release, revoked=false;const seen=[]
+  const request=async (_url, options)=>{seen.push(JSON.parse(options.body));if(seen.length===1)await new Promise(resolve=>{release=resolve});return Response.json({ok:true})}
+  const service=createConverterAdmin({directory,env:{SEAL_CONVERTER_CONTROL_TOKEN:controlToken},request})
+  t.after(()=>{service.close();fs.rmSync(directory,{recursive:true,force:true})})
+  const task=service.update({enabled:true,concurrency:2},false,()=>{if(revoked)throw Object.assign(new Error('权限已撤销'),{status:403})})
+  while(!release)await new Promise(resolve=>setTimeout(resolve,5))
+  revoked=true;release()
+  await assert.rejects(task,/权限已撤销/)
+  assert.equal(seen.length,2);assert.equal(seen[1].enabled,false)
+  assert.equal(fs.existsSync(path.join(directory,'converter-settings.json')),false)
+})
 
 async function fixture(t, options = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-converter-admin-'))

@@ -15,6 +15,15 @@ export function 解码PDF数据(数据: string): Uint8Array {
   return 字节
 }
 
+/** 把字节数组还原为 Base64，供优化后重新交给阅读器加载。 */
+export function 编码PDF数据(字节: Uint8Array): string {
+  let 二进制 = ''
+  for (let 起点 = 0; 起点 < 字节.length; 起点 += 8192) {
+    二进制 += String.fromCharCode(...字节.subarray(起点, 起点 + 8192))
+  }
+  return btoa(二进制)
+}
+
 export async function 载入PDF(数据: string): Promise<PDF加载结果> {
   补齐Promise接口()
   补齐流接口()

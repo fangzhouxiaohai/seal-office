@@ -11,7 +11,8 @@ const {randomUUID}=require('node:crypto')
 const {verifyWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version
 const pcCurrent=process.argv.includes('--pc-current')
-const plan=pcCurrent?require('../../docs/promo/pc-current-storyboard.json'):require('../../docs/promo/current-storyboard.json'),out=path.join(root,'release/promo'),work=path.join(out,'work-'+version+'-tutorial')
+const candidatePaths=require('./candidate-paths.cjs').promoPaths(root,version)
+const plan=pcCurrent?require('../../docs/promo/pc-current-storyboard.json'):require('../../docs/promo/current-storyboard.json'),out=candidatePaths.output,work=path.join(out,'work-'+version+'-tutorial')
 const voices=JSON.parse(fs.readFileSync(path.join(work,'voice.json'),'utf8')).clips
 const requested=process.argv.find(a=>a.startsWith('--platform='))?.split('=')[1]
 const probe=process.argv.find(a=>a.startsWith('--probe='))?.split('=')[1]
@@ -20,8 +21,7 @@ assert(fs.existsSync(ffmpeg),'FFmpeg runtime missing')
 app.setPath('userData',path.join(work,'profile-'+process.pid));app.disableHardwareAcceleration();app.commandLine.appendSwitch('force-device-scale-factor','1')
 if(!global.fetch)global.fetch=net.fetch.bind(net)
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=p=>require('node:crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex')
-const artifactName=require('../artifact-names.cjs').artifactName
-const artifact=platform=>path.join(root,'release/v'+version,artifactName(platform,version))
+const artifact=platform=>platform==='android'?candidatePaths.androidApk:candidatePaths.webZip
 const mobileRoot=pcCurrent||requested==='pc'?null:require('./android-source.cjs').verifyAndroidRecordingSource(
   process.env.SEAL_PROMO_ANDROID_ROOT||path.join(root,'android-studio/app/src/main/assets/apps/__UNI__B52B65B/www/static/office'),
   artifact('android'),version)

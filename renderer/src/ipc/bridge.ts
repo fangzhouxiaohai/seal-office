@@ -15,6 +15,7 @@ export interface 最近文档记录 {
 }
 /** 版本更新：平台取值与服务端发布表一致；unsupported 表示便携版等不支持在线更新的运行方式。 */
 export type 更新平台 = 'windows' | 'windows-store' | 'linux' | 'macos' | 'web' | 'android' | 'harmony' | 'unsupported'
+import type { 下载进度 } from '../update/downloadState'
 export interface 版本发布 { hasUpdate: boolean; version?: string; mandatory?: boolean; notes?: string; url?: string | null; sha256?: string | null; bytes?: number | null; publishedAt?: number }
 export interface 更新操作结果<T> { 成功: boolean; 数据?: T; 错误?: string; 状态码?: number; 不支持?: boolean }
 export interface 应用信息 { 名称: string; 英文名称: string; 版本: string; 作者: string; 邮箱: string; 说明: string; 开源地址: string; 专业服务: string }
@@ -257,6 +258,12 @@ export interface 电子接口 {
     info: () => Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }>
     check: (通道: 'stable' | 'beta') => Promise<更新操作结果<版本发布>>
     install: (发布: 版本发布) => Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean; 已打开下载?: boolean }>>
+    download?: (发布: 版本发布) => Promise<更新操作结果<下载进度>>
+    cancel?: () => Promise<更新操作结果<下载进度>>
+    status?: () => Promise<更新操作结果<下载进度>>
+    installReady?: () => Promise<更新操作结果<下载进度>>
+    onProgress?: (回调: (状态: 下载进度) => void) => () => void
+    openStore?: () => Promise<更新操作结果<{已显示?: boolean}>>
   }
   cloud?: { invoke: (action: string, input?: unknown) => Promise<云端响应<any>> }
   zotero?: { invoke: (动作: string, 输入?: unknown) => Promise<云端响应<any>> }
@@ -450,9 +457,16 @@ export const 桥接 = {
   /** 版本更新（桌面主进程）：版本号来自 app.getVersion()，安装包由主进程下载并校验 */
   update: {
     get 可用() { return typeof 取后端()?.update?.check === 'function' },
+    get 下载可用() { const api = 取后端()?.update; return typeof api?.download === 'function' && typeof api?.cancel === 'function' && typeof api?.status === 'function' && typeof api?.installReady === 'function' && typeof api?.onProgress === 'function' },
     info: (): Promise<{ 成功: boolean; 版本?: string; 平台?: 更新平台; 错误?: string }> => 取后端()?.update?.info() ?? 失败('当前环境不支持检查更新'),
     check: (通道: 'stable' | 'beta' = 'stable'): Promise<更新操作结果<版本发布>> => 取后端()?.update?.check(通道) ?? 失败('当前环境不支持检查更新'),
     install: (发布: 版本发布): Promise<更新操作结果<{ 已启动安装?: boolean; 已打开商店?: boolean; 已打开下载?: boolean }>> => 取后端()?.update?.install(发布) ?? 失败('当前环境不支持在线更新'),
+    download: (发布: 版本发布): Promise<更新操作结果<下载进度>> => 取后端()?.update?.download?.(发布) ?? 失败('当前环境不支持下载更新'),
+    cancel: (): Promise<更新操作结果<下载进度>> => 取后端()?.update?.cancel?.() ?? 失败('当前环境不支持取消下载'),
+    status: (): Promise<更新操作结果<下载进度>> => 取后端()?.update?.status?.() ?? 失败('当前环境不支持查询下载状态'),
+    installReady: (): Promise<更新操作结果<下载进度>> => 取后端()?.update?.installReady?.() ?? 失败('当前环境不支持安装更新'),
+    onProgress: (回调: (状态: 下载进度) => void): (() => void) => 取后端()?.update?.onProgress?.(回调) ?? (() => {}),
+    openStore: (): Promise<更新操作结果<{已显示?: boolean}>> => 取后端()?.update?.openStore?.() ?? 失败('当前鸿蒙宿主不支持打开应用市场更新'),
   },
   getAppInfo: () => 取后端()?.getAppInfo() ?? Promise.resolve({ 名称: '海豹办公', 英文名称: 'Seal Office', 版本: __APP_VERSION__, 作者: '饮风一笑', 邮箱: '24519660@qq.com', 说明: '本程序永久免费开源', 开源地址: 'https://github.com/fangzhouxiaohai/seal-office', 专业服务: '专业应用开发服务' }),
   ai: {

@@ -3,10 +3,11 @@ import hashlib,json,math,re,shutil,subprocess,sys,wave
 from pathlib import Path
 import numpy as np, cv2, imageio_ffmpeg
 from PIL import Image,ImageDraw,ImageFont
+from candidate_paths import promo_output
 
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
-OUT=ROOT/'release/promo';WORK=OUT/('work-'+VERSION+'-tutorial')
+OUT=promo_output(ROOT);WORK=OUT/('work-'+VERSION+'-tutorial')
 FFMPEG=imageio_ffmpeg.get_ffmpeg_exe();FONT=Path('C:/Windows/Fonts/msyh.ttc');BOLD=Path('C:/Windows/Fonts/msyhbd.ttc')
 VOICE_START=.4
 def sha(p):

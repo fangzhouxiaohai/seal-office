@@ -1,0 +1,56 @@
+{
+  "tag": "v2.7.5",
+  "releaseUrl": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.7.5",
+  "repository": "gcw_pGfMiWVg/seal-office",
+  "verified": true,
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 682,
+      "sha256": "a3d4754df0aaece1f10807800c4d50ad33289e92290a53d70e5accda13682c8e",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/SHA256SUMS.txt"
+    },
+    {
+      "name": "seal-office-2.7.5-amd64.deb",
+      "size": 152342948,
+      "sha256": "ba1f659951c7f1a1e832d643463460692936f410a3b1c2c5740eac8984606a67",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-amd64.deb"
+    },
+    {
+      "name": "seal-office-2.7.5-android.apk",
+      "size": 41249356,
+      "sha256": "73ab7eefbc2662f90171efd424fbd92ee352d1ae0cbc25d9e74545ca09d238bc",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-android.apk"
+    },
+    {
+      "name": "seal-office-2.7.5-harmony.hap",
+      "size": 66534284,
+      "sha256": "f640d914c12aa106f5ad6cbde987138e5bd1c11829d7ce99734624cd1e3cc2cf",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-harmony.hap"
+    },
+    {
+      "name": "seal-office-2.7.5-macos.dmg",
+      "size": 229882337,
+      "sha256": "8c084c7c804864e730e92517288a9bc10e7ac61eb20b50320f847cea5d64d19f",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-macos.dmg"
+    },
+    {
+      "name": "seal-office-2.7.5-microsoft-store-x64.msix",
+      "size": 798502363,
+      "sha256": "70aa9eed6eb902f18748281af8da0f96f679f0a5222a62ba5fa3238db80a9fd2",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-microsoft-store-x64.msix"
+    },
+    {
+      "name": "seal-office-2.7.5-web.zip",
+      "size": 49853318,
+      "sha256": "ce1820931f68cbf828af7a984f9dbc7cd8e767bfb7f84c47727f9ddce371bf2c",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-2.7.5-web.zip"
+    },
+    {
+      "name": "seal-office-setup-2.7.5.exe",
+      "size": 567068675,
+      "sha256": "4e1ec953a9bc394e16804c1e2ee7d337fbc569d1ae42c12793abd97425b7409b",
+      "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.5/seal-office-setup-2.7.5.exe"
+    }
+  ]
+}

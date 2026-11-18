@@ -39,6 +39,7 @@ import 文献库面板 from '../citation/文献库面板'
 import { 插入引文, 插入书目, 刷新域, 执行取消链接 } from '../citation/commands'
 import { 读取引文簇 } from '../citation/documentModel'
 import RibbonTabs from './ribbon/RibbonTabs'
+import { useRibbonActions } from './ribbon/RibbonActionsContext'
 import { 保存选区, 恢复选区, 选区覆盖的段落 } from './selection'
 import RibbonPanel from './ribbon/RibbonPanel'
 import EditorCanvas from './EditorCanvas'
@@ -132,6 +133,7 @@ const DocEditor = () => {
   } = useAppStore()
 
   const [当前标签, set当前标签] = useState('start')
+  const 右侧图标 = useRibbonActions()
   const [缩放, set缩放] = use文件缩放(activeDocumentId)
   const [页面视图, set视图] = useState<ViewState>(默认视图)
   const 视图 = { ...页面视图, 缩放 }
@@ -1356,7 +1358,7 @@ const DocEditor = () => {
       目录: () => set导航打开(当前 => !当前),
     }) : null,
     保护查看 ? React.createElement(仅查看提示条, { 警告: 当前文档?.警告, 另存副本: () => 执行命令('file.saveAs') }) : null,
-    !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签 }),
+    !阅读.阅读模式 && React.createElement(RibbonTabs, { activeKey: 当前标签, onChange: set当前标签, 右侧图标 }),
     修订面板 && React.createElement(RevisionPanel, { html: 当前文档?.html ?? '', author: 修订作者, setAuthor: set修订作者, view: 修订视图, setView: set修订视图, busy: 修订处理中, readOnly: 只读, resolve: (action, id, part) => void 处理修订(action, id, part) }),
     !阅读.阅读模式 && React.createElement(RibbonPanel, {
       activeKey: 当前标签,

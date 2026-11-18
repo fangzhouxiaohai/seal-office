@@ -5,49 +5,36 @@ import TitleBar from './TitleBar'
 
 describe('顶栏', () => {
   it('展示品牌图标与当前页名，隐藏英文名称', () => {
-    render(<TitleBar pageName="首页" />)
+    render(<TitleBar pageName={'首页'} />)
     expect(screen.getByRole('img', { name: '海豹办公' })).toBeInTheDocument()
     expect(screen.queryByText('Seal Office')).toBeNull()
     expect(screen.getByText('首页')).toBeInTheDocument()
   })
 
   it('展示搜索框占位文字', () => {
-    render(<TitleBar pageName="首页" />)
+    render(<TitleBar pageName={'首页'} />)
     expect(screen.getByPlaceholderText('搜索文件、模板')).toBeInTheDocument()
   })
 
   it('搜索输入触发回调', async () => {
     const 回调 = vi.fn()
-    render(<TitleBar pageName="首页" onSearch={回调} />)
+    render(<TitleBar pageName={'首页'} onSearch={回调} />)
     await userEvent.type(screen.getByPlaceholderText('搜索文件、模板'), '预算')
     expect(回调).toHaveBeenLastCalledWith('预算')
   })
 
-  it('编辑器视图下以文档名替代搜索框', () => {
-    render(<TitleBar pageName="文档" documentName="季度报告.docx" />)
-    expect(screen.getByText('季度报告.docx')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('搜索文件、模板')).toBeNull()
-  })
-
-  it('非首页顶栏首次显示时也提供可用的深浅模式切换', async () => {
-    const 切换主题 = vi.fn()
-    render(<TitleBar pageName="文档" documentName="季度报告.docx" on切换主题={切换主题} />)
-    await userEvent.click(screen.getByRole('button', { name: '切换深浅模式' }))
-    expect(切换主题).toHaveBeenCalledOnce()
-  })
-
   it('全局设置入口不再有悬浮提示（避免提示框压住下拉菜单）', async () => {
-    render(<TitleBar pageName="首页" homeMode />)
+    render(<TitleBar pageName={'首页'} homeMode />)
     const 入口 = screen.getByRole('button', { name: '全局设置' })
     expect(入口).toHaveAttribute('aria-haspopup', 'menu')
     await userEvent.hover(入口)
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
-  it('全局设置菜单项为“全局设置”和“关于我们”，点击后各自触发回调', async () => {
+  it('全局设置菜单项为"全局设置"和"关于我们"，点击后各自触发回调', async () => {
     const 打开设置 = vi.fn()
     const 打开关于 = vi.fn()
-    render(<TitleBar pageName="首页" homeMode onShowSettings={打开设置} on关于={打开关于} />)
+    render(<TitleBar pageName={'首页'} homeMode onShowSettings={打开设置} on关于={打开关于} />)
     await userEvent.click(screen.getByRole('button', { name: '全局设置' }))
     await userEvent.click(await screen.findByRole('menuitem', { name: '全局设置' }))
     expect(打开设置).toHaveBeenCalledOnce()
@@ -58,7 +45,7 @@ describe('顶栏', () => {
 
   it('右上角语言菜单可切换英语，并立即使用英文顶栏文案', async () => {
     const 切换语言 = vi.fn()
-    render(<TitleBar pageName="首页" homeMode 语言="en-US" on切换语言={切换语言} />)
+    render(<TitleBar pageName={'首页'} homeMode 语言={'en-US'} on切换语言={切换语言} />)
     expect(screen.getByText('Home')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Search recent documents by name or content')).toBeInTheDocument()
     const 入口 = screen.getByRole('button', { name: 'Switch interface language' })

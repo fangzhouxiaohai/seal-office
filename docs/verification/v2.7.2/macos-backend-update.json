@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "version": "2.7.2",
+  "checks": [
+    {
+      "platform": "macos",
+      "filename": "seal-office-2.7.2-macos.dmg",
+      "bytes": 467583156,
+      "sha256": "ee5239b483c4823016eee38f8902d60e552b196a45d72a3c190d0a244eacd256",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/9d319c75-44a6-4c8c-8046-d0b14785f650/seal-office-2.7.2-macos.dmg",
+      "oldVersion": "2.7.1",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.2",
+        "mandatory": false,
+        "notes": "海豹办公 2.7.2 macOS 通用版，支持 Apple Silicon 和 Intel。\n本版本包含简洁模式、默认缩放及版本更新相关改进。\n安装包使用临时签名，未经苹果公证；首次打开时可能需要在系统设置的“隐私与安全性”中确认。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/9d319c75-44a6-4c8c-8046-d0b14785f650/seal-office-2.7.2-macos.dmg",
+        "sha256": "ee5239b483c4823016eee38f8902d60e552b196a45d72a3c190d0a244eacd256",
+        "bytes": 467583156,
+        "publishedAt": 1794598599051
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

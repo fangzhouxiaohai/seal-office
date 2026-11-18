@@ -45,3 +45,62 @@
 .seal-login__field :is(.ant-input,.ant-input-affix-wrapper):focus-within{border-color:var(--brand);outline:2px solid var(--brand-soft);outline-offset:1px}
 .seal-login-modal .ant-modal-close:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 @media(max-width:480px){.seal-login-modal .ant-modal-content{padding:22px 20px 24px}.seal-login-modal .ant-modal-close{width:44px;height:44px;top:8px;right:8px}.seal-login__brand{padding-top:20px}.seal-login__code-row>.ant-btn{width:120px}.seal-login__brand h2{font-size:22px}}
+
+/* 功能区标签行右侧的云端状态徽标：圆角长方形，替代整行提示条 */
+.seal-cloud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  max-width: 168px;
+  height: 26px;
+  margin-right: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1;
+  cursor: default;
+}
+
+.seal-cloud-pill__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seal-cloud-pill--正常 {
+  border-color: color-mix(in srgb, var(--brand) 22%, var(--border));
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.seal-cloud-pill--进行中 {
+  border-color: color-mix(in srgb, var(--brand) 18%, var(--border));
+  color: var(--brand);
+}
+
+.seal-cloud-pill--错误 {
+  border-color: color-mix(in srgb, #f04461 30%, var(--border));
+  color: #d92c49;
+  background: color-mix(in srgb, #f04461 8%, transparent);
+  cursor: pointer;
+}
+
+.seal-cloud-pill--错误:hover {
+  background: color-mix(in srgb, #f04461 14%, transparent);
+}
+
+.seal-cloud-pill:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (max-width: 820px) {
+  .seal-cloud-pill {
+    max-width: 132px;
+    height: 28px;
+  }
+}

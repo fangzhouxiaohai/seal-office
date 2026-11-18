@@ -58,3 +58,17 @@ test('portable verification follows the public name while installed and MSIX exe
   const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/ubuntu.yml'), 'utf8')
   assert.match(workflow, /artifactName\('ubuntu', version\)/)
 })
+
+test('微软商店打包脚本可由 Windows PowerShell 正确读取中文', () => {
+  const script = path.join(__dirname, 'build-msix.ps1')
+  const bytes = fs.readFileSync(script)
+  assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'Windows PowerShell 5.1 需要 UTF-8 字节顺序标记')
+  if (process.platform === 'win32') {
+    const { spawnSync } = require('node:child_process')
+    const command = "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; $t=$null; $e=$null; $a=[System.Management.Automation.Language.Parser]::ParseFile($env:SEAL_MSIX_TEST_SCRIPT,[ref]$t,[ref]$e); if ($e.Count) { exit 1 }; [Console]::Write($a.Extent.Text)"
+    const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(command, 'utf16le').toString('base64')], { encoding: 'utf8', windowsHide: true, env: { ...process.env, SEAL_MSIX_TEST_SCRIPT: script } })
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /Executable="海豹办公\.exe"/)
+    assert.match(result.stdout, /\[string\]\$PublisherDisplayName = '星马软件'/)
+  }
+})

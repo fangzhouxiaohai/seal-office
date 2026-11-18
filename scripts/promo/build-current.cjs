@@ -4,7 +4,7 @@ const { spawnSync } = require('node:child_process')
 
 const root = path.resolve(__dirname, '../..')
 const version = require('../../package.json').version
-const output = path.join(root, 'release/promo')
+const output = require('./candidate-paths.cjs').promoPaths(root, version).output
 fs.mkdirSync(output, { recursive: true })
 if (fs.realpathSync(output) !== output) throw new Error('宣传目录必须位于当前项目内')
 

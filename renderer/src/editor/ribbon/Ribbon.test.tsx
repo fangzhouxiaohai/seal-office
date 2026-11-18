@@ -34,15 +34,33 @@ describe('Ribbon 标签行', () => {
 })
 
 describe('Ribbon 功能组', () => {
-  it('渲染组名与子元素', () => {
+  it('渲染子元素，不渲染组名行', () => {
     const { container } = render(
       <RibbonGroup name="字体">
         <span>子元素</span>
       </RibbonGroup>
     )
-    expect(screen.getByText('字体')).toBeInTheDocument()
     expect(screen.getByText('子元素')).toBeInTheDocument()
     expect(container.querySelector('.wps-ribbon-group')).not.toBeNull()
+    // 分组名称行已彻底删除，DOM 中不应存在该元素
+    expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
+    expect(screen.queryByText('字体')).toBeNull()
+  })
+})
+
+describe('Ribbon 标签行右侧图标', () => {
+  it('传入右侧图标时渲染在 wps-ribbon-tabs__actions 容器中', () => {
+    const { container } = render(
+      <RibbonTabs activeKey="start" onChange={() => {}} 右侧图标={<button type="button">设置</button>} />
+    )
+    const 容器 = container.querySelector('.wps-ribbon-tabs__actions')
+    expect(容器).not.toBeNull()
+    expect(容器?.querySelector('button')?.textContent).toBe('设置')
+  })
+
+  it('未传入右侧图标时不渲染 wps-ribbon-tabs__actions', () => {
+    const { container } = render(<RibbonTabs activeKey="start" onChange={() => {}} />)
+    expect(container.querySelector('.wps-ribbon-tabs__actions')).toBeNull()
   })
 })
 
@@ -103,8 +121,8 @@ describe('Ribbon 功能区', () => {
   it('渲染当前标签的功能组', () => {
     const { container } = render(<RibbonPanel activeKey="start" />)
     expect(container.querySelectorAll('.wps-ribbon-group').length).toBeGreaterThan(0)
-    expect(screen.getByText('剪贴板')).toBeInTheDocument()
-    expect(screen.getByText('字体')).toBeInTheDocument()
+    // 分组名称行已彻底删除
+    expect(container.querySelector('.wps-ribbon-group__name')).toBeNull()
   })
 
   it('切换标签后功能组随之变化', () => {

@@ -2,7 +2,8 @@ import { Buffer } from 'buffer'
 import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto, nativeUpdate, onNativeUpdate } from './native'
+import { createNativeUpdateApi, createHarmonyStoreUpdateApi } from './update'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
 import formats from '../../main/documentFormats.json'
@@ -234,9 +235,11 @@ async function initialize() {
     return { 成功: true, ...result }
   })
   registerFiles(); registerFonts(); await installExportAdapters(core, save, handle)
-  // 不提供仅属于 Windows 或独立桌面窗口的能力探测。update 为桌面主进程更新通道，Web 与移动端改走云服务查询。
+  // 不提供仅属于 Windows 或独立桌面窗口的能力；安卓接入原生更新能力。
   const api = window.electronAPI as any
   for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity', 'update']) delete api[key]
+  if (window.sealNative?.platform === 'android') api.update = createNativeUpdateApi('android', __APP_VERSION__, cloud, nativeUpdate, onNativeUpdate)
+  if (window.sealNative?.platform === 'harmony') api.update = createHarmonyStoreUpdateApi(__APP_VERSION__, cloud, nativeUpdate)
   const originalCloud = api.cloud.invoke
   api.cloud.invoke = async (action: string, input: any = {}) => {
     if (['ocrImage', 'imagePresentation'].includes(action)) await platform.prepareImage(Buffer.from(input.data, 'base64'))

@@ -36,10 +36,11 @@ const 英文界面: Record<string, string> = {
   'PDF 工具': 'PDF tools',
   '设置': 'Settings',
   '设置中心': 'Settings',
-  '工作区导航': 'Workspace navigation',
   '简洁模式': 'Compact mode',
   '默认放大至 150%': 'Open files at 150%',
   '收起文件工作区的标题、常驻同步说明和工具文字，保留工具图标与功能标签': 'Hide workspace titles, routine sync notices, and tool labels while keeping tool icons and tabs.',
+  '默认关闭。开启后收起文件工作区的标题、常驻同步说明和工具文字，保留工具图标与功能标签，为主内容区让出空间': 'Off by default. When enabled, hide workspace titles, routine sync notices, and tool labels while keeping tool icons and tabs, giving the content area more room.',
+  '简洁模式默认关闭。开启后文件工作区收起标题、常驻同步说明和工具文字，可用图标继续操作，关闭后恢复完整显示。': 'Compact mode is off by default. When enabled, the file workspace hides titles, routine sync notices, and tool labels; icons remain usable, and turning it off restores the full display.',
   '新打开的文件以 150% 查看。关闭后以 100% 查看，已打开文件保持当前比例': 'Open new files at 150% when enabled, or 100% when disabled. Open files keep their current zoom.',
   '读取显示设置失败': 'Unable to read display settings',
   '保存显示设置失败': 'Unable to save display settings',
@@ -866,7 +867,7 @@ const 英文界面: Record<string, string> = {
   '云空间': 'Cloud space',
   '默认关闭；主动勾选协议后开通 300 MB 加密空间。': 'Off by default. Accept the agreement to enable 300 MB of encrypted storage.',
   '云文档自动保存': 'Cloud document autosave',
-  '内容变动后加密同步；关闭不会删除已保存的云文件。': 'Encrypt and sync after changes. Turning this off does not delete saved cloud files.',
+  '内容变动后先保存本机文件再加密同步；关闭不会删除已保存的云文件。': 'Save to the local file before encrypting and syncing. Turning this off does not delete saved cloud files.',
   '账号与恢复密钥': 'Account and recovery key',
   '登录或开通云空间': 'Sign in or enable cloud space',
   '注册文字、表格、演示和 PDF 的打开能力，包含 CSV、旧版 Office、模板和开放文档；需要时进入 Windows 默认应用页面确认，设置后回读实际结果': 'Register document, spreadsheet, presentation, PDF, CSV, legacy Office, template, and OpenDocument formats. Windows may ask you to confirm the defaults.',
@@ -988,6 +989,7 @@ const 英文界面: Record<string, string> = {
 }
 
 const 动态翻译: Array<[RegExp, (...匹配: string[]) => string]> = [
+  [/^(.+)；无法保存下载失败记录$/, (_全部, 错误) => `${翻译界面文本(错误, 'en-US')} Could not save the failed download record.`],
   [/^向(上|下|左|右)(移动|扩展选区|跳到数据边界|扩展到数据边界|微移对象|移动对象)$/, (_全部, 方向, 动作) => `${({移动:'Move',扩展选区:'Extend selection',跳到数据边界:'Go to data edge',扩展到数据边界:'Extend selection to data edge',微移对象:'Nudge object',移动对象:'Move object'} as Record<string,string>)[动作]} ${({上:'up',下:'down',左:'left',右:'right'} as Record<string,string>)[方向]}`],
   [/^(.+)快捷键列表$/, (_全部, 分类) => `${翻译界面文本(分类, 'en-US')} shortcuts`],
   [/^恢复(.+)默认快捷键$/, (_全部, 名称) => `Restore default shortcut for ${翻译界面文本(名称, 'en-US')}`],
@@ -1027,6 +1029,7 @@ const 动态翻译: Array<[RegExp, (...匹配: string[]) => string]> = [
   // 2.7.1 版本更新：含版本号与日期的动态文案
   [/^已是最新版本（(.+)）$/, (_全部, 版本) => `You are on the latest version (${版本})`],
   [/^发现新版本 (\S+)$/, (_全部, 版本) => `New version ${版本} available`],
+  [/^版本 (\S+)$/, (_全部, 版本) => `Version ${版本}`],
   [/^发布时间：(\d{4}-\d{2}-\d{2})$/, (_全部, 日期) => `Released: ${日期}`],
   // 2.7.1 Access 数据库：含表名、字段名、路径的动态文案
   ...动态翻译271Database,

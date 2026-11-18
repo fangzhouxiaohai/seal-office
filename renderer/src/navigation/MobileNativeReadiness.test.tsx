@@ -52,7 +52,7 @@ function 工作区(样式: '首页' | '完整' | '简洁', 加载中 = false) {
   return <App>
     {加载中 && <div className="startup-screen" />}
     <div className="wps-app" data-module={样式 === '首页' ? 'home' : 'word'} data-compact-workspace={样式 === '简洁' ? 'true' : undefined}>
-      {样式 === '简洁' ? <nav className="wps-workspace-navigation" /> : <header className="wps-titlebar" />}
+      {样式 === '简洁' ? <div className="wps-ribbon-tabs" /> : <header className="wps-titlebar" />}
     </div>
     <MobileNavigation />
   </App>

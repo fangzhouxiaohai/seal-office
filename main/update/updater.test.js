@@ -144,4 +144,14 @@ describe('更新服务', () => {
       await expect(环境.服务.安装({ version: '2.7.1', url: 'file:///C:/a.exe' })).rejects.toThrow('无法打开微软商店，请手动在商店中搜索海豹办公')
     } finally { 环境.清理() }
   })
+
+  it('首次连接失败后重试一次，仍失败才报告无法连接', async () => {
+    const 临时目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-update-retry-'))
+    let 次数 = 0
+    const 请求 = vi.fn(async () => { 次数 += 1; throw new Error('ECONNRESET') })
+    const 服务 = 创建更新服务({ 当前版本: '2.7.0', 平台: 'windows', 获取服务地址: () => 'https://seal.xingmasoft.com/api', 请求, 临时目录, 启动安装程序: vi.fn(), 退出: vi.fn(), 打开外部: vi.fn() })
+    await expect(服务.检查('stable')).rejects.toThrow('无法连接更新服务')
+    expect(请求).toHaveBeenCalledTimes(2)
+    fs.rmSync(临时目录, { recursive: true, force: true })
+  })
 })

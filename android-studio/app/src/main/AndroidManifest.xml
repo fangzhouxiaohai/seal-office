@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- 用户确认后由系统安装器处理已校验的应用更新。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 2.7.1 拍照扫描：仅在用户点“拍照”并确认授权说明后申请，用于拍摄文档与单据；拒绝后仍可相册或文件导入。 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+    </queries>
     <application
         android:label="${appLabel}"
         android:icon="@drawable/seal_logo"
@@ -21,6 +32,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name=".UpdateService" android:exported="false" android:foregroundServiceType="dataSync" />
         <!-- 系统相机把照片写入应用缓存 camera/ 目录，只授权单次写入，不暴露其他目录。 -->
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -28,6 +40,13 @@
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/scan_files" />
+        </provider>
+        <provider
+            android:name=".UpdateFileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_files" />
         </provider>
     </application>
 </manifest>

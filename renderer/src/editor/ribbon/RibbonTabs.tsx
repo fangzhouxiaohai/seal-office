@@ -1,4 +1,5 @@
 // Ribbon 标签行：开始、插入、页面布局、引用、审阅、视图。
+// 右侧图标槽（右侧图标）：桌面端通过此 prop 注入云同步、设置等图标，推到行末。
 import React from 'react'
 import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 
@@ -7,9 +8,11 @@ interface Props {
   onChange: (键: string) => void
   /** 标签声明，默认使用文字编辑器的六标签；表格传入自己的七标签 */
   tabs?: RibbonTabSpec[]
+  /** 桌面端顶栏图标下移后注入此槽，居右显示 */
+  右侧图标?: React.ReactNode
 }
 
-const RibbonTabs = ({ activeKey, onChange, tabs = RIBBON_TABS }: Props) =>
+const RibbonTabs = ({ activeKey, onChange, tabs = RIBBON_TABS, 右侧图标 }: Props) =>
   React.createElement(
     'div',
     { className: 'wps-ribbon-tabs', role: 'tablist' },
@@ -27,7 +30,10 @@ const RibbonTabs = ({ activeKey, onChange, tabs = RIBBON_TABS }: Props) =>
         },
         标签.label
       )
-    )
+    ),
+    右侧图标
+      ? React.createElement('div', { className: 'wps-ribbon-tabs__actions', role: 'toolbar', 'aria-label': '快捷操作' }, 右侧图标)
+      : null
   )
 
 export default RibbonTabs

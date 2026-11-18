@@ -12,6 +12,12 @@ function 定位兼容引擎({ 平台 = process.platform, 根目录 }) {
     }
     throw new Error('文档兼容引擎缺失，请安装 libreoffice-writer、libreoffice-calc、libreoffice-impress 后重试')
   }
+  if (平台 === 'darwin') {
+    const 文件 = '/Applications/LibreOffice.app/Contents/MacOS/soffice'
+    try { fs.accessSync(文件, fs.constants.X_OK); return 文件 } catch {
+      throw new Error('文档兼容引擎缺失，请安装 LibreOffice 到“应用程序”目录后重试')
+    }
+  }
   throw new Error('当前桌面系统尚未配置文档兼容引擎')
 }
 // Ubuntu LTS keeps older LibreOffice releases. These export filter names remain

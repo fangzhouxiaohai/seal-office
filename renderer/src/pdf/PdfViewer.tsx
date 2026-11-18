@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
-import { 载入PDF } from './pdfLoader'
+import { 载入PDF, 解码PDF数据, 编码PDF数据 } from './pdfLoader'
+import { 优化PDF大图 } from './pdfOptimize'
 import Icon from '../components/Icon'
 import { use文件缩放, use滚轮缩放, 阅读缩放范围, 放大一档, 缩小一档, 缩放百分比文本 } from '../editor/wheelZoom'
 import SelectionFloatPanel, { use选区浮窗, type 浮窗按钮 } from '../components/SelectionFloatPanel'
@@ -84,7 +85,12 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
         }
         const 像素比 = Math.min(window.devicePixelRatio || 1, 2)
         // 每页各自限制画布像素，长文档滚动时不会一次创建所有页的画布。
-        const 画布像素上限 = 16_000_000
+        // 超长扫描页（面积远超常规纸张）在放大阅读时需要更高的画布上限，否则画布被过度缩小、
+        // 再被 CSS 拉伸，即使原图已优化也会显得模糊。
+        const 超大页面 = 原始宽度 * 原始高度 > 30_000_000
+        // 移动端内存更紧，超大页面用更保守的画布上限，仍高于普通页面。
+        const 移动宿主 = document.documentElement.dataset.sealPlatform === 'app'
+        const 画布像素上限 = 超大页面 ? (移动宿主 ? 24_000_000 : 32_000_000) : 16_000_000
         const 期望像素 = 显示宽度 * 显示高度 * 像素比 * 像素比
         const 渲染比 = 期望像素 > 画布像素上限 ? Math.sqrt(画布像素上限 / 期望像素) : 1
         const 渲染视口 = 页面.getViewport({ scale: 显示宽度 / 原始宽度 * 渲染比 })
@@ -291,10 +297,19 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
       return
     }
     set状态('加载中')
-    void 载入PDF(数据).then((结果) => {
-      if (已取消) {
+    void (async () => {
+      // 超大扫描页（单页面积或单边远超常规纸张）先缩小位图再交给渲染器：
+      // 这类文件的原图常超过浏览器单边 32767 像素上限，pdf.js 解码失败会显示空白。
+      let 结果 = await 载入PDF(数据)
+      if (已取消) { 结果.关闭(); return }
+      const 首尺寸 = await 结果.文档.getPage(1).then((首) => 首.getViewport({ scale: 1 })).catch(() => null)
+      const 超大 = Boolean(首尺寸) && (首尺寸!.width * 首尺寸!.height > 30_000_000 || Math.max(首尺寸!.width, 首尺寸!.height) > 16000)
+      if (超大) {
         结果.关闭()
-        return
+        const 优化 = await 优化PDF大图(解码PDF数据(数据)).catch(() => null)
+        if (已取消) return
+        结果 = await 载入PDF(优化?.已优化 ? 编码PDF数据(优化.数据) : 数据)
+        if (已取消) { 结果.关闭(); return }
       }
       关闭文档 = 结果.关闭
       set文档(结果.文档)
@@ -306,7 +321,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
         (_, 索引) => 索引 + 1,
       )))
       set状态('就绪')
-    }).catch((错误: unknown) => {
+    })().catch((错误: unknown) => {
       if (已取消) return
       set状态('失败')
       报错回调.current?.(`无法打开「${文件名引用.current}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)

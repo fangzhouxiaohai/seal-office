@@ -1,6 +1,31 @@
 // 导出文档：拼装独立 HTML 文件，或从编辑区 HTML 抽取纯文本。
 // 下载通过浏览器原生 Blob 触发，不依赖主进程。
 
+/** 与编辑区一致的正文基础样式，保证导出 HTML / PDF 的字号、字体与行距
+ * 和屏幕上看到的一致；缺少这段样式时打印窗口会退回到浏览器默认字体，
+ * 整页文字会变细发虚、段落间距丢失。 */
+export const 正文基础样式 = `<style>
+@page { size: A4; margin: 20mm 18mm; }
+html, body { margin: 0; padding: 0; background: #fff; }
+body {
+  color: #000;
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  word-break: break-word;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  text-rendering: geometricPrecision;
+}
+p { margin: 0 0 10px; }
+h1, h2, h3, h4, h5, h6 { margin: 12px 0 8px; line-height: 1.4; }
+ul, ol { margin: 0 0 10px; padding-left: 24px; }
+table { border-collapse: collapse; max-width: 100%; }
+td, th { vertical-align: top; }
+img, svg, video { max-width: 100%; height: auto; }
+.wps-page-break, [data-seal-page-break] { break-after: page; page-break-after: always; height: 0; border: 0; }
+</style>`
+
 export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '', 页脚Html = '', 水印 = '无'): string {
   const 安全标题 = 标题.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const 图片 = 水印.startsWith('图片:') ? 水印.slice(3) : ''
@@ -8,7 +33,6 @@ export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '
   const 水印内容 = 安全图片 ? `<img src="${安全图片}" alt="">` : 水印 !== '无' && !图片
     ? 水印.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''
   const 附加样式 = 页眉Html || 页脚Html ? `<style>
-@page { margin: 25mm 20mm; }
 .seal-print-header { position: fixed; top: 0; left: 0; right: 0; font-size: 10pt; }
 .seal-print-footer { position: fixed; bottom: 0; left: 0; right: 0; font-size: 10pt; }
 .seal-print-layout { width: 100%; border-collapse: collapse; }
@@ -23,6 +47,7 @@ export function 导出为Html(标题: string, 正文Html: string, 页眉Html = '
 <meta charset="utf-8">
 <meta name="generator" content="海豹办公 Seal Office">
 <title>${安全标题}</title>
+${正文基础样式}
 ${附加样式}
 ${水印内容 ? `<style>.seal-print-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)${安全图片 ? '' : ' rotate(-30deg)'};z-index:1;opacity:${安全图片 ? '.24' : '.18'};font:700 72px sans-serif;color:#64748b;white-space:nowrap;pointer-events:none}.seal-print-watermark img{display:block;max-width:500px;max-height:680px}</style>` : ''}
 </head>

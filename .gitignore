@@ -36,3 +36,6 @@ pub.txt
 # 正式签名私钥只保留在本机，不得提交
 *.keystore
 *.jks
+
+# 官网独立构建产物
+/website-dist/

@@ -193,7 +193,9 @@ async function 验收() {
             await 等待("Boolean(document.querySelector('.wps-ppt-box__editor'))")
             await 执行(`(()=>{const 输入=document.querySelector('.wps-ppt-box__editor');输入.focus();if(document.activeElement!==输入)throw new Error('PPTX 验收文本框未取得焦点');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(输入,${JSON.stringify(文本)});输入.dispatchEvent(new Event('input',{bubbles:true}));return true})()`)
             await 等待片刻(100)
+            console.log('PPTX 验收：失焦前状态', JSON.stringify(await 执行("({文档有焦点:document.hasFocus(),活动元素:document.activeElement?.className,编辑器聚焦:document.activeElement===document.querySelector('.wps-ppt-box__editor')})")))
             await 执行("document.querySelector('.wps-ppt-box__editor').blur();true")
+            console.log('PPTX 验收：失焦后状态', JSON.stringify(await 执行("({文档有焦点:document.hasFocus(),活动元素:document.activeElement?.className,编辑器仍存在:!!document.querySelector('.wps-ppt-box__editor')})")))
             await 等待("!document.querySelector('.wps-ppt-box__editor')")
             内容表达式 = `[...document.querySelectorAll('.wps-ppt-box')].some(项=>项.textContent.includes(${JSON.stringify(文本)}))`
           }

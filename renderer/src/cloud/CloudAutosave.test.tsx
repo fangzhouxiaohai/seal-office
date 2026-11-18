@@ -7,13 +7,14 @@ import {创建工作表,写入单元格} from '../sheet/model'
 import {创建演示文稿,创建文本框} from '../ppt/deck'
 import {createRequire} from 'node:module'
 const require=createRequire(import.meta.url),native=require('../../../main/office/sealFormat.js')
-const fixture=vi.hoisted(()=>({store:{} as any,state:{} as any,call:vi.fn(),refresh:vi.fn(async()=>{})}))
+const fixture=vi.hoisted(()=>({store:{} as any,state:{} as any,call:vi.fn(),refresh:vi.fn(async()=>{}),saveToFile:vi.fn()}))
 vi.mock('../store',()=>({useAppStore:()=>fixture.store}))
 vi.mock('./CloudProvider',()=>({useCloud:()=>({state:fixture.state,refresh:fixture.refresh,configure:vi.fn()}),cloudCall:fixture.call}))
 // 文件绑定导入时会注册字体增强；此处只隔离桥接注册，专属格式仍用真实编解码器验收。
-vi.mock('../ipc/bridge',()=>({注册海豹格式增强:vi.fn(),桥接:{presentationResources:{export:vi.fn(async()=>({成功:true,条目:[]}))},office:{writeDocx:vi.fn(async()=>({成功:true,数据:'UEs='})),writeSeal:vi.fn(async(type:string,model:unknown)=>{const {createRequire}=await import('node:module');const codec=createRequire(import.meta.url)('../../../main/office/sealFormat.js');return {成功:true,数据:(await codec.writeSeal(type,model)).toString('base64')}})}}}))
+vi.mock('../ipc/bridge',()=>({注册海豹格式增强:vi.fn(),桥接:{可用:true,saveToFile:fixture.saveToFile,presentationResources:{export:vi.fn(async()=>({成功:true,条目:[]}))},office:{writeDocx:vi.fn(async()=>({成功:true,数据:'UEs='})),writeSeal:vi.fn(async(type:string,model:unknown)=>{const {createRequire}=await import('node:module');const codec=createRequire(import.meta.url)('../../../main/office/sealFormat.js');return {成功:true,数据:(await codec.writeSeal(type,model)).toString('base64')}})}}}))
 beforeEach(()=>{
   vi.useFakeTimers();fixture.call.mockReset();fixture.call.mockImplementation(async(action,input)=>action==='save'?{id:input.linkId,statuses:{[input.linkId]:'离线待同步'}}:{})
+  fixture.saveToFile.mockReset();fixture.saveToFile.mockResolvedValue({成功:true,文件指纹:'本机指纹'})
   fixture.state={account:{id:'user',enabled:true,autosave:true},unlocked:true,statuses:{}}
   fixture.store={module:'word',activeWorkspaceTabId:'word',documents:[{id:'word',name:'资料.docx',html:'<p>原内容</p>'}],workspaceTabs:[{id:'word',type:'word',dirty:true}],pdfDocuments:[],文档路径:{},表格文档模型:{},演示文档模型:{}}
 })
@@ -99,6 +100,66 @@ describe('云端自动保存关闭链路',()=>{
     fixture.store={...fixture.store,workspaceTabs:[{id:'pdf',type:'pdf',dirty:true}],pdfDocuments:[{...fixture.store.pdfDocuments[0],data:'JVBERi1lZGl0'}]};view.rerender(<CloudAutosave/>);
     await act(async()=>{await flushCloudBeforeClose()})
     expect(fixture.call).toHaveBeenCalledWith('save',expect.objectContaining({linkId:'D:/原件.pdf',data:'JVBERi1lZGl0',queueOnly:true}))
+  })
+  it('开启自动保存后先把快照写回本机文件，成功后再上传云端，并清除未保存标记',async()=>{
+    vi.useRealTimers()
+    const 顺序:string[]=[]
+    fixture.saveToFile.mockImplementation(async()=>{顺序.push('本机');return {成功:true,文件指纹:'新指纹'}})
+    fixture.call.mockImplementation(async(action,input)=>{if(action==='save')顺序.push('云端');return action==='save'?{id:input.linkId,statuses:{[input.linkId]:'加密上传中'}}:{}})
+    const 更新文件指纹=vi.fn(),标记已保存=vi.fn()
+    fixture.store={...fixture.store,文档路径:{word:'D:/资料/资料.docx'},更新文件指纹,markDocumentSaved:标记已保存}
+    render(<CloudAutosave/>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    expect(顺序).toEqual(['本机','云端'])
+    expect(fixture.saveToFile).toHaveBeenCalledWith('D:/资料/资料.docx',expect.any(String),'二进制',undefined)
+    expect(更新文件指纹).toHaveBeenCalledWith('word','新指纹')
+    // 本机文件已写入该快照，标签不应继续显示未保存
+    expect(标记已保存).toHaveBeenCalledWith('word','<p>原内容</p>',undefined,expect.anything())
+  })
+  it('云端文件已被删除时清除旧映射并按新文件重新上传',async()=>{
+    vi.useRealTimers()
+    let 次数=0
+    fixture.call.mockImplementation(async(action,input)=>{
+      if(action==='save')return {id:input.linkId,statuses:{[input.linkId]:'离线待同步'}}
+      if(action==='flush'){次数+=1;return 次数===1?{errors:[{id:'word',error:'上传失败：云文件不存在或已删除'}]}:{errors:[],statuses:{'D:/资料/资料.docx':'云端已保存'}}}
+      return {}
+    })
+    fixture.store={...fixture.store,文档路径:{word:'D:/资料/资料.docx'}}
+    render(<CloudAutosave/>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    const 动作=fixture.call.mock.calls.map(([action])=>action)
+    expect(动作.filter(a=>a==='save')).toHaveLength(2)
+    expect(动作).toContain('forget')
+    expect(fixture.call.mock.calls.find(([action])=>action==='forget')![1]).toEqual({linkId:'D:/资料/资料.docx'})
+    expect(screen.getByRole('status')).toHaveTextContent('云端已保存')
+  })
+  it('本机文件写回失败时停止云端上传并显示原因',async()=>{
+    vi.useRealTimers()
+    fixture.saveToFile.mockResolvedValueOnce({成功:false,错误:'文件已被其他程序修改，本机内容未覆盖'})
+    fixture.store={...fixture.store,文档路径:{word:'D:/资料/资料.docx'}}
+    render(<CloudAutosave/>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(0)
+    expect(screen.getByRole('status')).toHaveTextContent('文件已被其他程序修改，本机内容未覆盖')
+  })
+  it('尚未落盘的新文档没有本机路径时只上传云端快照',async()=>{
+    vi.useRealTimers()
+    render(<CloudAutosave/>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    expect(fixture.saveToFile).not.toHaveBeenCalled()
+    expect(fixture.call.mock.calls.filter(([action])=>action==='save')).toHaveLength(1)
+  })
+
+  it('桌面编辑器使用徽标时不再渲染整行提示条，并把状态写入徽标',async()=>{
+    vi.useRealTimers()
+    const Pill=(await import('./CloudStatusPill')).default
+    const {读取云端状态}=await import('./cloudStatus')
+    const view=render(<div><CloudAutosave 状态徽标 /><Pill /></div>)
+    await act(async()=>{await flushCloudBeforeClose('word')})
+    expect(view.container.querySelector('.seal-cloud-banner')).toBeNull()
+    expect(读取云端状态()).toMatchObject({文档标识:'word',文本:'待同步',级别:'进行中'})
+    expect(screen.getByLabelText('云端状态：待同步')).toHaveTextContent('待同步')
+    view.unmount()
   })
   it.each(['share','team'] as const)('%s 的海豹 PDF 只走整文件共享同步，不另上传个人自动副本',async(kind)=>{
     const path=`D:/${kind}-隔离.spdf`

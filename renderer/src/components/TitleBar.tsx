@@ -1,6 +1,7 @@
 // 顶栏：品牌标识、搜索或当前文档名、设置与帮助入口。
 // Electron 使用系统边框窗口，此处不自绘最小化与关闭按钮。
 // 首页态（homeMode）：居中大搜索框 + 通知/客服/设置/会员/头像图标组。
+// EditorRibbonActions：桌面端编辑器删除顶栏后，五个图标迁入 RibbonTabs 右侧使用的独立组件。
 import React, { useState } from 'react'
 import { Dropdown, Input, Tooltip } from 'antd'
 import Icon from './Icon'
@@ -38,6 +39,137 @@ interface Props {
   语言?: 界面语言
   on切换语言?: (语言: 界面语言) => void
 }
+
+export interface EditorRibbonActionsProps {
+  onCloud?: () => void
+  onShowSettings?: () => void
+  onShowHelp?: () => void
+  on关于?: () => void
+  主题深色?: boolean
+  on切换主题?: () => void
+  语言?: 界面语言
+  on切换语言?: (语言: 界面语言) => void
+}
+
+/**
+ * 桌面端编辑器顶栏图标组，迁入 RibbonTabs 右侧后单独渲染。
+ * 包含：云同步、全局设置/关于我们、帮助手册、语言切换、主题切换。
+ */
+export const EditorRibbonActions = ({
+  onCloud,
+  onShowSettings,
+  onShowHelp,
+  on关于,
+  主题深色 = false,
+  on切换主题,
+  语言 = 'zh-CN',
+  on切换语言,
+}: EditorRibbonActionsProps) => {
+  const 文案 = (原文: string) => 翻译界面文本(原文, 语言)
+
+  const 渲染图标按钮 = (标题: string, 图标: string, 标签: string, 点击?: () => void) =>
+    React.createElement(
+      Tooltip,
+      { title: 文案(标题) },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button',
+          'aria-label': 文案(标签),
+          onClick: () => { if (点击 !== undefined) 点击() },
+        },
+        React.createElement(Icon, { name: 图标, size: 18 })
+      )
+    )
+
+  const 渲染全局设置 = () =>
+    React.createElement(
+      Dropdown,
+      {
+        trigger: ['click'],
+        menu: {
+          items: [
+            { key: 'settings', label: 文案('全局设置') },
+            { key: 'about', label: 文案('关于我们') },
+          ],
+          onClick: ({ key }: { key: string }) => {
+            if (key === 'settings' && onShowSettings !== undefined) onShowSettings()
+            if (key === 'about' && on关于 !== undefined) on关于()
+          },
+        },
+      },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button',
+          'aria-label': 文案('全局设置'),
+          'aria-haspopup': 'menu',
+        },
+        React.createElement(Icon, { name: 'sliders', size: 18 })
+      )
+    )
+
+  const 渲染主题切换 = () =>
+    React.createElement(
+      Tooltip,
+      { title: 文案(主题深色 ? '切换为浅色模式' : '切换为深色模式') },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button',
+          'aria-label': 文案('切换深浅模式'),
+          'aria-pressed': 主题深色,
+          onClick: () => { if (on切换主题 !== undefined) on切换主题() },
+        },
+        React.createElement(Icon, { name: 主题深色 ? 'moon' : 'sun', size: 18 })
+      )
+    )
+
+  const 渲染语言切换 = () =>
+    React.createElement(
+      Dropdown,
+      {
+        trigger: ['click'],
+        menu: {
+          selectable: true,
+          selectedKeys: [语言],
+          items: [
+            { key: 'zh-CN', label: '简体中文' },
+            { key: 'en-US', label: 'English' },
+          ],
+          onClick: ({ key }: { key: string }) => {
+            if ((key === 'zh-CN' || key === 'en-US') && on切换语言 !== undefined) on切换语言(key)
+          },
+        },
+      },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'wps-icon-button wps-language-switcher',
+          'aria-label': 文案('切换界面语言'),
+          'aria-haspopup': 'menu',
+          title: 文案('切换界面语言'),
+        },
+        React.createElement(Icon, { name: 'language', size: 17 }),
+        React.createElement('span', { className: 'wps-language-switcher__label', lang: 语言 }, 语言 === 'en-US' ? 'EN' : '中')
+      )
+    )
+
+  return React.createElement(
+    React.Fragment,
+    null,
+    渲染图标按钮('账号与云空间', 'cloud', '云文档', onCloud),
+    渲染全局设置(),
+    渲染图标按钮('帮助手册', 'help', '帮助手册', onShowHelp),
+    渲染语言切换(),
+    渲染主题切换(),
+  )
+}
+
 
 const TitleBar = ({
   pageName,
