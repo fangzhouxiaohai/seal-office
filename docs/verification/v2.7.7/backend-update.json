@@ -1,0 +1,132 @@
+{
+  "passed": true,
+  "version": "2.7.7",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.7.exe",
+      "bytes": 567063631,
+      "sha256": "b5b366e744eba0575e84e6d4a69cd25ae1ca9f5ae617d1c7a961df44fc2b9456",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/bee665c9-7720-4c61-9bae-aaff82f9eba6/seal-office-setup-2.7.7.exe",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/bee665c9-7720-4c61-9bae-aaff82f9eba6/seal-office-setup-2.7.7.exe",
+        "sha256": "b5b366e744eba0575e84e6d4a69cd25ae1ca9f5ae617d1c7a961df44fc2b9456",
+        "bytes": 567063631,
+        "publishedAt": 1795029335196
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.7-microsoft-store-x64.msix",
+      "bytes": 798519877,
+      "sha256": "6754d77b960dc140a17cd2011a7f1d1a9454bbeddf6de91928bd36f955097238",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/278d0f85-5d20-4237-b2ff-8aa3ada3d302/seal-office-2.7.7-microsoft-store-x64.msix",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "6754d77b960dc140a17cd2011a7f1d1a9454bbeddf6de91928bd36f955097238",
+        "bytes": 798519877,
+        "publishedAt": 1795029335197
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.7-amd64.deb",
+      "bytes": 152350960,
+      "sha256": "860b1f7d77b65bccd66cfffd047ae6780a7dba9aa8a9a09744073d8369e9b8cf",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/d52cffc5-7f3c-4d99-9e4d-75129b7de817/seal-office-2.7.7-amd64.deb",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/d52cffc5-7f3c-4d99-9e4d-75129b7de817/seal-office-2.7.7-amd64.deb",
+        "sha256": "860b1f7d77b65bccd66cfffd047ae6780a7dba9aa8a9a09744073d8369e9b8cf",
+        "bytes": 152350960,
+        "publishedAt": 1795029335197
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.7-android.apk",
+      "bytes": 53792394,
+      "sha256": "943e481a8f1c7fd5160f73dbcbe61702136e7da3e6db37b0699f6fb2ea4a6aaf",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a9ab54a3-ad22-4b6b-9606-508ca2273940/seal-office-2.7.7-android.apk",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a9ab54a3-ad22-4b6b-9606-508ca2273940/seal-office-2.7.7-android.apk",
+        "sha256": "943e481a8f1c7fd5160f73dbcbe61702136e7da3e6db37b0699f6fb2ea4a6aaf",
+        "bytes": 53792394,
+        "publishedAt": 1795029335197
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.7-harmony.hap",
+      "bytes": 66558858,
+      "sha256": "d5b88024ab4a3706a80a3f9b72a235d3f0184f5b835d263ec1a920fd01cd8df1",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/0ccf5746-489c-4adc-b862-8b5c98aca915/seal-office-2.7.7-harmony.hap",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/0ccf5746-489c-4adc-b862-8b5c98aca915/seal-office-2.7.7-harmony.hap",
+        "sha256": "d5b88024ab4a3706a80a3f9b72a235d3f0184f5b835d263ec1a920fd01cd8df1",
+        "bytes": 66558858,
+        "publishedAt": 1795029335198
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.7-web.zip",
+      "bytes": 49863091,
+      "sha256": "0120d70d037d87c09e0d85a79a2f83dbb44a3a332c3d2bc470d34574c98a0c68",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a4615241-05f5-4e90-a336-87ec34f5ba0f/seal-office-2.7.7-web.zip",
+      "oldVersion": "2.7.6",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.7",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.7\n\n本版集中完善 PDF 工作台、第三方 Office 文件导入与打开失败的提示，并补齐 Access 数据库入口。移动构建号为 20707。\n\n## PDF 工作台\n\n- 新增拖拽查看、编辑、只读可复制三种模式，可按标签独立切换，切换时保留当前页、缩放和阅读位置。\n- 只读可复制模式下可拖选文字并复制，不提供编辑工具；没有文字层的页面明确提示为扫描图像。\n- 新增 PDF 转换为 Word、Excel、文本和图片，可按全部页、当前页或指定页范围导出；转换前说明扫描页与复杂版式的处理方式，转换后标出需要复核的页码。\n\n## 文档导入与保存\n\n- 带图表的第三方 XLSX 打开时，图表未导入会保留表格数据、公式和列宽，并给出具体警告，不再整份文件打不开。\n- 演示文稿支持矩形、圆角矩形、椭圆、线条等基础形状导入；形状或图片属性不完整时，警告定位到页与对象。\n- 改进 WPS 生成文档和新旧 Office 文件的导入与另存，保存后重新打开内容保持一致；原始文件不被修改。\n\n## 打开失败提示\n\n- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”入口。\n- 不使用空白内容或默认数据掩盖失败，用户可判断是哪个文件、哪一步出了问题。\n\n## 数据库\n\n- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，浏览与维护表结构和记录，并执行常用查询。\n\n## 安装包与发布\n\n- Windows 交付安装程序与微软商店 MSIX，Ubuntu 交付 DEB，另有 Web ZIP、Android 正式签名 APK 与 HarmonyOS 已签名 HAP；macOS 由官网按芯片版本提供。\n- 校验值见 `release/v2.7.7/SHA256SUMS.txt`。\n\n## 平台说明\n\n- 微软商店 MSIX 是商店上传包，审核与分发由微软处理。\n- 鸿蒙 HAP 使用发布证书，需通过应用市场正式或测试渠道安装。\n- 第三方 Office 文件的既有格式兼容范围不变。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a4615241-05f5-4e90-a336-87ec34f5ba0f/seal-office-2.7.7-web.zip",
+        "sha256": "0120d70d037d87c09e0d85a79a2f83dbb44a3a332c3d2bc470d34574c98a0c68",
+        "bytes": 49863091,
+        "publishedAt": 1795029335198
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

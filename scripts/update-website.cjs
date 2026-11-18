@@ -105,7 +105,8 @@ function main() {
     const askScript = windows ? '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n'
       : '#!/bin/sh\nprintf "%s" "$SEAL_DEPLOY_PASSWORD"\n'
     fs.writeFileSync(ask, askScript, { mode: 0o700, flag: 'wx' })
-    run('tar', [...(windows ? ['--force-local'] : []), '-cf', archive, '-C', local, 'website'])
+    const tarForceLocal = windows && /GNU tar/i.test(run('tar', ['--version']))
+    run('tar', [...(tarForceLocal ? ['--force-local'] : []), '-cf', archive, '-C', local, 'website'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
     run('scp', [...options, '-P', '22', archive, `root@192.140.178.117:${remote}/release.tar`], { env })
     process.stdout.write(ssh(makeActivationScript(id, assets)))

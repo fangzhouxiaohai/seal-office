@@ -187,14 +187,15 @@ describe('更新卡片', () => {
     expect(screen.getByRole('progressbar', { name:'后台下载进度' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name:'取消下载' })).toBeNull()
   })
-  it('移动端普通更新显示轻量入口，不显示大型更新卡片', async () => {
+  it('移动端普通更新先弹出说明弹窗，不显示大型更新卡片', async () => {
     vi.useFakeTimers()
     document.documentElement.dataset.sealPlatform = 'app'
     模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
-    expect(screen.getByRole('button', { name:'更新' }).closest('aside')).toHaveClass('seal-update-entry--mobile')
-    expect(screen.queryByText('发现新版本 2.7.1')).toBeNull()
+    expect(screen.getByText('发现新版本 2.7.1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name:'更新' })).toBeInTheDocument()
+    expect(document.querySelector('.seal-update-card')).toBeNull()
   })
   it('下载窗口中的更新说明正确解析 Markdown 且不执行嵌入内容', async () => {
     vi.useFakeTimers()
@@ -206,6 +207,7 @@ describe('更新卡片', () => {
     渲染卡片()
     await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name:'更新' })) })
+    fireEvent.click(screen.getByRole('button', { name:/正在下载更新/ }))
     fireEvent.click(screen.getByText('查看更新说明'))
     const 内容 = document.querySelector('.seal-update-card__notes')!
     expect(内容.querySelector('h1')?.textContent).toBe('海豹办公 2.7.2')
@@ -225,6 +227,7 @@ describe('更新卡片', () => {
       渲染卡片()
       await act(async () => { await vi.advanceTimersByTimeAsync(启动检查延迟) })
       await act(async () => { fireEvent.click(screen.getByRole('button', {name:'更新'})) })
+      fireEvent.click(screen.getByRole('button', { name:/正在下载更新/ }))
       fireEvent.click(screen.getByText('查看更新说明'))
       expect(screen.getByText('更新说明原文为中文')).toBeInTheDocument()
       expect(screen.getByText(/修复表格筛选/)).toBeInTheDocument()

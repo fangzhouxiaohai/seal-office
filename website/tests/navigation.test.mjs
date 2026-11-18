@@ -45,11 +45,13 @@ describe('主下载按钮', () => {
   })
 
   it('识别出平台时直接指向该平台标有版本的安装包', async () => {
+    const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
+    const escaped = version.replace(/\./g, '\\.')
     const dom = await openHomepage('Mozilla/5.0 Android HarmonyOS')
     const { document } = dom.window
     const primary = document.querySelector('.download-primary')
     assert.equal(primary.href, document.querySelector('[data-platform="harmony"]').href)
-    assert.match(primary.textContent, /鸿蒙.*v2\.7\.6/)
+    assert.match(primary.textContent, new RegExp(`鸿蒙.*v${escaped}`))
     dom.window.close()
   })
 })

@@ -46,21 +46,26 @@ describe('最新版下载', () => {
 
 describe('分平台下载入口', () => {
   it('静态首页为每个包显示相应版本和来源', async () => {
+    const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
+    const escaped = version.replace(/\./g, '\\.')
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
     const links = Array.from(document.querySelectorAll('#downloads [data-platform]'))
     assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos-arm64', 'macos-intel', 'linux', 'android', 'harmony'])
     for (const link of links) {
       if (link.dataset.platform === 'macos-arm64') {
-        assert.equal(link.href, 'https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.7/seal-office-2.7.7-macos-arm64.dmg')
-        assert.match(link.textContent, /Apple 芯片.*ARM64.*v2\.7\.7/)
+        assert.equal(link.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-macos-arm64.dmg`)
+        assert.match(link.textContent, new RegExp(`Apple 芯片.*ARM64.*v${escaped}`))
+      } else if (link.dataset.platform === 'macos-intel') {
+        // Intel 版暂未随本版更新，仍指向已发布的 2.7.6。
+        assert.equal(link.href, 'https://seal.xingmasoft.com/api/v1/release-assets/a16bd326-b64e-4ba0-8492-2e62810f21fa/seal-office-2.7.6-macos.dmg')
+        assert.match(link.textContent, /Intel.*v2\.7\.6/)
       } else {
-        assert.match(link.href, /^https:\/\/seal\.xingmasoft\.com\/api\/v1\/release-assets\/[^/]+\/seal-office-.*2\.7\.6/)
-        assert.match(link.textContent, /v2\.7\.6/)
+        assert.match(link.href, new RegExp(`^https://seal\\.xingmasoft\\.com/api/v1/release-assets/[^/]+/seal-office-.*${escaped}`))
+        assert.match(link.textContent, new RegExp(`v${escaped}`))
       }
     }
     const intel = document.querySelector('[data-platform="macos-intel"]')
     assert.match(intel.textContent, /Intel/)
-    assert.equal(intel.href, 'https://seal.xingmasoft.com/api/v1/release-assets/a16bd326-b64e-4ba0-8492-2e62810f21fa/seal-office-2.7.6-macos.dmg')
   })
 })

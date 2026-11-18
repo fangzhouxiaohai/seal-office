@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.7.6**，移动构建号 **20706**。共用编辑器与服务；鸿蒙沿用 UTS 宿主，安卓新增 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，后续不再生成便携版；Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+新增 [移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.7.7**，移动构建号 **20707**。共用编辑器与服务；鸿蒙沿用 UTS 宿主，安卓新增 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，后续不再生成便携版；Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -16,9 +16,17 @@
 
 官网已部署在 [seal.xingmasoft.com](https://seal.xingmasoft.com/)，后台入口为 `/admin/`，在线办公入口仍为 `/office/`。官网源码位于 `website/`，采用独立构建；运行与发布验证见 [官网修改说明](功能修改说明-官网.md)。
 
-官网首页当前显示 2.7.6 版 Windows、macOS、Linux、安卓和鸿蒙安装包，下载地址统一使用服务器已上架的 `/api/v1/release-assets/` 链接，不依赖 GitHub；首屏使用可暂停的光晕、网格和渐变背景动效，并遵循系统的减少动态效果设置。改动与验证见[官网首页下载与动效调整](功能修改说明-官网首页下载.md)。
+官网首页当前显示 2.7.7 版 Windows、Linux、安卓、鸿蒙与 macOS Apple 芯片安装包，macOS Intel 仍为 2.7.6 版；下载地址统一使用服务器已上架的 `/api/v1/release-assets/` 链接，不依赖 GitHub；首屏使用可暂停的光晕、网格和渐变背景动效，并遵循系统的减少动态效果设置。改动与验证见[官网首页下载与动效调整](功能修改说明-官网首页下载.md)。
 
 官网已做整体视觉美化：首屏与页脚增加星空动效（闪烁星点与偶发流星，离开视口自动暂停），按钮统一为胶囊样式并带光泽动效，各区块滚动显现，卡片增加悬浮光晕。改动与验证见[官网星空美化说明](功能修改说明-官网星空美化.md)。
+
+## 2.7.7 PDF 工作台与导入兼容
+
+- PDF 工作台新增拖拽查看、编辑、只读可复制三种模式，切换保留页码、缩放和阅读位置；新增转换为 Word、Excel、文本和图片，支持全部页、当前页与指定页范围。
+- 带图表的第三方 XLSX 不再整份打不开，图表未导入时保留表格数据、公式与列宽并给出警告；演示文稿支持基础形状导入，警告定位到页与对象。
+- 打开失败弹窗显示文件名、格式、失败阶段和可读原因，并提供技术详情、复制详情与“打开所在文件夹”。
+- 补齐 Access 数据库入口，可新建 ACCDB、打开现有 MDB/ACCDB，维护表结构与记录。
+- 各端安装包已更新到 2.7.7：Windows 安装程序与微软商店 MSIX、Ubuntu DEB、Web ZIP、Android 正式签名 APK、HarmonyOS 已签名 HAP；macOS 已在此前发布。详见[2.7.7 更新说明](docs/release-notes/v2.7.7.md)与[发行验收](docs/verification/v2.7.7-release.md)。
 
 ## 2.7.6 超大扫描页 PDF 清晰度修复
 

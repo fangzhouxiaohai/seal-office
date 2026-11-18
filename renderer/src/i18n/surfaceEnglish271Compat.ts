@@ -1,5 +1,7 @@
 // 2.7.1 新增界面英文映射（Compat）。新增固定文案必须在此同时提供英文。
 export const 英文界面271Compat: Record<string, string> = {
+  // ---- 演示形状无障碍标签 ----
+  '直线': 'Line',
   // ---- 打开询问、仅查看提示条与保存提示（2.7.1 警告分级） ----
   '此文件包含本机暂不支持的内容': 'This file contains content that is not supported here',
   '此文件只能查看': 'This file can only be viewed',

@@ -40,7 +40,7 @@ describe('系统文件关联打开', () => {
     try {
       render(<StrictMode><AntdApp><AppProvider 初始最近文档={[]}><AssociatedFileOpener /><GlobalTabs /></AppProvider></AntdApp></StrictMode>)
       expect((await screen.findAllByText('打开文件失败')).length).toBeGreaterThan(0)
-      expect((await screen.findAllByText('文件不存在')).length).toBeGreaterThan(0)
+      expect((await screen.findAllByText(/文件不存在/)).length).toBeGreaterThan(0)
       expect(screen.queryByRole('tab', { name: /失效\.docx/ })).not.toBeInTheDocument()
     } finally {
       可用.mockRestore(); 领取.mockRestore(); 订阅.mockRestore(); 读取.mockRestore()
