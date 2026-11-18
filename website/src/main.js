@@ -1,5 +1,5 @@
 import './styles.css'
-import { SERVER_DOWNLOADS, SERVER_VERSION, detectPlatform } from './downloads.mjs'
+import { detectPlatform } from './downloads.mjs'
 import { autoStarfields } from './stars.mjs'
 
 const toggle = document.querySelector('.menu-toggle')
@@ -15,25 +15,16 @@ if (toggle && navigation) {
   window.addEventListener('resize', () => { if (window.innerWidth > 760) setMenu(false) })
 }
 
-const status = document.querySelector('.download-status')
 const primary = document.querySelector('.download-primary')
-const platformLinks = document.querySelectorAll('[data-platform]')
-const labels = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: '安卓版', harmony: '鸿蒙版' }
-
-platformLinks.forEach((link) => {
-  const platform = link.dataset.platform
-  const url = SERVER_DOWNLOADS[platform]
-  if (!url) return
-  link.href = url
-  link.classList.add('is-available')
-})
-
 const platform = detectPlatform(navigator.userAgent)
-if (platform && SERVER_DOWNLOADS[platform] && primary) {
-  primary.href = SERVER_DOWNLOADS[platform]
-  primary.textContent = `下载 ${labels[platform]}`
+const link = document.querySelector(`[data-platform="${platform}"]`)
+if (primary && link) {
+  primary.href = link.href
+  primary.textContent = `下载 ${link.textContent.trim()}`
+} else if (primary && platform === 'macos') {
+  // macOS 浏览器可能在 Apple 芯片上也报告 Intel。
+  primary.textContent = '选择 macOS 芯片版本'
 }
-if (status) status.textContent = `最新版本 v${SERVER_VERSION}，安装包由海豹办公服务器提供`
 
 // 顶部首屏与底部页脚的星空动效
 autoStarfields()

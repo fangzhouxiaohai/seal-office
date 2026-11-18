@@ -83,11 +83,13 @@ function main() {
   const files = new Map()
   collect(path.join(root, 'website-dist'), '', files)
   const assets = validateWebsite(files).map(item => item.path)
-  const password = process.env.SEAL_DEPLOY_PASSWORD || JSON.parse(fs.readFileSync(path.join(root, '.upgrade-private/deploy-server.json'), 'utf8')).password
-  if (!password) throw new Error('缺少部署凭据')
+  const config = path.join(root, '.upgrade-private/deploy-server.json')
+  const password = process.env.SEAL_DEPLOY_PASSWORD || (fs.existsSync(config) && JSON.parse(fs.readFileSync(config, 'utf8')).password)
+  if (!password) throw new Error('缺少官网部署凭据，请在本机配置 SEAL_DEPLOY_PASSWORD 或 .upgrade-private/deploy-server.json')
   const id = new Date().toISOString().replace(/\D/g, '').slice(0, 14) + '-' + randomBytes(4).toString('hex')
   const local = path.join(root, '.upgrade-private', 'website-update-' + id)
-  const ask = local + '.cmd'
+  const windows = process.platform === 'win32'
+  const ask = local + (windows ? '.cmd' : '.sh')
   const archive = local + '.tar'
   const remote = `${siteRoot}/website-releases/${id}`
   const env = { ...process.env, SEAL_DEPLOY_PASSWORD: password, SSH_ASKPASS: ask, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: 'localhost:0' }
@@ -100,8 +102,10 @@ function main() {
       fs.mkdirSync(path.dirname(target), { recursive: true })
       fs.writeFileSync(target, bytes)
     }
-    fs.writeFileSync(ask, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n')
-    run('tar', ['--force-local', '-cf', archive, '-C', local, 'website'])
+    const askScript = windows ? '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n'
+      : '#!/bin/sh\nprintf "%s" "$SEAL_DEPLOY_PASSWORD"\n'
+    fs.writeFileSync(ask, askScript, { mode: 0o700, flag: 'wx' })
+    run('tar', [...(windows ? ['--force-local'] : []), '-cf', archive, '-C', local, 'website'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
     run('scp', [...options, '-P', '22', archive, `root@192.140.178.117:${remote}/release.tar`], { env })
     process.stdout.write(ssh(makeActivationScript(id, assets)))
