@@ -2,6 +2,7 @@ const patterns = {
   windows: /^seal-office-setup-.*\.exe$/i,
   macos: /^seal-office-.*-macos\.dmg$/i,
   'macos-arm64': /^seal-office-.*-macos-arm64\.dmg$/i,
+  'macos-intel': /^seal-office-.*-macos-intel\.dmg$/i,
   linux: /^seal-office-.*-amd64\.deb$/i,
   android: /^seal-office-.*-android\.apk$/i,
   harmony: /^seal-office-.*-harmony\.hap$/i,

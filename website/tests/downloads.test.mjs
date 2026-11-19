@@ -57,9 +57,8 @@ describe('分平台下载入口', () => {
         assert.equal(link.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-macos-arm64.dmg`)
         assert.match(link.textContent, new RegExp(`Apple 芯片.*ARM64.*v${escaped}`))
       } else if (link.dataset.platform === 'macos-intel') {
-        // Intel 版暂未随本版更新，仍指向已发布的 2.7.6。
-        assert.equal(link.href, 'https://seal.xingmasoft.com/api/v1/release-assets/a16bd326-b64e-4ba0-8492-2e62810f21fa/seal-office-2.7.6-macos.dmg')
-        assert.match(link.textContent, /Intel.*v2\.7\.6/)
+        assert.equal(link.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-macos-intel.dmg`)
+        assert.match(link.textContent, new RegExp(`Intel.*v${escaped}`))
       } else {
         assert.match(link.href, new RegExp(`^https://seal\\.xingmasoft\\.com/api/v1/release-assets/[^/]+/seal-office-.*${escaped}`))
         assert.match(link.textContent, new RegExp(`v${escaped}`))

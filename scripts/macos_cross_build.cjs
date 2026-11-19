@@ -180,7 +180,7 @@ function 校验文件关联(formats, entries) {
 }
 function 整理输入记录(config) {
   const out = Object.fromEntries(['source', 'bundle', 'work', 'arch', 'electronVersion'].map(key => [key, config[key]]))
-  for (const key of ['electronZip', 'packager', 'zapp', 'rcodesign', 'seven', 'sevenLibrary', 'python']) {
+  for (const key of ['electronZip', 'packager', 'zapp', 'rcodesign', 'seven', 'sevenLibrary', 'python', 'appIcon']) {
     if (config[key]) out[key] = { path: config[key].path, sha256: config[key].sha256 }
   }
   return out
@@ -196,6 +196,7 @@ function 校验配置(config) {
     if (!item || !path.isAbsolute(item.path || '') || !/^[a-f0-9]{64}$/i.test(item.sha256 || '')) throw new Error(`${key} 必须提供绝对路径与 SHA-256`)
   }
   if (config.sevenLibrary && (!path.isAbsolute(config.sevenLibrary.path || '') || !/^[a-f0-9]{64}$/i.test(config.sevenLibrary.sha256 || ''))) throw new Error('7-Zip 动态库配置无效')
+  if (config.appIcon && (!path.isAbsolute(config.appIcon.path || '') || !/^[a-f0-9]{64}$/i.test(config.appIcon.sha256 || ''))) throw new Error('应用图标配置无效')
   if (path.basename(config.electronZip.path) !== `electron-v${config.electronVersion}-darwin-${config.arch}.zip`) throw new Error('Electron ZIP 名称与目标不符')
   return config
 }
@@ -212,6 +213,7 @@ async function 构建(config) {
   const source = fs.realpathSync(config.source), bundle = fs.realpathSync(config.bundle)
   const work = 验证工作目录(config.work, source, bundle)
   for (const key of ['electronZip', 'packager', 'zapp', 'rcodesign', 'seven', 'python']) 校验散列(config[key].path, config[key].sha256)
+  if (config.appIcon) 校验散列(config.appIcon.path, config.appIcon.sha256)
   if (process.platform === 'win32') {
     if (!config.sevenLibrary || path.dirname(config.sevenLibrary.path) !== path.dirname(config.seven.path) || path.basename(config.sevenLibrary.path).toLowerCase() !== '7z.dll') throw new Error('Windows 7-Zip 必须提供同目录 7z.dll 及摘要')
     校验散列(config.sevenLibrary.path, config.sevenLibrary.sha256)
@@ -263,6 +265,7 @@ async function 构建(config) {
   if (apps.length !== 1) throw new Error('未生成唯一应用，Packager 可能跳过目标')
   const app = path.join(apps[0], `${pkg.build.productName}.app`), resources = path.join(app, 'Contents', 'Resources')
   if (!fs.existsSync(app)) throw new Error('应用目录缺失')
+  if (config.appIcon) fs.copyFileSync(config.appIcon.path, path.join(resources, 'electron.icns'))
   for (const item of mac.extraResources) {
     if (!item.from || !item.to || path.isAbsolute(item.from) || path.isAbsolute(item.to) || [item.from, item.to].some(x => x.split(/[\\/]/).includes('..'))) throw new Error('资源路径无效')
     const base = item.from.startsWith('node_modules/') ? bundle : source

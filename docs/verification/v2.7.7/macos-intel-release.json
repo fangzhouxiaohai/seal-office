@@ -1,0 +1,21 @@
+{
+  "version": "2.7.7",
+  "name": "seal-office-2.7.7-macos-intel.dmg",
+  "bytes": 236477556,
+  "sha256": "684d5608f8cd725e04474143dcd7c5ef4bef97404d6809d2b30bc15307225fa0",
+  "github": {
+    "platform": "github",
+    "skipped": true,
+    "name": "seal-office-2.7.7-macos-intel.dmg",
+    "size": 236477556,
+    "digest": "sha256:684d5608f8cd725e04474143dcd7c5ef4bef97404d6809d2b30bc15307225fa0",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.7/seal-office-2.7.7-macos-intel.dmg"
+  },
+  "gitcode": {
+    "platform": "gitcode",
+    "name": "seal-office-2.7.7-macos-intel.dmg",
+    "size": 236477556,
+    "sha256": "684d5608f8cd725e04474143dcd7c5ef4bef97404d6809d2b30bc15307225fa0",
+    "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.7/seal-office-2.7.7-macos-intel.dmg"
+  }
+}
