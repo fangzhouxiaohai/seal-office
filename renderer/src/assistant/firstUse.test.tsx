@@ -37,6 +37,7 @@ function 环境(类型: 'word' | 'table' | 'ppt' | 'pdf' = 'word') {
     return <>
       <button onClick={() => store.createDoc(类型, 类型 === 'word' ? '<p>原始内容</p>' : 类型 === 'pdf' ? '测试PDF数据' : undefined, { 名称: `样例.${类型 === 'word' ? 'docx' : 类型 === 'table' ? 'xlsx' : 类型 === 'ppt' ? 'pptx' : 'pdf'}` })}>打开样例</button>
       <button onClick={() => store.createDoc('word', '<p>另一个文件</p>', { 名称: '其他.docx' })}>切换文件</button>
+      <button onClick={() => store.activeDocumentId && store.set文档路径(store.activeDocumentId, '/tmp/样例.docx')}>保存样例</button>
       <AiAssistant />
     </>
   }
@@ -47,6 +48,21 @@ function 环境(类型: 'word' | 'table' | 'ppt' | 'pdf' = 'word') {
 }
 
 describe('快捷 AI 首次初始化和执行展示', () => {
+  it('助手关闭时打开和保存文件不读取配置或绑定加密记忆',async()=>{
+    const e=环境()
+    const bindSession=vi.fn().mockResolvedValue({成功:true})
+    ;(window.electronAPI!.ai as any).bindSession=bindSession
+    fireEvent.click(screen.getByText('打开样例'))
+    fireEvent.click(screen.getByText('保存样例'))
+    await act(async()=>{})
+    expect(e.ai.getConfig).not.toHaveBeenCalled()
+    expect(e.ai.getSession).not.toHaveBeenCalled()
+    expect(bindSession).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button',{name:'打开智能助手'}))
+    await e.初始化()
+    await waitFor(()=>expect(bindSession).toHaveBeenCalledTimes(1))
+  })
+
   it.each(['word', 'table', 'ppt', 'pdf'] as const)('%s 冷启动第一次快捷操作等待配置和会话，只发出一次请求且不进入队列', async (类型) => {
     const e = 环境(类型)
     fireEvent.click(screen.getByText('打开样例')); e.快捷()

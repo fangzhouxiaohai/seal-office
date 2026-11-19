@@ -12,32 +12,40 @@ function normalizeUrl(value){
   if(url.username||url.password||url.search||url.hash||(url.protocol!=='https:'&&!(url.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(url.hostname))))throw new Error('服务器须使用 HTTPS；本机测试可使用 HTTP')
   return url.toString().replace(/\/$/,'')
 }
-function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,mergeUpdates}={}){
+function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,mergeUpdates,deferUnlock=false}={}){
   const secureFile=path.join(directory,'cloud.secure'),outbox=path.join(directory,'cloud-outbox')
   fs.mkdirSync(outbox,{recursive:true})
   let state={url:normalizeUrl(defaultUrl),token:null,account:null,owner:null,root:null,recoveryPending:null,links:{},statuses:{}}
   const locks=new Map(),saveLocks=new Map(),active=new Set();let epoch=0
   function durableWrite(filename,data){const temp=filename+'.tmp';const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,data);fs.fsyncSync(fd)}finally{fs.closeSync(fd)}fs.renameSync(temp,filename)}
-  if(fs.existsSync(secureFile)){
-    if(!safeStorage?.isEncryptionAvailable())throw new Error('系统安全存储不可用，无法读取云端会话')
-    try{state={...state,...JSON.parse(safeStorage.decryptString(fs.readFileSync(secureFile)))}}catch{throw new Error('云端本机安全记录损坏，请通过设置重新登录')}
+  // macOS 仅在用户恢复云会话后读取加密凭据；本机文档和被动状态检查不访问钥匙串。
+  let sessionLoaded=!deferUnlock||!fs.existsSync(secureFile)
+  function restoreSession(){
+    if(fs.existsSync(secureFile)){
+      if(!safeStorage?.isEncryptionAvailable())throw new Error('系统安全存储不可用，无法读取云端会话')
+      try{state={...state,...JSON.parse(safeStorage.decryptString(fs.readFileSync(secureFile)))}}catch{throw new Error('无法解锁本机云会话，原记录已保留；请允许钥匙串访问后重试')}
+    }
+    state.owner=state.owner||state.account?.id||null
+    sessionLoaded=true
+    return status()
   }
-  state.owner=state.owner||state.account?.id||null
+  if(sessionLoaded)restoreSession()
   const referencedBlobs=new Set(fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).map(n=>{try{return JSON.parse(fs.readFileSync(path.join(outbox,n),'utf8')).blob}catch{throw new Error('待同步记录损坏，请先备份本机数据')}}))
   for(const filename of fs.readdirSync(outbox))if(filename.endsWith('.bin')&&!referencedBlobs.has(filename))fs.unlinkSync(path.join(outbox,filename))
   function persist(){
+    if(!sessionLoaded)throw new Error('请先恢复本机云会话，原加密记录保持不变')
     if(!safeStorage?.isEncryptionAvailable())throw new Error('系统安全存储不可用，无法保存云端密钥')
     durableWrite(secureFile,safeStorage.encryptString(JSON.stringify(state)))
   }
   const root=()=>{if(!state.root)throw new Error('请先输入恢复密钥解锁云空间');return Buffer.from(state.root,'base64')}
-  function status(){return {url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,deletionPending:Boolean(state.deletionReceipt),...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
+  function status(){return {sessionLocked:!sessionLoaded,url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,deletionPending:Boolean(state.deletionReceipt),...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
   async function request(route,{method='GET',data,binary=false,headers={},timeout=30000}={}){
     const url=new URL(state.url+route),payload=Buffer.isBuffer(data)?data:data===undefined?null:Buffer.from(JSON.stringify(data))
     const head={...(state.token?{Authorization:'Bearer '+state.token}:{}),...(payload?{'Content-Type':Buffer.isBuffer(data)?'application/octet-stream':'application/json','Content-Length':payload.length}:{}),...headers}
     if(transport){
       const controller=new AbortController(),req={destroy:()=>controller.abort()};active.add(req)
       try{return await transport(url.toString(),{method,headers:head,body:payload,binary,signal:controller.signal,timeout})}
-      catch(error){if(error.status===401){state.token=null;state.root=null;state.account=null;epoch++;for(const pending of active)pending.destroy();persist()}throw error}
+      catch(error){if(error.status===401&&state.token&&head.Authorization==='Bearer '+state.token){state.token=null;state.root=null;state.account=null;epoch++;for(const pending of active)pending.destroy();persist()}throw error}
       finally{active.delete(req)}
     }
     return new Promise((resolve,reject)=>{
@@ -45,7 +53,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
         const chunks=[];let size=0
         res.on('data',chunk=>{size+=chunk.length;if(size>310000000){req.destroy(new Error('服务器响应过大'));return}chunks.push(chunk)})
         res.on('error',reject);res.on('end',()=>{const raw=Buffer.concat(chunks);let result;try{result=JSON.parse(raw.toString())}catch{result=null}
-          if(res.statusCode<200||res.statusCode>=300){const error=Object.assign(new Error(result?.error||'云服务请求失败'),{status:res.statusCode});if(res.statusCode===401){state.token=null;state.root=null;state.account=null;epoch++;persist()}reject(error)}else if(binary)resolve(raw);else if(result)resolve(result);else reject(new Error('服务器响应格式不正确'))
+          if(res.statusCode<200||res.statusCode>=300){const error=Object.assign(new Error(result?.error||'云服务请求失败'),{status:res.statusCode});if(res.statusCode===401&&state.token&&head.Authorization==='Bearer '+state.token){state.token=null;state.root=null;state.account=null;epoch++;persist()}reject(error)}else if(binary)resolve(raw);else if(result)resolve(result);else reject(new Error('服务器响应格式不正确'))
         })
       });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(timeout,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
     })
@@ -183,7 +191,8 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     const binding=await realtime.realtimeNodeBinding({id})
     if(binding&&(await realtime.realtimeSnapshot({binding})).initialized)throw new Error('此文件正在实时共同编辑，请先下载最新协作文件并上传为独立副本，再复制或公开发布；原实时内容保持不变')
   }
-  return {
+  const service={
+    resumeSession:()=>sessionLoaded?status():restoreSession(),
     ...collaboration,
     ...realtime,
     // 分享链接模块需要解封文件密钥。keyFor 接收节点对象（依赖 meta.key），
@@ -229,5 +238,18 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     async copy(id,parent){await rejectStaleRealtimeBinary(id);const node=(await list()).find(n=>n.id===id);if(!node||['folder','library'].includes(node.kind))throw new Error('请选择文件复制');const file=await download(id),ext=path.extname(file.name),filename=path.basename(file.name,ext)+' 副本'+ext;return save({linkId:randomUUID(),name:node.meta.name+' 副本',filename,data:file.data,kind:node.kind,parent:parent??node.parent,text:node.meta.text,cover:node.meta.cover,template:node.meta.template})},
     async publish(id,kind,consent,category){if(consent!==true)throw new Error('请确认公开授权');await rejectStaleRealtimeBinary(id);const node=(await list()).find(n=>n.id===id),file=await download(id);return request('/v1/publications',{method:'POST',data:{nodeId:id,kind,consent:true,title:node.meta.name,name:file.name,data:file.data,text:node.meta.text||'',cover:node.meta.cover||'',category:category&&category!=='all'?category:node.meta.category||'',description:[node.meta.description,node.meta.license].filter(Boolean).join(' · ')}})}
   }
+  // 未恢复时禁止任何私有操作覆盖加密记录，也不因后台轮询触发系统授权。
+  for(const [name,operation] of Object.entries(service)){
+    if(['status','resumeSession','realtimeCapabilities'].includes(name)||typeof operation!=='function')continue
+    service[name]=function(...args){
+      if(!sessionLoaded){
+        if(name==='request'&&(args[1]?.method??'GET')==='GET'&&/^\/v1\/(?:capabilities$|updates\/latest(?:\?|$)|public(?:\/|\?|$))/.test(args[0]))return operation.apply(service,args)
+        if(name==='refresh'||name==='flush')return Promise.resolve(name==='flush'?{errors:[],...status()}:status())
+        throw Object.assign(new Error('请先在账号入口恢复本机云会话'),{code:'CLOUD_SESSION_LOCKED'})
+      }
+      return operation.apply(service,args)
+    }
+  }
+  return service
 }
 module.exports={createService,normalizeUrl,DEFAULT_URL}

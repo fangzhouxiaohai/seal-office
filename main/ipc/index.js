@@ -30,7 +30,7 @@ function 创建共用助手服务(依赖 = {}) {
 }
 
 function 注册全部通道(ipcMain, 依赖 = {}) {
-  const cloudService = 依赖.cloudService ?? createService({ directory: app.getPath('userData'), safeStorage })
+  const cloudService = 依赖.cloudService ?? createService({ directory: app.getPath('userData'), safeStorage, deferUnlock: process.platform === 'darwin' })
   const requireAIIdentity = 依赖.requireAIIdentity ?? (() => cloudService.requireAIIdentity())
   const 助手服务 = 创建实名助手服务(创建共用助手服务({ ...依赖, requireAIIdentity }), requireAIIdentity)
   注册文件通道(ipcMain)

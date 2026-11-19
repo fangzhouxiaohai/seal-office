@@ -18,7 +18,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     return response.text()
   }
   const zotero=()=>zoteroInstance||(zoteroInstance=createZoteroDocs({cacheDirectory:path.join(app.getPath('userData'),'zotero-docs'),fetchText}))
-  const service=()=>instance||(instance=createService({directory:app.getPath('userData'),safeStorage}))
+  const service=()=>instance||(instance=createService({directory:app.getPath('userData'),safeStorage,deferUnlock:process.platform==='darwin'}))
   // 分享链接复用同一份云端会话与根密钥；服务自身已提供全部依赖。
   const shareLinkService=()=>{const current=service();return shareLinkInstance||(shareLinkInstance=createShareLinkService(current))}
   const identityCheck=requireAIIdentity||(()=>service().requireAIIdentity())
@@ -37,7 +37,7 @@ function 注册云端通道(ipcMain,{cloudService,助手服务,requireAIIdentity
     // 版本更新查询（Web 与移动端）：沿用当前云服务地址，接口匿名访问
     updateLatest:i=>service().request('/v1/updates/latest?'+new URLSearchParams({platform:String(i.platform||''),version:String(i.version||''),channel:String(i.channel||'stable')})),
     conversionCapabilities:()=>service().conversionCapabilities(),convertDocument:i=>service().convertDocument(i),
-    status:()=>service().status(),refresh:()=>service().refresh(),
+    status:()=>service().status(),refresh:()=>service().refresh(),resumeSession:()=>service().resumeSession(),
     code:i=>service().sendCode(i.phone,i.purpose),login:i=>service().login(i.phone,i.code),logout:()=>service().logout(),
     loginPassword:i=>service().loginPassword(i.phone,i.password),setPassword:i=>service().setPassword(i),
     deleteAccount:i=>service().deleteAccount(i),deletionStatus:()=>service().deletionStatus(),

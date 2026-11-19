@@ -55,4 +55,23 @@ describe('固定云服务的账号界面',()=>{
     await waitFor(()=>expect(screen.getByRole('button',{name:'60 秒后重试'})).toBeDisabled())
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+  it('被动状态检查不恢复凭据；用户点击后才解锁并显示原账号',async()=>{
+    let locked=true
+    const account={id:'saved',phone:'13800138000',enabled:true,autosave:false,used:0,quota:300000000}
+    const invoke=vi.fn(async(action:string)=>{
+      if(action==='resumeSession')locked=false
+      return {成功:true,数据:{sessionLocked:locked,account:locked?null:account,unlocked:!locked,statuses:{},pending:0}}
+    })
+    window.electronAPI={cloud:{invoke}} as any
+    render(<App><CloudProvider><OpenAccount/></CloudProvider></App>)
+    await waitFor(()=>expect(invoke).toHaveBeenCalledWith('status',undefined))
+    expect(invoke.mock.calls.some(call=>call[0]==='resumeSession')).toBe(false)
+    fireEvent.click(screen.getByText('账号测试入口'))
+    expect(await screen.findByRole('button',{name:'恢复本机云会话'})).toBeInTheDocument()
+    expect(screen.queryByLabelText('手机号')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:'恢复本机云会话'}))
+    expect(await screen.findByText(/已登录：13800138000/)).toBeInTheDocument()
+    expect(invoke.mock.calls.filter(call=>call[0]==='resumeSession')).toHaveLength(1)
+  })
+
 })

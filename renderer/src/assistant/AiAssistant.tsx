@@ -369,7 +369,7 @@ export default function AiAssistant() {
 
   useEffect(() => { set修改页(0) }, [当前待确认])
   useEffect(() => {
-    if (!新版可用 || typeof window.electronAPI?.ai?.bindSession !== 'function' || 发送中 || 清除中 || 处理候选中 || Object.values(恢复中范围).some(Boolean)) return
+    if (!打开 || !新版可用 || typeof window.electronAPI?.ai?.bindSession !== 'function' || 发送中 || 清除中 || 处理候选中 || Object.values(恢复中范围).some(Boolean)) return
     const 需要绑定 = documents.find((文档) => {
       const 路径 = 文档路径[文档.id] ?? 文档.来源路径
       const 来源 = 会话标识按文档.current.get(文档.id)
@@ -394,7 +394,7 @@ export default function AiAssistant() {
       正在绑定.current.delete(文件标识)
       if (组件有效.current) set绑定中范围((当前) => ({ ...当前, [文件标识]: false }))
     })
-  }, [documents, 文档路径, 当前会话标识, 新版可用, 发送中, 清除中, 处理候选中, 恢复中范围, 绑定中范围, modal])
+  }, [打开, documents, 文档路径, 当前会话标识, 新版可用, 发送中, 清除中, 处理候选中, 恢复中范围, 绑定中范围, modal])
   const 恢复会话 = (范围: string, 会话标识: string): Promise<void> => {
     const 正在读取 = 恢复请求.current.get(范围)
     if (正在读取) return 正在读取

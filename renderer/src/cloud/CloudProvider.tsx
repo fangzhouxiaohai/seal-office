@@ -4,7 +4,7 @@ import {CloudLoginForm} from './CloudLoginForm'
 import {AccountSecurity} from './AccountSecurity'
 import {AI身份提示事件,AI登录原因,检查AI身份,提示AI身份,requireAIIdentity,type AI身份提示} from './aiIdentity'
 export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string;hasPassword?:boolean;identityVerified?:boolean;identityMethod?:'phone'}
-export interface CloudState {account:CloudAccount|null;unlocked:boolean;statuses:Record<string,string>;pending:number;recoveryPending?:string;deletionPending?:boolean}
+export interface CloudState {sessionLocked?:boolean;account:CloudAccount|null;unlocked:boolean;statuses:Record<string,string>;pending:number;recoveryPending?:string;deletionPending?:boolean}
 const initial:CloudState={account:null,unlocked:false,statuses:{},pending:0}
 export async function cloudCall<T=any>(action:string,input?:unknown):Promise<T>{
   const api=window.electronAPI?.cloud
@@ -48,7 +48,7 @@ export function CloudProvider({children}:{children:React.ReactNode}){
     <Modal title={!loginVisible?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={loginVisible?'seal-login-modal':undefined} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current){setOpen(false);setReason('');setForceLogin(false)}}} width={!loginVisible?560:440}>
       {reason?<p role="status">{reason}</p>:null}
       {state.deletionPending&&<div role="status"><p>注销请求正在确认或清理历史备份。服务器确认完成后，账号与对应云数据无法恢复；可以查看进度。</p><Button loading={busy} onClick={()=>void run(async()=>{const result=await cloudCall('deletionStatus');if(result.deleted)message.success('账号与云数据已永久删除；历史备份清理完成')})}>查看注销进度</Button></div>}
-      {!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
+      {state.sessionLocked?<><p>本机保存的云账号尚未解锁。本地文件可直接使用；继续使用云服务时，macOS 可能要求输入这台 Mac 的登录密码，授权读取保存的加密凭据。</p><Button type="primary" loading={busy} onClick={()=>void run(async()=>{await cloudCall('resumeSession');setForceLogin(false)})}>恢复本机云会话</Button></>:!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
         <p>已登录：{state.account.phone} <Button size="small" onClick={()=>run(()=>cloudCall('logout'))}>退出登录</Button></p>
         <AccountSecurity key={state.account.id} account={state.account} onChanged={refresh}/>
         {!state.account.enabled?<>
