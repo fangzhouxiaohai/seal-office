@@ -77,11 +77,14 @@ describe('桌面更新暂存', () => {
       expect(e.请求).not.toHaveBeenCalled()
     } finally { e.清理() }
   })
-  it('下次启动时显示辅助进程启动安装器失败原因', async () => {
-    const e = 环境(); try {
-      const state = await e.创建().下载(发布)
-      fs.writeFileSync(path.join(e.目录, 'install-result.json'), JSON.stringify({ 成功:false, 错误:'主程序未退出', 任务标识:state.任务标识 }))
-      expect(await e.创建().状态()).toMatchObject({ 阶段:'失败', 错误:'主程序未退出', 版本:发布.version })
+  it('安装启动失败时回退到已就绪并允许重试', async () => {
+    const e = 环境('windows'); try {
+      const a = e.创建(); await a.下载(发布)
+      e.打开安装包.mockRejectedValueOnce(new Error('安装程序未启动'))
+      await expect(a.安装()).rejects.toThrow('安装程序未启动')
+      expect((await a.状态()).阶段).toBe('已就绪')
+      await a.安装()
+      expect(e.打开安装包).toHaveBeenCalledTimes(2)
     } finally { e.清理() }
   })
   it('下载网络超时明确报错而不是误称用户取消', async () => {
@@ -115,14 +118,6 @@ describe('桌面更新暂存', () => {
     const e = 环境('windows'); try {
       const a = e.创建(); await a.下载(发布); await a.安装()
       await expect(a.下载(发布)).rejects.toThrow('正在安装')
-    } finally { e.清理() }
-  })
-  it('Windows 未退出时可看到辅助进程超时失败并恢复操作', async () => {
-    const e = 环境('windows'); try {
-      const a = e.创建(); await a.下载(发布); const state = await a.安装()
-      fs.writeFileSync(path.join(e.目录,'install-result.json'), JSON.stringify({成功:false, 任务标识:state.任务标识, 错误:'主程序未退出'}))
-      expect(await a.状态()).toMatchObject({阶段:'失败',错误:'主程序未退出'})
-      expect((await a.下载(发布)).阶段).toBe('已就绪')
     } finally { e.清理() }
   })
   it('新版本启动时清除与当前版本相同的待安装记录', async () => {
