@@ -91,13 +91,6 @@ nav > a:not(.button):hover::after { transform: scaleX(1) }
 .ambient-orb-one { width: 42vw; height: 42vw; left: 7%; top: 5%; background: radial-gradient(circle at 35% 35%, rgba(108, 183, 255, .72) 0%, rgba(59, 100, 229, .3) 44%, transparent 72%); animation: ambient-drift-one 16s ease-in-out infinite alternate }
 .ambient-orb-two { width: 34vw; height: 34vw; right: 2%; top: 15%; background: radial-gradient(circle at 60% 40%, rgba(182, 139, 255, .6) 0%, rgba(100, 80, 211, .24) 48%, transparent 72%); animation: ambient-drift-two 20s ease-in-out infinite alternate }
 .ambient-orb-three { width: 30vw; height: 30vw; left: 34%; bottom: -10%; background: radial-gradient(circle at 50% 45%, rgba(78, 224, 212, .49) 0%, rgba(37, 112, 181, .17) 50%, transparent 74%); animation: ambient-drift-three 22s ease-in-out infinite alternate }
-.ambient-grid {
-  position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(181, 211, 255, .075) 1px, transparent 1px), linear-gradient(90deg, rgba(181, 211, 255, .075) 1px, transparent 1px);
-  background-size: 92px 92px;
-  mask-image: radial-gradient(ellipse at 50% 42%, black 8%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse at 50% 42%, black 8%, transparent 72%);
-  animation: grid-drift 26s linear infinite;
-}
 .orbit { position: absolute; left: 50%; top: 35px; border: 1px solid rgba(189, 172, 255, .09); border-radius: 50%; transform: translateX(-50%); pointer-events: none; z-index: 0 }
 .orbit-one { width: 700px; height: 700px }
 .orbit-two { width: 1050px; height: 1050px }
@@ -262,7 +255,6 @@ footer::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; 
 @keyframes ambient-drift-one { from { transform: translate3d(-4%, 2%, 0) scale(.92) } to { transform: translate3d(10%, 10%, 0) scale(1.12) } }
 @keyframes ambient-drift-two { from { transform: translate3d(8%, -6%, 0) scale(1.05) } to { transform: translate3d(-12%, 12%, 0) scale(.88) } }
 @keyframes ambient-drift-three { from { transform: translate3d(-9%, 8%, 0) scale(.9) } to { transform: translate3d(8%, -10%, 0) scale(1.1) } }
-@keyframes grid-drift { from { transform: translate3d(0, 0, 0) } to { transform: translate3d(46px, 46px, 0) } }
 @keyframes sparkle-twinkle { 0%, 100% { opacity: .35; transform: scale(.75) rotate(0deg) } 50% { opacity: 1; transform: scale(1.08) rotate(18deg) } }
 @keyframes badge-glow { 0%, 100% { box-shadow: 0 0 18px rgba(139, 109, 255, .2), inset 0 1px 0 rgba(255, 255, 255, .1) } 50% { box-shadow: 0 0 34px rgba(139, 109, 255, .45), inset 0 1px 0 rgba(255, 255, 255, .14) } }
 @keyframes title-shimmer { from { background-position: 0% 0 } to { background-position: 220% 0 } }

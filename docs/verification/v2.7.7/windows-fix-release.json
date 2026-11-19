@@ -1,0 +1,21 @@
+{
+  "version": "2.7.7",
+  "name": "seal-office-setup-2.7.7.exe",
+  "bytes": 567076190,
+  "sha256": "c077e6f3e2d6d0513f7b49d148bc8edb65a7fd38d4f3e179f65f4605a2a6b38c",
+  "github": {
+    "platform": "github",
+    "skipped": true,
+    "name": "seal-office-setup-2.7.7.exe",
+    "size": 567076190,
+    "digest": "sha256:c077e6f3e2d6d0513f7b49d148bc8edb65a7fd38d4f3e179f65f4605a2a6b38c",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.7/seal-office-setup-2.7.7.exe"
+  },
+  "gitcode": {
+    "platform": "gitcode",
+    "name": "seal-office-setup-2.7.7.exe",
+    "size": 567076190,
+    "sha256": "c077e6f3e2d6d0513f7b49d148bc8edb65a7fd38d4f3e179f65f4605a2a6b38c",
+    "url": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/download/v2.7.7/seal-office-setup-2.7.7.exe"
+  }
+}

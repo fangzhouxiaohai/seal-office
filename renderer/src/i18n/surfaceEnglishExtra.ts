@@ -5,6 +5,8 @@
 // 3) JSX 表达式中拼接的片段文案（多为三段拼接，需按片段翻译才能得到通顺英文）。
 // 知识库正文、皮肤模板数据与帮助手册长文属于内容而不是界面，各自有独立英文来源，保持原语言，不在此表。
 export const 补充英文界面二: Record<string, string> = {
+  '恢复本机云会话': 'Restore local cloud session',
+  '本机保存的云账号尚未解锁。本地文件可直接使用；继续使用云服务时，macOS 可能要求输入这台 Mac 的登录密码，授权读取保存的加密凭据。': 'The cloud account saved on this device is locked. Local files remain available. To continue using cloud services, macOS may ask for this Mac\'s login password to authorize reading the saved encrypted credentials.',
   '新版本已发布，是否立即更新？更新过程中可以继续使用，下载完成后会自动打开系统安装程序。': 'An update is available. You can keep working while it downloads. The installer opens when the download finishes.',
   '安装未启动': 'Installation did not start',
   '正在下载更新，点击查看进度': 'Downloading update. View progress',

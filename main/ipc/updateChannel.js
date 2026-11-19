@@ -1,8 +1,6 @@
 // 版本更新通道：版本号取 app.getVersion()，服务器地址沿用云服务当前配置。
 const { app, shell, net } = require('electron')
 const { spawn } = require('child_process')
-const fs = require('fs')
-const path = require('path')
 const { 创建更新服务, 判定更新平台 } = require('../update/updater')
 const { 创建暂存更新 } = require('../update/stagedUpdater')
 const { AI失败结果 } = require('../ai/identityGate')
@@ -37,22 +35,20 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
     通知,
     // 安装包下载同样走 Chromium 网络栈，代理环境下可用
     请求: (地址, 选项) => net.fetch(地址, 选项),
-    打开安装包: async (文件, 发布, 任务标识) => {
+    打开安装包: async (文件) => {
       if (服务().平台 !== 'windows') {
         const 错误 = await shell.openPath(文件)
         if (错误) throw new Error('无法打开已校验的安装包：' + 错误)
         return
       }
-      const 结果路径 = path.join(app.getPath('userData'), 'verified-updates', 'install-result.json')
-      fs.rmSync(结果路径, { force: true })
+      // 直接启动已验证的 NSIS 安装程序：--updated 让安装程序等待本进程退出后静默安装并启动新版本。
+      // 先确认安装程序启动成功再退出应用，避免出现“只关闭程序、没有启动安装程序”。
       await new Promise((resolve, reject) => {
-        const helper = spawn(process.execPath, [path.join(__dirname, '../update/installAfterExit.js'), String(process.pid), 文件, 发布.sha256, String(发布.bytes), 结果路径, 任务标识], {
-          detached: true, stdio: 'ignore', windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        })
-        helper.once('error', reject)
-        helper.once('spawn', () => { helper.unref(); resolve() })
+        const 进程 = spawn(文件, ['--updated'], { detached: true, stdio: 'ignore', windowsHide: true })
+        进程.once('error', reject)
+        进程.once('spawn', () => { 进程.unref(); resolve() })
       })
-      setTimeout(() => app.quit(), 800)
+      setTimeout(() => app.quit(), 500)
     },
   }))
   ipcMain.handle('update.info', async () => {

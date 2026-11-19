@@ -75,12 +75,6 @@ function 创建暂存更新({ 平台, 当前版本, 目录, 检查, 请求 = glo
     return 文件
   }
   async function 状态() {
-    if (平台 === 'windows' && 当前.阶段 === '安装中') {
-      let 结果
-      try { 结果 = JSON.parse(fs.readFileSync(path.join(目录, 'install-result.json'), 'utf8')) }
-      catch (e) { if (e.code !== 'ENOENT') throw 错误('无法读取安装执行结果') }
-      if (结果?.任务标识 === 当前.任务标识 && 结果.成功 === false) 变更({ 阶段:'失败', 错误:String(结果.错误 || '启动安装程序失败').slice(0,200) })
-    }
     if (进行 || 当前.阶段 !== '空闲') return { ...当前 }
     清理已安装()
     const p = 读取()
@@ -92,13 +86,6 @@ function 创建暂存更新({ 平台, 当前版本, 目录, 检查, 请求 = glo
       return { ...当前 }
     }
     await 校验(p)
-    let 结果
-    try { 结果 = JSON.parse(fs.readFileSync(path.join(目录, 'install-result.json'), 'utf8')) }
-    catch (e) { if (e.code !== 'ENOENT') throw 错误('无法读取安装执行结果') }
-    if (结果?.任务标识 === p.任务标识 && 结果.成功 === false) {
-      当前 = { 阶段:'失败', 已下载:p.发布.bytes, 总大小:p.发布.bytes, 版本:p.发布.version, 任务标识:p.任务标识, 错误:String(结果.错误 || '启动安装程序失败').slice(0,200) }
-      return { ...当前 }
-    }
     当前 = { 阶段: '已就绪', 已下载: p.发布.bytes, 总大小: p.发布.bytes, 版本: p.发布.version, 任务标识: p.任务标识 }
     return { ...当前 }
   }

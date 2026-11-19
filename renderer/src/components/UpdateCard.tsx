@@ -23,7 +23,7 @@ function use自动检查(开启: boolean) {
     if (!开启) return
     let 有效 = true
     const 执行 = () => {
-      void 恢复下载状态().then(() => {
+      void 恢复下载状态().catch(() => null).then(() => {
         if (!有效) return null
         const 当前 = 取下载状态().进度
         // 正在下载或安装时不打断；已下载待安装时仍要检查，以便发现更新版本后切回“更新”
@@ -122,17 +122,6 @@ function 下载界面() {
   const 发布 = 取下载发布()
   const 强制 = Boolean(发布?.mandatory || 进度?.强制)
   const 移动端 = document.documentElement.dataset.sealPlatform === 'app'
-  useEffect(() => {
-    if (!桥接.update.下载可用) return
-    const 取消订阅 = 桥接.update.onProgress(值 => {
-      try {
-        接收下载进度(值)
-        if (取下载状态().进度 === 值 && document.documentElement.dataset.sealPlatform === 'app' && (值.阶段 === '失败' || (值.阶段 === '已就绪' && Boolean(值.错误)) || (值.强制 && ['下载中', '校验中', '已就绪', '安装中'].includes(值.阶段)))) 改变下载界面('前台')
-      } catch (错误) { modal.error({ title: '下载状态异常', content: 错误 instanceof Error ? 错误.message : '下载状态无效', okText: '确定' }) }
-    })
-    void 恢复下载状态().then(async () => { const 上次 = 取下载状态().进度; if (上次?.阶段 === '失败' && (await 读取更新平台()).平台 !== 'android') modal.error({ title: '上次更新未完成', content: 上次.错误 || '更新任务失败，请重新检查更新', okText: '确定' }) }).catch(错误 => { modal.error({ title: '更新状态读取失败', content: 错误 instanceof Error ? 错误.message : '请稍后重试', okText: '确定' }) })
-    return 取消订阅
-  }, [modal])
   useEffect(() => {
     if (进度?.阶段 !== '安装中') return
     let 有效 = true, 已提示 = false
@@ -243,7 +232,7 @@ function 更新入口() {
     }
   }
   if (下载中) return <aside className="seal-update-entry" aria-live="polite">
-    <button type="button" className="seal-update-ring" title="正在下载更新，点击查看进度" aria-label={百分比 === null ? '正在下载更新' : '正在下载更新 ' + 百分比 + '%'} onClick={() => 改变下载界面('前台')}>
+    <button type="button" className="seal-update-ring" title="正在下载更新" aria-label={百分比 === null ? '正在下载更新' : '正在下载更新 ' + 百分比 + '%'}>
       <svg viewBox="0 0 36 36" aria-hidden="true"><circle className="seal-update-ring__track" cx="18" cy="18" r="15" /><circle className={百分比 === null ? 'seal-update-ring__value is-indeterminate' : 'seal-update-ring__value'} cx="18" cy="18" r="15" pathLength="100" strokeDasharray={百分比 === null ? '25 75' : 百分比 + ' 100'} /></svg>
       <span>{百分比 === null ? '…' : 百分比 + '%'}</span>
     </button>
@@ -258,9 +247,25 @@ function 更新入口() {
 }
 
 /** 只负责展示卡片，不发起自动检查（手动检查结果也经此展示） */
+function use下载进度订阅() {
+  useEffect(() => {
+    if (!桥接.update.下载可用) return
+    return 桥接.update.onProgress(值 => {
+      try {
+        接收下载进度(值)
+        const 移动端 = document.documentElement.dataset.sealPlatform === 'app'
+        if (移动端 && 取下载状态().进度 === 值 && (值.阶段 === '失败' || (值.阶段 === '已就绪' && Boolean(值.错误)) || (值.强制 && ['下载中', '校验中', '已就绪', '安装中'].includes(值.阶段)))) 改变下载界面('前台')
+      } catch { /* 无效进度忽略，不弹窗 */ }
+    })
+  }, [])
+}
+
 export function 更新卡片宿主() {
   const 状态 = use更新卡片()
-  return <>{状态 ? <卡片 key={状态.发布.version} 发布={状态.发布} /> : null}<下载界面 /><更新入口 /></>
+  const 移动端 = document.documentElement.dataset.sealPlatform === 'app'
+  use下载进度订阅()
+  useEffect(() => { if (桥接.update.下载可用) void 恢复下载状态().catch(() => {}) }, [])
+  return <>{状态 ? <卡片 key={状态.发布.version} 发布={状态.发布} /> : null}{移动端 ? <下载界面 /> : null}<更新入口 /></>
 }
 
 /** 应用级挂载：展示卡片并按设置执行自动检查 */
