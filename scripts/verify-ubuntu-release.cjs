@@ -83,6 +83,8 @@ async function verify() {
   check(await page.evaluate("!document.querySelector('.ant-modal-confirm-error')"), 'Cold launch opens Unicode CSV argument without an error')
   const info = await page.evaluate('window.electronAPI.getAppInfo()')
   check(info.版本 === version, 'Installed renderer preload and IPC version')
+  report.updateStatus = await page.evaluate('window.electronAPI.update.status()')
+  check(report.updateStatus.成功 === true && report.updateStatus.数据?.阶段 === '空闲', '新用户目录从已安装客户端读取更新状态为空闲')
   const integrity = await page.evaluate('window.electronAPI.checkIntegrity()')
   check(integrity.成功 && integrity.完整, 'Packaged application integrity manifest')
   const options = await main.evaluate(`(()=>{const e=process.mainModule.require('electron');return e.BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences()})()`)

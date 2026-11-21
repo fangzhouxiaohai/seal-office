@@ -9,6 +9,8 @@ on:
       - 'build/artifact-names.json'
       - 'scripts/artifact-names.cjs'
       - 'main/linux/**'
+      - 'main/ipc/updateChannel*.js'
+      - 'main/update/**'
       - 'main/office/native*.js'
       - 'main/office/xlsx*.js'
       - 'renderer/src/**'
@@ -34,7 +36,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Verify platform integration
-        run: npx vitest run --config vitest.main.config.js main/linux/platform.test.js main/fileAssociation.test.js main/windows/defaultApps.test.js main/main.test.js main/integrity.test.js main/office/xlsxNamespaces.test.js main/office/xlsxCodec.test.js
+        run: >-
+          npx vitest run --config vitest.main.config.js
+          main/linux/platform.test.js main/fileAssociation.test.js main/windows/defaultApps.test.js
+          main/main.test.js main/integrity.test.js main/office/xlsxNamespaces.test.js main/office/xlsxCodec.test.js
+          main/ipc/updateChannel.test.js main/update/updater.test.js main/update/stagedUpdater.test.js
       - name: Build Ubuntu amd64 package
         # Release upload happens separately after both installed-package checks.
         run: npm run dist:ubuntu
