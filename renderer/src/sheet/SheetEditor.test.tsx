@@ -37,7 +37,7 @@ describe('表格编辑器容器', () => {
     await userEvent.click(screen.getByRole('button', { name: '打开有损表格' }))
     const 单元格 = container.querySelector('[data-地址="A1"]') as HTMLElement
     expect(单元格.getAttribute('aria-readonly')).toBe('true')
-    expect(screen.getByRole('status')).toHaveTextContent('网页样式未导入')
+    expect(screen.getByRole('status', { name: '仅查看提示' })).toHaveTextContent('仅查看')
     act(() => 状态!.set文档路径(状态!.activeDocumentId!, 'C:\\资料\\报表.slxls'))
     await waitFor(() => expect(单元格.getAttribute('aria-readonly')).toBeNull())
   })
@@ -918,7 +918,10 @@ describe('表格保存为 xlsx', () => {
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告表格' }))
-    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent('数据透视表未导入')
+    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent('仅查看')
+    await userEvent.click(screen.getByRole('button', { name: '查看兼容性详情' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('数据透视表未导入')
+    await userEvent.keyboard('{Escape}')
     expect(screen.getByRole('button', { name: '另存副本以便编辑' })).toBeInTheDocument()
     expect(screen.queryByText('表格内容可能未完整导入')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '保存' }))

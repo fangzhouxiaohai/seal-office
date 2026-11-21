@@ -4,11 +4,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 var(--space-1);
+  gap: 0 var(--space-2);
 }
 
 .seal-protected-view-bar__action {
-  margin-left: var(--space-2);
   padding: 0 var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
@@ -32,4 +31,52 @@
 .seal-warning-list {
   margin: var(--space-2) 0;
   padding-left: 20px;
+  overflow-wrap: anywhere;
+}
+
+.seal-warning-list summary { cursor: pointer; }
+.seal-warning-list summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+.seal-file-warning-dialog.ant-modal .ant-modal-content {
+  --seal-warning-dialog-inset: 24px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--seal-warning-dialog-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - var(--seal-warning-dialog-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.seal-file-warning-dialog .ant-modal-header,
+.seal-file-warning-dialog .ant-modal-footer,
+.seal-file-warning-dialog .ant-modal-confirm-title,
+.seal-file-warning-dialog .ant-modal-confirm-btns { flex: none; }
+.seal-file-warning-dialog .ant-modal-body,
+.seal-file-warning-dialog .ant-modal-confirm-body-wrapper,
+.seal-file-warning-dialog .ant-modal-confirm-body,
+.seal-file-warning-dialog .ant-modal-confirm-paragraph { min-height: 0; }
+.seal-file-warning-dialog.ant-modal-confirm .ant-modal-body,
+.seal-file-warning-dialog .ant-modal-confirm-body-wrapper,
+.seal-file-warning-dialog .ant-modal-confirm-paragraph { display: flex; flex-direction: column; }
+.seal-file-warning-dialog .ant-modal-confirm-paragraph { min-width: 0; }
+.seal-file-warning-dialog:not(.ant-modal-confirm) .ant-modal-body,
+.seal-file-warning-dialog .ant-modal-confirm-content {
+  min-height: 0;
+  overflow-y: auto;
+  max-height: none;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.seal-file-warning-dialog .ant-modal-confirm-btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
+.seal-file-warning-dialog .ant-modal-confirm-btns .ant-btn { margin-inline-start: 0; }
+
+@media (pointer: coarse) {
+  .seal-protected-view-bar__action,
+  .seal-file-warning-dialog .ant-modal-confirm-btns .ant-btn,
+  .seal-file-warning-dialog .ant-modal-close { min-height: 44px; }
 }

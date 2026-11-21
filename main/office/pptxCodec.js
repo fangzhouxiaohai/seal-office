@@ -6,6 +6,7 @@ const { 解码Xml实体 } = require('./xmlEntities')
 const { 规范Office命名空间 } = require('./ooxmlNamespaces')
 const pptxgen = require('pptxgenjs')
 const { 读取部件 } = require('./pptx/parts')
+const { 读取对象标识 } = require('./pptx/objectIds')
 const { 解析关系, 关联目标 } = require('./pptx/relations')
 const sax = require('sax')
 const { 读取图片对象, 写入图片对象, 检查图片字节, 写入音效, 读取音效 } = require('./pptx/media')
@@ -69,6 +70,43 @@ function 解码标识(名称) {
     const 原文 = Buffer.from(名称.slice(标识前缀.length), 'base64url').toString('utf8')
     return 原文.length > 0 && 原文.length <= 256 ? 原文 : null
   } catch { return null }
+}
+
+function 读取顶层形状(xml) {
+  const 形状 = [], 栈 = []
+  const 解析器 = sax.parser(true)
+  解析器.onopentag = 标签 => {
+    if (栈.at(-1)?.名称 === 'p:spTree') {
+      形状.push({ 起点: 解析器.startTagPosition - 1, 深度: 栈.length })
+    }
+    const 当前 = 形状.at(-1)
+    if (标签.name === 'p:cNvPr' && 当前 && 栈.length === 当前.深度 + 2 && !当前.终点) {
+      当前.名称 = 标签.attributes.name
+      当前.编号 = 标签.attributes.id
+    }
+    栈.push({ 名称: 标签.name })
+  }
+  解析器.onclosetag = () => {
+    栈.pop()
+    const 当前 = 形状.at(-1)
+    if (当前 && 栈.length === 当前.深度 && !当前.终点) 当前.终点 = 解析器.position
+  }
+  解析器.write(xml).close()
+  return 形状.filter(项 => 项.编号 && 项.终点 > 项.起点)
+}
+
+function 还原混合图层(xml, 顺序) {
+  if (!Array.isArray(顺序) || 顺序.length === 0) return xml
+  const 次序 = new Map(顺序.map((id, index) => [id, index]))
+  const 已知 = 读取顶层形状(xml).flatMap(形状 => {
+    const index = 次序.get(解码标识(形状.名称))
+    return index === undefined ? [] : [{ ...形状, index }]
+  })
+  const 内容 = [...已知].sort((a, b) => a.index - b.index).map(项 => xml.slice(项.起点, 项.终点))
+  for (let i = 已知.length - 1; i >= 0; i--) {
+    xml = xml.slice(0, 已知[i].起点) + 内容[i] + xml.slice(已知[i].终点)
+  }
+  return xml
 }
 
 /** 去掉颜色值里的 #，pptxgenjs 只接受无井号的十六进制 */
@@ -294,6 +332,22 @@ async function 读取pptx(数据) {
     }
     const 对象列表 = [...图片.对象列表, ...公式补充.对象列表, ...嵌入.对象列表, ...图示.对象列表]
     if (对象列表.length) 幻灯片.对象列表 = 对象列表
+    if (图片.混合图层) {
+      const 文本 = new Set(幻灯片.文本框列表.map(项 => 项.id))
+      const 成员 = new Set(对象列表.flatMap(项 => 项.子对象标识 ?? []))
+      const 对象 = new Set(对象列表.filter(项 => !成员.has(项.id)).map(项 => 项.id))
+      const 图层顺序 = 读取顶层形状(正文Xml).flatMap(形状 => {
+        const 框 = 解码标识(形状.名称) ?? `box-${幻灯片.id}-${形状.编号}`
+        const id = 读取对象标识(形状.名称, 名称, 形状.编号)
+        if (文本.has(框)) return [框]
+        return 对象.has(id) ? [id] : []
+      })
+      if (new Set(图层顺序).size === 文本.size + 对象.size && 图层顺序.length === 文本.size + 对象.size) {
+        幻灯片.图层顺序 = 图层顺序
+      } else {
+        警告.add('图片与文字图层未完整导入')
+      }
+    }
     // 图表动态播放参数与原生构建清单一起读回；构建项缺失时明确告警并丢弃对应分步动画。
     const 图表构建 = 扩展.图表构建 && typeof 扩展.图表构建 === 'object' ? 扩展.图表构建 : {}
     for (const 对象 of 幻灯片.对象列表 ?? []) {
@@ -308,7 +362,10 @@ async function 读取pptx(数据) {
       if (!幻灯片.动画序列.length) delete 幻灯片.动画序列
     }
     for (const 资源 of [...图片.资源条目, ...嵌入.资源条目, ...图示.资源条目]) 资源表.set(资源.标识, 资源)
-    for (const 原因 of [...图片.警告, ...公式补充.警告, ...嵌入.警告, ...图示.警告]) 警告.add(原因)
+    const 图层提示 = ['原生对象与普通文字图层未完整导入', '图表与文字图层未完整导入']
+    for (const 原因 of [...图片.警告, ...公式补充.警告, ...嵌入.警告, ...图示.警告]) {
+      if (!幻灯片.图层顺序 || !图层提示.includes(原因)) 警告.add(原因)
+    }
     const 备注 = await 读取幻灯片备注(压缩包, 名称, 警告)
     if (备注 !== null) 幻灯片.备注 = 备注
     // 版式归属：按关系还原母版与版式标识，不使用文件名推断
@@ -671,6 +728,7 @@ async function 写入pptx(模型) {
     const 占位符列表 = (页.文本框 ?? []).filter((框) => 框.占位符 === '标题' || 框.占位符 === '正文')
     if (占位符列表.length) xml = 写入占位符绑定(xml, 占位符列表, 版式索引.get(页.版式标识) ?? null)
     if (页.对象列表?.length) xml = await 写入图片对象(压缩包, 名称, xml, 页.对象列表, 模型.资源条目 ?? [], 页面路径)
+    xml = 还原混合图层(xml, 页.图层顺序)
     if (页.背景填充) {
       const 资源 = 页.背景填充.类型 === '图片' ? 资源条目.get(页.背景填充.资源标识) : null
       xml = await 写入背景填充(压缩包, 名称, xml, 页.背景填充, 资源)

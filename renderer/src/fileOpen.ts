@@ -14,7 +14,7 @@ import { 从二进制读取网页型旧版表格, 导入网页型旧版表格 } 
 import { 读取单文件网页 } from './office/mhtml'
 import { 内容风险警告 } from './fileWarnings'
 import { 关键内容缺失, 关键内容缺失说明, 登记待另存副本, 读取打开选择, 记住打开选择, type 打开选择 } from './fileOpenChoice'
-import { 警告列表 } from './ProtectedViewBar'
+import { 文件警告弹窗, 警告列表 } from './ProtectedViewBar'
 
 export type 打开类型 = 'word' | 'table' | 'ppt' | 'pdf'
 
@@ -341,6 +341,7 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
   }
   const 选择 = await new Promise<打开选择>(完成 => {
     ;(导入确认弹窗 ?? Modal.confirm)(只能查看 ? {
+      ...文件警告弹窗,
       title: '此文件只能查看',
       content: createElement('div', null,
         createElement('p', null, '此文件包含本机暂不支持的内容：'),
@@ -349,6 +350,7 @@ export async function 准备打开本地文件(路径: string): Promise<本地�
       okText: '仅查看', okCancel: false, maskClosable: false,
       onOk: () => { 完成('仅查看') },
     } : {
+      ...文件警告弹窗,
       title: '此文件包含本机暂不支持的内容',
       content: createElement('div', null,
         createElement('p', null, '以下内容本机暂不支持，直接保存会丢失：'),

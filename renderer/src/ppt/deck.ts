@@ -109,6 +109,7 @@ export interface 幻灯片 {
   /** 单页页脚覆盖；null 表示本页不显示页脚、日期与页码 */
   页脚?: 页脚设置 | null
   文本框列表: 文本框[]
+  图层顺序?: string[]
   /** 扩展对象在完成 PPTX 往返能力前仍须接受校验并禁止有损保存。 */
   对象列表?: 演示对象[]
 }
@@ -144,6 +145,9 @@ export type 演示对象 = {
   height: number
   旋转?: number
   锁定?: boolean
+  锁定比例?: boolean
+  创建标识?: string
+  替代文字?: string
   裁剪?: { 左: number; 上: number; 右: number; 下: number }
   资源标识?: string
   子对象标识?: string[]
@@ -301,6 +305,7 @@ export function 复制幻灯片(文稿: 演示文稿, 标识: string): 演示文
     动画序列: 原幻灯片.动画序列?.map(a => ({ ...a, id: 生成标识('animation'), 对象标识: 对象标识映射.get(a.对象标识)! })),
     id: 生成标识('slide'),
     title: `${原幻灯片.title} 副本`,
+    图层顺序: 原幻灯片.图层顺序?.map(id => 对象标识映射.get(id)).filter((id): id is string => id !== undefined),
     文本框列表: 原幻灯片.文本框列表.map((框) => ({ ...框, id: 对象标识映射.get(框.id)! })),
     对象列表: 原幻灯片.对象列表?.map((对象) => ({
       ...对象,

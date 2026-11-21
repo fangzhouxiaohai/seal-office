@@ -11,7 +11,7 @@ import { useAppStore } from '../store'
 import { 基准文件名, 扩展转类型, 记录最近文档 } from '../fileOpen'
 import { 处于受保护查看, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
 import { 领取待另存副本 } from '../fileOpenChoice'
-import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
+import { 仅查看提示条, 文件警告弹窗, 警告列表 } from '../ProtectedViewBar'
 import { htmlToDocxModel, 命令表, type CommandContext, type InsertableKind, type ViewState, type 选区格式 } from './commands'
 import { 桥接 } from '../ipc/bridge'
 import { useRealtimeDocument } from '../collaboration/useRealtimeDocument'
@@ -297,6 +297,7 @@ const DocEditor = () => {
 
   const 展示导入警告 = (警告: string[]) => {
     modal.warning({
+      ...文件警告弹窗,
       title: '文档内容可能未完整导入',
       content: React.createElement('div', null,
         React.createElement('p', null, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
@@ -325,6 +326,7 @@ const DocEditor = () => {
 
   const 提示保存保真风险 = (警告: string[]) => {
     modal.info({
+      ...文件警告弹窗,
       title: '已保存，部分效果将在 Word 或 WPS 中更新',
       content: React.createElement('div', null,
         React.createElement('p', null, '文件已覆盖保存，正文与原有结构均已保留。以下效果沿用原文件或按近似方式处理：'),
@@ -1142,6 +1144,7 @@ const DocEditor = () => {
     保真风险: 当前保真风险,
     提示保真风险: (警告: string[]) => {
       modal.warning({
+        ...文件警告弹窗,
         title: '已阻止覆盖来源文件',
         content: React.createElement('div', null,
           React.createElement('p', null, '此文件含本机暂不支持的内容，直接保存会丢失以下内容。请通过另存为保存到不同路径。'),
@@ -1152,6 +1155,7 @@ const DocEditor = () => {
     },
     确认保真另存: (警告: string[]) => new Promise<boolean>((完成) => {
       modal.confirm({
+        ...文件警告弹窗,
         title: '确认保存副本',
         content: React.createElement('div', null,
           React.createElement('p', null, '部分内容未完整导入，保存的副本可能缺少以下内容：'),

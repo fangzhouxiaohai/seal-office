@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict')
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{randomUUID,scryptSync}=require('node:crypto')
 const {createCloud}=require('../index.cjs')
 const {createService}=require('../../main/cloud/service')
-const {seal,unseal}=require('../../main/cloud/crypto')
+const {seal,unseal,recoveryKey}=require('../../main/cloud/crypto')
 const {listenLoopback}=require('./collaborationFixture.cjs')
 async function fixture(t,quota){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'seal-cloud-')),codes=new Map();let time=Date.now()
@@ -40,11 +40,11 @@ test('默认关闭、协议必需、账号隔离、实际占用硬限制及管�
   assert.ok(overview.users.every(u=>u.created>0&&u.lastAction>0))
   assert.ok(!JSON.stringify(overview).includes('13800000001'));assert.ok(!JSON.stringify(overview).includes('13800000002'))
 })
-test('真实客户端加密、恢复密钥、下载解密、重命名、公开撤回与清空停用',async t=>{
+test('真实客户端加密、自动解锁、下载解密、重命名、公开撤回与清空停用',async t=>{
   const f=await fixture(t),safeStorage={isEncryptionAvailable:()=>true,encryptString:s=>seal(Buffer.alloc(32,1),Buffer.from(s),'test-safe'),decryptString:b=>unseal(Buffer.alloc(32,1),b,'test-safe').toString()}
   const local=fs.mkdtempSync(path.join(os.tmpdir(),'seal-client-'));t.after(()=>fs.rmSync(local,{recursive:true,force:true}))
   const client=createService({directory:local,safeStorage});await client.setServer(f.url);await client.sendCode('13800000003');await client.login('13800000003',f.codes.get('13800000003'))
-  const enabled=await client.enable(true);assert.equal(enabled.account.autosave,false);assert.equal(enabled.recovery.length,64)
+  const enabled=await client.enable(true);assert.equal(enabled.account.autosave,false);assert.equal(enabled.unlocked,true);assert.equal(enabled.recovery,undefined)
   await client.setAutosave(true)
   const folder=await client.folder('机密目录');const saved=await client.save({linkId:'doc',name:'机密资料.txt',data:Buffer.from('机密内容-客户数据').toString('base64'),parent:folder.id})
   assert.equal(saved.statuses[saved.id],'云端已保存');assert.equal(fs.readFileSync(path.join(f.dir,'seal.sqlite')).includes(Buffer.from('机密')),false)
@@ -61,10 +61,65 @@ test('真实客户端加密、恢复密钥、下载解密、重命名、公开�
   assert.equal(f.cloud.db.one('SELECT text,bytes FROM publications WHERE id=?',[publicItem.id]).bytes,0)
   assert.equal(fs.existsSync(path.join(f.dir,'objects',publicItem.id)),false)
   assert.equal((await f.request('/v1/admin/publications/'+publicItem.id,{status:'approved'},admin,'PATCH')).status,400)
-  const rootEnvelope=client.status().account.envelope;await assert.rejects(client.logout());client.ackRecovery();await client.logout();f.tick();await client.sendCode('13800000003');await client.login('13800000003',f.codes.get('13800000003'));assert.equal(client.status().unlocked,false)
-  await assert.rejects(client.unlock('0'.repeat(64)));await client.unlock(enabled.recovery);assert.equal(client.status().account.envelope,rootEnvelope)
+  await client.logout();f.tick();await client.sendCode('13800000003');await client.login('13800000003',f.codes.get('13800000003'));assert.equal(client.status().unlocked,true)
+  assert.equal(Buffer.from((await client.download(saved.id)).data,'base64').toString(),'机密内容-客户数据')
   f.tick();await client.sendCode(null,'purge');await client.purge(f.codes.get('13800000003'));assert.equal(client.status().account.enabled,false);assert.equal(client.status().account.autosave,false);assert.equal(f.cloud.usage(enabled.account.id),0)
   await assert.rejects(client.setAutosave(true));const reopened=await client.enable(true);assert.equal(reopened.account.autosave,false);assert.equal((await client.list()).length,0)
+})
+
+test('已解锁和锁定的旧版均能迁移，短信重置撤销会话并保留历史文件', async t => {
+  const f = await fixture(t)
+  const safeStorage = {
+    isEncryptionAvailable: () => true,
+    encryptString: text => seal(Buffer.alloc(32, 5), Buffer.from(text), 'test-device'),
+    decryptString: bytes => unseal(Buffer.alloc(32, 5), bytes, 'test-device').toString(),
+  }
+  const createClient = () => createService({ directory: fs.mkdtempSync(path.join(f.dir, 'device-')), safeStorage, defaultUrl: f.url })
+  for (const [phone, alreadyUnlocked] of [['13800000101', true], ['13800000102', false]]) {
+    const signedIn = await f.login(phone)
+    const { id } = signedIn.account
+    const root = Buffer.alloc(32, alreadyUnlocked ? 7 : 8)
+    const recovery = 'd'.repeat(64)
+    const envelope = seal(recoveryKey(recovery, id), root, `seal-root:${id}`).toString('base64')
+    assert.equal((await f.request('/v1/space/enable', { consent:true, agreementVersion:'2026-10-08', envelope }, signedIn.token)).status, 200)
+    const oldAccount = (await f.request('/v1/me', null, signedIn.token)).body
+    const oldDirectory = fs.mkdtempSync(path.join(f.dir, 'old-'))
+    const local = { url:f.url, token:signedIn.token, account:oldAccount, owner:id, root:root.toString('base64') }
+    fs.writeFileSync(path.join(oldDirectory, 'cloud.secure'), safeStorage.encryptString(JSON.stringify(local)))
+    const legacy = createService({ directory:oldDirectory, safeStorage })
+    const saved = await legacy.save({ linkId:'legacy', name:'旧版文件.txt', data:Buffer.from('迁移前第一版').toString('base64') })
+    await legacy.save({ linkId:'legacy', name:'旧版文件.txt', data:Buffer.from('迁移前第二版').toString('base64') })
+    assert.equal((await f.request('/v1/space/key', null, signedIn.token)).status, 409)
+    assert.equal((await f.request('/v1/space/key', { key:Buffer.alloc(32, 10).toString('base64'), envelope }, signedIn.token)).status, 400)
+    if (alreadyUnlocked) {
+      await legacy.refresh()
+    } else {
+      fs.writeFileSync(path.join(oldDirectory, 'cloud.secure'), safeStorage.encryptString(JSON.stringify({ ...local, root:null })))
+      const locked = createService({ directory:oldDirectory, safeStorage })
+      await locked.refresh()
+      assert.equal(locked.status().unlocked, false)
+      await assert.rejects(locked.unlock('0'.repeat(64)))
+      await locked.unlock(recovery)
+      assert.equal(locked.status().unlocked, true)
+    }
+    const fresh = createClient()
+    f.tick(); await fresh.sendCode(phone); await fresh.login(phone, f.codes.get(phone))
+    assert.equal(fresh.status().unlocked, true)
+    const storedBefore = f.cloud.db.one('SELECT vault_key FROM users WHERE id=?', [id]).vault_key
+    assert.notEqual(storedBefore, root.toString('base64'))
+    f.tick(); await fresh.sendCode(null, 'space-key-reset')
+    const otp = f.codes.get(phone)
+    await assert.rejects(fresh.resetSpaceKey('000000'))
+    await fresh.resetSpaceKey(otp)
+    await assert.rejects(fresh.resetSpaceKey(otp))
+    assert.notEqual(f.cloud.db.one('SELECT vault_key FROM users WHERE id=?', [id]).vault_key, storedBefore)
+    assert.equal((await f.request('/v1/space/key', null, signedIn.token)).status, 401)
+    assert.equal((await f.request('/v1/space/key')).status, 401)
+    const versions = (await fresh.versions(saved.id)).items
+    assert.equal(versions.length, 2)
+    assert.equal(Buffer.from((await fresh.download(saved.id, versions[1].id)).data,'base64').toString(),'迁移前第一版')
+    assert.equal(Buffer.from((await fresh.download(saved.id)).data,'base64').toString(),'迁移前第二版')
+  }
 })
 test('分块上传位置、版本冲突与目录递归回收站',async t=>{
   const f=await fixture(t),a=await f.login('13800000004');await f.request('/v1/space/enable',{consent:true,envelope:'x',agreementVersion:'2026-10-08'},a.token)

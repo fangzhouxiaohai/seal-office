@@ -137,6 +137,8 @@ export interface Sheet {
   合并区域: string[]
   /** 图片以左上角单元格为锚点，旧版工作表可能缺少该字段。 */
   图片?: SheetImage[]
+  结构化表格?: Array<{ 名称: string; 范围: string; 列: string[]; 样式: 'TableStyleLight1'; 带状行: boolean }>
+  条件格式?: Array<{ 范围: string; 公式: string; 优先级: number; 字体颜色?: string; 填充颜色?: string; 填充方式?: '背景色' | '纯色' }>
   页面设置: 页面设置
   冻结?: { 行: number; 列: number }
   /** 兼容旧版单列单值 { 列, 值 } 与 2.7.1 起的多列多条件模型 */

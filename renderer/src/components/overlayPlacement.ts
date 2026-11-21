@@ -11,21 +11,21 @@ export function 合并矩形(矩形: 边界矩形[]): 边界矩形 | null {
   const right = Math.max(...有效.map(r => r.right)), bottom = Math.max(...有效.map(r => r.bottom))
   return { left, top, right, bottom, width: right - left, height: bottom - top }
 }
-export function 读取可见矩形(元素: Element | Iterable<Element> | null): 边界矩形 | null {
+export function 读取可见矩形(元素: Element | Iterable<Element> | null, 测量: (项: Element) => 边界矩形 = 项 => 项.getBoundingClientRect()): 边界矩形 | null {
   if (!元素) return null
   const 列表 = 元素 instanceof Element ? [元素] : Array.from(元素)
   const 结果: 边界矩形[] = []
   for (const 项 of 列表) {
-    const r = 项.getBoundingClientRect()
-    const 可见 = 裁剪可见矩形(r, 项.parentElement)
+    const r = 测量(项)
+    const 可见 = 裁剪可见矩形(r, 项.parentElement, 测量)
     if (可见) 结果.push(可见)
   }
   return 合并矩形(结果)
 }
-function 裁剪可见矩形(r: 边界矩形, 起始元素: Element | null): 边界矩形 | null {
+function 裁剪可见矩形(r: 边界矩形, 起始元素: Element | null, 测量: (项: Element) => 边界矩形 = 项 => 项.getBoundingClientRect()): 边界矩形 | null {
     let left = Math.max(0, r.left), top = Math.max(0, r.top), right = Math.min(window.innerWidth, r.right), bottom = Math.min(window.innerHeight, r.bottom)
     for (let 父 = 起始元素; 父; 父 = 父.parentElement) {
-      const 样式 = getComputedStyle(父), p = 父.getBoundingClientRect()
+    const 样式 = getComputedStyle(父), p = 测量(父)
       if (p.width > 0 && /auto|scroll|hidden|clip/.test(样式.overflowX || 样式.overflow)) { left = Math.max(left, p.left); right = Math.min(right, p.right) }
       if (p.height > 0 && /auto|scroll|hidden|clip/.test(样式.overflowY || 样式.overflow)) { top = Math.max(top, p.top); bottom = Math.min(bottom, p.bottom) }
     }

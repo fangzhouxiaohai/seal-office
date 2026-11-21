@@ -12,13 +12,14 @@ afterEach(()=>{
 // 模拟云服务节点与上传会话，便于复现“云端文件已被删除”后再次保存的链路。
 function 建立传输(){
   const 节点=new Map(),上传=new Map(),创建记录=[]
+  let envelope
   const 失败=(状态,消息)=>Object.assign(new Error(消息),{status:状态})
   const 解析=请求=>{if(!请求.body||!请求.body.length)return {};return JSON.parse(请求.body.toString())}
   const transport=async(url,请求={})=>{
     const 方法=(请求.method||'GET').toUpperCase(),纯=url.replace(/^https?:\/\/[^/]+/,'').replace(/^\/api(?=\/v1\/)/,'')
     if(纯==='/v1/auth/login')return {token:'测试令牌',account:{id:'用户',enabled:false,autosave:true,used:0,quota:10**9}}
-    if(纯==='/v1/space/enable')return {id:'用户',enabled:true,autosave:true,used:0,quota:10**9}
-    if(纯==='/v1/me')return {id:'用户',enabled:true,autosave:true,used:0,quota:10**9}
+    if(纯==='/v1/space/enable'){envelope=解析(请求).envelope;return {id:'用户',enabled:true,autosave:true,used:0,quota:10**9,envelope}}
+    if(纯==='/v1/me')return {id:'用户',enabled:true,autosave:true,used:0,quota:10**9,envelope}
     if(纯==='/v1/nodes'&&方法==='GET')return {items:[...节点.values()]}
     if(纯==='/v1/nodes'&&方法==='POST'){const 数据=解析(请求);if(节点.has(数据.id))throw 失败(409,'已存在');节点.set(数据.id,{id:数据.id,kind:数据.kind,meta:数据.meta});创建记录.push(数据.id);return {id:数据.id}}
     if(纯==='/v1/uploads'&&方法==='POST'){const 数据=解析(请求);if(!节点.has(数据.nodeId))throw 失败(404,'云文件不存在或已删除');const id='up'+上传.size;上传.set(id,{id,nodeId:数据.nodeId,offset:0});return {id,offset:0}}

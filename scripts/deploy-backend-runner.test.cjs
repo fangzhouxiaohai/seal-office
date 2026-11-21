@@ -56,7 +56,7 @@ test('公网只读探针验证后台摘要、拒绝未授权及新旧客户端�
   await assert.rejects(probe('2.7.2',{fetcher,homeHash:'0'.repeat(64)}),/后台首页/)
 })
 test('指针原子切换仅接受预期基线，并保留 previous-release', { skip: process.platform === 'win32' ? '需在 Linux 服务器隔离目录验证真实符号链接' : false }, () => {
-  const root=fs.mkdtempSync(path.join(os.tmpdir(),'seal-backend-switch-'))
+  const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'seal-backend-switch-')))
   try {
     fs.mkdirSync(path.join(root,'releases','old'),{recursive:true});fs.mkdirSync(path.join(root,'releases','new'),{recursive:true})
     fs.symlinkSync(path.join(root,'releases','old'),path.join(root,'current'),'dir');fs.writeFileSync(path.join(root,'previous-release'),'历史备份')

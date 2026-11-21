@@ -52,6 +52,9 @@ async function openStore(directory) {
   if(!query('PRAGMA table_info(versions)').some(c=>c.name==='upload_id'))db.run('ALTER TABLE versions ADD COLUMN upload_id TEXT')
   if(!query('PRAGMA table_info(releases)').some(c=>c.name==='withdrawn'))db.run('ALTER TABLE releases ADD COLUMN withdrawn INTEGER DEFAULT 0')
   if(!query('PRAGMA table_info(releases)').some(c=>c.name==='asset_id'))db.run('ALTER TABLE releases ADD COLUMN asset_id TEXT')
+  const userColumns = new Set(query('PRAGMA table_info(users)').map(column => column.name))
+  if (!userColumns.has('vault_key')) db.run('ALTER TABLE users ADD COLUMN vault_key TEXT')
+  if (!userColumns.has('vault_revision')) db.run('ALTER TABLE users ADD COLUMN vault_revision INTEGER NOT NULL DEFAULT 0')
   for(const session of query('SELECT s.* FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE d.session_hash IS NULL'))db.run('INSERT INTO session_devices VALUES(?,?,?,?,?,?)',[session.hash,session.user_id,randomUUID(),'已登录设备',session.expires-30*86400000,session.expires-30*86400000])
   const write = () => {
     const temp = filename + '.tmp'

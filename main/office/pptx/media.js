@@ -11,11 +11,29 @@ const zlib = require('zlib')
 const sax = require('sax')
 const { 读取关系 } = require('./relations')
 const { 读取部件 } = require('./parts')
+const { 解码Xml实体 } = require('../xmlEntities')
 
 const 属性 = (标签, 键) => 标签.match(new RegExp(`\\b${键}=["']([^"']*)["']`))?.[1]
 const 转义Xml = 值 => String(值).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const 布尔真值 = 值 => ['1','true'].includes(值)
-const 锁定属性未保真 = 属性表 => Object.entries(属性表).some(([键,值]) => !['noMove','noResize'].includes(键) || !['0','1','false','true'].includes(值)) || 布尔真值(属性表.noMove) !== 布尔真值(属性表.noResize)
+const 命名空间声明 = 键 => 键 === 'xmlns' || 键.startsWith('xmlns:')
+const 布尔属性合法 = 值 => ['0','1','false','true'].includes(值)
+const 锁定属性未保真 = (属性表, 支持比例锁定 = false) => Object.entries(属性表).some(([键,值]) =>
+  !命名空间声明(键) && ((!['noMove','noResize'].includes(键) && !(支持比例锁定 && 键 === 'noChangeAspect')) || !布尔属性合法(值))) ||
+  布尔真值(属性表.noMove) !== 布尔真值(属性表.noResize)
+const 创建标识扩展 = '{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}'
+const 创建标识空间 = 'http://schemas.microsoft.com/office/drawing/2014/main'
+const 创建标识格式 = /^\{[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\}$/i
+
+function 读取图片创建标识(片段) {
+  const 元数据 = 片段.match(/<p:cNvPr\b[^>]*>([\s\S]*?)<\/p:cNvPr>/)?.[1]
+  const 扩展 = 元数据?.match(/<a:extLst\b(?:\s+xmlns(?::[\w.-]+)?=["'][^"']*["'])*\s*>\s*<a:ext\s+uri=["']([^"']+)["']\s*>\s*<a16:creationId\b([^>]*?)\s*\/>\s*<\/a:ext>\s*<\/a:extLst>/)
+  if (!扩展 || 扩展[1].toUpperCase() !== 创建标识扩展) return null
+  const 属性片段 = 扩展[2], 标识 = 属性(属性片段, 'id')
+  if (!创建标识格式.test(标识 ?? '') || 属性(属性片段, 'xmlns:a16') !== 创建标识空间 ||
+      !/^\s*$/.test(属性片段.replace(/\s+(?:id|xmlns:a16)=["'][^"']*["']/g, ''))) return null
+  return { 标识, 节点: 扩展[0] }
+}
 const 编码标识 = 标识 => `seal-id:${Buffer.from(标识, 'utf8').toString('base64url')}`
 const 转EMU = 值 => Math.round(值 * 12700)
 const 转像素 = 值 => Number(值) / 12700
@@ -180,7 +198,13 @@ async function 写入图片对象(包, 路径, xml, 对象列表, 资源列表, 
     关系Xml = 关系Xml.replace('</Relationships>', `<Relationship Id="${关系标识}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${资源.标识}.${扩展}"/></Relationships>`)
     const 裁剪 = 对象.裁剪 ?? { 左: 0, 上: 0, 右: 0, 下: 0 }
     const 编号值 = 编号++
-    return `<p:pic><p:nvPicPr><p:cNvPr id="${编号值}" name="${编码标识(对象.id)}"${链接子元素 ? `>${链接子元素}</p:cNvPr>` : '/>'}<p:cNvPicPr><a:picLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${关系标识}"/><a:srcRect l="${Math.round(裁剪.左 * 100000)}" t="${Math.round(裁剪.上 * 100000)}" r="${Math.round(裁剪.右 * 100000)}" b="${Math.round(裁剪.下 * 100000)}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm rot="${Math.round((对象.旋转 ?? 0) * 60000)}"><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
+    if (对象.创建标识 !== undefined && !创建标识格式.test(对象.创建标识)) throw new Error('图片创建标识无效')
+    if (对象.锁定比例 !== undefined && typeof 对象.锁定比例 !== 'boolean') throw new Error('图片纵横比锁定无效')
+    const 创建信息 = 对象.创建标识 ? `<a:extLst><a:ext uri="${创建标识扩展}"><a16:creationId xmlns:a16="${创建标识空间}" id="${对象.创建标识}"/></a:ext></a:extLst>` : ''
+    const 属性内容 = 链接子元素 + 创建信息
+    const 比例锁 = 对象.锁定比例 ? ' noChangeAspect="1"' : ''
+    const 描述属性 = typeof 对象.替代文字 === 'string' ? ` descr="${转义Xml(对象.替代文字)}"` : ''
+    return `<p:pic><p:nvPicPr><p:cNvPr id="${编号值}" name="${编码标识(对象.id)}"${描述属性}${属性内容 ? `>${属性内容}</p:cNvPr>` : '/>'}<p:cNvPicPr><a:picLocks noMove="${对象.锁定 ? 1 : 0}" noResize="${对象.锁定 ? 1 : 0}"${比例锁}/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${关系标识}"/><a:srcRect l="${Math.round(裁剪.左 * 100000)}" t="${Math.round(裁剪.上 * 100000)}" r="${Math.round(裁剪.右 * 100000)}" b="${Math.round(裁剪.下 * 100000)}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm rot="${Math.round((对象.旋转 ?? 0) * 60000)}"><a:off x="${转EMU(对象.x)}" y="${转EMU(对象.y)}"/><a:ext cx="${转EMU(对象.width)}" cy="${转EMU(对象.height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
   }
   const 内容 = 对象列表.filter(项 => !成员.has(项.id)).map(生成).join('')
   包.file(关系路径, 关系Xml); 包.file('[Content_Types].xml', 类型Xml)
@@ -241,7 +265,7 @@ async function 读取图片对象(包, 路径, xml, 页码 = Number(路径.match
   const 对象列表 = [...外部.对象列表,...原生.对象列表,...图表.对象列表], 资源表 = new Map(), 警告 = [...外部.警告,...原生.警告,...图表.警告]
   const 已识别媒体片段 = []
   const 首图 = 原生.剩余.search(/<p:pic\b/), 文字位置 = Array.from(原生.剩余.matchAll(/<p:sp\b[^>]*>[\s\S]*?<\/p:sp>/g)).filter(项 => !项[0].includes('descr="seal-ink:')).map(项 => 项.index)
-  if (首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)) 警告.push('图片与文字图层未完整导入')
+  const 混合图层 = 首图 >= 0 && 文字位置.some(位置 => 位置 > 首图)
   if (/<p:pic\b[^>]*\/>/.test(xml)) 警告.push('图片未导入')
   for (const 匹配 of xml.matchAll(/<p:pic\b[^>]*>([\s\S]*?)<\/p:pic>/g)) {
     const 内容 = 匹配[1]
@@ -293,21 +317,23 @@ async function 读取图片对象(包, 路径, xml, 页码 = Number(路径.match
       已识别媒体片段.push(匹配[0])
       continue
     }
+    const 创建信息 = 读取图片创建标识(内容)
+    const 待检查 = 创建信息 ? 内容.replace(创建信息.节点, '') : 内容
     const 支持标签 = new Set(['p:pic','p:nvPicPr','p:cNvPr','p:cNvPicPr','p:nvPr','p:blipFill','p:spPr','a:picLocks','a:blip','a:srcRect','a:stretch','a:fillRect','a:xfrm','a:off','a:ext','a:prstGeom','a:avLst','a:hlinkClick'])
     const 图片名称 = 属性(内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? '', 'name') || String(对象列表.length + 1)
     const 定位 = '第 ' + 页码 + ' 页图片「' + 图片名称 + '」'
-    for (const 标签 of new Set(Array.from(内容.matchAll(/<([\w:]+)\b/g), 项 => 项[1]))) {
+    for (const 标签 of new Set(Array.from(待检查.matchAll(/<([\w:]+)\b/g), 项 => 项[1]))) {
       if (!支持标签.has(标签)) 警告.push(定位 + (标签 === 'a:alphaModFix' ? '的透明度未导入，图片按原始不透明度显示' : '的效果 ' + 标签 + ' 未导入'))
     }
-    const 支持属性 = { 'p:cNvPr': ['id','name'], 'a:picLocks': ['noMove','noResize'], 'a:blip': ['r:embed'], 'a:srcRect': ['l','t','r','b'], 'a:fillRect': ['l','t','r','b'], 'a:xfrm': ['rot','flipH','flipV'], 'a:off': ['x','y'], 'a:ext': ['cx','cy'], 'a:prstGeom': ['prst'] }
+    const 支持属性 = { 'p:cNvPr': ['id','name','descr'], 'a:picLocks': ['noMove','noResize','noChangeAspect'], 'a:blip': ['r:embed'], 'a:srcRect': ['l','t','r','b'], 'a:fillRect': ['l','t','r','b'], 'a:xfrm': ['rot','flipH','flipV'], 'a:off': ['x','y'], 'a:ext': ['cx','cy'], 'a:prstGeom': ['prst'] }
     const 属性解析器 = sax.parser(true)
     属性解析器.onopentag = 标签 => {
       for (const 键 of Object.keys(标签.attributes)) {
-        if (支持标签.has(标签.name) && !(支持属性[标签.name] ?? []).includes(键)) 警告.push(定位 + '的属性 ' + 标签.name + '@' + 键 + ' 未完整导入')
+        if (!命名空间声明(键) && 支持标签.has(标签.name) && !(支持属性[标签.name] ?? []).includes(键)) 警告.push(定位 + '的属性 ' + 标签.name + '@' + 键 + ' 未完整导入')
       }
       if (标签.name === 'a:xfrm' && ['flipH','flipV'].some(键 => 标签.attributes[键] !== undefined && !['0','false'].includes(标签.attributes[键]))) 警告.push('图片效果未完整导入')
     }
-    属性解析器.write(`<p:pic>${内容}</p:pic>`).close()
+    属性解析器.write(`<p:pic>${待检查}</p:pic>`).close()
     const 嵌入 = 属性(内容.match(/<a:blip\b[^>]*>/)?.[0] ?? '', 'r:embed')
     const 关联 = 关系.get(嵌入)
     if (!关联 || 关联.外部 || !关联.类型.endsWith('/image')) throw new Error('图片嵌入关系缺失或使用外部链接')
@@ -321,18 +347,20 @@ async function 读取图片对象(包, 路径, xml, 页码 = Number(路径.match
     const 裁剪 = 内容.match(/<a:srcRect\b[^>]*>/)?.[0] ?? ''
     const 裁剪值 = { 左: Number(属性(裁剪, 'l') ?? 0) / 100000, 上: Number(属性(裁剪, 't') ?? 0) / 100000, 右: Number(属性(裁剪, 'r') ?? 0) / 100000, 下: Number(属性(裁剪, 'b') ?? 0) / 100000 }
     const 属性标签 = 内容.match(/<p:cNvPr\b[^>]*>/)?.[0] ?? ''
+    const 描述 = 属性(属性标签, 'descr')
     const 锁标签 = 内容.match(/<a:picLocks\b[^>]*>/)?.[0] ?? ''
     const 锁定值 = 键 => 布尔真值(属性(锁标签, 键))
     const 链接解析 = 解析链接(内容.match(/<p:cNvPr\b[^>]*>[\s\S]*?<\/p:cNvPr>/)?.[0] ?? '', 关系)
     if (链接解析.警告) 警告.push(链接解析.警告)
-    if (锁定属性未保真(Object.fromEntries(Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g),项=>[项[1],项[2]])))) 警告.push('图片锁定属性未完整导入')
+    if (锁定属性未保真(Object.fromEntries(Array.from(锁标签.matchAll(/\b([\w:]+)=["']([^"']*)["']/g),项=>[项[1],项[2]])), true)) 警告.push('图片锁定属性未完整导入')
     const 旋转 = Number(属性(变换, 'rot') ?? 0) / 60000
     if (/\bflip[HV]="(?:1|true)"|<a:(?:effectLst|effectDag|tile|duotone|lum|alphaModFix|ln|custGeom)\b|<a:prstGeom\b[^>]*prst="(?!rect")/.test(内容)) 警告.push('图片效果未完整导入')
     const 填充区域 = 内容.match(/<a:fillRect\b[^>]*>/)?.[0] ?? ''
     if (['l','t','r','b'].some(名称 => Number(属性(填充区域, 名称) ?? 0) !== 0)) 警告.push('图片填充区域未完整导入')
     const 几何值 = [属性(位置,'x'),属性(位置,'y'),属性(尺寸,'cx'),属性(尺寸,'cy')].map(Number)
     if (!几何值.every(Number.isFinite) || 几何值[2] <= 0 || 几何值[3] <= 0 || !Number.isFinite(旋转) || Object.values(裁剪值).some(值 => !Number.isFinite(值) || 值 < 0 || 值 >= 1) || 裁剪值.左 + 裁剪值.右 >= 1 || 裁剪值.上 + 裁剪值.下 >= 1) throw new Error('图片几何或裁剪数据损坏')
-    对象列表.push({ id: 读取对象标识(属性(属性标签, 'name'), 路径, 属性(属性标签, 'id')), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识, ...(链接解析.链接 ? { 链接: 链接解析.链接 } : {}) })
+    对象列表.push({ id: 读取对象标识(属性(属性标签, 'name'), 路径, 属性(属性标签, 'id')), 类型: '图片', x: 转像素(属性(位置, 'x')), y: 转像素(属性(位置, 'y')), width: 转像素(属性(尺寸, 'cx')), height: 转像素(属性(尺寸, 'cy')), ...(旋转 ? { 旋转 } : {}), ...(锁定值('noMove') ? { 锁定: true } : {}), ...(锁定值('noChangeAspect') ? { 锁定比例: true } : {}), ...(创建信息 ? { 创建标识: 创建信息.标识 } : {}), ...(Object.values(裁剪值).some(Boolean) ? { 裁剪: 裁剪值 } : {}), 资源标识: 标识, ...(链接解析.链接 ? { 链接: 链接解析.链接 } : {}) })
+    if (描述 !== undefined) 对象列表.at(-1).替代文字 = 解码Xml实体(描述, '演示')
   }
   // 组合按原生对象树读取；非恒等坐标变换保留风险提示，不能覆盖来源。
   const 栈 = [], 组合列表 = [], 顺序 = []
@@ -393,7 +421,7 @@ async function 读取图片对象(包, 路径, xml, 页码 = Number(路径.match
   }
   // 已识别的媒体与笔迹不再参与「未导入内容」扫描，避免重复告警。
   for (const 片段 of 已识别媒体片段) 剩余Xml = 剩余Xml.replace(片段, '')
-  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告, 图表剩余: 剩余Xml }
+  return { 对象列表, 资源条目: Array.from(资源表.values()), 警告, 图表剩余: 剩余Xml, 混合图层 }
 }
 
 module.exports = { 检查图片字节, 读取图片对象, 写入图片对象, 写入音效, 读取音效 }

@@ -5,11 +5,14 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import urllib.error
 import urllib.request
 
 VERSION = '26.8.1'
 NAME = f'LibreOffice_{VERSION}_Win_x86-64.msi'
 URL = f'https://download.documentfoundation.org/libreoffice/stable/{VERSION}/win/x86_64/{NAME}'
+ARCHIVE_NAME = f'LibreOffice_{VERSION}.1_Win_x86-64.msi'
+ARCHIVE_URL = f'https://downloadarchive.documentfoundation.org/libreoffice/old/{VERSION}.1/win/x86_64/{ARCHIVE_NAME}'
 SHA256 = 'c6298b10cfa1748bcbedad94c62ce771e240e5021bfd6d7a967cd571b04b5312'
 ROOT = Path(__file__).resolve().parent.parent
 DESTINATION = ROOT / '.upgrade-private' / 'office-runtime'
@@ -37,7 +40,13 @@ def prepare():
     if not installer.exists() or digest(installer) != SHA256:
         print(f'Downloading LibreOffice {VERSION} from the official distribution...', flush=True)
         temporary = installer.with_suffix('.download')
-        with urllib.request.urlopen(URL, timeout=120) as remote, temporary.open('wb') as output:
+        try:
+            remote = urllib.request.urlopen(URL, timeout=120)
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+            remote = urllib.request.urlopen(ARCHIVE_URL, timeout=120)
+        with remote, temporary.open('wb') as output:
             shutil.copyfileobj(remote, output, 1024 * 1024)
         if digest(temporary) != SHA256:
             raise RuntimeError('Official conversion runtime SHA-256 verification failed')

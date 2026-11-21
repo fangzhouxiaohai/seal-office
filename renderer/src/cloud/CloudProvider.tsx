@@ -3,7 +3,7 @@ import {App,Button,Checkbox,Input,Modal} from 'antd'
 import {CloudLoginForm} from './CloudLoginForm'
 import {AccountSecurity} from './AccountSecurity'
 import {AI身份提示事件,AI登录原因,检查AI身份,提示AI身份,requireAIIdentity,type AI身份提示} from './aiIdentity'
-export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string;hasPassword?:boolean;identityVerified?:boolean;identityMethod?:'phone'}
+export interface CloudAccount {id:string;phone:string;enabled:boolean;autosave:boolean;used:number;quota:number;envelope?:string;hasPassword?:boolean;identityVerified?:boolean;identityMethod?:'phone';keyRecovery?:number;keyRevision?:number}
 export interface CloudState {sessionLocked?:boolean;account:CloudAccount|null;unlocked:boolean;statuses:Record<string,string>;pending:number;recoveryPending?:string;deletionPending?:boolean}
 const initial:CloudState={account:null,unlocked:false,statuses:{},pending:0}
 export async function cloudCall<T=any>(action:string,input?:unknown):Promise<T>{
@@ -22,9 +22,21 @@ export function CloudProvider({children}:{children:React.ReactNode}){
   const {modal,message}=App.useApp(),[state,setState]=useState(initial),[open,setOpen]=useState(false),[busy,setBusy]=useState(false)
   const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[agreed,setAgreed]=useState(false),[recovery,setRecovery]=useState(''),[shownRecovery,setShownRecovery]=useState(''),[confirmedRecovery,setConfirmedRecovery]=useState(false),[cooldown,setCooldown]=useState(0)
   const [loginError,setLoginError]=useState(''),operationPending=useRef(false)
+  const [resetOpen,setResetOpen]=useState(false),[resetCode,setResetCode]=useState(''),[resetCooldown,setResetCooldown]=useState(0)
   const [reason,setReason]=useState(''),[forceLogin,setForceLogin]=useState(false)
   const refresh=useCallback(async()=>{const result=await cloudCall<CloudState>('status');setState(result)},[])
-  useEffect(()=>{void refresh().catch(e=>message.error(e.message))},[refresh,message])
+  useEffect(()=>{
+    let active = true
+    void cloudCall<CloudState>('status').then(async result => {
+      if (!active) return
+      setState(result)
+      if (result.account?.enabled && (result.unlocked || result.account.keyRevision)) {
+        const synced = await cloudCall<CloudState>('refresh')
+        if (active) setState(synced)
+      }
+    }).catch(() => {})
+    return () => { active = false }
+  },[])
   useEffect(()=>{
     const prompt=(event:Event)=>{const detail=(event as CustomEvent<AI身份提示>).detail;if(!detail)return;if(!detail.loginRequired){modal.error({title:'AI 账号核验未完成',content:detail.error});return}setReason(detail.reason||AI登录原因);setForceLogin(true);setCode('');setLoginError('');setOpen(true);void refresh().catch(()=>{})}
     window.addEventListener(AI身份提示事件,prompt);return()=>window.removeEventListener(AI身份提示事件,prompt)
@@ -38,9 +50,10 @@ export function CloudProvider({children}:{children:React.ReactNode}){
     return()=>{cancelled=true;clearInterval(timer)}
   },[open,state.deletionPending,refresh,message])
   useEffect(()=>{if(!cooldown)return;const timer=window.setTimeout(()=>setCooldown(cooldown-1),1000);return()=>clearTimeout(timer)},[cooldown])
+  useEffect(()=>{if(!resetCooldown)return;const timer=window.setTimeout(()=>setResetCooldown(resetCooldown-1),1000);return()=>clearTimeout(timer)},[resetCooldown])
   const run=async(task:()=>Promise<any>,inline=false)=>{if(operationPending.current)return;operationPending.current=true;setBusy(true);if(inline)setLoginError('');try{await task()}catch(e){const error=e instanceof Error?e.message:'请稍后重试';if(inline)setLoginError(error);else modal.error({title:'云端操作未完成',content:error})}finally{await refresh().catch(()=>{});operationPending.current=false;setBusy(false)}}
   const send=()=>{if(cooldown||!/^1[3-9]\d{9}$/.test(phone))return;void run(async()=>{await cloudCall('code',{phone});setCooldown(60);message.success('验证码已发送')},true)}
-  const enable=()=>run(async()=>{const result=await cloudCall<CloudState&{recovery:string}>('enable',{consent:agreed});setShownRecovery(result.recovery);setConfirmedRecovery(false);setState(result)})
+  const enable=()=>run(async()=>{const result=await cloudCall<CloudState&{recovery?:string}>('enable',{consent:agreed});if(result.recovery){setShownRecovery(result.recovery);setConfirmedRecovery(false)}setState(result)})
   const configure=()=>{setReason('');setForceLogin(false);setCode('');setRecovery('');setAgreed(false);setLoginError('');setOpen(true)}
   const login=async(action:'login'|'loginPassword',input:unknown)=>{await cloudCall(action,input);if(reason||forceLogin){const identity=await 检查AI身份(reason||AI登录原因);if(!identity.成功)throw new Error(identity.错误);setOpen(false);setReason('');setForceLogin(false)}setCode('');message.success('登录成功')}
   const loginVisible=!state.account||forceLogin
@@ -48,15 +61,23 @@ export function CloudProvider({children}:{children:React.ReactNode}){
     <Modal title={!loginVisible?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={loginVisible?'seal-login-modal':undefined} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current){setOpen(false);setReason('');setForceLogin(false)}}} width={!loginVisible?560:440}>
       {reason?<p role="status">{reason}</p>:null}
       {state.deletionPending&&<div role="status"><p>注销请求正在确认或清理历史备份。服务器确认完成后，账号与对应云数据无法恢复；可以查看进度。</p><Button loading={busy} onClick={()=>void run(async()=>{const result=await cloudCall('deletionStatus');if(result.deleted)message.success('账号与云数据已永久删除；历史备份清理完成')})}>查看注销进度</Button></div>}
-      {state.sessionLocked?<><p>本机保存的云账号尚未解锁。本地文件可直接使用；继续使用云服务时，macOS 可能要求输入这台 Mac 的登录密码，授权读取保存的加密凭据。</p><Button type="primary" loading={busy} onClick={()=>void run(async()=>{await cloudCall('resumeSession');setForceLogin(false)})}>恢复本机云会话</Button></>:!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
+      {state.sessionLocked?<><p>本机保存的云账号尚未解锁。本地文件可直接使用；继续使用云服务时，macOS 可能要求输入这台 Mac 的登录密码，授权读取保存的加密凭据。</p><Button type="primary" loading={busy} onClick={()=>void run(async()=>{const restored=await cloudCall<CloudState>('resumeSession');setForceLogin(false);if(restored.account?.enabled)await cloudCall('refresh')})}>恢复本机云会话</Button></>:!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
         <p>已登录：{state.account.phone} <Button size="small" onClick={()=>run(()=>cloudCall('logout'))}>退出登录</Button></p>
         <AccountSecurity key={state.account.id} account={state.account} onChanged={refresh}/>
         {!state.account.enabled?<>
-          <div className="seal-cloud-agreement"><h3>云服务协议与隐私说明</h3><p>开通后，你主动上传或开启自动保存的文件会在本机加密后上传到海豹办公云服务。每账号提供 300 MB 实际配额，文件、历史版本、回收站和公开副本计入用量。服务器能够知道账号、密文大小与访问时间，无法直接解密私有文档内容和文件名。</p><p>恢复密钥由你保管。全部授权设备和恢复密钥丢失后，运营人员无法找回文件。公开发布与在线 AI 处理另行授权；公开副本可被他人及管理员阅读。清空停用后活动数据删除，备份最多保留 7 天；他人已下载的副本无法收回。</p></div>
+          <div className="seal-cloud-agreement"><h3>云服务协议与隐私说明</h3><p>{state.account.keyRecovery===1?'云文件和文件名在本机加密后上传。服务器加密保管云空间密钥，登录后设备可自动解锁。绑定手机验证通过后可以重置访问密钥。':'云文件在本机加密后上传。请保管旧版恢复密钥，换设备时用于解锁。'}</p><p>每账号提供 300 MB 配额，文件、历史版本、回收站和公开副本计入用量。公开发布与在线 AI 处理另行授权。清空停用后，备份最多保留 7 天。</p></div>
           <Checkbox checked={agreed} onChange={e=>setAgreed(e.target.checked)}>我已阅读并同意云服务协议与隐私说明</Checkbox>
           <p><Button type="primary" disabled={!agreed} loading={busy} onClick={enable}>开通云空间</Button></p>
-        </>:!state.unlocked?<><p>请输入自己保管的恢复密钥，解锁此设备。</p><Input.Password aria-label="恢复密钥" value={recovery} onChange={e=>setRecovery(e.target.value)}/><p><Button loading={busy} onClick={()=>run(()=>cloudCall('unlock',{recovery}))}>解锁云空间</Button></p></>:<><p>云空间已开通，已用 {(state.account.used/1000000).toFixed(2)} / 300 MB。</p><Button loading={busy} onClick={()=>run(()=>cloudCall('autosave',{enabled:!state.account?.autosave}))}>{state.account.autosave?'关闭':'开启'}云文档自动保存</Button></>}
+        </>:!state.unlocked?state.account.keyRevision?<p><Button loading={busy} onClick={()=>run(()=>cloudCall('refresh'))}>重新连接云空间</Button></p>:<><p>请用旧版恢复密钥解锁，或在一台已解锁的设备上完成迁移。</p><Input.Password aria-label="恢复密钥" value={recovery} onChange={e=>setRecovery(e.target.value)}/><p><Button loading={busy} onClick={()=>run(async()=>{await cloudCall('unlock',{recovery});setRecovery('')})}>解锁云空间</Button></p></>:<><p>云空间已开通，已用 {(state.account.used/1000000).toFixed(2)} / 300 MB。</p><Button loading={busy} onClick={()=>run(()=>cloudCall('autosave',{enabled:!state.account?.autosave}))}>{state.account.autosave?'关闭':'开启'}云文档自动保存</Button></>}
+        {Boolean(state.account.keyRevision)&&<p><Button disabled={busy} onClick={()=>{setResetCode('');setResetOpen(true)}}>重置云空间密钥</Button></p>}
       </>}
+    </Modal>
+    <Modal title="重置云空间密钥" open={resetOpen&&Boolean(state.account?.keyRevision)} centered confirmLoading={busy}
+      onCancel={()=>{if(!busy){setResetOpen(false);setResetCode('')}}} okText="验证并重置" okButtonProps={{disabled:!/^\d{6}$/.test(resetCode)}}
+      onOk={()=>run(async()=>{await cloudCall('resetSpaceKey',{code:resetCode});setResetOpen(false);setResetCode('');message.success('云空间密钥已重置，其他设备需重新登录')})}>
+      <p>请验证绑定手机 {state.account?.phone}。重置后，其他设备需重新登录。</p>
+      <Input aria-label="云空间重置验证码" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={resetCode} disabled={busy} onChange={e=>setResetCode(e.target.value.replace(/\D/g,''))}/>
+      <p><Button disabled={busy||resetCooldown>0} onClick={()=>run(async()=>{await cloudCall('code',{purpose:'space-key-reset'});setResetCooldown(60)})}>{resetCooldown?`${resetCooldown} 秒后重试`:'获取云空间重置验证码'}</Button></p>
     </Modal>
     <Modal title="保存你的云空间恢复密钥" open={Boolean(shownRecovery)} centered closable={false} maskClosable={false} confirmLoading={busy} onOk={()=>run(async()=>{await cloudCall('ackRecovery');setShownRecovery('');setOpen(false)})} okText="我已安全保存" okButtonProps={{disabled:!confirmedRecovery}} cancelButtonProps={{style:{display:'none'}}}>
       <p>换设备或重新登录后可能需要此密钥。请保存到安全位置；运营人员无法代你找回。</p><Input.TextArea aria-label="新恢复密钥" readOnly value={shownRecovery} rows={3}/><p><Button onClick={()=>navigator.clipboard.writeText(shownRecovery).then(()=>message.success('已复制恢复密钥')).catch(()=>message.error('复制失败，请手动保存'))}>复制密钥</Button></p><Checkbox checked={confirmedRecovery} onChange={e=>setConfirmedRecovery(e.target.checked)}>我已在安全位置保存恢复密钥</Checkbox>

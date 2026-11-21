@@ -163,6 +163,14 @@ async function 校验xlsx回读(数据, 期望模型) {
     const 表 = 期望表.名称
     if (实际表.名称 !== 表) 记录(失败, { 表, 项目: '工作表名称', 期望: 表, 实际: 实际表.名称 })
     const 元数据 = 实际表.元数据 ?? {}
+    for (const 项目 of ['结构化表格', '条件格式']) {
+      const 期望 = 期望表[项目] ?? [], 实际 = 元数据[项目] ?? []
+      // Renaming a header updates its table column definition.
+      const 比较值 = (项) => 项目 === '结构化表格' ? { ...项, 列: 项.列.length } : 项
+      if (JSON.stringify(期望.map(比较值)) !== JSON.stringify(实际.map(比较值))) {
+        记录(失败, { 表, 项目, 期望, 实际 })
+      }
+    }
     const 格子 = 解析Html表格(实际表.html)
     const 实际文本 = (行, 列) => 格子[行]?.[列]?.文本 ?? ''
     const 数据 = 期望表.数据.map((行) => Array.isArray(行) ? 行 : [行])

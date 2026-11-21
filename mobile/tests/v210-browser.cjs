@@ -41,7 +41,9 @@ app.whenReady().then(async()=>{
     await input('#seal-login-code',fixture.codes.get('13800111888'));await click('登录')
     await until(`document.body.textContent.includes('已登录：')`,'SMS sign-in')
     const owner=fixture.cloud.db.one('SELECT id FROM users WHERE phone=?',['13800111888']).id
-    const recovery=await evaluate(`(async()=>{const enabled=await window.electronAPI.cloud.invoke('enable',{consent:true});if(!enabled.成功)throw new Error(enabled.错误);const ack=await window.electronAPI.cloud.invoke('ackRecovery');if(!ack.成功)throw new Error(ack.错误);return enabled.数据.recovery})()`)
+    const enabled=await evaluate(`window.electronAPI.cloud.invoke('enable',{consent:true})`)
+    assert.equal(enabled.成功,true,enabled.错误)
+    assert.equal(enabled.数据.unlocked,true)
     const originalCloud=await evaluate(`(async()=>{const data=await window.electronAPI.office.writeSeal('word',{html:'<p>云端原生文件𠮷🦭</p>'});const saved=await window.electronAPI.cloud.invoke('save',{linkId:'v210-ui-account',name:'云端原生文件.sealdoc',data:data.数据});if(!saved.成功)throw new Error(saved.错误);return {id:saved.数据.id,data:data.数据}})()`)
     await click('设置登录密码');fixture.advance(61000);await click('获取账号安全验证码')
     await hostUntil(()=>fixture.cloud.db.one("SELECT phone FROM codes WHERE phone=? AND purpose='password'",['13800111888']),'password verification SMS')
@@ -54,13 +56,11 @@ app.whenReady().then(async()=>{
     await click('退出登录');await until(`!!document.querySelector('.seal-login')`,'signed out')
     win.setContentSize(1280,900);await pause(250)
     await click('密码登录');await input('#seal-login-phone','13800111888');await input('#current-password',password);await click('登录')
-    await until(`!!document.querySelector('[aria-label="恢复密钥"]')`,'independent recovery key requested')
-    await input('[aria-label="恢复密钥"]',recovery);await click('解锁云空间')
     await until(`(async()=>{const state=await window.electronAPI.cloud.invoke('status');return state.数据.unlocked})()`,'password session unlocked')
     const downloaded=await evaluate(`window.electronAPI.cloud.invoke('rawDownload',{id:${JSON.stringify(originalCloud.id)}})`)
     assert.equal(downloaded.成功,true);assert.equal(downloaded.数据.data,originalCloud.data)
     await capture('desktop-password-account.png')
-    checks.push('390px真实短信登录与密码设置、1280px密码登录及恢复密钥解锁；原加密原生文件字节不变')
+    checks.push('390px 短信登录与密码设置、1280px 密码登录后自动解锁，原加密原生文件字节一致')
     await evaluate(`(()=>{document.querySelector('.ant-modal-close').click();return true})()`);win.setContentSize(390,844);await pause(250)
     for(const label of ['返回首页','云盘','服务','模板','我的']){await click(label);await pause(250);assert.equal(await evaluate(`document.querySelector('.seal-mobile-nav [aria-label=${JSON.stringify(label)}]').getAttribute('aria-current')`),'page')}
     await click('服务');await input('[aria-label="搜索办公服务"]','脑图');assert.equal(await evaluate(`document.querySelectorAll('.seal-mobile-function-grid [data-nav-key]').length`),1)
@@ -73,7 +73,7 @@ app.whenReady().then(async()=>{
     const image=fs.readFileSync(path.resolve(__dirname,'../../renderer/src/editor/__fixtures__/office-image.png'))
     slide.addImage({data:'data:image/png;base64,'+image.toString('base64'),x:1,y:2,w:2,h:2})
     const sourceShow={成功:true,数据:Buffer.from(await deck.write({outputType:'nodebuffer'})).toString('base64')}
-    for(const [type,extension,source,ready]of [['word','sealdoc',sourceWord,`.wps-editor-canvas__content`],['table','sealsheet',sourceTable,`.wps-sheet-stage`],['ppt','sealshow',sourceShow,`.wps-ppt-canvas`]]){
+    for(const [type,extension,source,ready]of [['word','sldoc',sourceWord,`.wps-editor-canvas__content`],['table','slxls',sourceTable,`.wps-sheet-stage`],['ppt','slppt',sourceShow,`.wps-ppt-canvas`]]){
       assert.equal(source.成功,true,source.错误)
       const name='v210-'+type+'.'+{word:'docx',table:'xlsx',ppt:'pptx'}[type]
       const filename=await evaluate(`(async()=>{const file=await window.electronAPI.showSaveDialog(${JSON.stringify(name)},${JSON.stringify(type)});const saved=await window.electronAPI.saveToFile(file,${JSON.stringify(source.数据)},'二进制');if(!saved.成功)throw new Error(saved.错误);window.electronAPI.showOpenDialog=async()=>file;return file})()`)
@@ -99,7 +99,7 @@ app.whenReady().then(async()=>{
     assert.equal(fixture.cloud.db.one('SELECT id FROM users WHERE id=?',[owner]),undefined)
     assert.equal(fixture.cloud.db.one('SELECT COUNT(*) n FROM nodes WHERE user_id=?',[owner]).n,0)
     assert.equal(fixture.cloud.db.one('SELECT COUNT(*) n FROM sessions WHERE user_id=?',[owner]).n,0)
-    const localStillReadable=await evaluate(`(async()=>{const list=await window.electronAPI.listKnownFolder('document');const file=list.文件.find(item=>item.名称==='v210-word.sealdoc');const raw=await window.electronAPI.readFile(file.路径);return window.electronAPI.office.readSeal('sealdoc',raw.内容)})()`)
+    const localStillReadable=await evaluate(`(async()=>{const list=await window.electronAPI.listKnownFolder('document');const file=list.文件.find(item=>item.名称==='v210-word.sldoc');const raw=await window.electronAPI.readFile(file.路径);return window.electronAPI.office.readSeal('sldoc',raw.内容)})()`)
     assert.equal(localStillReadable.成功,true);assert.match(localStillReadable.html,/端到端文字𠮷🦭/)
     checks.push('真实注销表单的后果确认、专用验证码和完整确认文字；完成后云文件/会话删除，本机原生文档保留')
     assert.deepEqual(errors,[])

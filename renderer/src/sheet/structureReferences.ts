@@ -1,4 +1,4 @@
-import { 字母转列, 列转字母 } from './address'
+import { 字母转列, 列转字母, 解析地址 } from './address'
 import type { Sheet, SheetCell } from './model'
 
 type 引用调整 = { 名称: string; 轴: '行' | '列'; 索引: number; 删除: boolean }
@@ -10,7 +10,26 @@ let 序号 = 0
 /** 事件随对象展开传递，不进入 JSON；工作簿重算时统一更新其他表的引用并消费一次。 */
 export function 标记结构调整(旧表: Sheet, 新表: Sheet, 轴: '行' | '列', 索引: number, 删除: boolean): Sheet {
   const 事件 = { 名称: 旧表.name, 目标标识: 旧表.id, 轴, 索引, 删除, 序号: ++序号 }
-  return { ...更新引用单元格(新表, [事件]), [结构调整]: [...((旧表 as 带调整工作表)[结构调整] ?? []), 事件] } as 带调整工作表
+  const 更新 = 更新引用单元格(新表, [事件])
+  if (旧表.结构化表格?.length) {
+    更新.结构化表格 = 旧表.结构化表格.map(表 => {
+      const [头, 尾] = 表.范围.split(':').map(解析地址)
+      const 正在更改列定义 = 轴 === '列' && 头 && 尾 && 索引 >= 头.列 + (删除 ? 0 : 1) && 索引 <= 尾.列
+      const 正在删除表头 = 轴 === '行' && 删除 && 头 && 尾 && (索引 === 头.行 || 尾.行 === 头.行 + 1 && 索引 === 尾.行)
+      if (正在更改列定义 || 正在删除表头) throw new Error('此操作会改变结构化表格的列定义或表头，请保留表格结构后再试')
+      return { ...表, 范围: 调整公式引用(表.范围, 旧表.name, 事件) }
+    })
+  }
+  if (旧表.条件格式?.length) {
+    更新.条件格式 = 旧表.条件格式.flatMap(规则 => {
+      const 范围 = 调整公式引用(规则.范围, 旧表.name, 事件)
+      const 公式 = 调整公式引用(规则.公式, 旧表.name, 事件)
+      if (范围 === '#REF!') return []
+      if (公式.startsWith('#REF!')) throw new Error('此操作会删除条件格式引用的单元格，请保留引用后再试')
+      return [{ ...规则, 范围, 公式 }]
+    })
+  }
+  return { ...更新, [结构调整]: [...((旧表 as 带调整工作表)[结构调整] ?? []), 事件] } as 带调整工作表
 }
 
 const 同名 = (甲: string, 乙: string) => 甲.toUpperCase() === 乙.toUpperCase()

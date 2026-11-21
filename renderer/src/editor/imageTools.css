@@ -3,9 +3,15 @@
   --image-handle-target: 24px;
   --image-control-height: 28px;
 }
-.seal-image-frame {
+.seal-image-controls-viewport {
   position: fixed;
+  inset: 0;
   z-index: 40;
+  pointer-events: none;
+}
+.seal-image-frame {
+  position: absolute;
+  z-index: 1;
   outline: 1px solid var(--brand);
   pointer-events: none;
 }
@@ -39,7 +45,7 @@
   background: var(--bg-card); color: var(--brand); pointer-events: auto; touch-action: none; cursor: grab;
 }
 .seal-image-rotate::after { content: ''; position: absolute; left: 50%; top: 27px; height: 9px; border-left: 1px solid var(--brand); }
-.seal-image-drag-preview { position: fixed; z-index: 39; pointer-events: none; border: 2px dashed var(--brand); background: var(--brand-soft); color: var(--text-1); padding: 8px; box-sizing: border-box; font-size: 12px; }
+.seal-image-drag-preview { position: absolute; pointer-events: none; border: 2px dashed var(--brand); background: var(--brand-soft); color: var(--text-1); padding: 8px; box-sizing: border-box; font-size: 12px; }
 .wps-editor-canvas [contenteditable="true"] img { touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
 .seal-image-handle--nw { left: 0; top: 0; transform: translate(-50%, -50%); cursor: nwse-resize; }
 .seal-image-handle--ne { right: 0; top: 0; transform: translate(50%, -50%); cursor: nesw-resize; }

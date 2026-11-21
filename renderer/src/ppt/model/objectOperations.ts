@@ -9,6 +9,34 @@ export function 读取对象树顺序(列表: 演示对象[]): 演示对象[] {
   const 展开 = (对象: 演示对象): 演示对象[] => [对象, ...(对象.子对象标识 ?? []).flatMap(id => { const 子 = 列表.find(项 => 项.id === id); return 子 ? 展开(子) : [] })]
   return 列表.filter(项 => !成员.has(项.id)).flatMap(展开)
 }
+
+export function 读取混合图层(页: 幻灯片): string[] | undefined {
+  if (!页.图层顺序?.length) return undefined
+  const 文本 = new Set(页.文本框列表.map(框 => 框.id))
+  const 成员 = new Set((页.对象列表 ?? []).flatMap(对象 => 对象.子对象标识 ?? []))
+  const 对象 = (页.对象列表 ?? []).filter(项 => !成员.has(项.id)).map(项 => 项.id)
+  const 对象标识 = new Set(对象)
+  const 已知对象 = new Set(页.图层顺序.filter(id => 对象标识.has(id)))
+  const 排序对象 = 对象.filter(id => 已知对象.has(id))
+  const 结果 = []
+  let 索引 = 0
+  for (const id of 页.图层顺序) {
+    if (文本.delete(id)) 结果.push(id)
+    else if (已知对象.has(id) && 索引 < 排序对象.length) 结果.push(排序对象[索引++])
+  }
+  return [...结果, ...文本, ...对象.filter(id => !已知对象.has(id))]
+}
+
+export function 读取混合图层层级(页: 幻灯片) {
+  const 顺序 = 读取混合图层(页)
+  if (!顺序) return new Map<string, number>()
+  const 层级 = new Map(顺序.map((id, index) => [id, index + 1]))
+  for (const 对象 of 读取对象树顺序(页.对象列表 ?? [])) {
+    const 层 = 层级.get(对象.id)
+    if (层 !== undefined) for (const 子 of 对象.子对象标识 ?? []) 层级.set(子, 层)
+  }
+  return 层级
+}
 export function 修改对象(页: 幻灯片, 标识: string[], 修改: 几何修改): 幻灯片 {
   if (修改.旋转 !== undefined && (页.对象列表 ?? []).some(项 => 标识.includes(项.id) && !对象支持旋转(项))) throw new Error('选中的图表、表格、组合或连接线暂不支持旋转')
   if (标识.length > 1 && !(Object.keys(修改).length === 1 && 修改.锁定 === false)) 要求对象可编辑(页,标识)

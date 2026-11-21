@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject, type PointerEvent } from '
 import { createPortal } from 'react-dom'
 import { App, Button, Checkbox, InputNumber, Modal } from 'antd'
 import ContextMenu from '../components/ContextMenu'
-import { 合并矩形, 读取可见矩形, use边缘浮层 } from '../components/overlayPlacement'
+import { 合并矩形, 读取可见矩形, use边缘浮层, type 边界矩形 } from '../components/overlayPlacement'
 import { 对齐图片, 图片可用宽度, 正文位置, 移动图片到选区, 调整图片尺寸, 读取图片尺寸, 显示缩放, 屏幕矩形 } from './imageEditing'
 import { 图片变换样式, 规范角度, 读取图片变换, type 图片变换 } from '../office/imageTransform'
 import { 检查裁剪, 裁剪图片像素, 识别用图片, type 图片裁剪 } from './imagePixels'
@@ -25,7 +25,7 @@ const 空裁剪: 图片裁剪 = { 左: 0, 上: 0, 右: 0, 下: 0 }
 export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修改, 完成修改 }: Props) {
   const { modal } = App.useApp()
   const [图片, 设图片] = useState<HTMLImageElement | null>(null)
-  const [位置, 设位置] = useState<{ left: number; top: number; width: number; height: number; angle: number; right: number; boundTop: number } | null>(null)
+  const [位置, 设位置] = useState<{ left: number; top: number; width: number; height: number; angle: number; 裁剪区: 边界矩形 | null } | null>(null)
   const [弹窗, 设弹窗] = useState<弹窗类型>(null)
   const [尺寸, 设尺寸] = useState({ 宽: 0, 高: 0 })
   const [锁定比例, 设锁定比例] = useState(true)
@@ -45,7 +45,8 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const 当前图片 = useRef(图片)
   const 工具条 = useRef<HTMLDivElement>(null)
   const 更多按钮 = useRef<HTMLButtonElement>(null)
-  const 取图片保护区 = () => 合并矩形([读取可见矩形(当前图片.current), 读取可见矩形(document.querySelector('.seal-image-rotate'))].filter((r): r is NonNullable<typeof r> => r !== null))
+  const 测量 = (元素: Element) => 元素 instanceof HTMLElement ? 屏幕矩形(元素) : 元素.getBoundingClientRect()
+  const 取图片保护区 = () => 合并矩形([读取可见矩形(当前图片.current, 测量), 读取可见矩形(document.querySelector('.seal-image-rotate'), 测量)].filter((r): r is 边界矩形 => r !== null))
   const 工具位置 = use边缘浮层(Boolean(图片 && 位置 && !只读), 工具条, 取图片保护区, { 宽: 144, 高: 266 }, ['right', 'left', 'top', 'bottom'], undefined, undefined, 位置)
   const 忽略点击到 = useRef(0)
   const 异步序号 = useRef(0)
@@ -60,9 +61,9 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const 更新位置 = (图 = 当前图片.current) => {
     if (!图 || !编辑区.current?.contains(图)) { 设位置(null); return }
     const 矩形 = 屏幕矩形(图)
-    const 容器 = 图.closest<HTMLElement>('.wps-editor-stage,.wps-editor-canvas')
-    const 可视区 = 容器 ? 屏幕矩形(容器) : null
-    if (矩形.width <= 0 || 矩形.height <= 0 || 可视区 && 可视区.height > 0 && (矩形.bottom < 可视区.top || 矩形.top > 可视区.bottom)) { 设位置(null); return }
+    const 容器 = 图.closest<HTMLElement>('.wps-editor-stage')
+    const 可视区 = 容器 ? 读取可见矩形(容器, 测量) : null
+    if (!读取可见矩形(图, 测量)) { 设位置(null); return }
     try {
       const 实际 = 读取图片尺寸(图)
       // 用元素未旋转的显示尺寸及边界中心定位，页面缩放也应跟随。
@@ -70,7 +71,7 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
       const 宽 = (图.offsetWidth || 实际.宽) * 缩放, 高 = (图.offsetHeight || 实际.高) * 缩放
       let 转角 = 0
       try { 转角 = 读取图片变换(图.style.transform).旋转 } catch { /* 不支持的变换在修改或保存时提示。 */ }
-      设位置({ left: 矩形.left + (矩形.width - 宽) / 2, top: 矩形.top + (矩形.height - 高) / 2, width: 宽, height: 高, angle: 转角, right: 矩形.right, boundTop: 矩形.top })
+      设位置({ left: 矩形.left + (矩形.width - 宽) / 2, top: 矩形.top + (矩形.height - 高) / 2, width: 宽, height: 高, angle: 转角, 裁剪区: 可视区 })
     } catch { 设位置(null) }
   }
 
@@ -212,14 +213,28 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
     if (编辑区.current) 观察.observe(编辑区.current, { childList: true, subtree: true, attributes: true })
     const 大小观察 = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(刷新)
     大小观察?.observe(图片)
+    const 纸张 = 图片.closest('.wps-editor-canvas__paper')
+    const 滚动区 = 图片.closest('.wps-editor-stage')
+    if (纸张) 大小观察?.observe(纸张)
+    if (滚动区) 大小观察?.observe(滚动区)
     const 外部点击 = (事件: MouseEvent) => {
       const 目标 = 事件.target as HTMLElement
       if (!编辑区.current?.contains(目标) && !目标.closest('.seal-image-tools,.seal-image-menu,.ant-modal-root')) { 取消手势.current?.(); 设图片(null); 设等待位置(false) }
     }
     const 键盘 = (事件: KeyboardEvent) => { if (事件.key === 'Escape') { if (更多展开) { 设更多展开(false); return }; const 活动 = Boolean(取消手势.current); 取消手势.current?.(); 设等待位置(false); if (!活动 && !弹窗 && !识别图片) 设图片(null) } }
     刷新(); document.addEventListener('scroll', 刷新, true); window.addEventListener('resize', 刷新)
+    图片.addEventListener('load', 刷新)
+    window.visualViewport?.addEventListener('resize', 刷新)
+    window.visualViewport?.addEventListener('scroll', 刷新)
     document.addEventListener('mousedown', 外部点击); document.addEventListener('keydown', 键盘)
-    return () => { 观察.disconnect(); 大小观察?.disconnect(); document.removeEventListener('scroll', 刷新, true); window.removeEventListener('resize', 刷新); document.removeEventListener('mousedown', 外部点击); document.removeEventListener('keydown', 键盘) }
+    return () => {
+      观察.disconnect(); 大小观察?.disconnect()
+      document.removeEventListener('scroll', 刷新, true); window.removeEventListener('resize', 刷新)
+      图片.removeEventListener('load', 刷新)
+      window.visualViewport?.removeEventListener('resize', 刷新)
+      window.visualViewport?.removeEventListener('scroll', 刷新)
+      document.removeEventListener('mousedown', 外部点击); document.removeEventListener('keydown', 键盘)
+    }
   }, [图片, 弹窗, 识别图片, 更多展开])
 
   const 打开尺寸 = () => { if (!图片) return; try { const 当前 = 读取图片尺寸(图片); 比例.current = 当前.宽 / 当前.高; 设尺寸(当前); 设锁定比例(true); 设弹窗('尺寸') } catch (错误) { 报错(错误) } }
@@ -278,13 +293,17 @@ export default function ImageTools({ 编辑区, 文档标识, 只读, 开始修�
   const 比值 = Math.max(0.01, 图片.width / (图片.height || 1)), 弧度 = 预览变换.旋转 * Math.PI / 180
   const 可用宽 = Math.min(window.innerWidth * 0.8, 880), 可用高 = window.innerHeight * 0.5
   const 预览高 = Math.min(可用宽 / (Math.abs(比值 * Math.cos(弧度)) + Math.abs(Math.sin(弧度))), 可用高 / (Math.abs(比值 * Math.sin(弧度)) + Math.abs(Math.cos(弧度))))
+  const 裁剪区 = 位置?.裁剪区
+  const 裁剪样式 = 裁剪区 ? `inset(${裁剪区.top}px ${Math.max(0, window.innerWidth - 裁剪区.right)}px ${Math.max(0, window.innerHeight - 裁剪区.bottom)}px ${裁剪区.left}px)` : undefined
   return createPortal(<>
     {位置 && <div className="seal-image-tools">
-      <div className="seal-image-frame" style={{ left: 位置.left, top: 位置.top, width: 位置.width, height: 位置.height, transform: `rotate(${位置.angle}deg)` }}>
+      <div className="seal-image-controls-viewport" style={{ clipPath: 裁剪样式 }}>
+       <div className="seal-image-frame" style={{ left: 位置.left, top: 位置.top, width: 位置.width, height: 位置.height, transform: `rotate(${位置.angle}deg)` }}>
         {(Object.keys(手柄名) as 手柄[]).map(边 => <button key={边} type="button" className={`seal-image-handle seal-image-handle--${边}`} aria-label={`从${手柄名[边]}调整图片尺寸`} disabled={处理中} onPointerDown={事件 => 开始缩放(事件, 边)} />)}
         <button type="button" className="seal-image-rotate" aria-label="拖动旋转图片" title="拖动旋转，方向键微调，Shift 按 15° 调整" disabled={处理中} onPointerDown={开始旋转} onKeyDown={事件 => { if (事件.key === 'ArrowLeft' || 事件.key === 'ArrowRight') { 事件.preventDefault(); 修改变换({ 旋转: 预览变换.旋转 + (事件.key === 'ArrowLeft' ? -1 : 1) * (事件.shiftKey ? 15 : 1) }) } }}>↻</button>
-      </div>
+       </div>
       {拖动预览 && <div className="seal-image-drag-preview" style={拖动预览}>拖到正文文字的位置</div>}
+      </div>
       <div ref={工具条} role="toolbar" aria-label="图片工具" className="seal-image-toolbar" data-edge={工具位置?.边缘} style={{ left: 工具位置?.x, top: 工具位置?.y, maxWidth: 工具位置?.maxWidth, maxHeight: 工具位置?.maxHeight, visibility: 工具位置 ? undefined : 'hidden' }} onMouseDown={事件 => 事件.preventDefault()}>
         <button type="button" disabled={处理中} onClick={() => 设弹窗('布局')}>布局选项</button>
         <button type="button" disabled={处理中} onClick={() => { 设裁剪({ ...空裁剪 }); 设弹窗('裁剪') }}>图片裁剪</button>

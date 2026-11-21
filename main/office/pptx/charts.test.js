@@ -1,7 +1,6 @@
 const { 写入pptx, 读取pptx } = require('../pptxCodec')
 const JSZip = require('jszip')
 const ExcelJS = require('exceljs')
-const fs = require('fs')
 const 图表 = 种类 => ({ id: `图表-${种类}`, 类型: '图表', x: 80, y: 70, width: 720, height: 390, 图表: { 种类, 标题: '季度收入', 分类: ['第一季度','第二季度','第三季度'], 系列: [{ id: 'series-4', 名称: '华东', 数值: [12,24,18], 颜色: '#2B6CF6' }, ...(种类 === '饼图' ? [] : [{id:'series-8',名称:'华南',数值:[8,-4,16],颜色:'#718096'}])], 图例: '下', 横轴标题: '季度', 纵轴标题: '万元', 显示横轴: true, 显示纵轴: true, 数值格式: '#,##0' } })
 const 模型 = 对象 => ({ 幻灯片: 对象.map((项,i) => ({id:`页${i}`,文本框:[],对象列表:[项]})) })
 describe('原生图表和嵌入数据', () => {
@@ -9,7 +8,6 @@ describe('原生图表和嵌入数据', () => {
     let 对象 = ['柱状图','折线图','饼图'].map(图表)
     for (let 轮=1;轮<=2;轮++) {
       const 字节=await 写入pptx(模型(对象)),包=await JSZip.loadAsync(字节)
-      fs.mkdirSync('E:/Temp/ppt-task4',{recursive:true});fs.writeFileSync(`E:/Temp/ppt-task4/原生图表第${轮}轮.pptx`,字节)
       for (let i=0;i<3;i++) {
         const 图=await 包.file(`ppt/charts/seal-chart-${i+1}-1.xml`).async('string')
         expect(图).toContain(`<c:${['barChart','lineChart','pieChart'][i]}>`)

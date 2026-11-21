@@ -6,13 +6,38 @@ import { 读取单元格, 写入单元格 } from './model'
 import { 导出为Xlsx } from './sheetExport'
 import { 净化富文本 } from '../editor/sanitizeHtml'
 import GridView from './GridView'
+import { 工作表显示格式 } from './sheetFeatures'
 
 const require = createRequire(import.meta.url)
 const ExcelJS = require('exceljs')
 const { 读取xlsx, 写入xlsx } = require('../../../main/office/xlsxCodec')
+const { 校验xlsx回读 } = require('../../../main/office/xlsxVerify')
 const { 创建带前缀表格 } = require('../../../test/fixtures/prefixedXlsx.cjs')
 
 describe('真实 XLSX 导入、计算与保存重开', () => {
+  it('保留结构化表格，并在条件引用变化后刷新显示和写回规则', async () => {
+    const 原数据 = await 写入xlsx({ 工作表: [{
+      名称: '验收',
+      数据: [['事项', '状态'], ['兼容性', '☐'], ['保存', '☑']],
+      结构化表格: [{ 名称: 'ReviewTable', 范围: 'A1:B3', 列: ['事项', '状态'], 样式: 'TableStyleLight1', 带状行: true }],
+      条件格式: [{ 范围: 'A2:B3', 公式: '$B2="☐"', 优先级: 1, 字体颜色: 'FF81551A', 填充颜色: 'FFFFF0D9', 填充方式: '背景色' }],
+    }] })
+    const 导入 = await 读取xlsx(原数据)
+    expect(导入.警告).toEqual([])
+    const 表 = 导入.工作表列表[0]
+    let 编辑 = 从Html表格构建工作表(表.html, 表.名称, 表.页面设置, 表.元数据)!
+    expect(工作表显示格式(编辑)({ 行: 1, 列: 0 }).填充颜色).toBe('#FFF0D9')
+    编辑 = 写入单元格(编辑, 'B2', '☑')
+    expect(工作表显示格式(编辑)({ 行: 1, 列: 0 }).填充颜色).toBeUndefined()
+    expect(工作表显示格式(编辑)({ 行: 1, 列: 0 }).表格填充).toBe('#f2f2f2')
+    const 模型 = 导出为Xlsx(编辑)
+    const 保存 = await 写入xlsx(模型)
+    const 重开 = await 读取xlsx(保存)
+    expect(重开.警告).toEqual([])
+    expect(重开.工作表列表[0].元数据.结构化表格).toEqual(表.元数据.结构化表格)
+    expect(重开.工作表列表[0].元数据.条件格式).toEqual(表.元数据.条件格式)
+    expect((await 校验xlsx回读(保存, 模型)).一致).toBe(true)
+  })
   it('显式 XML 前缀和绝对关系的工作簿可编辑、重算并保存重开全部工作表', async () => {
     const 导入 = await 读取xlsx(await 创建带前缀表格({ 关系前缀: 'link' }))
     const 工作表 = 导入.工作表列表.map((表: any) => 从Html表格构建工作表(净化富文本(表.html), 表.名称, 表.页面设置, 表.元数据)!)

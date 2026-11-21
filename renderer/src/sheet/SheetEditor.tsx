@@ -51,7 +51,7 @@ import { useAppStore } from '../store'
 import { 准备打开本地文件, 记录最近文档 } from '../fileOpen'
 import { 处于受保护查看, 存在内容风险, 内容风险警告, 应提示保存保真风险 } from '../fileWarnings'
 import { 领取待另存副本 } from '../fileOpenChoice'
-import { 仅查看提示条, 警告列表 } from '../ProtectedViewBar'
+import { 仅查看提示条, 文件警告弹窗, 警告列表 } from '../ProtectedViewBar'
 import { 放大一档, 缩小一档, use文件缩放, use滚轮缩放, 表格缩放范围 } from '../editor/wheelZoom'
 import { 读取本机图片 } from './sheetImageFile'
 import SheetChartDialog from './SheetChartDialog'
@@ -181,6 +181,7 @@ const SheetEditor = () => {
       // 覆盖保存含保真风险的来源表格后提示一次（同一文档本次会话只提示一次）
       const 保真提示 = 应提示保存保真风险(activeDocumentId, 当前文档?.来源路径, 路径, 当前文档?.警告)
       if (保真提示) modal.info({
+        ...文件警告弹窗,
         title: '已保存，部分效果将在 Excel 或 WPS 中更新',
         content: 风险内容(保真提示, '文件已覆盖保存，单元格数据与原有结构均已保留。以下效果沿用原文件或按近似方式处理：'),
         okText: '我知道了',
@@ -193,6 +194,7 @@ const SheetEditor = () => {
     React.createElement(警告列表, { 警告 })
   )
   const 提示禁止覆盖 = (警告: string[]) => modal.warning({
+    ...文件警告弹窗,
     title: '已阻止覆盖来源文件',
     content: 风险内容(警告, '当前版本无法完整保留此表格的内容。请通过另存为保存到不同路径。'),
     okText: '我知道了',
@@ -219,6 +221,7 @@ const SheetEditor = () => {
   }
   const 确认保存副本 = (警告: string[]): Promise<boolean> => new Promise((完成) => {
     modal.confirm({
+      ...文件警告弹窗,
       title: '确认保存副本',
       content: 风险内容(警告, '部分内容未完整导入，保存的副本可能缺少以下内容：'),
       okText: '保存副本',
@@ -233,6 +236,7 @@ const SheetEditor = () => {
     if (提示警告.length && !保护查看 && !原生文档类型(当前文档?.来源路径 ?? '') && !已提示导入警告.current.has(当前文档!.id)) {
       已提示导入警告.current.add(当前文档!.id)
       modal.warning({
+        ...文件警告弹窗,
         title: '表格内容可能未完整导入',
         content: 风险内容(提示警告, '本文件的部分内容无法完整导入。为保护原文件，请通过另存为保存副本。'),
         okText: '我知道了',

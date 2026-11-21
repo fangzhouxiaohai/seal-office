@@ -17,6 +17,7 @@ const { createMyShares } = require('./myShares.cjs')
 const { createReleases } = require('./releases.cjs')
 const { createReleaseAssets } = require('./releaseAssets.cjs')
 const { openAdminAccess } = require('./adminAccess.cjs')
+const { createSpaceKeys, agreementVersion, legacyAgreementVersion } = require('./spaceKeys.cjs')
 const { AsyncLocalStorage } = require('node:async_hooks')
 const { Transform } = require('node:stream')
 const QUOTA = 300000000
@@ -51,6 +52,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   const secretFile = path.join(root, 'otp.secret')
   if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, randomBytes(32), { mode: 0o600 })
   const secret = fs.readFileSync(secretFile)
+  const spaceKeys = createSpaceKeys(db, secret, fail)
   const sender = sms || createSms(env)
   const diskFree=()=>{const info=fs.statfsSync(root);return Number(info.bavail)*Number(info.bsize)}
   const ensureDisk=extra=>{const reserved=Number(db.one('SELECT COALESCE(SUM(total),0) n FROM uploads').n);if(diskFree()<reserved+extra+2*1024*1024*1024)fail(503,'服务器存储余量不足，文件已保留在本机，请稍后再试')}
@@ -70,21 +72,24 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
   // Password login authenticates that existing phone-verified account; it never
   // creates a new user. This records phone verification, not an ID-card KYC claim.
   const phoneVerified = user => /^1[3-9]\d{9}$/.test(user?.phone || '')
-  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), identityVerified: phoneVerified(user), identityMethod: phoneVerified(user) ? 'phone' : undefined, hasPassword: Boolean(db.one('SELECT user_id FROM passwords WHERE user_id=?', [user.id])), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, used: usage(user.id), quota, agreementVersion: '2026-10-08' })
+  const account = user => ({ id: user.id, phone: user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'), identityVerified: phoneVerified(user), identityMethod: phoneVerified(user) ? 'phone' : undefined, hasPassword: Boolean(db.one('SELECT user_id FROM passwords WHERE user_id=?', [user.id])), enabled: Boolean(user.enabled), autosave: Boolean(user.autosave), envelope: user.envelope, keyRecovery: 1, keyRevision: user.vault_key ? user.vault_revision : 0, used: usage(user.id), quota, agreementVersion })
   const nodeFor = (id, user, allowDeleted = false) => {
     const node = db.one('SELECT * FROM nodes WHERE id=? AND user_id=?', [id, user])
     if (!node || (!allowDeleted && node.deleted)) fail(404, '云文件不存在或已删除')
     return node
   }
   const parentFor = (parent, user) => { if (parent) { const n = nodeFor(parent, user); if (n.kind !== 'folder' && n.kind !== 'library') fail(400, '目标不是目录') } }
-  const verifyCode = (phone, purpose, code) => {
+  const verifyCode = (phone, purpose, code, change) => {
     const item = db.one('SELECT * FROM codes WHERE phone=? AND purpose=?', [phone, purpose])
     if (!item || item.expires < clock() || item.attempts >= 5) fail(400, '验证码已过期或尝试次数过多，请重新获取')
     if (!safeEqual(item.hash, codeHash(phone, purpose, String(code)))) {
       db.transaction(() => db.run('UPDATE codes SET attempts=attempts+1 WHERE phone=? AND purpose=?', [phone, purpose]))
       fail(400, '验证码不正确')
     }
-    db.transaction(() => db.run('DELETE FROM codes WHERE phone=? AND purpose=?', [phone, purpose]))
+    return db.transaction(() => {
+      db.run('DELETE FROM codes WHERE phone=? AND purpose=?', [phone, purpose])
+      return change?.()
+    })
   }
   const trashTree = (id, user, deleted) => {
     nodeFor(id, user, true)
@@ -232,14 +237,15 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       }
       if (await releases.handlePublic({ route, method, url, reply, ip: clientIp(req) })) return
       if (releaseAssets.handlePublic({ route, method, req, res })) return
-      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, shareLink:1, methodOverride:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion: '2026-10-08' })
+      if (route === '/v1/capabilities' && method === 'GET') return reply({ version: 1, collaboration: 1, realtime: 1, diagramRealtime: 1, accountConversion:1, passwordAuth:1, accountDeletion:1, aiIdentity:1, shareLink:1, methodOverride:1, keyRecovery:1, quota, chunkSize: CHUNK, sms: sender.configured, encryption: 'AES-256-GCM', agreementVersion })
       const bearer = /^Bearer ([a-zA-Z0-9_-]+)$/.exec(req.headers.authorization || '')?.[1]
       const session = bearer && db.one('SELECT s.*,d.device_id,d.device_name,d.created,d.last_seen FROM sessions s LEFT JOIN session_devices d ON d.session_hash=s.hash WHERE s.hash=? AND s.expires>?', [hash(bearer), clock()])
       const user = session && db.one('SELECT * FROM users WHERE id=?', [session.user_id])
       if (route === '/v1/auth/code' && method === 'POST') {
         const input = await json(), purpose = input.purpose || 'login', phone = purpose !== 'login' ? user?.phone : input.phone
-        if (!['login', 'purge', 'password', 'delete-account'].includes(purpose) || !/^1[3-9]\d{9}$/.test(phone || '')) fail(400, '手机号或验证码用途无效')
+        if (!['login', 'purge', 'password', 'delete-account', 'space-key-reset'].includes(purpose) || !/^1[3-9]\d{9}$/.test(phone || '')) fail(400, '手机号或验证码用途无效')
         if (purpose !== 'login' && (!user || !db.one('SELECT hash FROM sessions WHERE hash=? AND expires>?', [session.hash, clock()]))) fail(401, '请先登录')
+        if (purpose === 'space-key-reset' && !db.one('SELECT vault_key FROM users WHERE id=?', [user.id])?.vault_key) fail(409, '请先完成云空间密钥迁移')
         const ip = clientIp(req)
         if (db.one('SELECT COUNT(*) n FROM sends WHERE phone=? AND time>?', [phone, clock()-60000]).n || db.one('SELECT COUNT(*) n FROM sends WHERE phone=? AND time>?', [phone, clock()-86400000]).n >= 20 || db.one('SELECT COUNT(*) n FROM sends WHERE ip=? AND time>?', [ip, clock()-3600000]).n >= 50) fail(429, '发送过于频繁，请稍后再试')
         const code = String(randomInt(100000, 1000000))
@@ -289,13 +295,59 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       }
       if (route === '/v1/me' && method === 'GET') return reply(account(user))
       if (route === '/v1/auth/logout' && method === 'POST') { db.transaction(()=>{db.run('DELETE FROM sessions WHERE hash=?',[hash(bearer)]);db.run('DELETE FROM session_devices WHERE session_hash=?',[hash(bearer)])}); return reply({ loggedOut:true }) }
+      const currentAccount = () => {
+        if (!db.one('SELECT hash FROM sessions WHERE hash=? AND expires>?', [session.hash, clock()])) fail(401, '登录已过期，请重新登录')
+        const current = db.one('SELECT * FROM users WHERE id=?', [user.id])
+        if (!current) fail(401, '登录已过期，请重新登录')
+        return current
+      }
       if (route === '/v1/space/enable' && method === 'POST') {
-        const input=await json(); if(input.agreementVersion!=='2026-10-08'||input.consent!==true||typeof input.envelope!=='string'||bytes(input.envelope)>4096) fail(400,'请同意云服务协议并创建加密密钥')
-        if(user.enabled) return reply(account(user))
-        db.transaction(()=>{db.run('UPDATE users SET enabled=1,autosave=0,envelope=?,consent=? WHERE id=?',[input.envelope,JSON.stringify({version:input.agreementVersion,time:clock()}),user.id]);audit(user.id,'enable-space')})
+        const input = await json()
+        const managed = input.agreementVersion === agreementVersion
+        const legacy = input.agreementVersion === legacyAgreementVersion && typeof input.envelope === 'string' && bytes(input.envelope) <= 4096
+        if (input.consent !== true || (!managed && !legacy)) fail(400, '请同意云服务协议并创建加密密钥')
+        const current = currentAccount()
+        if (current.enabled) return reply(account(current))
+        const revision = current.vault_revision + 1
+        const wrapped = managed ? spaceKeys.envelopeFor(user.id, revision, randomBytes(32)) : null
+        db.transaction(() => {
+          db.run('UPDATE users SET enabled=1,autosave=0,envelope=?,consent=?,vault_key=?,vault_revision=? WHERE id=?', [managed ? null : input.envelope, JSON.stringify({ version: input.agreementVersion, time: clock() }), wrapped, revision, user.id])
+          audit(user.id, 'enable-space')
+        })
         return reply(account(db.one('SELECT * FROM users WHERE id=?',[user.id])))
       }
       if (!user.enabled) fail(403, '请先开通云空间')
+      if (route === '/v1/space/key' && method === 'GET') {
+        if (!user.vault_key) fail(409, '请在旧版已解锁设备上完成迁移，或输入旧版恢复密钥')
+        return reply({ key: spaceKeys.rootFor(user).toString('base64'), revision: user.vault_revision })
+      }
+      if (route === '/v1/space/key' && method === 'POST') {
+        const input = await json(8192)
+        const current = currentAccount()
+        if (!current.enabled) fail(403, '请先开通云空间')
+        if (current.vault_key) return reply(account(current))
+        const root = spaceKeys.recoverLegacy(current, input)
+        const revision = current.vault_revision + 1
+        db.transaction(() => {
+          db.run('UPDATE users SET vault_key=?,vault_revision=? WHERE id=?', [spaceKeys.envelopeFor(user.id, revision, root), revision, user.id])
+          audit(user.id, 'migrate-space-key')
+        })
+        return reply(account(db.one('SELECT * FROM users WHERE id=?', [user.id])))
+      }
+      if (route === '/v1/space/key/reset' && method === 'POST') {
+        const input = await json(8192)
+        const current = currentAccount()
+        if (!current.vault_key) fail(409, '请先完成云空间密钥迁移')
+        const root = spaceKeys.rootFor(current)
+        const revision = current.vault_revision + 1
+        verifyCode(current.phone, 'space-key-reset', input.code, () => {
+          db.run('UPDATE users SET vault_key=?,vault_revision=? WHERE id=?', [spaceKeys.envelopeFor(user.id, revision, root), revision, user.id])
+          db.run('DELETE FROM sessions WHERE user_id=? AND hash<>?', [user.id, session.hash])
+          db.run('DELETE FROM session_devices WHERE user_id=? AND session_hash<>?', [user.id, session.hash])
+          audit(user.id, 'reset-space-key')
+        })
+        return reply({ key: root.toString('base64'), revision })
+      }
       if (await myShares.handle({ route, method, url, user, json, reply })) return
       if (route === '/v1/share-links' || route.startsWith('/v1/share-links')) { if (await shareLinks.handle({ route, method, json, reply, user, req, res, body })) return }
       if(route==='/v1/space/counts'&&method==='GET')return reply({files:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('file','knowledge')",[user.id]).n,folders:db.one("SELECT COUNT(*) n FROM nodes WHERE user_id=? AND kind IN ('folder','library')",[user.id]).n,versions:db.one('SELECT COUNT(*) n FROM versions WHERE user_id=?',[user.id]).n,trash:db.one('SELECT COUNT(*) n FROM nodes WHERE user_id=? AND deleted=1',[user.id]).n,publications:db.one('SELECT COUNT(*) n FROM publications WHERE user_id=?',[user.id]).n,used:usage(user.id)})
@@ -303,7 +355,7 @@ async function createCloud({ directory, sms, env = process.env, quota = QUOTA, c
       if (route === '/v1/space/purge' && method === 'POST') {
         const input=await json(); if(input.confirm!=='清空并停用云空间') fail(400,'请确认清空操作');verifyCode(user.phone,'purge',input.code)
         const blobs=db.query('SELECT blob FROM versions WHERE user_id=? UNION SELECT blob FROM publications WHERE user_id=?',[user.id,user.id]), pending=db.query('SELECT id FROM uploads WHERE user_id=?',[user.id])
-        db.transaction(()=>{realtime.purgeUser(user.id);blobs.push(...collaboration.purgeUser(user.id));shareLinks.purgeUser(user.id);for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL WHERE id=?',[user.id]);audit(user.id,'purge-space')})
+        db.transaction(()=>{realtime.purgeUser(user.id);blobs.push(...collaboration.purgeUser(user.id));shareLinks.purgeUser(user.id);for(const table of ['nodes','versions','uploads','publications'])db.run(`DELETE FROM ${table} WHERE user_id=?`,[user.id]);db.run('UPDATE users SET enabled=0,autosave=0,envelope=NULL,consent=NULL,vault_key=NULL WHERE id=?',[user.id]);db.run("DELETE FROM codes WHERE phone=? AND purpose='space-key-reset'",[user.phone]);audit(user.id,'purge-space')})
         for(const b of blobs)unlink(path.join(b.team?teamObjects:objects,b.blob));for(const u of pending)unlink(path.join(incoming,u.id))
         return reply({enabled:false,autosave:false,deleted:true,backupRetentionDays:7})
       }

@@ -2,7 +2,7 @@ import { ChartRenderer } from './ChartRenderer'
 import React from 'react'
 import { App as AntdApp } from 'antd'
 import type { 幻灯片, 文本框, 演示对象 } from '../deck'
-import { 读取对象树顺序 } from '../model/objectOperations'
+import { 读取对象树顺序, 读取混合图层层级 } from '../model/objectOperations'
 import type { 图表显示 } from '../model/elements'
 import { ShapeRenderer } from './ShapeRenderer'
 import { TableRenderer } from './TableRenderer'
@@ -45,7 +45,7 @@ export function 图片内容({ 对象, 图片地址 }: { 对象: 演示对象; �
   const { modal } = AntdApp.useApp()
   const 裁剪 = 对象.裁剪 ?? { 左: 0, 上: 0, 右: 0, 下: 0 }
   const 地址 = 图片地址[对象.资源标识 ?? '']
-  return <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>{地址 && <img alt="幻灯片图片" draggable={false} src={地址} onError={() => modal.error({ title: '图片显示失败', content: `图片对象 ${对象.id} 无法解码，请检查来源图片数据` })} style={{ position: 'absolute', width: `${100 / (1 - 裁剪.左 - 裁剪.右)}%`, height: `${100 / (1 - 裁剪.上 - 裁剪.下)}%`, left: `${-裁剪.左 * 100 / (1 - 裁剪.左 - 裁剪.右)}%`, top: `${-裁剪.上 * 100 / (1 - 裁剪.上 - 裁剪.下)}%` }} />}</div>
+  return <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>{地址 && <img alt={对象.替代文字 || '幻灯片图片'} draggable={false} src={地址} onError={() => modal.error({ title: '图片显示失败', content: `图片对象 ${对象.id} 无法解码，请检查来源图片数据` })} style={{ position: 'absolute', width: `${100 / (1 - 裁剪.左 - 裁剪.右)}%`, height: `${100 / (1 - 裁剪.上 - 裁剪.下)}%`, left: `${-裁剪.左 * 100 / (1 - 裁剪.左 - 裁剪.右)}%`, top: `${-裁剪.上 * 100 / (1 - 裁剪.上 - 裁剪.下)}%` }} />}</div>
 }
 export function 对象样式(对象: 演示对象): React.CSSProperties {
   return { position: 'absolute', left: 对象.x, top: 对象.y, width: 对象.width, height: 对象.height, transform: `rotate(${对象.旋转 ?? 0}deg)`, transformOrigin: 'center' }
@@ -89,5 +89,10 @@ export function 页脚图层({ 页脚, 页序号, 尺寸 }: { 页脚?: 页脚设
 /** 编辑画布、缩略预览、放映与导出共享相同坐标、文字片段、背景、页脚、图表显示范围与媒体呈现。 */
 export function SlideObjects({ 幻灯片, 图片地址 = {}, 图表显示 = {}, 仅标识, 放映 = false, on媒体失败, 页脚, 页序号 = 0, 页面尺寸 = 默认页面尺寸 }: { 幻灯片: 幻灯片; 图片地址?: 图片地址表; 图表显示?: Record<string, 图表显示>; 仅标识?: string[]; 放映?: boolean; on媒体失败?: (错误: unknown) => void; 页脚?: 页脚设置 | null; 页序号?: number; 页面尺寸?: 页面尺寸 }) {
   const 显示该项 = (标识: string) => !仅标识 || 仅标识.includes(标识)
-  return <>{幻灯片.文本框列表.filter(框 => 显示该项(框.id)).map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={文本样式(框)}><文本内容 框={框} /></div>)}{读取绘制对象(幻灯片.对象列表 ?? []).filter(对象 => 显示该项(对象.id)).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={对象样式(对象)}><对象内容 对象={对象} 图片地址={图片地址} 显示={图表显示[对象.id]} 放映={放映} on媒体失败={on媒体失败} /></div>)}<页脚图层 页脚={页脚} 页序号={页序号} 尺寸={页面尺寸} /></>
+  const 层级 = 读取混合图层层级(幻灯片)
+  return <>
+    {幻灯片.文本框列表.filter(框 => 显示该项(框.id)).map(框 => <div key={框.id} data-框标识={框.id} className="wps-slideshow__box" style={{ ...文本样式(框), zIndex: 层级.get(框.id) }}><文本内容 框={框} /></div>)}
+    {读取绘制对象(幻灯片.对象列表 ?? []).filter(对象 => 显示该项(对象.id)).map(对象 => <div key={对象.id} data-对象标识={对象.id} style={{ ...对象样式(对象), zIndex: 层级.get(对象.id) }}><对象内容 对象={对象} 图片地址={图片地址} 显示={图表显示[对象.id]} 放映={放映} on媒体失败={on媒体失败} /></div>)}
+    <页脚图层 页脚={页脚} 页序号={页序号} 尺寸={页面尺寸} />
+  </>
 }

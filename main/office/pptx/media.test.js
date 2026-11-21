@@ -20,7 +20,7 @@ describe('原生图片关系', () => {
     const 形 = {id:'原生形',类型:'图形',x:0,y:0,width:100,height:100,形状:{种类:'矩形',文本:'节点',填充:'#FFFFFF',线条:'#000000',线宽:1,颜色:'#000000',字号:20,加粗:false}}
     const xml = await 写入图片对象(包,路径,'<p:sld><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>',[形,{id:'图片',类型:'图片',x:0,y:0,width:80,height:60,资源标识:标识}],[{标识,类型:'image/png',数据:图片.toString('base64')}])
     const 交错 = xml.replace('</p:spTree>','<p:sp><p:txBody><a:p><a:r><a:t>上层文字</a:t></a:r></a:p></p:txBody></p:sp></p:spTree>')
-    expect((await 读取图片对象(包,路径,交错)).警告).toContain('图片与文字图层未完整导入')
+    expect((await 读取图片对象(包,路径,交错)).混合图层).toBe(true)
   })
   it.each(['noMove="true" noResize="true"',"noMove='true' noResize='true'"] )('组合合法布尔锁定 %s 两轮读写保留',async 属性=>{
     const {写入pptx,读取pptx}=require('../pptxCodec')

@@ -330,7 +330,10 @@ describe('演示文稿编辑器容器', () => {
     }
     render(<AntdApp><AppProvider><创建入口 /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告演示' }))
-    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent(风险)
+    expect(await screen.findByRole('status', { name: '仅查看提示' })).toHaveTextContent('仅查看')
+    await userEvent.click(screen.getByRole('button', { name: '查看兼容性详情' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent(风险)
+    await userEvent.keyboard('{Escape}')
     expect(screen.queryByText('演示文稿内容可能未完整导入')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: '保存' }))
     expect((await screen.findAllByText('已阻止覆盖来源文件')).length).toBeGreaterThan(0)

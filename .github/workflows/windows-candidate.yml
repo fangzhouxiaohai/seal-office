@@ -1,0 +1,50 @@
+name: Windows desktop candidate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/windows-candidate.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'main/**'
+      - 'renderer/**'
+      - 'scripts/build-windows-release.ps1'
+      - 'scripts/build-msix.ps1'
+      - 'scripts/prepare-office-runtime.py'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: '--max-old-space-size=6144'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run dist:windows:all
+      - name: Verify installer and store package
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $directory = "release/v$version"
+          $installer = "$directory/seal-office-setup-$version.exe"
+          $store = "$directory/seal-office-$version-microsoft-store-x64.msix"
+          python scripts/verify-msix-package.py $store "$directory/win-unpacked" --version $version --report "$directory/msix-verification.json"
+          if ($LASTEXITCODE -ne 0) { throw 'MSIX validation failed' }
+          Get-FileHash -Algorithm SHA256 -Path $installer,$store | Format-Table
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: |
+            release/v*/seal-office-setup-*.exe
+            release/v*/seal-office-*-microsoft-store-x64.msix
+            release/v*/msix-verification.json
+          compression-level: 0
+          if-no-files-found: error

@@ -6,6 +6,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { 列转字母, 生成地址, 解析地址, type 单元格位置 } from './address'
 import { 读取单元格, 查询合并, 默认列宽, 默认行高, type Sheet } from './model'
 import { 获取合并边界, 获取合并外缘格式, 可见轴索引 } from './gridGeometry'
+import { 工作表显示格式 } from './sheetFeatures'
 
 export interface 选区范围 {
   起点: 单元格位置
@@ -174,6 +175,7 @@ const GridView = ({
   }, [选区.起点.行, 选区.起点.列, 选区.终点.行, 选区.终点.列, 编辑地址, 工作表.id, scale, 跟随选区])
 
   // 第一行为角落与列标，其余每行为行号加该行单元格；全部显式定位以支持合并单元格
+  const 显示格式 = useMemo(() => 工作表显示格式(工作表), [工作表])
   const 网格子元素: React.ReactNode[] = [
     React.createElement('div', {
       key: 'corner',
@@ -235,6 +237,8 @@ const GridView = ({
       continue
     }
     const 单元 = 读取单元格(工作表, 地址)
+    const 条件格式 = 显示格式(位置)
+    const 填充 = 条件格式.填充颜色 ?? 单元.格式.填充颜色 ?? 条件格式.表格填充
     const 边缘格式 = 合并 ? 获取合并外缘格式(工作表, 位置, 合并.跨度行, 合并.跨度列, 单元.格式) : 单元.格式
     const 原边框 = 边缘格式.边框
     const 上邻边框 = 行 > 0 ? 读取单元格(工作表, 生成地址(行 - 1, 列)).格式.边框 : undefined
@@ -278,8 +282,8 @@ const GridView = ({
             fontWeight: 单元.格式.加粗 === true ? 600 : 400,
             fontStyle: 单元.格式.斜体 === true ? 'italic' : 'normal',
             textDecoration: 单元.格式.下划线 === true ? 'underline' : 'none',
-            color: 单元.格式.字体颜色,
-            background: 单元.格式.填充颜色,
+            color: 条件格式.字体颜色 ?? 单元.格式.字体颜色,
+            background: 填充,
             boxShadow: 边框阴影(绘制边框, 边缘格式.边框颜色),
             borderRightColor: 原边框?.右 || 右邻边框?.左 ? 'transparent' : undefined,
             borderBottomColor: 原边框?.下 || 下邻边框?.上 ? 'transparent' : undefined,
@@ -291,7 +295,7 @@ const GridView = ({
               ...(行 < 冻结行 ? { top: 行顶偏移[行] } : {}),
               ...(列 < 冻结列 ? { left: 列左偏移[列] } : {}),
               zIndex: 行 < 冻结行 && 列 < 冻结列 ? 5 : 3,
-              background: 单元.格式.填充颜色 ?? (选中 ? 'var(--brand-soft)' : 'var(--bg-card)'),
+              background: 填充 ?? (选中 ? 'var(--brand-soft)' : 'var(--bg-card)'),
             } as React.CSSProperties : {}),
           },
           onMouseDown: (事件: React.MouseEvent) => {

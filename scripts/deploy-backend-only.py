@@ -13,7 +13,7 @@ ROOT=Path(__file__).resolve().parents[1]
 PRIVATE=ROOT/'.upgrade-private/backend-only'
 SITE='/www/wwwroot/seal.xingmasoft.com'
 SCRIPTS=['deploy-backend-runner.cjs','deploy-backend-only.cjs']
-RUNTIME=['index.cjs','store.cjs','adminAccess.cjs','sms.cjs','formats.cjs','passwords.cjs','shareLinks.cjs','myShares.cjs','collaboration.cjs','realtime.cjs','accountConversion.cjs','accountErasure.cjs','eraseRecords.cjs','eraseBackups.cjs','publicValidation.cjs','nativeCodec.cjs','skinFormat.cjs','converterAdmin.cjs','validateIsolated.cjs','releases.cjs','releaseAssets.cjs','package.json','package-lock.json']
+RUNTIME=['index.cjs','store.cjs','adminAccess.cjs','sms.cjs','formats.cjs','passwords.cjs','spaceKeys.cjs','shareLinks.cjs','myShares.cjs','collaboration.cjs','realtime.cjs','accountConversion.cjs','accountErasure.cjs','eraseRecords.cjs','eraseBackups.cjs','publicValidation.cjs','nativeCodec.cjs','skinFormat.cjs','converterAdmin.cjs','validateIsolated.cjs','releases.cjs','releaseAssets.cjs','package.json','package-lock.json']
 
 def digest(path):
     value=hashlib.sha256()

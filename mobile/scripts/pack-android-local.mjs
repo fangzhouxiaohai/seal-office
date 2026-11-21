@@ -46,9 +46,9 @@ export async function packAndroidLocal() {
   const config = await validateAndroidBuild(root)
   // 脚本及参数固定，避免把本机密码或动态路径拼进命令字符串。
   if (process.platform === 'win32') run('cmd.exe', ['/d', '/c', 'gradlew.bat', '--no-daemon', 'testDebugUnitTest', 'assembleRelease'], config.project)
-  else run('./gradlew', ['--no-daemon', 'testDebugUnitTest', 'assembleRelease'], config.project)
+  else run('sh', ['./gradlew', '--no-daemon', 'testDebugUnitTest', 'assembleRelease'], config.project)
   const apk = path.join(config.project, 'app/build/outputs/apk/release/app-release.apk')
-  run('python', [path.join(config.project, 'scripts/verify-apk.py'), apk], root)
+  run(process.platform === 'win32' ? 'python' : 'python3', [path.join(config.project, 'scripts/verify-apk.py'), apk], root)
   let sdk = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME
   if (!sdk) {
     const properties = await fs.readFile(path.join(config.project, 'local.properties'), 'utf8')

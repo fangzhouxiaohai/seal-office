@@ -15,6 +15,7 @@ export const 英文界面271Compat: Record<string, string> = {
   '。原文件不会被覆盖。': '. The original file will not be overwritten.',
   '另存副本以便编辑': 'Save a copy to edit',
   '仅查看提示': 'View-only notice',
+  '查看兼容性详情': 'Compatibility details',
   '当前为仅查看，请先另存副本再编辑': 'This file is view-only. Save a copy before editing.',
   '当前文件为仅查看（含本机暂不支持的内容），请先另存副本再让助手修改': 'This file is view-only because it contains unsupported content. Save a copy before asking the assistant to edit it.',
   '此文件含本机暂不支持的内容，直接保存会丢失以下内容。请通过另存为保存到不同路径。': 'This file contains unsupported content that would be lost if saved directly. Use Save As to save to a different path.',

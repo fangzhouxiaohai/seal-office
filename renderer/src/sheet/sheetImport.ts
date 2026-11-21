@@ -24,6 +24,8 @@ export interface Xlsx工作表元数据 {
   筛选?: 工作表筛选
   保护?: '本机' | '外部'
   图片?: Array<Omit<SheetImage, 'id'> & { id?: string }>
+  结构化表格?: Sheet['结构化表格']
+  条件格式?: Sheet['条件格式']
 }
 
 /** 从 HTML 表格标记构建工作表；内容写入后统一重算公式 */
@@ -44,6 +46,7 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   }))
   const 最大列数 = 行值列表.reduce((最大, 行) => Math.max(最大, 行.length), 0)
   const 元数据地址 = [
+    ...(元数据?.结构化表格 ?? []).flatMap(表 => 表.范围.split(':')),
     ...Object.keys(元数据?.单元格格式 ?? {}),
     ...Object.keys(元数据?.单元格验证 ?? {}),
     ...Object.keys(元数据?.超链接 ?? {}),
@@ -66,6 +69,8 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   const 行数 = Math.max(行值列表.length + 5, 元数据最大行 + 1, 图片最大行 + 1, 10)
   const 列数 = Math.max(最大列数 + 3, 元数据最大列 + 1, 图片最大列 + 1, 6)
   const 工作表: Sheet = { ...创建工作表(名称, 行数, 列数), 页面设置: { ...默认页面设置, ...页面 } }
+  if (元数据?.结构化表格?.length) 工作表.结构化表格 = 元数据.结构化表格
+  if (元数据?.条件格式?.length) 工作表.条件格式 = 元数据.条件格式
   if (元数据?.列布局) 工作表.列布局 = 元数据.列布局.map(项 => ({ ...项, ...(项.格式 ? { 格式: { ...项.格式 } } : {}) }))
   else if (元数据?.列宽 && Object.keys(元数据.列宽).length) 工作表.列布局 = 压缩列宽(元数据.列宽)
   if (元数据?.视图) 工作表.视图 = { ...元数据.视图 }

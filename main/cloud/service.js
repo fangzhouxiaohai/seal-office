@@ -37,8 +37,9 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     if(!safeStorage?.isEncryptionAvailable())throw new Error('系统安全存储不可用，无法保存云端密钥')
     durableWrite(secureFile,safeStorage.encryptString(JSON.stringify(state)))
   }
-  const root=()=>{if(!state.root)throw new Error('请先输入恢复密钥解锁云空间');return Buffer.from(state.root,'base64')}
-  function status(){return {sessionLocked:!sessionLoaded,url:state.url,account:state.account,unlocked:Boolean(state.root&&state.account),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,deletionPending:Boolean(state.deletionReceipt),...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
+  const root=()=>{if(!state.root)throw new Error('云空间密钥尚未就绪，请重新连接云空间');return Buffer.from(state.root,'base64')}
+  function spaceReady() { return Boolean(state.root && state.account?.enabled && (!state.account.keyRevision || state.account.keyRevision === state.keyRevision)) }
+  function status(){return {sessionLocked:!sessionLoaded,url:state.url,account:state.account,unlocked:spaceReady(),statuses:{...state.statuses},pending:fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).length,deletionPending:Boolean(state.deletionReceipt),...(state.account&&state.recoveryPending?{recoveryPending:state.recoveryPending}:{})}}
   async function request(route,{method='GET',data,binary=false,headers={},timeout=30000}={}){
     const url=new URL(state.url+route),payload=Buffer.isBuffer(data)?data:data===undefined?null:Buffer.from(JSON.stringify(data))
     const head={...(state.token?{Authorization:'Bearer '+state.token}:{}),...(payload?{'Content-Type':Buffer.isBuffer(data)?'application/octet-stream':'application/json','Content-Length':payload.length}:{}),...headers}
@@ -58,10 +59,56 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
       });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(timeout,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
     })
   }
-  const requireSpace=()=>{if(state.deletionReceipt)throw new Error('账号正在确认注销，请先查看注销进度');if(!state.token||!state.account?.enabled)throw new Error('请先登录并开通云空间');root()}
+  const requireSpace=()=>{if(state.deletionReceipt)throw new Error('账号正在确认注销，请先查看注销进度');if(!state.token||!state.account?.enabled)throw new Error('请先登录并开通云空间');if(!spaceReady())throw new Error('请重新连接云空间以同步密钥')}
   const encodeMeta=(id,meta)=>seal(root(),Buffer.from(JSON.stringify(meta)),`seal-meta:${id}`).toString('base64')
   const decodeMeta=n=>({...n,meta:JSON.parse(unseal(root(),Buffer.from(n.meta,'base64'),`seal-meta:${n.id}`).toString())})
-  async function refresh(){if(state.token){const account=await request('/v1/me');if(state.account?.autosave&&!account.autosave){epoch++;for(const req of active)req.destroy()}state.account=account;if(!account.enabled){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};clearOutbox()}persist()}return status()}
+  function guardAccount(expected, started) {
+    if (epoch !== started || state.account?.id !== expected.id) throw new Error('当前账号已切换，请重试')
+  }
+  function cacheSpaceKey(key, revision) {
+    if (typeof key !== 'string' || !/^[A-Za-z0-9+/]{43}=$/.test(key) || !Number.isSafeInteger(revision) || revision <= 0) throw new Error('云空间密钥响应无效')
+    if (state.root && state.root !== key && pending().length) throw new Error('还有使用原密钥的待同步文件，请先导出本机副本')
+    if (state.root && state.root !== key) {
+      epoch++; for (const req of active) req.destroy()
+      state.links = {}; state.statuses = {}; state.shareKeys = {}
+    }
+    state.root = key
+    state.keyRevision = revision
+    state.account = { ...state.account, keyRevision: revision }
+    state.recoveryPending = null
+    persist()
+  }
+  async function syncSpaceKey(recovery) {
+    const expected = state.account, started = epoch
+    if (!expected?.enabled || expected.keyRecovery !== 1) return
+    if (!expected.keyRevision && !state.root) return
+    if (expected.keyRevision && state.root && expected.keyRevision === state.keyRevision) return
+    if (!expected.keyRevision) {
+      const account = await request('/v1/space/key', { method:'POST', data:{ key:state.root, envelope:expected.envelope, ...(recovery ? { recovery } : {}) } })
+      guardAccount(expected, started)
+      state.account = account
+    }
+    const { key, revision } = await request('/v1/space/key')
+    guardAccount(expected, started)
+    // A concurrent refresh may already have cached a newer revision.
+    if (!state.root || (state.keyRevision ?? 0) <= revision) cacheSpaceKey(key, revision)
+  }
+  async function refresh() {
+    if (!state.token) return status()
+    const started = epoch
+    const account = await request('/v1/me')
+    guardAccount(account, started)
+    if (state.account?.autosave && !account.autosave) { epoch++; for (const req of active) req.destroy() }
+    state.account = account
+    if (!account.enabled) {
+      if (pending().length) throw new Error('云空间已停用，本机待同步文件仍可导出')
+      state.root = null; state.keyRevision = 0; state.recoveryPending = null; state.links = {}; state.statuses = {}
+    } else {
+      await syncSpaceKey(state.recoveryPending)
+    }
+    persist()
+    return status()
+  }
   async function requireAIIdentity(){
     const required=(status=401,message='使用 AI 功能前请先登录并完成手机号验证')=>Object.assign(new Error(message),{status,code:'AI_IDENTITY_REQUIRED'})
     if(!state.token||!state.account||state.deletionReceipt)throw required()
@@ -82,7 +129,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
   const keyFor=n=>unseal(root(),Buffer.from(n.meta.key,'base64'),`seal-key:${n.id}`)
   const clearOutbox=()=>{for(const name of fs.readdirSync(outbox))fs.unlinkSync(path.join(outbox,name))}
   async function flushItem(queue){
-    const localEpoch=epoch;if(!state.account?.enabled||!state.root||!state.token)return
+    const localEpoch=epoch;if(!spaceReady()||!state.token)return
     if(queue.automatic&&!state.account.autosave)return
     state.statuses[queue.id]='加密上传中'
     try{
@@ -159,7 +206,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
   async function download(id,versionId){const nodes=await list(),node=nodes.find(n=>n.id===id);if(!node||node.deleted)throw new Error('文件不存在');const versions=await request(`/v1/nodes/${id}/versions`);const v=versionId?versions.items.find(v=>v.id===versionId):versions.items[0];if(!v)throw new Error('文件还没有已保存的版本');const raw=await request(`/v1/versions/${v.id}`,{binary:true});return {name:node.meta.filename||node.meta.name,data:unseal(keyFor(node),raw,`seal-data:${id}`).toString('base64'),version:v.version}}
   function pending(){return fs.readdirSync(outbox).filter(n=>n.endsWith('.json')).map(filename=>{const q=JSON.parse(fs.readFileSync(path.join(outbox,filename),'utf8')),link=Object.values(state.links).find(l=>l.id===q.id);return {id:q.id,name:link?.meta?.name||'待同步文件',status:state.statuses[q.id]||'离线待同步',automatic:q.automatic}})}
   function queuePath(id){if(typeof id!=='string'||!/^[0-9a-f-]{36}$/.test(id))throw new Error('待同步文件标识无效');return path.join(outbox,id+'.json')}
-  function pendingFile(id){requireSpace();const q=JSON.parse(fs.readFileSync(queuePath(id),'utf8')),link=Object.values(state.links).find(l=>l.id===id);if(!link?.meta)throw new Error('待同步文件密钥不可用，请保留本机记录并输入恢复密钥');return {name:link.meta.filename||link.meta.name,data:unseal(keyFor({id,meta:link.meta}),fs.readFileSync(path.join(outbox,q.blob)),`seal-data:${id}`).toString('base64')}}
+  function pendingFile(id){const q=JSON.parse(fs.readFileSync(queuePath(id),'utf8')),link=Object.values(state.links).find(l=>l.id===id);if(!link?.meta||!state.root)throw new Error('待同步文件密钥不可用，请保留本机记录并恢复云空间');return {name:link.meta.filename||link.meta.name,data:unseal(keyFor({id,meta:link.meta}),fs.readFileSync(path.join(outbox,q.blob)),`seal-data:${id}`).toString('base64')}}
   async function keepConflict(id){
     requireSpace();if(locks.has(id))throw new Error('请等待当前同步结束');const queueFile=queuePath(id),q=JSON.parse(fs.readFileSync(queueFile,'utf8')),entries=Object.entries(state.links).filter(([,l])=>l.id===id),link=entries[0]?.[1];if(!link)throw new Error('待同步文件不存在')
     const file=pendingFile(id),ext=path.extname(file.name),name=path.basename(file.name,ext)+' 冲突副本'+ext
@@ -177,9 +224,14 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     const result=await request(route,{method:'POST',data:{...credentials,deviceId:state.deviceId,deviceName:'海豹办公设备'}})
     const same=state.owner===result.account.id
     if(!same&&pending().length){try{await request('/v1/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+result.token}})}catch{}throw new Error('本机还有原账号的待同步数据，请先登录原账号处理')}
+    const legacyChanged = same && state.account?.envelope && result.account.envelope !== state.account.envelope && !result.account.keyRevision
+    if (legacyChanged && pending().length) throw new Error('原云空间已变化，请先导出待同步文件')
     epoch++;state.token=result.token;state.account=result.account;state.owner=result.account.id
-    if(!same){state.root=null;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox()}
-    persist();return status()
+    if(legacyChanged){state.root=null;state.keyRevision=0;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={}}
+    if(!same){state.root=null;state.keyRevision=0;state.recoveryPending=null;state.links={};state.statuses={};state.shareKeys={};clearOutbox()}
+    persist()
+    await syncSpaceKey(state.recoveryPending).catch(() => {})
+    return status()
   }
   function finishAccountDeletion(){
     if(state.owner&&state.owner!==state.deletionOwner||state.account&&state.account.id!==state.deletionOwner)return
@@ -224,9 +276,47 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
       finishAccountDeletion();if(result.deleted){state.deletionReceipt=null;state.deletionOwner=null;persist()}return result
     },
     async logout(){requireEmptyOutbox();if(state.recoveryPending)throw new Error('请先安全保存并确认恢复密钥');try{await request('/v1/auth/logout',{method:'POST'})}finally{epoch++;for(const req of active)req.destroy();state.token=null;state.account=null;state.owner=null;state.root=null;state.links={};state.statuses={};clearOutbox();persist()}return status()},
-    async enable(consent){if(!state.account)throw new Error('请先登录');if(consent!==true)throw new Error('请先同意云服务协议');if(state.account.enabled)return status();const recovery=randomBytes(32).toString('hex'),key=randomBytes(32);const envelope=seal(recoveryKey(recovery,state.account.id),key,`seal-root:${state.account.id}`).toString('base64');state.account=await request('/v1/space/enable',{method:'POST',data:{consent:true,agreementVersion:'2026-10-08',envelope}});state.root=key.toString('base64');state.recoveryPending=recovery;persist();return {...status(),recovery}},
+    async enable(consent) {
+      const expected = state.account, started = epoch
+      if (!expected) throw new Error('请先登录')
+      if (consent !== true) throw new Error('请先同意云服务协议')
+      if (expected.enabled) return refresh()
+      if (expected.keyRecovery === 1) {
+        const account = await request('/v1/space/enable', { method:'POST', data:{ consent:true, agreementVersion:expected.agreementVersion } })
+        guardAccount(expected, started)
+        state.account = account
+        await syncSpaceKey()
+        return status()
+      }
+      const recovery = randomBytes(32).toString('hex'), key = randomBytes(32)
+      const envelope = seal(recoveryKey(recovery, expected.id), key, `seal-root:${expected.id}`).toString('base64')
+      const account = await request('/v1/space/enable', { method:'POST', data:{ consent:true, agreementVersion:'2026-10-08', envelope } })
+      guardAccount(expected, started)
+      state.account = account
+      if (account.envelope !== envelope) return refresh()
+      state.root = key.toString('base64')
+      state.recoveryPending = recovery
+      persist()
+      return { ...status(), recovery }
+    },
     ackRecovery(){requireSpace();state.recoveryPending=null;persist();return status()},
-    async unlock(recovery){if(!state.account?.envelope)throw new Error('请先开通云空间');const key=unseal(recoveryKey(recovery,state.account.id),Buffer.from(state.account.envelope,'base64'),`seal-root:${state.account.id}`);state.root=key.toString('base64');persist();return status()},
+    async unlock(recovery) {
+      if (state.account?.keyRevision) return refresh()
+      if (!state.account?.envelope) throw new Error('请先开通云空间')
+      const key = unseal(recoveryKey(recovery, state.account.id), Buffer.from(state.account.envelope, 'base64'), `seal-root:${state.account.id}`)
+      state.root = key.toString('base64')
+      persist()
+      await syncSpaceKey(recovery)
+      return status()
+    },
+    async resetSpaceKey(code) {
+      const expected = state.account, started = epoch
+      if (!expected?.enabled || !expected.keyRevision) throw new Error('请先完成云空间密钥迁移')
+      const { key, revision } = await request('/v1/space/key/reset', { method:'POST', data:{ code } })
+      guardAccount(expected, started)
+      cacheSpaceKey(key, revision)
+      return status()
+    },
     async setAutosave(enabled){if(!state.account?.enabled)throw new Error('请先开通云空间');if(enabled)root();await request('/v1/space/autosave',{method:'POST',data:{enabled}});state.account.autosave=enabled;if(!enabled){epoch++;for(const req of active)req.destroy()}persist();return status()},
     async purge(code){const result=await request('/v1/space/purge',{method:'POST',data:{code,confirm:'清空并停用云空间'}});epoch++;for(const req of active)req.destroy();state.root=null;state.recoveryPending=null;state.account={...state.account,enabled:false,autosave:false,envelope:null,used:0};state.links={};state.statuses={};clearOutbox();persist();return {...result,...status()}},
     folder:(name,parent,kind='folder')=>createNode({name},kind,parent),

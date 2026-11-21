@@ -12,6 +12,7 @@ const { 解析颜色, 读取索引调色板 } = require('./xlsxColors')
 const { 从Xml读取筛选, 规范筛选, 替换工作表筛选Xml, 含降级条件, 解析筛选范围, 行满足筛选 } = require('./xlsxFilter')
 const { 筛选降级告警, 内部名称告警 } = require('./warningLevels')
 const { 读取工作簿定义名, 写入打印定义名, 规范打印定义名 } = require('./xlsxDefinedNames')
+const { 读取表格功能, 写入表格功能, 移除生成表格的筛选 } = require('./xlsxSheetFeatures')
 
 const 单张图片字节上限 = 5 * 1024 * 1024
 const 工作簿图片字节上限 = 20 * 1024 * 1024
@@ -591,7 +592,6 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
     图片节点数 !== 图片状态.已导入图片数 || (绘图路径.length > 0 && 图片节点数 === 0)) 警告.add('绘图对象未导入')
   for (const 提示 of 图片状态.警告) 警告.add(提示)
   if (存在部件(/^xl\/(?:pivotTables|pivotCache)\//i)) 警告.add('数据透视表未导入')
-  if (存在部件(/^xl\/tables\//i)) 警告.add('结构化表格未导入')
   if (存在部件(/^xl\/threadedComments\//i)) 警告.add('线程批注未导入')
   if (存在部件(/^xl\/(?:externalLinks|connections|queryTables)\//i)) 警告.add('外部数据连接未导入')
   // 以原始 workbook.xml 为准：ExcelJS 会把打印区域等内部名转移到页面设置，不能只看 definedNames。
@@ -612,7 +612,6 @@ async function 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列�
     }
     if (工作表.autoFilter && !筛选) 警告.add('筛选条件未导入')
     if (含降级条件(筛选)) 警告.add(筛选降级告警)
-    if (工作表.conditionalFormattings?.length > 0) 警告.add('条件格式未导入')
     if (保护列表[索引] === '外部') 警告.add('工作表保护设置未导入')
     工作表.eachRow({ includeEmpty: true }, (行) => {
       行.eachCell({ includeEmpty: true }, (单元格) => {
@@ -702,7 +701,8 @@ async function 读取xlsx(数据) {
   const 公式警告 = new Set()
   const 单元元数据 = await 读取工作簿元数据(压缩包, 公式警告)
   let 已展开共享公式 = false
-  for (const 路径 of await 工作表Xml路径列表(压缩包)) {
+  const 工作表路径 = await 工作表Xml路径列表(压缩包)
+  for (const 路径 of 工作表路径) {
     const 部件 = 路径 ? 压缩包.file(路径) : null
     if (!部件) { 公式来源列表.push({}); 原始数字列表.push({}); 打印方向列表.push(undefined); continue }
     const xml = await 部件.async('string')
@@ -728,7 +728,8 @@ async function 读取xlsx(数据) {
   const 数组预算 = { 剩余: 1000000 }
   const 完整公式来源 = 工作簿.worksheets.map((工作表, 索引) => 补充动态类型缓存(工作表, { ...读取公式来源(工作表, 工作簿.properties.date1904), ...公式来源列表[索引] }, 原始数字列表[索引], 公式警告, 数组预算))
   const 警告 = await 收集保真警告(工作簿, 压缩包, 筛选列表, 保护列表, 图片状态, 原始数字列表, 完整公式来源, 定义名)
-  警告.push(...公式警告)
+  const 表格功能 = await 读取表格功能(工作簿, 压缩包, 工作表路径)
+  警告.push(...公式警告, ...表格功能.警告)
   const 页面警告 = new Set(警告)
   if (!工作簿.worksheets || 工作簿.worksheets.length === 0) {
     return { html: '<p><br></p>', 警告 }
@@ -738,7 +739,7 @@ async function 读取xlsx(数据) {
     名称: 工作表.name || 'Sheet1',
     html: 工作表转Html(工作表, 公式来源列表[索引], 原始数字列表[索引]),
     页面设置: 读取页面设置(工作表, 页面警告, 打印方向列表[索引], 定义名.打印设置[索引]),
-    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引] ?? undefined, 保护列表[索引], 颜色上下文), ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
+    元数据: { ...读取工作表元数据(工作表, 页面警告, 筛选列表[索引] ?? undefined, 保护列表[索引], 颜色上下文), ...表格功能.数据[索引], ...(工作簿.properties.date1904 ? { 日期系统1904: true } : {}), ...(公式兼容模式 ? { 公式兼容模式 } : {}), 图片: 图片列表[索引], 公式来源: 完整公式来源[索引] },
   }))
   return { html: 工作表列表[0].html, 工作表列表, 警告: Array.from(页面警告) }
 }
@@ -763,6 +764,7 @@ async function 写入xlsx(模型) {
   工作簿.calcProperties.fullCalcOnLoad = true
   const 图片状态 = { 总字节: 0 }
   const 动态数组地址列表 = []
+  const 无筛选表格 = new Set()
   // 归一化输入为 [{ 名称, 数据: 二维数组 }]：
   // 渲染层契约为 { 工作表: [{ 名称, 数据 }] }，旧契约为 { 行: 二维数组 }（单表）。
   let 表定义列表 = []
@@ -773,6 +775,7 @@ async function 写入xlsx(模型) {
         const 名称 = typeof 表.名称 === 'string' && 表.名称.trim() !== '' ? 表.名称 : `工作表${序号 + 1}`
         return { 名称, 数据: 表.数据, 页面设置: 表.页面设置, 日期系统1904: 表.日期系统1904 ?? 表.元数据?.日期系统1904, 公式兼容模式: 表.公式兼容模式 ?? 表.元数据?.公式兼容模式,
           图片: 表.图片 !== undefined ? 表.图片 : 表.元数据?.图片,
+          结构化表格: 表.结构化表格, 条件格式: 表.条件格式,
           列布局: 表.列布局, 默认列宽: 表.默认列宽, 默认行高: 表.默认行高, 视图: 表.视图,
           合并区域: 表.合并区域, 列宽: 表.列宽, 行高: 表.行高, 冻结: 表.冻结, 筛选: 表.筛选, 保护: 表.保护 }
       })
@@ -912,6 +915,7 @@ async function 写入xlsx(模型) {
         if (单元 && typeof 单元 === 'object') 写入数据验证(目标单元, 单元.数据验证)
       })
     })
+    写入表格功能(工作表, 表定义, 无筛选表格)
     // 合并子格可以分别保存外缘边框，不能用主格样式覆盖这些真实格式。
     if (Array.isArray(表定义.合并区域)) 表定义.合并区域.forEach((区域) => 工作表.mergeCellsWithoutStyle(区域))
     if (表定义.筛选) {
@@ -933,7 +937,8 @@ async function 写入xlsx(模型) {
       工作表.addImage(图片编号, { tl: { col: 图片.列, row: 图片.行 }, ext: { width: 图片.宽, height: 图片.高 } })
     }
   })
-  const 原数据 = 表定义列表.some(表 => 表.页面设置?.打印区域) ? await 规范打印定义名(await 工作簿.xlsx.writeBuffer()) : await 工作簿.xlsx.writeBuffer()
+  let 原数据 = await 移除生成表格的筛选(await 工作簿.xlsx.writeBuffer(), JSZip, 无筛选表格)
+  if (表定义列表.some(表 => 表.页面设置?.打印区域)) 原数据 = await 规范打印定义名(原数据)
   return 写入公式兼容模式(await 写入动态元数据(await 写入筛选Xml(原数据, 表定义列表.map((表) => 表.筛选)), 动态数组地址列表), 公式兼容模式)
 }
 

@@ -136,6 +136,8 @@ type Xlsx工作表 = {
   筛选?: import('./model').工作表筛选
   保护?: boolean
   图片?: SheetImage[]
+  结构化表格?: Sheet['结构化表格']
+  条件格式?: Sheet['条件格式']
 }
 
 /** XML cannot represent isolated UTF-16 surrogates returned by legacy WPS text
@@ -180,6 +182,7 @@ function 构建单表模型(工作表: Sheet, 保留空表 = false): Xlsx工作�
   })
   const 自定义页面 = !!工作表.页面设置?.自定义页边距 || Object.keys(默认页面设置).some(键 => (工作表.页面设置 ?? 默认页面设置)[键 as keyof typeof 默认页面设置] !== 默认页面设置[键 as keyof typeof 默认页面设置])
   const 有布局 = 工作表.合并区域.length > 0 || 工作表.冻结 !== undefined || 工作表.筛选 !== undefined || 工作表.保护 !== undefined || 自定义页面 ||
+    !!工作表.结构化表格?.length || !!工作表.条件格式?.length ||
     !!工作表.列布局?.length || 工作表.视图 !== undefined || 工作表.默认列宽 !== undefined || 工作表.默认行高 !== undefined ||
     工作表.日期系统1904 === true || 工作表.公式兼容模式 === 'WPS' ||
     工作表.列宽.some((宽) => 宽 !== 默认列宽) || 工作表.行高.some((高) => 高 !== 默认行高) || (工作表.图片?.length ?? 0) > 0
@@ -232,6 +235,8 @@ function 构建单表模型(工作表: Sheet, 保留空表 = false): Xlsx工作�
       ...(工作表.视图.普通缩放 !== undefined ? { 普通缩放: Math.min(400, Math.max(10, Math.round(工作表.视图.普通缩放))) } : {}),
     } } : {}),
     图片: [...(工作表.图片 ?? [])],
+    ...(工作表.结构化表格?.length ? { 结构化表格: 工作表.结构化表格 } : {}),
+    ...(工作表.条件格式?.length ? { 条件格式: 工作表.条件格式 } : {}),
     ...(工作表.冻结 ? { 冻结: 工作表.冻结 } : {}),
     ...(工作表.筛选 ? { 筛选: 工作表.筛选 } : {}),
     ...(工作表.保护 ? { 保护: true } : {}),
