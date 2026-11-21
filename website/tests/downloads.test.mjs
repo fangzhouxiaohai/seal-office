@@ -58,6 +58,13 @@ describe('分平台下载入口', () => {
         const displayedVersion = /v(\d+\.\d+\.\d+)/.exec(link.textContent)?.[1]
         assert.equal(displayedVersion, version)
         assert.equal(link.href, `${base}${displayedVersion}/seal-office-${displayedVersion}-macos-${mac[1]}.dmg`)
+      } else if (link.dataset.platform === 'windows' || link.dataset.platform === 'linux') {
+        const url = new URL(link.href)
+        const filename = link.dataset.platform === 'windows' ? `seal-office-setup-${version}.exe` : `seal-office-${version}-amd64.deb`
+        assert.equal(url.origin, 'https://seal.xingmasoft.com')
+        assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
+        assert.equal(url.pathname.split('/').pop(), filename)
+        assert.ok(link.textContent.includes(`v${version}`))
       } else {
         assert.ok(link.href.startsWith(`${base}${version}/seal-office-`))
         assert.ok(link.textContent.includes(`v${version}`))
@@ -65,5 +72,15 @@ describe('分平台下载入口', () => {
     }
     const intel = document.querySelector('[data-platform="macos-intel"]')
     assert.match(intel.textContent, /Intel/)
+  })
+
+  it('在下载按钮旁说明旧桌面版遇到更新失败时如何覆盖安装', async () => {
+    const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+    const { document } = new JSDOM(html).window
+    const text = document.querySelector('#downloads').textContent
+    assert.match(text, /2\.7\.7/)
+    assert.match(text, /更新失败/)
+    assert.match(text, /覆盖安装/)
+    assert.match(text, /微软商店/)
   })
 })
