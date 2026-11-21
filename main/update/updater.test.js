@@ -39,6 +39,26 @@ describe('更新服务', () => {
     } finally { 环境.清理() }
   })
 
+  it('内置桌面运行时能在下载前重新查询发布，且可取消正在进行的查询', async () => {
+    // 桌面端内置的 Node 18.15 仅提供 timeout，未提供 AbortSignal.any。
+    vi.stubGlobal('AbortSignal', { timeout: AbortSignal.timeout.bind(AbortSignal) })
+    const 环境 = 准备({ 查询结果: { hasUpdate: true, ...新版 } })
+    try {
+      const 控制 = new AbortController()
+      await expect(环境.服务.检查('stable', 控制.signal)).resolves.toEqual({ hasUpdate: true, ...新版 })
+      环境.请求.mockImplementationOnce((_地址, { signal }) => new Promise((_完成, 拒绝) => {
+        signal.addEventListener('abort', () => 拒绝(signal.reason), { once: true })
+      }))
+      const 等待查询 = 环境.服务.检查('stable', 控制.signal)
+      控制.abort()
+      await expect(等待查询).rejects.toMatchObject({ status: 0 })
+      expect(环境.请求).toHaveBeenCalledTimes(2)
+    } finally {
+      环境.清理()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('服务端返回错误时带状态码抛出，不伪装成无更新', async () => {
     const 环境 = 准备({ 状态码: 429, 查询结果: { error: '更新检查过于频繁，请稍后再试' } })
     try {

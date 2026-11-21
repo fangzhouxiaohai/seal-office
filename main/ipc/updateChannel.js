@@ -1,6 +1,7 @@
 // 版本更新通道：版本号取 app.getVersion()，服务器地址沿用云服务当前配置。
 const { app, shell, net } = require('electron')
 const { spawn } = require('child_process')
+const path = require('node:path')
 const { 创建更新服务, 判定更新平台 } = require('../update/updater')
 const { 创建暂存更新 } = require('../update/stagedUpdater')
 const { AI失败结果 } = require('../ai/identityGate')

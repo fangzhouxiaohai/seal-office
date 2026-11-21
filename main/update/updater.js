@@ -24,22 +24,34 @@ function 创建更新服务({ 当前版本, 平台, 获取服务地址, 请求 =
     if (!['windows', 'windows-store', 'linux', 'macos'].includes(平台)) throw 失败('当前平台暂不支持在线更新', { code: 'UNSUPPORTED' })
     if (通道 !== 'stable' && 通道 !== 'beta') throw 失败('发布通道无效')
     const 地址 = `${String(获取服务地址()).replace(/\/$/, '')}/v1/updates/latest?platform=${encodeURIComponent(平台)}&version=${encodeURIComponent(当前版本)}&channel=${通道}`
-    let 响应
-    const 发起 = () => 请求(地址, { signal: 信号 ? AbortSignal.any([信号, AbortSignal.timeout(超时)]) : AbortSignal.timeout(超时), headers: { Accept: 'application/json' } })
-    try { 响应 = await 发起() }
-    catch (首次) {
-      // 启动阶段网络或代理可能尚未就绪，稍等后重试一次，仍失败才提示无法连接
-      if (信号?.aborted) throw 失败('无法连接更新服务', { status: 0, cause: 首次 })
-      await new Promise(完成 => setTimeout(完成, 600))
-      try { 响应 = await 发起() }
-      catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
+    async function 发起() {
+      if (信号?.aborted) throw 失败('无法连接更新服务', { status: 0, cause: 信号.reason })
+      const 控制器 = new AbortController()
+      const 取消 = () => 控制器.abort(信号.reason)
+      信号?.addEventListener('abort', 取消, { once: true })
+      const 定时器 = setTimeout(() => 控制器.abort(), 超时)
+      try {
+        let 响应
+        try { 响应 = await 请求(地址, { signal: 控制器.signal, headers: { Accept: 'application/json' } }) }
+        catch (原因) { throw 失败('无法连接更新服务', { status: 0, cause: 原因 }) }
+        if ([401, 403, 404].includes(响应.status)) throw 失败('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', { status: 响应.status })
+        let 数据
+        try { 数据 = await 响应.json() } catch { throw 失败('更新服务返回内容无效', { status: 响应.status }) }
+        if (!响应.ok) throw 失败(数据?.error || '更新服务暂时不可用', { status: 响应.status })
+        if (!数据 || typeof 数据.hasUpdate !== 'boolean') throw 失败('更新服务返回内容无效', { status: 响应.status })
+        return Object.fromEntries(必要字段.filter(键 => 键 in 数据).map(键 => [键, 数据[键]]))
+      } finally {
+        clearTimeout(定时器)
+        信号?.removeEventListener('abort', 取消)
+      }
     }
-    if ([401, 403, 404].includes(响应.status)) throw 失败('更新服务尚未部署或配置不正确，请联系管理员完成后台部署后重试', { status: 响应.status })
-    let 数据
-    try { 数据 = await 响应.json() } catch { throw 失败('更新服务返回内容无效', { status: 响应.status }) }
-    if (!响应.ok) throw 失败(数据?.error || '更新服务暂时不可用', { status: 响应.status })
-    if (!数据 || typeof 数据.hasUpdate !== 'boolean') throw 失败('更新服务返回内容无效', { status: 响应.status })
-    return Object.fromEntries(必要字段.filter(键 => 键 in 数据).map(键 => [键, 数据[键]]))
+    try { return await 发起() }
+    catch (首次) {
+      if (首次.status !== 0 || 信号?.aborted) throw 首次
+      // 启动阶段网络或代理可能尚未就绪，稍等后重试一次。
+      await new Promise(完成 => setTimeout(完成, 600))
+      return 发起()
+    }
   }
 
   async function 下载并校验(发布) {

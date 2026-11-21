@@ -12,6 +12,12 @@ const 限时 = (信号, 毫秒) => AbortSignal.any([信号, AbortSignal.timeout(
 const 图形表达式 = () => `(()=>{const e=process.mainModule.require('electron'),p=process.mainModule.require('path');const canvas=process.mainModule.require(p.join(e.app.getAppPath(),'node_modules/@napi-rs/canvas'));return canvas.createCanvas(2,2).toBuffer('image/png').subarray(0,8).toString('hex')})()`
 const 窗口表达式 = () => "typeof process !== 'undefined' && !!process.mainModule && process.mainModule.require('electron').BrowserWindow.getAllWindows().length > 0"
 
+async function 核对更新状态(计算) {
+  const 响应 = await 计算('window.electronAPI.update.status()')
+  assert.equal(响应?.成功, true, 响应?.错误 || '未能读取更新暂存状态')
+  assert.equal(响应.数据?.阶段, '空闲', '隔离配置的更新暂存状态异常')
+}
+
 function 有界等待(任务, 信号) {
   return new Promise((resolve, reject) => {
     if (信号.aborted) return reject(中断错误())
@@ -142,6 +148,8 @@ async function 验收(应用) {
     进度('核对应用与沙箱')
     assert.equal(await 主进程.计算("process.mainModule.require('electron').app.isPackaged"), true)
     assert.equal(await 主进程.计算("process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences().sandbox"), true)
+    进度('读取更新暂存状态')
+    await 核对更新状态(渲染.计算)
     进度('加载原生图形模块')
     assert.equal(await 主进程.计算(图形表达式(), 20000), '89504e470d0a1a0a')
     进度('转换文稿')
@@ -170,5 +178,5 @@ async function 验收(应用) {
   }
 }
 
-module.exports = { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口 }
+module.exports = { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口, 核对更新状态 }
 if (require.main === module) 验收(process.argv[2]).catch(错误 => { console.error(错误); process.exitCode = 1 })

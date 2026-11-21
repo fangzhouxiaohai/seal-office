@@ -6,6 +6,15 @@ const path = require('node:path')
 const { EventEmitter } = require('node:events')
 const { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口 } = require('./verify-macos-candidate.cjs')
 
+test('隔离苹果成品必须通过真实预加载桥读取更新暂存状态', async () => {
+  const { 核对更新状态 } = require('./verify-macos-candidate.cjs')
+  const vm = require('node:vm')
+  const 调用 = 响应 => 表达式 => vm.runInNewContext(表达式, { window: { electronAPI: { update: { status: async () => 响应 } } } })
+  await 核对更新状态(调用({ 成功: true, 数据: { 阶段: '空闲' } }))
+  await assert.rejects(核对更新状态(调用({ 成功: false, 错误: '无法读取暂存目录' })), /无法读取暂存目录/)
+  await assert.rejects(核对更新状态(调用({ 成功: true, 数据: { 阶段: '失败' } })))
+})
+
 test('上下文未初始化和主模块未就绪均可安全重试，真实异常继续抛出', () => {
   const vm = require('node:vm')
   assert.equal(vm.runInNewContext(窗口表达式(), {}), false)

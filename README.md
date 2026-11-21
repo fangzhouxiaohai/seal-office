@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-新增 [移动与网页版项目](mobile/README.md)，当前桌面、服务端与移动源码版本为 **2.7.7**，移动构建号 **20707**。共用编辑器与服务；鸿蒙沿用 UTS 宿主，安卓新增 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，后续不再生成便携版；Ubuntu 打包使用 `pack:ubuntu` / `dist:ubuntu`。目录与每版视频规则见[打包规范](docs/打包规范.md)。
+当前桌面、服务端与移动源码版本为 **2.7.8**，移动构建号为 **20708**。各端共用编辑器与服务。鸿蒙沿用 UTS 宿主，安卓使用 [Android Studio Java 原生宿主](android-studio/README.md)。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` 或 `dist:ubuntu`。参见[移动与网页版项目](mobile/README.md)与[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
@@ -16,9 +16,13 @@
 
 官网已部署在 [seal.xingmasoft.com](https://seal.xingmasoft.com/)，后台入口为 `/admin/`，在线办公入口仍为 `/office/`。官网源码位于 `website/`，采用独立构建；运行与发布验证见 [官网修改说明](功能修改说明-官网.md)。
 
-官网首页当前显示 2.7.7 版 Windows、Linux、安卓、鸿蒙与 macOS Apple 芯片 / Intel 安装包；下载地址统一使用服务器已上架的 `/api/v1/release-assets/` 链接与 GitHub 发行附件，不依赖 GitHub 仓库页面；首屏使用可暂停的光晕、网格和渐变背景动效，并遵循系统的减少动态效果设置。改动与验证见[官网首页下载与动效调整](功能修改说明-官网首页下载.md)。
+官网提供 2.7.8 版 Windows、Linux、安卓、鸿蒙、macOS Apple 芯片和 Intel 安装包。首屏的光晕、网格和渐变动效可以暂停，并遵循系统的减少动态效果设置。参见[官网首页下载与动效调整](功能修改说明-官网首页下载.md)。
 
 官网已做整体视觉美化：首屏与页脚增加星空动效（闪烁星点与偶发流星，离开视口自动暂停），按钮统一为胶囊样式并带光泽动效，各区块滚动显现，卡片增加悬浮光晕。改动与验证见[官网星空美化说明](功能修改说明-官网星空美化.md)。
+
+## 2.7.8 桌面更新修复
+
+如果 2.7.7 点击“更新”弹出 `path is not defined`，或已装首发的 2.7.8 桌面包，请先保存文档、退出程序，从官网下载对应平台的 2.7.8 修订包并覆盖安装一次。Windows 选择普通安装版，Ubuntu 选择 DEB，macOS 按芯片选择 DMG。完成后，后续版本可继续在程序内更新。[官网下载](https://seal.xingmasoft.com/#downloads) · [2.7.8 更新说明](docs/release-notes/v2.7.8.md)
 
 ## 2.7.7 PDF 工作台与导入兼容
 

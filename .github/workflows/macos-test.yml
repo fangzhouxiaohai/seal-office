@@ -11,6 +11,7 @@ on:
       - 'build/third-party-notice.txt'
       - 'main/**'
       - 'scripts/verify-macos-candidate.cjs'
+      - 'scripts/verify-macos-universal.cjs'
       - 'scripts/generate-integrity.cjs'
       - 'mobile/web/public/fonts/**'
       - 'renderer/**'
@@ -48,7 +49,7 @@ jobs:
       - name: 安装依赖
         run: npm ci --no-audit --no-fund
       - name: 执行平台测试
-        run: npx vitest run --config vitest.main.config.js main/mac/platform.test.js main/fileAssociation.test.js main/fileAssociation.integration.test.js main/update/stagedUpdater.test.js
+        run: npx vitest run --config vitest.main.config.js main/mac/platform.test.js main/fileAssociation.test.js main/fileAssociation.integration.test.js main/update/stagedUpdater.test.js main/ipc/updateChannel.test.js
       - name: 安装系统转换引擎
         run: |
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
@@ -101,7 +102,7 @@ jobs:
           PY
           test ! -e "$app/Contents/Resources/office-runtime/program/soffice.com"
           node scripts/verify-macos-candidate.cjs "$app"
-          shasum -a 256 "$dmg" > "$RELEASE_DIR/macos-test-sha256.txt"
+          (cd "$RELEASE_DIR" && shasum -a 256 "$(basename "$dmg")" > macos-test-sha256.txt)
           printf '%s\n' '仅供隔离测试：未进行开发者签名、公证或真实访达、程序坞手工验收，不得作为正式发行包。' > "$RELEASE_DIR/macos-test-status.txt"
       - name: 保存隔离测试附件
         uses: actions/upload-artifact@v4
@@ -114,3 +115,121 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 7
+
+  merge-universal:
+    needs: build-and-test
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macos-*-test-only
+          path: ${{ runner.temp }}/macos-inputs
+      - name: 合并本次两款安装包并封装临时签名的通用更新包
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          name="seal-office-$version-macos.dmg"
+          work="$RUNNER_TEMP/macos-universal"
+          mkdir -p "$work/merged"
+          for arch in x64 arm64; do
+            input="$RUNNER_TEMP/macos-inputs/macos-$arch-test-only"
+            (cd "$input" && shasum -a 256 -c macos-test-sha256.txt)
+            hdiutil verify "$input/$name"
+            mkdir -p "$work/mount"
+            hdiutil attach -readonly -nobrowse -mountpoint "$work/mount" "$input/$name"
+            trap 'hdiutil detach "$work/mount" || true' EXIT
+            mkdir "$work/$arch"
+            ditto "$work/mount/海豹办公.app" "$work/$arch/海豹办公.app"
+            codesign --verify --deep --strict "$work/$arch/海豹办公.app"
+            hdiutil detach "$work/mount"
+            trap - EXIT
+          done
+          app="$work/merged/海豹办公.app"
+          node scripts/verify-macos-universal.cjs "$work/x64/海豹办公.app" "$work/arm64/海豹办公.app" "$app"
+          node - "$app" <<'NODE'
+          require('@electron/osx-sign').signApp({ app: process.argv[2], platform: 'darwin', identity: '-', identityValidation: false, hardenedRuntime: false, preEmbedProvisioningProfile: false }).catch(error => { console.error(error); process.exitCode = 1 })
+          NODE
+          codesign --verify --deep --strict "$app"
+          lipo "$app/Contents/MacOS/海豹办公" -verify_arch x86_64 arm64
+          npx electron-builder --config build/electron-macos.cjs --mac dmg --universal --prepackaged "$app" --publish never
+          directory="release/v$version"
+          hdiutil verify "$directory/$name"
+          (cd "$directory" && shasum -a 256 "$name" > macos-universal-sha256.txt)
+          printf 'RELEASE_DIR=%s\n' "$directory" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal-update
+          path: |
+            ${{ env.RELEASE_DIR }}/*-macos.dmg
+            ${{ env.RELEASE_DIR }}/macos-universal-sha256.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+  verify-universal:
+    needs: merge-universal
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            machine: arm64
+          - runner: macos-15-intel
+            machine: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    env:
+      EXPECTED_ARCH: ${{ matrix.machine }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: 安装系统转换引擎
+        run: |
+          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            if [ "$EXPECTED_ARCH" = x86_64 ]; then brew update; fi
+            brew install --cask libreoffice
+          fi
+          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal-update
+          path: ${{ runner.temp }}/macos-universal
+      - name: 挂载通用成品并验证当前架构的更新、原生图形和文稿转换
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          version=$(node -p "require('./package.json').version")
+          work="$RUNNER_TEMP/macos-universal"
+          (cd "$work" && shasum -a 256 -c macos-universal-sha256.txt)
+          dmg="$work/seal-office-$version-macos.dmg"
+          hdiutil verify "$dmg"
+          mkdir "$work/mount" "$work/copy"
+          hdiutil attach -readonly -nobrowse -mountpoint "$work/mount" "$dmg"
+          trap 'hdiutil detach "$work/mount" || true' EXIT
+          test "$(readlink "$work/mount/Applications")" = /Applications
+          test -s "$work/mount/.DS_Store"
+          app="$work/copy/海豹办公.app"
+          ditto "$work/mount/海豹办公.app" "$app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
+          codesign --verify --deep --strict "$app"
+          lipo "$app/Contents/MacOS/海豹办公" -verify_arch x86_64 arm64
+          node -e "require('./scripts/verify-macos-universal.cjs').校验完整性(process.argv[1])" "$app"
+          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-universal.cjs --canvas "$app"

@@ -1,4 +1,55 @@
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const { createHash } = require('node:crypto')
+
 describe('桌面更新 IPC', () => {
+  it.each([
+    ['windows', '.exe'],
+    ['linux', '.deb'],
+    ['macos', '.dmg'],
+  ])('%s 更新入口通过真实暂存服务校验并恢复下载', async (平台, 扩展名) => {
+    const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-update-ipc-'))
+    const 内容 = Buffer.from('海豹办公测试安装包')
+    const 发布 = {
+      hasUpdate: true, version: '2.7.8', url: 'https://example.com/seal-office' + 扩展名,
+      bytes: 内容.length, sha256: createHash('sha256').update(内容).digest('hex'),
+    }
+    const 请求 = vi.fn(async () => new Response(内容))
+    const 获取目录 = vi.fn(() => 目录)
+    const 服务 = { 平台, 当前版本: '2.7.7', 检查: vi.fn(async () => 发布) }
+    const electronPath = require.resolve('electron')
+    const 原模块 = require('electron')
+    const channelPath = require.resolve('./updateChannel')
+    const 原通道 = require.cache[channelPath]
+    require.cache[electronPath].exports = { app: { getPath: 获取目录 }, net: { fetch: 请求 } }
+    delete require.cache[channelPath]
+    try {
+      const { 注册更新通道 } = require('./updateChannel')
+      const 注册 = () => {
+        const 方法 = new Map()
+        注册更新通道({ handle: (名, 回调) => 方法.set(名, 回调) }, { 更新服务: 服务 })
+        return 方法
+      }
+      const 方法 = 注册()
+      const 结果 = await 方法.get('update.download')({}, 发布)
+      expect(结果).toMatchObject({ 成功: true, 数据: { 阶段: '已就绪', 已下载: 内容.length } })
+      expect(获取目录).toHaveBeenCalledWith('userData')
+      expect(请求.mock.calls[0][0]).toBe(发布.url)
+      expect(服务.检查).toHaveBeenCalledOnce()
+      const 暂存目录 = path.join(目录, 'verified-updates')
+      const 记录 = JSON.parse(fs.readFileSync(path.join(暂存目录, 'pending.json'), 'utf8'))
+      expect(path.extname(记录.文件)).toBe(扩展名)
+      expect(fs.readFileSync(path.join(暂存目录, 记录.文件))).toEqual(内容)
+      expect(await 注册().get('update.status')({})).toEqual(结果)
+    } finally {
+      require.cache[electronPath].exports = 原模块
+      if (原通道) require.cache[channelPath] = 原通道
+      else delete require.cache[channelPath]
+      fs.rmSync(目录, { recursive: true, force: true })
+    }
+  })
+
   it('更新操作经过暂存服务，旧安装通道不能执行桌面安装包', async () => {
     const electronPath = require.resolve('electron')
     require('electron')
