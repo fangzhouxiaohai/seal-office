@@ -52,6 +52,7 @@ jobs:
       - name: 安装系统转换引擎
         run: |
           if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
+            if [ "$MACHINE" = x86_64 ]; then brew update; fi
             brew install --cask libreoffice
           fi
           /Applications/LibreOffice.app/Contents/MacOS/soffice --version
