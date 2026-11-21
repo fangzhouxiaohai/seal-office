@@ -45,6 +45,7 @@ export default {
     uni.$on('seal-persist-workspace', this.persistWorkspace)
   },
   onReady() { this.updateSafeArea() },
+  onHide() { this.evaluate("window.dispatchEvent(new Event('seal-camera-background'))") },
   onResize() { this.updateSafeArea() },
   onUnload() {
     this.alive = false
@@ -115,7 +116,7 @@ export default {
       // #ifdef APP-HARMONY
       platform = 'harmony'
       // #endif
-      const config: UTSJSONObject = { token: this.token, platform: platform }
+      const config: UTSJSONObject = { token: this.token, platform: platform, cameraPreview: platform == 'harmony' }
       this.evaluate('window.sealNative=' + JSON.stringify(config) + ";window.dispatchEvent(new Event('seal-native-ready'))")
     },
     onError(event: UniWebViewErrorEvent) {
@@ -153,6 +154,13 @@ export default {
         if (action == 'ping') this.reply({ id: id, type: 'ready' })
         // #ifdef APP-HARMONY
         else if (action == 'update-store-open') this.openHarmonyStoreUpdate(id)
+        else if (action == 'camera-preview') {
+          if (!this.workspaceReady) { this.reply({ id: id, type: 'error', error: '工作台尚未就绪，请重新打开相机' }); return }
+          UTSHarmony.requestSystemPermission(['ohos.permission.CAMERA'], (allRight: boolean, _granted: string[]) => {
+            this.reply({ id: id, type: allRight ? 'camera-ready' : 'camera-denied' })
+          }, (_again: boolean, _granted: string[]) => { this.reply({ id: id, type: 'camera-denied' }) })
+        }
+        else if (action == 'camera-preview-cancel') return
         // #endif
         else if (action == 'abort') {
           // #ifdef APP-HARMONY

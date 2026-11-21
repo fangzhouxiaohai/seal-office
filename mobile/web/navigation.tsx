@@ -3,11 +3,13 @@ import { App } from 'antd'
 import { useAppStore } from '../../renderer/src/store'
 import Icon from '../../renderer/src/components/Icon'
 import { mobileSection } from './home'
+import { decodeToolRoute } from './toolCatalog'
 import { 底部标签栏可见, 计算返回去向 } from '../../renderer/src/navigation/backLevel'
 
 export default function MobileNavigation() {
   const store = useAppStore(), { message } = App.useApp()
   const route = { module: store.module, navKey: store.navKey, tab: store.activeWorkspaceTabId }
+  const toolOpen = route.module === 'home' && decodeToolRoute(route.navKey) !== null
   const routes = useRef([route]), restoring = useRef(false)
   useEffect(() => {
     if (restoring.current) { restoring.current = false; return }
@@ -92,7 +94,7 @@ export default function MobileNavigation() {
     return () => { active = false; frames.forEach(cancelAnimationFrame); observer.disconnect(); window.removeEventListener('seal-native-back', back); window.removeEventListener('seal-persist-workspace', persist); window.removeEventListener('seal-native-probe', healthy); window.removeEventListener('seal-native-ready', report); document.removeEventListener('fullscreenchange', report) }
   }, [store, message])
   return <>
-    <nav className="seal-mobile-nav" aria-label="移动工作台导航">
+    <nav className="seal-mobile-nav" aria-label="移动工作台导航" hidden={toolOpen}>
       {[{key:'home',section:'home',label:'首页',icon:'home'},{key:'my-cloud',section:'cloud',label:'云盘',icon:'folder'},{key:'apps',section:'services',label:'服务',icon:'grid'},{key:'market',section:'templates',label:'模板',icon:'page-view'},{key:'mobile-profile',section:'mine',label:'我的',icon:'users'}].map(item=><button key={item.key} aria-label={item.label==='首页'?'返回首页':item.label} aria-current={store.module==='home'&&mobileSection(store.navKey)===item.section?'page':undefined} onClick={()=>navigate(item.key)}><Icon name={item.icon} size={23} variant="outline"/><span>{item.label}</span></button>)}
     </nav>
   </>

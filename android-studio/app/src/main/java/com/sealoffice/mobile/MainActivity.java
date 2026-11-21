@@ -28,9 +28,11 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.speech.RecognizerIntent;
 import android.util.Base64;
 import android.view.View;
 import android.webkit.MimeTypeMap;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -83,6 +85,8 @@ public final class MainActivity extends Activity {
     private static final int CAMERA_CAPTURE = 42104;
     private static final int CAMERA_PERMISSION = 42105;
     private static final int UPDATE_NOTIFICATIONS_PERMISSION = 42106;
+    private static final int PREVIEW_PERMISSION = 42107;
+    private static final int SPEECH_INPUT = 42108;
     private static final long MAX_IMPORT = 100L * 1024L * 1024L;
     private static final String LEGACY_ASSET_ROOT = "apps/__UNI__B52B65B/www/static/office/";
     private static final String ENTRY = "file:///android_asset" + HostProtocol.LEGACY_ASSET_PATH + "?native=1";
@@ -114,6 +118,10 @@ public final class MainActivity extends Activity {
     private ValueCallback<Uri[]> cameraCallback;
     private File cameraFile;
     private Uri cameraUri;
+    private String previewId;
+    private boolean previewPermissionPending;
+    private long previewGrantUntil;
+    private String speechId;
 
     @Override public void onCreate(Bundle state) {
         SplashScreen splash = SplashScreen.installSplashScreen(this);
@@ -186,6 +194,14 @@ public final class MainActivity extends Activity {
                     if (data != null) ui.post(() -> receive(data));
                 });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onPermissionRequest(PermissionRequest request) {
+                boolean allowed = ready && previewGrantUntil > android.os.SystemClock.elapsedRealtime() &&
+                        checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+                        HostProtocol.allowsPreview(web.getUrl(), request.getOrigin().toString(), request.getResources());
+                if (!allowed) { request.deny(); return; }
+                previewGrantUntil = 0;
+                request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+            }
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (HostProtocol.wantsCamera(params.isCaptureEnabled(), params.getAcceptTypes())) return capturePhoto(null, callback);
                 if (htmlPicker != null) htmlPicker.onReceiveValue(null);
@@ -218,7 +234,7 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (!HostProtocol.isWorkspaceUrl(url)) return;
-                String config = "{token:" + JSONObject.quote(token) + ",platform:'android'}";
+                String config = "{token:" + JSONObject.quote(token) + ",platform:'android',cameraPreview:true,speechInput:true}";
                 evaluate("window.uni=window.uni||{};window.uni.webView={postMessage:function(value){SealHost.postMessage(JSON.stringify(value))}};" +
                         "window.sealNative=" + config + ";window.open=function(url){SealHost.postMessage(JSON.stringify({data:{action:'open-external',token:window.sealNative.token,url:String(url)}}));return null};" +
                         "window.dispatchEvent(new Event('seal-native-ready'));");
@@ -259,6 +275,8 @@ public final class MainActivity extends Activity {
     }
 
     private void openOffice() {
+        previewGrantUntil = 0;
+        previewId = null;
         ready = false;
         failure.setVisibility(View.GONE);
         web.setVisibility(View.INVISIBLE);
@@ -345,6 +363,26 @@ public final class MainActivity extends Activity {
                 case "update-install": updater.install(value -> replyUpdate(id, value)); break;
                 case "pick-files": pickFiles(id, data.optBoolean("multiple")); break;
                 case "camera-capture": capturePhoto(id, null); break;
+                case "camera-preview": preparePreview(id); break;
+                case "camera-preview-cancel":
+                    if (id.equals(previewId)) previewId = null;
+                    previewGrantUntil = 0;
+                    break;
+                case "speech-input":
+                    if (speechId != null) { replyError(id, "已有录音转写正在进行"); break; }
+                    Intent recognition = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    recognition.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    recognition.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
+                    recognition.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+                    recognition.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说出需要转写的内容");
+                    try { speechId = id; startActivityForResult(recognition, SPEECH_INPUT); }
+                    catch (ActivityNotFoundException error) {
+                        speechId = null; replyError(id, "设备没有系统语音识别服务，可录制音频后选择文件转写");
+                    }
+                    break;
+                case "speech-input-cancel":
+                    if (id.equals(speechId)) { speechId = null; finishActivity(SPEECH_INPUT); }
+                    break;
                 case "save": save(id, data, false); break;
                 case "print": save(id, data, true); break;
                 case "font": font(id, data.optString("family")); break;
@@ -443,6 +481,12 @@ public final class MainActivity extends Activity {
         }
     }
     @Override protected void onPause() { if (updater != null) updater.visible(this, false); super.onPause(); }
+    @Override protected void onStop() {
+        previewGrantUntil = 0;
+        previewId = null;
+        evaluate("window.dispatchEvent(new Event('seal-camera-background'))");
+        super.onStop();
+    }
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent); setIntent(intent);
         if (UpdateService.isInstallIntent(this, intent)) { installFromNotification = true; }
@@ -556,7 +600,7 @@ public final class MainActivity extends Activity {
 
     /** 拍照：先确认运行时相机权限（网页层已先展示本应用的授权说明），再打开系统相机写入缓存文件。 */
     private boolean capturePhoto(String id, ValueCallback<Uri[]> callback) {
-        if (cameraId != null || cameraCallback != null) {
+        if (cameraId != null || cameraCallback != null || previewPermissionPending) {
             if (id != null) replyError(id, "相机已打开，请先完成当前拍摄");
             else callback.onReceiveValue(null);
             return true;
@@ -568,6 +612,32 @@ public final class MainActivity extends Activity {
         }
         openCamera();
         return true;
+    }
+
+    private void preparePreview(String id) throws JSONException {
+        if (!ready || !HostProtocol.isWorkspaceUrl(web.getUrl()) || previewPermissionPending || cameraId != null || cameraCallback != null) {
+            replyError(id, "相机暂时不可用，请先完成当前操作"); return;
+        }
+        previewId = id;
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            finishPreviewPermission(true);
+        } else {
+            previewPermissionPending = true;
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, PREVIEW_PERMISSION);
+        }
+    }
+
+    private void finishPreviewPermission(boolean granted) {
+        String id = previewId;
+        previewId = null;
+        previewPermissionPending = false;
+        if (id == null) return;
+        try {
+            if (granted) {
+                previewGrantUntil = android.os.SystemClock.elapsedRealtime() + 10000;
+                reply(result(id, "camera-ready"));
+            } else reply(result(id, "camera-denied").put("error", "未获得相机权限，可在系统设置中开启或从相册导入"));
+        } catch (JSONException ignored) { }
     }
 
     private void openCamera() {
@@ -609,6 +679,10 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == PREVIEW_PERMISSION) {
+            finishPreviewPermission(HostProtocol.permissionGranted(results));
+            return;
+        }
         if (requestCode == UPDATE_NOTIFICATIONS_PERMISSION) {
             String id = updatePermission.take(); JSONObject release = pendingUpdateRelease;
             pendingUpdateRelease = null;
@@ -736,6 +810,19 @@ public final class MainActivity extends Activity {
         if (requestCode == HTML_PICKER) {
             ValueCallback<Uri[]> callback = htmlPicker; htmlPicker = null;
             if (callback != null) callback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            return;
+        }
+        if (requestCode == SPEECH_INPUT) {
+            String id = speechId; speechId = null;
+            if (id == null) return;
+            try {
+                if (resultCode != RESULT_OK) { reply(result(id, "cancel")); return; }
+                ArrayList<String> texts = data == null ? null : data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                if (texts == null || texts.isEmpty() || texts.get(0).trim().isEmpty()) {
+                    replyError(id, "系统没有识别到文字，请重新录音"); return;
+                }
+                reply(result(id, "speech-text").put("value", texts.get(0).trim()));
+            } catch (JSONException error) { replyError(id, "无法读取系统转写结果"); }
             return;
         }
         if (requestCode == CAMERA_CAPTURE) {

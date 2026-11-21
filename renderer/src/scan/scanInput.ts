@@ -5,6 +5,7 @@ declare global {
   interface Window {
     /** 原生宿主拍照；拒绝相机权限时以 name = CameraDeniedError 拒绝 */
     sealCamera?: () => Promise<File[]>
+    sealPrepareCamera?: (signal: AbortSignal) => Promise<void>
     /** 原生宿主的系统文件选择器（鸿蒙 WebView 的文件输入不可靠，走宿主通道） */
     sealPickImages?: (multiple: boolean) => Promise<File[]>
   }

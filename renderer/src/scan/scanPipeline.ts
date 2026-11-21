@@ -1,19 +1,27 @@
 // 扫描页处理流水线：解码（最长边 ≤ 2400）→ 旋转 → 四角（自动检测或手动）→ 透视校正 → 增强 → JPEG。
 // 全部在本机完成；界面层通过本模块调用，组件测试中可整体替换（jsdom 没有画布）。
-import { 检测文档四角, 透视校正, 增强图像, 旋转九十度, type 四角, type 增强模式, type 像素图 } from './imageProcessing'
+import { 检测文档四角, 整图四角, 透视校正, 增强图像, 旋转九十度, type 四角, type 增强模式, type 像素图 } from './imageProcessing'
 import { 解码图片, 编码图片 } from './imageIO'
+import { 拆分书页, 清除彩色笔迹, 擦除笔画, type 擦除笔画设置 } from './scanTransforms'
 
-export interface 页面设置 { 四角: 四角 | null; 模式: 增强模式; 旋转: number }
+export interface 页面设置 { 四角: 四角 | null; 模式: 增强模式; 旋转: number; 整张照片?: boolean; 清除彩笔?: boolean; 笔画?: 擦除笔画设置[] }
 export interface 处理结果 { 图片: Uint8Array; 类型: 'image/jpeg'; 宽: number; 高: number; 四角: 四角; 已检测: boolean }
 
 const 是整图 = (角: 四角, 图: 像素图) => 角[0].x <= 0 && 角[0].y <= 0 && 角[2].x >= 图.宽 && 角[2].y >= 图.高 && 角[1].x >= 图.宽 && 角[3].y >= 图.高
 
 export async function 处理扫描页(原图: Blob, 设置: 页面设置): Promise<处理结果> {
   const 图 = 旋转九十度(await 解码图片(原图), 设置.旋转)
-  const 检测 = 设置.四角 ? { 四角: 设置.四角, 已检测: false } : 检测文档四角(图)
+  const 检测 = 设置.四角 ? { 四角: 设置.四角, 已检测: false } : 设置.整张照片 ? { 四角: 整图四角(图.宽, 图.高), 已检测: false } : 检测文档四角(图)
   const 校正 = 是整图(检测.四角, 图) ? 图 : 透视校正(图, 检测.四角)
-  const 增强 = 增强图像(校正, 设置.模式)
+  const 去彩笔 = 设置.清除彩笔 ? 清除彩色笔迹(校正) : 校正
+  const 底图 = 设置.整张照片 && 设置.模式 === '彩色' ? 去彩笔 : 增强图像(去彩笔, 设置.模式)
+  const 增强 = 设置.笔画?.length ? 擦除笔画(底图, 设置.笔画) : 底图
   return { 图片: await 编码图片(增强), 类型: 'image/jpeg', 宽: 增强.宽, 高: 增强.高, 四角: 检测.四角, 已检测: 检测.已检测 }
+}
+
+export async function 拆分书籍照片(原图: File): Promise<File[]> {
+  const 两页 = 拆分书页(await 解码图片(原图))
+  return Promise.all(两页.map(async (页, i) => new File([await 编码图片(页, 'image/png') as BlobPart], `${原图.name}-${i ? '右' : '左'}.png`, { type: 'image/png' })))
 }
 
 /** 手动调整四角用的原图预览：坐标系与处理时一致（缩放并旋转后的像素） */

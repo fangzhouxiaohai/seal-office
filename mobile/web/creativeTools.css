@@ -1,0 +1,13 @@
+.seal-creative-tool { max-width:680px; display:grid; gap:14px; margin-inline:auto; color:var(--text-1); }
+.seal-creative-tool label { display:grid; gap:5px; font-size:14px; }
+.seal-creative-tool input,.seal-creative-tool select,.seal-creative-tool textarea {
+  box-sizing:border-box; width:100%; min-height:44px; padding:9px 10px; border:1px solid var(--border); border-radius:8px; color:var(--text-1); background:var(--bg-card); font:inherit;
+}
+.seal-creative-tool [role=alert] { color:var(--text-1); margin:0; padding-inline-start:9px; border-inline-start:3px solid #c74245; }
+.seal-pen-settings,.seal-creative-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.seal-pen-settings label,.seal-creative-actions button { flex:1; }
+.seal-creative-tool button { min-height:44px; }
+.seal-handwriting-canvas,.seal-chart-preview:not(:empty) { display:block; box-sizing:border-box; width:100%; background:white; border:1px solid var(--border); border-radius:10px; }
+.seal-handwriting-canvas { aspect-ratio:800/360; touch-action:none; user-select:none; cursor:crosshair; }
+.seal-chart-preview:not(:empty) { aspect-ratio:600/360; }
+.seal-chart-preview svg { display:block; }

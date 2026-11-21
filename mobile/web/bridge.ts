@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto, nativeUpdate, onNativeUpdate } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto, prepareNativeCamera, nativeUpdate, onNativeUpdate } from './native'
 import { createNativeUpdateApi, createHarmonyStoreUpdateApi } from './update'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
@@ -186,7 +186,10 @@ async function initialize() {
   await waitForNative()
   if (window.sealNative) window.sealClipboard = { writeText: writeNativeClipboard }
   // 拍照扫描：原生宿主提供相机；鸿蒙 WebView 的文件输入不可靠，图片导入同样走宿主文件选择器。
-  if (window.sealNative) window.sealCamera = captureNativePhoto
+  if (window.sealNative) {
+    window.sealCamera = captureNativePhoto
+    window.sealPrepareCamera = prepareNativeCamera
+  }
   if (window.sealNative?.platform === 'harmony') window.sealPickImages = (multiple: boolean) => pickNativeFiles(multiple)
   if (navigator.locks) await new Promise<void>((resolve, reject) => {
     void navigator.locks.request('seal-office-workspace', { ifAvailable: true }, async (lock) => {

@@ -1,0 +1,24 @@
+.seal-utility { height: 100%; min-height: 0; width: 100%; display: flex; flex-direction: column; background: #f6f6fa; color: #222334; overflow: hidden; font: 15px/1.55 system-ui,sans-serif }
+.seal-utility, .seal-utility * { box-sizing: border-box }
+.seal-utility-header { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px max(14px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); background: white; border-bottom: 1px solid #e4e2ea }
+.seal-utility-header h1 { margin: 0; font-size: 19px; font-weight: 680; color: #282437 }
+.seal-utility-header button { display: grid; place-items: center; width: 44px; padding: 0 }
+.seal-utility-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; width: 100%; max-width: 750px; margin-inline: auto; padding: 16px max(14px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left)) }
+.seal-util-card { display: grid; gap: 13px; min-width: 0; margin-bottom: 14px; border: 1px solid #e4e2ec; border-radius: 17px; padding: 16px; background: white }
+.seal-util-card h2 { margin: 0; font-size: 17px }
+.seal-util-card p { margin: 0; color: #535364 }
+.seal-util-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.seal-utility :is(button,.seal-util-pick) { min-height: 44px; border: 1px solid #dcd9e7; border-radius: 11px; background: #fff; color: #353041; padding: 7px 13px; font: inherit; cursor: pointer }
+.seal-utility .seal-util-primary { background: #5340b3; border-color: #5340b3; color: #fff; font-weight: 650 }
+.seal-utility button:disabled { opacity: .5; cursor: default }
+.seal-utility :is(button,input,select,textarea):focus-visible { outline: 2px solid #7661ce; outline-offset: 2px }
+.seal-util-label { display: grid; gap: 5px; color: #413a52; font-weight: 600 }
+.seal-util-label :is(select,input:not([type=checkbox]),textarea) { display: block; width: 100%; min-width: 0; min-height: 44px; background: white; color: #292638; border: 1px solid #d5d1df; border-radius: 9px; padding: 9px; font: 400 16px/1.5 system-ui,sans-serif }
+.seal-util-label textarea { resize: vertical; min-height: 104px }
+.seal-util-label input[type=range] { padding: 0; accent-color: #6954be }
+.seal-util-preview { display: block; max-width: 100%; max-height: min(44dvh,460px); margin: auto; object-fit: contain; border-radius: 7px }
+.seal-util-preview.editable { touch-action: none; cursor: crosshair }
+.seal-util-note, .seal-util-status { color: #585267; font-size: 13px; overflow-wrap: anywhere }
+.seal-util-status { padding: 9px; border-radius: 8px; background: #f0edf9 }
+.seal-util-consent { display: flex; gap: 9px; align-items: start; min-height: 44px }
+.seal-util-consent input { margin-top: 5px }

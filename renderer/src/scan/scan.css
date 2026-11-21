@@ -87,3 +87,7 @@
   .scan-pages { grid-template-columns: 1fr; }
   .scan-import .ant-btn, .scan-actions .ant-btn { min-height: 44px; }
 }
+.scan-erase-preview { display: block; width: 100%; height: auto; margin-top: 12px; touch-action: none; cursor: crosshair; }
+.scan-mobile-results .scan-pages { grid-template-columns: minmax(0, 1fr); }
+.scan-mobile-results .scan-page__bar, .scan-mobile-results .scan-page__actions { flex-wrap: wrap; }
+.scan-mobile-results .scan-mobile-actions { position: sticky; bottom: 0; z-index: 1; padding-bottom: max(12px, env(safe-area-inset-bottom)); }

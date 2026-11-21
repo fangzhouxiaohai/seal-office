@@ -3,15 +3,17 @@
 // （mobile/web/shims/fs.js），桌面端 IndexedDB 位于 Electron 用户数据目录内，
 // 随应用数据一起清理，不另建路径。网页版不提供扫描件库（浏览器存储不可靠）。
 
+import type { 扫描模式, 证件类型 } from './scanModes'
 export const 默认分组 = ['我的证件', '我的试卷', '我的错题本', '我的票据']
 export type 扫描来源 = '拍照' | '相册' | '文件' | '粘贴'
 export type 排序方式 = '时间' | '名称' | '大小'
 
 export interface 扫描页设置 { 四角: Array<{ x: number; y: number }> | null; 模式: '彩色' | '灰度' | '黑白'; 旋转: number }
 /** 图片为处理后页面；原图（已缩放到最长边 ≤ 2400）与处理设置用于重新裁边或更换增强效果 */
-export interface 扫描页 { 图片: Uint8Array; 类型: 'image/jpeg' | 'image/png'; 宽: number; 高: number; 文字: string; 原图?: Uint8Array; 设置?: 扫描页设置 }
-export interface 新扫描件 { 标识?: string; 名称: string; 分组: string; 来源: 扫描来源; 模板: string; 页: 扫描页[] }
-export interface 扫描件摘要 { 标识: string; 名称: string; 分组: string; 来源: 扫描来源; 模板: string; 页数: number; 大小: number; 创建时间: number; 修改时间: number; 已识别: boolean; 导出次数: number }
+export interface 扫描页 { 图片: Uint8Array; 类型: 'image/jpeg' | 'image/png'; 宽: number; 高: number; 文字: string; 原图?: Uint8Array; 原图类型?: string; 跨页原片?: Uint8Array; 跨页类型?: string; 译文?: string; 设置?: 扫描页设置 }
+interface 移动记录 { 工具?: 扫描模式; 证件?: 证件类型; 译文语言?: string }
+export interface 新扫描件 extends 移动记录 { 标识?: string; 名称: string; 分组: string; 来源: 扫描来源; 模板: string; 页: 扫描页[] }
+export interface 扫描件摘要 extends 移动记录 { 标识: string; 名称: string; 分组: string; 来源: 扫描来源; 模板: string; 页数: number; 大小: number; 创建时间: number; 修改时间: number; 已识别: boolean; 导出次数: number }
 export interface 扫描件 extends 扫描件摘要 { 页: 扫描页[] }
 export interface 导出记录 { 标识: string; 扫描件标识: string; 扫描件名称: string; 格式: string; 文件名: string; 时间: number }
 
@@ -76,7 +78,8 @@ export async function 打开扫描件库(工厂: IDBFactory | undefined = global
       const 原有 = await 请求结果(事务.objectStore(表.摘要).get(标识)) as 扫描件摘要 | undefined
       const 摘要: 扫描件摘要 = {
         标识, 名称, 分组: 输入.分组, 来源: 输入.来源, 模板: 输入.模板, 页数: 输入.页.length,
-        大小: 输入.页.reduce((总计, 页) => 总计 + 页.图片.byteLength + (页.原图?.byteLength ?? 0), 0),
+        ...(输入.工具 ? { 工具: 输入.工具, 证件: 输入.证件, 译文语言: 输入.译文语言 } : {}),
+        大小: 输入.页.reduce((总计, 页) => 总计 + 页.图片.byteLength + (页.原图?.byteLength ?? 0) + (页.跨页原片?.byteLength ?? 0), 0),
         创建时间: 原有?.创建时间 ?? 时间, 修改时间: 时间, 已识别: 输入.页.some(页 => 页.文字.trim() !== ''), 导出次数: 原有?.导出次数 ?? 0,
       }
       事务.objectStore(表.摘要).put(摘要)

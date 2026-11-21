@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "version": "2.7.8",
+  "checks": [
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.8-amd64.deb",
+      "bytes": 168968992,
+      "sha256": "4838c9e8904711fe74bed9c0404aba82085542e6a8574745e1f267976ed3751a",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/72adb402-c1c9-4116-b733-70f92399c89b/seal-office-2.7.8-amd64.deb",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n本修订版修复了桌面版无法下载更新的问题。2.7.7 提示“更新失败”时，请先保存文档并退出海豹办公，在浏览器打开 https://seal.xingmasoft.com/#downloads ，下载 Linux 的 DEB 包，使用系统软件安装器覆盖安装。若系统提示已是同一版本，请在下载目录运行 sudo apt install --reinstall ./seal-office-2.7.8-amd64.deb。初版 2.7.8 也可按此方法覆盖安装。\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/72adb402-c1c9-4116-b733-70f92399c89b/seal-office-2.7.8-amd64.deb",
+        "sha256": "4838c9e8904711fe74bed9c0404aba82085542e6a8574745e1f267976ed3751a",
+        "bytes": 168968992,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

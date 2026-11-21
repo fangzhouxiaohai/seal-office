@@ -4,7 +4,7 @@ import { 桥接 } from '../ipc/bridge'
 import { 当前扫描平台 } from './platform'
 import { 字节转Base64 } from './recognition'
 
-const 类型映射 = { pdf: 'application/pdf', word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', table: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } as const
+const 类型映射 = { pdf: 'application/pdf', word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', table: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ppt: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' } as const
 export type 导出类型 = keyof typeof 类型映射
 
 export const 安全文件名 = (名称: string) => 名称.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim() || '扫描件'

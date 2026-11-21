@@ -9,10 +9,10 @@ import { useSettings } from '../store/settingsStore'
 import './workspaceTools.css'
 
 /** Toolbar/table structure follows the existing application theme and the Ant Design toolbar-table pattern. */
-export default function MultiTablePage() {
+export default function MultiTablePage({ initialView = 'grid' }: { initialView?: 'grid'|'board'|'form' } = {}) {
   const { modal, message } = App.useApp(), document = useToolDocument('seal-multitable-v1', () => ({ schema: 1 as const, tables: [newBaseTable()] }), parseBase)
   const { 语言 } = useSettings(), en = 语言 === 'en-US'
-  const [tableId, setTableId] = useState(''), [search, setSearch] = useState(''), [view, setView] = useState('grid'), [status, setStatus] = useState<string>(), [selected, setSelected] = useState<React.Key[]>([])
+  const [tableId, setTableId] = useState(''), [search, setSearch] = useState(''), [view, setView] = useState<string>(initialView), [status, setStatus] = useState<string>(), [selected, setSelected] = useState<React.Key[]>([])
   const [editing, setEditing] = useState<BaseRecord | null>(null), [field, setField] = useState<BaseField | null>(null), [tableName, setTableName] = useState<string | null>(null)
   const importer = useRef<HTMLInputElement>(null), base = document.data, table = base?.tables.find(t => t.id === tableId) ?? base?.tables[0]
   const fail = (error: unknown) => { modal.error({ title: '操作未完成', content: error instanceof Error ? error.message : String(error) }) }

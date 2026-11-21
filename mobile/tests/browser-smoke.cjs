@@ -167,10 +167,10 @@ app.whenReady().then(async () => {
     // 逐一操作移动菜单，检查实际导航状态，而非只检查按钮存在。
     await evaluate(`document.querySelector('[aria-label="服务"]').click()`)
     await new Promise(resolve => setTimeout(resolve, 350))
-    const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-mobile-function-grid button')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
+    const navigation = await evaluate(`Array.from(document.querySelectorAll('.seal-tool-catalog [data-nav-key]')).map(button=>({key:button.dataset.navKey,label:button.textContent}))`)
     const expectedNavigation = ['pdf','mindmap','flow','multitable','design','notes','calendar','scan','receipt','shared','my-cloud','device','tag','team','knowledge','market','skins','trash','document','settings','help']
     assert.equal(navigation.length, expectedNavigation.length, '服务页面可操作入口数量：' + navigation.map(item => item.key).join('、'))
-    assert.deepEqual(navigation.map(item=>item.key), expectedNavigation, '服务页须完整呈现全部工具、协作和设置入口')
+    assert.deepEqual(navigation.map(item=>item.key).sort(), [...expectedNavigation].sort(), '服务页须完整呈现全部工具、协作和设置入口')
     assert.equal(navigation.some(item=>item.key==='database'), false, '移动端不提供依赖桌面数据库引擎的 Access 入口')
     for (const item of navigation) {
       await evaluate(`document.querySelector('[data-nav-key=${JSON.stringify(item.key)}]').click()`)

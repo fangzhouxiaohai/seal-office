@@ -74,6 +74,14 @@ public final class HostProtocol {
         return true;
     }
 
+    public static boolean allowsPreview(String page, String origin, String[] resources) {
+        if (page == null || origin == null || resources == null || resources.length != 1 ||
+                !"android.webkit.resource.VIDEO_CAPTURE".equals(resources[0])) return false;
+        if (isLegacyWorkspaceUrl(page)) return "file://".equals(origin) || "file:///".equals(origin);
+        return page.startsWith(ORIGIN + "/") && isHttpsWorkspaceUrl(page) &&
+                (ORIGIN.equals(origin) || (ORIGIN + "/").equals(origin));
+    }
+
     /** 拍照临时文件名：只取安全字符，放在应用缓存的 camera 子目录，由 FileProvider 授权给系统相机写入。 */
     public static String cameraFileName(String id) {
         String clean = id == null ? "" : id.replaceAll("[^A-Za-z0-9-]", "_");

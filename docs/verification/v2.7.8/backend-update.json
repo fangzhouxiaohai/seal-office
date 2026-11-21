@@ -1,0 +1,153 @@
+{
+  "passed": true,
+  "version": "2.7.8",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.8.exe",
+      "bytes": 567069333,
+      "sha256": "741aa289b7502acd0f00259d8b8b0bfd427ca0de2acffe81ae04aa706439d107",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/c0e500fb-0b74-4dc8-855b-07877de457ca/seal-office-setup-2.7.8.exe",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/c0e500fb-0b74-4dc8-855b-07877de457ca/seal-office-setup-2.7.8.exe",
+        "sha256": "741aa289b7502acd0f00259d8b8b0bfd427ca0de2acffe81ae04aa706439d107",
+        "bytes": 567069333,
+        "publishedAt": 1795282048987
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.8-microsoft-store-x64.msix",
+      "bytes": 798522912,
+      "sha256": "84d47b1f46f5cf2a4fe439b4593b560e9c56529e04a12b1521e6c9352566943f",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/db51487d-98c3-4f01-bbf5-e22e2f68a564/seal-office-2.7.8-microsoft-store-x64.msix",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "84d47b1f46f5cf2a4fe439b4593b560e9c56529e04a12b1521e6c9352566943f",
+        "bytes": 798522912,
+        "publishedAt": 1795282048988
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.8-amd64.deb",
+      "bytes": 168920348,
+      "sha256": "c3d6ed7d10e3dc05913ada2c72d1d73376d8f85cfe178548f9bba0cea11fda05",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/45cfc951-8507-4db9-bc31-19b45835b153/seal-office-2.7.8-amd64.deb",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/45cfc951-8507-4db9-bc31-19b45835b153/seal-office-2.7.8-amd64.deb",
+        "sha256": "c3d6ed7d10e3dc05913ada2c72d1d73376d8f85cfe178548f9bba0cea11fda05",
+        "bytes": 168920348,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "macos",
+      "filename": "seal-office-2.7.8-macos.dmg",
+      "bytes": 436797614,
+      "sha256": "2f93d4ab773926c383622e43ef7e1a8837fd342fa3a51d8c2d9bca1383d9bc30",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/79cd2694-c6f6-4494-95b7-aada0c317193/seal-office-2.7.8-macos.dmg",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/79cd2694-c6f6-4494-95b7-aada0c317193/seal-office-2.7.8-macos.dmg",
+        "sha256": "2f93d4ab773926c383622e43ef7e1a8837fd342fa3a51d8c2d9bca1383d9bc30",
+        "bytes": 436797614,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.8-android.apk",
+      "bytes": 53799722,
+      "sha256": "9bb6211a37423fe2ec7c5f55742e0730793caafa4b469e16377bc4899a852409",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/4692b484-d242-46b3-b9c5-d0ecd0230048/seal-office-2.7.8-android.apk",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/4692b484-d242-46b3-b9c5-d0ecd0230048/seal-office-2.7.8-android.apk",
+        "sha256": "9bb6211a37423fe2ec7c5f55742e0730793caafa4b469e16377bc4899a852409",
+        "bytes": 53799722,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.8-harmony.hap",
+      "bytes": 66594582,
+      "sha256": "9ba9130ef3b8449f3f5a475f489ee61207e74a00e506a110650f5dbb6339b955",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/39a16368-2ee1-4162-ab3d-271a5b1a84cd/seal-office-2.7.8-harmony.hap",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/39a16368-2ee1-4162-ab3d-271a5b1a84cd/seal-office-2.7.8-harmony.hap",
+        "sha256": "9ba9130ef3b8449f3f5a475f489ee61207e74a00e506a110650f5dbb6339b955",
+        "bytes": 66594582,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.8-web.zip",
+      "bytes": 49941209,
+      "sha256": "7786fb1be3891350b2ed7806e594c77cd8c913f7b571d88e0d65d1fcca7fe713",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/284bf30a-ca16-42f1-a13e-c668481eace8/seal-office-2.7.8-web.zip",
+      "oldVersion": "2.7.7",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.8",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.8\n\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/284bf30a-ca16-42f1-a13e-c668481eace8/seal-office-2.7.8-web.zip",
+        "sha256": "7786fb1be3891350b2ed7806e594c77cd8c913f7b571d88e0d65d1fcca7fe713",
+        "bytes": 49941209,
+        "publishedAt": 1795282048989
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

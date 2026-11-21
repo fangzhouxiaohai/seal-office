@@ -75,3 +75,21 @@ test('隐私声明写明相机用途与识别上传，并与安卓、鸿蒙权�
   assert.match(privacy, /识别[^。]*授权确认/)
   assert.doesNotMatch(privacy, /程序不使用摄像头|不读取通讯录、位置或相机|程序不申请摄像头/)
 })
+
+test('实时取景准备能区分授权、拒绝与取消', async () => {
+  const buildResult = await build({ entryPoints: [fileURLToPath(new URL('../web/native.ts', import.meta.url))], bundle: true, platform: 'node', format: 'esm', write: false })
+  const previous = globalThis.window, sent = []
+  globalThis.window = { fetch: globalThis.fetch, sealNative: { token:'t', platform:'android', cameraPreview: true }, uni:{ webView: { postMessage: x => sent.push(x.data) } } }
+  try {
+    const native = await import('data:text/javascript;base64,' + Buffer.from(buildResult.outputFiles[0].contents).toString('base64') + '#preview')
+    const ok = native.prepareNativeCamera(new AbortController().signal)
+    assert.equal(sent.at(-1).action,'camera-preview')
+    window.sealReceiveNative({id:sent.at(-1).id,type:'camera-ready'})
+    await ok
+    const control = new AbortController()
+    const canceled = native.prepareNativeCamera(control.signal)
+    control.abort()
+    await assert.rejects(canceled,e=>e.name==='AbortError')
+    assert.equal(sent.at(-1).action,'camera-preview-cancel')
+  } finally { globalThis.window = previous }
+})

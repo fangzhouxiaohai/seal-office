@@ -1,0 +1,43 @@
+{
+  "run": 44934147050,
+  "commit": "e46c2ae22099b35b717bb75329922fe11a8631c4",
+  "sourceCommit": "0abda463d7a142d6fab09dab43a26fb3613243cc",
+  "bytes": 168968992,
+  "sha256": "4838c9e8904711fe74bed9c0404aba82085542e6a8574745e1f267976ed3751a",
+  "sourceSha256": {
+    "main/ipc/updateChannel.js": "0986de164193e4193f746295df942713d4c273256b81d1d762360f634115ec8e",
+    "main/update/updater.js": "684a135c68ee74608e9f45474622c7678e880ff25b2e19796784b5b4d6361b26",
+    "main/update/stagedUpdater.js": "f08d424ceec1c6479246187d2be595dd484caccb0f93f1baa42b735fc7c2483b"
+  },
+  "reports": {
+    "22.04": {
+      "passed": true,
+      "checks": 78,
+      "package": "2.7.8 amd64",
+      "update": {
+        "成功": true,
+        "数据": {
+          "阶段": "空闲",
+          "已下载": 0,
+          "总大小": 0
+        }
+      },
+      "sandboxBypassed": false
+    },
+    "24.04": {
+      "passed": true,
+      "checks": 78,
+      "package": "2.7.8 amd64",
+      "update": {
+        "成功": true,
+        "数据": {
+          "阶段": "空闲",
+          "已下载": 0,
+          "总大小": 0
+        }
+      },
+      "sandboxBypassed": false
+    }
+  },
+  "artifact": "seal-office-2.7.8-amd64.deb"
+}

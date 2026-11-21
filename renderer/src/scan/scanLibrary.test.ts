@@ -9,6 +9,16 @@ describe('扫描件库', () => {
   let 库: 扫描件库
   beforeEach(async () => { 库 = await 打开扫描件库(new IDBFactory()) })
 
+  it('移动扫描草稿重开后保留模式、原片格式、书籍跨页原图与译文', async () => {
+    const 输入 = 扫描件('双页书', '我的试卷', [3])
+    const 原片 = new Uint8Array([7, 6, 5])
+    const 标识 = await 库.保存({ ...输入, 工具: '拍书籍', 证件: '其他', 页: [{ ...输入.页[0], 原图类型: 'image/webp', 跨页原片: 原片, 跨页类型: 'image/jpeg', 译文: '译文' }] })
+    const 原稿 = await 库.读取(标识)
+    expect(原稿).toMatchObject({ 工具: '拍书籍', 证件: '其他', 大小: 6 })
+    expect(原稿?.页[0]).toMatchObject({ 原图类型: 'image/webp', 译文: '译文' })
+    expect(Array.from(原稿?.页[0].跨页原片 ?? [])).toEqual([7, 6, 5])
+  })
+
   it('保存后列表只含元数据，读取时取回全部页面字节', async () => {
     const 编号 = await 库.保存(扫描件('合同', '我的证件', [100, 50]))
     const 列表 = await 库.列出()

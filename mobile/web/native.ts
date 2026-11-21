@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
 
 type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[]; value?: any }
-type Bridge = { token: string; platform: string }
+type Bridge = { token: string; platform: string; cameraPreview?: boolean; speechInput?: boolean }
 declare global {
   interface Window {
     sealNative?: Bridge
@@ -216,6 +216,51 @@ export function captureNativePhoto(): Promise<File[]> {
       } catch (error) { cleanup(); reject(error) }
     })
     try { send({ id, action: 'camera-capture' }) } catch (error) { cleanup(); reject(error) }
+  })
+}
+
+export function prepareNativeCamera(signal: AbortSignal): Promise<void> {
+  if (!window.sealNative?.cameraPreview) return Promise.reject(new DOMException('此宿主仅支持系统相机', 'NotSupportedError'))
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const cleanup = () => { pending.delete(id); clearTimeout(timer); signal.removeEventListener('abort', cancel) }
+    const cancel = () => {
+      cleanup()
+      try { send({ id, action: 'camera-preview-cancel' }) } finally { reject(new DOMException('取景已取消', 'AbortError')) }
+    }
+    const timer = setTimeout(() => { cleanup(); reject(new Error('相机授权等待超时，请重试')) }, 120000)
+    if (signal.aborted) { cancel(); return }
+    signal.addEventListener('abort', cancel, { once: true })
+    pending.set(id, event => {
+      cleanup()
+      if (event.type === 'camera-ready') resolve()
+      else if (event.type === 'camera-denied') reject(new DOMException('未获得相机权限', 'NotAllowedError'))
+      else reject(new Error(event.error || '无法准备摄像头，请重试'))
+    })
+    try { send({ id, action: 'camera-preview' }) } catch (error) { cleanup(); reject(error) }
+  })
+}
+
+/** 系统语音界面自己申请麦克风权限；应用只接收用户确认的识别文字。 */
+export function nativeSpeechInput(signal: AbortSignal): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    if (!window.sealNative?.speechInput) { reject(new Error('当前设备没有系统语音识别服务')); return }
+    if (signal.aborted) { resolve(null); return }
+    const id = crypto.randomUUID()
+    const cleanup = () => { pending.delete(id); signal.removeEventListener('abort', cancel) }
+    const cancel = () => {
+      cleanup()
+      try { send({ id, action: 'speech-input-cancel' }) } catch { /* 原生工作台已退出。 */ }
+      resolve(null)
+    }
+    signal.addEventListener('abort', cancel, { once: true })
+    pending.set(id, event => {
+      cleanup()
+      if (event.type === 'cancel') resolve(null)
+      else if (event.type === 'speech-text' && typeof event.value === 'string' && event.value.trim()) resolve(event.value.trim())
+      else reject(new Error(event.error || '系统未返回转写文字，请重新录音'))
+    })
+    try { send({ id, action: 'speech-input' }) } catch (error) { cleanup(); reject(error) }
   })
 }
 export async function platformFetch(input: string | URL | Request, options: RequestInit = {}): Promise<Response> {

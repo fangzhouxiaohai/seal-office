@@ -148,8 +148,6 @@ async function 验收(应用) {
     进度('核对应用与沙箱')
     assert.equal(await 主进程.计算("process.mainModule.require('electron').app.isPackaged"), true)
     assert.equal(await 主进程.计算("process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences().sandbox"), true)
-    进度('读取更新暂存状态')
-    await 核对更新状态(渲染.计算)
     进度('加载原生图形模块')
     assert.equal(await 主进程.计算(图形表达式(), 20000), '89504e470d0a1a0a')
     进度('转换文稿')
@@ -164,6 +162,9 @@ async function 验收(应用) {
       await 延迟(100)
     }
     assert(已打开, '主进程文件打开事件未到达界面')
+    // 确认文稿已显示后，预加载桥与工作台才处于同一个已就绪的页面上下文。
+    进度('读取更新暂存状态')
+    await 核对更新状态(渲染.计算)
     进度('验证程序坞事件')
     await 主进程.计算("(()=>{const e=process.mainModule.require('electron');for(const w of e.BrowserWindow.getAllWindows())w.destroy();e.app.emit('activate');e.app.emit('activate');return true})()")
     assert.equal(await 主进程.计算("process.mainModule.require('electron').BrowserWindow.getAllWindows().length"), 1)

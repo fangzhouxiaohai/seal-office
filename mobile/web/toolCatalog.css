@@ -1,0 +1,53 @@
+.seal-tool-catalog {
+  --tool-blue: var(--brand, #315fd2);
+  color: var(--text-1);
+  max-width: 960px;
+  margin-inline: auto;
+}
+.seal-tool-search { width: 100%; margin: 2px 0 12px; }
+.seal-tool-search .ant-input-affix-wrapper { min-height: 44px; border-radius: 12px; }
+.seal-tool-tabs { display: flex; align-items: center; gap: 22px; border-bottom: 1px solid var(--border); }
+.seal-tool-tabs button, .seal-tool-more { color: var(--text-2); font: inherit; background: transparent; border: 0; cursor: pointer; min-height: 44px; }
+.seal-tool-tabs button { padding: 4px 2px; border-bottom: 3px solid transparent; }
+.seal-tool-tabs button[aria-pressed=true] { border-color: var(--tool-blue); color: var(--text-1); font-weight: 650; }
+.seal-tool-group { margin-block: 18px 24px; }
+.seal-tool-group header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.seal-tool-group header h2, .seal-create-group h3 { font-size: 17px; font-weight: 650; color: var(--text-1); margin: 0 0 8px; }
+.seal-tool-more { font-size: 13px; }
+.seal-tool-grid, .seal-mobile-services .seal-tool-grid {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:start; gap:8px 4px; margin: 0;
+}
+.seal-tool-catalog .seal-tool-grid[data-collapsed=true] {
+  display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 12px)/4); grid-template-columns:none;
+  overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity; scrollbar-width:thin;
+}
+.seal-tool-tile, .seal-mobile-services .seal-tool-grid .seal-tool-tile, .seal-quick-create-sheet .seal-tool-tile {
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:7px; min-height:76px; min-width:0;
+  padding:6px 2px; border:0; border-radius:9px; background:transparent; color:var(--text-1); cursor:pointer;
+  font:inherit; font-size:13px; line-height:1.4; overflow-wrap:anywhere; scroll-snap-align:start;
+}
+.seal-tool-icon { display:inline-grid; place-items:center; flex-shrink:0; width:44px; height:44px; border-radius:14px; color:var(--brand); background:var(--brand-soft,var(--bg-hover)); }
+.seal-tool-grid .seal-tool-tile:nth-child(4n+2) .seal-tool-icon { background:color-mix(in srgb,#7766bd 12%,var(--bg-card)); }
+.seal-tool-grid .seal-tool-tile:nth-child(4n+3) .seal-tool-icon { background:color-mix(in srgb,#208c73 12%,var(--bg-card)); }
+.seal-tool-grid .seal-tool-tile:nth-child(4n+4) .seal-tool-icon { background:color-mix(in srgb,#c17b2a 12%,var(--bg-card)); }
+.seal-tool-tile:focus-visible,.seal-tool-more:focus-visible,.seal-tool-tabs button:focus-visible { outline:2px solid var(--brand); outline-offset:-2px; }
+.seal-tool-tile:hover,.seal-tool-tile:active,.seal-tool-tile:focus-visible { background:var(--bg-hover); }
+.seal-tool-empty,.seal-export-info p { color:var(--text-2); line-height:1.6; }
+.seal-export-info { padding:16px; border:1px solid var(--border); border-radius:12px; }
+.seal-export-info h2 { margin:0 0 6px; font-size:17px; }
+.seal-quick-create-sheet .ant-drawer-content { border-radius:20px 20px 0 0; background:var(--bg-card); }
+.seal-quick-create-sheet .ant-drawer-body { padding:12px 18px calc(18px + env(safe-area-inset-bottom,0px)); }
+.seal-create-group { margin:8px 0 20px; }
+.seal-create-featured { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.seal-quick-create-sheet .seal-create-featured .seal-tool-tile { flex-direction:row; align-items:center; gap:7px; min-height:54px; padding:5px 8px; background:var(--bg-hover); text-align:start; }
+.seal-create-featured .seal-tool-icon { width:34px; height:34px; }
+.seal-assistant-starter { display:grid; justify-items:start; gap:14px; margin:4px auto; max-width:680px; }
+.seal-assistant-starter h1 { font-size:22px; margin:0; }
+.seal-mobile-nav[hidden] { display:none!important; }
+@media (max-width:820px), (pointer:coarse) and (max-width:1024px) {
+  #root:has(.seal-mobile-nav[hidden]) .wps-app { height:100%; }
+  .seal-mobile-homebar__actions .ant-btn { padding-inline:9px; }
+}
+@media (min-width:660px) {
+  .seal-tool-group .seal-tool-grid { grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); }
+}

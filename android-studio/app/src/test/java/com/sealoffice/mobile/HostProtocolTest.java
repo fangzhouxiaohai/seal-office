@@ -51,6 +51,20 @@ public class HostProtocolTest {
         assertFalse(HostProtocol.permissionGranted(null));
     }
 
+    @Test public void 取景授权只给当前应用工作台的摄像头() {
+        String asset = "file:///android_asset" + HostProtocol.LEGACY_ASSET_PATH + "?native=1";
+        String page = HostProtocol.ORIGIN + "/office/index.html?native=1";
+        String video = "android.webkit.resource.VIDEO_CAPTURE";
+        assertTrue(HostProtocol.allowsPreview(page, HostProtocol.ORIGIN + "/", new String[]{video}));
+        assertTrue(HostProtocol.allowsPreview(asset, "file:///", new String[]{video}));
+        assertFalse(HostProtocol.allowsPreview(asset, "https://example.com", new String[]{video}));
+        assertFalse(HostProtocol.allowsPreview("file:///sdcard/note.html", "file:///", new String[]{video}));
+        assertFalse(HostProtocol.allowsPreview(page, "https://appassets.androidplatform.net:9443", new String[]{video}));
+        assertFalse(HostProtocol.allowsPreview(page, HostProtocol.ORIGIN, new String[]{video,"android.webkit.resource.AUDIO_CAPTURE"}));
+        assertFalse(HostProtocol.allowsPreview(page, HostProtocol.ORIGIN, new String[]{}));
+        assertFalse(HostProtocol.allowsPreview(asset, "null", new String[]{video}));
+    }
+
     @Test public void 拍照文件只放在应用缓存的相机目录() {
         assertEquals("photo-abc.jpg", HostProtocol.cameraFileName("abc"));
         assertEquals("photo-x_y.jpg", HostProtocol.cameraFileName("x/y"));
