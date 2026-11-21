@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
-const candidates = ['D:/HBuilderX/cli.exe', 'C:/HBuilderX/cli.exe', 'E:/HBuilderX/cli.exe']
+const candidates = process.platform === 'darwin'
+  ? ['/Applications/HBuilderX.app/Contents/MacOS/cli']
+  : ['D:/HBuilderX/cli.exe', 'C:/HBuilderX/cli.exe', 'E:/HBuilderX/cli.exe']
 export function findHBuilder(config = {}) {
   const supplied = process.env.HBUILDERX_PATH || config.hbuilderx
   const values = supplied ? [supplied] : candidates

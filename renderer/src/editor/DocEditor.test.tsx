@@ -41,7 +41,7 @@ afterEach(() => {
 })
 
 describe('编辑器容器', () => {
-  it('有损来源处于仅查看，顶部提示条列出缺失项并提供另存入口，另存副本后恢复编辑', async () => {
+  it('有损来源处于仅查看，顶部提供兼容性详情和另存入口，另存副本后恢复编辑', async () => {
     let 状态: ReturnType<typeof useAppStore> | null = null
     const 创建入口 = () => {
       状态 = useAppStore()
@@ -52,8 +52,8 @@ describe('编辑器容器', () => {
     const 编辑区 = container.querySelector('.wps-editor-canvas__content') as HTMLElement
     expect(编辑区.getAttribute('contenteditable')).toBe('false')
     const 提示条 = screen.getByRole('status', { name: '仅查看提示' })
-    expect(提示条).toHaveTextContent('图片尚未导入')
-    expect(within(提示条).getByRole('button', { name: '另存副本以便编辑' })).toBeInTheDocument()
+    expect(提示条).toHaveTextContent('仅查看')
+    expect(screen.getByRole('button', { name: '另存副本以便编辑' })).toBeInTheDocument()
     // 打开时已询问过的文件不再重复弹出导入警告
     expect(screen.queryByText('文档内容可能未完整导入')).toBeNull()
     act(() => 状态!.set文档路径(状态!.activeDocumentId!, 'C:\\资料\\报告.sldoc'))
@@ -147,9 +147,11 @@ describe('编辑器容器', () => {
     render(<AntdApp><AppProvider><创建入口 /><DocEditor /></AppProvider></AntdApp>)
     await userEvent.click(screen.getByRole('button', { name: '打开带警告文档' }))
     // 打开时的询问弹窗已列出缺失项，这里不再重复弹窗
-    await waitFor(() => expect(screen.getByRole('status', { name: '仅查看提示' })).toHaveTextContent('图片尚未导入'))
+    expect(screen.getByRole('status', { name: '仅查看提示' })).toHaveTextContent('仅查看')
     expect(screen.queryByText('文档内容可能未完整导入')).toBeNull()
-    expect(screen.getAllByText('图片尚未导入').length).toBeGreaterThan(0)
+    expect(screen.queryByText('图片尚未导入')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: '查看兼容性详情' }))
+    expect(within(await screen.findByRole('dialog', { name: '仅查看提示' })).getByText('图片尚未导入')).toBeInTheDocument()
   })
 
   it('目录域缓存直接打开时不弹导入警告、不进入仅查看，可直接覆盖保存且只提示一次', async () => {

@@ -36,7 +36,7 @@ jobs:
           $directory = "release/v$version"
           $installer = "$directory/seal-office-setup-$version.exe"
           $store = "$directory/seal-office-$version-microsoft-store-x64.msix"
-          python scripts/verify-msix-package.py $store "$directory/win-unpacked" --version $version --report "$directory/msix-verification.json"
+          python scripts/verify-msix-package.py $store "$directory/win-unpacked" --version "$version.0" --report "$directory/msix-verification.json"
           if ($LASTEXITCODE -ne 0) { throw 'MSIX validation failed' }
           Get-FileHash -Algorithm SHA256 -Path $installer,$store | Format-Table
       - uses: actions/upload-artifact@v4

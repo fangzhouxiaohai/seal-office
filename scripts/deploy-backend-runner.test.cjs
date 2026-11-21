@@ -48,11 +48,11 @@ test('公网只读探针验证后台摘要、拒绝未授权及新旧客户端�
     if(url.includes('/seal-admin/profile')||url.includes('/api/v1/admin/overview'))return new Response('',{status:401})
     if(url.includes('/updates/latest'))return Response.json({hasUpdate:false})
     if(url.includes('/capabilities'))return Response.json({version:1})
-    return new Response(html,{headers:{'content-type':'text/html'}})
+    return new Response(url.endsWith('/admin/') ? html : '<html>官网</html>',{headers:{'content-type':'text/html'}})
   }
   const result=await probe('2.7.2',{fetcher,homeHash:crypto.createHash('sha256').update(html).digest('hex')})
   assert.equal(calls.filter(x=>x.includes('/updates/latest')).length,12)
-  assert.equal(Object.keys(result).length,12)
+  assert.equal(Object.keys(result).length,13)
   await assert.rejects(probe('2.7.2',{fetcher,homeHash:'0'.repeat(64)}),/后台首页/)
 })
 test('指针原子切换仅接受预期基线，并保留 previous-release', { skip: process.platform === 'win32' ? '需在 Linux 服务器隔离目录验证真实符号链接' : false }, () => {

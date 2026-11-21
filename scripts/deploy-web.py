@@ -65,15 +65,17 @@ def patch_nginx(original, example, extension=None):
 
 
 def connection():
-    credentials = json.loads((ROOT / '.upgrade-private/connection.json').read_text(encoding='utf-8-sig'))
+    credentials = json.loads((ROOT / '.upgrade-private/deploy-server.json').read_text(encoding='utf-8-sig'))
+
+    class PinnedHostKey(paramiko.MissingHostKeyPolicy):
+        def missing_host_key(self, client, hostname, key):
+            actual = 'SHA256:' + base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip('=')
+            if actual != FINGERPRINT:
+                raise paramiko.SSHException('SSH server fingerprint mismatch')
+
     client = paramiko.SSHClient()
-    client.load_host_keys(str(ROOT / '.upgrade-private/server-known-hosts'))
-    client.set_missing_host_key_policy(paramiko.RejectPolicy())
-    client.connect(credentials['host'], username=credentials['user'], password=credentials['password'], timeout=20, look_for_keys=False, allow_agent=False)
-    actual = 'SHA256:' + base64.b64encode(hashlib.sha256(client.get_transport().get_remote_server_key().asbytes()).digest()).decode().rstrip('=')
-    if actual != FINGERPRINT:
-        client.close()
-        raise ValueError('SSH server fingerprint mismatch')
+    client.set_missing_host_key_policy(PinnedHostKey())
+    client.connect(credentials['host'], port=credentials.get('port', 22), username=credentials['user'], password=credentials['password'], timeout=20, look_for_keys=False, allow_agent=False)
     client.get_transport().set_keepalive(15)
     return client
 

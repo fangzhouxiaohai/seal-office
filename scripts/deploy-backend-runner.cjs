@@ -122,15 +122,16 @@ async function probe(version, options={}) {
   const base='https://seal.xingmasoft.com', fetcher=options.fetcher || fetch, hashes={}
   const parts=version.split('-')[0].split('.').map(Number), previous=parts[2]>0 ? `${parts[0]}.${parts[1]}.${parts[2]-1}` : version
   const updatePaths=['windows','linux','macos','android','harmony','web'].flatMap(p=>(options.recovery?[version]:[version,previous]).map(v=>`/api/v1/updates/latest?platform=${p}&version=${encodeURIComponent(v)}`))
-  for (const [uri,status] of [['/',200],['/office/',200],['/share/',200],['/seal-admin/profile',401],['/api/v1/admin/overview',401],['/api/v1/capabilities',200],...updatePaths.map(p=>[p,200])]) {
+  for (const [uri,status] of [['/',200],['/admin/',200],['/office/',200],['/share/',200],['/seal-admin/profile',401],['/api/v1/admin/overview',401],['/api/v1/capabilities',200],...updatePaths.map(p=>[p,200])]) {
     const r=await fetcher(base+uri,{redirect:'error',signal:options.signal ? AbortSignal.any([options.signal,AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000)})
     if(r.status!==status)throw new Error('公网只读探针失败：'+uri+' '+r.status)
     if(uri.includes('/updates/')){const obj=await r.json();if(typeof obj.hasUpdate!=='boolean')throw new Error('公网更新接口协议无效');hashes[uri]=sha(JSON.stringify(obj))}
     else if(uri==='/api/v1/capabilities'){const obj=await r.json();if(obj.version!==1)throw new Error('公网能力接口协议无效')}
     else {
       const bytes=Buffer.from(await r.arrayBuffer())
-      if(uri==='/' && options.homeHash && sha(bytes)!==options.homeHash)throw new Error('公网后台首页与现有后台不一致')
-      if(['/', '/office/', '/share/'].includes(uri) && !/text\/html/i.test(r.headers.get('content-type')||''))throw new Error('公网网页响应类型无效：'+uri)
+      if(uri==='/admin/' && options.homeHash && sha(bytes)!==options.homeHash)throw new Error('公网后台首页与现有后台不一致')
+      if(['/', '/admin/', '/office/', '/share/'].includes(uri) && !/text\/html/i.test(r.headers.get('content-type')||''))throw new Error('公网网页响应类型无效：'+uri)
+      if(uri==='/')hashes[uri]=sha(bytes)
     }
   }
   return hashes
@@ -160,7 +161,7 @@ async function run(payload) {
     await switchBackend(payload.baseline.current,payload.candidate,{
       current:()=>current(SITE), switchTo:next=>atomicSwitch(SITE,next===payload.candidate ? payload.baseline.current : payload.candidate,next),
       restart:()=>execFileSync('systemctl',['restart','seal-cloud'],{timeout:90000}),
-      verify:async()=>waitReady(async signal=>{execFileSync('systemctl',['is-active','--quiet','seal-cloud'],{timeout:3000});const recovery=current(SITE)===payload.baseline.current;const after=await probe(payload.version,{homeHash,signal,recovery});if(Object.keys(after).some(key=>after[key]!==previousResponses[key]))throw new Error('公网更新接口结果发生意外变化');if(JSON.stringify(baseline().protected)!==JSON.stringify(payload.baseline.protected))throw new Error('受保护对象发生变化')}),
+      verify:async()=>waitReady(async signal=>{execFileSync('systemctl',['is-active','--quiet','seal-cloud'],{timeout:3000});const recovery=current(SITE)===payload.baseline.current;const after=await probe(payload.version,{homeHash,signal,recovery});if(Object.keys(after).some(key=>after[key]!==previousResponses[key]))throw new Error('官网首页或公网更新接口发生意外变化');if(JSON.stringify(baseline().protected)!==JSON.stringify(payload.baseline.protected))throw new Error('受保护对象发生变化')}),
     })
     return {passed:true,previous:payload.baseline.current,current:payload.candidate}
   }
