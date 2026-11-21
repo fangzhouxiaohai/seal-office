@@ -31,10 +31,11 @@ describe('苹果系统平台支持', () => {
     expect(JSON.stringify(配置.extraResources)).not.toContain('office-runtime')
   })
 
-  it('苹果测试工作流只在受限分支和相关文件推送时触发，并且不发布', () => {
+  it('苹果测试工作流在主分支相关文件变更时构建双架构试包，并且不发布', () => {
     const yaml = require('js-yaml')
     const 工作流 = yaml.load(fs.readFileSync(require('path').join(__dirname, '../../.github/workflows/macos-test.yml'), 'utf8'))
-    expect(工作流.on.push.branches).toEqual(['codex/**'])
+    expect(工作流.on.push.branches).toEqual(['main'])
+    expect(工作流.jobs['build-and-test'].strategy.matrix.include.map(entry => entry.machine)).toEqual(['arm64', 'x86_64'])
     expect(工作流.on.push.paths).toEqual(expect.arrayContaining([
       '.github/workflows/macos-test.yml', 'build/electron-macos.cjs', 'build/artifact-names.json',
       'main/**', 'scripts/verify-macos-candidate.cjs', 'renderer/**', 'package.json', 'package-lock.json',
