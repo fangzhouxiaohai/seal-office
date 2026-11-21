@@ -2,7 +2,7 @@ name: 苹果系统隔离测试包
 on:
   workflow_dispatch:
   push:
-    branches: ['codex/**']
+    branches: [main]
     paths:
       - '.github/workflows/macos-test.yml'
       - 'build/electron-macos.cjs'
@@ -22,11 +22,23 @@ permissions:
   contents: read
 jobs:
   build-and-test:
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            machine: arm64
+          - runner: macos-15-intel
+            arch: x64
+            machine: x86_64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       NODE_OPTIONS: '--max-old-space-size=4096'
+      ARCH: ${{ matrix.arch }}
+      MACHINE: ${{ matrix.machine }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,12 +55,18 @@ jobs:
             brew install --cask libreoffice
           fi
           /Applications/LibreOffice.app/Contents/MacOS/soffice --version
-      - name: 构建未签名隔离测试包
+      - name: 构建临时签名测试包
         run: |
-          test "$(uname -m)" = arm64
+          test "$(uname -m)" = "$MACHINE"
           npm run build
-          npx electron-builder --config build/electron-macos.cjs --mac dmg --arm64 --publish never
-          node -e "const fs=require('fs'),p=require('./package.json');if(!/^\d+\.\d+\.\d+$/.test(p.version))throw Error('版本无效');fs.appendFileSync(process.env.GITHUB_ENV,'RELEASE_DIR=release/v'+p.version+'\n')"
+          version=$(node -p "require('./package.json').version")
+          directory="release/v$version"
+          npx electron-builder --config build/electron-macos.cjs --mac dir --"$ARCH" --publish never
+          app=$(find "$directory" -maxdepth 2 -type d -name '海豹办公.app' -print -quit)
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          npx electron-builder --config build/electron-macos.cjs --mac dmg --"$ARCH" --prepackaged "$app" --publish never
+          printf 'RELEASE_DIR=%s\n' "$directory" >> "$GITHUB_ENV"
       - name: 核对磁盘映像并验收隔离副本
         timeout-minutes: 8
         run: |
@@ -68,7 +86,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = com.sealoffice.desktop
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$(node -p "require('./package.json').version")"
           test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 11.0
-          file "$app/Contents/MacOS/海豹办公" | grep arm64
+          file "$app/Contents/MacOS/海豹办公" | grep "$MACHINE"
+          codesign --verify --deep --strict "$app"
           python3 - "$app/Contents/Info.plist" <<'PY'
           import json, plistlib, sys
           with open(sys.argv[1], 'rb') as stream:
@@ -86,7 +105,7 @@ jobs:
       - name: 保存隔离测试附件
         uses: actions/upload-artifact@v4
         with:
-          name: macos-arm64-unsigned-test-only
+          name: macos-${{ matrix.arch }}-test-only
           path: |
             ${{ env.RELEASE_DIR }}/*-macos.dmg
             ${{ env.RELEASE_DIR }}/macos-test-sha256.txt

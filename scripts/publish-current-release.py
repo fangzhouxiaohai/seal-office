@@ -49,8 +49,11 @@ def git(*args):
 
 
 def sha(path):
+    digest = hashlib.sha256()
     with path.open('rb') as handle:
-        return hashlib.file_digest(handle, 'sha256').hexdigest()
+        for block in iter(lambda: handle.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def credential(host):
@@ -196,7 +199,9 @@ def main():
     TAG = release_tag(args.tag)
     head = git('rev-parse', TAG + '^{commit}')
     # 只核对本次实际发布的仓库，避免一端网络不通时阻塞另一端发布。
-    remotes = {'github': ['github'], 'gitcode': ['origin']}.get(args.only, ['github', 'origin'])
+    repositories = {'github': 'https://github.com/fangzhouxiaohai/seal-office.git',
+                    'gitcode': 'https://gitcode.com/gcw_pGfMiWVg/seal-office.git'}
+    remotes = [repositories[args.only]] if args.only else repositories.values()
     for remote in remotes:
         if head not in git('ls-remote', remote, f'refs/tags/{TAG}', f'refs/tags/{TAG}^{{}}'):
             raise SystemExit(f'请先把 {TAG} 推送到 {remote}')
