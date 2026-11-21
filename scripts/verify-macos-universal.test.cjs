@@ -79,7 +79,7 @@ test('通用包完整性键和每份 ASAR 头摘要均须准确', async t => {
   const contents = path.join(root, 'app/Contents'), resources = path.join(contents, 'Resources'), source = path.join(root, 'source')
   fs.mkdirSync(resources, { recursive: true }); fs.mkdirSync(source); fs.writeFileSync(path.join(source, 'entry.js'), '测试')
   const 项 = {}
-  for (const 名称 of ['app.asar', 'app-arm64.asar', 'app-x64.asar']) {
+  for (const 名称 of ['app.asar', 'app-arm64.asar', 'app-x64.asar', 'default_app.asar']) {
     const 文件 = path.join(resources, 名称)
     await asar.createPackage(source, 文件)
     项['Resources/' + 名称] = { algorithm: 'SHA256', hash: crypto.createHash('sha256').update(asar.getRawHeader(文件).headerString).digest('hex') }
@@ -145,12 +145,17 @@ test('只在隔离副本补齐两种原生模块并移除旧签名资源', t => 
     const native = path.join(dir, `Contents/Resources/app.asar.unpacked/node_modules/@napi-rs/canvas-darwin-${arch}`)
     fs.mkdirSync(native, { recursive: true })
     fs.writeFileSync(path.join(native, `skia.darwin-${arch}.node`), arch)
+    fs.writeFileSync(path.join(native, 'package.json'), JSON.stringify({ cpu: [arch] }))
     fs.mkdirSync(path.join(dir, 'Contents/_CodeSignature'), { recursive: true })
     fs.writeFileSync(path.join(dir, 'Contents/_CodeSignature/CodeResources'), arch)
   }
   对齐副本(x, a)
   for (const dir of [x, a]) {
-    for (const arch of ['x64', 'arm64']) assert.equal(fs.readFileSync(path.join(dir, `Contents/Resources/app.asar.unpacked/node_modules/@napi-rs/canvas-darwin-${arch}/skia.darwin-${arch}.node`), 'utf8'), arch)
+    for (const arch of ['x64', 'arm64']) {
+      const native = path.join(dir, `Contents/Resources/app.asar.unpacked/node_modules/@napi-rs/canvas-darwin-${arch}`)
+      assert.equal(fs.readFileSync(path.join(native, `skia.darwin-${arch}.node`), 'utf8'), arch)
+      assert.deepEqual(JSON.parse(fs.readFileSync(path.join(native, 'package.json'), 'utf8')), { cpu: [arch] })
+    }
     assert.equal(fs.existsSync(path.join(dir, 'Contents/_CodeSignature')), false)
   }
 })

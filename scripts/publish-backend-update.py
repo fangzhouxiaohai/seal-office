@@ -27,8 +27,20 @@ NAMES = {
 
 
 def digest(path):
+    checksum = hashlib.sha256()
     with path.open('rb') as handle:
-        return hashlib.file_digest(handle, 'sha256').hexdigest()
+        for block in iter(lambda: handle.read(1024 * 1024), b''):
+            checksum.update(block)
+    return checksum.hexdigest()
+
+
+def read_checksums(path):
+    sums = {}
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) == 2:
+            sums[parts[1].lstrip('*').replace('\\', '/')] = parts[0].lower()
+    return sums
 
 
 def collect(root, platforms=None):
@@ -36,11 +48,11 @@ def collect(root, platforms=None):
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         raise ValueError('当前项目版本格式错误')
     directory = root / 'release' / ('v' + version)
-    sums = {}
-    for line in (directory / 'SHA256SUMS.txt').read_text(encoding='utf-8-sig').splitlines():
-        parts = line.split(maxsplit=1)
-        if len(parts) == 2:
-            sums[parts[1].lstrip('*').replace('\\', '/')] = parts[0].lower()
+    sums = read_checksums(directory / 'SHA256SUMS.txt')
+    macos_name = NAMES['macos'].format(version=version)
+    local_checksums = directory / 'SHA256SUMS-local.txt'
+    if macos_name not in sums and local_checksums.is_file():
+        sums[macos_name] = read_checksums(local_checksums).get(macos_name)
     rows = []
     for platform in platforms or NAMES:
         if platform not in NAMES:

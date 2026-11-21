@@ -51,6 +51,17 @@ class 发布测试(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '校验'):
             publisher.collect(self.root)
 
+    def test_后台专用通用包可读取本机校验值(self):
+        name = 'seal-office-2.7.2-macos.dmg'
+        (self.directory / name).write_bytes(self.data)
+        (self.directory / 'SHA256SUMS-local.txt').write_text(f'{self.digest}  {name}\n')
+        _, rows = publisher.collect(self.root, ['macos'])
+        self.assertEqual(rows[0]['sha256'], self.digest)
+        with (self.directory / 'SHA256SUMS.txt').open('a') as handle:
+            handle.write(f'\n{"0" * 64}  {name}\n')
+        with self.assertRaisesRegex(ValueError, '校验'):
+            publisher.collect(self.root, ['macos'])
+
     def test_同版本已发包仅字节相同才能复用(self):
         _, rows = publisher.collect(self.root)
         existing = [{'version': '2.7.2', 'channel': 'stable', 'platform': 'android',

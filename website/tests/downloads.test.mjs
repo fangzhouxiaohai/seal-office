@@ -56,7 +56,7 @@ describe('分平台下载入口', () => {
       const base = 'https://github.com/fangzhouxiaohai/seal-office/releases/download/v'
       if (mac) {
         const displayedVersion = /v(\d+\.\d+\.\d+)/.exec(link.textContent)?.[1]
-        assert.ok(displayedVersion)
+        assert.equal(displayedVersion, version)
         assert.equal(link.href, `${base}${displayedVersion}/seal-office-${displayedVersion}-macos-${mac[1]}.dmg`)
       } else {
         assert.ok(link.href.startsWith(`${base}${version}/seal-office-`))

@@ -30,7 +30,8 @@ function 校验完整性(应用) {
   const 内容 = path.join(应用, 'Contents'), 资源 = path.join(内容, 'Resources')
   const 属性 = plist.parse(fs.readFileSync(path.join(内容, 'Info.plist'), 'utf8'))
   const 表 = 属性.ElectronAsarIntegrity
-  const 名称 = ['app.asar', 'app-arm64.asar', 'app-x64.asar'].sort()
+  const 名称 = ['app.asar', 'app-arm64.asar', 'app-x64.asar']
+  if (fs.existsSync(path.join(资源, 'default_app.asar'))) 名称.push('default_app.asar')
   const 键 = 名称.map(项 => 'Resources/' + 项).sort()
   if (!表 || !isDeepStrictEqual(Object.keys(表).sort(), 键)) throw new Error('通用包完整性路径不一致')
   for (const 项 of 名称) {
@@ -38,7 +39,7 @@ function 校验完整性(应用) {
     const 摘要 = createHash('sha256').update(asar.getRawHeader(path.join(资源, 项)).headerString).digest('hex')
     if (记录?.algorithm !== 'SHA256' || 记录.hash !== 摘要) throw new Error('通用包完整性摘要不一致：' + 项)
   }
-  console.log('通过：通用包三份 ASAR 路径和头摘要')
+  console.log('通过：通用包 ASAR 路径和头摘要')
 }
 
 function 清除旧签名(目录) {
@@ -52,14 +53,17 @@ function 清除旧签名(目录) {
 
 function 对齐副本(x64, arm64) {
   if (![x64, arm64].every(path.isAbsolute) || x64 === arm64) throw new Error('必须提供两个独立的绝对路径副本')
-  const 复制项 = [[x64, arm64, 'x64'], [arm64, x64, 'arm64']]
-  for (const [来源, 目标, arch] of 复制项) {
-    const 源文件 = path.join(来源, 原生路径(arch)), 目标文件 = path.join(目标, 原生路径(arch))
+  const 复制项 = [[x64, arm64, 'x64'], [arm64, x64, 'arm64']].flatMap(([来源, 目标, arch]) => {
+    const 二进制 = 原生路径(arch)
+    const 清单 = path.join(path.dirname(二进制), 'package.json')
+    const 文件 = fs.existsSync(path.join(来源, 清单)) ? [二进制, 清单] : [二进制]
+    return 文件.map(相对路径 => [path.join(来源, 相对路径), path.join(目标, 相对路径)])
+  })
+  for (const [源文件, 目标文件] of 复制项) {
     if (!fs.lstatSync(源文件).isFile()) throw new Error('原生模块不是普通文件')
     if (fs.existsSync(目标文件)) throw new Error('原生模块目标文件已存在，拒绝覆盖')
   }
-  for (const [来源, 目标, arch] of 复制项) {
-    const 源文件 = path.join(来源, 原生路径(arch)), 目标文件 = path.join(目标, 原生路径(arch))
+  for (const [源文件, 目标文件] of 复制项) {
     fs.mkdirSync(path.dirname(目标文件), { recursive: true })
     fs.copyFileSync(源文件, 目标文件, fs.constants.COPYFILE_EXCL)
   }
