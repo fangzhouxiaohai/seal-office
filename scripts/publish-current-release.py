@@ -97,6 +97,11 @@ def assets():
             sums[parts[1]] = parts[0].lower()
     rows = []
     for name in CANDIDATES:
+        # The universal DMG can be prepared exclusively for the in-app update.
+        if name == f'seal-office-{VERSION}-macos.dmg' and name not in sums and (DIRECTORY / 'SHA256SUMS-local.txt').is_file():
+            local_sums = (DIRECTORY / 'SHA256SUMS-local.txt').read_text(encoding='utf-8-sig').splitlines()
+            if any(line.split()[1:] == [name] for line in local_sums):
+                continue
         relative = name if (DIRECTORY / name).is_file() else 'mobile-web/' + name
         file = DIRECTORY / relative
         if not file.is_file():
