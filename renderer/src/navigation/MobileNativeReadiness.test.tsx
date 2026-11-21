@@ -6,7 +6,6 @@ import MobileNavigation from '../../../mobile/web/navigation'
 // 根测试配置只加载导航组件，由测试声明模拟宿主注入的接口。
 declare global {
   interface Window {
-    sealNative?: { token: string; platform: string }
     uni?: { webView?: { postMessage: (input: { data: unknown }) => void } }
   }
 }

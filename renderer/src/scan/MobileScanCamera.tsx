@@ -3,7 +3,8 @@ import { Modal } from 'antd'
 import Icon from '../components/Icon'
 import { 编码图片, 解码图片 } from './imageIO'
 import { 缩放尺寸 } from './imageProcessing'
-import { 拍照, 选择图片 } from './scanInput'
+import { 拍照, 是相机拒绝, 选择图片 } from './scanInput'
+import { useCameraNotice } from './useScanImport'
 import { 扫描模式列表, type 扫描模式, type 扫描取景参数, type 证件类型 } from './scanModes'
 import { useMobileViewfinder } from './useMobileViewfinder'
 import './mobileScanCamera.css'
@@ -35,17 +36,22 @@ async function 轻量照片(文件: File) {
 export default function MobileScanCamera(参数: 扫描取景参数 & { 打开扫描库?:()=>void }) {
   const { 模式, 证件, 书籍, 页数, 忙碌 } = 参数
   const 镜头 = useMobileViewfinder()
+  const 确认相机说明 = useCameraNotice()
   const [连拍, 设连拍] = useState(false)
   const [轻量, 设轻量] = useState(false)
   const [辅助, 设辅助] = useState(true)
   const [面板, 设面板] = useState<'模式' | '证件' | null>(null)
   const [处理中, 设处理中] = useState(false)
   const [异常, 设异常] = useState('')
+  const [权限提示, 设权限提示] = useState('')
   const 锁 = useRef(false), 在场 = useRef(true)
   const 当前按钮 = useRef<HTMLButtonElement>(null)
   const 已就绪 = 镜头.status === 'ready'
   const 禁用 = 忙碌 || 处理中 || 镜头.status === 'starting'
-  const 相机回退 = !已就绪 && (镜头.status === 'unavailable' || 镜头.status === 'error' || 镜头.status === 'denied') && typeof window.sealCamera === 'function'
+  const 相机回退 = !已就绪 && typeof window.sealCamera === 'function' && (
+    !navigator.mediaDevices?.getUserMedia || window.isSecureContext === false ||
+    镜头.status === 'unavailable' || 镜头.status === 'error' || 镜头.status === 'denied'
+  )
   const 常用 = 常用模式.includes(模式) ? 常用模式 : [...常用模式, 模式]
   useEffect(() => {
     在场.current = true
@@ -63,7 +69,11 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
     if (锁.current || 禁用) return
     锁.current = true; 设处理中(true); 设异常('')
     try {
-      if (拍摄 && !已就绪 && !相机回退) { await 镜头.start(); return }
+      if (拍摄 && !已就绪) {
+        if (!(await 确认相机说明()) || !在场.current) return
+        设权限提示('')
+        if (!相机回退) { await 镜头.start(); return }
+      }
       const 原图 = !拍摄 ? await 选择图片(true) : 相机回退 ? await 拍照() : [await 镜头.capture()]
       if (!原图.length || !在场.current) return
       const 文件: File[] = []
@@ -73,7 +83,10 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
       const 等背面 = 模式 === '证件扫描' && 证件 === '身份证' && 页数 + 文件.length < 2
       if ((!拍摄 || !连拍) && !等背面) 看结果()
     } catch (错误) {
-      if (在场.current) 设异常(错误 instanceof Error ? 错误.message : '读取图片失败，请重新选择或拍摄。')
+      if (在场.current) {
+        if (拍摄 && 是相机拒绝(错误)) 设权限提示('未获得相机权限，可在系统设置中开启；也可以继续从相册或文件导入。')
+        else 设异常(错误 instanceof Error ? 错误.message : '读取图片失败，请重新选择或拍摄。')
+      }
     } finally { 锁.current = false; if (在场.current) 设处理中(false) }
   }
   const 提示 = 模式 === '拍书籍' && 书籍 === '双页' ? '将书本中缝对齐虚线，两侧各留出完整一页'
@@ -98,7 +111,7 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
       {!已就绪 && <div className="seal-vf-idle">
         <span className="seal-vf-lens"><Icon name="scan" size={32} variant="outline" /></span>
         <strong>{镜头.status === 'starting' ? '正在开启相机' : 镜头.status === 'idle' ? '开启相机取景' : '相机暂未开启'}</strong>
-        <p>{镜头.error || '允许使用摄像头后，即可在这里拍摄文档。'}</p>
+        <p role="status">{权限提示 || 镜头.error || '允许使用摄像头后，即可在这里拍摄文档。'}</p>
         {模式 === '照片转PDF' ? <button type="button" onClick={() => void 取图(false)} disabled={禁用}>选择图片</button>
           : <button type="button" onClick={() => void 取图(true)} disabled={禁用}>{相机回退 ? '打开系统相机' : 镜头.status === 'idle' ? '开启相机' : '重新开启相机'}</button>}
       </div>}

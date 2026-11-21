@@ -26,6 +26,8 @@ const 图片 = (名称 = '单据1.jpg') => new File([new Uint8Array([255, 216, 2
 const 设置平台 = (平台: 'desktop' | 'web' | 'android' | 'harmony') => {
   delete document.documentElement.dataset.sealPlatform
   delete (window as any).sealNative
+  delete window.sealCamera
+  if (平台 === 'android' || 平台 === 'harmony') window.sealCamera = 输入.拍照
   if (平台 === 'web') document.documentElement.dataset.sealPlatform = 'web'
   if (平台 === 'android' || 平台 === 'harmony') { document.documentElement.dataset.sealPlatform = 'app'; (window as any).sealNative = { token: 't', platform: 平台 } }
 }
@@ -72,6 +74,7 @@ describe('扫描与识别：各平台入口差异', () => {
     await waitFor(() => expect(输入.拍照).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('第 1 页')).toBeInTheDocument()
     // 已同意过的说明不再重复弹出。
+    await 用户.click(screen.getByRole('button', { name: '继续拍摄' }))
     await 用户.click(screen.getByRole('button', { name: '拍照' }))
     await waitFor(() => expect(输入.拍照).toHaveBeenCalledTimes(2))
   })
@@ -85,7 +88,7 @@ describe('扫描与识别：各平台入口差异', () => {
     渲染(<ScanPage />)
     await 用户.click(screen.getByRole('button', { name: '拍照' }))
     expect(await screen.findByText('未获得相机权限，可在系统设置中开启；也可以继续从相册或文件导入。')).toBeInTheDocument()
-    await 用户.click(screen.getByRole('button', { name: '相册导入' }))
+    await 用户.click(screen.getByRole('button', { name: '导入图片' }))
     expect(await screen.findByText('第 1 页')).toBeInTheDocument()
   })
 })

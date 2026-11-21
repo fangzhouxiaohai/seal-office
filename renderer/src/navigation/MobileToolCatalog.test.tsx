@@ -30,7 +30,7 @@ describe('手机版服务直达', () => {
     for(const [query, label, id] of [['ＯＣＲ','拍照提取文字','提取文字'],['CAD转PDF','CAD 转 PDF','cad-pdf'],['抠图','一键抠图','cutout']]) {
       fireEvent.change(input, {target:{value:query}})
       fireEvent.click(screen.getByRole('button',{name:label}))
-      expect(opened.at(-1)).toBe(id)
+      expect(opened[opened.length - 1]).toBe(id)
     }
     fireEvent.change(input,{target:{value:'完全不存在的工具'}})
     expect(screen.getByRole('status')).toHaveTextContent('未找到')

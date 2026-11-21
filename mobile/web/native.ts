@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
 
 type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[]; value?: any }
-type Bridge = { token: string; platform: string; cameraPreview?: boolean; speechInput?: boolean }
+type Bridge = { token: string; platform: string; cameraPreview?: boolean; speechInput?: boolean; audioRecorder?: boolean }
 declare global {
   interface Window {
     sealNative?: Bridge
@@ -164,13 +164,21 @@ export function writeNativeClipboard(text: string): Promise<void> {
 }
 /** Native file-picker bytes avoid ArkWeb trying to fetch a foreign file URI. */
 export function pickNativeFiles(multiple: boolean): Promise<File[]> {
+  return receiveFiles(crypto.randomUUID(), 'pick-files', { multiple })
+}
+
+function receiveFiles(id:string, action:string, fields:Record<string,unknown>, signal?:AbortSignal, started?:()=>void): Promise<File[]> {
   return new Promise((resolve, reject) => {
-    const id = crypto.randomUUID(), files: File[] = []
+    const files: File[] = []
     let name = '', chunks: Uint8Array[] = [], total = 0, aggregate = 0, reading = false
-    const cleanup = () => { clearTimeout(timer); pending.delete(id) }
-    const timer = setTimeout(() => { cleanup(); reject(new Error('文件选择超时，请重新选择')) }, 180000)
+    const cleanup = () => { clearTimeout(timer); pending.delete(id); signal?.removeEventListener('abort', cancel) }
+    const cancel = () => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); resolve([]) }
+    const timer = setTimeout(() => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); reject(new Error('等待原生文件超时，请重试')) }, started ? 12*60000 : 180000)
+    if(signal?.aborted) { cleanup(); resolve([]); return }
+    signal?.addEventListener('abort',cancel,{once:true})
     pending.set(id, event => {
       try {
+        if (event.type === 'audio-started') { started?.(); return }
         if (event.type === 'file-start') {
           if (reading || files.length >= 20) throw new Error('文件读取顺序无效或数量超过上限')
           name = event.name || '文档'; chunks = []; total = 0; reading = true
@@ -183,7 +191,7 @@ export function pickNativeFiles(multiple: boolean): Promise<File[]> {
           chunks.push(chunk)
         } else if (event.type === 'file-end') {
           if (!reading) throw new Error('文件读取尚未开始')
-          files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name)); chunks = []; reading = false
+          files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name, {type:started ? 'audio/mp4' : ''})); chunks = []; reading = false
         } else if (event.type === 'end' || event.type === 'cancel') {
           if (event.type === 'end' && reading) throw new Error('文件读取未完成，请重新选择')
           cleanup(); resolve(event.type === 'cancel' ? [] : files)
@@ -191,8 +199,14 @@ export function pickNativeFiles(multiple: boolean): Promise<File[]> {
         else if (event.type === 'error') throw new Error(event.error || '文件读取失败')
       } catch (error) { cleanup(); reject(error) }
     })
-    try { send({ id, action: 'pick-files', multiple }) } catch (error) { cleanup(); reject(error) }
+    try { send({ id, action, ...fields }) } catch (error) { cleanup(); reject(error) }
   })
+}
+
+export function recordNativeAudio(signal:AbortSignal, started:()=>void) {
+  const id=crypto.randomUUID()
+  const result=receiveFiles(id,'audio-record-start',{},signal,started).then(files=>files[0]??null)
+  return {停止:()=>{if(pending.has(id)) send({id,action:'audio-record-stop'})},结果:result}
 }
 /** 原生宿主拍照（2.7.1 拍照扫描）：复用文件分块协议；用户拒绝相机权限时抛出 CameraDeniedError，界面据此提示并保留相册导入。 */
 export function captureNativePhoto(): Promise<File[]> {

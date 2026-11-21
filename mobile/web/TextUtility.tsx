@@ -37,7 +37,7 @@ export default function TextUtility({tool}:{tool:工具}) {
   const [正文,设正文]=useState(''),[对照,设对照]=useState(''),[语言,设语言]=useState('英语')
   const [同意,设同意]=useState(false),[结果,设结果]=useState(''),[进度,设进度]=useState(''),[忙,设忙]=useState(false)
   const 代次=useRef(0), 正在请求=useRef(''), {modal,message}=App.useApp()
-  const 停止 = () => { 代次.current++; if(正在请求.current) void 桥接.ai.stop(正在请求.current); 正在请求.current='' }
+  const 停止 = () => { 代次.current++; if(正在请求.current) void 桥接.ai.cancel(正在请求.current); 正在请求.current='' }
   useEffect(()=>()=>{停止()},[])
   const 更改正文=(文:string)=>{设正文(文);设结果('');设同意(false)}
   const 执行=async()=>{
@@ -97,7 +97,7 @@ export default function TextUtility({tool}:{tool:工具}) {
       {进度 && <p role="status">{进度}</p>}
     </div>
     {结果 && <div className="seal-util-card"><label className="seal-util-label">处理结果<textarea rows={8} value={结果} onChange={e=>设结果(e.target.value)} disabled={忙}/></label>
-      <div className="seal-util-row"><button disabled={忙} onClick={()=>void downloadFile((本地?'文字比对报告':tool==='translate-text'?'全文译稿':'改写稿')+'.txt',new TextEncoder().encode(结果),'text/plain;charset=utf-8').catch(()=>modal.error({title:'保存失败',content:'请选择可写入的位置后重试。'}))}>保存文本</button>
+      <div className="seal-util-row"><button disabled={忙} onClick={()=>void downloadFile((本地?'文字比对报告':tool==='translate-text'?'全文译稿':'改写稿')+'.txt',new TextEncoder().encode(结果),'text/plain;charset=utf-8').catch(()=>{modal.error({title:'保存失败',content:'请选择可写入的位置后重试。'})})}>保存文本</button>
       <button disabled={忙} onClick={()=>void (async()=>{try{await navigator.clipboard.writeText(结果);message.success('已复制')}catch{modal.info({title:'请手动复制',content:'长按结果文本并选择复制。'})}})()}>复制</button></div></div>}
   </>
 }

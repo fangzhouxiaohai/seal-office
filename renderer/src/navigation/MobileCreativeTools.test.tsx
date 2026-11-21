@@ -20,7 +20,7 @@ describe('手机创作工具',()=>{
     fireEvent.change(data,{target:{value:'甲,18\n乙,32'}})
     fireEvent.click(screen.getByRole('button',{name:'导出 SVG'}))
     await waitFor(()=>expect(downloadFile).toHaveBeenCalled())
-    const [filename,bytes,mime]=vi.mocked(downloadFile).mock.calls.at(-1)!
+    const [filename,bytes,mime]=vi.mocked(downloadFile).mock.lastCall!
     expect(filename).toMatch(/\.svg$/)
     expect(mime).toBe('image/svg+xml')
     const image=new DOMParser().parseFromString(new TextDecoder().decode(bytes),'image/svg+xml')
@@ -41,8 +41,8 @@ describe('手机创作工具',()=>{
     }
     expect(button).toBeEnabled()
     fireEvent.click(button)
-    await waitFor(()=>expect(vi.mocked(downloadFile).mock.calls.at(-1)?.[0]).toBe('手写字迹.svg'))
-    expect(new TextDecoder().decode(vi.mocked(downloadFile).mock.calls.at(-1)![1])).toContain('polyline')
+    await waitFor(()=>expect(vi.mocked(downloadFile).mock.lastCall?.[0]).toBe('手写字迹.svg'))
+    expect(new TextDecoder().decode(vi.mocked(downloadFile).mock.lastCall![1])).toContain('polyline')
     fireEvent.click(screen.getByRole('button',{name:'撤销上一笔'}))
     expect(button).toBeDisabled()
   })

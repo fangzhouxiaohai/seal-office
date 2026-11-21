@@ -42,7 +42,7 @@ it('由用户操作启动后置视频，支持设备才使用补光，后台立�
 it('返回或卸载后才获准的摄像头立即关闭，没有迟到的预览', async () => {
   const cam = 相机()
   let grant!: (stream: typeof cam.stream) => void
-  cam.acquire.mockImplementation(() => new Promise(resolve => { grant = resolve }))
+  cam.acquire.mockImplementation(() => new Promise<typeof cam.stream>(resolve => { grant = resolve }))
   const { result, unmount } = renderHook(useMobileViewfinder)
   act(() => result.current.videoRef(cam.video))
   let pending!: Promise<boolean>

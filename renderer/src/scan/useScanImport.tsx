@@ -12,8 +12,19 @@ const 已同意相机说明 = () => { try { return localStorage.getItem(相机�
 const 记录相机说明 = () => { try { localStorage.setItem(相机说明键, '1') } catch { /* 存储不可用时下次仍会先展示说明 */ } }
 const 错误文字 = (错误: unknown, 默认: string) => 错误 instanceof Error && 错误.message ? 错误.message : 默认
 
+export function useCameraNotice() {
+  const { modal } = AntdApp.useApp()
+  return () => 已同意相机说明() ? Promise.resolve(true) : new Promise<boolean>(完成 => modal.confirm({
+    title: '使用相机拍摄文档',
+    content: '海豹办公将请求系统相机权限，仅用于拍摄文档与单据。照片在本机完成裁边与增强；只有你点击识别并同意后，才会发送到已配置的 AI 服务识别文字。拒绝权限后仍可从相册或文件导入。',
+    okText: '同意并拍照', cancelText: '取消', zIndex: 2410,
+    onOk: () => { 记录相机说明(); 完成(true) }, onCancel: () => 完成(false),
+  }))
+}
+
 export function useScanImport(能力: 扫描能力, 添加: (文件: File[], 来源: 扫描来源) => void | Promise<void>) {
   const { modal, message } = AntdApp.useApp()
+  const 确认相机说明 = useCameraNotice()
   const 添加引用 = useRef(添加)
   添加引用.current = 添加
 
@@ -23,13 +34,6 @@ export function useScanImport(能力: 扫描能力, 添加: (文件: File[], 来
     if (图片.length < 文件.length) message.warning(`已忽略 ${文件.length - 图片.length} 个非图片文件`)
     if (图片.length) await 添加引用.current(图片, 来源)
   }
-
-  const 确认相机说明 = () => 已同意相机说明() ? Promise.resolve(true) : new Promise<boolean>(完成 => modal.confirm({
-    title: '使用相机拍摄文档',
-    content: '海豹办公将请求系统相机权限，仅用于拍摄文档与单据。照片在本机完成裁边与增强；只有你点击识别并同意后，才会发送到已配置的 AI 服务识别文字。拒绝权限后仍可从相册或文件导入。',
-    okText: '同意并拍照', cancelText: '取消',
-    onOk: () => { 记录相机说明(); 完成(true) }, onCancel: () => 完成(false),
-  }))
 
   const 拍摄 = async () => {
     if (!(await 确认相机说明())) return

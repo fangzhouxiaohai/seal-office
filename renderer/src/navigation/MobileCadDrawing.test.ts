@@ -29,7 +29,11 @@ describe('手机二维 CAD',()=>{
    const doc=await PDFDocument.load(await drawingPdf(entities))
    const page=doc.getPage(0), contents=page.node.Contents() as PDFArray
    expect(doc.getPageCount()).toBe(1)
-   const operators=Array.from({length:contents.size()},(_,i)=>new TextDecoder().decode(decodePDFRawStream(doc.context.lookup(contents.get(i),PDFRawStream)).decode())).join('\n')
+   const operators = Array.from({length: contents.size()}, (_, i) => {
+     const stream = doc.context.lookup(contents.get(i))
+     if (!(stream instanceof PDFRawStream)) throw new Error('页面内容缺少 PDF 流')
+     return new TextDecoder().decode(decodePDFRawStream(stream).decode())
+   }).join('\n')
    expect(operators).toMatch(/[-\d.]+ [-\d.]+ m/)
    expect(operators).toMatch(/\sl\b/)
    expect(operators).toMatch(/\sc\b/)

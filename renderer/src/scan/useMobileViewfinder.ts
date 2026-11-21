@@ -8,7 +8,7 @@ interface 相机环境 {
 
 function 相机错误(错误: unknown): { status: 状态; error: string } {
   const 名称 = 错误 instanceof Error || 错误 instanceof DOMException ? 错误.name : ''
-  if (名称 === 'NotAllowedError' || 名称 === 'CameraDeniedError') return { status: 'denied', error: '未获得相机权限，可在系统设置中开启，或从相册导入。' }
+  if (名称 === 'NotAllowedError' || 名称 === 'CameraDeniedError') return { status: 'denied', error: '未获得相机权限，可在系统设置中开启；也可以继续从相册或文件导入。' }
   if (['SecurityError', 'NotFoundError', 'OverconstrainedError', 'NotSupportedError'].includes(名称)) return { status: 'unavailable', error: '当前环境无法使用实时取景，可打开系统相机或从相册导入。' }
   if (名称 === 'NotReadableError') return { status: 'error', error: '摄像头正被其他程序占用，请关闭后重试。' }
   return { status: 'error', error: '摄像头未能启动，请重试或使用系统相机。' }

@@ -1,1 +1,4 @@
-{"string": [{"name": "seal_camera_reason", "value": "用于拍摄文档与单据，生成扫描件或识别为表格；拒绝后仍可从相册或文件导入"}]}
+{"string": [
+  {"name": "seal_camera_reason", "value": "用于拍摄文档与单据，生成扫描件或识别为表格；拒绝后仍可从相册或文件导入"},
+  {"name": "seal_audio_reason", "value": "在您启动录音转文字时录制音频"}
+]}

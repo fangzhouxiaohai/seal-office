@@ -37,6 +37,10 @@ export default {
       safeRight: 0,
       // #ifdef APP-HARMONY
       harmonyTasks: new Map<string, http.HttpRequest>(),
+      audioSession: '',
+      audioStarted: false,
+      audioCanceled: false,
+      recorderBound: false,
       // #endif
       tasks: new Map<string, RequestTask>()
     }
@@ -55,6 +59,7 @@ export default {
     // #ifdef APP-HARMONY
     this.harmonyTasks.forEach((task: http.HttpRequest) => { try { task.destroy() } catch (_) {} })
     this.harmonyTasks.clear()
+    if (this.audioSession.length > 0) this.cancelAudio(this.audioSession)
     // #endif
   },
   onBackPress(): boolean {
@@ -116,7 +121,7 @@ export default {
       // #ifdef APP-HARMONY
       platform = 'harmony'
       // #endif
-      const config: UTSJSONObject = { token: this.token, platform: platform, cameraPreview: platform == 'harmony' }
+      const config: UTSJSONObject = { token: this.token, platform: platform, cameraPreview: platform == 'harmony', audioRecorder: platform == 'harmony' }
       this.evaluate('window.sealNative=' + JSON.stringify(config) + ";window.dispatchEvent(new Event('seal-native-ready'))")
     },
     onError(event: UniWebViewErrorEvent) {
@@ -154,6 +159,9 @@ export default {
         if (action == 'ping') this.reply({ id: id, type: 'ready' })
         // #ifdef APP-HARMONY
         else if (action == 'update-store-open') this.openHarmonyStoreUpdate(id)
+        else if (action == 'audio-record-start') this.recordAudio(id)
+        else if (action == 'audio-record-stop' && this.audioSession == id && this.audioStarted) uni.getRecorderManager().stop()
+        else if (action == 'audio-record-cancel') this.cancelAudio(id)
         else if (action == 'camera-preview') {
           if (!this.workspaceReady) { this.reply({ id: id, type: 'error', error: '工作台尚未就绪，请重新打开相机' }); return }
           UTSHarmony.requestSystemPermission(['ohos.permission.CAMERA'], (allRight: boolean, _granted: string[]) => {
@@ -350,6 +358,57 @@ export default {
     },
     // 拍照扫描（2.7.1）：网页层先展示本应用的授权说明，宿主再申请系统相机权限；拒绝时回传 camera-denied，
     // 网页层提示后仍可相册或文件导入。旧 HBuilderX 安卓工程不声明相机权限，只提供导入。
+    // #ifdef APP-HARMONY
+    cancelAudio(id: string) {
+      if (this.audioSession != id) return
+      this.audioCanceled = true
+      if (this.audioStarted) uni.getRecorderManager().stop()
+    },
+    recordAudio(id: string) {
+      if (this.audioSession.length > 0) { this.reply({id: id, type: 'error', error: '请先结束当前录音'}); return }
+      this.audioSession = id
+      this.audioCanceled = false
+      const recorder = uni.getRecorderManager()
+      if (!this.recorderBound) {
+        this.recorderBound = true
+        recorder.onStart((_) => {
+          this.audioStarted = true
+          if (this.audioCanceled || !this.alive) recorder.stop()
+          else this.reply({id: this.audioSession, type: 'audio-started'})
+        })
+        recorder.onError((error) => {
+          const session = this.audioSession
+          this.audioSession = ''; this.audioStarted = false
+          if (session.length > 0 && this.alive) this.reply({id: session, type: 'error', error: error.errMsg})
+        })
+        recorder.onStop((result) => {
+          const session = this.audioSession
+          this.audioSession = ''; this.audioStarted = false
+          if (session.length == 0 || this.audioCanceled || !this.alive) return
+          uni.getFileSystemManager().readFile({filePath: result.tempFilePath, encoding: 'base64',
+            success: (data) => {
+              const encoded = data.data as string
+              if (encoded.length == 0 || encoded.length > 139810136) { this.reply({id: session, type: 'error', error: '录音为空或超过 100 MiB'}); return }
+              this.reply({id: session, type: 'file-start', name: '录音-' + Date.now().toString() + '.m4a'})
+              for (let pos = 0; pos < encoded.length; pos += 32768) this.reply({id: session, type: 'chunk', data: encoded.slice(pos,pos+32768)})
+              this.reply({id: session, type: 'file-end'}); this.reply({id: session, type: 'end'})
+            },
+            fail: (error) => { this.reply({id: session, type: 'error', error: error.errMsg}) }
+          })
+        })
+      }
+      UTSHarmony.requestSystemPermission(['ohos.permission.MICROPHONE'], (granted: boolean, _list: string[]) => {
+        if (this.audioCanceled || !this.alive || !granted) {
+          this.audioSession = ''
+          if (!granted && this.alive) this.reply({id: id, type: 'error', error: '未获得麦克风权限，可以选择音频文件'})
+          return
+        }
+        recorder.start({duration: 600000, format: 'm4a'})
+      }, (_again: boolean, _list: string[]) => {
+        this.audioSession = ''; this.reply({id: id, type: 'error', error: '未获得麦克风权限，可以选择音频文件'})
+      })
+    },
+    // #endif
     capturePhoto(id: string) {
       // #ifdef APP-HARMONY
       UTSHarmony.requestSystemPermission(['ohos.permission.CAMERA'], (allRight: boolean, _granted: string[]) => {
