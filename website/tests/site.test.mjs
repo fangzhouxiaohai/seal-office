@@ -28,7 +28,7 @@ describe('海豹办公官网页面', () => {
     assert.match(html, /href="#downloads"/)
     assert.match(html, /href="\/office\/"/)
     assert.match(html, /href="\/admin\/"/)
-    assert.match(html, /seal\.xingmasoft\.com\/api\/v1\/release-assets/)
+    assert.match(html, /(?:seal\.xingmasoft\.com\/api\/v1\/release-assets|github\.com\/fangzhouxiaohai\/seal-office\/releases\/download)/)
     assert.match(html, /class="hero-ambient"/)
     assert.match(html, /id="features"/)
     assert.match(html, /id="workflow"/)

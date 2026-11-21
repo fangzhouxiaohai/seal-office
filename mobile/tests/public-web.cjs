@@ -83,7 +83,15 @@ app.whenReady().then(async () => {
     recordCheck('同域中文字体PDF生成、文件读取，严格CSP下本地PDF Worker绘制和中文文字层')
     }
     if (includes('projects')) {
-    const clickAria = async label => evaluate(`(async()=>{const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&item.getAttribute('aria-label')===${JSON.stringify(label)});if(!button)throw new Error('缺少项目操作：'+${JSON.stringify(label)});button.scrollIntoView({block:'center',inline:'nearest'});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);if(!hit||!button.contains(hit))throw new Error('项目操作被遮挡：'+${JSON.stringify(label)});button.click();return true})()`)
+    const clickAria = async label => wait(`(()=>{
+      const button=[...document.querySelectorAll('button')].find(item=>item.getClientRects().length&&item.getAttribute('aria-label')===${JSON.stringify(label)});
+      if(!button||button.disabled)return false;
+      button.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+      const rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
+      if(!hit||!button.contains(hit))return false;
+      button.click();
+      return true;
+    })()`, '项目操作可点击：'+label, 30)
     const navigationClosed = async () => {
       await wait(`[...document.querySelectorAll('.ant-drawer-content-wrapper')].every(panel=>{const r=panel.getBoundingClientRect();return !r.height||r.top>=innerHeight||r.bottom<=0||getComputedStyle(panel).visibility==='hidden'})`, '页面未被弹层遮挡')
       await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`)

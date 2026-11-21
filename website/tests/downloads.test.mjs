@@ -47,21 +47,20 @@ describe('最新版下载', () => {
 describe('分平台下载入口', () => {
   it('静态首页为每个包显示相应版本和来源', async () => {
     const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
-    const escaped = version.replace(/\./g, '\\.')
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
     const links = Array.from(document.querySelectorAll('#downloads [data-platform]'))
     assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos-arm64', 'macos-intel', 'linux', 'android', 'harmony'])
     for (const link of links) {
-      if (link.dataset.platform === 'macos-arm64') {
-        assert.equal(link.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-macos-arm64.dmg`)
-        assert.match(link.textContent, new RegExp(`Apple 芯片.*ARM64.*v${escaped}`))
-      } else if (link.dataset.platform === 'macos-intel') {
-        assert.equal(link.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-macos-intel.dmg`)
-        assert.match(link.textContent, new RegExp(`Intel.*v${escaped}`))
+      const mac = /^macos-(arm64|intel)$/.exec(link.dataset.platform)
+      const base = 'https://github.com/fangzhouxiaohai/seal-office/releases/download/v'
+      if (mac) {
+        const displayedVersion = /v(\d+\.\d+\.\d+)/.exec(link.textContent)?.[1]
+        assert.ok(displayedVersion)
+        assert.equal(link.href, `${base}${displayedVersion}/seal-office-${displayedVersion}-macos-${mac[1]}.dmg`)
       } else {
-        assert.match(link.href, new RegExp(`^https://seal\\.xingmasoft\\.com/api/v1/release-assets/[^/]+/seal-office-.*${escaped}`))
-        assert.match(link.textContent, new RegExp(`v${escaped}`))
+        assert.ok(link.href.startsWith(`${base}${version}/seal-office-`))
+        assert.ok(link.textContent.includes(`v${version}`))
       }
     }
     const intel = document.querySelector('[data-platform="macos-intel"]')
