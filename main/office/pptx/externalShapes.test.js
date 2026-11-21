@@ -2,6 +2,25 @@ const pptxgen = require('pptxgenjs')
 const JSZip = require('jszip')
 const { 读取pptx, 写入pptx } = require('../pptxCodec')
 
+it('纯图形底板和分隔线保留与多段正文的叠放顺序，另存后仍可见', async () => {
+  const deck = new pptxgen()
+  const slide = deck.addSlide()
+  slide.addShape(deck.ShapeType.rect, { x: 0, y: 1, w: 8, h: 4, fill: { color: '19243E' } })
+  slide.addText('识别代码', { x: 1, y: 2, w: 5, h: 0.5, color: 'FFFFFF' })
+  slide.addShape(deck.ShapeType.line, { x: 1, y: 3, w: 5, h: 0, line: { color: 'FFFFFF' } })
+  slide.addText('办公地址', { x: 1, y: 4, w: 5, h: 0.5, color: 'FFFFFF' })
+  let bytes = await deck.write({ outputType: 'nodebuffer' })
+  for (let i = 0; i < 2; i++) {
+    const { 演示文稿 } = await 读取pptx(bytes)
+    const page = 演示文稿.幻灯片列表[0]
+    const [background, divider] = page.对象列表
+    const [code, address] = page.文本框列表
+    expect(page.图层顺序).toEqual([background.id, code.id, divider.id, address.id])
+    expect(page.文本框列表.map(box => box.text)).toEqual(['识别代码', '办公地址'])
+    if (i === 0) bytes = await 写入pptx({ 幻灯片: [{ ...page, 文本框: page.文本框列表 }] })
+  }
+})
+
 it('外部演示的矩形、圆角卡片、椭圆与横线可以编辑后写回原生图形', async () => {
   const deck = new pptxgen()
   const slide = deck.addSlide()

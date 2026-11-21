@@ -332,7 +332,8 @@ async function 读取pptx(数据) {
     }
     const 对象列表 = [...图片.对象列表, ...公式补充.对象列表, ...嵌入.对象列表, ...图示.对象列表]
     if (对象列表.length) 幻灯片.对象列表 = 对象列表
-    if (图片.混合图层) {
+    // 即使没有图片，底色矩形、分隔线和普通文字也按 spTree 的先后顺序叠放。
+    if (对象列表.length && 幻灯片.文本框列表.length) {
       const 文本 = new Set(幻灯片.文本框列表.map(项 => 项.id))
       const 成员 = new Set(对象列表.flatMap(项 => 项.子对象标识 ?? []))
       const 对象 = new Set(对象列表.filter(项 => !成员.has(项.id)).map(项 => 项.id))
@@ -345,7 +346,7 @@ async function 读取pptx(数据) {
       if (new Set(图层顺序).size === 文本.size + 对象.size && 图层顺序.length === 文本.size + 对象.size) {
         幻灯片.图层顺序 = 图层顺序
       } else {
-        警告.add('图片与文字图层未完整导入')
+        警告.add('对象与文字图层未完整导入')
       }
     }
     // 图表动态播放参数与原生构建清单一起读回；构建项缺失时明确告警并丢弃对应分步动画。

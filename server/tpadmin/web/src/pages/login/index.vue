@@ -64,7 +64,7 @@
         </t-form>
       </div>
 
-      <footer class="login-panel__copyright">海豹办公云端服务</footer>
+      <FilingFooter class="login-panel__copyright"><span>海豹办公云端服务</span></FilingFooter>
     </section>
   </div>
 </template>
@@ -84,6 +84,7 @@ import {
 } from 'tdesign-icons-vue-next';
 import { useUserStore } from '@/stores/user';
 import logoUrl from '@/assets/seal-logo.png';
+import FilingFooter from '@/components/FilingFooter.vue';
 
 const REMEMBER_KEY = 'tladmin:remember_username';
 
@@ -301,8 +302,6 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
 
 .login-panel__copyright {
   margin-top: 60px;
-  font-size: 12px;
-  color: var(--tl-text-3);
 }
 
 @media (max-width: 900px) {

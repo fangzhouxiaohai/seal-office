@@ -94,6 +94,7 @@
           </transition>
         </router-view>
       </main>
+      <FilingFooter />
     </div>
   </div>
 </template>
@@ -117,6 +118,7 @@ import { setThemeMode, themeMode, type ThemeMode } from '@/utils/theme';
 import { useUserStore } from '@/stores/user';
 import type { MenuNode } from '@/types/auth';
 import MenuTree from '@/layouts/components/MenuTree.vue';
+import FilingFooter from '@/components/FilingFooter.vue';
 import logoUrl from '@/assets/seal-logo.png';
 
 const COLLAPSE_KEY = 'tladmin:menu_collapsed';

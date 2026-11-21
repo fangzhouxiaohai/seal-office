@@ -2,10 +2,27 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { SlideObjects, 文本样式 } from './SlideObjects'
 import { 创建文本框 } from '../deck'
+import { 创建图形 } from '../model/elements'
 import { 导出为Html预览 } from '../deckExport'
 import SlideCanvas from '../SlideCanvas'
 import type { 幻灯片 } from '../deck'
 describe('统一只读对象渲染', () => {
+  it('编辑画布和放映都把正文绘制在底板上方', () => {
+    const box = 创建文本框(8, 12, 140, 32, '办公地址', 14)
+    const page: 幻灯片 = { id: 'page', title: '', 版式: '空白', 背景色: '#FFFFFF',
+      文本框列表: [box], 对象列表: [{ ...创建图形('矩形'), id: 'panel', x: 0, y: 0, width: 400, height: 160 }],
+      图层顺序: ['panel', box.id] }
+    const { container, rerender } = render(<SlideCanvas 幻灯片={page} 缩放={1} 编辑框标识={null} 选中框标识={null}
+      编辑值="" 显示网格线={false} on选中框={()=>{}} on双击框={()=>{}} on编辑值变化={()=>{}}
+      on提交编辑={()=>{}} on拖动框={()=>{}} on文本选择={()=>{}} />)
+    const verify = () => {
+      const panel = container.querySelector<HTMLElement>('[data-对象标识="panel"]')!
+      expect(Number(screen.getByText('办公地址').style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex))
+    }
+    verify()
+    rerender(<SlideObjects 幻灯片={page} 放映 />)
+    verify()
+  })
   it('窄文本框和长串共享盒模型与换行规则，网页独立运行',()=>{
     const 框=创建文本框(0,0,40,90,'长串ABCDEFGHIJKLMN\n第二行',20)
     expect(文本样式(框)).toMatchObject({boxSizing:'border-box',overflowWrap:'anywhere',border:'0 solid transparent'})
