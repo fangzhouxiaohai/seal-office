@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-当前桌面、服务端与移动源码版本为 **2.7.8**，移动构建号为 **20708**。各端共用编辑器与服务。鸿蒙沿用 UTS 宿主，安卓使用 [Android Studio Java 原生宿主](android-studio/README.md)。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` 或 `dist:ubuntu`。参见[移动与网页版项目](mobile/README.md)与[打包规范](docs/打包规范.md)。
+当前桌面与移动客户端版本为 **2.7.8**，移动构建号为 **20708**。各端共用编辑器与服务。鸿蒙沿用 UTS 宿主，安卓使用 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` 或 `dist:ubuntu`。参见[移动与网页版项目](mobile/README.md)与[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 

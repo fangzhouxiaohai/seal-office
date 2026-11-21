@@ -89,7 +89,7 @@ def api(kind, method, path, missing=False, **kwargs):
     return response.json() if response.content else {}
 
 
-def assets():
+def assets(names=None):
     sums = {}
     for line in (DIRECTORY / 'SHA256SUMS.txt').read_text(encoding='utf-8-sig').splitlines():
         parts = line.split()
@@ -97,6 +97,8 @@ def assets():
             sums[parts[1]] = parts[0].lower()
     rows = []
     for name in CANDIDATES:
+        if names and name not in names:
+            continue
         # The universal DMG can be prepared exclusively for the in-app update.
         if name == f'seal-office-{VERSION}-macos.dmg' and name not in sums and (DIRECTORY / 'SHA256SUMS-local.txt').is_file():
             local_sums = (DIRECTORY / 'SHA256SUMS-local.txt').read_text(encoding='utf-8-sig').splitlines()
@@ -110,8 +112,38 @@ def assets():
         if sums.get(relative) != digest:
             raise RuntimeError('SHA256SUMS 与文件不一致：' + name)
         rows.append({'name': name, 'path': relative, 'bytes': file.stat().st_size, 'sha256': digest})
-    rows.append({'name': 'SHA256SUMS.txt', 'path': 'SHA256SUMS.txt', 'bytes': (DIRECTORY / 'SHA256SUMS.txt').stat().st_size, 'sha256': sha(DIRECTORY / 'SHA256SUMS.txt')})
-    return rows
+    if not names or 'SHA256SUMS.txt' in names:
+        rows.append({'name': 'SHA256SUMS.txt', 'path': 'SHA256SUMS.txt', 'bytes': (DIRECTORY / 'SHA256SUMS.txt').stat().st_size, 'sha256': sha(DIRECTORY / 'SHA256SUMS.txt')})
+    return select_assets(rows, names)
+
+
+def select_assets(rows, names):
+    if not names:
+        return rows
+    requested = set(names)
+    selected = [row for row in rows if row['name'] in requested]
+    if len(selected) != len(requested):
+        missing = requested.difference(row['name'] for row in selected)
+        raise ValueError('找不到已校验的发行附件：' + '、'.join(sorted(missing)))
+    return selected
+
+
+def gitcode_matches(remote, row):
+    if int(remote.get('size') or 0) != row['bytes']:
+        return False
+    url = GC + '/releases/' + TAG + '/attach_files/' + quote(row['name'], safe='') + '/download'
+    digest, size = hashlib.sha256(), 0
+    try:
+        with requests.get(url, stream=True, timeout=(30, 600)) as response:
+            response.raise_for_status()
+            for block in response.iter_content(4 * 1024 * 1024):
+                digest.update(block)
+                size += len(block)
+    except requests.RequestException as error:
+        raise RuntimeError('GitCode 附件下载中断：' + row['name'] + '，' + type(error).__name__) from None
+    if size != row['bytes']:
+        raise RuntimeError('GitCode 附件下载不完整：' + row['name'])
+    return digest.hexdigest() == row['sha256']
 
 
 def github_publish(rows, title, body):
@@ -128,13 +160,30 @@ def github_publish(rows, title, body):
         if remote and remote['size'] == row['bytes'] and remote.get('digest') == 'sha256:' + row['sha256']:
             print(json.dumps({'github': 'skip', 'name': row['name']}, ensure_ascii=False), flush=True)
             continue
-        if remote:
-            api('github', 'DELETE', f"/releases/assets/{remote['id']}")
-        with (DIRECTORY / row['path']).open('rb') as handle:
-            remote = api('github', 'POST', release['upload_url'].split('{')[0], params={'name': row['name']},
-                         headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(row['bytes'])}, data=handle)
-        if remote['size'] != row['bytes'] or remote.get('digest') not in (None, 'sha256:' + row['sha256']):
+        upload_name = row['name'] + '.upload-' + row['sha256'][:16] if remote else row['name']
+        uploaded = next((item for item in current['assets'] if item['name'] == upload_name), None)
+        if not uploaded:
+            with (DIRECTORY / row['path']).open('rb') as handle:
+                uploaded = api('github', 'POST', release['upload_url'].split('{')[0], params={'name': upload_name},
+                               headers={'Content-Type': 'application/octet-stream', 'Content-Length': str(row['bytes'])}, data=handle)
+        if uploaded['size'] != row['bytes'] or uploaded.get('digest') != 'sha256:' + row['sha256']:
             raise RuntimeError('GitHub 附件校验失败：' + row['name'])
+        if remote:
+            old_path = f"/releases/assets/{remote['id']}"
+            if api('github', 'GET', old_path)['name'] != row['name']:
+                raise RuntimeError('GitHub 同名附件在上传期间发生变化：' + row['name'])
+            api('github', 'PATCH', old_path, json={'name': row['name'] + '.previous-' + str(remote['id'])})
+            try:
+                api('github', 'PATCH', f"/releases/assets/{uploaded['id']}", json={'name': row['name']})
+            except Exception:
+                latest = api('github', 'GET', f'/releases/{rid}')
+                canonical = next((item for item in latest['assets'] if item['name'] == row['name']), None)
+                if canonical is None:
+                    api('github', 'PATCH', old_path, json={'name': row['name']})
+                    raise
+                if canonical['id'] != uploaded['id']:
+                    raise
+            api('github', 'DELETE', old_path)
         print(json.dumps({'github': 'uploaded', 'name': row['name'], 'bytes': row['bytes']}, ensure_ascii=False), flush=True)
     final = api('github', 'GET', f'/releases/{rid}')
     for row in rows:
@@ -157,41 +206,34 @@ def gitcode_publish(rows, title, body):
     def upload(row):
         current = api('gitcode', 'GET', '/releases/' + TAG)
         remote = next((item for item in current.get('assets', []) if item['name'] == row['name']), None)
-        if remote and int(remote.get('size') or 0) == row['bytes']:
+        if remote and gitcode_matches(remote, row):
             return {'name': row['name'], 'status': 'skip'}
+        if remote:
+            api('gitcode', 'DELETE', f"/releases/{TAG}/attach_files/{remote['id']}")
         target = api('gitcode', 'GET', '/releases/' + TAG + '/upload_url', params={'file_name': row['name']})
         parsed = urlsplit(target['url'])
         if parsed.scheme != 'https':
             raise RuntimeError('GitCode 上传地址异常')
         with (DIRECTORY / row['path']).open('rb') as handle:
-            response = requests.put(target['url'], headers={**target['headers'], 'Content-Length': str(row['bytes'])}, data=handle, timeout=(30, 3600))
+            try:
+                response = requests.put(target['url'], headers={**target['headers'], 'Content-Length': str(row['bytes'])}, data=handle, timeout=(30, 3600))
+            except requests.RequestException as error:
+                raise RuntimeError('GitCode 附件上传中断：' + row['name'] + '，' + type(error).__name__) from None
         if not response.ok:
             raise RuntimeError(f"GitCode 存储 HTTP {response.status_code}: {row['name']}")
         for _ in range(30):
             current = api('gitcode', 'GET', '/releases/' + TAG)
             remote = next((item for item in current.get('assets', []) if item['name'] == row['name']), None)
-            if remote:
+            if remote and int(remote.get('size') or 0) == row['bytes']:
                 break
             time.sleep(3)
-        if not remote:
-            raise RuntimeError('GitCode 附件未出现：' + row['name'])
+        if not remote or not gitcode_matches(remote, row):
+            raise RuntimeError('GitCode 公开下载校验失败：' + row['name'])
         return {'name': row['name'], 'status': 'uploaded'}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         for result in pool.map(upload, rows):
             print(json.dumps({'gitcode': result}, ensure_ascii=False), flush=True)
-    # 所有正式附件都匿名下载核对全部字节，大型安装程序与商店包也必须验证。
-    for row in rows:
-        url = GC + '/releases/' + TAG + '/attach_files/' + quote(row['name']) + '/download'
-        digest, size = hashlib.sha256(), 0
-        with requests.get(url, stream=True, timeout=(30, 600)) as response:
-            response.raise_for_status()
-            for block in response.iter_content(4 * 1024 * 1024):
-                digest.update(block)
-                size += len(block)
-        if size != row['bytes'] or digest.hexdigest() != row['sha256']:
-            raise RuntimeError('GitCode 公开下载字节不一致：' + row['name'])
-        print(json.dumps({'gitcodeVerified': row['name']}, ensure_ascii=False), flush=True)
     return 'https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/' + TAG
 
 
@@ -202,6 +244,7 @@ def main():
     parser.add_argument('--notes', default=str(ROOT / 'docs' / 'release-notes' / f'v{VERSION}.md'))
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--only', choices=['github', 'gitcode'])
+    parser.add_argument('--asset', action='append', help='只补发指定的成品或校验清单，可重复传入')
     args = parser.parse_args()
     TAG = release_tag(args.tag)
     head = git('rev-parse', TAG + '^{commit}')
@@ -212,7 +255,7 @@ def main():
     for remote in remotes:
         if head not in git('ls-remote', remote, f'refs/tags/{TAG}', f'refs/tags/{TAG}^{{}}'):
             raise SystemExit(f'请先把 {TAG} 推送到 {remote}')
-    rows = assets()
+    rows = assets(args.asset)
     notes = Path(args.notes).read_text(encoding='utf-8')
     title = f'海豹办公 {VERSION}'
     print(json.dumps({'tag': TAG, 'assets': rows}, ensure_ascii=False, indent=1), flush=True)
