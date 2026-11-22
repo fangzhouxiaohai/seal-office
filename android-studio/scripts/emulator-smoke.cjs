@@ -59,17 +59,29 @@ const bridgeAction = (action, extra = {}) => `(async()=>{
 })()`
 
 async function selectTestFile() {
-  await pause(1200)
-  run('shell', 'input', 'tap', '80', '145')
-  await pause(650)
-  run('shell', 'input', 'tap', '240', '830')
-  await pause(650)
-  run('shell', 'input', 'tap', '860', '145')
-  await pause(350)
-  run('shell', 'input', 'text', 'seal-native-import-qa.txt')
-  run('shell', 'input', 'keyevent', '66')
-  await pause(900)
-  run('shell', 'input', 'tap', '285', '800')
+  const { JSDOM } = require('jsdom')
+  const filename = 'seal-native-import-qa.txt'
+  const until = Date.now() + 12000
+  while (Date.now() < until) {
+    const raw = run('exec-out', 'uiautomator', 'dump', '/dev/tty')
+    const xml = raw.match(/<hierarchy\b[\s\S]*?<\/hierarchy>/)?.[0]
+    if (!xml) continue
+    const dom = new JSDOM(xml, { contentType: 'text/xml' })
+    const nodes = Array.from(dom.window.document.querySelectorAll('node'))
+    const file = nodes.find(node => node.getAttribute('text') === filename)
+    const downloads = nodes.find(node => node.getAttribute('resource-id')?.endsWith('/title') &&
+      ['Downloads', '下载', '下载内容'].includes(node.getAttribute('text')))
+    const roots = nodes.find(node => ['Show roots', '显示根目录', '显示位置'].includes(node.getAttribute('content-desc')))
+    const bounds = (file || downloads || roots)?.getAttribute('bounds')?.match(/\d+/g)?.map(Number)
+    dom.window.close()
+    if (bounds) {
+      const [left, top, right, bottom] = bounds
+      run('shell', 'input', 'tap', String(Math.floor((left + right) / 2)), String(Math.floor((top + bottom) / 2)))
+      if (file) return
+    }
+    await pause(200)
+  }
+  throw new Error('系统选择器未显示下载目录中的测试文件')
 }
 
 async function main() {
@@ -153,6 +165,8 @@ async function main() {
       if (result.types.at(-1) !== 'cancel') throw new Error(`${action} 系统选择器取消回传失败：${JSON.stringify(result)}`)
     }
     console.log('系统导入与保存选择器取消回传：通过')
+    const launcher = run('shell', 'cmd', 'package', 'resolve-activity', '--brief', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.HOME').split('\n').pop().trim()
+    if (!launcher.includes('/')) throw new Error('无法识别模拟器默认桌面')
     for (let index = 0; index < 5; index++) {
       run('shell', 'am', 'start', '-n', activity)
       await pause(450)
@@ -161,7 +175,7 @@ async function main() {
       run('shell', 'input', 'keyevent', '4')
       await pause(850)
       const activityState = run('shell', 'dumpsys', 'activity', 'activities')
-      if (!/topResumedActivity=.*com\.android\.launcher3/.test(activityState)) throw new Error(`第 ${index + 1} 个主导航返回后没有到系统桌面`)
+      if (!activityState.split('\n').some(line => line.includes('topResumedActivity=') && line.includes(launcher))) throw new Error(`第 ${index + 1} 个主导航返回后没有到系统桌面`)
     }
     console.log('五个主导航单次返回系统桌面：通过')
   } finally {

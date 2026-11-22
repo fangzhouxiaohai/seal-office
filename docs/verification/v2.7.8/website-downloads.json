@@ -1,0 +1,44 @@
+[
+  {
+    "platform": "windows",
+    "filename": "seal-office-setup-2.7.8.exe",
+    "bytes": 567077301,
+    "sha256": "5035e87e5bcb8e70f7aaeb2d4cd345d8a4628fba1a80f37d4893233a9447a0f3",
+    "url": "https://seal.xingmasoft.com/api/v1/release-assets/02592b94-d8bd-4925-b8c4-082a7abbf676/seal-office-setup-2.7.8.exe"
+  },
+  {
+    "platform": "macos-arm64",
+    "filename": "seal-office-2.7.8-macos-arm64.dmg",
+    "bytes": 224099825,
+    "sha256": "96028aa983e65fd348694fffff08e4a1edee57522cdad7bad12a0fb1cd6c90fe",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-macos-arm64.dmg"
+  },
+  {
+    "platform": "macos-intel",
+    "filename": "seal-office-2.7.8-macos-intel.dmg",
+    "bytes": 230708151,
+    "sha256": "d9e08105b5a16a90977f7bf895236ddae25b45a0374ffabe17df7f7d993cc52b",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-macos-intel.dmg"
+  },
+  {
+    "platform": "linux",
+    "filename": "seal-office-2.7.8-amd64.deb",
+    "bytes": 168989752,
+    "sha256": "bdf528ba288b3c64d1c52a12418dbabf69ca7f0db1e306d4583aff1a993939ef",
+    "url": "https://seal.xingmasoft.com/api/v1/release-assets/1dc66e13-9acf-45fd-9fd3-298634a9a0ea/seal-office-2.7.8-amd64.deb"
+  },
+  {
+    "platform": "android",
+    "filename": "seal-office-2.7.8-android.apk",
+    "bytes": 53939521,
+    "sha256": "5edddbfdd6250d76ed2e6f63840aaa7dc0e8e90861dec71a741d85ab92abc4b6",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-android.apk"
+  },
+  {
+    "platform": "harmony",
+    "filename": "seal-office-2.7.8-harmony.hap",
+    "bytes": 67028991,
+    "sha256": "1a7ab208c41b2ea3dd10478403b047101c721dc6f7f5f168d3806bac9831815a",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-harmony.hap"
+  }
+]
