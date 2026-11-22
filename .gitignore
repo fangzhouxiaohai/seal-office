@@ -39,3 +39,4 @@ pub.txt
 
 # 官网独立构建产物
 /website-dist/
+seal-server/target/

@@ -1,5 +1,0 @@
-com\sealoffice\cloud\common\ApiException.class
-com\sealoffice\cloud\common\GlobalExceptionHandler.class
-com\sealoffice\cloud\config\SealEnvironmentLoader.class
-com\sealoffice\cloud\config\SealProperties.class
-com\sealoffice\cloud\SealCloudApplication.class
