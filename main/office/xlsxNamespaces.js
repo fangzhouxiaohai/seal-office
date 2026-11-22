@@ -12,6 +12,7 @@ const 声明命名空间 = 'http://www.w3.org/2000/xmlns/'
 const 严格表格命名空间 = 'http://purl.oclc.org/ooxml/spreadsheetml/main'
 const 严格关系命名空间 = 'http://purl.oclc.org/ooxml/officeDocument/relationships'
 const 规范Uri = uri => uri === 严格表格命名空间 ? 表格命名空间 : uri === 严格关系命名空间 ? 关系命名空间 : uri
+const 字体开关 = new Set(['b', 'i', 'strike', 'outline', 'shadow', 'condense', 'extend'])
 
 function 转义Xml(文本) {
   return 文本.replace(/[&<>"'\r\n\t]/g, 字符 => ({
@@ -25,11 +26,21 @@ function 规范表格Xml命名空间(xml, 关系目录) {
   const 解析器 = sax.parser(true, { xmlns: true })
   const 输出 = []
   const 栈 = []
+  let 忽略深度 = 0
   const 外部前缀 = new Map()
   let 已转换 = false
   let 根节点数 = 0
 
   解析器.onopentag = 节点 => {
+    if (忽略深度) { 忽略深度++; return }
+    // ExcelJS 仅看字体标记是否存在，会将 <b val="0"/> 读作粗体。
+    if (规范Uri(节点.uri) === 表格命名空间 && ['font', 'rPr'].includes(栈.at(-1)?.标签) &&
+      ((字体开关.has(节点.local) && ['0', 'false'].includes(节点.attributes.val?.value)) ||
+       (节点.local === 'u' && 节点.attributes.val?.value === 'none'))) {
+      忽略深度 = 1
+      已转换 = true
+      return
+    }
     if (栈.length === 0) 根节点数 += 1
     const 父范围 = 栈.at(-1)?.范围 ?? { xml: 'http://www.w3.org/XML/1998/namespace' }
     const 范围 = { ...父范围 }
@@ -92,6 +103,7 @@ function 规范表格Xml命名空间(xml, 关系目录) {
     栈.push({ 标签, 范围, 自闭合: 节点.isSelfClosing })
   }
   解析器.onclosetag = () => {
+    if (忽略深度) { 忽略深度--; return }
     const 节点 = 栈.pop()
     if (!节点.自闭合) 输出.push(`</${节点.标签}>`)
   }

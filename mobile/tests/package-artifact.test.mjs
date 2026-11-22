@@ -11,9 +11,10 @@ import { pdfFontResources, inspectPdfFonts } from '../scripts/pdf-font-resources
 const JSZip = createRequire(import.meta.url)('jszip')
 const manifest = { versionName: '2.0.0', versionCode: '20000', 'app-harmony': { distribute: { bundleName: 'com.sealoffice.mobile' } } }
 const editor = Buffer.from('verified-current-editor-中文')
-async function hap({ app = {}, build = {}, missing = '' } = {}) {
+async function hap({ app = {}, build = {}, releaseType = 'Release', missing = '' } = {}) {
   const zip = new JSZip()
-  zip.file('module.json', JSON.stringify({ app: { bundleName: 'com.sealoffice.mobile', versionName: '2.0.0', versionCode: 20000, debug: false, ...app }, module: { type: 'entry' } }))
+  zip.file('module.json', JSON.stringify({ app: { bundleName: 'com.sealoffice.mobile', versionName: '2.0.0', versionCode: 20000, debug: false, apiReleaseType:'Release', ...app }, module: { type: 'entry' } }))
+  zip.file('pack.info', JSON.stringify({summary:{modules:[{apiVersion:{releaseType}}]}}))
   const prefix = 'resources/rawfile/apps/__UNI__B52B65B/www/static/office/'
   const entries = { 'build-info.json': JSON.stringify({ platform: 'harmony', desktopVersion: '2.0.0', ...build }), 'office.js': editor, 'index.html': '<html></html>', ...Object.fromEntries(pdfFontResources.map(name => ['fonts/' + name, Buffer.from('test-font-resource-' + name)])) }
   for (const [name, bytes] of Object.entries(entries)) if (name !== missing) zip.file(prefix + name, bytes)
@@ -66,6 +67,8 @@ test('实际读取HAP ZIP样本核对身份、版本和当前内置资源，不�
   assert.equal(result.versionCode, '20000')
   assert.equal(result.signatureVerified, false)
   assert.equal(result.deviceVerified, false)
+  await assert.rejects(inspectHap(await hap({releaseType:'Beta1'}), manifest, editor), /Release API/)
+  await assert.rejects(inspectHap(await hap({app:{apiReleaseType:'Beta1'}}), manifest, editor), /Release API/)
   assert.deepEqual(result.embeddedPdfFonts.map(item => item.name), pdfFontResources)
   for (const options of [{ app: { bundleName: 'other.app' } }, { app: { versionCode: 19999 } }, { app: { debug: true } }, { app: { debug: null } }, { build: { platform: 'android' } }, { missing: 'fonts/NotoSansSC.ttf' }]) await assert.rejects(inspectHap(await hap(options), manifest, editor))
   for (const name of pdfFontResources) await assert.rejects(inspectHap(await hap({ missing: 'fonts/' + name }), manifest, editor), /字体或许可证缺失/)

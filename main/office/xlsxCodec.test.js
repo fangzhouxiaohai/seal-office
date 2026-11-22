@@ -186,6 +186,20 @@ describe('xlsxCodec：xlsx 原生保存增强', () => {
     })
     expect(读回.警告).not.toContain('数据验证规则未导入')
   })
+  it.each([
+    ["sheet='false' objects='0' scenarios='false' formatCells='false'", undefined],
+    ['sheet="0" sort="true"', undefined], ['', undefined],
+    ['sheet="true"', '本机'], ['sheet="false" objects="1"', '外部'],
+    ['sheet="true" password="ABCD"', '外部'],
+  ])('按 OOXML 属性读取工作表保护 %s', async (attributes, expected) => {
+    const zip = await JSZip.loadAsync(await 写入xlsx({ 工作表:[{ 名称:'回读', 数据:[['示例']], 保护:true }] }))
+    const part = 'xl/worksheets/sheet1.xml'
+    zip.file(part, (await zip.file(part).async('string')).replace('<sheetProtection sheet="1"/>', '<sheetProtection ' + attributes + '></sheetProtection>'))
+    const result = await 读取xlsx(await zip.generateAsync({ type:'nodebuffer' }))
+    expect(result.工作表列表[0].元数据.保护).toBe(expected)
+    expect(result.警告.includes('工作表保护设置未导入')).toBe(expected === '外部')
+  })
+
   it('旧式密码保护不能当作可直接解除的本机保护', async () => {
     const 数据 = await 写入xlsx({ 工作表: [{ 名称: '密码保护', 数据: [['内容']], 保护: true }] })
     const 压缩包 = await JSZip.loadAsync(数据)

@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer'
 import { exportMime } from './fileTypes'
+import { 图片格式 } from '../../renderer/src/scan/imageFormat'
 
 type NativeEvent = { id: string; type: string; status?: number; headers?: Record<string, string>; data?: string; error?: string; path?: string; name?: string; size?: number; fonts?: unknown[]; value?: any }
 type Bridge = { token: string; platform: string; cameraPreview?: boolean; speechInput?: boolean; audioRecorder?: boolean }
@@ -167,10 +168,23 @@ export function pickNativeFiles(multiple: boolean): Promise<File[]> {
   return receiveFiles(crypto.randomUUID(), 'pick-files', { multiple })
 }
 
+function mediaChunk(data?: string): Uint8Array<ArrayBuffer> {
+  if (!data || data.length % 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) throw new Error('媒体数据传输不完整，请重新选择')
+  return new Uint8Array(Buffer.from(data, 'base64'))
+}
+
+function recordingFormat(bytes: Uint8Array): [string, string] {
+  const header = String.fromCharCode(...bytes.subarray(0, 16))
+  if (header.slice(4, 8) === 'ftyp') return ['audio/mp4', 'm4a']
+  if (header.startsWith('RIFF') && header.slice(8, 12) === 'WAVE') return ['audio/wav', 'wav']
+  if (bytes[0] === 0xff && (bytes[1] & 0xf6) === 0xf0) return ['audio/aac', 'aac']
+  throw new Error('录音文件格式无效，请重新录制')
+}
+
 function receiveFiles(id:string, action:string, fields:Record<string,unknown>, signal?:AbortSignal, started?:()=>void): Promise<File[]> {
   return new Promise((resolve, reject) => {
     const files: File[] = []
-    let name = '', chunks: Uint8Array[] = [], total = 0, aggregate = 0, reading = false
+    let name = '', chunks: Uint8Array<ArrayBuffer>[] = [], total = 0, aggregate = 0, reading = false, expected: number | undefined
     const cleanup = () => { clearTimeout(timer); pending.delete(id); signal?.removeEventListener('abort', cancel) }
     const cancel = () => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); resolve([]) }
     const timer = setTimeout(() => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); reject(new Error('等待原生文件超时，请重试')) }, started ? 12*60000 : 180000)
@@ -181,17 +195,25 @@ function receiveFiles(id:string, action:string, fields:Record<string,unknown>, s
         if (event.type === 'audio-started') { started?.(); return }
         if (event.type === 'file-start') {
           if (reading || files.length >= 20) throw new Error('文件读取顺序无效或数量超过上限')
-          name = event.name || '文档'; chunks = []; total = 0; reading = true
+          name = event.name || '文档'; chunks = []; total = 0; reading = true; expected = event.size
         }
         else if (event.type === 'chunk') {
           if (!reading) throw new Error('文件读取尚未开始')
-          const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64'))
+          const chunk = mediaChunk(event.data)
           total += chunk.length; aggregate += chunk.length
           if (aggregate > 100 * 1024 * 1024) throw new Error('一次导入的文件总大小不能超过 100 MiB')
           chunks.push(chunk)
         } else if (event.type === 'file-end') {
           if (!reading) throw new Error('文件读取尚未开始')
-          files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name, {type:started ? 'audio/mp4' : ''})); chunks = []; reading = false
+          if (expected !== undefined && expected > 0 && expected !== total) throw new Error('文件传输不完整，请重新选择')
+          let type = exportMime(name)
+          if (started) {
+            if (!total) throw new Error('录音为空，请重新录制')
+            const [mime, ext] = recordingFormat(Buffer.concat(chunks, Math.min(16, total)))
+            type = mime
+            name = name.replace(/\.[^.]*$/, '') + '.' + ext
+          }
+          files.push(new File(chunks, name, {type})); chunks = []; reading = false
         } else if (event.type === 'end' || event.type === 'cancel') {
           if (event.type === 'end' && reading) throw new Error('文件读取未完成，请重新选择')
           cleanup(); resolve(event.type === 'cancel' ? [] : files)
@@ -212,18 +234,25 @@ export function recordNativeAudio(signal:AbortSignal, started:()=>void) {
 export function captureNativePhoto(): Promise<File[]> {
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID(), files: File[] = []
-    let name = '', chunks: Uint8Array[] = [], reading = false, total = 0
+    let name = '', chunks: Uint8Array<ArrayBuffer>[] = [], reading = false, total = 0, expected: number | undefined
     const cleanup = () => { clearTimeout(timer); pending.delete(id) }
     const timer = setTimeout(() => { cleanup(); reject(new Error('拍照超时，请重新拍摄')) }, 600000)
     pending.set(id, event => {
       try {
-        if (event.type === 'file-start') { if (reading || files.length) throw new Error('照片读取顺序无效'); name = event.name || 'photo.jpg'; chunks = []; reading = true }
+        if (event.type === 'file-start') { if (reading || files.length) throw new Error('照片读取顺序无效'); name = event.name || 'photo.jpg'; chunks = []; reading = true; expected = event.size }
         else if (event.type === 'chunk') {
           if (!reading) throw new Error('照片读取尚未开始')
-          const chunk = new Uint8Array(Buffer.from(event.data ?? '', 'base64')); total += chunk.length
+          const chunk = mediaChunk(event.data); total += chunk.length
           if (total > 100 * 1024 * 1024) throw new Error('照片超过 100 MiB，无法导入')
           chunks.push(chunk)
-        } else if (event.type === 'file-end') { if (!reading) throw new Error('照片读取尚未开始'); files.push(new File(chunks.map(chunk => new Uint8Array(chunk)), name, { type: 'image/jpeg' })); chunks = []; reading = false }
+        } else if (event.type === 'file-end') {
+          if (!reading || !total || (expected !== undefined && expected !== total)) throw new Error('照片数据不完整，请重新拍摄')
+          const type = 图片格式(Buffer.concat(chunks, Math.min(total, 128)))
+          if (!type) throw new Error('系统相机返回的文件无法识别，请重新拍摄')
+          const ext = type === 'image/jpeg' ? 'jpg' : type.slice(6)
+          files.push(new File(chunks, name.replace(/\.[^.]*$/, '') + '.' + ext, { type }))
+          chunks = []; reading = false
+        }
         else if (event.type === 'end' || event.type === 'cancel') { if (event.type === 'end' && reading) throw new Error('照片读取未完成，请重新拍摄'); cleanup(); resolve(event.type === 'cancel' ? [] : files) }
         else if (event.type === 'camera-denied') { cleanup(); reject(Object.assign(new Error(event.error || '未获得相机权限'), { name: 'CameraDeniedError' })) }
         else if (event.type === 'error') throw new Error(event.error || '拍照失败')

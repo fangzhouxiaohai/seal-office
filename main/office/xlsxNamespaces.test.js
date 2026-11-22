@@ -10,6 +10,10 @@ const 关系 = 'http://schemas.openxmlformats.org/officeDocument/2006/relationsh
 const 包关系 = 'http://schemas.openxmlformats.org/package/2006/relationships'
 
 describe('XLSX 命名空间和关系路径兼容', () => {
+  it('显式关闭字体开关与缺省等价，其他启用的样式保持有效', () => {
+    const input = '<font xmlns="' + 表格 + '"><b val="0"/><i val="false"></i><strike val="0"/><u val="none"/><outline val="1"/><sz val="15"/></font>'
+    expect(规范表格Xml命名空间(input)).toBe('<font xmlns="' + 表格 + '"><outline val="1"/><sz val="15"/></font>')
+  })
   it.each(['x', 'sheet', 'sml'])('读取 %s: 标签的工作簿、样式、公式和两张工作表', async 前缀 => {
     const 结果 = await 读取xlsx(await 创建带前缀表格({ 前缀, 关系前缀: 'link' }))
     expect(结果.工作表列表.map(表 => 表.名称)).toEqual(['逐条验收', '测试证据'])

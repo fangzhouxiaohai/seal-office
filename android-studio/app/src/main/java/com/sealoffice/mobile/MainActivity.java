@@ -87,6 +87,9 @@ public final class MainActivity extends Activity {
     private static final int UPDATE_NOTIFICATIONS_PERMISSION = 42106;
     private static final int PREVIEW_PERMISSION = 42107;
     private static final int SPEECH_INPUT = 42108;
+    private static final int MICROPHONE_PERMISSION = 42109;
+    private PermissionRequest microphoneRequest;
+    private boolean microphonePermissionPending;
     private static final long MAX_IMPORT = 100L * 1024L * 1024L;
     private static final String LEGACY_ASSET_ROOT = "apps/__UNI__B52B65B/www/static/office/";
     private static final String ENTRY = "file:///android_asset" + HostProtocol.LEGACY_ASSET_PATH + "?native=1";
@@ -195,12 +198,25 @@ public final class MainActivity extends Activity {
                 });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest request) {
+                if (allowsMicrophone(request)) {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                    } else if (!microphonePermissionPending) {
+                        microphoneRequest = request;
+                        microphonePermissionPending = true;
+                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MICROPHONE_PERMISSION);
+                    } else request.deny();
+                    return;
+                }
                 boolean allowed = ready && previewGrantUntil > android.os.SystemClock.elapsedRealtime() &&
                         checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
                         HostProtocol.allowsPreview(web.getUrl(), request.getOrigin().toString(), request.getResources());
                 if (!allowed) { request.deny(); return; }
                 previewGrantUntil = 0;
                 request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+            }
+            @Override public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (microphoneRequest == request) microphoneRequest = null;
             }
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (HostProtocol.wantsCamera(params.isCaptureEnabled(), params.getAcceptTypes())) return capturePhoto(null, callback);
@@ -234,7 +250,8 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (!HostProtocol.isWorkspaceUrl(url)) return;
-                String config = "{token:" + JSONObject.quote(token) + ",platform:'android',cameraPreview:true,speechInput:true}";
+                boolean speechAvailable = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).resolveActivity(getPackageManager()) != null;
+                String config = "{token:" + JSONObject.quote(token) + ",platform:'android',cameraPreview:true,speechInput:" + speechAvailable + "}";
                 evaluate("window.uni=window.uni||{};window.uni.webView={postMessage:function(value){SealHost.postMessage(JSON.stringify(value))}};" +
                         "window.sealNative=" + config + ";window.open=function(url){SealHost.postMessage(JSON.stringify({data:{action:'open-external',token:window.sealNative.token,url:String(url)}}));return null};" +
                         "window.dispatchEvent(new Event('seal-native-ready'));");
@@ -677,8 +694,27 @@ public final class MainActivity extends Activity {
         } catch (JSONException ignored) { }
     }
 
+    private boolean allowsMicrophone(PermissionRequest request) {
+        String[] resources = request.getResources();
+        if (web == null || !ready || !HostProtocol.isWorkspaceUrl(web.getUrl()) ||
+                resources.length != 1 || !PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0])) return false;
+        String origin = request.getOrigin().toString();
+        if (HostProtocol.isLegacyWorkspaceUrl(web.getUrl())) return "file://".equals(origin) || "file:///".equals(origin);
+        return HostProtocol.ORIGIN.equals(origin) || (HostProtocol.ORIGIN + "/").equals(origin);
+    }
+
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == MICROPHONE_PERMISSION) {
+            PermissionRequest request = microphoneRequest;
+            microphoneRequest = null;
+            microphonePermissionPending = false;
+            if (request != null) {
+                if (HostProtocol.permissionGranted(results) && allowsMicrophone(request)) request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                else request.deny();
+            }
+            return;
+        }
         if (requestCode == PREVIEW_PERMISSION) {
             finishPreviewPermission(HostProtocol.permissionGranted(results));
             return;

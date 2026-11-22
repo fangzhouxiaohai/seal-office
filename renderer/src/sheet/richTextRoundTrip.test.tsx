@@ -12,6 +12,34 @@ const { 读取xlsx, 写入xlsx } = require('../../../main/office/xlsxCodec')
 const margins = {left:.75,right:.75,top:1,bottom:1,header:.511811023622047,footer:.511811023622047}
 const load = (result: any) => result.工作表列表.map((s: any) => 从Html表格构建工作表(s.html,s.名称,s.页面设置,s.元数据)!)
 
+it.skipIf(!process.env.SEAL_INVOICE_SAMPLE)('发票原件经过编辑模型、XLSX 保存和重开保留单元格和合并区域', async () => {
+  const bytes = readFileSync(process.env.SEAL_INVOICE_SAMPLE!)
+  const original = await 读取xlsx(bytes)
+  expect(original.警告).toEqual([])
+  const sheets = load(original)
+  expect(sheets[0].保护).toBeUndefined()
+  const values = (sheet: any) => Object.fromEntries(Object.entries(sheet.单元格)
+    .filter(([, cell]: any) => cell.原始值 !== '').map(([addr, cell]: any) => [addr, cell.原始值]))
+  const before = values(sheets[0])
+  expect(Object.keys(before).length).toBeGreaterThan(0)
+  const edited = 写入单元格(sheets[0], 'AP36', '兼容性复测')
+  const saved = await 写入xlsx(导出为Xlsx([edited]))
+  const SheetJS = require('../../../mobile/node_modules/xlsx')
+  const cells = (data: Buffer) => {
+    const book = SheetJS.read(data)
+    const sheet = book.Sheets[book.SheetNames[0]]
+    return Object.fromEntries(Object.entries(sheet).filter(([key, cell]: any) =>
+      !key.startsWith('!') && cell.v !== undefined && cell.v !== '').map(([key, cell]: any) => [key, [cell.t, cell.v, cell.f]]))
+  }
+  expect(cells(saved)).toEqual({...cells(bytes), AP36:['s', '兼容性复测', undefined]})
+  const result = await 读取xlsx(saved)
+  expect(result.警告).toEqual([])
+  const [reopened] = load(result)
+  expect(values(reopened)).toEqual({...before, AP36: '兼容性复测'})
+  expect(reopened.合并区域).toEqual(sheets[0].合并区域)
+  expect(reopened.保护).toBeUndefined()
+})
+
 it('富文本、字符集、默认对齐、自定义页边距经过编辑和保存重开保留；编辑富文本不复活旧文字', async () => {
   const book = new ExcelJS.Workbook(), sheet = book.addWorksheet('报名表')
   book.addWorksheet('空表').pageSetup.margins = margins

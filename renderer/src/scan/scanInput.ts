@@ -13,7 +13,7 @@ declare global {
 
 /** 单据批量识别上限，与需求“100 张以内”一致 */
 export const 最大批量 = 100
-const 图片扩展名 = /\.(?:jpe?g|png|webp|bmp|gif)$/i
+const 图片扩展名 = /\.(?:jpe?g|png|webp|bmp|gif|hei[cf]|avif)$/i
 
 export function 是图片文件(文件: File): boolean {
   return /^image\//i.test(文件.type) || 图片扩展名.test(文件.name)

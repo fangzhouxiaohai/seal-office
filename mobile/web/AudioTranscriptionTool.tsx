@@ -20,17 +20,16 @@ export default function AudioTranscriptionTool() {
     finally {active.current=null;session.current=null;setBusy(false);setRecording(false)}
   }
   const record=async(signal:AbortSignal)=>{
-    if(window.sealNative?.speechInput) {
-      const result=await nativeSpeechInput(signal)
-      if(result&&!signal.aborted){setText(result);setFile(null);setConsent(false)}
-      return
-    }
     session.current=(window.sealNative?.audioRecorder?recordNativeAudio:录制网页音频)(signal,()=>setRecording(true))
     const recorded=await session.current.结果
     if(recorded&&!signal.aborted) select(recorded)
   }
   return <div className="seal-util-card">
-    <div className="seal-util-row"><button className="seal-util-primary" disabled={busy&&!recording} onClick={()=>recording?session.current?.停止():void run(record)}>{recording?'结束录音':window.sealNative?.speechInput?'打开系统语音输入':'开始录音'}</button>
+    <div className="seal-util-row"><button className="seal-util-primary" disabled={busy&&!recording} onClick={()=>recording?session.current?.停止():void run(record)}>{recording?'结束录音':'开始录音'}</button>
+    {window.sealNative?.speechInput && <button disabled={busy} onClick={()=>void run(async signal=>{
+      const result=await nativeSpeechInput(signal)
+      if(result&&!signal.aborted){setText(result);setFile(null);setConsent(false)}
+    })}>打开系统语音输入</button>}
     <UtilityFileButton label="选择音频" disabled={busy} accept="audio/*,.m4a,.webm" onFile={select}/></div>
     {file&&<><p>{file.name}</p>
       <label className="seal-util-label">转写服务接口<input type="url" placeholder="https://" value={url} disabled={busy} onChange={e=>{setUrl(e.target.value);setConsent(false)}}/></label>

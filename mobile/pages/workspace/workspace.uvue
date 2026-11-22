@@ -385,16 +385,7 @@ export default {
           const session = this.audioSession
           this.audioSession = ''; this.audioStarted = false
           if (session.length == 0 || this.audioCanceled || !this.alive) return
-          uni.getFileSystemManager().readFile({filePath: result.tempFilePath, encoding: 'base64',
-            success: (data) => {
-              const encoded = data.data as string
-              if (encoded.length == 0 || encoded.length > 139810136) { this.reply({id: session, type: 'error', error: '录音为空或超过 100 MiB'}); return }
-              this.reply({id: session, type: 'file-start', name: '录音-' + Date.now().toString() + '.m4a'})
-              for (let pos = 0; pos < encoded.length; pos += 32768) this.reply({id: session, type: 'chunk', data: encoded.slice(pos,pos+32768)})
-              this.reply({id: session, type: 'file-end'}); this.reply({id: session, type: 'end'})
-            },
-            fail: (error) => { this.reply({id: session, type: 'error', error: error.errMsg}) }
-          })
+          this.readMediaFile(session, result.tempFilePath, '录音-' + Date.now().toString() + '.m4a')
         })
       }
       UTSHarmony.requestSystemPermission(['ohos.permission.MICROPHONE'], (granted: boolean, _list: string[]) => {
@@ -426,7 +417,7 @@ export default {
       uni.chooseImage({ count: 1, sourceType: ['camera'], sizeType: ['original'],
         success: (result) => {
           if (result.tempFilePaths.length == 0) { this.reply({ id: id, type: 'cancel' }); return }
-          this.readCameraFile(id, result.tempFilePaths[0])
+          this.readMediaFile(id, result.tempFilePaths[0], 'photo-' + Date.now().toString() + '.jpg')
         },
         fail: (error) => {
           const type = error.errCode == 1101001 || error.errMsg.toLowerCase().includes('cancel') ? 'cancel' : error.errCode == 1101005 ? 'camera-denied' : 'error'
@@ -434,17 +425,18 @@ export default {
         }
       })
     },
-    readCameraFile(id: string, path: string) {
-      uni.getFileSystemManager().readFile({ filePath: path, encoding: 'base64',
+    readMediaFile(id: string, path: string, name: string) {
+      uni.getFileSystemManager().readFile({ filePath: path,
         success: (result) => {
-          const data = result.data as string
-          if (data.length == 0 || data.length > 139810136) { this.reply({ id: id, type: 'error', error: '照片为空或超过 100 MiB，无法导入' }); return }
-          this.reply({ id: id, type: 'file-start', name: 'photo-' + Date.now().toString() + '.jpg', size: Math.floor(data.length * 3 / 4) })
-          for (let start = 0; start < data.length; start += 32768) this.reply({ id: id, type: 'chunk', data: data.slice(start, start + 32768) })
+          const bytes = result.data as ArrayBuffer
+          const size = bytes.byteLength
+          if (size == 0 || size > 104857600) { this.reply({ id: id, type: 'error', error: '媒体文件为空或超过 100 MiB' }); return }
+          this.reply({ id: id, type: 'file-start', name: name, size: size })
+          for (let start = 0; start < size; start += 24576) this.reply({ id: id, type: 'chunk', data: uni.arrayBufferToBase64(bytes.slice(start, start + 24576)) })
           this.reply({ id: id, type: 'file-end' })
           this.reply({ id: id, type: 'end' })
         },
-        fail: (_) => { this.reply({ id: id, type: 'error', error: '照片读取失败，请重试' }) }
+        fail: (error) => { this.reply({ id: id, type: 'error', error: error.errMsg }) }
       })
     },
     readPickedFile(id: string, files: ChooseFileTempFile[], index: number, transferred: number) {

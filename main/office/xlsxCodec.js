@@ -497,10 +497,23 @@ async function 读取保护列表(压缩包, 工作表数) {
   for (let 索引 = 0; 索引 < 工作表数; 索引 += 1) {
     const 部件 = 压缩包.file(路径列表[索引] ?? '')
     const Xml = 部件 ? await 部件.async('string') : ''
-    const 匹配 = Xml.match(/<sheetProtection\b([^>]*?)\/>/i)
-    if (!匹配) { 结果.push(undefined); continue }
-    const 余下属性 = 匹配[1].replace(/\bsheet="1"/, '').trim()
-    结果.push(余下属性 === '' ? '本机' : '外部')
+    let 保护
+    const parser = require('sax').parser(true, { xmlns: true })
+    let 深度 = 0
+    parser.onopentag = node => {
+      深度++
+      if (深度 !== 2 || node.local !== 'sheetProtection' || node.uri !== 'http://schemas.openxmlformats.org/spreadsheetml/2006/main') return
+      const 属性 = Object.values(node.attributes).filter(attr => attr.uri !== 'http://www.w3.org/2000/xmlns/')
+      const 有效 = attr => ['1', 'true'].includes(attr.value.trim())
+      const 权限 = new Set(['sheet','objects','scenarios','formatCells','formatColumns','formatRows','insertColumns','insertRows','insertHyperlinks','deleteColumns','deleteRows','selectLockedCells','sort','autoFilter','pivotTables','selectUnlockedCells'])
+      // 属性缺省时 sheet、objects、scenarios 均为 false。未知扩展和密码信息继续保留保真提示。
+      if (属性.every(attr => 权限.has(attr.name) && /^(?:0|1|true|false)$/.test(attr.value.trim())) &&
+          !属性.some(attr => ['sheet','objects','scenarios'].includes(attr.name) && 有效(attr))) return
+      保护 = 属性.length === 1 && 属性[0].name === 'sheet' && 有效(属性[0]) ? '本机' : '外部'
+    }
+    parser.onclosetag = () => { 深度-- }
+    if (Xml) parser.write(Xml).close()
+    结果.push(保护)
   }
   return 结果
 }

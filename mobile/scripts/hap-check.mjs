@@ -11,10 +11,23 @@ const require = createRequire(import.meta.url), JSZip = require('jszip')
 const project = fileURLToPath(new URL('../..', import.meta.url))
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 
+export async function verifyReleaseApi(zip, isHap) {
+  const info = JSON.parse(await zip.file('pack.info')?.async('string') || '{}')
+  const modules = info.summary?.modules
+  if (!Array.isArray(modules) || !modules.length || modules.some(module => module.apiVersion?.releaseType?.toLowerCase() !== 'release')) {
+    throw new Error('pack.info 未记录正式 Release API，请使用 HarmonyOS Release SDK 重新编译')
+  }
+  if (isHap) {
+    const config = JSON.parse(await zip.file('module.json')?.async('string') || '{}')
+    if (config.app?.apiReleaseType?.toLowerCase() !== 'release') throw new Error('module.json 未记录正式 Release API')
+  }
+}
+
 export async function inspectHap(data, manifest, currentEditor) {
   const zip = await JSZip.loadAsync(data, { checkCRC32: true })
   const configuration = zip.file('module.json')
   if (!configuration) throw new Error('HAP 缺少编译后的 module.json；不接受源码快照、APP 或 HAR 冒充 HAP')
+  await verifyReleaseApi(zip, true)
   const { app, module } = JSON.parse(await configuration.async('string'))
   if (app?.bundleName !== manifest['app-harmony']?.distribute?.bundleName || app?.versionName !== manifest.versionName || String(app?.versionCode) !== manifest.versionCode) throw new Error('HAP 应用身份或版本与当前项目不一致')
   if (app.debug !== false || module?.type !== 'entry') throw new Error('请提供明确关闭调试的 entry HAP')

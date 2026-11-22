@@ -1,0 +1,27 @@
+name: Office file compatibility
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'main/office/**'
+      - 'renderer/src/sheet/**'
+      - 'renderer/src/fileOpen*'
+      - 'test/fixtures/**'
+      - 'package*.json'
+      - '.github/workflows/office-compatibility.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  round-trip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:main -- main/office/xlsx main/office/docx main/office/pptx
+      - run: npx vitest run renderer/src/sheet/xlsxRoundTrip.test.tsx renderer/src/sheet/richTextRoundTrip.test.tsx renderer/src/fileOpen.test.ts

@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { buildPlatform } from './build.mjs'
 import { findHBuilder, runHBuilder } from './hbuilder.mjs'
+import { verifyReleaseApi } from './hap-check.mjs'
+import JSZip from 'jszip'
 
 const directory = fileURLToPath(new URL('..', import.meta.url))
 const root = path.resolve(directory, '..')
@@ -50,6 +52,8 @@ export async function packHarmony() {
   await runHBuilder(executable, ['pack', 'app-harmony', '--project', directory])
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'seal-harmony-signature-'))
   try {
+    await verifyReleaseApi(await JSZip.loadAsync(await fs.readFile(appFile)), false)
+    await verifyReleaseApi(await JSZip.loadAsync(await fs.readFile(hapFile)), true)
     verify(tool, appFile, temporary)
     verify(tool, hapFile, temporary)
   } finally {
