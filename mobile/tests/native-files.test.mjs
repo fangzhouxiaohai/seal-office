@@ -3,14 +3,16 @@ import assert from 'node:assert/strict'
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
 
-test('鸿蒙文件选择分块、取消、残缺响应及保存/打印的宿主确认', async () => {
+test('鸿蒙文件选择分块、取消、残缺响应及保存/打印的宿主确认', async t => {
   const previous = globalThis.window, messages = []
   globalThis.window = { fetch: globalThis.fetch, sealNative: { token: 'test-only', platform: 'harmony' }, uni: { webView: { postMessage: ({ data }) => messages.push(data) } } }
   try {
     const result = await build({ entryPoints: [fileURLToPath(new URL('../web/native.ts', import.meta.url))], bundle: true, platform: 'node', format: 'esm', write: false })
     const native = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'))
     const reply = (type, extra = {}) => window.sealReceiveNative({ id: messages.at(-1).id, type, ...extra })
+    t.mock.timers.enable({apis:['setTimeout']})
     const picked = native.pickNativeFiles(true)
+    t.mock.timers.tick(4 * 60000)
     assert.equal(messages.at(-1).action, 'pick-files')
     for (const name of ['中文.pdf', '数据.xlsx']) {
       reply('file-start', { name }); reply('chunk', { data: Buffer.from('数据').toString('base64') }); reply('file-end')

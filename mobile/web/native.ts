@@ -187,12 +187,23 @@ function receiveFiles(id:string, action:string, fields:Record<string,unknown>, s
     let name = '', chunks: Uint8Array<ArrayBuffer>[] = [], total = 0, aggregate = 0, reading = false, expected: number | undefined
     const cleanup = () => { clearTimeout(timer); pending.delete(id); signal?.removeEventListener('abort', cancel) }
     const cancel = () => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); resolve([]) }
-    const timer = setTimeout(() => { if(started) {try{send({id,action:'audio-record-cancel'})}catch{}} cleanup(); reject(new Error('等待原生文件超时，请重试')) }, started ? 12*60000 : 180000)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const watchTransfer = (ms: number) => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (started) { try { send({id, action:'audio-record-cancel'}) } catch {} }
+        cleanup()
+        reject(new Error('等待原生文件超时，请重试'))
+      }, ms)
+    }
+    // 系统选择器可长期停留，收到文件后才开始检查传输是否停滞。
+    if (started) watchTransfer(12 * 60000)
     if(signal?.aborted) { cleanup(); resolve([]); return }
     signal?.addEventListener('abort',cancel,{once:true})
     pending.set(id, event => {
       try {
         if (event.type === 'audio-started') { started?.(); return }
+        if (event.type === 'file-start' || event.type === 'chunk' || event.type === 'file-end') watchTransfer(180000)
         if (event.type === 'file-start') {
           if (reading || files.length >= 20) throw new Error('文件读取顺序无效或数量超过上限')
           name = event.name || '文档'; chunks = []; total = 0; reading = true; expected = event.size
