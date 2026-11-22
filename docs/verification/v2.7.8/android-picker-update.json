@@ -1,0 +1,21 @@
+{
+  "version": "2.7.8",
+  "passed": true,
+  "bytes": 54735593,
+  "sha256": "5e8784d25866f6a9181e4a5416f243e0b33c37bf6f91a453ef2433ceb52e58e1",
+  "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/bea6b176-1e03-4c13-a479-6dd8355fb4c9/seal-office-2.7.8-android.apk",
+  "verification": "Full anonymous HTTPS download via origin nginx; external range and update checks",
+  "oldResponse": {
+    "hasUpdate": true,
+    "version": "2.7.8",
+    "mandatory": false,
+    "notes": "# 海豹办公 2.7.8\n\n- 修正部分演示文稿末页的底色图形遮住正文的问题。打开、仅查看和另存时均可查看完整的兼容性提示。\n- 手机版增加拍照取景、连续扫描、相册导入与审阅，首页和服务页可直达图片、PDF、录音转文字与二维 CAD 工具。首次使用相机时先说明用途。\n- 管理后台登录页和登录后的页面底部均可查阅网站备案号。\n- 11 月 22 日修订了 Windows 普通安装版、Ubuntu 和 macOS 的程序内更新。使用 2.7.7 时如果点击“更新”出现 `path is not defined`，或已安装首发的 2.7.8 桌面包，请保存文档、退出程序，从官网下载对应的 2.7.8 修订包并覆盖安装一次。后续版本可在程序内下载并校验。[官网下载](https://seal.xingmasoft.com/#downloads)\n- 改善演示文稿中的图片和文字混合图层读取，保留图片比例锁定、替代文字和对象标识。改善表格对部分 Excel 表样式与文本条件格式的兼容性。\n- 导入和保存提示限制最大高度，详情可在弹窗内滚动。受保护文稿顶部显示简短提示，兼容性说明可按需打开。\n- 已启用的云空间在登录后自动解锁。升级时，已解锁的旧客户端可迁移原有密钥，其他旧客户端在首次解锁时迁移。迁移完成后可通过短信验证恢复访问，已有云文件继续使用原密钥解密。未迁移的旧云文件仍需要原解锁密钥或一台已解锁的设备。\n- 鸿蒙 HAP 使用正式发布配置，安装请使用 AppGallery 或其测试渠道。微软商店 MSIX 用于商店提交。\n- macOS 支持 Apple 芯片和 Intel 处理器，请按芯片下载对应 DMG。两款安装包采用临时签名，尚未通过 Apple 公证。",
+    "url": "https://seal.xingmasoft.com/api/v1/release-assets/bea6b176-1e03-4c13-a479-6dd8355fb4c9/seal-office-2.7.8-android.apk",
+    "sha256": "5e8784d25866f6a9181e4a5416f243e0b33c37bf6f91a453ef2433ceb52e58e1",
+    "bytes": 54735593,
+    "publishedAt": 1795282048989
+  },
+  "currentResponse": {
+    "hasUpdate": false
+  }
+}

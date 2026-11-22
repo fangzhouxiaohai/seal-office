@@ -1,0 +1,26 @@
+[
+  {
+    "platform": "macos-arm64",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-macos-arm64.dmg",
+    "bytes": 230455026,
+    "sha256": "c6f0e333f36df99e1f032a119014247b90f4737aae207f5e650f51716cce69fd"
+  },
+  {
+    "platform": "macos-intel",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-macos-intel.dmg",
+    "bytes": 237813926,
+    "sha256": "d3f6662a6922a9ac048e028aeb3f492e1eb5227d047a324329539aad3f9cdd19"
+  },
+  {
+    "platform": "android",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-android.apk",
+    "bytes": 54735593,
+    "sha256": "5e8784d25866f6a9181e4a5416f243e0b33c37bf6f91a453ef2433ceb52e58e1"
+  },
+  {
+    "platform": "harmony",
+    "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.8/seal-office-2.7.8-harmony.hap",
+    "bytes": 70242491,
+    "sha256": "6e5fb89702fa09e02bfbc929119b861029bce1c42319d1f7af8529e518b8c7ff"
+  }
+]
