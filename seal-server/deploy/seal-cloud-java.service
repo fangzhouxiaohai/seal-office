@@ -1,0 +1,26 @@
+[Unit]
+Description=Seal Office Cloud API (Spring Boot)
+After=network.target mysqld.service
+
+[Service]
+Type=simple
+User=seal-cloud
+Group=seal-cloud
+WorkingDirectory=/www/server/java_project/seal-server
+Environment=SEAL_ENV_FILE=/etc/seal-cloud/service.env
+Environment=SEAL_SERVER_PORT=8097
+ExecStart=/www/server/java/jdk-17.0.8/bin/java -Xms512m -Xmx2g -jar /www/server/java_project/seal-server/seal-server.jar
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWriteDirectories=/www/wwwroot/seal.xingmasoft.com/data /www/wwwroot/seal.xingmasoft.com/account-erasure /www/backup/seal-cloud
+TimeoutStopSec=40
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

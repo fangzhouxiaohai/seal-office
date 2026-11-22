@@ -42,6 +42,18 @@ public class GlobalExceptionHandler {
         return render(404, "接口不存在");
     }
 
+    /** Node 对路径存在但方法不支持的路由同样返回 404「接口不存在」（无 405 概念） */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> methodNotSupported() {
+        return render(404, "接口不存在");
+    }
+
+    /** Spring 6.1 起静态资源分发缺失时抛出 NoResourceFoundException，同样对齐 404 */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> noResource() {
+        return render(404, "接口不存在");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> unknown(Exception error) {
         log.error("未处理异常", error);

@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
   autosave TINYINT NOT NULL DEFAULT 0,
   envelope MEDIUMTEXT,
   consent MEDIUMTEXT,
-  created BIGINT NOT NULL,
   vault_key MEDIUMTEXT,
   vault_revision BIGINT NOT NULL DEFAULT 0,
+  created BIGINT NOT NULL,
   UNIQUE KEY uk_users_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS sends (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   phone VARCHAR(20),
   ip VARCHAR(64),
-  time BIGINT
+  time BIGINT,
+  KEY idx_sends_time (time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS nodes (
