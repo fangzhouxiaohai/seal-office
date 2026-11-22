@@ -1,0 +1,50 @@
+server:
+  port: ${SEAL_SERVER_PORT:8097}
+  shutdown: graceful
+
+spring:
+  application:
+    name: seal-server
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+  datasource:
+    url: ${SEAL_JDBC_URL:jdbc:mysql://127.0.0.1:3306/seal_cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true}
+    username: ${SEAL_JDBC_USER:seal}
+    password: ${SEAL_JDBC_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 4
+      connection-timeout: 5000
+  jackson:
+    default-property-inclusion: non_null
+  web:
+    resources:
+      add-mappings: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+
+logging:
+  level:
+    root: info
+    com.sealoffice: info
+
+seal:
+  # 与 Node 版 service.env 同名文件，启动时读取，环境变量优先
+  env-file: ${SEAL_ENV_FILE:/etc/seal-cloud/service.env}
+  data-dir: ${SEAL_DATA_DIR:/www/wwwroot/seal.xingmasoft.com/data}
+  public-origin: ${SEAL_PUBLIC_ORIGIN:https://seal.xingmasoft.com}
+  converter-internal-url: ${SEAL_CONVERTER_INTERNAL_URL:http://127.0.0.1:8298}
+  erasure-dir: ${SEAL_ERASURE_DIR:/www/wwwroot/seal.xingmasoft.com/account-erasure}
+  backup-dir: ${SEAL_BACKUP_DIR:/www/backup/seal-cloud}
+  quota: 300000000
+  chunk-size: 1048576
