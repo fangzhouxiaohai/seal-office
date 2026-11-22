@@ -103,7 +103,8 @@ export function 正文位置(根: HTMLElement, x: number, y: number): Range {
 
 export function 显示缩放(元素: HTMLElement): number {
   let 缩放 = 1
-  for (let 父: HTMLElement | null = 元素; 父; 父 = 父.parentElement) {
+  // 选框和图片共用根视口。Electron 25 在 Retina 上将设备倍率计入根元素的 computed zoom。
+  for (let 父: HTMLElement | null = 元素; 父 && 父 !== 元素.ownerDocument.documentElement; 父 = 父.parentElement) {
     const 值 = getComputedStyle(父).getPropertyValue('zoom')
     缩放 *= (parseFloat(值) || 1) / (值.includes('%') ? 100 : 1)
   }

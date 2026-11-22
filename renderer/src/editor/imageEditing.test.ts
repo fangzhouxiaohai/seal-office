@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { describe, expect, it } from 'vitest'
-import { 调整图片尺寸, 对齐图片, 移动图片到选区 } from './imageEditing'
+import { describe, expect, it, vi } from 'vitest'
+import { 调整图片尺寸, 对齐图片, 移动图片到选区, 显示缩放 } from './imageEditing'
 import { htmlToDocxModel } from './commands'
 import { 净化富文本 } from './sanitizeHtml'
 
@@ -17,6 +17,20 @@ function 文档(html = `<p>前文<strong><img src="data:image/png;base64,${图�
 }
 
 describe('图片尺寸和正文位置', () => {
+  it('选框使用正文相对视口的缩放，根节点报告的 Retina 倍率不重复计入', () => {
+    const { 根, 图 } = 文档()
+    document.body.append(根)
+    const 样式 = vi.spyOn(window, 'getComputedStyle')
+    try {
+      for (const 倍率 of [0.75, 1, 1.5]) {
+        样式.mockImplementation(元素 => ({
+          getPropertyValue: () => 元素 === document.documentElement ? '2' : 元素 === 根 ? String(倍率) : '1',
+        } as CSSStyleDeclaration))
+        expect(显示缩放(图)).toBe(倍率)
+      }
+    } finally { 样式.mockRestore(); 根.remove() }
+  })
+
   it('精确尺寸写入图片，非法尺寸不留下部分修改', () => {
     const { 图 } = 文档()
     调整图片尺寸(图, 240, 160)
