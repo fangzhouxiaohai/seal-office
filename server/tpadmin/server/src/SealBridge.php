@@ -7,7 +7,7 @@ final class SealBridge
 {
     private const ROUTES = [
         'GET' => ['#^/overview$#', '#^/converter$#', '#^/releases$#', '#^/publications/[0-9a-f-]{36}$#', '#^/access/(admins|roles|menus|menu-candidates)$#'],
-        'POST' => ['#^/converter/token$#', '#^/converter/test$#', '#^/releases$#', '#^/releases/batch$#', '#^/access/(admins|roles|menus)$#'],
+        'POST' => ['#^/converter/token$#', '#^/converter/test$#', '#^/releases$#', '#^/releases/batch$#', '#^/releases/delete-version$#', '#^/access/(admins|roles|menus)$#'],
         'PATCH' => ['#^/converter$#', '#^/releases/[0-9a-f-]{36}$#', '#^/publications/[0-9a-f-]{36}$#', '#^/access/(admins|roles)/[0-9a-f-]{36}$#', '#^/access/menus/[a-z]+$#'],
         'DELETE' => ['#^/releases/[0-9a-f-]{36}$#', '#^/access/(admins|roles)/[0-9a-f-]{36}$#'],
     ];

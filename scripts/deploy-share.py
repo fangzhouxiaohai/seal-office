@@ -18,7 +18,7 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 SITE = '/www/wwwroot/seal.xingmasoft.com'
 BACKUPS = '/root/seal-share-deploy'
-FINGERPRINT = 'SHA256:E5r0/n8PRbe7VLprGOWW7Y/E3ZpnLVaVo53q+5r4xPw'
+FINGERPRINT = 'SHA256:9PR7vJ7IWKjvkwL2mk5FcS8zQ2djUy15jKtRV0USK/0'
 FILES = {
     'script': ('share/app.js', SITE + '/share/app.js'),
     'page': ('share/index.html', SITE + '/share/index.html'),

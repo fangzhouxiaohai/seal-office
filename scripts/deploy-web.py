@@ -31,7 +31,7 @@ PRIVATE = ROOT / '.upgrade-private/web-deployment'
 SITE = '/www/wwwroot/seal.xingmasoft.com'
 CONF = '/www/server/panel/vhost/nginx/seal.xingmasoft.com.conf'
 EXTENSION_CONF = '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com/seal-office-app.conf'
-FINGERPRINT = 'SHA256:E5r0/n8PRbe7VLprGOWW7Y/E3ZpnLVaVo53q+5r4xPw'
+FINGERPRINT = 'SHA256:9PR7vJ7IWKjvkwL2mk5FcS8zQ2djUy15jKtRV0USK/0'
 BEGIN = '# BEGIN SEAL OFFICE WEB MANAGED'
 END = '# END SEAL OFFICE WEB MANAGED'
 

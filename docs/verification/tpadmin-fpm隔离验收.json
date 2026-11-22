@@ -23,8 +23,8 @@
     "隔离错误配置恢复及语法检查"
   ],
   "sourceHashes": {
-    "public/index.php": "2155e8a1b1c1d0b3fcd61b5fdafcd6a5476359a4e4b176a6e974b787995fe627",
-    "src/SealBridge.php": "dc15b77b235ebbfff41d5a9e85bd3ac0bc5cef7a84c6907543a3f42efddfb645",
+    "public/index.php": "02ea8f8f7e031bb78971760004cb941cc7f3dfcee23456dc77093a440af74d12",
+    "src/SealBridge.php": "163743f6af75273fd272c3f6d8dace4ed4103e5a23b4b49167f51dd460abaf7e",
     "vendor-source/app/common/config/ConfigRepository.php": "98dff11d9744249dee1c65c9f64173618edbab5fb84554846d0eafac15dea316",
     "vendor-source/app/common/exception/BizException.php": "4b5b35f8371e973deb27e585557bc91fc4830900deeb46e58912d9036ccc79f1",
     "vendor-source/app/common/http/Request.php": "b82cf3efc49a19ee9c0fa522d15b63c7a042a228ade8ce4c66d7f40cb9b73d5a",
@@ -42,12 +42,12 @@
     "fpm": "677464077a99f504a47087d586dfd0064879fd2022cf895a2641a704133e1f36",
     "service": "fdc877a8d01a517f64c4a6209deb86f6f388018e595fef2771c293039b45a5e8",
     "nginx": "8909cd42d0ea5acef027b11af260b80be0f8158c2a2522c993bdf5ae2776800e",
-    "probe": "e54952fb550d76b71e52c1af377553e40490d73c5eb3f7af54493ea35fdffc32"
+    "probe": "47da8c1b69c7cd08574cdcdc653274cd52b91b0a80ef8ca37b60f177032954b0"
   },
   "upstream": "回环隔离模拟服务，实际生产地址未访问",
   "sockets": "独立 Unix 套接字",
   "sourceModification": "仅隔离副本上游端口替换；FPM 和 Nginx 配置路径替换到隔离目录",
-  "recordedAt": "2026-11-13T16:37:12.855036+00:00",
+  "recordedAt": "2026-11-22T18:27:58.818741+00:00",
   "command": "python -X utf8 scripts/verify-tpadmin-fpm-remote.py",
   "verifiedServerHostKey": true,
   "productionDataAccessed": false,

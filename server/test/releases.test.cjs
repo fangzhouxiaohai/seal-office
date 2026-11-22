@@ -133,6 +133,51 @@ test('管理员新增、查询、修改、下架、删除发布并写入操作�
   for(const action of ['release-create','release-update','release-delete'])assert.ok(actions.includes(action),action)
 })
 
+// 造一份结构合法的上传附件：元数据与文件大小满足 assets.get 校验
+function makeAsset(dir,{id,platform,version,bytes=8}){
+  const {filenames}=require('../releaseAssets.cjs')
+  const filename=filenames[platform](version)
+  fs.writeFileSync(path.join(dir,'release-assets',id+path.extname(filename)),Buffer.alloc(bytes,1))
+  fs.writeFileSync(path.join(dir,'release-assets',id+'.json'),JSON.stringify({id,platform,version,filename,bytes,sha256:'b'.repeat(64),createdAt:1}))
+}
+const assetFile=(dir,id,ext)=>path.join(dir,'release-assets',id+ext)
+
+test('删除单平台发布时一并删除对应安装包文件',async t=>{
+  const f=await fixture(t),token=await f.admin()
+  const id='11111111-1111-4111-8111-111111111111'
+  makeAsset(f.dir,{id,platform:'windows',version:'2.7.9'})
+  const created=await f.request('/v1/admin/releases',{platform:'windows',version:'2.7.9',channel:'stable',assetId:id},token)
+  assert.equal(created.status,200)
+  assert.ok(fs.existsSync(assetFile(f.dir,id,'.exe')))
+  assert.equal((await f.request('/v1/admin/releases/'+created.body.item.id,null,token,'DELETE')).status,200)
+  assert.ok(!fs.existsSync(assetFile(f.dir,id,'.exe')),'安装包文件必须随发布记录删除')
+  assert.ok(!fs.existsSync(assetFile(f.dir,id,'.json')),'安装包元数据必须随发布记录删除')
+})
+
+test('按版本删除：该版本各端发布记录与安装包文件一并清除',async t=>{
+  const f=await fixture(t),token=await f.admin()
+  const a='22222222-2222-4222-8222-222222222221',b='22222222-2222-4222-8222-222222222222',keep='33333333-3333-4333-8333-333333333333'
+  makeAsset(f.dir,{id:a,platform:'windows',version:'2.7.9'})
+  makeAsset(f.dir,{id:b,platform:'android',version:'2.7.9'})
+  makeAsset(f.dir,{id:keep,platform:'windows',version:'2.7.10'})
+  for(const [platform,assetId,version] of [['windows',a,'2.7.9'],['android',b,'2.7.9'],['windows',keep,'2.7.10']])
+    assert.equal((await f.request('/v1/admin/releases',{platform,version,channel:'stable',assetId},token)).status,200)
+  assert.equal((await f.request('/v1/admin/releases/delete-version',{version:'2.7'},token)).status,400)
+  assert.equal((await f.request('/v1/admin/releases/delete-version',{version:'2.7.9',channel:'nightly'},token)).status,400)
+  assert.equal((await f.request('/v1/admin/releases/delete-version',{version:'9.9.9'},token)).status,404)
+  assert.equal((await f.request('/v1/admin/releases/delete-version',{version:'2.7.9'},null)).status,401)
+  const result=await f.request('/v1/admin/releases/delete-version',{version:'2.7.9',channel:'stable'},token)
+  assert.equal(result.status,200);assert.equal(result.body.deleted,2)
+  assert.deepEqual([...result.body.platforms].sort(),['android','windows'])
+  assert.deepEqual((await f.request('/v1/admin/releases',null,token)).body.items.map(item=>item.version),['2.7.10'])
+  assert.ok(!fs.existsSync(assetFile(f.dir,a,'.exe'))&&!fs.existsSync(assetFile(f.dir,a,'.json')),'Windows 附件必须清除')
+  assert.ok(!fs.existsSync(assetFile(f.dir,b,'.apk'))&&!fs.existsSync(assetFile(f.dir,b,'.json')),'Android 附件必须清除')
+  assert.ok(fs.existsSync(assetFile(f.dir,keep,'.exe')),'其他版本附件不受影响')
+  assert.equal((await f.request('/v1/updates/latest?platform=windows&version=2.7.0')).body.version,'2.7.10')
+  const actions=(await f.request('/v1/admin/overview',null,token)).body.audit.map(row=>row.action)
+  assert.ok(actions.includes('release-version-delete'),'操作记录必须包含整版本删除')
+})
+
 test('发布表新增不影响已有数据，重启后仍可读',async t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'seal-release-restart-'))
   t.after(()=>fs.rmSync(dir,{recursive:true,force:true}))

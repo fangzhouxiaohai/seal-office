@@ -94,7 +94,7 @@ function main() {
   const remote = `${siteRoot}/website-releases/${id}`
   const env = { ...process.env, SEAL_DEPLOY_PASSWORD: password, SSH_ASKPASS: ask, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: 'localhost:0' }
   const options = ['-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', '-o', 'ConnectTimeout=20']
-  const ssh = script => run('ssh', ['-T', ...options, '-p', '22', 'root@192.140.178.117', 'bash -s'], { input: script, env })
+  const ssh = script => run('ssh', ['-T', ...options, '-p', '22', 'root@103.236.97.150', 'bash -s'], { input: script, env })
   try {
     fs.mkdirSync(path.join(local, 'website'), { recursive: true })
     for (const [name, bytes] of files) {
@@ -108,7 +108,7 @@ function main() {
     const tarForceLocal = windows && /GNU tar/i.test(run('tar', ['--version']))
     run('tar', [...(tarForceLocal ? ['--force-local'] : []), '-cf', archive, '-C', local, 'website'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
-    run('scp', [...options, '-P', '22', archive, `root@192.140.178.117:${remote}/release.tar`], { env })
+    run('scp', [...options, '-P', '22', archive, `root@103.236.97.150:${remote}/release.tar`], { env })
     process.stdout.write(ssh(makeActivationScript(id, assets)))
   } finally {
     fs.rmSync(ask, { force: true })

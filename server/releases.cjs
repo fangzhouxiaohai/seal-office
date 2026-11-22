@@ -166,6 +166,23 @@ function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets, g
       reply({ items: ids.map(id => presentRelease(find(id))) })
       return true
     }
+    if (route === '/v1/admin/releases/delete-version' && method === 'POST') {
+      const input = await json()
+      if (!input || typeof input !== 'object' || Array.isArray(input)) fail(400, '删除内容无效')
+      const version = input.version, channel = input.channel ?? 'stable'
+      if (!parseVersion(version)) fail(400, '版本号须为语义化版本，例如 2.7.1')
+      if (!CHANNELS.includes(channel)) fail(400, '发布通道无效')
+      const rows = db.query('SELECT * FROM releases WHERE version=? AND channel=?', [version, channel])
+      if (!rows.length) fail(404, '该版本没有发布记录')
+      const platforms = rows.map(row => row.platform)
+      for (const row of rows) if (row.asset_id) assets.remove(row.asset_id)
+      db.transaction(() => {
+        db.run('DELETE FROM releases WHERE version=? AND channel=?', [version, channel])
+        audit('admin', 'release-version-delete', JSON.stringify({ version, channel, platforms }))
+      })
+      reply({ deleted: rows.length, platforms })
+      return true
+    }
     if (route === '/v1/admin/releases' && method === 'POST') {
       const release = prepareRelease(await json())
       assertNew(release)
@@ -198,6 +215,7 @@ function createReleases({ db, clock = Date.now, audit, rateLimit = {}, assets, g
     }
     if (method === 'DELETE') {
       if (!existing) fail(404, '发布记录不存在')
+      if (existing.asset_id) assets.remove(existing.asset_id)
       db.transaction(() => {
         db.run('DELETE FROM releases WHERE id=?', [existing.id])
         audit('admin', 'release-delete', JSON.stringify({ platform: existing.platform, version: existing.version, channel: existing.channel }))

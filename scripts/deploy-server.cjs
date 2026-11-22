@@ -25,7 +25,7 @@ const { verifyManifest } = require('./admin-build-manifest.cjs')
 
 // ── 生产服务器（写死，避免记错）──────────────────────────────
 const SERVER = {
-  host: '192.140.178.117',
+  host: '103.236.97.150',
   port: 22,
   user: 'root',
   // 站点根目录：releases/ 与 current 软链都在这里

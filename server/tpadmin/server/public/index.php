@@ -53,7 +53,7 @@ $handler = static function (Request $request) use ($bridge): Response {
 };
 foreach ([
     'GET'=>['/seal-admin/profile','/seal-admin/api/overview','/seal-admin/api/converter','/seal-admin/api/releases','/seal-admin/api/publications/{id}','/seal-admin/api/access/admins','/seal-admin/api/access/roles','/seal-admin/api/access/menus','/seal-admin/api/access/menu-candidates'],
-    'POST'=>['/seal-admin/api/converter/token','/seal-admin/api/converter/test','/seal-admin/api/releases','/seal-admin/api/releases/batch','/seal-admin/api/access/admins','/seal-admin/api/access/roles','/seal-admin/api/access/menus'],
+    'POST'=>['/seal-admin/api/converter/token','/seal-admin/api/converter/test','/seal-admin/api/releases','/seal-admin/api/releases/batch','/seal-admin/api/releases/delete-version','/seal-admin/api/access/admins','/seal-admin/api/access/roles','/seal-admin/api/access/menus'],
     'PATCH'=>['/seal-admin/api/converter','/seal-admin/api/releases/{id}','/seal-admin/api/publications/{id}','/seal-admin/api/access/admins/{id}','/seal-admin/api/access/roles/{id}','/seal-admin/api/access/menus/{id}'],
     'DELETE'=>['/seal-admin/api/releases/{id}','/seal-admin/api/access/admins/{id}','/seal-admin/api/access/roles/{id}'],
 ] as $method => $paths) foreach ($paths as $path) $router->add($method, $path, $handler);

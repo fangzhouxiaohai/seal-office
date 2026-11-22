@@ -39,7 +39,7 @@ async function publicProbe({base,token,indexSha,assets,legacy,version}) {
     const bytes=Buffer.from(await response.arrayBuffer());if(bytes.length>32*1024*1024)throw Error('探针资源过大')
     return {status:response.status,bytes}
   }
-  for(const route of ['/','/seal/overview']){const r=await get(route);if(r.status!==200||hash(r.bytes)!==indexSha)throw Error('后台入口或 history 路由不一致');checks++}
+  for(const route of ['/admin/','/admin/seal/overview']){const r=await get(route);if(r.status!==200||hash(r.bytes)!==indexSha)throw Error('后台入口或 history 路由不一致');checks++}
   for(const [prefix,files] of [['/admin-assets/',assets],['/assets/',legacy]])for(const item of files){if(!/^[A-Za-z0-9._/-]+$/.test(item.path)||item.path.split('/').includes('..')||!/^[a-f0-9]{64}$/.test(item.sha256))throw Error('资源清单路径无效');const r=await get(prefix+item.path);if(r.status!==200||hash(r.bytes)!==item.sha256)throw Error('后台资源内容不一致：'+prefix+item.path);checks++}
   for(const route of ['/office/','/share/','/api/v1/capabilities']){const r=await get(route);if(r.status!==200)throw Error('既有站点接口不可访问：'+route);checks++}
   const update=await get('/api/v1/updates/latest?platform=windows&version='+encodeURIComponent(version));let updateData;try{updateData=JSON.parse(update.bytes.toString())}catch{throw Error('更新接口不是 JSON')};if(update.status!==200||typeof updateData.hasUpdate!=='boolean')throw Error('客户端更新接口无效');checks++

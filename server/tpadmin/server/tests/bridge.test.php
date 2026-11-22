@@ -28,6 +28,9 @@ $r = $bridge->dispatch('POST', '/seal-admin/api/access/admins', '', '{}', 'Beare
 $check($r['status'] === 200 && end($calls)['path'] === '/v1/admin/access/admins', '授权管理请求走固定白名单');
 $bridge->dispatch('POST', '/seal-admin/api/converter/test', '', '{}', 'Bearer valid');
 $check(end($calls)['timeout'] >= 190, '转换测试超时不得短于既有保障');
+$r = $bridge->dispatch('POST', '/seal-admin/api/releases/delete-version', '', '{"version":"2.7.9","channel":"stable"}', 'Bearer valid');
+$last = end($calls);
+$check($r['status'] === 200 && $last['path'] === '/v1/admin/releases/delete-version' && str_contains($last['body'], '2.7.9'), '整版本删除请求必须原样转发');
 $count = count($calls);
 foreach ([['POST','/seal-admin/api/release-assets'], ['GET','/seal-admin/api/publications/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/download'], ['GET','/seal-admin/api/../../auth/login'], ['POST','/seal-admin/api/overview'], ['GET','/seal-admin/api/overview']] as [$method, $path]) {
     $r = $bridge->dispatch($method, $path, '', '', '');

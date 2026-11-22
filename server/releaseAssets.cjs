@@ -16,7 +16,7 @@ const filenames = {
   harmony: version => `seal-office-${version}-harmony.hap`,
 }
 const fail = (status, message) => { throw Object.assign(new Error(message), { status }) }
-const remove = filename => { try { fs.unlinkSync(filename) } catch (error) { if (error.code !== 'ENOENT') throw error } }
+const unlink = filename => { try { fs.unlinkSync(filename) } catch (error) { if (error.code !== 'ENOENT') throw error } }
 
 async function readAt(file, length, offset) {
   const bytes = Buffer.alloc(length)
@@ -155,9 +155,18 @@ function createReleaseAssets({ directory, db, env = process.env, clock = Date.no
     } finally {
       reserved -= total
       if (file) await file.close()
-      remove(temp)
-      if (!complete) { remove(target); remove(metadata) }
+      unlink(temp)
+      if (!complete) { unlink(target); unlink(metadata) }
     }
+  }
+  /** 删除已上传安装包：元数据与安装包文件一并移除；记录缺失时按已删除处理。 */
+  function remove(id) {
+    if (typeof id !== 'string' || !UUID.test(id)) fail(400, '安装包标识无效')
+    let item = null
+    try { item = JSON.parse(fs.readFileSync(path.join(root, id + '.json'), 'utf8')) }
+    catch (error) { if (error.code !== 'ENOENT') throw error }
+    if (item && item.id === id && typeof item.filename === 'string' && /^\.[a-z0-9]+$/i.test(path.extname(item.filename))) unlink(fileFor(item))
+    unlink(path.join(root, id + '.json'))
   }
   async function handleAdmin(context) {
     if (context.route !== '/v1/admin/release-assets' || context.method !== 'POST') return false
@@ -192,7 +201,7 @@ function createReleaseAssets({ directory, db, env = process.env, clock = Date.no
     }
     return true
   }
-  return { get, handleAdmin, handlePublic, maxBytes: configuredLimit }
+  return { get, remove, handleAdmin, handlePublic, maxBytes: configuredLimit }
 }
 
 module.exports = { MAX_BYTES, filenames, validatePackage, createReleaseAssets }
