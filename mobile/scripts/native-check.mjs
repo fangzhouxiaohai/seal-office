@@ -7,7 +7,8 @@ const project = fileURLToPath(new URL('..', import.meta.url)), installation = pa
 const sourceIndex = process.argv.indexOf('--source')
 if (sourceIndex >= 0 && (!process.argv[sourceIndex + 1] || process.argv[sourceIndex + 1].startsWith('--'))) throw new Error('--source 需要云打包源码目录')
 const source = sourceIndex >= 0 ? path.resolve(process.argv[sourceIndex + 1]) : project
-const plugins = path.join(installation, 'plugins'), compiler = path.join(plugins, 'uniapp-cli-vite/node_modules/@dcloudio/vite-plugin-uni/bin/uni.js')
+const plugins = process.platform === 'darwin' ? path.resolve(installation, '../HBuilderX/plugins') : path.join(installation, 'plugins')
+const compiler = path.join(plugins, 'uniapp-cli-vite/node_modules/@dcloudio/vite-plugin-uni/bin/uni.js')
 await fs.access(compiler)
 await fs.access(path.join(source, 'static/office/index.html')).catch(() => { throw new Error('请先运行对应平台的 build 命令，准备内置编辑器资源') })
 const platform = process.argv.includes('--harmony') ? 'harmony' : 'android'
