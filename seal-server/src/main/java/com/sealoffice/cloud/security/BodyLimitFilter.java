@@ -9,6 +9,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * JSON 请求体限长：与 Node body/json(limit) 的 413「请求内容过大」对应。
@@ -25,7 +26,18 @@ public class BodyLimitFilter extends OncePerRequestFilter {
             "/v1/auth/delete-account", 4096L,
             "/v1/auth/deletion-status", 4096L,
             "/v1/space/key", 8192L,
-            "/v1/space/key/reset", 8192L);
+            "/v1/space/key/reset", 8192L,
+            "/v1/nodes", 20L * 1048576L,
+            // P6：安装包上传为 octet-stream 流（上限 1 GiB，由 ReleaseAssetService 按声明长度精确校验），
+            // 不适用 JSON 默认 2 MiB 限制；413 文案由控制器给出「安装包超过上传上限…」
+            "/v1/admin/release-assets", Long.MAX_VALUE,
+            // P4 公开内容发布：Node json(32*CHUNK)
+            "/v1/publications", 32L * 1048576L);
+
+    /** 带路径变量的专属上限：节点 PATCH 为 20 倍块（json(20*CHUNK)），上传写块为 1 倍块（body(req,CHUNK)） */
+    private static final Map<Pattern, Long> PATTERN_LIMITS = Map.of(
+            Pattern.compile("^/v1/nodes/[0-9a-f-]{36}$"), 20L * 1048576L,
+            Pattern.compile("^/v1/uploads/[0-9a-f-]{36}$"), 1048576L);
 
     private final ObjectMapper objectMapper;
 
@@ -43,7 +55,7 @@ public class BodyLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        long limit = ROUTE_LIMITS.getOrDefault(request.getRequestURI(), DEFAULT_LIMIT);
+        long limit = limitFor(request.getRequestURI());
         long length = request.getContentLengthLong();
         if (length > limit) {
             response.setStatus(413);
@@ -52,5 +64,18 @@ public class BodyLimitFilter extends OncePerRequestFilter {
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    private static long limitFor(String uri) {
+        Long exact = ROUTE_LIMITS.get(uri);
+        if (exact != null) {
+            return exact;
+        }
+        for (Map.Entry<Pattern, Long> entry : PATTERN_LIMITS.entrySet()) {
+            if (entry.getKey().matcher(uri).matches()) {
+                return entry.getValue();
+            }
+        }
+        return DEFAULT_LIMIT;
     }
 }
