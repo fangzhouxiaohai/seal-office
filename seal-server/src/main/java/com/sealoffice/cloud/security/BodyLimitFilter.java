@@ -34,10 +34,13 @@ public class BodyLimitFilter extends OncePerRequestFilter {
             // P4 公开内容发布：Node json(32*CHUNK)
             "/v1/publications", 32L * 1048576L);
 
-    /** 带路径变量的专属上限：节点 PATCH 为 20 倍块（json(20*CHUNK)），上传写块为 1 倍块（body(req,CHUNK)） */
+    /** 带路径变量的专属上限：节点 PATCH 为 20 倍块（json(20*CHUNK)），上传写块为 1 倍块（body(req,CHUNK)），
+     *  协作内容回写为 100 MiB（body(req,100*1024*1024)，见 collaboration.cjs） */
     private static final Map<Pattern, Long> PATTERN_LIMITS = Map.of(
             Pattern.compile("^/v1/nodes/[0-9a-f-]{36}$"), 20L * 1048576L,
-            Pattern.compile("^/v1/uploads/[0-9a-f-]{36}$"), 1048576L);
+            Pattern.compile("^/v1/uploads/[0-9a-f-]{36}$"), 1048576L,
+            Pattern.compile("^/v1/shares/[0-9a-f-]{36}/content$"), 100L * 1048576L,
+            Pattern.compile("^/v1/teams/[0-9a-f-]{36}/nodes/[0-9a-f-]{36}/content$"), 100L * 1048576L);
 
     private final ObjectMapper objectMapper;
 
