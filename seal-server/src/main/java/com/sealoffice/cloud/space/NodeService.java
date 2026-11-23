@@ -76,7 +76,7 @@ public class NodeService {
             jdbc.update("UPDATE nodes SET deleted = ?, updated = ? WHERE id = ?", deleted, clock.now(), nodeId);
             if (deleted == 1) {
                 for (String blob : jdbc.queryForList(
-                        "SELECT blob FROM publications WHERE node_id = ? AND user_id = ?", String.class, nodeId, userId)) {
+                        "SELECT `blob` FROM publications WHERE node_id = ? AND user_id = ?", String.class, nodeId, userId)) {
                     storage.unlink(storage.objectsPath(blob));
                 }
                 jdbc.update("UPDATE publications SET status = 'withdrawn', text = '', cover = '', bytes = 0 "

@@ -354,7 +354,10 @@ public class RealtimeService {
         if (includeSeed) {
             result.put("seed", item.seed());
         }
-        result.put("checkpoint", afterLong < item.checkpointSeq() ? item.checkpoint() : null);
+        // Node 序列化包含 "checkpoint":null；本仓库全局 non_null 约定下省略该键，语义等价
+        if (afterLong < item.checkpointSeq()) {
+            result.put("checkpoint", item.checkpoint());
+        }
         result.put("checkpointSeq", item.checkpointSeq());
         result.put("head", item.head());
         result.put("editable", allowed.editable());

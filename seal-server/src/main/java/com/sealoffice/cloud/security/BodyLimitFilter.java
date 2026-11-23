@@ -35,12 +35,18 @@ public class BodyLimitFilter extends OncePerRequestFilter {
             "/v1/publications", 32L * 1048576L);
 
     /** 带路径变量的专属上限：节点 PATCH 为 20 倍块（json(20*CHUNK)），上传写块为 1 倍块（body(req,CHUNK)），
-     *  协作内容回写为 100 MiB（body(req,100*1024*1024)，见 collaboration.cjs） */
+     *  协作内容回写为 100 MiB（body(req,100*1024*1024)，见 collaboration.cjs），
+     *  实时协作 open/checkpoint 为 34 MiB、updates 为 12 MiB、presence 为 12000 字节（realtime.cjs），
+     *  账号文档转换为 20 MiB 文档的 base64 上限（accountConversion.cjs 与 converter/index.cjs） */
     private static final Map<Pattern, Long> PATTERN_LIMITS = Map.of(
             Pattern.compile("^/v1/nodes/[0-9a-f-]{36}$"), 20L * 1048576L,
             Pattern.compile("^/v1/uploads/[0-9a-f-]{36}$"), 1048576L,
             Pattern.compile("^/v1/shares/[0-9a-f-]{36}/content$"), 100L * 1048576L,
-            Pattern.compile("^/v1/teams/[0-9a-f-]{36}/nodes/[0-9a-f-]{36}/content$"), 100L * 1048576L);
+            Pattern.compile("^/v1/teams/[0-9a-f-]{36}/nodes/[0-9a-f-]{36}/content$"), 100L * 1048576L,
+            Pattern.compile("^/v1/realtime/(share|team|node)/[0-9a-f-]{36}(?:/[0-9a-f-]{36})?/(open|checkpoint)$"), 34L * 1048576L,
+            Pattern.compile("^/v1/realtime/(share|team|node)/[0-9a-f-]{36}(?:/[0-9a-f-]{36})?/updates$"), 12L * 1048576L,
+            Pattern.compile("^/v1/realtime/(share|team|node)/[0-9a-f-]{36}(?:/[0-9a-f-]{36})?/presence$"), 12000L,
+            Pattern.compile("^/v1/conversion/convert$"), 27962028L);
 
     private final ObjectMapper objectMapper;
 

@@ -1,0 +1,1 @@
+const o=e=>e?new Date(Number(e)).toLocaleString("zh-CN",{hour12:!1}):"—",i=e=>(e/1e6).toFixed(2),t=e=>e<1048576?`${(e/1024).toFixed(1)} KiB`:`${(e/1024/1024).toFixed(1)} MiB`;export{o as a,t as f,i as s};

@@ -189,7 +189,7 @@ public class NodeController {
         tx.executeWithoutResult(status -> {
             for (String item : tree) {
                 doomed.addAll(jdbc.queryForList(
-                        "SELECT blob FROM versions WHERE node_id = ? UNION SELECT blob FROM publications WHERE node_id = ?",
+                        "SELECT `blob` FROM versions WHERE node_id = ? UNION SELECT `blob` FROM publications WHERE node_id = ?",
                         String.class, item, item));
                 for (String pending : jdbc.queryForList(
                         "SELECT id FROM uploads WHERE node_id = ?", String.class, item)) {

@@ -84,7 +84,7 @@ public class CloudMaintenanceService implements ApplicationRunner {
         for (String id : jdbc.queryForList("SELECT id FROM nodes WHERE deleted = 1 AND updated < ?",
                 String.class, clock.now() - TRASH_RETENTION)) {
             for (String table : new String[]{"versions", "publications"}) {
-                for (String blob : jdbc.queryForList("SELECT blob FROM " + table + " WHERE node_id = ?",
+                for (String blob : jdbc.queryForList("SELECT `blob` FROM " + table + " WHERE node_id = ?",
                         String.class, id)) {
                     storage.unlink(storage.objectsPath(blob));
                 }

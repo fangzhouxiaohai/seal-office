@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS team_versions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS realtime_rooms (
-  id VARCHAR(36) PRIMARY KEY,
+  id VARCHAR(78) PRIMARY KEY,
   owner_id VARCHAR(36) NOT NULL,
   kind VARCHAR(16) NOT NULL,
   scope_id VARCHAR(36) NOT NULL,
@@ -243,7 +243,7 @@ CREATE TABLE IF NOT EXISTS realtime_rooms (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS realtime_updates (
-  room_id VARCHAR(36) NOT NULL,
+  room_id VARCHAR(78) NOT NULL,
   seq BIGINT NOT NULL,
   operation_id VARCHAR(64) NOT NULL,
   cipher MEDIUMTEXT NOT NULL,
@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS realtime_updates (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS realtime_receipts (
-  room_id VARCHAR(36) NOT NULL,
+  room_id VARCHAR(78) NOT NULL,
   operation_id VARCHAR(64) NOT NULL,
   seq BIGINT NOT NULL,
   digest VARCHAR(64) NOT NULL,
@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS realtime_receipts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS realtime_presence (
-  room_id VARCHAR(36) NOT NULL,
+  room_id VARCHAR(78) NOT NULL,
   client_id VARCHAR(64) NOT NULL,
   session_hash VARCHAR(64) NOT NULL,
   `reference` MEDIUMTEXT NOT NULL,

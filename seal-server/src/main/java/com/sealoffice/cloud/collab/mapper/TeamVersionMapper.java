@@ -13,7 +13,7 @@ import java.util.List;
  */
 public interface TeamVersionMapper {
 
-    @Insert("INSERT INTO team_versions(id,team_id,node_id,version,blob,bytes,created,actor_id)"
+    @Insert("INSERT INTO team_versions(id,team_id,node_id,version,`blob`,bytes,created,actor_id)"
             + " VALUES(#{id},#{teamId},#{nodeId},#{version},#{blob},#{bytes},#{created},#{actorId})")
     int insert(TeamVersionEntity version);
 
@@ -25,10 +25,10 @@ public interface TeamVersionMapper {
     TeamVersionEntity atVersion(@Param("teamId") String teamId, @Param("nodeId") String nodeId,
                                 @Param("version") long version);
 
-    @Select("SELECT blob FROM team_versions WHERE team_id = #{teamId}")
+    @Select("SELECT `blob` FROM team_versions WHERE team_id = #{teamId}")
     List<String> blobsForTeam(@Param("teamId") String teamId);
 
-    @Select("SELECT blob FROM team_versions WHERE node_id = #{nodeId} AND team_id = #{teamId}")
+    @Select("SELECT `blob` FROM team_versions WHERE node_id = #{nodeId} AND team_id = #{teamId}")
     List<String> blobsForNode(@Param("teamId") String teamId, @Param("nodeId") String nodeId);
 
     @Delete("DELETE FROM team_versions WHERE team_id = #{teamId}")

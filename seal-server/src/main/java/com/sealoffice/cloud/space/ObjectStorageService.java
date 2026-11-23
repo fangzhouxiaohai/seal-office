@@ -160,9 +160,9 @@ public class ObjectStorageService {
      */
     public void clearOrphans() {
         Set<String> blobs = new HashSet<>(jdbc.queryForList(
-                "SELECT blob FROM versions UNION SELECT blob FROM publications WHERE status <> 'withdrawn'", String.class));
+                "SELECT `blob` FROM versions UNION SELECT `blob` FROM publications WHERE status <> 'withdrawn'", String.class));
         Set<String> uploads = new HashSet<>(jdbc.queryForList("SELECT id FROM uploads", String.class));
-        Set<String> teamBlobs = new HashSet<>(jdbc.queryForList("SELECT blob FROM team_versions", String.class));
+        Set<String> teamBlobs = new HashSet<>(jdbc.queryForList("SELECT `blob` FROM team_versions", String.class));
         sweep(objects, blobs);
         sweep(incoming, uploads);
         sweep(teamObjects, teamBlobs);

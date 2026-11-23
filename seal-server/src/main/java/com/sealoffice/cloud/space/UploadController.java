@@ -230,7 +230,7 @@ public class UploadController {
             storage.moveToObjects(id, blob);
             try {
                 tx.executeWithoutResult(status -> {
-                    jdbc.update("INSERT INTO versions(id, node_id, user_id, `version`, blob, bytes, created, upload_id) "
+                    jdbc.update("INSERT INTO versions(id, node_id, user_id, `version`, `blob`, bytes, created, upload_id) "
                                     + "VALUES(?,?,?,?,?,?,?,?)",
                             blob, node.getId(), userId, newVersion, blob, upload.getTotal(), clock.now(), id);
                     jdbc.update("UPDATE nodes SET `version` = ?, updated = ? WHERE id = ?",

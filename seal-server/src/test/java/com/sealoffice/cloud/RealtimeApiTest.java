@@ -184,15 +184,15 @@ class RealtimeApiTest extends CollabTestSupport {
                 .getResponse().getStatus());
         for (int index = 0; index < 2; index++) {
             assertEquals(200, post("/v1/realtime/node/" + node + "/updates", Map.of(
-                            "operationId", UUID.randomUUID().toString(), "cipher", cipherOf("更新内容-0123456789-" + index)),
+                            "operationId", UUID.randomUUID().toString(), "cipher", cipherOf("更新内容-0123456789abcdef0123-" + index)),
                     owner).getResponse().getStatus());
         }
         // after 必须等于当前 head
         MvcResult stale = putJson("/v1/realtime/node/" + node + "/checkpoint",
-                Map.of("after", 1, "cipher", cipherOf("检查点密文-0123456789abcd")), owner, null);
+                Map.of("after", 1, "cipher", cipherOf("检查点密文-0123456789abcdef01234567")), owner, null);
         assertEquals(409, stale.getResponse().getStatus());
         assertEquals("协作日志已更新，请先合并再压缩", json(stale).get("error").asText());
-        String checkpoint = cipherOf("检查点密文-0123456789abcd");
+        String checkpoint = cipherOf("检查点密文-0123456789abcdef01234567");
         MvcResult compacted = putJson("/v1/realtime/node/" + node + "/checkpoint",
                 Map.of("after", 2, "cipher", checkpoint), owner, null);
         assertEquals(200, compacted.getResponse().getStatus());
@@ -229,6 +229,7 @@ class RealtimeApiTest extends CollabTestSupport {
         assertEquals(1, json(snapshotResult).get("peers").size());
         assertEquals(clientId, json(snapshotResult).get("peers").get(0).get("clientId").asText());
         // 同一用户另一设备会话占用同一 clientId → 403（PUT 与 DELETE 同样拦截）
+        tick(61000);
         String secondDevice = login("13900006301");
         MvcResult hijacked = putJson("/v1/realtime/node/" + node + "/presence",
                 Map.of("clientId", clientId, "cipher", presenceCipher), secondDevice, null);
@@ -274,7 +275,7 @@ class RealtimeApiTest extends CollabTestSupport {
         assertEquals(200, post("/v1/realtime/node/" + node + "/open", openBody("mindmap", seed), owner)
                 .getResponse().getStatus());
         assertEquals(200, post("/v1/realtime/node/" + node + "/updates",
-                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("更新内容-0123456789abc")),
+                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("更新内容-0123456789abcdef0123")),
                 owner).getResponse().getStatus());
         // 无新内容时挂起至超时
         long startedAt = System.currentTimeMillis();
@@ -347,7 +348,7 @@ class RealtimeApiTest extends CollabTestSupport {
         assertFalse(json(readOpened).get("editable").asBoolean());
         assertEquals(seed, json(readOpened).get("seed").asText());
         MvcResult readDenied = post("/v1/realtime/share/" + readShare + "/updates",
-                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("只读不可写-0123456789abc")),
+                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("只读不可写-0123456789abcdef0123")),
                 reader, readHeaders);
         assertEquals(403, readDenied.getResponse().getStatus());
         assertEquals("此共享仅允许读取", json(readDenied).get("error").asText());
@@ -375,7 +376,7 @@ class RealtimeApiTest extends CollabTestSupport {
         assertEquals(200, viewerOpened.getResponse().getStatus());
         assertFalse(json(viewerOpened).get("editable").asBoolean());
         MvcResult viewerDenied = post("/v1/realtime/team/" + team + "/" + teamNode + "/updates",
-                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("只读不可写-0123456789abc")),
+                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("只读不可写-0123456789abcdef0123")),
                 reader);
         assertEquals(403, viewerDenied.getResponse().getStatus());
         assertEquals("团队角色没有此操作权限", json(viewerDenied).get("error").asText());
@@ -383,8 +384,12 @@ class RealtimeApiTest extends CollabTestSupport {
                 openBody("mindmap", teamSeed), outsider);
         assertEquals(404, outsideDenied.getResponse().getStatus());
         assertEquals("团队不存在或成员权限已撤销", json(outsideDenied).get("error").asText());
+        MvcResult editorOpened = post("/v1/realtime/team/" + team + "/" + teamNode + "/open",
+                openBody("mindmap", teamSeed), editor);
+        assertEquals(200, editorOpened.getResponse().getStatus());
+        assertTrue(json(editorOpened).get("editable").asBoolean());
         MvcResult editorPosted = post("/v1/realtime/team/" + team + "/" + teamNode + "/updates",
-                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("编辑可写-0123456789abcd")),
+                Map.of("operationId", UUID.randomUUID().toString(), "cipher", cipherOf("编辑可写-0123456789abcdef012345")),
                 editor);
         assertEquals(200, editorPosted.getResponse().getStatus());
         assertEquals(1, json(editorPosted).get("seq").asInt());

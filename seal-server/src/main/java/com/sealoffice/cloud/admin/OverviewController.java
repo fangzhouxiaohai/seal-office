@@ -11,9 +11,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -149,11 +146,16 @@ public class OverviewController {
         }
     }
 
-    /** 与 Node process.memoryUsage().rss 最接近的 JVM 指标：常驻提交内存 */
+    /** 与 Node process.memoryUsage().rss 对齐：优先读 /proc/self/status 的 VmRSS，取不到时退回 JVM 堆内存 */
     private static long processMemory() {
-        java.lang.management.OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
-        if (bean instanceof com.sun.management.OperatingSystemMXBean sun) {
-            return sun.getCommittedVirtualMemorySize();
+        try {
+            for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("/proc/self/status"))) {
+                if (line.startsWith("VmRSS:")) {
+                    return Long.parseLong(line.replaceAll("[^0-9]", "")) * 1024L;
+                }
+            }
+        } catch (Exception ignored) {
+            // 非 Linux 或受限环境，走 JVM 指标
         }
         return Runtime.getRuntime().totalMemory();
     }

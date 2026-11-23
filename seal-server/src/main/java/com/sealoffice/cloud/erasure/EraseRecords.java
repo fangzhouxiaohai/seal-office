@@ -32,12 +32,12 @@ public class EraseRecords {
         List<String> person = jdbc.queryForList("SELECT phone FROM users WHERE id = ?", String.class, userId);
 
         if (tables.contains("versions")) {
-            for (String blob : jdbc.queryForList("SELECT blob FROM versions WHERE user_id = ?", String.class, userId)) {
+            for (String blob : jdbc.queryForList("SELECT `blob` FROM versions WHERE user_id = ?", String.class, userId)) {
                 files.add(new EraseBlobs.BlobRef("objects", blob));
             }
         }
         if (tables.contains("publications")) {
-            for (String blob : jdbc.queryForList("SELECT blob FROM publications WHERE user_id = ?", String.class, userId)) {
+            for (String blob : jdbc.queryForList("SELECT `blob` FROM publications WHERE user_id = ?", String.class, userId)) {
                 files.add(new EraseBlobs.BlobRef("objects", blob));
             }
         }
@@ -49,7 +49,7 @@ public class EraseRecords {
         if (tables.contains("teams")) {
             for (String teamId : jdbc.queryForList("SELECT id FROM teams WHERE owner_id = ?", String.class, userId)) {
                 if (tables.contains("team_versions")) {
-                    for (String blob : jdbc.queryForList("SELECT blob FROM team_versions WHERE team_id = ?",
+                    for (String blob : jdbc.queryForList("SELECT `blob` FROM team_versions WHERE team_id = ?",
                             String.class, teamId)) {
                         files.add(new EraseBlobs.BlobRef("team-objects", blob));
                     }

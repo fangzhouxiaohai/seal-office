@@ -49,7 +49,7 @@ public class PurgeService {
             doomed.addAll(purgeCollaboration(userId));
             jdbc.update("DELETE FROM share_links WHERE user_id = ?", userId);
             List<String> blobs = jdbc.queryForList(
-                    "SELECT blob FROM versions WHERE user_id = ? UNION SELECT blob FROM publications WHERE user_id = ?",
+                    "SELECT `blob` FROM versions WHERE user_id = ? UNION SELECT `blob` FROM publications WHERE user_id = ?",
                     String.class, userId, userId);
             List<String> pending = jdbc.queryForList("SELECT id FROM uploads WHERE user_id = ?", String.class, userId);
             for (String table : new String[]{"nodes", "versions", "uploads", "publications"}) {
@@ -79,7 +79,7 @@ public class PurgeService {
     /** collaboration.purgeUser：返回待删的团队版本文件 */
     private List<Path> purgeCollaboration(String userId) {
         List<Path> blobs = new ArrayList<>();
-        jdbc.queryForList("SELECT v.blob FROM team_versions v JOIN teams t ON t.id = v.team_id WHERE t.owner_id = ?",
+        jdbc.queryForList("SELECT v.`blob` FROM team_versions v JOIN teams t ON t.id = v.team_id WHERE t.owner_id = ?",
                         String.class, userId)
                 .forEach(blob -> blobs.add(teamObjects.resolve(blob)));
         List<String> teams = jdbc.queryForList("SELECT id FROM teams WHERE owner_id = ?", String.class, userId);
