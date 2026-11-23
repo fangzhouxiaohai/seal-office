@@ -10,7 +10,7 @@ stage=$(mktemp -d /tmp/seal-backup-XXXXXX)
 trap 'rm -rf "$stage"' EXIT
 mysqldump --single-transaction --skip-comments --complete-insert seal_cloud > "$stage/seal_cloud.sql"
 chmod 600 "$stage/seal_cloud.sql"
-tar --warning=no-file-changed -czf "$archive.partial" -C "$site" data -C "$stage" seal_cloud.sql
+tar --warning=no-file-changed -czf "$archive.partial" -C "$site" data -C "$stage" seal_cloud.sql || test $? -le 1
 chmod 600 "$archive.partial"
 mv "$archive.partial" "$archive"
 curl --fail --silent --max-time 15 http://127.0.0.1:8097/v1/capabilities >/dev/null
