@@ -1,0 +1,42 @@
+{
+  "version": "2.7.9",
+  "website": "https://seal.xingmasoft.com/#downloads",
+  "links": [
+    {
+      "platform": "windows",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/2cdc44ab-0943-487a-8c29-49adaf2e2d04/seal-office-setup-2.7.9.exe",
+      "bytes": 572282131,
+      "sha256": "62ca25359ce94c0a84c6232b36bb36998afc0aa0bf8c3d89a0896d211d18bfac"
+    },
+    {
+      "platform": "macos-arm64",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.9/seal-office-2.7.9-macos-arm64.dmg",
+      "bytes": 231627757,
+      "sha256": "b7111a9e0392b2f1274ed1d50d1616bcf8c2478568a793b26870b10609f2a50f"
+    },
+    {
+      "platform": "macos-intel",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.9/seal-office-2.7.9-macos-intel.dmg",
+      "bytes": 238224674,
+      "sha256": "b193917dedaa857d148c518128b33073b075fc325dce81ac77ac5dc6a4d4a370"
+    },
+    {
+      "platform": "linux",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/19d83bb2-4a7f-41ab-a1a0-34da8b22a7ef/seal-office-2.7.9-amd64.deb",
+      "bytes": 171226892,
+      "sha256": "3eee0b79b58d611f5c391555ba788ffea41dc890dba39bef4c1238fe03955cca"
+    },
+    {
+      "platform": "android",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.9/seal-office-2.7.9-android.apk",
+      "bytes": 56496017,
+      "sha256": "cb3b2c423850d45cf882020394626f9fa45ba149c3de6fe5a7b9692405c3e67f"
+    },
+    {
+      "platform": "harmony",
+      "url": "https://github.com/fangzhouxiaohai/seal-office/releases/download/v2.7.9/seal-office-2.7.9-harmony.hap",
+      "bytes": 74983724,
+      "sha256": "7e8147f1ea6478e9028e9a378517a43bb79f0a0f6a61306be994a82a6101111d"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "github": {
+    "latestTag": "v2.7.9",
+    "files": [
+      "SHA256SUMS.txt",
+      "seal-office-2.7.9-amd64.deb",
+      "seal-office-2.7.9-android.apk",
+      "seal-office-2.7.9-harmony.hap",
+      "seal-office-2.7.9-macos-arm64.dmg",
+      "seal-office-2.7.9-macos-intel.dmg",
+      "seal-office-2.7.9-microsoft-store-x64.msix",
+      "seal-office-2.7.9-web.zip",
+      "seal-office-setup-2.7.9.exe"
+    ]
+  },
+  "gitcode": {
+    "latestTag": "v2.7.9",
+    "files": [
+      "SHA256SUMS.txt",
+      "seal-office-2.7.9-amd64.deb",
+      "seal-office-2.7.9-android.apk",
+      "seal-office-2.7.9-harmony.hap",
+      "seal-office-2.7.9-macos-arm64.dmg",
+      "seal-office-2.7.9-macos-intel.dmg",
+      "seal-office-2.7.9-microsoft-store-x64.msix",
+      "seal-office-2.7.9-web.zip",
+      "seal-office-setup-2.7.9.exe"
+    ]
+  },
+  "sha256": {
+    "seal-office-2.7.9-amd64.deb": "3eee0b79b58d611f5c391555ba788ffea41dc890dba39bef4c1238fe03955cca",
+    "seal-office-2.7.9-android.apk": "cb3b2c423850d45cf882020394626f9fa45ba149c3de6fe5a7b9692405c3e67f",
+    "seal-office-2.7.9-harmony.hap": "7e8147f1ea6478e9028e9a378517a43bb79f0a0f6a61306be994a82a6101111d",
+    "seal-office-2.7.9-web.zip": "8fdf3df9a11215a5950b0b0a18daf1982edf21043159ab5e0d7444f6ad1b9259",
+    "seal-office-setup-2.7.9.exe": "62ca25359ce94c0a84c6232b36bb36998afc0aa0bf8c3d89a0896d211d18bfac",
+    "seal-office-2.7.9-microsoft-store-x64.msix": "6bfcefc395eb5b73c34b6d7d7b38e6382bf550d5f7358d18b26e0740cc1674d4",
+    "seal-office-2.7.9-macos-arm64.dmg": "b7111a9e0392b2f1274ed1d50d1616bcf8c2478568a793b26870b10609f2a50f",
+    "seal-office-2.7.9-macos-intel.dmg": "b193917dedaa857d148c518128b33073b075fc325dce81ac77ac5dc6a4d4a370",
+    "SHA256SUMS.txt": "a5daa7f97af21c03d50b959176cda5b7beb59b17582435017c4fac4887ed1f90"
+  }
+}
