@@ -3,6 +3,8 @@ dist/
 .vite/
 .npm-cache/
 release/
+# P6 后端源码包 com.sealoffice.cloud.release 必须可提交，放行被上行误伤的 Java 包目录
+!seal-server/src/main/java/com/sealoffice/cloud/release/
 release-final/
 /android-mobile/*
 /android-studio/.gradle/
@@ -40,3 +42,4 @@ pub.txt
 # 官网独立构建产物
 /website-dist/
 seal-server/target/
+seal-admin-web/dist-observe/
