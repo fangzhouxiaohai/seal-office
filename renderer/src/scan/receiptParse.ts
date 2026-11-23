@@ -87,6 +87,34 @@ function 计算命中(文本: string, 模板: 识别模板): number {
 /** 按模板解析一张单据的识别文本 */
 export function 解析单据文本(文本: string, 模板: 识别模板, 来源: string): 单据解析结果 {
   const 行列表 = 文本.split(/\r?\n/)
+  if (模板.标识 === 'general-form') {
+    const rows = 行列表.filter(line => line.trim() && !是分隔行(line))
+    const split = (line: string) => line.includes('|') ? 拆分单元格(line) : line.split('\t').map(v => v.trim())
+    const start = rows.findIndex((line,i) => split(line).length >= 2 && i+1 < rows.length && split(rows[i+1]).length === split(line).length)
+    if (start >= 0) {
+      const header = split(rows[start]), used = new Set<string>()
+      const width = rows.slice(start).reduce((n,line) => Math.max(n,split(line).length),header.length)
+      const columns = Array.from({ length:width }, (_, i) => {
+        const base = header[i] || '列 ' + (i+1)
+        let label = base, suffix = 1
+        while (used.has(label)) label = base + ' (' + (++suffix) + ')'
+        used.add(label)
+        return label
+      })
+      const 明细 = rows.slice(start + 1).map(line => {
+        const row = split(line)
+        const 值 = Object.fromEntries(columns.map((name,c) => ['col:' + name,row[c] ?? '']))
+        return { 值, 置信度:Object.fromEntries(Object.entries(值).map(([k,v]) => [k,置信度(v)])) }
+      })
+      return { 来源, 模板标识:模板.标识, 动态列:columns, 表头:空行(), 明细, 模板匹配:true, 原文:文本 }
+    }
+    const 明细 = 行列表.filter(line => line.trim() && !是分隔行(line)).map(line => {
+      const match = line.match(/^\s*([^:：|\t]+)[:：|\t]\s*(.+)$/)
+      const 值 = { 字段: match?.[1].trim() ?? '', 内容: match?.[2].trim() ?? line.trim() }
+      return { 值, 置信度: { 字段: 置信度(值.字段), 内容: 置信度(值.内容) } }
+    })
+    return { 来源, 模板标识:模板.标识, 表头:空行(), 明细, 模板匹配:明细.length > 0, 原文:文本 }
+  }
   const 表格 = 查找表格(行列表, 模板)
   const 跳过 = new Set<number>()
   const 明细: 解析行[] = []
@@ -113,6 +141,13 @@ export function 解析单据文本(文本: string, 模板: 识别模板, 来源:
   const 字段总数 = 模板.表头字段.length + 模板.明细字段.length
   const 模板匹配 = 命中 >= Math.min(2, 字段总数)
   return { 来源, 模板标识: 模板.标识, 表头: 模板匹配 ? 表头 : 空行(), 明细: 模板匹配 ? 明细 : [], 模板匹配, 原文: 文本 }
+}
+
+export function 输出模板(template: 识别模板, results: 单据解析结果[]): 识别模板 {
+  if (template.标识 !== 'general-form' || !results.some(item => item.动态列?.length)) return template
+  const names = new Set(results.flatMap(item => item.动态列 ?? []))
+  const dynamic: 识别字段[] = [...names].map(name => ({ 键:'col:'+name, 名称:name, 英文名:name, 类型:'文本', 必填:false, 别名:[name] }))
+  return { ...template, 明细字段: [...dynamic, ...(results.some(item => !item.动态列) ? template.明细字段 : [])] }
 }
 
 /** 按命中字段数推荐单据类型；命中少于 2 个字段时不推荐 */

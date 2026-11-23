@@ -27,6 +27,8 @@ import AboutDialog from './components/AboutDialog'
 import Footer from './components/Footer'
 import GlobalTabs from './components/GlobalTabs'
 import AiAssistant from './assistant/AiAssistant'
+import OpenProgressView from './OpenProgressView'
+import CalendarReminders from './localTools/calendarReminders'
 import NewFileNotifier, { 本机通知事件名, type 本机通知 } from './components/NewFileNotifier'
 import AssociatedFileOpener from './components/AssociatedFileOpener'
 import DefaultAppPrompt from './components/DefaultAppPrompt'
@@ -635,6 +637,8 @@ const 外壳 = ({ 跨端首页 }: { 跨端首页?: React.ComponentType<{children
         React.createElement('span', null, '支持 DOCX、XLSX、PPTX、PDF、CSV、TXT、MD、HTML，可一次拖入多个'))) : null,
     React.createElement(AiAssistant, null),
     React.createElement(NewFileNotifier, null),
+    React.createElement(CalendarReminders),
+    React.createElement(OpenProgressView),
     React.createElement(AssociatedFileOpener, null),
     React.createElement(DefaultAppPrompt, null),
     React.createElement(UpdateCard, null)

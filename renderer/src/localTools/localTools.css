@@ -11,6 +11,14 @@
 .calendar-card, .calendar-agenda, .diagram-workspace, .diagram-inspector { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-card); }
 .calendar-card { overflow-x: auto; }
 .calendar-card__nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-4); border-bottom: 1px solid var(--border); }
+.calendar-next { transform: rotate(180deg); }
+.calendar-date, .calendar-sound { display: flex; align-items: center; gap: var(--space-2); }
+.calendar-date small[data-status='休'] { color: var(--danger, #b63e34); }
+.calendar-date small[data-status='班'] { color: var(--text-2); }
+.calendar-festival { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.calendar-observance { margin-block: var(--space-2); }
+.calendar-agenda > a { display: inline-block; margin-bottom: var(--space-3); color: var(--brand); }
+.local-form select { min-height: 34px; padding-inline: var(--space-2); background: var(--bg-card); color: var(--text-1); border: 1px solid var(--border); border-radius: var(--radius-control); }
 .calendar-card__nav strong { font-size: 16px; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); padding: var(--space-2); }
 .calendar-grid__weekday { padding: var(--space-2); text-align: center; color: var(--text-2); font-size: 12px; }
@@ -151,7 +159,7 @@
   .database-sql-tools > .ant-select, .database-filter-row > .ant-select { flex: 1 1 100%; min-width: 0; }
 }
 @container wps-main (max-width: 480px) {
-  .calendar-card__nav, .calendar-grid { min-width: 350px; }
+  .calendar-card__nav, .calendar-grid { min-width: 0; }
   .calendar-grid__day { min-height: 46px; padding: var(--space-1); }
   .calendar-grid__day small { font-size: 10px; }
   .calendar-event { flex-direction: column; }

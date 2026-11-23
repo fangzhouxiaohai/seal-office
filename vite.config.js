@@ -16,6 +16,8 @@ export default defineConfig({
   plugins: [共享校验模块(), inlineMarketImages(), react(), 预览资源复制()],
   // PDF 阅读器的兼容工作线程需先补齐浏览器接口，再动态装载解析模块。
   worker: { format: 'es' },
+  // Vite 4 的内联 Worker 使用 atob 创建 Blob，脚本须为 ASCII 字节。
+  esbuild: { charset: 'ascii' },
   // 注入应用版本号，供设置页/关于页/页脚统一读取，避免多处硬编码不一致
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),

@@ -5,6 +5,7 @@ import { RIBBON_TABS, type RibbonTabSpec } from './tabSpecs'
 import RibbonGroup from './RibbonGroup'
 import RibbonButton from './RibbonButton'
 import FontPicker from '../../fonts/FontPicker'
+import SheetFormatControls from '../../sheet/SheetFormatControls'
 import { 缩放百分比文本 } from '../wheelZoom'
 import { 取文字功能区色调 } from './iconTones'
 import { use显示偏好 } from '../../store/settingsStore'
@@ -63,6 +64,10 @@ const RibbonPanel = ({
                 onSelect: (值: string) => onCommand && onCommand(项.commandId, 值),
                 onDropdownOpen,
               })
+            : ['cell.fontSize','cell.fill','cell.fontColor'].includes(项.commandId)
+            ? React.createElement(SheetFormatControls, { key: 项.commandId, command: 项.commandId, label: 项.label,
+                value: 获取当前值?.(项.commandId), disabled: 获取禁用态?.(项.commandId),
+                apply: value => onCommand?.(项.commandId, value) })
             : React.createElement(RibbonButton, {
                 key: `${组.name}-${项.commandId}-${项.label}`,
                 commandId: 项.commandId,

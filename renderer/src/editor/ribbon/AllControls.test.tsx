@@ -18,13 +18,29 @@ for(const [kind,tabs] of [['文字',RIBBON_TABS],['表格',表格标签],['演�
       const {container}=render(<RibbonPanel activeKey={tab.key} tabs={tabs} onCommand={dispatch} onDropdownOpen={open}/>)
       const groups=container.querySelectorAll('.wps-ribbon-group')
       for(let i=0;i<tab.groups.length;i++) {
-        const buttons=groups[i].querySelectorAll<HTMLButtonElement>('button')
+        const buttons=groups[i].querySelectorAll<HTMLElement>('button,input.sheet-size-control')
         expect(buttons.length).toBe(tab.groups[i].items.length)
         for(let j=0;j<buttons.length;j++) {
           const item=tab.groups[i].items[j],button=buttons[j]
           expect(button).toHaveAccessibleName(item.label)
+          if (item.commandId === 'cell.fontSize') {
+            fireEvent.change(button, { target: { value: '14' } })
+            fireEvent.blur(button)
+            expect(dispatch).toHaveBeenLastCalledWith(item.commandId, '14')
+            continue
+          }
           expect(button.querySelector('svg')).not.toBeNull()
-          if(字体命令.has(item.commandId)) {
+          if (item.commandId === 'cell.fontColor' || item.commandId === 'cell.fill') {
+            fireEvent.click(button)
+            const palette = await waitFor(() => {
+              const panel = document.querySelector<HTMLElement>(`.sheet-color-panel[aria-label="${item.label}"]`)
+              expect(panel).not.toBeNull()
+              return panel!
+            })
+            const scope = within(palette)
+            fireEvent.click(scope.getByRole('button', { name: '#1976d2' }))
+            expect(dispatch).toHaveBeenLastCalledWith(item.commandId, '#1976d2')
+          } else if(字体命令.has(item.commandId)) {
             fireEvent.click(button)
             expect(open).toHaveBeenCalled()
             expect(dispatch).toHaveBeenLastCalledWith(item.commandId,'宋体')

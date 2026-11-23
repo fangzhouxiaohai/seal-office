@@ -8,6 +8,9 @@ import RibbonTabs from '../editor/ribbon/RibbonTabs'
 import { useRibbonActions } from '../editor/ribbon/RibbonActionsContext'
 import RibbonPanel from '../editor/ribbon/RibbonPanel'
 import { 表格标签 } from './ribbonSpecs'
+import { 分段, 选区格式, type 文字选区 } from './selectionFormat'
+import { useFontCatalog } from '../fonts/useFontCatalog'
+import { 首个菜单字体 } from '../fonts/FontPicker'
 import { 查找表格命令, type 表格命令上下文, type 选区范围 } from './sheetCommands'
 import {
   创建工作表,
@@ -164,6 +167,8 @@ const SheetEditor = () => {
   const [活动窗格, set活动窗格] = useState(0)
   const 图片输入引用 = useRef<HTMLInputElement>(null)
   const [文档路径, set文档路径] = useState<string | null>(() => 已知文档路径[activeDocumentId ?? ''] ?? null)
+  const 来源须另存 = Boolean(文档路径 && 当前文档?.另存来源 && 是同一路径(文档路径, 当前文档.另存来源))
+  const 建议副本名 = 来源须另存 ? 基准名(文档路径!).replace(/\.[^.]+$/, '.xlsx') : undefined
 
   // Ctrl+滚轮缩放工作表内容，与状态栏缩放按钮共用同一状态
   use滚轮缩放(缩放, set缩放, 表格缩放范围)
@@ -342,6 +347,11 @@ const SheetEditor = () => {
   }, [历史, 工作表列表, 实时协作.active])
 
   const 工作表 = 工作表列表[有效当前索引]
+  const 字体库 = useFontCatalog()
+  const 首字体 = 首个菜单字体(字体库.字体族)
+  const [格内选区, 设置格内选区] = useState<文字选区 | null>(null)
+  useEffect(() => { 设置格内选区(null) }, [选区, 工作表.id])
+  const 当前格式 = useMemo(() => 选区格式(工作表, 选区, 格内选区, 首字体), [工作表, 选区, 格内选区, 首字体])
   const 开始草稿 = (address: string) => {
     const old = 草稿.current
     if (old?.address === address && old.sheetId === 工作表.id) return old
@@ -794,6 +804,15 @@ const SheetEditor = () => {
       modal.warning({ title: '工作表已保护', content: '请先从“审阅”中解除工作表保护，再修改内容。' })
       return
     }
+    if (格内选区 && 格内选区.表 === 工作表.id && 格内选区.地址 === 取首格地址() && 参数 && ['cell.font','cell.fontSize','cell.fontColor'].includes(标识)) {
+      const 单元 = 读取单元格(工作表, 格内选区.地址)
+      if (单元.原始值 === 格内选区.文本 && !单元.公式来源 && (!单元.原始值.startsWith('=') || 单元.值类型 === '文本')) {
+        const 更新 = 标识 === 'cell.font' ? { 字体: 参数 } : 标识 === 'cell.fontColor' ? { 字体颜色: 参数 } : { 字号: Number(参数) }
+        const 富文本 = 分段(单元, 格内选区).map(({ 文本, 格式, selected }) => ({ 文本, 格式: selected ? { ...格式, ...更新 } : 格式 }))
+        更新工作表({ ...工作表, 单元格: { ...工作表.单元格, [格内选区.地址]: { ...单元, 富文本, 值类型: '文本' } } })
+        return
+      }
+    }
     if (标识 === 'view.gridlines') {
       const 目标 = !显示网格线
       set显示网格线(目标)
@@ -891,7 +910,7 @@ const SheetEditor = () => {
       const 默认名称 = 文档路径 && !可直接保存
         ? `${基准名(文档路径).replace(/\.[^.]+$/, '')}.slxls`
         : 生成表格文件名(工作表.name, '.slxls')
-      const 选择路径 = 可直接保存 ? 文档路径 : 桥接.showSaveDialog(默认名称, 'table' as const)
+      const 选择路径 = 可直接保存 && !来源须另存 ? 文档路径 : 桥接.showSaveDialog(建议副本名 ?? 默认名称, 'table' as const)
       Promise.resolve(选择路径).then((文件路径) => {
         if (文件路径) {
           return 保存表格文件(文件路径, '文件已保存', 保存快照)
@@ -906,7 +925,7 @@ const SheetEditor = () => {
         message.info('当前环境不支持保存功能，请使用打包后的版本')
         return
       }
-      桥接.showSaveDialog(文档路径 ? 基准名(文档路径) : 生成表格文件名(工作表.name, '.slxls'), 'table' as const).then(async (文件路径) => {
+      桥接.showSaveDialog(建议副本名 ?? (文档路径 ? 基准名(文档路径) : 生成表格文件名(工作表.name, '.slxls')), 'table' as const).then(async (文件路径) => {
         if (文件路径) {
           if (路径被其他标签占用(规范表格路径(文件路径))) return
           if (保真风险 && 是同一路径(规范表格路径(文件路径), 保真风险.来源路径) && !/\.(slxls|sealsheet)$/i.test(文件路径)) {
@@ -1005,6 +1024,11 @@ const SheetEditor = () => {
   const 保存表格文件 = async (原始路径: string, 成功提示: string, 快照 = 最新工作簿.current) => {
     const 保存工作表 = 快照.find(sheet => sheet.id === 工作表.id) ?? 快照[0]
     const 文件路径 = 规范表格路径(原始路径)
+    if (当前文档?.另存来源 && 是同一路径(文件路径, 当前文档.另存来源)) {
+      提示文件错误('请选择副本位置', '来源文件使用其他格式，请另存为 XLSX。')
+      return
+    }
+    if (来源须另存 && 当前文档?.导入损失?.length && !await 确认保存副本(当前文档.导入损失)) return
     const 预期文件指纹 = 当前文档 && 文档路径 && 是同一路径(文件路径, 文档路径)
       ? 当前文档.文件指纹 : undefined
     if (!可保存扩展('table').has(文件路径.match(/\.[^\\/.]+$/)?.[0]?.toLowerCase() ?? '')) {
@@ -1218,7 +1242,7 @@ const SheetEditor = () => {
       onDropdownOpen: () => set浮窗位置(null),
       获取激活态: 取激活态,
       获取当前值: (标识: string) => {
-        if (标识 === 'cell.font') return 读取单元格(工作表, 取首格地址()).格式?.字体 ?? '宋体'
+        if (Object.prototype.hasOwnProperty.call(当前格式, 标识)) return 当前格式[标识 as keyof typeof 当前格式]
         if (标识 === 'layout.margin') return 工作表.页面设置?.页边距 ?? '常规'
         if (标识 === 'layout.orientation') return 工作表.页面设置?.方向 ?? '纵向'
         if (标识 === 'layout.paperSize') return 工作表.页面设置?.纸张大小 ?? 'A4'
@@ -1375,6 +1399,10 @@ const SheetEditor = () => {
         on编辑值变化: (值: string) => {
           if (!编辑地址) return
           set编辑值(同步草稿(编辑地址, 值, 草稿.current?.composing).值)
+        },
+        on文字选择: (输入: HTMLInputElement) => {
+          const 开始 = 输入.selectionStart ?? 0, 结束 = 输入.selectionEnd ?? 0
+          设置格内选区(编辑地址 && 结束 > 开始 ? { 表: 工作表.id, 地址: 编辑地址, 文本: 输入.value, 开始, 结束 } : null)
         },
         on组合开始: () => { if (编辑地址) { 开始草稿(编辑地址).composing = true; 通知编辑草稿变化() } },
         on组合结束: (值: string) => { if (编辑地址) set编辑值(同步草稿(编辑地址, 值, false).值) },

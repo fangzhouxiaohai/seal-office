@@ -350,6 +350,11 @@ const 命令列表: 表格命令[] = [
   设置格式命令('cell.alignCenter', '居中', { 水平对齐: 'center' }),
   设置格式命令('cell.alignRight', '右对齐', { 水平对齐: 'right' }),
   设置格式命令('cell.font', '字体', { 字体: '宋体' }, '字体'),
+  { id: 'cell.fontSize', label: '字号', run(上下文, 参数) {
+    const 字号 = Number(参数)
+    if (!Number.isFinite(字号) || 字号 < 4 || 字号 > 96) throw new Error('字号须为 4 至 96 磅')
+    上下文.更新工作表(设置格式(上下文.工作表, 选区区域(上下文), { 字号 }))
+  } },
   设置格式命令('cell.fill', '填充颜色', { 填充颜色: '#EBF1FE' }, '填充颜色'),
   设置格式命令('cell.fontColor', '字体颜色', { 字体颜色: '#E34D59' }, '字体颜色'),
   {

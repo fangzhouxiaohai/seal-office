@@ -6,6 +6,7 @@ declare global {
     /** 原生宿主拍照；拒绝相机权限时以 name = CameraDeniedError 拒绝 */
     sealCamera?: () => Promise<File[]>
     sealPrepareCamera?: (signal: AbortSignal) => Promise<void>
+    sealCameraSettings?: () => void
     /** 原生宿主的系统文件选择器（鸿蒙 WebView 的文件输入不可靠，走宿主通道） */
     sealPickImages?: (multiple: boolean) => Promise<File[]>
   }
@@ -29,11 +30,11 @@ export async function 拍照(): Promise<File[]> {
 }
 
 /** 打开系统文件选择器选择图片；取消时返回空数组 */
-export function 选择图片(多选 = true): Promise<File[]> {
+export function 选择图片(多选 = true, 包含PDF = false): Promise<File[]> {
   if (typeof window.sealPickImages === 'function') return window.sealPickImages(多选)
   return new Promise<File[]>((完成) => {
     const 输入 = document.createElement('input')
-    输入.type = 'file'; 输入.accept = 'image/*'; 输入.multiple = 多选; 输入.hidden = true
+    输入.type = 'file'; 输入.accept = 包含PDF ? 'image/*,application/pdf,.pdf' : 'image/*'; 输入.multiple = 多选; 输入.hidden = true
     let 已结束 = false, 计时: ReturnType<typeof setTimeout> | undefined
     const 结束 = (文件: File[]) => { if (已结束) return; 已结束 = true; clearTimeout(计时); 输入.remove(); window.removeEventListener('focus', 聚焦); 完成(文件) }
     // 部分 WebView 不触发 cancel 事件：窗口重新获得焦点且仍无文件时视为取消。

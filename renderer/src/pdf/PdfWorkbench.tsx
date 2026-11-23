@@ -9,6 +9,7 @@ import { 解析页码, PDF命令表, type PDF命令 } from './pdfCommands'
 import { useShortcuts } from '../shortcuts/useShortcuts'
 import { 写出PDF文档 } from '../office/writeDocument'
 import { 读取本地文件内容 } from '../fileOpen'
+import { afterPaint, beginOpen } from '../openProgress'
 import './pdf.css'
 import { 转换PDF图片, 转换PDF文字 } from './pdfConversion'
 
@@ -169,14 +170,22 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
       const 路径列表 = await 桥接.showOpenDialogMany('pdf')
       if (路径列表.length === 0) return
       const 结果 = await Promise.allSettled(路径列表.map(async (路径) => {
-        const 读取结果 = await 读取本地文件内容(路径)
+        const job = await beginOpen(路径)
+        try {
+        const 读取结果 = await 读取本地文件内容(路径, job)
         if (读取结果.类型 !== 'pdf' || !读取结果.内容 || /\.ofd$/i.test(路径)) {
           throw new Error(`无法读取「${路径}」：不是有效的 PDF 或海豹 PDF 文件`)
         }
+        job?.update({ stage: 'screen' })
+        if (job && (路径列表.length > 1 || 当前文件)) afterPaint(job.finish)
         return { 路径, 名称: 路径.split(/[\\/]/).pop() || 'PDF 文件', 数据: 读取结果.内容, 文件指纹: 读取结果.文件指纹, ...(读取结果.警告?.length ? { 警告: 读取结果.警告 } : {}) }
+        } catch (error) {
+          job?.finish()
+          throw error
+        }
       }))
       const 已读取 = 结果.filter((项): 项 is PromiseFulfilledResult<{ 路径: string; 名称: string; 数据: string; 文件指纹: string | undefined; 警告?: string[] }> => 项.status === 'fulfilled').map((项) => 项.value)
-      const 失败项 = 结果.filter((项): 项 is PromiseRejectedResult => 项.status === 'rejected')
+      const 失败项 = 结果.filter((项): 项 is PromiseRejectedResult => 项.status === 'rejected' && 项.reason?.name !== 'AbortError')
       if (失败项.length > 0) 显示错误('PDF 文件读取失败', 失败项.map((项) => 项.reason instanceof Error ? 项.reason.message : '文件无法读取').join('；'))
       if (已读取.length > 0) {
         set文件列表((当前) => [...当前, ...已读取.map((文件) => ({ 标识: `path:${文件.路径}`, 名称: 文件.名称, 数据: 文件.数据, 路径: 文件.路径, 文件指纹: 文件.文件指纹, ...(文件.警告?.length ? { 警告: 文件.警告 } : {}) }))])
@@ -373,6 +382,7 @@ const PdfWorkbench = ({ 初始文件, 已打开文件, 当前标识, onAdded, on
     <section className={`pdf-workbench${工具展开 ? '' : ' pdf-workbench--collapsed'}`}>
       <PdfViewer
         key={`${当前文件?.标识 ?? 'empty'}:${预览代次}`}
+        来源路径={当前文件?.路径}
         数据={当前文件?.数据}
         工作区文件标识={当前标识}
         文件名={当前文件?.名称}

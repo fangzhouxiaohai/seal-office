@@ -1,4 +1,8 @@
-export interface 日程项 { id: string; 标题: string; 日期: string; 开始: string; 结束: string; 备注: string }
+export const 日程存储键 = 'seal-local-calendar-v1'
+export const 提示音 = { bell: '轻铃', mallet: '木琴', double: '双音' }
+export type Tone = keyof typeof 提示音
+export interface CalendarAlarm { id: string; title: string; time: string; at: number; tone: Tone }
+export interface 日程项 { id: string; 标题: string; 日期: string; 开始: string; 结束: string; 备注: string; 提醒?: Tone }
 
 export function 是有效日期(日期: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(日期)) return false
@@ -20,7 +24,7 @@ export function 校验日程(值: unknown): 日程项 {
   if (typeof 项.日期 !== 'string' || !是有效日期(项.日期)) throw new Error('日程日期无效')
   if (typeof 项.开始 !== 'string' || typeof 项.结束 !== 'string' || !是有效时间(项.开始) || !是有效时间(项.结束) || 项.结束 <= 项.开始) throw new Error('日程时间范围无效')
   if (typeof 项.备注 !== 'string' || 项.备注.length > 5000) throw new Error('日程备注无效')
-  return { id: 项.id, 标题: 项.标题, 日期: 项.日期, 开始: 项.开始, 结束: 项.结束, 备注: 项.备注 }
+  return { id: 项.id, 标题: 项.标题, 日期: 项.日期, 开始: 项.开始, 结束: 项.结束, 备注: 项.备注, ...(typeof 项.提醒 === 'string' && Object.prototype.hasOwnProperty.call(提示音, 项.提醒) ? { 提醒: 项.提醒 as Tone } : {}) }
 }
 
 export function 解析日程(原文: string | null): 日程项[] {

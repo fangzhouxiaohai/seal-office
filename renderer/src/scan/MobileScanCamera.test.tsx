@@ -17,11 +17,11 @@ function 场景(参数: Partial<扫描取景参数>) {
 
 beforeEach(() => { vi.clearAllMocks(); 相机.status = 'ready'; 相机.torchAvailable = false; localStorage.clear() })
 
-it('首次进入不自行激活相机，显示相册入口，取景失败仍可导入', async () => {
+it('首次进入自动启动镜头，取景失败仍可从相册导入', async () => {
   相机.status = 'unavailable'
   const 接收图片 = vi.fn(), 查看结果 = vi.fn(), 文件 = new File(['图片'], '文稿.png', {type:'image/png'})
   选择.mockResolvedValue([文件]); render(<场景 接收图片={接收图片} 查看结果={查看结果} />)
-  expect(相机.start).not.toHaveBeenCalled()
+  await waitFor(() => expect(相机.start).toHaveBeenCalledOnce())
   fireEvent.click(screen.getByRole('button', {name:'导入图片'}))
   await waitFor(() => expect(接收图片).toHaveBeenCalledWith([文件], '相册'))
   expect(查看结果).toHaveBeenCalledOnce()
@@ -30,6 +30,7 @@ it('首次进入不自行激活相机，显示相册入口，取景失败仍可�
 it('连续拍摄保留取景，手动点结果后释放镜头', async () => {
   const 查看结果=vi.fn(), 接收图片=vi.fn(); 相机.capture.mockResolvedValue(new File(['原图'],'拍摄.jpg',{type:'image/jpeg'}))
   render(<场景 页数={1} 查看结果={查看结果} 接收图片={接收图片} />)
+  fireEvent.loadedData(screen.getByLabelText('实时相机画面'))
   fireEvent.click(screen.getByRole('button',{name:'连拍'})); fireEvent.click(screen.getByRole('button',{name:'拍照'}))
   await waitFor(()=>expect(接收图片).toHaveBeenCalledOnce()); expect(查看结果).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button',{name:/查看.*1.*页/})); expect(相机.stop).toHaveBeenCalled(); expect(查看结果).toHaveBeenCalledOnce()

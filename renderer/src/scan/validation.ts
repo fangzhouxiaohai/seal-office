@@ -15,6 +15,7 @@ export interface 解析行 {
 
 export interface 单据解析结果 {
   来源: string
+  动态列?: string[]
   模板标识: string
   表头: 解析行
   明细: 解析行[]

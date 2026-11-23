@@ -26,6 +26,14 @@ const 分组顺序: Array<{ 来源: 字体族['来源']; 标题: string; 说明:
 
 const 预览文字 = '公文排版 海豹办公 Aa 123'
 
+export function 首个菜单字体(families: 字体族[]) {
+  for (const group of 分组顺序) {
+    const first = families.find(family => family.来源 === group.来源)
+    if (first) return first.名称
+  }
+  return '宋体'
+}
+
 export default function FontPicker({ label = '字体', commandId, currentValue, fallbackOptions, 禁用, onSelect, onDropdownOpen }: Props) {
   const { message } = AntdApp.useApp()
   const catalog = useFontCatalog()

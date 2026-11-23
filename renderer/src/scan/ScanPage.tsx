@@ -20,7 +20,9 @@ import { 打开扫描件库, 默认分组, type 扫描件库, type 扫描来源,
 import { 识别图片文字, 是取消授权 } from './recognition'
 import { 生成图片PDF, 生成可搜索PDF, 生成文字Html, 生成识别工作表 } from './scanExport'
 import { 保存导出文件, 安全文件名, 自Base64 } from './scanSave'
-import { 扫描模板列表, 取识别模板 } from './templates'
+import { 取识别模板 } from './templates'
+import TemplateSelect from './TemplateSelect'
+import { PDF来源 } from './pdfPageSource'
 import { 解析识别文本 } from './receiptParse'
 import { 生成异常清单, type 单据解析结果 } from './validation'
 import { 修改键, 应用修改, type 修改表 } from './reviewModel'
@@ -141,21 +143,29 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
     try {
       const 选图: Array<{ 原图: File; 跨页原片?: File }> = []
       for (const 原图 of 文件) {
-        if (能力.拍照 && 手机模式 === '拍书籍' && 书籍 === '双页') {
+        if (能力.拍照 && 手机模式 === '拍书籍' && 书籍 === '双页' && !PDF来源.has(原图)) {
           const [左, 右] = await 拆分书籍照片(原图)
           选图.push({ 原图: 左, 跨页原片: 原图 }, { 原图: 右, 跨页原片: 原图 })
         } else 选图.push({ 原图 })
       }
       if (!页列表.length) 设来源(图片来源)
-      const 新页 = 选图.map(输入 => ({ 标识: 新标识(), ...输入, 设置: { 四角: null, 模式, 旋转: 0, 整张照片: 能力.拍照 && 手机模式 === '照片转PDF', 清除彩笔: 能力.拍照 && 手机模式 === '去除手写' }, 宽: 0, 高: 0, 文字: '', 处理中: true }))
+      const 新页 = 选图.map(输入 => ({ 标识: 新标识(), ...输入, 设置: { 四角: null, 模式, 旋转: 0, 整张照片: PDF来源.has(输入.原图) || (能力.拍照 && 手机模式 === '照片转PDF'), 清除彩笔: 能力.拍照 && 手机模式 === '去除手写' }, 宽: 0, 高: 0, 文字: '', 处理中: true }))
       设页列表(列表 => [...列表, ...新页])
       清除识别()
       const 失败页: string[] = []
-      for (const 页 of 新页) { const 错误 = await 处理(页, 页.设置); if (错误) 失败页.push(`${页.原图.name}：${错误}`) }
+      for (const 页 of 新页) {
+        const 错误 = await 处理(页, 页.设置)
+        const source = PDF来源.get(页.原图)
+        if (错误) 失败页.push(`${页.原图.name}：${错误}`)
+        else if (source?.文字 && !source.待识别图块.length) 更新页(页.标识,{文字:source.文字})
+      }
       if (失败页.length) throw new Error(失败页.join('\n'))
     } finally { 设导入中(false) }
   }
-  const { 拍摄, 导入 } = useScanImport(能力, 添加图片)
+  const { 拍摄, 导入 } = useScanImport(能力, async (files, source) => {
+    await 添加图片(files, source)
+    if (files.length && 能力.拍照) { 设视图('工作台'); 设取景中(false) }
+  }, 100 - 页列表.length)
 
   const 移动页 = (序号: number, 偏移: number) => 设页列表(列表 => { const 结果 = [...列表], 目标 = 序号 + 偏移; if (目标 < 0 || 目标 >= 结果.length) return 列表; [结果[序号], 结果[目标]] = [结果[目标], 结果[序号]]; return 结果 })
   const 删除页 = (页: 工作页) => { 图像任务.current.delete(页.标识); if (页.预览) URL.revokeObjectURL(页.预览); 设页列表(列表 => 列表.filter(项 => 项.标识 !== 页.标识)); 清除识别() }
@@ -174,9 +184,13 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
   const 扫描页列表 = (): 扫描页[] => 可用页.map(页 => ({ 图片: 页.图片!, 类型: 'image/jpeg', 宽: 页.宽, 高: 页.高, 文字: 页.文字 }))
   const 默认名称 = () => 当前扫描件?.名称 ?? `${能力.拍照 ? (手机模式 === '证件扫描' ? 证件 : 手机模式) : 模板?.名称 ?? '扫描件'}${当前日期()}`
 
+  const 页来源 = (页: 工作页, i: number) => {
+    const pdf = PDF来源.get(页.原图)
+    return pdf ? `第 ${i+1} 页 · ${pdf.文件名}（原第 ${pdf.页码} 页）` : `第 ${i+1} 页`
+  }
   const 解析 = (页文字: string[], 使用模板 = 模板) => {
     if (!使用模板) return
-    const 结果 = 页文字.map((文字, 序号) => 文字.trim() ? 解析识别文本(文字, 使用模板, `第 ${序号 + 1} 页`) : null).filter((项): 项 is 单据解析结果 => 项 !== null)
+    const 结果 = 页文字.map((文字, 序号) => 文字.trim() ? 解析识别文本(文字, 使用模板, 页来源(可用页[序号], 序号)) : null).filter((项): 项 is 单据解析结果 => 项 !== null)
     设解析结果(结果); 设修改({}); 设已核对(new Set())
   }
 
@@ -184,10 +198,10 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
     if (!可用页.length) { message.warning('请先拍照或导入图片'); return }
     清除识别()
     try {
-      const 结果 = await 识别图片文字(modal, 可用页.map(页 => ({ 图片: 页.图片!, 类型: 'image/jpeg' })), { 表格: 模板?.分类 === '单据', 进度: (完成, 总数) => 设识别进度({ 完成, 总数 }) })
+      const 结果 = await 识别图片文字(modal, 可用页.map(页 => ({ 图片: 页.图片!, 类型: 'image/jpeg', PDF: PDF来源.get(页.原图) })), { 表格: 模板?.分类 === '单据', 进度: (完成, 总数) => 设识别进度({ 完成, 总数 }) })
       const 文字 = 可用页.map((页, 序号) => 结果[序号].文字 ?? 页.文字)
       设页列表(列表 => 列表.map(页 => { const 位置 = 可用页.findIndex(项 => 项.标识 === 页.标识); return 位置 < 0 ? 页 : { ...页, 文字: 结果[位置].文字 ?? 页.文字 } }))
-      设失败(结果.flatMap((项, 序号) => 项.错误 ? [{ 来源: `第 ${序号 + 1} 页`, 原因: 项.错误 }] : []))
+      设失败(结果.flatMap((项, 序号) => 项.错误 ? [{ 来源: 页来源(可用页[序号], 序号), 原因: 项.错误 }] : []))
       解析(文字)
       if (结果.some(项 => 项.文字)) message.success('识别完成，识别结果需对照原图核对')
     } catch (错误) {
@@ -231,7 +245,7 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
     const 待识别 = 可用页.filter(页 => 重新识别 || !页.文字.trim())
     const 已得文字 = new Map(可用页.map(页 => [页.标识, 页.文字]))
     if (待识别.length) {
-      const 结果 = await 识别图片文字(modal, 待识别.map(页 => ({ 图片: 页.图片!, 类型: 'image/jpeg' })), { 表格: 手机模式 === '拍照转Excel', 进度: (完成, 总数) => 设识别进度({ 完成, 总数 }) })
+      const 结果 = await 识别图片文字(modal, 待识别.map(页 => ({ 图片: 页.图片!, 类型: 'image/jpeg', PDF: PDF来源.get(页.原图) })), { 表格: 手机模式 === '拍照转Excel', 进度: (完成, 总数) => 设识别进度({ 完成, 总数 }) })
       const 未完成: string[] = []
       待识别.forEach((页, i) => {
         const 文字 = 结果[i]?.文字
@@ -358,7 +372,7 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
     {手机模式 === '图片翻译' && <label className="scan-field">翻译成<Select aria-label="翻译目标语言" value={目标语言} disabled={忙碌}
       options={['中文', '英文', '日文', '韩文', '法文', '德文', '俄文', '西班牙文'].map(语言 => ({ label: 语言, value: 语言 }))}
       onChange={语言 => { 设目标语言(语言); 设页列表(页 => 页.map(项 => ({ ...项, 译文: undefined }))) }} /></label>}
-    {文字模式 && <Button disabled={忙碌 || !可用页.length} onClick={() => void 手机识别()}>识别文字</Button>}
+    {(文字模式 || 模板) && <Button disabled={忙碌 || !可用页.length} onClick={() => void (模板 ? 识别() : 手机识别())}>识别文字</Button>}
     {手机模式 === '图片翻译' && <Button type="primary" disabled={忙碌 || !可用页.length} onClick={() => void 手机翻译()}>翻译文字</Button>}
     {['拍照转Word', '提取文字', '图片翻译'].includes(手机模式) && <Button type={手机模式 === '图片翻译' ? 'default' : 'primary'} disabled={忙碌 || !可用页.length} onClick={() => void 保存手机文字()}>{手机模式 === '图片翻译' ? '导出译文 Word' : '导出 Word'}</Button>}
     {手机模式 === '拍照转Excel' && <Button type="primary" disabled={忙碌 || !可用页.length} onClick={() => void 保存手机表格()}>导出 Excel</Button>}
@@ -375,12 +389,11 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
   </section>
   const 页面 = <>
     <section className="scan-card scan-toolbar" aria-label="扫描工作台">
-      {能力.拍照 ? <Button disabled={忙碌} onClick={() => 设取景中(true)}>继续拍摄</Button> : <ScanImportButtons 能力={能力} 拍摄={拍摄} 导入={导入} 禁用={Boolean(识别进度)} />}
+      {能力.拍照 ? <><Button disabled={忙碌} onClick={() => 设取景中(true)}>继续拍摄</Button><Button disabled={忙碌} onClick={导入}>导入图片或 PDF</Button></> : <ScanImportButtons 能力={能力} 拍摄={拍摄} 导入={导入} 禁用={Boolean(识别进度)} />}
       <div className="scan-toolbar__options">
-        {!能力.拍照 && <label className="scan-field"><span>识别模板</span>
-          <Select aria-label="识别模板" value={模板标识} onChange={值 => { 设模板标识(值); 解析(可用页.map(页 => 页.文字), 值 ? 取识别模板(值) : null) }} style={{ minWidth: 160 }}
-            options={[{ value: '', label: '万能扫描' }, ...['证件', '试卷', '单据'].map(分类 => ({ label: 分类 === '单据' ? '票据' : 分类, options: 扫描模板列表.filter(项 => 项.分类 === 分类).map(项 => ({ value: 项.标识, label: 项.名称 })) }))]} />
-        </label>}
+        <label className="scan-field"><span>识别模板</span>
+          <TemplateSelect value={模板标识} change={值 => { 设模板标识(值); 解析(可用页.map(页 => 页.文字), 值 ? 取识别模板(值) : null) }} />
+        </label>
         <label className="scan-field"><span>增强效果</span>
           <Segmented aria-label="增强效果" value={模式} disabled={忙碌} onChange={值 => 切换模式(值 as 增强模式)} options={[{ value: '彩色', label: '彩色' }, { value: '灰度', label: '灰度' }, { value: '黑白', label: '黑白' }]} />
         </label>
@@ -441,7 +454,7 @@ export default function ScanPage({ 初始模式 = '文件扫描', 返回 }: { �
 
   if (能力.拍照 && 取景中) return <MobileScanCamera 模式={手机模式} 切换模式={工具 => 切换草稿(工具)} 证件={证件} 切换证件={类型 => 切换草稿('证件扫描', 类型)}
     书籍={书籍} 切换书籍={设书籍} 页数={页列表.length} 缩略图={页列表[页列表.length - 1]?.预览} 忙碌={忙碌}
-    接收图片={添加图片} 查看结果={() => { 设视图('工作台'); 设取景中(false) }} 打开扫描库={() => void 离开取景('扫描库')} 返回={() => void 离开取景('返回')} />
+    导入文件={导入} 接收图片={添加图片} 查看结果={() => { 设视图('工作台'); 设取景中(false) }} 打开扫描库={() => void 离开取景('扫描库')} 返回={() => void 离开取景('返回')} />
   return <div className={`local-page scan-page-root${能力.拍照 ? ' scan-mobile-results' : ''}`}>
     <header className="local-page__header">
       <div>

@@ -45,6 +45,7 @@ export const 英文界面271Compat: Record<string, string> = {
   '注释引用未完整导入': 'Note reference not fully imported',
   '图片未导入': 'Image not imported',
   '图形未导入': 'Shape or graphic not imported',
+  '对象与文字图层未完整导入': 'Object and text layers were not fully imported',
   '媒体未导入': 'Media not imported',
   '批注未导入': 'Comments not imported',
   '修订信息未导入': 'Tracked changes not imported',

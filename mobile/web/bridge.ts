@@ -1,8 +1,11 @@
 import { Buffer } from 'buffer'
 import { mergeUpdates } from 'yjs'
 import path from 'path-browserify'
+import DocumentReadWorker from './generated/documentRead.mjs?worker&inline'
+import type { DocumentReader } from '../../renderer/src/openProgress'
+import { trackOpen } from '../../renderer/src/openProgress'
 import core from './generated/core.mjs'
-import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto, prepareNativeCamera, nativeUpdate, onNativeUpdate } from './native'
+import { downloadFile, platformFetch, waitForNative, pickNativeFiles, writeNativeClipboard, listNativeSystemFonts, captureNativePhoto, prepareNativeCamera, openCameraSettings, syncCalendar, nativeUpdate, onNativeUpdate } from './native'
 import { createNativeUpdateApi, createHarmonyStoreUpdateApi } from './update'
 import { installExportAdapters } from './exports'
 import { validateImport } from './fileTypes'
@@ -47,7 +50,24 @@ async function pickFiles(accept = allDocuments, multiple = false): Promise<strin
   for (const file of files) {
     const name = path.basename(file.name.replaceAll('\\', '/')).replace(/[\u0000-\u001f]/g, '_')
     const filename = '/seal/documents/' + cryptoCore.randomUUID() + '/' + name
-    storage.mkdirSync(path.dirname(filename), { recursive: true }); storage.writeFileSync(filename, Buffer.from(await file.arrayBuffer())); paths.push(filename)
+    const job = trackOpen(name, file.size, documentRead)
+    try {
+      let content: Buffer
+      if (job) {
+        content = Buffer.alloc(file.size)
+        for (let offset = 0; offset < file.size; offset += 512 * 1024) {
+          const part = new Uint8Array(await file.slice(offset, offset + 512 * 1024).arrayBuffer())
+          job.signal.throwIfAborted()
+          content.set(part, offset)
+          job.update({ stage: 'read', done: offset + part.length, total: file.size })
+        }
+      } else content = Buffer.from(await file.arrayBuffer())
+      storage.mkdirSync(path.dirname(filename), { recursive: true })
+      storage.writeFileSync(filename, content)
+      paths.push(filename)
+    } catch (error) {
+      if (!job?.signal.aborted) throw error
+    } finally { job?.finish() }
   }
   await storage.flushStorage(); return paths
 }
@@ -132,6 +152,24 @@ async function save(filename: string, data: string | Uint8Array, format?: string
   return { 成功: true, 路径: filename, 文件指纹: hash(content) }
 }
 const recentFile = '/seal/private/recent.json'
+const reads = new Map<string, () => void>()
+const documentRead: DocumentReader = {
+  size: async name => storage.statSync(name).size,
+  read: (name, id, update) => new Promise((resolve, reject) => {
+    const file = storage.fileBlob(name)
+    const worker = new DocumentReadWorker()
+    const close = () => { worker.terminate(); reads.delete(id) }
+    reads.set(id, () => { close(); reject(new DOMException('已取消打开', 'AbortError')) })
+    worker.onerror = e => { close(); reject(new Error(e.message || '后台读取失败')) }
+    worker.onmessage = e => {
+      if (e.data.stage) update(e.data)
+      else { close(); resolve(e.data.result) }
+    }
+    worker.postMessage({ file, ext: path.extname(name).toLowerCase() })
+  }),
+  cancel: async id => { reads.get(id)?.() },
+}
+
 const readRecents = () => storage.existsSync(recentFile) ? JSON.parse(storage.readFileSync(recentFile, 'utf8')) : []
 const writeRecents = (items: unknown[]) => { storage.writeFileSync(recentFile, JSON.stringify(items)); return { 成功: true, 数据: items } }
 
@@ -189,6 +227,7 @@ async function initialize() {
   if (window.sealNative) {
     window.sealCamera = captureNativePhoto
     window.sealPrepareCamera = prepareNativeCamera
+    window.sealCameraSettings = openCameraSettings
   }
   if (window.sealNative?.platform === 'harmony') window.sealPickImages = (multiple: boolean) => pickNativeFiles(multiple)
   if (navigator.locks) await new Promise<void>((resolve, reject) => {
@@ -239,6 +278,9 @@ async function initialize() {
   registerFiles(); registerFonts(); await installExportAdapters(core, save, handle)
   // 不提供仅属于 Windows 或独立桌面窗口的能力；安卓接入原生更新能力。
   const api = window.electronAPI as any
+  api.documentRead = documentRead
+  if (window.sealNative) api.calendar = { sync: syncCalendar }
+  else delete api.calendar
   for (const key of ['database', 'setDefaultApp', 'applyDefaultApp', 'checkDefaultAppOnStartup', 'defaultAppCheckState', 'checkDefaultAppPrompt', 'presenter', 'newPresentationWindow', 'tilePresentationWindows', 'takePendingAssociatedFiles', 'onAssociatedFilesAvailable', 'checkIntegrity', 'update']) delete api[key]
   if (window.sealNative?.platform === 'android') api.update = createNativeUpdateApi('android', __APP_VERSION__, cloud, nativeUpdate, onNativeUpdate)
   if (window.sealNative?.platform === 'harmony') api.update = createHarmonyStoreUpdateApi(__APP_VERSION__, cloud, nativeUpdate)

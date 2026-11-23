@@ -30,6 +30,7 @@ interface Props {
   on选中: (位置: 单元格位置, 扩展选区: boolean) => void
   on双击: (地址: string) => void
   on编辑值变化: (值: string) => void
+  on文字选择?: (input: HTMLInputElement) => void
   on组合开始?: () => void
   on组合结束?: (值: string) => void
   on提交编辑: () => void
@@ -89,6 +90,7 @@ const GridView = ({
   on选中,
   on双击,
   on编辑值变化,
+  on文字选择,
   on组合开始,
   on组合结束,
   on提交编辑,
@@ -343,6 +345,7 @@ const GridView = ({
               className: 'wps-sheet__editor',
               value: 编辑值,
               readOnly: 只读,
+              onSelect: (event: React.SyntheticEvent<HTMLInputElement>) => on文字选择?.(event.currentTarget),
               autoFocus: true,
               onChange: (事件: React.ChangeEvent<HTMLInputElement>) =>
                 on编辑值变化(事件.target.value),

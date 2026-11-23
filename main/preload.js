@@ -24,6 +24,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     : 预期文件指纹 === undefined
     ? ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式)
     : ipcRenderer.invoke('file.saveToFile', 路径, 内容, 格式, 预期文件指纹),
+  documentRead: {
+    size: path => ipcRenderer.invoke('file.size', path),
+    read: (path, id, progress) => {
+      const listener = (_event, update) => { if (update.id === id) progress(update) }
+      ipcRenderer.on('file.readProgress', listener)
+      return ipcRenderer.invoke('file.readLarge', path, id).finally(() => ipcRenderer.removeListener('file.readProgress', listener))
+    },
+    cancel: id => ipcRenderer.invoke('file.cancelRead', id),
+  },
+  calendar: {
+    sync: (items, ask) => ipcRenderer.invoke('calendar.sync', items, ask),
+    onDue: callback => {
+      const listener = (_event, item) => callback(item)
+      ipcRenderer.on('calendar.due', listener)
+      return () => ipcRenderer.removeListener('calendar.due', listener)
+    },
+  },
   readFile: (路径) => ipcRenderer.invoke('file.readFile', 路径),
   renameFile: (旧路径, 新名称, 预期文件指纹) => 预期文件指纹 === undefined
     ? ipcRenderer.invoke('file.rename', 旧路径, 新名称)

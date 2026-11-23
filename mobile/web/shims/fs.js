@@ -47,6 +47,10 @@ export function mkdirSync(name, options = {}) {
   return name
 }
 export const existsSync = (name) => files.has(normalize(name)) || directories.has(normalize(name))
+export function fileBlob(name) {
+  const item = files.get(normalize(name)); if (!item) throw error('ENOENT', name)
+  return new Blob([item.bytes])
+}
 export function readFileSync(name, options) {
   const item = files.get(normalize(name)); if (!item) throw error('ENOENT', name)
   const encoding = typeof options === 'string' ? options : options?.encoding

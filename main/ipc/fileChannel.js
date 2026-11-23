@@ -427,16 +427,10 @@ function 注册文件通道(ipcMain) {
   ipcMain.handle('file.readFile', async (_event, filePath) => {
     try {
       if (!filePath) return { 成功: false, 错误: '未指定文件路径' }
-      const 缓冲 = fs.readFileSync(filePath)
+      const 缓冲 = await fs.promises.readFile(filePath)
       const 扩展名 = path.extname(filePath).toLowerCase()
       const 文件指纹 = 计算文件指纹(filePath, 缓冲)
-      if (扩展名 === '.xls') {
-        const 网页内容 = require('./htmlXls').识别网页型旧版表格(缓冲)
-        if (网页内容 !== null) return { 成功: true, 内容: 网页内容, 二进制: false, 实际格式: 'html-table-xls', 文本编码: 'utf8', 扩展名, 文件指纹 }
-      }
-      return 文本扩展名.has(扩展名)
-        ? { 成功: true, ...解码文本(缓冲), 二进制: false, 扩展名, 文件指纹 }
-        : { 成功: true, 内容: 缓冲.toString('base64'), 二进制: true, 扩展名, 文件指纹 }
+      return { 成功: true, ...await require('./documentBytes').decodeDocument(缓冲, 扩展名), 扩展名, 文件指纹 }
     } catch (错误) {
       return { 成功: false, 错误: 错误.message || '读取文件失败' }
     }

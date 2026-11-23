@@ -1,6 +1,7 @@
 // 识别结果核对面板：异常清单（字段模糊 / 数字不符 / 必填缺失 / 模板不匹配）+ 可编辑的结构化结果。
 // 扫描工具箱的模板化识别与单据转表格共用。异常格高亮，修改后自动重新校验。
 import { Button, Checkbox, Empty, Input, Tag } from 'antd'
+import { 输出模板 } from './receiptParse'
 import type { 识别模板 } from './templates'
 import type { 单据解析结果, 异常项 } from './validation'
 import { 修改键, 异常键, type 修改表 } from './reviewModel'
@@ -17,7 +18,8 @@ interface Props {
   查看原图: (来源: string) => void
 }
 
-export default function ReviewPanel({ 模板, 结果列表, 异常清单, 已核对, 修改, 失败, 切换核对, 修改字段, 查看原图 }: Props) {
+export default function ReviewPanel({ 模板: 选定模板, 结果列表, 异常清单, 已核对, 修改, 失败, 切换核对, 修改字段, 查看原图 }: Props) {
+  const 模板 = 输出模板(选定模板, 结果列表)
   const 异常级别 = (来源: string, 行: number | null, 键: string) => 异常清单.find(项 => 项.来源 === 来源 && 项.行 === 行 && 项.字段.includes(键))?.级别
   const 取值 = (结果: 单据解析结果, 行: number | null, 键: string) => 修改[修改键(结果.来源, 行, 键)] ?? (行 === null ? 结果.表头.值[键] : 结果.明细[行 - 1]?.值[键]) ?? ''
   const 待处理 = 异常清单.filter(项 => !已核对.has(异常键(项))).length

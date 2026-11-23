@@ -13,6 +13,7 @@
 import { exportDocument, printDocument } from '../../native/export.uts'
 import { isWorkspaceDocument, onUIThread, messageString, messageBoolean, messageNumber } from '../../native/workspace.uts'
 // #ifdef APP-HARMONY
+import { syncCalendar } from '../../native/calendar.uts'
 import systemFont from '@ohos.font'
 import http from '@ohos.net.http'
 import { updateManager } from '@kit.AppGalleryKit'
@@ -49,6 +50,7 @@ export default {
     uni.$on('seal-persist-workspace', this.persistWorkspace)
   },
   onReady() { this.updateSafeArea() },
+  onShow() { if (this.workspaceReady) this.evaluate("window.dispatchEvent(new Event('seal-camera-foreground'))") },
   onHide() { this.evaluate("window.dispatchEvent(new Event('seal-camera-background'))") },
   onResize() { this.updateSafeArea() },
   onUnload() {
@@ -162,6 +164,11 @@ export default {
         else if (action == 'audio-record-start') this.recordAudio(id)
         else if (action == 'audio-record-stop' && this.audioSession == id && this.audioStarted) uni.getRecorderManager().stop()
         else if (action == 'audio-record-cancel') this.cancelAudio(id)
+        else if (action == 'calendar-sync') {
+          syncCalendar(messageString(message, 'events'), messageBoolean(message, 'ask')).then((status: string) => {
+            this.reply({ id: id, type: 'calendar', value: status })
+          }).catch((error: Error) => this.reply({ id: id, type: 'error', error: error.message }))
+        }
         else if (action == 'camera-preview') {
           if (!this.workspaceReady) { this.reply({ id: id, type: 'error', error: '工作台尚未就绪，请重新打开相机' }); return }
           UTSHarmony.requestSystemPermission(['ohos.permission.CAMERA'], (allRight: boolean, _granted: string[]) => {
@@ -169,6 +176,7 @@ export default {
           }, (_again: boolean, _granted: string[]) => { this.reply({ id: id, type: 'camera-denied' }) })
         }
         else if (action == 'camera-preview-cancel') return
+        else if (action == 'camera-settings') uni.openAppAuthorizeSetting({})
         // #endif
         else if (action == 'abort') {
           // #ifdef APP-HARMONY

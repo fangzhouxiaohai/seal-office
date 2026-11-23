@@ -1,0 +1,41 @@
+// #ifdef APP-HARMONY
+import reminders from '@ohos.reminderAgentManager'
+import notifications from '@ohos.notificationManager'
+
+type CalendarItem = { id: string, title: string, time: string, at: number, tone: string }
+type Scheduled = { key: string, signature: string, nativeId: number }
+
+export async function syncCalendar(events: string, ask: boolean): Promise<string> {
+  let enabled = await notifications.isNotificationEnabled()
+  if (!enabled && ask) {
+    try { await notifications.requestEnableNotification(UTSHarmony.getUIAbilityContext()) } catch (_) {}
+    enabled = await notifications.isNotificationEnabled()
+  }
+  const saved = uni.getStorageSync('calendar-system-ids') as string | null
+  const pending: Scheduled[] = saved != null && saved.length > 0 ? JSON.parse<Scheduled[]>(saved)! : []
+  const wanted = JSON.parse<CalendarItem[]>(events)!
+  const persist = () => { uni.setStorageSync('calendar-system-ids', JSON.stringify(pending)) }
+  for (let i = pending.length - 1; i >= 0; i--) {
+    const old = pending[i]
+    const same = wanted.findIndex((item: CalendarItem): boolean => item.id == old.key && JSON.stringify(item) == old.signature)
+    if (same >= 0 && enabled) continue
+    const active = await reminders.getAllValidReminders()
+    if (active.some((entry: reminders.ReminderInfo): boolean => entry.reminderId == old.nativeId)) await reminders.cancelReminder(old.nativeId)
+    pending.splice(i, 1); persist()
+  }
+  if (!enabled) return '系统通知权限未开启'
+  for (const item of wanted) {
+    if (item.at <= Date.now() || pending.some((entry: Scheduled): boolean => entry.key == item.id)) continue
+    const date = new Date(item.at)
+    const tone = item.tone == 'mallet' || item.tone == 'double' ? item.tone : 'bell'
+    const request: reminders.ReminderRequestCalendar = {
+      reminderType: reminders.ReminderType.REMINDER_TYPE_CALENDAR,
+      dateTime: { year: date.getFullYear(), month: date.getMonth()+1, day: date.getDate(), hour: date.getHours(), minute: date.getMinutes(), second: 0 },
+      title: item.title, content: item.time, ringDuration: 1, snoozeTimes: 0, customRingUri: 'seal_' + tone + '.wav'
+    }
+    const nativeId = await reminders.publishReminder(request)
+    pending.push({ key: item.id, signature: JSON.stringify(item), nativeId: nativeId }); persist()
+  }
+  return '系统到点提醒，支持后台和锁屏'
+}
+// #endif

@@ -17,7 +17,9 @@ import { 查找文档, 下一个命中下标, type 查找命中, type 搜索文�
 import { 换算PDF坐标 } from './pdfEditCoords'
 import '../editor/reading.css'
 
+import { pdfFirstPageReady } from '../openProgress'
 interface Props {
+  来源路径?: string | null
   数据?: string
   工作区文件标识?: string | null
   文件名?: string
@@ -38,12 +40,13 @@ interface PDF页面尺寸 { 宽: number; 高: number }
 const 短文档完整渲染页数 = 8
 
 /** 只在页面进入阅读区附近时创建画布；离开后释放画布内存。 */
-function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on尺寸, onError, 命中标记 = [], 编辑模式 = false, on页面点选 }: {
+function PdfPageCanvas({ 来源路径, 文档, 页码, 缩放, 初始缩放, 可用宽度, on尺寸, onError, 命中标记 = [], 编辑模式 = false, on页面点选 }: {
   文档: PDFDocumentProxy
   页码: number
   缩放: number
   初始缩放: number
   可用宽度: number | null
+  来源路径?: string | null
   on尺寸: (页码: number, 尺寸: PDF页面尺寸) => void
   onError: (页码: number, 错误: unknown) => void
   /** 本页的查找命中框（百分比坐标） */
@@ -109,6 +112,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
           transform: 像素比 === 1 ? undefined : [像素比, 0, 0, 像素比, 0, 0],
         })
         await 渲染任务.promise
+        if (!已取消 && 页码 === 1) pdfFirstPageReady(来源路径)
         const 容器 = 局部容器.current
         const 滚动区 = 节点.closest<HTMLElement>('.pdf-viewer__stage')
         if (!已取消 && 渲染比 < 1 && 容器 && 滚动区) {
@@ -203,7 +207,7 @@ function PdfPageCanvas({ 文档, 页码, 缩放, 初始缩放, 可用宽度, on�
   </>
 }
 
-const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', onError, 编辑模式 = false, 拖拽模式 = false, on模式切换, on页面点选 }: Props) => {
+const PdfViewer = ({ 来源路径, 数据, 工作区文件标识, 文件名 = 'PDF 文件', onError, 编辑模式 = false, 拖拽模式 = false, on模式切换, on页面点选 }: Props) => {
   const [文档, set文档] = useState<PDFDocumentProxy | null>(null)
   const [状态, set状态] = useState<阅读状态>('空白')
   const [当前页, set当前页] = useState(1)
@@ -372,6 +376,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
     })().catch((错误: unknown) => {
       if (已取消) return
       关闭文档?.()
+      pdfFirstPageReady(来源路径)
       set状态('失败')
       报错回调.current?.(`无法打开「${文件名引用.current}」：${错误 instanceof Error ? 错误.message : '文件格式无法识别'}`)
     })
@@ -712,7 +717,7 @@ const PdfViewer = ({ 数据, 工作区文件标识, 文件名 = 'PDF 文件', on
               aria-label={`第 ${页码} 页`}
               style={{ width: 宽, height: 高 }}
             >
-              {活跃页.has(页码) && <PdfPageCanvas 文档={文档} 页码={页码} 缩放={缩放} 初始缩放={初始缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} 命中标记={本页命中(页码)} 编辑模式={编辑模式} on页面点选={on页面点选} />}
+              {活跃页.has(页码) && <PdfPageCanvas 来源路径={来源路径} 文档={文档} 页码={页码} 缩放={缩放} 初始缩放={初始缩放} 可用宽度={页面可用宽度} on尺寸={记录页面尺寸} onError={报告页面错误} 命中标记={本页命中(页码)} 编辑模式={编辑模式} on页面点选={on页面点选} />}
             </div>
             return 分页模式?<div key={页码} className="pdf-viewer__slide" data-pdf-slide={页码} style={{width:可用宽度??'100vw',height:阅读区.current?.clientHeight||'100%'}}>{页面}</div>:页面
           })}

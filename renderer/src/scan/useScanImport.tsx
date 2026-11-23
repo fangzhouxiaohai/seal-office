@@ -22,7 +22,7 @@ export function useCameraNotice() {
   }))
 }
 
-export function useScanImport(能力: 扫描能力, 添加: (文件: File[], 来源: 扫描来源) => void | Promise<void>) {
+export function useScanImport(能力: 扫描能力, 添加: (文件: File[], 来源: 扫描来源) => void | Promise<void>, 剩余额度 = 100) {
   const { modal, message } = AntdApp.useApp()
   const 确认相机说明 = useCameraNotice()
   const 添加引用 = useRef(添加)
@@ -45,7 +45,18 @@ export function useScanImport(能力: 扫描能力, 添加: (文件: File[], 来
   }
 
   const 导入 = async () => {
-    try { await 处理文件(await 选择图片(true), 能力.拍照 ? '相册' : '文件') }
+    try {
+      const files = await 选择图片(true,true), picked: File[] = []
+      for (const file of files) {
+        if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+          try {
+            const { 导入PDF页 } = await import('./pdfImport')
+            picked.push(...await 导入PDF页(file,modal,剩余额度-picked.length,error => { message.error(error) }))
+          } catch (err) { message.error(错误文字(err,file.name + ' 读取失败')) }
+        } else picked.push(file)
+      }
+      await 处理文件(picked, '文件')
+    }
     catch (错误) { modal.error({ title: '导入图片失败', content: 错误文字(错误, '所选图片读取失败，请重试'), okText: '知道了' }) }
   }
 
@@ -68,8 +79,8 @@ export function ScanImportButtons({ 能力, 拍摄, 导入, 禁用 }: { 能力: 
   return <div className="scan-import">
     {能力.拍照 && <Button type="primary" icon={<Icon name="scan" size={16} />} disabled={禁用} onClick={拍摄}>拍照</Button>}
     {能力.拍照
-      ? <Button icon={<Icon name="image" size={16} />} disabled={禁用} onClick={导入}>相册导入</Button>
-      : <Button type="primary" icon={<Icon name="image" size={16} />} disabled={禁用} onClick={导入}>导入图片</Button>}
+      ? <Button icon={<Icon name="image" size={16} />} disabled={禁用} onClick={导入}>导入图片或 PDF</Button>
+      : <Button type="primary" icon={<Icon name="image" size={16} />} disabled={禁用} onClick={导入}>导入图片或 PDF</Button>}
     {能力.粘贴 && <span className="scan-help">可按 Ctrl+V 粘贴截图</span>}
   </div>
 }

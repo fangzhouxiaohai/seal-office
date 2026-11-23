@@ -1,5 +1,6 @@
 // 表格导入：把主进程 xlsx 读取产出的 HTML 表格标记解析为工作表模型。
 // 缺少 <table> 标记时返回 null；合法空工作表仍可打开。
+import { parseFragment, type DefaultTreeAdapterMap } from 'parse5'
 import { 创建工作表, 读取单元格, 重算工作表, 默认页面设置, 添加图片, type CellFormat, type Sheet, type SheetCell, type SheetImage, type 页面设置, type 单元格数据验证, type 工作表筛选 } from './model'
 import { 筛选最大列 } from './sheetFilter'
 import { 展开区域, 生成地址, 解析地址 } from './address'
@@ -30,19 +31,20 @@ export interface Xlsx工作表元数据 {
 
 /** 从 HTML 表格标记构建工作表；内容写入后统一重算公式 */
 export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', 页面?: Partial<页面设置>, 元数据?: Xlsx工作表元数据): Sheet | null {
-  const 解析器 = new DOMParser()
-  const 文档 = 解析器.parseFromString(html, 'text/html')
-  const 表格 = 文档.querySelector('table')
-  if (表格 === null) {
-    return null
+  type Node = DefaultTreeAdapterMap['node']
+  type Element = DefaultTreeAdapterMap['element']
+  function* elements(node: Node, names: string[]): Generator<Element> {
+    if ('tagName' in node && names.includes(node.tagName)) { yield node; return }
+    if ('childNodes' in node) for (const child of node.childNodes) yield* elements(child, names)
   }
-  const 行集合 = Array.from(表格.querySelectorAll('tr'))
-  const 行值列表 = 行集合.map((行) => Array.from(行.querySelectorAll('th, td')).map((格) => {
-    const 显示值 = 格.textContent ?? ''
-    const 公式 = 格.getAttribute('data-formula')
-    const 批注 = 格.getAttribute('data-comment')
-    const 值类型 = 格.getAttribute('data-value-type') === 'text' ? '文本' as const : undefined
-    return { 原始值: 公式 ? (公式.startsWith('=') ? 公式 : `=${公式}`) : 显示值, 显示值, 批注, 值类型 }
+  const attr = (el: Element, name: string) => el.attrs.find(a => a.name === name)?.value
+  const textOf = (node: Node): string => 'value' in node ? node.value : 'childNodes' in node ? node.childNodes.map(textOf).join('') : ''
+  const 表格 = elements(parseFragment(html), ['table']).next().value
+  if (!表格) return null
+  const 行值列表 = Array.from(elements(表格, ['tr']), row => Array.from(elements(row, ['td','th']), cell => {
+    const 显示值 = textOf(cell), 公式 = attr(cell, 'data-formula'), 批注 = attr(cell, 'data-comment')
+    const 值类型 = attr(cell, 'data-value-type') === 'text' ? '文本' as const : undefined
+    return { 原始值: 公式 ? (公式.startsWith('=') ? 公式 : '=' + 公式) : 显示值, 显示值, 批注, 值类型 }
   }))
   const 最大列数 = 行值列表.reduce((最大, 行) => Math.max(最大, 行.length), 0)
   const 元数据地址 = [
@@ -60,9 +62,9 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
     }),
     ...(元数据?.合并区域 ?? []).flatMap((区域) => 区域.split(':')),
   ].map(解析地址).filter((位置): 位置 is { 行: number; 列: number } => 位置 !== null)
-  const 元数据最大行 = Math.max(-1, ...元数据地址.map((位置) => 位置.行), ...Object.keys(元数据?.行高 ?? {}).map(Number))
+  const 元数据最大行 = Object.keys(元数据?.行高 ?? {}).reduce((max, row) => Math.max(max, Number(row)), 元数据地址.reduce((max,p) => Math.max(max,p.行), -1))
   // 整列宽度是布局默认值，不代表最后一列存在数据；真实内容和合并仍决定边界。
-  const 元数据最大列 = Math.max(-1, ...元数据地址.map((位置) => 位置.列), 筛选最大列(元数据?.筛选))
+  const 元数据最大列 = 元数据地址.reduce((max,p) => Math.max(max,p.列), 筛选最大列(元数据?.筛选))
   const 图片最大行 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.行))
   const 图片最大列 = Math.max(-1, ...(元数据?.图片 ?? []).map((图片) => 图片.列))
   // 在数据区外留出编辑余量，工作表尺寸必须覆盖全部已导入数据与布局。
@@ -89,7 +91,7 @@ export function 从Html表格构建工作表(html: string, 名称 = 'Sheet1', �
   }
   if (元数据?.日期系统1904 === true) 工作表.日期系统1904 = true
   if (元数据?.公式兼容模式) 工作表.公式兼容模式 = 元数据.公式兼容模式
-  const CSV标记 = 表格.getAttribute('data-seal-csv')
+  const CSV标记 = attr(表格, 'data-seal-csv')
   if (CSV标记) {
     const 来源 = JSON.parse(decodeURIComponent(CSV标记)) as Sheet['CSV来源']
     if (!来源 || !Array.isArray(来源.行字段数) || 来源.行字段数.length !== 行值列表.length ||

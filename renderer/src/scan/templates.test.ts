@@ -7,7 +7,7 @@ describe('识别模板定义', () => {
     const 标识 = 识别模板列表.map(模板 => 模板.标识)
     expect(标识).toEqual(expect.arrayContaining(['id-card', 'business-license', 'bank-card', 'exam', 'delivery-note', 'weighbridge', 'invoice', 'expense', 'stock-in', 'receipt']))
     expect(new Set(标识).size).toBe(标识.length)
-    expect(单据模板列表.map(模板 => 模板.标识)).toEqual(['delivery-note', 'weighbridge', 'invoice', 'expense', 'stock-in', 'receipt'])
+    expect(单据模板列表.map(模板 => 模板.标识)).toEqual(expect.arrayContaining(['delivery-note', 'weighbridge', 'invoice', 'expense', 'stock-in', 'receipt','inventory','grades','budget','general-form']))
     // 扫描工具箱里的“票据”直接引用单据模板对象，不复制一套。
     for (const 模板 of 单据模板列表) expect(扫描模板列表).toContain(模板)
     expect(取识别模板('delivery-note')).toBe(单据模板列表[0])

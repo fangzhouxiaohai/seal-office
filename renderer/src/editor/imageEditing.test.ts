@@ -25,7 +25,7 @@ describe('图片尺寸和正文位置', () => {
       for (const 倍率 of [0.75, 1, 1.5]) {
         样式.mockImplementation(元素 => ({
           getPropertyValue: () => 元素 === document.documentElement ? '2' : 元素 === 根 ? String(倍率) : '1',
-        } as CSSStyleDeclaration))
+        } as unknown as CSSStyleDeclaration))
         expect(显示缩放(图)).toBe(倍率)
       }
     } finally { 样式.mockRestore(); 根.remove() }

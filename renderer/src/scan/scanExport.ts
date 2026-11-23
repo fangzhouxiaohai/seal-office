@@ -84,8 +84,11 @@ export function 生成文字Html(页文字: string[]): string {
 
 const 错误底色 = '#FDE2E2', 待确认底色 = '#FFF4CE'
 
+import { 输出模板 } from './receiptParse'
+
 /** 把已确认的识别结果写成一张工作表：每张单据的明细逐行展开，表头字段随行重复，异常格高亮并附批注 */
-export function 生成识别工作表(结果列表: 单据解析结果[], 模板: 识别模板, 异常清单: 异常项[]): Sheet {
+export function 生成识别工作表(结果列表: 单据解析结果[], 选定模板: 识别模板, 异常清单: 异常项[]): Sheet {
+  const 模板 = 输出模板(选定模板, 结果列表)
   const 列 = [{ 键: '来源', 名称: '来源', 类型: '文本' as const, 表头: true }, ...模板.表头字段.map(字段 => ({ ...字段, 表头: true })), ...模板.明细字段.map(字段 => ({ ...字段, 表头: false }))]
   const 行列表 = 结果列表.filter(结果 => 结果.模板匹配).flatMap(结果 => (结果.明细.length ? 结果.明细 : [null]).map((明细, 序号) => ({ 结果, 明细, 行号: 明细 ? 序号 + 1 : null })))
   const 工作表 = 创建工作表(模板.名称, Math.max(100, 行列表.length + 1), Math.max(26, 列.length))

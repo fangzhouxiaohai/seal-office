@@ -21,7 +21,8 @@ describe('本地文件打开', () => {
     const 结果 = await 读取本地文件内容('C:\\资料\\报表.xls')
     expect(结果.类型).toBe('table')
     expect(结果.文件指纹).toBe('来源指纹')
-    expect(结果.警告?.join('')).toContain('网页表格')
+    expect(结果.警告 ?? []).toEqual([])
+    expect(结果.工作表列表?.[0]).toMatchObject({ 另存来源: 'C:\\资料\\报表.xls', 导入损失: [] })
     const 表 = 结果.工作表列表?.[0]
     expect(表 && '单元格' in 表 ? 表.单元格.A2.原始值 : '').toBe('00123456789012345678')
     expect(旧版转换).not.toHaveBeenCalled()

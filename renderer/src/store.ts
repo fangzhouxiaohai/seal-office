@@ -10,6 +10,7 @@ import {
 } from './mock/recentDocs'
 import { DOC_TYPE_TO_MODULE, NAV_GROUPS, NEW_DOC_NAMES, type ModuleKey } from './navConfig'
 import { 桥接, type 演示资源条目 } from './ipc/bridge'
+import { preparedSnapshots } from './openProgress'
 import { 基准文件名, 记录最近文档, 读取本地文件内容, 准备打开本地文件 } from './fileOpen'
 import { 创建工作表, 检查工作簿更新, 重算工作簿, type Sheet } from './sheet/model'
 import { 从Html表格构建工作表, type Xlsx工作表元数据 } from './sheet/sheetImport'
@@ -41,6 +42,8 @@ export interface EditorDocument {
   已保存页面设置?: 文字页面设置
   type?: 'word' | 'table' | 'ppt'
   来源路径?: string
+  另存来源?: string
+  导入损失?: string[]
   文件指纹?: string
   警告?: string[]
 }
@@ -692,7 +695,7 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
   }
 
   /** 追加一个编辑器标签并设为当前文档。 */
-  const 新建标签 = (名称: string, 类型: 'word' | 'table' | 'ppt', 初始Html = '<p><br></p>', 来源?: { 路径: string; 警告?: string[]; 文件指纹?: string }, 已保存模型?: string, 页面设置?: 文字页面设置) => {
+  const 新建标签 = (名称: string, 类型: 'word' | 'table' | 'ppt', 初始Html = '<p><br></p>', 来源?: { 路径: string; 警告?: string[]; 文件指纹?: string; 另存来源?: string; 导入损失?: string[] }, 已保存模型?: string, 页面设置?: 文字页面设置) => {
     const 新文档: EditorDocument = {
       id: 生成文档标识(),
       name: 名称,
@@ -703,6 +706,8 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
       已保存页面设置: 页面设置,
       type: 类型,
       来源路径: 来源?.路径,
+      另存来源: 来源?.另存来源,
+      导入损失: 来源?.导入损失,
       文件指纹: 来源?.文件指纹,
       警告: 来源?.警告,
     }
@@ -798,9 +803,11 @@ export function AppProvider({ children, 初始最近文档 }: { children: React.
     setModule(目标模块)
     const 初始Html = 目标模块 === 'word' && typeof 初始内容 === 'string' ? 初始内容 : '<p><br></p>'
     const 已保存模型 = 来源 === undefined ? undefined
-      : 新表格 !== null ? JSON.stringify(新表格)
+      : 新表格 !== null ? (preparedSnapshots.get(新表格) ?? JSON.stringify(新表格))
         : 新演示 !== null ? JSON.stringify(新演示) : undefined
-    const 有效来源 = 来源路径 !== null ? { 路径: 来源路径, 警告: 来源?.警告, 文件指纹: 来源?.文件指纹 } : undefined
+    const 首表 = 类型 === 'table' && Array.isArray(初始内容) ? 初始内容[0] : undefined
+    const 有效来源 = 来源路径 !== null ? { 路径: 来源路径, 警告: 来源?.警告, 文件指纹: 来源?.文件指纹,
+      ...(首表?.另存来源 === 来源路径 ? { 另存来源: 来源路径, 导入损失: 首表.导入损失 } : {}) } : undefined
     const 文档 = 新建标签(有效来源 ? 基准文件名(有效来源.路径) : 指定名称 || 模块默认文档名(目标模块), 目标模块 as 'word' | 'table' | 'ppt', 初始Html, 有效来源, 已保存模型, 目标模块 === 'word' ? 来源?.页面设置 : undefined)
     if (新表格 !== null) set表格文档模型((当前) => ({ ...当前, [文档.id]: 新表格 }))
     if (新演示 !== null) set演示文档模型((当前) => ({ ...当前, [文档.id]: 新演示 }))

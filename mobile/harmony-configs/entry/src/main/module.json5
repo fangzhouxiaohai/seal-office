@@ -22,6 +22,7 @@
     }],
     "requestPermissions": [
       {"name": "ohos.permission.INTERNET"},
+      {"name": "ohos.permission.PUBLISH_AGENT_REMINDER"},
       {"name": "ohos.permission.MICROPHONE", "reason": "$string:seal_audio_reason", "usedScene": {"abilities": ["EntryAbility"], "when": "inuse"}},
       {"name": "ohos.permission.PRINT", "reason": "$string:seal_print_reason", "usedScene": {"abilities": ["EntryAbility"], "when": "inuse"}},
       {"name": "ohos.permission.CAMERA", "reason": "$string:seal_camera_reason", "usedScene": {"abilities": ["EntryAbility"], "when": "inuse"}}

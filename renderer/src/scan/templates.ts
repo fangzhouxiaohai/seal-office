@@ -2,6 +2,7 @@
 // 只放纯数据，不依赖界面与运行环境；字段英文名与 surfaceEnglish271Scan 中的映射保持一致，
 // 由 templates.test.ts 校验，避免中英两套名称漂移。
 
+import { industryForms, industryEnglish } from './industryForms'
 export type 识别模板分类 = '证件' | '试卷' | '单据'
 export type 字段类型 = '文本' | '数字' | '日期'
 
@@ -91,6 +92,20 @@ export const 试卷模板: 识别模板 = {
 }
 
 /** 扫描工具箱可选的全部模板；票据直接引用单据模板对象，不另复制。 */
+const 已知字段 = new Map([...单据模板列表,...证件模板列表,试卷模板].flatMap(t => [...t.表头字段,...t.明细字段]).map(f => [f.键,f]))
+function 行业字段(names: string) {
+  return names.split(' ').map(name => {
+    const known = 已知字段.get(name)
+    if (known) return { ...known, 必填: false }
+    return 字段(name, industryEnglish[name], /金额|数量|天数|读数|用量|工程量|余额|手续费|运费/.test(name) ? '数字' : '文本')
+  })
+}
+for (const [标识,名称,英文名,行业,head,items] of industryForms) {
+  const 明细字段 = 行业字段(items)
+  单据模板列表.push({ 标识,名称,英文名,行业,分类:'单据',表头字段:行业字段(head),明细字段,
+    校验规则: ['数量','单价','金额'].every(k => 明细字段.some(f => f.键 === k)) ? [{ 类型:'乘积',字段:['数量','单价','金额'] }] : [] })
+}
+单据模板列表.push({ 标识:'general-form',名称:'通用单据',英文名:'General form',行业:'通用',分类:'单据',表头字段:[],明细字段:行业字段('字段 内容'),校验规则:[] })
 export const 扫描模板列表: 识别模板[] = [...证件模板列表, 试卷模板, ...单据模板列表]
 export const 识别模板列表: 识别模板[] = 扫描模板列表
 

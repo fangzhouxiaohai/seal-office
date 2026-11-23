@@ -7,7 +7,7 @@ const directory = fileURLToPath(new URL('..', import.meta.url)), root = path.dir
 export async function buildCore(outputFile = path.join(directory, 'web/generated/core.mjs')) {
   await fs.mkdir(path.dirname(outputFile), { recursive: true })
   await build({
-    entryPoints: [path.join(directory, 'web/core.cjs')], outfile: outputFile,
+    entryPoints: { [path.basename(outputFile, '.mjs')]: path.join(directory, 'web/core.cjs'), documentRead: path.join(directory, 'web/documentRead.cjs') }, outdir: path.dirname(outputFile), outExtension: { '.js': '.mjs' },
     bundle: true, platform: 'browser', format: 'esm', target: ['chrome100', 'safari15'], minify: true,
     inject: [path.join(directory, 'web/shims/globals.js')],
     alias: {

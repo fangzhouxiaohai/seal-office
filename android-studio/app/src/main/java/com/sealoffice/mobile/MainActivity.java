@@ -83,6 +83,9 @@ public final class MainActivity extends Activity {
     private static final int SAVE_DOCUMENT = 42102;
     private static final int HTML_PICKER = 42103;
     private static final int CAMERA_CAPTURE = 42104;
+    private static final int CALENDAR_PERMISSION = 42110;
+    private String calendarRequest;
+    private JSONArray calendarEvents;
     private static final int CAMERA_PERMISSION = 42105;
     private static final int UPDATE_NOTIFICATIONS_PERMISSION = 42106;
     private static final int PREVIEW_PERMISSION = 42107;
@@ -181,6 +184,7 @@ public final class MainActivity extends Activity {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
@@ -381,6 +385,17 @@ public final class MainActivity extends Activity {
                 case "pick-files": pickFiles(id, data.optBoolean("multiple")); break;
                 case "camera-capture": capturePhoto(id, null); break;
                 case "camera-preview": preparePreview(id); break;
+                case "calendar-sync":
+                    calendarEvents = new JSONArray(data.getString("events"));
+                    if (data.optBoolean("ask") && Build.VERSION.SDK_INT >= 33 &&
+                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        calendarRequest = id;
+                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, CALENDAR_PERMISSION);
+                    } else reply(result(id, "calendar").put("value", CalendarReceiver.sync(this, calendarEvents)));
+                    break;
+                case "camera-settings":
+                    startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
+                    break;
                 case "camera-preview-cancel":
                     if (id.equals(previewId)) previewId = null;
                     previewGrantUntil = 0;
@@ -484,6 +499,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume();
+        if (ready) evaluate("window.dispatchEvent(new Event('seal-camera-foreground'))");
         if (updater != null) updater.visible(this, true);
         if (restoredPermissionRequest) {
             restoredPermissionRequest = false;
@@ -705,6 +721,12 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == CALENDAR_PERMISSION) {
+            try {
+                if (calendarRequest != null) reply(result(calendarRequest, "calendar").put("value", CalendarReceiver.sync(this, calendarEvents)));
+            } catch (Exception e) { if (calendarRequest != null) replyError(calendarRequest, e.getMessage()); }
+            calendarRequest = null; calendarEvents = null; return;
+        }
         if (requestCode == MICROPHONE_PERMISSION) {
             PermissionRequest request = microphoneRequest;
             microphoneRequest = null;

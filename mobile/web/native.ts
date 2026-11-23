@@ -273,6 +273,22 @@ export function captureNativePhoto(): Promise<File[]> {
   })
 }
 
+export function syncCalendar(events: unknown[], ask: boolean): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID()
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('系统日程提醒未响应')) }, 120000)
+    pending.set(id, event => {
+      clearTimeout(timer); pending.delete(id)
+      if (event.type === 'calendar') resolve(event.value)
+      else reject(new Error(event.error || '系统提醒设置失败'))
+    })
+    try { send({ id, action: 'calendar-sync', events: JSON.stringify(events), ask }) }
+    catch (err) { clearTimeout(timer); pending.delete(id); reject(err) }
+  })
+}
+
+export function openCameraSettings() { send({ id: crypto.randomUUID(), action: 'camera-settings' }) }
+
 export function prepareNativeCamera(signal: AbortSignal): Promise<void> {
   if (!window.sealNative?.cameraPreview) return Promise.reject(new DOMException('此宿主仅支持系统相机', 'NotSupportedError'))
   return new Promise((resolve, reject) => {

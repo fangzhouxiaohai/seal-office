@@ -2,7 +2,7 @@
 // 异常清单（模糊 / 数字不符 / 必填缺失 / 模板不符）核对 → 确认后生成新工作表（桌面与移动）或下载 xlsx（网页版）。
 // 识别通道与扫描工具箱共用（recognition.ts），解析完全基于识别文本，不生成任何演示数据。
 import { useMemo, useState } from 'react'
-import { App as AntdApp, Button, Modal, Progress, Select, Tag } from 'antd'
+import { App as AntdApp, Button, Modal, Progress, Tag } from 'antd'
 import Icon from '../components/Icon'
 import { 桥接 } from '../ipc/bridge'
 import { useAppStore } from '../store'
@@ -13,7 +13,9 @@ import { 识别图片文字, 是取消授权 } from './recognition'
 import { 解析单据文本, 推荐模板 } from './receiptParse'
 import { 生成识别工作表 } from './scanExport'
 import { 保存导出文件, 自Base64 } from './scanSave'
-import { 单据模板列表, 取识别模板 } from './templates'
+import { 取识别模板 } from './templates'
+import TemplateSelect from './TemplateSelect'
+import { PDF来源 } from './pdfPageSource'
 import { 生成异常清单, type 单据解析结果 } from './validation'
 import { 修改键, 唯一名称, 应用修改, 异常键, type 修改表 } from './reviewModel'
 import { 最大批量, 读取字节 } from './scanInput'
@@ -52,7 +54,7 @@ export default function ReceiptPage() {
     const 新增 = 文件.slice(0, Math.max(0, 剩余)).map(文件项 => { const 名称 = 唯一名称(文件项.name || '单据.jpg', 名称集); 名称集.push(名称); return { 名称, 文件: 文件项, 预览: URL.createObjectURL(文件项) } })
     设图片(旧 => [...旧, ...新增])
   }
-  const { 拍摄, 导入 } = useScanImport(能力, 添加)
+  const { 拍摄, 导入 } = useScanImport(能力, 添加, 最大批量 - 图片.length)
   const 移除 = (名称: string) => { 设图片(旧 => { const 项 = 旧.find(图 => 图.名称 === 名称); if (项) URL.revokeObjectURL(项.预览); return 旧.filter(图 => 图.名称 !== 名称) }); 设识别文字(旧 => 旧.filter(项 => 项.来源 !== 名称)) }
   const 清空 = () => { for (const 项 of 图片) URL.revokeObjectURL(项.预览); 设图片([]); 设识别文字([]); 设失败([]); 设修改({}); 设已核对(new Set()); 设提示('') }
 
@@ -61,7 +63,7 @@ export default function ReceiptPage() {
     if (!图片.length) { 设提示('请先拍照或导入单据图片'); return }
     设提示(''); 设失败([]); 设修改({}); 设已核对(new Set())
     try {
-      const 页 = await Promise.all(图片.map(async 项 => ({ 图片: await 读取字节(项.文件), 类型: 项.文件.type || 'image/jpeg' })))
+      const 页 = await Promise.all(图片.map(async 项 => ({ 图片: await 读取字节(项.文件), 类型: 项.文件.type || 'image/jpeg', PDF:PDF来源.get(项.文件) })))
       const 结果 = await 识别图片文字(modal, 页, { 表格: true, 进度: (完成, 总数) => 设进度({ 完成, 总数 }) })
       设识别文字(结果.flatMap((项, 序号) => 项.文字 ? [{ 来源: 图片[序号].名称, 文字: 项.文字 }] : []))
       设失败(结果.flatMap((项, 序号) => 项.错误 ? [{ 来源: 图片[序号].名称, 原因: 项.错误 }] : []))
@@ -103,8 +105,7 @@ export default function ReceiptPage() {
     <div className="scan-notice" role="note"><Tag color="warning">识别结果需核对</Tag><span>识别不是百分之百准确，金额、数量等关键数字必须人工复核；手写、盖章遮盖或模糊的单据会列入异常清单。</span></div>
     <section className="scan-card scan-toolbar" aria-label="单据识别">
       <label className="scan-field"><span>单据类型</span>
-        <Select aria-label="单据类型" placeholder="请选择单据类型" value={模板标识} style={{ minWidth: 200 }} onChange={值 => { 设模板标识(值); 设修改({}); 设已核对(new Set()) }}
-          options={['物流', '财务', '仓储', '零售'].map(行业 => ({ label: 行业, options: 单据模板列表.filter(项 => 项.行业 === 行业).map(项 => ({ value: 项.标识, label: 项.名称 })) }))} />
+        <TemplateSelect receipts value={模板标识} change={值 => { 设模板标识(值); 设修改({}); 设已核对(new Set()) }} />
       </label>
       <ScanImportButtons 能力={能力} 拍摄={拍摄} 导入={导入} 禁用={Boolean(进度)} />
       <Button type="primary" loading={Boolean(进度)} onClick={() => void 开始识别()}>开始识别</Button>

@@ -484,6 +484,10 @@ export const commandCatalog = {
       "字体"
     ],
     [
+      "cell.fontSize",
+      "字号"
+    ],
+    [
       "cell.fontColor",
       "字体颜色"
     ],

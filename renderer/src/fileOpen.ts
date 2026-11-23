@@ -1,6 +1,7 @@
 import { 恢复导入图片 } from './ppt/render/resources'
 // 本地文件打开助手：按扩展名把文件内容分流到对应模块的数据模型。
 // 首页「打开文件」与最近文档点击共用同一条链路，避免两套行为不一致。
+import { beginOpen, afterPaint, prepareModel, type OpenJob } from './openProgress'
 import { 桥接 } from './ipc/bridge'
 import { Modal } from 'antd'
 import { createElement } from 'react'
@@ -54,26 +55,7 @@ export interface 本地文件内容 {
   打开方式?: 打开选择
 }
 
-function 转义Html(文本: string): string {
-  return 文本.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-}
-
-function 文本转Html(文本: string): string {
-  const 片段 = 文本.split(/(\r\n|\n|\r)/)
-  const 换行名称 = (换行: string): 'crlf' | 'cr' | 'lf' => 换行 === '\r\n' ? 'crlf' : 换行 === '\r' ? 'cr' : 'lf'
-  const 计数 = { crlf: 0, cr: 0, lf: 0 }
-  for (let 索引 = 1; 索引 < 片段.length; 索引 += 2) 计数[换行名称(片段[索引])] += 1
-  const 默认换行 = (Object.keys(计数) as Array<keyof typeof 计数>).reduce((当前, 候选) =>
-    计数[候选] > 计数[当前] ? 候选 : 当前, 换行名称(片段[1] ?? '\n'))
-  const 行列表: string[] = []
-  for (let 索引 = 0; 索引 < 片段.length; 索引 += 2) {
-    const 行 = 片段[索引]
-    const 后续换行 = 片段[索引 + 1]
-    const 属性 = ` data-seal-line-ending="${默认换行}"${后续换行 ? ` data-seal-break="${换行名称(后续换行)}"` : ''}`
-    行列表.push(`<p${属性}>${行.length > 0 ? 转义Html(行) : '<br>'}</p>`)
-  }
-  return 行列表.join('')
-}
+import { 文本转Html, Csv转表格Html } from './textImport'
 
 function 是记录(值: unknown): 值 is Record<string, unknown> {
   return typeof 值 === 'object' && 值 !== null && !Array.isArray(值)
@@ -111,62 +93,7 @@ function 解析旧版表格Json(原文: string): Sheet[] | null {
   return 数据
 }
 
-/** 按 CSV 引号规则解析，避免逗号及换行落在引号中时错列。 */
-function Csv转表格Html(文本: string, 编码?: import('./ipc/bridge').文本编码, 分隔符 = ','): string {
-  const BOM = 文本.startsWith('\uFEFF')
-  if (BOM) 文本 = 文本.slice(1)
-  let 换行: '\r\n' | '\r' | '\n' | undefined
-  const 行列表: string[][] = []
-  let 当前行: string[] = []
-  let 单元格 = ''
-  let 引号内 = false
-  let 引号已结束 = false
-  const 提交单元格 = () => {
-    当前行.push(单元格)
-    单元格 = ''
-    引号已结束 = false
-  }
-  const 提交行 = () => {
-    提交单元格()
-    行列表.push(当前行)
-    当前行 = []
-  }
-  for (let 位置 = 0; 位置 < 文本.length; 位置 += 1) {
-    const 字符 = 文本[位置]
-    if (引号内) {
-      if (字符 === '"') {
-        if (文本[位置 + 1] === '"') {
-          单元格 += '"'
-          位置 += 1
-        } else {
-          引号内 = false
-          引号已结束 = true
-        }
-      } else {
-        单元格 += 字符
-      }
-    } else if (字符 === 分隔符 || 字符 === '\n' || 字符 === '\r') {
-      if (字符 === 分隔符) {
-        提交单元格()
-      } else {
-        换行 ??= 字符 === '\r' && 文本[位置 + 1] === '\n' ? '\r\n' : 字符 as '\r' | '\n'
-        提交行()
-        if (字符 === '\r' && 文本[位置 + 1] === '\n') 位置 += 1
-      }
-    } else if (字符 === '"' && 单元格.length === 0 && !引号已结束) {
-      引号内 = true
-    } else if (引号已结束 || 字符 === '"') {
-      throw new Error('CSV 文件引号格式无效')
-    } else {
-      单元格 += 字符
-    }
-  }
-  if (引号内) throw new Error('CSV 文件引号未闭合')
-  if (当前行.length > 0 || 单元格.length > 0 || (文本.length > 0 && !/[\r\n]$/.test(文本))) 提交行()
-  const 行内容 = 行列表.map((行) => `<tr>${行.map((值) => `<td data-value-type="text">${转义Html(值)}</td>`).join('')}</tr>`).join('')
-  const 来源 = encodeURIComponent(JSON.stringify({ 行字段数: 行列表.map(行 => 行.length), 换行: 换行 ?? '\r\n', 末尾换行: /[\r\n]$/.test(文本), BOM, ...(分隔符 !== ',' ? { 分隔符 } : {}), ...(编码 && 编码 !== 'utf8' ? { 编码 } : {}) }))
-  return `<table data-seal-csv="${来源}"><tbody>${行内容}</tbody></table>`
-}
+
 
 /** 从路径取小写扩展名（不含点） */
 export function 归一化扩展名(路径: string): string {
@@ -175,16 +102,19 @@ export function 归一化扩展名(路径: string): string {
 }
 
 /** 读取本地文件并解析为模块内容；不支持的格式返回 null */
-export async function 读取本地文件内容(路径: string): Promise<本地文件内容> {
-  const 结果 = await 桥接.readFile(路径)
+export async function 读取本地文件内容(路径: string, job?: OpenJob): Promise<本地文件内容> {
+  const 结果 = job ? await job.backend.read(路径, job.id, job.update) : await 桥接.readFile(路径)
+  job?.signal.throwIfAborted()
+  if (job) job.update({ stage: 'parse' })
   if (!结果.成功) {
     throw new Error(结果.错误 || '文件读取失败')
   }
-  const 扩展 = (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase() || 归一化扩展名(路径)
+  const 扩展 = 结果.实际格式 === 'xlsx' ? 'xlsx' : (结果.扩展名 ?? '').replace(/^\./, '').toLowerCase() || 归一化扩展名(路径)
   if (结果.内容 === '' && ['docx', 'xlsx', 'pptx', 'pdf', 'doc', 'xls', 'ppt'].includes(扩展)) {
     throw new Error('文件为零字节，未包含有效的办公文件结构。如果文件来自旧版右键新建菜单，请更新海豹办公并刷新资源管理器后重新新建；现有文件没有可恢复的正文。')
   }
-  if (结果.内容 === undefined || (结果.内容 === '' && !['csv', 'tsv', 'txt', 'md', 'html', 'htm'].includes(扩展))) {
+  if (结果.已解析 && 结果.内容 === undefined) 结果.内容 = ''
+  if (结果.内容 === undefined || (!结果.已解析 && 结果.内容 === '' && !['csv', 'tsv', 'txt', 'md', 'html', 'htm'].includes(扩展))) {
     throw new Error('文件内容为空')
   }
   const 带文件指纹 = (内容: 本地文件内容): 本地文件内容 =>
@@ -196,10 +126,15 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
       ? 从二进制读取网页型旧版表格(结果.内容)
       : 结果.实际格式 === 'html-table-xls' || /^\uFEFF?\s*(?:<!doctype\s+html(?:\s|>)|<html(?:\s|>))/i.test(结果.内容)
         ? 结果.内容 : null
-    if (网页原文 !== null) return 带文件指纹({
-      类型: 'table', 工作表列表: 导入网页型旧版表格(网页原文),
-      警告: ['文件实际为网页表格，已按表格内容读取；原始文件保持不变', '网页样式、脚本及其他非表格对象未导入，请另存副本后核对'],
-    })
+    if (网页原文 !== null) {
+      if (job) {
+        const model = await prepareModel(job, { kind: 'xls', text: 网页原文, source: 路径 })
+        return 带文件指纹({ 类型: 'table', 工作表列表: model.sheets })
+      }
+      const 导入损失 = new Set<string>()
+      const 工作表列表 = 导入网页型旧版表格(网页原文, {}, 导入损失)
+      return 带文件指纹({ 类型: 'table', 工作表列表: 工作表列表.map(表 => ({ ...表, 另存来源: 路径, 导入损失: [...导入损失] })) })
+    }
   }
   const 兼容格式 = 文档格式.find(项 => 项.extension === 扩展 && 项.conversion)
   const OfficeXML = 扩展 === 'xml' && /urn:schemas-microsoft-com:office:spreadsheet|http:\/\/schemas.microsoft.com\/office\/word\/2003\/wordml/.test(结果.内容)
@@ -232,18 +167,22 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
       throw new Error('海豹文档内容结构不正确，文件未打开')
     }
     if (扩展 === 'docx') {
-      const 数据: any = await 桥接.office.readDocx(结果.内容)
+      const 数据: any = 结果.已解析 ?? await 桥接.office.readDocx(结果.内容)
       if (数据 && 数据.成功 && typeof 数据.html === 'string') {
         return 带文件指纹({ 类型: 'word', 内容: 增强字体回退Html(净化富文本(数据.html)), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}), ...(数据.页面设置 ? { 页面设置: 数据.页面设置 } : {}) })
       }
       throw new Error(数据?.错误 || '文字文档解析失败')
     }
     if (扩展 === 'xlsx') {
-      const 数据: any = await 桥接.office.readXlsx(结果.内容)
+      const 数据: any = 结果.已解析 ?? await 桥接.office.readXlsx(结果.内容)
       if (数据 && 数据.成功 && (typeof 数据.html === 'string' || Array.isArray(数据.工作表列表))) {
         if (Array.isArray(数据.工作表列表)) {
           if (数据.工作表列表.length === 0) throw new Error('表格文件没有工作表')
-          const 工作表列表 = 数据.工作表列表.map((工作表: { 名称: string; html: string }) => ({ ...工作表, html: 净化富文本(工作表.html) }))
+          if (job) {
+            const model = await prepareModel(job, { kind: 'sheets', sheets: 数据.工作表列表, source: 结果.实际格式 === 'xlsx' ? 路径 : undefined })
+            return 带文件指纹({ 类型: 'table', 工作表列表: model.sheets, 警告: 数据.警告 })
+          }
+          const 工作表列表 = 数据.工作表列表.map((工作表: { 名称: string; html: string }) => ({ ...工作表, ...(结果.实际格式 === 'xlsx' ? { 另存来源: 路径 } : {}), html: 净化富文本(工作表.html) }))
           return 带文件指纹({ 类型: 'table', 内容: 净化富文本(数据.html ?? 工作表列表[0].html), 工作表列表, ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}) })
         }
         return 带文件指纹({ 类型: 'table', 内容: 净化富文本(数据.html), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}) })
@@ -251,7 +190,7 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
       throw new Error(数据?.错误 || '表格文档解析失败')
     }
     if (扩展 === 'pptx') {
-      const 数据: any = await 桥接.office.readPptx(结果.内容)
+      const 数据: any = 结果.已解析 ?? await 桥接.office.readPptx(结果.内容)
       if (数据 && 数据.成功 && 数据.演示文稿) {
         return 带文件指纹({ 类型: 'ppt', 演示文稿: await 恢复导入图片(数据), ...(Array.isArray(数据.警告) ? { 警告: 数据.警告 } : {}) })
       }
@@ -263,6 +202,10 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     throw new Error(`不支持打开 ${扩展 || '未知'} 格式的文件`)
   }
   if (['csv', 'tsv'].includes(扩展)) {
+    if (job) {
+      const model = await prepareModel(job, { kind: 扩展, text: 结果.内容, encoding: 结果.文本编码 })
+      return 带文件指纹({ 类型: 'table', 工作表列表: model.sheets })
+    }
     return 带文件指纹({ 类型: 'table', 内容: Csv转表格Html(结果.内容, 结果.文本编码, 扩展 === 'tsv' ? '\t' : ',') })
   }
   if (扩展 === 'json') {
@@ -270,7 +213,7 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
     if (工作表列表 !== null) return 带文件指纹({ 类型: 'table', 工作表列表 })
   }
   if (['txt', 'md', 'json', 'xml'].includes(扩展)) {
-    return 带文件指纹({ 类型: 'word', 内容: 文本转Html(结果.内容), ...(结果.文本编码 && 结果.文本编码 !== 'utf8' ? { 警告: ['来源使用 ' + 结果.文本编码.toUpperCase() + ' 编码，请另存为 UTF-8 副本以保留原文件'] } : {}) })
+    return 带文件指纹({ 类型: 'word', 内容: job ? (await prepareModel(job, { kind: 'text', text: 结果.内容 })).html : 文本转Html(结果.内容), ...(结果.文本编码 && 结果.文本编码 !== 'utf8' ? { 警告: ['来源使用 ' + 结果.文本编码.toUpperCase() + ' 编码，请另存为 UTF-8 副本以保留原文件'] } : {}) })
   }
   if (['html', 'htm', 'mht', 'mhtml'].includes(扩展)) {
     return 带文件指纹({
@@ -284,9 +227,26 @@ export async function 读取本地文件内容(路径: string): Promise<本地�
 
 /** All interactive open entrances pass this gate before creating an editor tab. */
 export async function 准备打开本地文件(路径: string): Promise<本地文件内容 | null> {
+  const job = await beginOpen(路径)
+  try {
+    const result = await 确认打开(路径, job)
+    if (!job) return result
+    if (!result || job.signal.aborted) { job.finish(); return null }
+    job.update({ stage: 'screen' })
+    if (result.类型 !== 'pdf' || !/\.pdf$/i.test(路径)) afterPaint(job.finish)
+    return result
+  } catch (error) {
+    job?.finish()
+    if (job?.signal.aborted) return null
+    throw error
+  }
+}
+async function 确认打开(路径: string, job?: OpenJob): Promise<本地文件内容 | null> {
   let 内容: 本地文件内容
-  try { 内容 = await 读取本地文件内容(路径) }
+  try { 内容 = await 读取本地文件内容(路径, job) }
   catch (错误) {
+    if (job?.signal.aborted) return null
+    job?.finish()
     const 原因 = 错误 instanceof Error ? 错误.message : '文件内容无法识别'
     if (原生文档类型(路径) || !/加密|password|encrypt|解密|无法识别|格式|解析|不支持|损坏|文件内容为空|零字节|zip|central directory|invalid|corrupt/i.test(原因)) throw 错误
     await new Promise<void>(完成 => {

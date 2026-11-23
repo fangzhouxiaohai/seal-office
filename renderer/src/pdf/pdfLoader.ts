@@ -24,7 +24,7 @@ export function 编码PDF数据(字节: Uint8Array): string {
   return btoa(二进制)
 }
 
-export async function 载入PDF(数据: string): Promise<PDF加载结果> {
+export async function 载入PDF(数据: string | Uint8Array, 密码?: string): Promise<PDF加载结果> {
   补齐Promise接口()
   补齐流接口()
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -36,7 +36,7 @@ export async function 载入PDF(数据: string): Promise<PDF加载结果> {
     void Promise.resolve(任务?.destroy()).catch(() => {}).finally(线程.release)
   }
   try {
-    任务 = pdfjs.getDocument({ data: 解码PDF数据(数据), useSystemFonts: true, ...线程.options })
+    任务 = pdfjs.getDocument({ data: typeof 数据 === 'string' ? 解码PDF数据(数据) : 数据.slice(), password: 密码, useSystemFonts: true, ...线程.options })
     const 文档 = await 任务.promise
     return { 文档, 关闭 }
   } catch (错误) {

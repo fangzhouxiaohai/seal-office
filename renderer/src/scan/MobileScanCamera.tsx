@@ -4,7 +4,6 @@ import Icon from '../components/Icon'
 import { 编码图片, 解码图片 } from './imageIO'
 import { 缩放尺寸 } from './imageProcessing'
 import { 拍照, 是相机拒绝, 选择图片 } from './scanInput'
-import { useCameraNotice } from './useScanImport'
 import { 扫描模式列表, type 扫描模式, type 扫描取景参数, type 证件类型 } from './scanModes'
 import { useMobileViewfinder } from './useMobileViewfinder'
 import './mobileScanCamera.css'
@@ -33,10 +32,11 @@ async function 轻量照片(文件: File) {
   } finally { 画布.width = 目标.width = 0 }
 }
 
-export default function MobileScanCamera(参数: 扫描取景参数 & { 打开扫描库?:()=>void }) {
+export default function MobileScanCamera(参数: 扫描取景参数 & { 打开扫描库?:()=>void; 导入文件?:()=>void }) {
   const { 模式, 证件, 书籍, 页数, 忙碌 } = 参数
   const 镜头 = useMobileViewfinder()
-  const 确认相机说明 = useCameraNotice()
+  const 启动镜头 = 镜头.start
+  const [已有画面, 设已有画面] = useState(false)
   const [连拍, 设连拍] = useState(false)
   const [轻量, 设轻量] = useState(false)
   const [辅助, 设辅助] = useState(true)
@@ -46,13 +46,26 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
   const [权限提示, 设权限提示] = useState('')
   const 锁 = useRef(false), 在场 = useRef(true)
   const 当前按钮 = useRef<HTMLButtonElement>(null)
-  const 已就绪 = 镜头.status === 'ready'
-  const 禁用 = 忙碌 || 处理中 || 镜头.status === 'starting'
+  const 已就绪 = 镜头.status === 'ready' && 已有画面
+  const 禁用 = 忙碌 || 处理中
   const 相机回退 = !已就绪 && typeof window.sealCamera === 'function' && (
     !navigator.mediaDevices?.getUserMedia || window.isSecureContext === false ||
-    镜头.status === 'unavailable' || 镜头.status === 'error' || 镜头.status === 'denied'
+    镜头.status === 'unavailable'
   )
   const 常用 = 常用模式.includes(模式) ? 常用模式 : [...常用模式, 模式]
+  useEffect(() => {
+    const 启动 = () => { if (document.visibilityState !== 'hidden') void 启动镜头() }
+    const 计时 = window.setTimeout(启动, 0)
+    document.addEventListener('visibilitychange', 启动)
+    window.addEventListener('pageshow', 启动)
+    window.addEventListener('seal-camera-foreground', 启动)
+    return () => {
+      window.clearTimeout(计时)
+      document.removeEventListener('visibilitychange', 启动)
+      window.removeEventListener('pageshow', 启动)
+      window.removeEventListener('seal-camera-foreground', 启动)
+    }
+  }, [启动镜头])
   useEffect(() => {
     在场.current = true
     return () => { 在场.current = false }
@@ -70,9 +83,8 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
     锁.current = true; 设处理中(true); 设异常('')
     try {
       if (拍摄 && !已就绪) {
-        if (!(await 确认相机说明()) || !在场.current) return
         设权限提示('')
-        if (!相机回退) { await 镜头.start(); return }
+        if (!相机回退) return
       }
       const 原图 = !拍摄 ? await 选择图片(true) : 相机回退 ? await 拍照() : [await 镜头.capture()]
       if (!原图.length || !在场.current) return
@@ -97,23 +109,19 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
     : ''
   return <section className="seal-viewfinder" aria-label="拍照扫描">
     <div className="seal-vf-live">
-      <video ref={镜头.videoRef} autoPlay playsInline muted aria-label="实时相机画面" />
+      <video ref={镜头.videoRef} autoPlay playsInline muted controls={false} disablePictureInPicture
+        style={{ opacity: 已就绪 ? 1 : 0 }} onLoadedData={() => 设已有画面(true)}
+        onPlaying={() => 设已有画面(true)} onEmptied={() => 设已有画面(false)} aria-label="实时相机画面" />
       <header className="seal-vf-head">
         <button type="button" onClick={离开} aria-label="返回"><Icon name="back" variant="outline" /></button>
         <span className="seal-vf-heading">{模式}</span>
+        {参数.导入文件 && <button type="button" disabled={禁用} aria-label="导入图片或 PDF" title="导入图片或 PDF" onClick={参数.导入文件}><Icon name="folder" variant="outline" /></button>}
         <button type="button" aria-label="切换拍摄画质" aria-pressed={!轻量} onClick={() => 设轻量(!轻量)}>{轻量 ? '轻量' : '高清'}</button>
         <button type="button" aria-label="取景辅助线" aria-pressed={辅助} onClick={() => 设辅助(!辅助)}><Icon name="gridlines" variant="outline" /></button>
         {镜头.torchAvailable && <button type="button" aria-label="补光" aria-pressed={镜头.torchEnabled} onClick={() => void 镜头.toggleTorch()}><Icon name="sun" variant="outline" /></button>}
       </header>
       {辅助 && <div aria-hidden="true" className={'seal-vf-frame' + (模式 === '证件扫描' ? ' is-id' : '')}>
         <i/><i/><i/><i/>{模式 === '拍书籍' && 书籍 === '双页' && <span/>}
-      </div>}
-      {!已就绪 && <div className="seal-vf-idle">
-        <span className="seal-vf-lens"><Icon name="scan" size={32} variant="outline" /></span>
-        <strong>{镜头.status === 'starting' ? '正在开启相机' : 镜头.status === 'idle' ? '开启相机取景' : '相机暂未开启'}</strong>
-        <p role="status">{权限提示 || 镜头.error || '允许使用摄像头后，即可在这里拍摄文档。'}</p>
-        {模式 === '照片转PDF' ? <button type="button" onClick={() => void 取图(false)} disabled={禁用}>选择图片</button>
-          : <button type="button" onClick={() => void 取图(true)} disabled={禁用}>{相机回退 ? '打开系统相机' : 镜头.status === 'idle' ? '开启相机' : '重新开启相机'}</button>}
       </div>}
       <div className="seal-vf-options">
         {提示 && <span className="seal-vf-tip">{提示}</span>}
@@ -123,12 +131,17 @@ export default function MobileScanCamera(参数: 扫描取景参数 & { 打开�
       </div>
     </div>
     <div className="seal-vf-deck">
+      {(权限提示 || 镜头.error) && <div role="status" className="seal-vf-feedback">
+        {镜头.status === 'denied' ? '未获得相机权限，可从相册导入。' : 权限提示 || 镜头.error}
+        {镜头.status === 'error' && <button onClick={() => void 启动镜头()}>重试</button>}
+        {镜头.status === 'denied' && window.sealCameraSettings && <button onClick={() => window.sealCameraSettings?.()}>去设置</button>}
+      </div>}
       <div className="seal-vf-modes" aria-label="拍摄模式">{常用.map(值 => <button key={值} aria-label={值} aria-pressed={值 === 模式} ref={模式 === 值 ? 当前按钮 : undefined} disabled={禁用} onClick={() => 选择模式(值)}>{标签[值]}</button>)}
         <button aria-label="更多模式" disabled={禁用} onClick={() => 设面板('模式')}>更多</button>
       </div>
       <div className="seal-vf-actions">
         <button className="seal-vf-side" disabled={禁用} aria-label="导入图片" onClick={() => void 取图(false)}><Icon name="image" size={24} variant="outline"/><span>相册</span></button>
-        <button className="seal-vf-shutter" aria-label="拍照" disabled={禁用} onClick={() => void 取图(true)}><span/></button>
+        <button className="seal-vf-shutter" aria-label="拍照" disabled={禁用 || (!已就绪 && !相机回退)} onClick={() => void 取图(true)}><span/></button>
         <button className="seal-vf-side" aria-label={'查看已拍 ' + 页数 + ' 页'} disabled={!页数 || 禁用} onClick={看结果}>{参数.缩略图 ? <img src={参数.缩略图} alt="最后一页" /> : <Icon name="page-view" size={24} variant="outline"/>}<span>{页数 ? '已拍 ' + 页数 + ' 页' : '待整理'}</span></button>
       </div>
     </div>
