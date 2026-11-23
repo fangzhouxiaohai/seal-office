@@ -12,6 +12,10 @@
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 
+## 云端服务端
+
+云端服务端已整体重构为 Spring Boot 3 + Vue3 + MySQL：`seal-server/`（Java 17，客户端接口与历史 Node 版一比一兼容）、`seal-admin-web/`（Element Plus 管理后台）。接口契约见[后端重构接口契约](docs/后端重构-接口契约.md)，迁移与切换流程见[后端重构迁移与切换方案](docs/后端重构-迁移与切换方案.md)及[升级计划](升级计划-服务器迁移与后端重构.md)。历史 Node 服务端位于 `server/`，切换稳定观察期结束后下线。
+
 ## 海豹办公官网
 
 官网已部署在 [seal.xingmasoft.com](https://seal.xingmasoft.com/)，后台入口为 `/admin/`，在线办公入口仍为 `/office/`。官网源码位于 `website/`，采用独立构建；运行与发布验证见 [官网修改说明](功能修改说明-官网.md)。
