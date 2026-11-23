@@ -2,6 +2,8 @@ package com.sealoffice.cloud;
 
 import com.sealoffice.cloud.config.SealProperties;
 import com.sealoffice.cloud.security.CryptoUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -27,6 +29,20 @@ public abstract class CollabTestSupport extends CloudApiTestSupport {
 
     @Autowired
     protected SealProperties properties;
+
+    /**
+     * 验证码发送记录按「同 IP 每小时 50 次」限流，全套测试共享 127.0.0.1 与同一内存库。
+     * 本模块用例前后清理 sends，避免新增登录挤占其他模块的配额（仅清测试痕迹，不影响业务断言）。
+     */
+    @BeforeEach
+    void clearSendsBefore() {
+        jdbc.update("DELETE FROM sends");
+    }
+
+    @AfterEach
+    void clearSendsAfter() {
+        jdbc.update("DELETE FROM sends");
+    }
 
     /** 注册并开通云空间（托管协议版本），返回会话令牌 */
     protected String enable(String phone) throws Exception {
