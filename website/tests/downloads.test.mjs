@@ -74,13 +74,9 @@ describe('分平台下载入口', () => {
     assert.match(intel.textContent, /Intel/)
   })
 
-  it('在下载按钮旁说明旧桌面版遇到更新失败时如何覆盖安装', async () => {
+  it('下载区直接显示平台列表', async () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
-    const text = document.querySelector('#downloads').textContent
-    assert.match(text, /2\.7\.7/)
-    assert.match(text, /更新失败/)
-    assert.match(text, /覆盖安装/)
-    assert.match(text, /微软商店/)
+    assert.ok(document.querySelector('#downloads').firstElementChild.matches('.platform-list'))
   })
 })

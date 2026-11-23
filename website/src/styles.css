@@ -126,7 +126,6 @@ nav > a:not(.button):hover::after { transform: scaleX(1) }
 
 /* 下载选择器：玻璃胶囊列表 */
 .download-picker { max-width: 860px; margin: 0 auto; scroll-margin-top: 84px }
-.download-status { min-height: 20px; margin: 0 0 12px; color: #b5c4d9; font-size: 13px }
 .platform-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px }
 .platform-list a {
   position: relative; min-width: 128px; padding: 12px 16px;
