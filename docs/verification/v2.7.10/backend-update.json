@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "checks": [
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.10-harmony.hap",
+      "bytes": 74873124,
+      "sha256": "acabff83a95a259ad18fbc32dbc9285b92188197483ec468393c700635406f69",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/6ffcd009-c396-44f1-b22d-02788c99594d/seal-office-2.7.10-harmony.hap",
+      "oldVersion": "2.7.9",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.10",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.10\n\n- 修复云空间新建文件夹和上传文件后列表不显示的问题，成功同步后立即更新当前目录，失败项保留重试入口。\n- 补齐云空间账号安全、自动保存、验证码和日历等界面的中英文文案，统一语言切换后的状态与错误提示。\n- 调整个人空间登录、注销和账号安全面板的分区与操作顺序，长内容弹窗在小屏和窄窗口内可滚动，关闭与提交操作始终可达。\n- 共享渲染层同步更新到桌面、Web、Android 和 HarmonyOS 构建资源。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/6ffcd009-c396-44f1-b22d-02788c99594d/seal-office-2.7.10-harmony.hap",
+        "sha256": "acabff83a95a259ad18fbc32dbc9285b92188197483ec468393c700635406f69",
+        "bytes": 74873124,
+        "publishedAt": 1795534046765
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}
