@@ -74,7 +74,8 @@ async function main() {
     fs.mkdirSync(local, { recursive: true })
     for (const [name, bytes] of files) { const target = path.join(local, ...name.split('/')); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, bytes) }
     fs.writeFileSync(path.join(local, 'nginx.conf'), conf)
-    fs.writeFileSync(ask, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n')
+    if (process.platform === 'win32') fs.writeFileSync(ask, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n')
+    else { fs.writeFileSync(ask, '#!/bin/sh\nprintf %s "$SEAL_DEPLOY_PASSWORD"\n'); fs.chmodSync(ask, 0o700) }
     run('tar', ['-cf', archive, '-C', local, '.'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
     run('scp', ['-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', '-P', '22', archive, `root@103.236.97.150:${remote}/release.tar`], { env })
