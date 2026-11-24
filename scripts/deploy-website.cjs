@@ -75,7 +75,7 @@ async function main() {
     for (const [name, bytes] of files) { const target = path.join(local, ...name.split('/')); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, bytes) }
     fs.writeFileSync(path.join(local, 'nginx.conf'), conf)
     fs.writeFileSync(ask, '@echo off\r\nnode -e "process.stdout.write(process.env.SEAL_DEPLOY_PASSWORD)"\r\n')
-    run('tar', ['--force-local', '-cf', archive, '-C', local, '.'])
+    run('tar', ['-cf', archive, '-C', local, '.'])
     ssh(`set -eu\nmkdir -p '${siteRoot}/website-releases'\ntest ! -e '${remote}'\nmkdir '${remote}'\n`)
     run('scp', ['-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', '-P', '22', archive, `root@103.236.97.150:${remote}/release.tar`], { env })
     const activate = `set -eu\ncd '${siteRoot}'\ntest ! -e '${nginxConfig}'\ntest ! -e websitecurrent\ntest -f admin/index.html\ntest ! -e 'admin.backup-${id}'\ntar -xf '${remote}/release.tar' -C '${remote}'\ntest -f '${remote}/website/index.html'\ntest -f '${remote}/admin/index.html'\nmkdir 'admin.next-${id}'\ncp -a admin/. 'admin.next-${id}/'\ncp -a '${remote}/admin/.' 'admin.next-${id}/'\nrestore() {\n  if [ -e 'admin.backup-${id}' ]; then\n    if [ -e admin ]; then mv admin 'admin.failed-${id}'; fi\n    mv 'admin.backup-${id}' admin\n  fi\n  rm -f '${nginxConfig}' websitecurrent\n  nginx -t && systemctl reload nginx\n}\ntrap restore ERR\nln -s '${remote}/website' websitecurrent\nmv admin 'admin.backup-${id}'\nmv 'admin.next-${id}' admin\ncp '${remote}/nginx.conf' '${nginxConfig}'\nnginx -t\nsystemctl reload nginx\ntouch '${remote}/activated'\ntrap - ERR\n`
