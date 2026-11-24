@@ -120,7 +120,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     if(identity?.verified!==true||identity.accountId!==accountId||identity.method!=='phone')throw required(403,'请先使用手机号短信验证登录，再使用 AI 功能')
     return {accountId,verified:true,method:'phone'}
   }
-  async function list(){requireSpace();const result=await request('/v1/nodes');return result.items.map(decodeMeta)}
+  async function list(){requireSpace();const result=await request('/v1/nodes');return result.items.map(item=>decodeMeta({...item,parent:item.parent??null}))}
   async function createNode(meta,kind='file',parent=null){
     requireSpace();const id=randomUUID(),fileKey=randomBytes(32)
     const details={...meta,key:seal(root(),fileKey,`seal-key:${id}`).toString('base64')}

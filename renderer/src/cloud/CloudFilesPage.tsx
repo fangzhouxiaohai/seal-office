@@ -23,7 +23,17 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
   const collaborationFiles=useCollaborationFiles(cloud.state.account?.id||'')
   const [selected,setSelected]=useState<string[]>([]),[sort,setSort]=useState('updated'),[showShares,setShowShares]=useState(false)
   const context=useRef('');context.current=JSON.stringify([cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
-  const load=async()=>{const key=context.current;try{const items=await cloudCall('list'),queue=await cloudCall('pending');if(key!==context.current)return;setNodes(items);setPending(queue);setError('');await cloud.refresh()}catch(e){if(key===context.current)setError(e instanceof Error?e.message:'读取失败')}finally{if(key===context.current)setLoaded(true)}}
+  const loadVersion=useRef(0)
+  const load=async()=>{const key=context.current,version=++loadVersion.current;let listError:unknown=null,pendingError:unknown=null
+    const [itemsResult,queueResult]=await Promise.allSettled([cloudCall<Node[]>('list'),cloudCall<any[]>('pending')])
+    if(key!==context.current||version!==loadVersion.current)return
+    if(itemsResult.status==='fulfilled'){setNodes(itemsResult.value)}else listError=itemsResult.reason
+    if(queueResult.status==='fulfilled'){setPending(queueResult.value)}else pendingError=queueResult.reason
+    if(listError)setError(listError instanceof Error?listError.message:'读取云空间文件失败')
+    else if(pendingError)setError(pendingError instanceof Error?`文件列表已读取，但同步状态暂不可用：${pendingError.message}`:'文件列表已读取，但同步状态暂不可用')
+    else {setError('');await Promise.resolve(cloud.refresh?.()).catch(()=>{})}
+    if(key===context.current&&version===loadVersion.current)setLoaded(true)
+  }
   useEffect(()=>{setNodes([]);setPending([]);setVersions(null);setParent(null);setShowShares(false);setLoaded(false);setPreviewing(null);if(cloud.state.account?.enabled&&cloud.state.unlocked)void load()},[cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
   useEffect(()=>{setSelected([])},[parent,search,trash,cloud.state.account?.id])
   useEffect(()=>{setSelected(previous=>previous.filter(id=>nodes.some(node=>node.id===id&&Boolean(node.deleted)===trash)))},[nodes,trash])
@@ -91,21 +101,21 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     <nav className="seal-drive-path" aria-label={t('文件夹路径','Folder path')}><Button type="text" disabled={!parent||Boolean(search)} aria-label={t('上级目录','Parent folder')} icon={<Icon name="arrow-left" size={16}/>} onClick={()=>setParent(nodes.find(n=>n.id===parent)?.parent||null)}/><button onClick={()=>{setParent(null);setSearch('')}}>{trash?t('回收站','Recycle bin'):t('全部文件','All files')}</button>{search?<><span>/</span><strong>{t('搜索结果','Search results')}</strong></>:ancestors.map(n=><span className="seal-drive-crumb" key={n.id}><span>/</span><button translate="no" onClick={()=>setParent(n.id)}>{n.meta.name}</button></span>)}</nav>
     {selected.length?<div className="seal-drive-selection"><span>{t(`已选择 ${selected.length} 项`,`${selected.length} selected`)}</span>{trash?<Button disabled={busy} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('restore',{id:n.id});setSelected([])})}>{t('恢复','Restore')}</Button>:<Button disabled={busy||!selection.length||selection.some(isFolder)} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('download',{id:n.id})})}>{t('下载','Download')}</Button>}<Button danger disabled={busy} onClick={()=>remove(selection,trash)}>{trash?t('彻底删除','Delete permanently'):t('删除','Delete')}</Button><Button type="text" onClick={()=>setSelected([])}>{t('取消选择','Clear selection')}</Button></div>:null}
     {error?<p className="seal-cloud-error">{error}</p>:null}
-    {pending.length?<div className="seal-cloud-card"><h2>待同步文件（已在本机加密保留）</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>重试同步</Button>{pending.map(p=><p key={p.id}>{p.name} · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>导出本机副本</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>保留为冲突副本</Button>:null}<Button danger onClick={()=>modal.confirm({title:'清除这条待同步记录？',content:'此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。',onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>清除记录</Button></p>)}</div>:null}
+    {pending.length?<div className="seal-cloud-card seal-cloud-pending"><h2>{t('待同步文件（已在本机加密保留）','Files waiting to sync (encrypted on this device)')}</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>{t('重试同步','Retry sync')}</Button>{pending.map(p=><p key={p.id}><span className="seal-cloud-pending__name" translate="no">{p.name}</span> · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>{t('导出本机副本','Export local copy')}</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>{t('保留为冲突副本','Keep as conflict copy')}</Button>:null}<Button danger onClick={()=>modal.confirm({title:t('清除这条待同步记录？','Clear this pending sync record?'),content:t('此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。','This removes the encrypted pending copy on this device. Export anything needed first. The saved cloud version and original local file are not affected.'),onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>{t('清除记录','Clear record')}</Button></p>)}</div>:null}
     {!loaded&&!error?<LoadingState 文字={t('正在读取云空间文件…','Loading cloud files…')}/>:<CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):默认打开方式(node.meta.filename||node.meta.name)==='preview'?setPreviewing(node):void download(node,true)} actions={actions}/>}
     {sharing?<ShareLinkDialog 文件={{id:sharing.id,name:sharing.meta.name}} onClose={()=>setSharing(null)}/>:null}
     {previewing?<CloudPreview 节点={{id:previewing.id,name:previewing.meta.filename||previewing.meta.name}} 大小={typeof previewing.meta.size==='number'?previewing.meta.size:undefined} 引擎={当前预览引擎} onClose={()=>setPreviewing(null)} on下载={()=>void download(previewing)} on用编辑器打开={()=>{const node=previewing;setPreviewing(null);void download(node,true)}}/>:null}
     <Modal open={Boolean(versions)} centered title={t('历史版本','Version history')} footer={null} onCancel={()=>setVersions(null)}>
       {versions?.items.map(v=><p key={v.id}>
-        版本 {v.version} · {new Date(v.created).toLocaleString()} · {(v.bytes/1000).toFixed(1)} KB
-        <Button onClick={()=>void download(versions.node,false,v.id)}>下载此版本</Button>
+        {t('版本','Version')} {v.version} · {new Date(v.created).toLocaleString(en?'en-US':'zh-CN')} · {(v.bytes/1000).toFixed(1)} KB
+        <Button onClick={()=>void download(versions.node,false,v.id)}>{t('下载此版本','Download this version')}</Button>
         {v.version!==versions.node.version?<Button danger onClick={()=>modal.confirm({
-          title:'永久删除此历史版本？',content:'删除后释放相应云空间，无法恢复。',
+          title:t('永久删除此历史版本？','Permanently delete this version?'),content:t('删除后释放相应云空间，无法恢复。','Deleting it releases cloud storage and cannot be undone.'),
           onOk:()=>run(async()=>{
             await cloudCall('removeVersion',{id:v.id})
             setVersions({...versions,items:(await cloudCall('versions',{id:versions.node.id})).items})
           })
-        })}>删除旧版本</Button>:<Tag>当前版本</Tag>}
+        })}>{t('删除旧版本','Delete old version')}</Button>:<Tag>{t('当前版本','Current version')}</Tag>}
       </p>)}
     </Modal>
   </section>

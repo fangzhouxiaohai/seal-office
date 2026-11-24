@@ -90,6 +90,12 @@ describe('云空间加载与预览',()=>{
     expect(await screen.findByRole('button',{name:'长文件名工作汇报.docx'})).toBeInTheDocument()
     expect(screen.queryByText('正在读取云空间文件…')).not.toBeInTheDocument()
   })
+  it('待同步状态读取失败时仍显示已读取的云文件',async()=>{
+    fixture.call.mockImplementation(async(action)=>action==='list'?nodes:action==='pending'?Promise.reject(new Error('本机队列暂不可用')):[])
+    render(<AntdApp><CloudFilesPage/></AntdApp>)
+    expect(await screen.findByRole('button',{name:'长文件名工作汇报.docx'})).toBeInTheDocument()
+    expect(screen.getByText(/文件列表已读取，但同步状态暂不可用/)).toBeInTheDocument()
+  })
   it('点击图片文件进入预览，菜单提供预览入口',async()=>{
     const withImage=[...nodes,{id:'photo',parent:null,kind:'file',deleted:0,version:1,meta:{name:'现场照片.png'},updated:50}]
     ;(URL as any).createObjectURL=vi.fn(()=>'blob:x');(URL as any).revokeObjectURL=vi.fn()

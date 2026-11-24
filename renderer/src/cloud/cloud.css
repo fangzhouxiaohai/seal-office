@@ -16,6 +16,9 @@
 .seal-market-favorite>span{display:inline-flex;align-items:center;justify-content:center}.seal-market-favorite:hover{background:var(--brand,#245bd6)!important;color:#fff!important}.seal-market-favorite:focus-visible,.seal-market-cover:focus-visible{outline:3px solid var(--brand,#245bd6);outline-offset:3px}
 
 .seal-login-modal .ant-modal-content{padding:28px 32px 30px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);color:var(--text-1)}
+.seal-login-modal .ant-modal-body{max-height:min(720px,calc(100vh - 120px));overflow-y:auto;overscroll-behavior:contain;padding-inline:2px}
+.seal-account-modal .ant-modal-content{max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden}
+.seal-account-modal .ant-modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-inline:2px}
 .seal-login-modal .ant-modal-header{margin:0;background:transparent}
 .seal-login__dialog-title{font-size:13px;font-weight:400;color:var(--text-2)}
 .seal-login-modal .ant-modal-close{top:18px;right:18px;width:32px;height:32px;border-radius:6px;color:var(--text-2)}
@@ -45,6 +48,13 @@
 .seal-login__field :is(.ant-input,.ant-input-affix-wrapper):focus-within{border-color:var(--brand);outline:2px solid var(--brand-soft);outline-offset:1px}
 .seal-login-modal .ant-modal-close:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 @media(max-width:480px){.seal-login-modal .ant-modal-content{padding:22px 20px 24px}.seal-login-modal .ant-modal-close{width:44px;height:44px;top:8px;right:8px}.seal-login__brand{padding-top:20px}.seal-login__code-row>.ant-btn{width:120px}.seal-login__brand h2{font-size:22px}}
+.seal-account-security form{max-width:100%;overflow-wrap:anywhere}
+.seal-account-security .ant-radio-group{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:10px}
+.seal-account-security .ant-btn{white-space:normal;height:auto;min-height:40px}
+.seal-cloud-pending{overflow-wrap:anywhere}.seal-cloud-pending h2{line-height:1.45}.seal-cloud-pending p{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.seal-cloud-pending__name{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.seal-account-modal .seal-account-security form{max-height:min(58vh,560px);overflow-y:auto;padding-right:4px}
+.seal-account-modal .ant-modal-footer,.seal-account-modal .ant-modal-body{overflow-wrap:anywhere}
+@media(max-width:600px){.seal-account-modal .ant-modal-content{max-height:calc(100vh - 16px)}.seal-account-modal .ant-modal-body{padding-inline:0}.seal-account-modal .seal-account-security form{max-height:55vh}.seal-cloud-pending p{align-items:stretch;flex-direction:column}.seal-cloud-pending p .ant-btn{width:100%}}
 
 /* 功能区标签行右侧的云端状态徽标：圆角长方形，替代整行提示条 */
 .seal-cloud-pill {
