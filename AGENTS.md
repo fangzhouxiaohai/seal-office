@@ -15,10 +15,10 @@
 
 # Git 分支规则
 
-- 自 2026-11-19 起，本仓库只使用 `main` 主分支。拉取、提交、推送与打标签一律在 `main` 上完成，禁止新建分支，禁止向非 `main` 分支推送，禁止为单次改动另开分支。
-- 拉取最新代码先执行 `git fetch github main` 与 `git fetch origin main`，再在 `main` 上快进到最新提交；出现分叉时在 `main` 上合并或重置，不通过新建分支绕行。
-- 推送时同步执行 `git push github main` 与 `git push origin main`，保持两个远端主线一致。发现当前位于非 `main` 分支时，先切回 `main` 再操作。
-- 远端历史分支保留原记录，本轮不删除；后续新增开发不得再产生分支。
+- 本仓库永久只使用 `main` 主分支。任何开发、提交、合并、打标签和推送都必须在本地 `main` 上完成，禁止创建或切换到其他开发分支，禁止向非 `main` 分支推送。
+- 默认拉取来源为 GitHub 的 `main`。开始工作先执行 `git fetch github main`，再按需执行 `git fetch origin main` 和 `git fetch gitcode main` 核对双仓库；将本地 `main` 快进或在 `main` 上合并到最新状态，不通过创建分支绕行。
+- 两个用户管理的仓库固定为 GitHub 和 GitCode，目标分支始终是各自的 `main`。完成本地提交后同步执行 `git push github main` 与 `git push gitcode main`，需要兼容旧远端别名时才推送 `origin`，并确保它仍指向 GitHub 的 `main`。
+- 整理仓库时核对两个远端的所有分支和提交 ID。确认其他远端分支的提交已经包含在 `main` 后，按已核验的提交 ID 使用显式租约删除 GitCode 和 GitHub 上不再使用的分支；发现新增提交先抓取并在 `main` 上合并。推送后重新列出两个远端分支，确认仅保留 `main`，并核实默认分支为 `main`。
 
 # 打包目录与视频更新规则
 

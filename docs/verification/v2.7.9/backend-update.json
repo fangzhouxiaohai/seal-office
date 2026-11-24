@@ -1,0 +1,153 @@
+{
+  "passed": true,
+  "version": "2.7.9",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.7.9.exe",
+      "bytes": 572282131,
+      "sha256": "62ca25359ce94c0a84c6232b36bb36998afc0aa0bf8c3d89a0896d211d18bfac",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/2cdc44ab-0943-487a-8c29-49adaf2e2d04/seal-office-setup-2.7.9.exe",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/2cdc44ab-0943-487a-8c29-49adaf2e2d04/seal-office-setup-2.7.9.exe",
+        "sha256": "62ca25359ce94c0a84c6232b36bb36998afc0aa0bf8c3d89a0896d211d18bfac",
+        "bytes": 572282131,
+        "publishedAt": 1795447738230
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.7.9-microsoft-store-x64.msix",
+      "bytes": 806444403,
+      "sha256": "6bfcefc395eb5b73c34b6d7d7b38e6382bf550d5f7358d18b26e0740cc1674d4",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/2795ed7a-d813-49aa-a7a0-54da2ca625b7/seal-office-2.7.9-microsoft-store-x64.msix",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "6bfcefc395eb5b73c34b6d7d7b38e6382bf550d5f7358d18b26e0740cc1674d4",
+        "bytes": 806444403,
+        "publishedAt": 1795447738236
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.7.9-amd64.deb",
+      "bytes": 171226892,
+      "sha256": "3eee0b79b58d611f5c391555ba788ffea41dc890dba39bef4c1238fe03955cca",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/19d83bb2-4a7f-41ab-a1a0-34da8b22a7ef/seal-office-2.7.9-amd64.deb",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/19d83bb2-4a7f-41ab-a1a0-34da8b22a7ef/seal-office-2.7.9-amd64.deb",
+        "sha256": "3eee0b79b58d611f5c391555ba788ffea41dc890dba39bef4c1238fe03955cca",
+        "bytes": 171226892,
+        "publishedAt": 1795447738242
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "macos",
+      "filename": "seal-office-2.7.9-macos.dmg",
+      "bytes": 453417257,
+      "sha256": "c139cdd62993b0030f057547ddc50092d43d9ac2bec8c5ae37f527113618ec80",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/a4d54eef-fe3c-41c3-a3a4-8e8e9de9503d/seal-office-2.7.9-macos.dmg",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/a4d54eef-fe3c-41c3-a3a4-8e8e9de9503d/seal-office-2.7.9-macos.dmg",
+        "sha256": "c139cdd62993b0030f057547ddc50092d43d9ac2bec8c5ae37f527113618ec80",
+        "bytes": 453417257,
+        "publishedAt": 1795447738246
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.7.9-android.apk",
+      "bytes": 56496017,
+      "sha256": "cb3b2c423850d45cf882020394626f9fa45ba149c3de6fe5a7b9692405c3e67f",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/cfdd7a45-e185-4fb3-9d9b-21939348debc/seal-office-2.7.9-android.apk",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/cfdd7a45-e185-4fb3-9d9b-21939348debc/seal-office-2.7.9-android.apk",
+        "sha256": "cb3b2c423850d45cf882020394626f9fa45ba149c3de6fe5a7b9692405c3e67f",
+        "bytes": 56496017,
+        "publishedAt": 1795447738251
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.7.9-harmony.hap",
+      "bytes": 74983724,
+      "sha256": "7e8147f1ea6478e9028e9a378517a43bb79f0a0f6a61306be994a82a6101111d",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/13f5cd54-0d65-4e0e-9276-ac75592c71aa/seal-office-2.7.9-harmony.hap",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/13f5cd54-0d65-4e0e-9276-ac75592c71aa/seal-office-2.7.9-harmony.hap",
+        "sha256": "7e8147f1ea6478e9028e9a378517a43bb79f0a0f6a61306be994a82a6101111d",
+        "bytes": 74983724,
+        "publishedAt": 1795447738256
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.7.9-web.zip",
+      "bytes": 52581869,
+      "sha256": "8fdf3df9a11215a5950b0b0a18daf1982edf21043159ab5e0d7444f6ad1b9259",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/dd2f0063-788f-4813-a333-00e338d1291a/seal-office-2.7.9-web.zip",
+      "oldVersion": "2.7.8",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.7.9",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.7.9\n\n- 表格现在可直接打开扩展名为 CSV 的 XLSX 工作簿，以及网页表格格式的 XLS 报表。编辑后默认另存为 XLSX，保留来源文件。\n- 表格工具栏显示选区字体、字号。空白表格默认显示字体菜单首项和 10 磅，字体颜色和填充颜色支持自定义 RGB 色值。\n- 手机上进入扫描取景页会自动请求相机权限，允许后即可取景。扫描识别与单据转表格支持 PDF 选页导入，行业模板可按关键词搜索。\n- 日历支持中国大陆节日、年度放假调休及常见国际节日，月份可用箭头切换。新增日程可选择和试听三种提示音，提醒方式取决于设备通知权限。\n- 打开超过 5 MB 的文件时，界面显示后台读取进度，支持取消后重新打开。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/dd2f0063-788f-4813-a333-00e338d1291a/seal-office-2.7.9-web.zip",
+        "sha256": "8fdf3df9a11215a5950b0b0a18daf1982edf21043159ab5e0d7444f6ad1b9259",
+        "bytes": 52581869,
+        "publishedAt": 1795447738260
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

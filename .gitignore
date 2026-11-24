@@ -43,3 +43,5 @@ pub.txt
 /website-dist/
 seal-server/target/
 seal-admin-web/dist-observe/
+.DS_Store
+**/.DS_Store
