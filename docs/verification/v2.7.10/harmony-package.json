@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "bundleName": "com.sealoffice.mobile",
+  "appPack": {
+    "filename": "seal-office-2.7.10-harmony.app",
+    "bytes": 43203484,
+    "sha256": "1faa450b1cef694ebb7605919c9c027fffaa1f7cc9d4d245eabe12470fb36ade",
+    "purpose": "AppGallery 上架",
+    "publicReleaseAttachment": false,
+    "signatureVerified": true
+  },
+  "hap": {
+    "filename": "seal-office-2.7.10-harmony.hap",
+    "bytes": 74873124,
+    "sha256": "acabff83a95a259ad18fbc32dbc9285b92188197483ec468393c700635406f69",
+    "purpose": "鸿蒙安装包",
+    "signatureVerified": true
+  },
+  "verification": "DevEco Studio hap-sign-tool verify-app"
+}
