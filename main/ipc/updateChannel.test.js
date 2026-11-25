@@ -6,7 +6,6 @@ const { createHash } = require('node:crypto')
 describe('桌面更新 IPC', () => {
   it.each([
     ['windows', '.exe'],
-    ['linux', '.deb'],
     ['macos', '.dmg'],
   ])('%s 更新入口通过真实暂存服务校验并恢复下载', async (平台, 扩展名) => {
     const 目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-update-ipc-'))
@@ -84,6 +83,23 @@ describe('桌面更新 IPC', () => {
       expect((await handlers.get('update.install')({}, {version:'2.7.3',url:'https://attacker.test'})).成功).toBe(false)
       expect(service.安装).not.toHaveBeenCalled()
       expect((await handlers.get('update.install')({}, {version:'2.7.3',url:'ms-windows-store://pdp/?productid=ok'})).成功).toBe(true)
+    } finally { require.cache[electronPath].exports = original; if (cached) require.cache[channelPath] = cached; else delete require.cache[channelPath] }
+  })
+  it('Linux 不在应用内下载 DEB，确认后在浏览器打开当前发布的下载地址', async () => {
+    const electronPath = require.resolve('electron'); require('electron')
+    const original = require.cache[electronPath].exports, channelPath = require.resolve('./updateChannel'), cached = require.cache[channelPath]
+    require.cache[electronPath].exports = { app:{}, shell:{} }; delete require.cache[channelPath]
+    try {
+      const { 注册更新通道 } = require('./updateChannel'), handlers = new Map()
+      const 发布 = { hasUpdate:true, version:'2.8.0', url:'https://seal.xingmasoft.com/releases/seal-office-2.8.0-amd64.deb' }
+      const service = { 平台:'linux', 检查:vi.fn(async () => 发布), 安装:vi.fn(async () => ({已打开下载:true})) }
+      const 暂存 = { 下载:vi.fn() }
+      注册更新通道({handle:(key, fn) => handlers.set(key,fn)}, { 更新服务:service, 暂存服务:暂存 })
+      const 下载 = await handlers.get('update.download')({sender:{}}, 发布)
+      expect(下载.成功).toBe(false)
+      expect(暂存.下载).not.toHaveBeenCalled()
+      expect(await handlers.get('update.install')({}, 发布)).toMatchObject({ 成功:true, 数据:{ 已打开下载:true } })
+      expect(service.安装).toHaveBeenCalledWith(发布)
     } finally { require.cache[electronPath].exports = original; if (cached) require.cache[channelPath] = cached; else delete require.cache[channelPath] }
   })
 })

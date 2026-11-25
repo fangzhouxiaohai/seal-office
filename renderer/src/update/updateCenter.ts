@@ -185,6 +185,18 @@ export function 重置更新状态(): void {
   通知()
 }
 
+/** 官网下载区：鸿蒙应用市场不可用时的回退入口 */
+export const 官网下载页 = 'https://seal.xingmasoft.com/#downloads'
+
+/**
+ * 是否走“应用内下载 → 校验 → 安装”的暂存路径。
+ * Linux 的 DEB 需要 root 与包管理器，2.8.0 起改为确认后在浏览器中下载，由用户用软件中心或 dpkg 安装；
+ * 鸿蒙走华为应用市场，商店版走微软商店，Web 直接刷新。
+ */
+export function 使用暂存下载(平台: 更新平台 | null | undefined): boolean {
+  return Boolean(平台) && !['web', 'windows-store', 'harmony', 'linux', 'unsupported'].includes(平台 as string)
+}
+
 export type 更新执行结果 = { 成功: true; 提示?: string } | { 成功: false; 错误: string }
 
 /** 「立即更新」：Windows 下载校验后安装；商店版打开商店；Ubuntu 与 macOS 打开安装包下载；Web 刷新；移动端打开下载或市场地址。 */
@@ -198,15 +210,19 @@ export async function 执行更新(发布: 有效发布, 刷新页面: () => voi
     const 操作已完成 = 平台 === 'windows-store' ? 结果.数据?.已打开商店 === true
       : 平台 === 'linux' || 平台 === 'macos' ? 结果.数据?.已打开下载 === true : 结果.数据?.已启动安装 === true
     if (!操作已完成) return { 成功: false, 错误: '更新操作未返回有效结果，请重试' }
-    const 下载提示 = 平台 === 'macos' ? '已打开 macOS 安装包下载地址，下载完成后请打开 DMG 并按提示安装' : '已打开 Ubuntu 安装包下载地址，下载完成后请按系统提示安装'
+    const 下载提示 = 平台 === 'macos' ? '已打开 macOS 安装包下载地址，下载完成后请打开 DMG 并按提示安装'
+      : '已在浏览器中打开 DEB 安装包下载地址。下载完成后用系统软件中心打开安装，或在终端执行 sudo apt install ./安装包文件名.deb'
     return { 成功: true, 提示: 结果.数据?.已打开商店 ? '已打开微软商店，请在商店中完成更新' : 结果.数据?.已打开下载 ? 下载提示 : '安装包校验通过，正在启动安装程序，海豹办公即将退出' }
   }
   if (平台 === 'web') { 刷新页面(); return { 成功: true } }
   if (平台 === 'harmony') {
     const 结果 = await 桥接.update.openStore()
-    if (!结果.成功) return { 成功: false, 错误: 结果.错误 || '无法打开应用市场更新' }
-    if (!结果.数据?.已显示) return { 成功: false, 错误: '应用市场未显示更新弹窗，请稍后重试' }
-    return { 成功: true, 提示: '已打开应用市场更新弹窗，请按系统提示完成更新' }
+    if (结果.成功 && 结果.数据?.已显示) return { 成功: true, 提示: '已打开应用市场更新弹窗，请按系统提示完成更新' }
+    // 应用市场不可用或尚未上架新版本时回退到官网下载页；HAP 仍需通过华为应用市场安装，不在应用内下载安装。
+    const 原因 = 结果.成功 ? '应用市场未显示更新弹窗' : (结果.错误 || '无法打开应用市场更新')
+    const 回退 = await 桥接.openExternal(官网下载页)
+    if (!回退.成功) return { 成功: false, 错误: 原因 + '；也无法打开官网下载页，请稍后在华为应用市场搜索“海豹办公”更新' }
+    return { 成功: true, 提示: 原因 + '，已打开官网下载页。鸿蒙版需通过华为应用市场安装更新' }
   }
   if (平台 === 'android') {
     if (!发布.url) return { 成功: false, 错误: '发布记录缺少下载地址，请稍后再试' }

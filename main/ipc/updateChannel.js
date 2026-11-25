@@ -4,6 +4,7 @@ const { spawn } = require('child_process')
 const path = require('node:path')
 const { 创建更新服务, 判定更新平台 } = require('../update/updater')
 const { 创建暂存更新 } = require('../update/stagedUpdater')
+const { 启动安装向导交接 } = require('../update/installerHandoff')
 const { AI失败结果 } = require('../ai/identityGate')
 
 function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 } = {}) {
@@ -42,14 +43,16 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
         if (错误) throw new Error('无法打开已校验的安装包：' + 错误)
         return
       }
-      // 直接启动已验证的 NSIS 安装程序：--updated 让安装程序等待本进程退出后静默安装并启动新版本。
-      // 先确认安装程序启动成功再退出应用，避免出现“只关闭程序、没有启动安装程序”。
-      await new Promise((resolve, reject) => {
-        const 进程 = spawn(文件, ['--updated'], { detached: true, stdio: 'ignore', windowsHide: true })
-        进程.once('error', reject)
-        进程.once('spawn', () => { 进程.unref(); resolve() })
-      })
-      setTimeout(() => app.quit(), 500)
+      // 交接进程等待本程序退出后，以普通方式启动安装程序（不带 --updated），显示完整安装向导。
+      // 交接进程启动失败时打开安装包所在目录，提示用户手动运行；已下载的安装包保留以便重试。
+      const 日志文件 = path.join(app.getPath('userData'), 'verified-updates', 'install-log.jsonl')
+      try {
+        await 启动安装向导交接({ 安装包: 文件, 日志文件 })
+      } catch (错误) {
+        shell.showItemInFolder(文件)
+        throw new Error('无法启动安装向导，已打开安装包所在文件夹，请手动运行安装程序：' + (错误?.message || '未知错误'))
+      }
+      setTimeout(() => app.quit(), 300)
     },
   }))
   ipcMain.handle('update.info', async () => {
@@ -62,7 +65,8 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
   })
   ipcMain.handle('update.install', async (_事件, 发布) => {
     try {
-      if (服务().平台 !== 'windows-store') throw new Error('请先下载并校验更新，再选择安装')
+      // 商店版跳转微软商店；Linux 确认后在浏览器中打开 DEB 下载地址（不在应用内下载与安装）。
+      if (!['windows-store', 'linux'].includes(服务().平台)) throw new Error('请先下载并校验更新，再选择安装')
       const 通道 = 发布?.channel ?? 'stable'
       if (!['stable', 'beta'].includes(通道)) throw new Error('发布通道无效')
       const 最新 = await 服务().检查(通道)
@@ -72,7 +76,10 @@ function 注册更新通道(ipcMain, { cloudService, 更新服务, 暂存服务 
     catch (错误) { return AI失败结果(错误, '更新失败') }
   })
   ipcMain.handle('update.download', async (事件, 发布) => {
-    try { 记住(事件); return { 成功:true, 数据:await 暂存().下载(发布) } }
+    try {
+      if (服务().平台 === 'linux') throw new Error('Linux 版请在浏览器中下载 DEB 安装包，再用软件中心或 dpkg 安装')
+      记住(事件); return { 成功:true, 数据:await 暂存().下载(发布) }
+    }
     catch (错误) { return AI失败结果(错误, '下载更新失败') }
   })
   ipcMain.handle('update.cancel', async (事件) => {

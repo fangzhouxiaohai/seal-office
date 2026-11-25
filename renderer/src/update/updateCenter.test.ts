@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { 桥接 } from '../ipc/bridge'
-import { 检查更新, 执行更新, 重置更新状态 } from './updateCenter'
+import { 检查更新, 执行更新, 重置更新状态, 使用暂存下载, 官网下载页 } from './updateCenter'
 
 describe('macOS 更新通道', () => {
   const 发布 = { hasUpdate: true as const, version: '2.7.3', url: 'https://seal.xingmasoft.com/seal-office-2.7.3-macos.dmg', mandatory: false }
@@ -53,8 +53,24 @@ describe('鸿蒙应用市场更新', () => {
     expect(await 执行更新({hasUpdate:true,version:'2.7.3'})).toEqual({成功:true,提示:'已打开应用市场更新弹窗，请按系统提示完成更新'})
     expect(打开).toHaveBeenCalledOnce()
   })
-  it('没有展示弹窗时不冒称已打开', async () => {
+  it('市场未显示弹窗时如实说明并回退官网下载页', async () => {
     vi.spyOn(桥接.update,'openStore').mockResolvedValue({成功:true,数据:{已显示:false}})
-    expect(await 执行更新({hasUpdate:true,version:'2.7.3'})).toEqual({成功:false,错误:'应用市场未显示更新弹窗，请稍后重试'})
+    const 外部 = vi.spyOn(桥接,'openExternal').mockResolvedValue({成功:true} as any)
+    expect(await 执行更新({hasUpdate:true,version:'2.7.3'})).toEqual({成功:true,提示:'应用市场未显示更新弹窗，已打开官网下载页。鸿蒙版需通过华为应用市场安装更新'})
+    expect(外部).toHaveBeenCalledWith(官网下载页)
+  })
+  it('市场与官网都打不开时返回失败，不冒称已更新', async () => {
+    vi.spyOn(桥接.update,'openStore').mockResolvedValue({成功:false,错误:'华为应用市场暂未发现可更新版本，请稍后再试'})
+    vi.spyOn(桥接,'openExternal').mockResolvedValue({成功:false,错误:'x'} as any)
+    const 结果 = await 执行更新({hasUpdate:true,version:'2.7.3'})
+    expect(结果.成功).toBe(false)
+    expect((结果 as any).错误).toContain('华为应用市场暂未发现可更新版本')
+  })
+})
+
+describe('暂存下载路径', () => {
+  it('Linux、鸿蒙、商店版与 Web 不走应用内下载', () => {
+    for (const 平台 of ['linux', 'harmony', 'windows-store', 'web', 'unsupported'] as const) expect(使用暂存下载(平台)).toBe(false)
+    for (const 平台 of ['windows', 'macos', 'android'] as const) expect(使用暂存下载(平台)).toBe(true)
   })
 })
