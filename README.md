@@ -14,7 +14,7 @@
 
 ## 云端服务端
 
-云端服务端已整体重构为 Spring Boot 3 + Vue3 + MySQL：`seal-server/`（Java 17，客户端接口与历史 Node 版一比一兼容）、`seal-admin-web/`（Element Plus 管理后台）。接口契约见[后端重构接口契约](docs/后端重构-接口契约.md)，迁移与切换流程见[后端重构迁移与切换方案](docs/后端重构-迁移与切换方案.md)及[升级计划](升级计划-服务器迁移与后端重构.md)。旧版 Node + PHP 服务端（`server/`）已彻底删除；文档转换网关独立为 `converter/`（LibreOffice，经 8298 控制通道由 Java 后端调用）。后端与管理后台部署使用 `npm run deploy:server`（`scripts/deploy-backend.cjs`，支持 `--check` 只读体检、`--dry-run` 预演、失败自动回滚），管理后台的数据概览图表与短信服务模块说明见[功能修改说明](功能修改说明-数据概览与短信模块.md)。
+云端服务端已整体重构为 Spring Boot 3 + Vue3 + MySQL：`seal-server/`（Java 17，客户端接口与历史 Node 版一比一兼容）、`seal-admin-web/`（Element Plus 管理后台）。接口契约见[后端重构接口契约](docs/后端重构-接口契约.md)，迁移与切换流程见[后端重构迁移与切换方案](docs/后端重构-迁移与切换方案.md)及[升级计划](升级计划-服务器迁移与后端重构.md)。旧版 Node + PHP 服务端（`server/`）已彻底删除；文档转换网关独立为 `converter/`（LibreOffice，经 8298 控制通道由 Java 后端调用）。后端与管理后台部署使用 `npm run deploy:server`（`scripts/deploy-backend.cjs`，重启宝塔 Java 项目托管的 `spring_seal-cloud` 单元，支持 `--check` 只读体检、`--dry-run` 预演、失败自动回滚），管理后台的数据概览图表与短信服务模块说明见[功能修改说明](功能修改说明-数据概览与短信模块.md)。
 
 ## 海豹办公官网
 

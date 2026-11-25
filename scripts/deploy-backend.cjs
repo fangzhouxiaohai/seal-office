@@ -24,7 +24,8 @@ const SERVER = {
   user: 'root',
   siteRoot: '/www/wwwroot/seal.xingmasoft.com',
   jar: '/www/server/java_project/seal-server/seal-server.jar',
-  service: 'seal-cloud-java',
+  // Java 进程自 2026-11-23 起由宝塔「Java 项目」登记托管，单元名为 spring_<项目名>
+  service: 'spring_seal-cloud',
   localPort: 8097,
   publicBase: 'https://seal.xingmasoft.com',
   nginxExtension: '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com',

@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "commit": "85b169d",
+  "deployedAt": "2026-11-25T21:02:22+08:00",
+  "releaseId": "20261125130158-dcba6e",
+  "host": "103.236.97.150",
+  "unit": "spring_seal-cloud",
+  "jar": {
+    "path": "/www/server/java_project/seal-server/seal-server.jar",
+    "bytes": 29949518,
+    "sha256": "8bb19b789487b97610586c78bfbd3793f9497a17605fb7c0bcc82e6a95a7a640"
+  },
+  "admin": {
+    "entry": "/admin/assets/index-DuoqmKcT.js",
+    "sha256": "7c8041ba5db174f2633e658ff4595fada1e6608202e3acc40b4d47caa12fdb1a",
+    "title": "海豹办公云端管理"
+  },
+  "build": {
+    "server": "mvn -B package",
+    "serverTests": 165,
+    "serverFailures": 0,
+    "admin": "npm ci && npm run build"
+  },
+  "checks": {
+    "serviceActive": true,
+    "localCapabilities": 200,
+    "publicCapabilities": 200,
+    "capabilitiesSms": true,
+    "overviewStatsAnonymous": 401,
+    "smsAnonymous": 401,
+    "smsLogsAnonymous": 401,
+    "siteEntries": {
+      "/": 200,
+      "/office/": 200,
+      "/admin/": 200,
+      "/share/": 200
+    },
+    "database": {
+      "sms_logs": "created",
+      "sms_settings": "created",
+      "users": 147,
+      "nodes": 124
+    }
+  },
+  "rollback": {
+    "previousJar": "/www/wwwroot/seal.xingmasoft.com/backend-releases/20261125130158-dcba6e/previous-seal-server.jar",
+    "previousAdmin": "/www/wwwroot/seal.xingmasoft.com/admin.backup-20261125130158-dcba6e"
+  },
+  "notYetDone": [
+    "旧 Node 服务 seal-cloud.service 仍 active/enabled（nginx 已无 8096 上游），需执行 --retire-legacy 才停用",
+    "转换网关运行目录仍为 /app/server/converter/managed.cjs，仓库已迁至 converter/，重建运行时时生效"
+  ]
+}

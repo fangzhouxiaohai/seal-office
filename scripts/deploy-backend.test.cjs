@@ -23,6 +23,16 @@ test('部署脚本先备份再替换，失败时恢复 jar 与后台目录', () 
   assert.doesNotMatch(script, /8096/)
 })
 
+test('重启由宝塔 Java 项目登记的 spring_seal-cloud 单元，不再引用已移除的 seal-cloud-java', () => {
+  const script = deployScript(sample)
+  assert.match(script, /systemctl restart 'spring_seal-cloud'/)
+  assert.match(script, /systemctl is-active --quiet 'spring_seal-cloud'/)
+  assert.doesNotMatch(script, /seal-cloud-java/)
+  const check = checkScript()
+  assert.match(check, /systemctl is-active 'spring_seal-cloud'/)
+  assert.doesNotMatch(check, /seal-cloud-java/)
+})
+
 test('体检与停用旧服务脚本语法正确，停用前确认 nginx 不再指向 8096', () => {
   assert.equal(bashSyntax(checkScript()).status, 0)
   const retire = retireScript()
