@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 8298 控制通道客户端：对照 server/converterAdmin.cjs 与 server/test/converter.test.cjs。
+ * 8298 转换网关客户端：对照 converter/index.cjs 的转换接口与 converter/test.cjs。
  * 覆盖令牌轮换指纹与落盘形态、revision 同步、配置互斥回滚、回环地址校验与配置装载校验。
  */
 class ConverterGatewayTest {

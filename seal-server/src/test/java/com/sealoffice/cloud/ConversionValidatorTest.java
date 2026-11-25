@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * 转换请求校验：对照 server/converter/index.cjs validateConversion 的白名单与文案。
+ * 转换请求校验：对照 converter/index.cjs 中 validateConversion 的白名单与文案。
  */
 class ConversionValidatorTest {
 

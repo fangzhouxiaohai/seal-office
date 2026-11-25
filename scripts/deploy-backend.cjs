@@ -3,11 +3,10 @@
  * 海豹办公后端部署：Spring Boot 云服务（seal-server）+ 管理后台（seal-admin-web）。
  *
  * 用法：
- *   node scripts/deploy-backend.cjs --check            只读体检：服务状态、版本摘要、公网入口、nginx 上游、旧服务残留
+ *   node scripts/deploy-backend.cjs --check            只读体检：服务状态、版本摘要、公网入口、nginx 上游
  *   node scripts/deploy-backend.cjs --dry-run          本地构建并打包，打印将执行的远程脚本，不连接服务器
  *   node scripts/deploy-backend.cjs                    构建 → 上传 → 备份 → 替换 → 重启 → 验收，失败自动回滚
  *   node scripts/deploy-backend.cjs --skip-build       使用现有 target/*.jar 与 seal-admin-web/dist 部署
- *   node scripts/deploy-backend.cjs --retire-legacy    确认 /api/ 已指向 8097 后，停用并禁止自启旧 Node(8096) 与 PHP 后台服务（不删除文件）
  *
  * 凭据：环境变量 SEAL_DEPLOY_PASSWORD，或 .upgrade-private/deploy-server.json 的 password（该目录已被 .gitignore 排除）。
  * 密码只通过 SSH_ASKPASS 助手经子进程环境传递，不出现在命令行参数，也不写入文件。
@@ -29,7 +28,6 @@ const SERVER = {
   localPort: 8097,
   publicBase: 'https://seal.xingmasoft.com',
   nginxExtension: '/www/server/panel/vhost/nginx/extension/seal.xingmasoft.com',
-  legacyServices: ['seal-cloud.service', 'seal-admin-php.service'],
 }
 const ADMIN_TITLE = '海豹办公云端管理'
 
@@ -37,14 +35,13 @@ const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const quote = value => "'" + String(value).replace(/'/g, "'\\''") + "'"
 
 function parseArgs(argv) {
-  const known = new Set(['--check', '--dry-run', '--skip-build', '--skip-tests', '--retire-legacy'])
+  const known = new Set(['--check', '--dry-run', '--skip-build', '--skip-tests'])
   for (const arg of argv) if (!known.has(arg)) throw new Error('未知参数：' + arg)
   return {
     check: argv.includes('--check'),
     dryRun: argv.includes('--dry-run'),
     skipBuild: argv.includes('--skip-build'),
     skipTests: argv.includes('--skip-tests'),
-    retireLegacy: argv.includes('--retire-legacy'),
   }
 }
 
@@ -156,28 +153,6 @@ echo "公网接口: $(curl -s -o /dev/null -w '%{http_code}' --max-time 15 ${quo
 echo "公网后台: $(curl -s --max-time 15 ${quote(s.publicBase + '/admin/')} | grep -o '<title>[^<]*</title>')"
 echo "数据概览统计接口(未登录应 401): $(curl -s -o /dev/null -w '%{http_code}' --max-time 15 ${quote(s.publicBase + '/api/v1/admin/overview/stats')})"
 echo "nginx 上游端口: $(grep -ho 'proxy_pass http://127.0.0.1:[0-9]*' ${quote(s.nginxExtension)}/*.conf 2>/dev/null | sort | uniq -c | tr '\\n' ';')"
-${s.legacyServices.map(name => `echo "旧服务 ${name}: $(systemctl is-active ${quote(name)} 2>&1) / 自启 $(systemctl is-enabled ${quote(name)} 2>&1)"`).join('\n')}
-echo "旧 Node 8096 监听: $(ss -ltn 2>/dev/null | grep -c ':8096 ' || true)"
-`
-}
-
-/** 停用旧 Node/PHP 服务：先确认 nginx 不再引用 8096 和 PHP 后台。 */
-function retireScript() {
-  const s = SERVER
-  return `set -eu
-EXT=${quote(s.nginxExtension)}
-if grep -rq '127.0.0.1:8096' "$EXT"; then echo '!! nginx 仍有指向 8096 的上游，拒绝停用旧服务'; grep -rn '127.0.0.1:8096' "$EXT"; exit 1; fi
-if grep -rqi 'seal-admin-php\\|location ^~ /seal-admin/' "$EXT"; then echo '!! nginx 仍有旧 PHP 后台路由，拒绝停用'; exit 1; fi
-curl --fail --silent --max-time 15 ${quote(s.publicBase + '/api/v1/capabilities')} >/dev/null
-for unit in ${s.legacyServices.map(quote).join(' ')}; do
-  if systemctl list-unit-files "$unit" >/dev/null 2>&1 && systemctl list-unit-files "$unit" | grep -q "$unit"; then
-    systemctl disable --now "$unit" && echo "已停用：$unit"
-  else
-    echo "不存在：$unit"
-  fi
-done
-sleep 2
-curl --fail --silent --max-time 15 ${quote(s.publicBase + '/api/v1/capabilities')} >/dev/null && echo '停用后公网接口仍正常'
 `
 }
 
@@ -200,10 +175,9 @@ function sshSession(credentials, id) {
 async function main() {
   const options = parseArgs(process.argv.slice(2))
   const id = new Date().toISOString().replace(/\D/g, '').slice(0, 14) + '-' + randomBytes(3).toString('hex')
-  if (options.check || options.retireLegacy) {
+  if (options.check) {
     const session = sshSession(readCredentials(), id)
     try {
-      if (options.retireLegacy) console.log(session.ssh(retireScript()))
       console.log(session.ssh(checkScript()))
     } finally { session.close() }
     return
@@ -236,4 +210,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(error => { console.error('后端部署中止：' + error.message); process.exitCode = 1 })
-module.exports = { parseArgs, deployScript, checkScript, retireScript, locateArtifacts }
+module.exports = { parseArgs, deployScript, checkScript, locateArtifacts }

@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "completedAt": "2026-11-25T21:16:00+08:00",
+  "host": "103.236.97.150",
+  "goal": "彻底删除旧版 Node/PHP 后台代码与相关服务、发布目录、配置残留，仓库与本地同步最新",
+  "removed": {
+    "services": [
+      "seal-cloud.service（Node，8096）停用并关闭自启",
+      "seal-admin-php.service 及其 8 个 candidate/previous 单元文件删除"
+    ],
+    "directories": [
+      "/www/wwwroot/seal.xingmasoft.com/releases（2.5G，38 个旧 Node 后端发布）",
+      "/www/wwwroot/seal.xingmasoft.com/seal-admin-php（1.3M，current 与 11 个历史版本）",
+      "/www/wwwroot/seal.xingmasoft.com/deployment-config-backups（旧后端配置备份）",
+      "/www/wwwroot/seal.xingmasoft.com/verification-erasure-1792513883289（旧验证临时目录）",
+      "17 个 admin.failed/admin.previous/admin.candidate/admin.tpbak 旧后台构建目录"
+    ],
+    "files": [
+      "current、previous-release 旧发布指针",
+      "11 个 30-tpadmin.conf.* 旧 PHP 后台 nginx 配置"
+    ],
+    "local": [
+      "E:/seal-office/server 未跟踪构建残留 1.16 GB、95025 个文件"
+    ]
+  },
+  "kept": {
+    "data": "data/ 保留 objects=720、release-assets=76、team-objects=1、seal.sqlite、admin-rbac.sqlite",
+    "backup": "/www/backup/seal-cloud 9.9G 加密备份",
+    "rollback": "admin.backup-20261125130158-dcba6e 与 backend-releases/20261125130158-dcba6e/previous-seal-server.jar",
+    "converter": "converter 8298 运行时未改动"
+  },
+  "verification": {
+    "nginxConfigTest": "passed，reload 后仅剩 10-admin-assets、20-release-assets、40-website、seal-office-app、site_total 五份生效配置",
+    "ports": "8096 监听数 0，8097（Java）与 8298（转换器）正常",
+    "siteEntries": {
+      "/": 200,
+      "/office/": 200,
+      "/admin/": 200,
+      "/share/": 200,
+      "/api/v1/capabilities": 200,
+      "/api/v1/admin/sms": 401
+    },
+    "database": {
+      "users": 147,
+      "nodes": 124
+    },
+    "failedUnits": 0,
+    "disk": {
+      "before": "/home 35G/295G",
+      "after": "/home 32G/295G"
+    },
+    "deployCheck": "node scripts/deploy-backend.cjs --check 通过，旧服务项已从体检脚本移除"
+  }
+}

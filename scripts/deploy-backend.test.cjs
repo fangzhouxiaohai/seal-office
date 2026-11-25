@@ -1,14 +1,15 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { spawnSync } = require('node:child_process')
-const { parseArgs, deployScript, checkScript, retireScript } = require('./deploy-backend.cjs')
+const { parseArgs, deployScript, checkScript } = require('./deploy-backend.cjs')
 
 const sample = { id: '20261125120000-abc123', remote: '/www/wwwroot/seal.xingmasoft.com/backend-releases/20261125120000-abc123', jarSha: 'a'.repeat(64), adminEntry: '/admin/assets/index-x.js', adminEntrySha: 'b'.repeat(64) }
 const bashSyntax = script => spawnSync('bash', ['-n'], { input: script, encoding: 'utf8' })
 
 test('参数只接受已知开关', () => {
-  assert.deepEqual(parseArgs(['--check']), { check: true, dryRun: false, skipBuild: false, skipTests: false, retireLegacy: false })
+  assert.deepEqual(parseArgs(['--check']), { check: true, dryRun: false, skipBuild: false, skipTests: false })
   assert.throws(() => parseArgs(['--force']), /未知参数/)
+  assert.throws(() => parseArgs(['--retire-legacy']), /未知参数/)
 })
 
 test('部署脚本先备份再替换，失败时恢复 jar 与后台目录', () => {
@@ -33,12 +34,10 @@ test('重启由宝塔 Java 项目登记的 spring_seal-cloud 单元，不再引�
   assert.doesNotMatch(check, /seal-cloud-java/)
 })
 
-test('体检与停用旧服务脚本语法正确，停用前确认 nginx 不再指向 8096', () => {
-  assert.equal(bashSyntax(checkScript()).status, 0)
-  const retire = retireScript()
-  assert.equal(bashSyntax(retire).status, 0, bashSyntax(retire).stderr)
-  assert.ok(retire.indexOf("127.0.0.1:8096") < retire.indexOf('systemctl disable --now'))
-  assert.match(retire, /seal-cloud\.service/)
-  assert.match(retire, /seal-admin-php\.service/)
-  assert.doesNotMatch(retire, /rm -rf/)
+test('体检脚本语法正确，且不再引用已下线的旧 Node/PHP 服务', () => {
+  const check = checkScript()
+  assert.equal(bashSyntax(check).status, 0, bashSyntax(check).stderr)
+  assert.doesNotMatch(check, /seal-cloud\.service/)
+  assert.doesNotMatch(check, /seal-admin-php/)
+  assert.doesNotMatch(check, /8096/)
 })

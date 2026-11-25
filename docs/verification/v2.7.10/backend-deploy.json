@@ -47,8 +47,11 @@
     "previousJar": "/www/wwwroot/seal.xingmasoft.com/backend-releases/20261125130158-dcba6e/previous-seal-server.jar",
     "previousAdmin": "/www/wwwroot/seal.xingmasoft.com/admin.backup-20261125130158-dcba6e"
   },
+  "legacyRetirement": {
+    "completedAt": "2026-11-25T21:16:00+08:00",
+    "record": "docs/verification/v2.7.10/legacy-retirement.json"
+  },
   "notYetDone": [
-    "旧 Node 服务 seal-cloud.service 仍 active/enabled（nginx 已无 8096 上游），需执行 --retire-legacy 才停用",
     "转换网关运行目录仍为 /app/server/converter/managed.cjs，仓库已迁至 converter/，重建运行时时生效"
   ]
 }
