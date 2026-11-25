@@ -15,7 +15,7 @@ const 尺寸 = [
   { 名称: '390×844', width: 390, height: 844 },
   { 名称: '320×568', width: 320, height: 568 },
 ]
-const 场景 = ['long', 'wide', 'preview', 'top', 'many', 'confirm', 'drawer']
+const 场景 = ['long', 'wide', 'preview', 'top', 'many', 'confirm', 'drawer', 'account', 'account&expand=1']
 
 async function 测量(page) {
   return page.evaluate(() => {
@@ -48,7 +48,7 @@ async function main() {
       const page = await 浏览器.newPage({ viewport: { width: 视口.width, height: 视口.height } })
       await page.goto(`http://127.0.0.1:${端口}/?case=${名称}`)
       await page.waitForSelector('.ant-modal-content, .ant-drawer-content-wrapper', { timeout: 15000 })
-      await page.waitForTimeout(400)
+      await page.waitForTimeout(名称.startsWith('account') ? 1500 : 400)
       const 值 = await 测量(page)
       const 通过 = !值.错误 && 值.四边在内 && 值.标题可见 !== false && 值.关闭可见 !== false && 值.底部可见 !== false && 值.无横向滚动
       结果.push({ 尺寸: 视口.名称, 场景: 名称, 通过, ...值 })

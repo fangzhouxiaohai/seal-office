@@ -7,10 +7,32 @@ import '../../renderer/src/styles/actionColors.css'
 import '../../renderer/src/styles/flatDesktop.css'
 import '../../main/ui/dialog.css'
 
+import { useEffect } from 'react'
+import '../../renderer/src/cloud/cloud.css'
+import { CloudProvider, useCloud } from '../../renderer/src/cloud/CloudProvider'
+
+// 账号与云空间面板（2.8.0 方案 A）：模拟已登录且已开通云空间的账号，?expand=1 展开改密与注销表单
+const 账号 = { id: 'demo', phone: '13812345678', enabled: true, autosave: false, used: 105_300_000, quota: 300_000_000, hasPassword: true, keyRevision: 1 }
+;(window as any).electronAPI = { cloud: { invoke: async (action: string) => ({ 成功: true, 数据: action === 'status' || action === 'refresh' ? { account: 账号, unlocked: true, statuses: {}, pending: 0 } : {} }) } }
+function 打开账号面板() {
+  const cloud = useCloud()
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cloud.configure()
+      if (new URLSearchParams(location.search).get('expand')) setTimeout(() => {
+        for (const 名称 of ['修改登录密码', '注销账号']) Array.from(document.querySelectorAll('button')).find(按钮 => 按钮.textContent?.trim() === 名称)?.click()
+      }, 300)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [])
+  return null
+}
+
 const 长段落 = Array.from({ length: 60 }, (_, i) => <p key={i}>第 {i + 1} 段：账号与云空间、历史版本、导入导出与帮助手册等长内容需要在正文区滚动，标题和底部按钮始终可见。A long English sentence to check wrapping in narrow windows.</p>)
 const 场景 = new URLSearchParams(location.search).get('case') || 'long'
 
 function 夹具() {
+  if (场景 === 'account') return <CloudProvider><打开账号面板 /></CloudProvider>
   if (场景 === 'drawer') return <Drawer open width={720} title="宽抽屉">{长段落}</Drawer>
   if (场景 === 'confirm') {
     Modal.confirm({ title: '确认删除这些文件？', content: <div>{长段落}</div>, okText: '删除', cancelText: '取消', className: 'viewport-case' })

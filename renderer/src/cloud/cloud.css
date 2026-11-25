@@ -27,7 +27,45 @@
 .seal-login__brand h2{margin:0 0 8px;font-size:23px;line-height:1.4;font-weight:600;letter-spacing:.02em;color:var(--text-1)}
 .seal-login__brand p{margin:0;font-size:13px;line-height:1.6;color:var(--text-2)}
 .seal-login__modes{display:flex;gap:10px;margin-bottom:20px}.seal-login__modes .ant-btn{flex:1;min-height:42px}
-.seal-account-security{border-block:1px solid var(--border);padding-block:12px;margin-block:16px}.seal-account-security label{display:block;margin-bottom:6px}.seal-account-security p{line-height:1.7}.seal-account-security form{padding-top:16px}.seal-account-security .ant-btn{min-height:40px}.seal-account-security [role="alert"]{color:#d92d20}
+/* 2.8.0 账号与云空间面板（方案 A 分组卡片）：间距 4/8/12/16/24，字号 12/13/14/16/18，圆角 10/14 */
+.seal-account-modal .ant-modal-body{display:flex;flex-direction:column;gap:16px}
+.seal-account-summary{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;background:var(--bg-hover)}
+.seal-account-avatar{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;font-size:13px;font-weight:600}
+.seal-account-summary__who{flex:1;min-width:0;display:flex;flex-direction:column}
+.seal-account-summary__who strong{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.seal-account-summary__who small{font-size:12px;line-height:1.5;color:var(--text-3)}
+.seal-account-card{border:1px solid var(--border);border-radius:10px;padding:16px}
+.seal-account-card h3{margin:0 0 4px;font-size:16px;line-height:1.4;font-weight:600}
+.seal-account-card__hint{margin:0;font-size:13px;line-height:1.6;color:var(--text-3)}
+.seal-account-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.seal-account-card__head>div{min-width:0}
+.seal-account-card__head>.ant-btn{flex:none}
+.seal-account-card__actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px}
+.seal-account-card .seal-cloud-agreement{margin:12px 0 8px}.seal-account-card .seal-cloud-agreement h4{margin:0 0 4px;font-size:14px}.seal-account-card .seal-cloud-agreement p{margin:0 0 4px;font-size:13px;color:var(--text-2)}
+.seal-account-meter.ant-progress{margin:12px 0 4px}.seal-account-meter .ant-progress-inner{height:8px}.seal-account-meter .ant-progress-bg{height:8px!important}
+.seal-account-meter__text{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.seal-account-meter__text b{font-size:16px;color:var(--text-1)}
+.seal-account-security form{padding-top:4px}
+.seal-account-field{display:flex;flex-direction:column;gap:4px;margin:12px 0 0}
+.seal-account-field>label,.seal-account-field__label{font-size:13px;color:var(--text-2)}
+.seal-account-field__row{display:flex;gap:8px;align-items:stretch}
+.seal-account-field__row>.ant-input{flex:1;min-width:0}
+.seal-account-field__row>.ant-btn{flex:none}
+.seal-account-field__help{margin:4px 0 0;font-size:12px;line-height:1.6;color:var(--text-3)}
+.seal-account-field .ant-segmented{align-self:flex-start;border-radius:10px}
+.seal-account-security .ant-btn,.seal-danger-zone .ant-btn{min-height:36px;border-radius:10px}
+.seal-account-security [role="alert"],.seal-danger-zone [role="alert"]{margin:12px 0 0;color:#d92d20}
+.seal-account-security [role="status"],.seal-danger-zone [role="status"]{margin:12px 0 0;color:var(--text-2)}
+.seal-danger-zone{border:1px dashed #f3c3c7;border-radius:10px;padding:14px 16px;background:#fdf0f1}
+.seal-danger-zone__head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seal-danger-zone__head>div{min-width:0}
+.seal-danger-zone h3{margin:0;font-size:14px;font-weight:600;color:var(--danger)}
+.seal-danger-zone__head p{margin:2px 0 0;font-size:12px;line-height:1.6;color:var(--text-2)}
+.seal-danger-zone form{margin-top:12px;padding-top:12px;border-top:1px dashed #f3c3c7}
+.seal-danger-zone form h4{margin:0 0 4px;font-size:14px}.seal-danger-zone form p{font-size:13px;line-height:1.7}
+[data-theme="dark"] .seal-danger-zone{background:rgba(227,77,89,.1);border-color:rgba(227,77,89,.45)}
+[data-theme="dark"] .seal-danger-zone form{border-color:rgba(227,77,89,.45)}
+@media(max-width:480px){.seal-account-card__head,.seal-danger-zone__head{flex-direction:column;align-items:stretch}.seal-account-card__actions{justify-content:stretch}.seal-account-card__actions>.ant-btn{flex:1}}
 @media(max-width:768px){.seal-account-security :is(.ant-btn,.ant-input,.ant-input-affix-wrapper){min-height:44px}.seal-account-security .ant-input-affix-wrapper>.ant-input{min-height:32px}.seal-account-security .ant-checkbox-wrapper{min-height:44px;align-items:center}}
 .seal-login__field{margin-bottom:20px}
 .seal-login__field>label{display:block;margin-bottom:8px;font-size:13px;font-weight:500;color:var(--text-1)}
@@ -52,9 +90,8 @@
 .seal-account-security .ant-radio-group{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:10px}
 .seal-account-security .ant-btn{white-space:normal;height:auto;min-height:40px}
 .seal-cloud-pending{overflow-wrap:anywhere}.seal-cloud-pending h2{line-height:1.45}.seal-cloud-pending p{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.seal-cloud-pending__name{min-width:0;max-width:100%;overflow-wrap:anywhere}
-.seal-account-modal .seal-account-security form{max-height:min(58vh,560px);overflow-y:auto;padding-right:4px}
 .seal-account-modal .ant-modal-footer,.seal-account-modal .ant-modal-body{overflow-wrap:anywhere}
-@media(max-width:600px){.seal-account-modal .ant-modal-content{max-height:calc(100vh - 16px)}.seal-account-modal .ant-modal-body{padding-inline:0}.seal-account-modal .seal-account-security form{max-height:55vh}.seal-cloud-pending p{align-items:stretch;flex-direction:column}.seal-cloud-pending p .ant-btn{width:100%}}
+@media(max-width:600px){.seal-account-modal .ant-modal-body{padding-inline:0}.seal-cloud-pending p{align-items:stretch;flex-direction:column}.seal-cloud-pending p .ant-btn{width:100%}}
 
 /* 功能区标签行右侧的云端状态徽标：圆角长方形，替代整行提示条 */
 .seal-cloud-pill {

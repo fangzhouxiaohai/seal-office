@@ -1,5 +1,5 @@
 import React,{createContext,useCallback,useContext,useEffect,useRef,useState} from 'react'
-import {App,Button,Checkbox,Input,Modal} from 'antd'
+import {App,Button,Checkbox,Input,Modal,Progress} from 'antd'
 import {CloudLoginForm} from './CloudLoginForm'
 import {AccountSecurity} from './AccountSecurity'
 import {AI身份提示事件,AI登录原因,检查AI身份,提示AI身份,requireAIIdentity,type AI身份提示} from './aiIdentity'
@@ -57,19 +57,35 @@ export function CloudProvider({children}:{children:React.ReactNode}){
   const configure=()=>{setReason('');setForceLogin(false);setCode('');setRecovery('');setAgreed(false);setLoginError('');setOpen(true)}
   const login=async(action:'login'|'loginPassword',input:unknown)=>{await cloudCall(action,input);if(reason||forceLogin){const identity=await 检查AI身份(reason||AI登录原因);if(!identity.成功)throw new Error(identity.错误);setOpen(false);setReason('');setForceLogin(false)}setCode('');message.success('登录成功')}
   const loginVisible=!state.account||forceLogin
+  const en=document.documentElement.lang==='en-US',tt=(zh:string,english:string)=>en?english:zh
   return <Context.Provider value={{state,refresh,configure,call:cloudCall,reason,requireAIIdentity}}>{children}
-    <Modal title={!loginVisible?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={loginVisible?'seal-login-modal':'seal-account-modal'} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current){setOpen(false);setReason('');setForceLogin(false)}}} width={!loginVisible?560:440}>
+    <Modal title={!loginVisible?'账号与云空间':<span className="seal-login__dialog-title">账号登录</span>} className={loginVisible?'seal-login-modal':'seal-account-modal'} open={open} centered footer={null} closable={!busy} keyboard={!busy} maskClosable={!busy} onCancel={()=>{if(!operationPending.current){setOpen(false);setReason('');setForceLogin(false)}}} width={!loginVisible?720:440}>
       {reason?<p role="status">{reason}</p>:null}
       {state.deletionPending&&<div role="status"><p>注销请求正在确认或清理历史备份。服务器确认完成后，账号与对应云数据无法恢复；可以查看进度。</p><Button loading={busy} onClick={()=>void run(async()=>{const result=await cloudCall('deletionStatus');if(result.deleted)message.success('账号与云数据已永久删除；历史备份清理完成')})}>查看注销进度</Button></div>}
       {state.sessionLocked?<><p>本机保存的云账号尚未解锁。本地文件可直接使用；继续使用云服务时，macOS 可能要求输入这台 Mac 的登录密码，授权读取保存的加密凭据。</p><Button type="primary" loading={busy} onClick={()=>void run(async()=>{const restored=await cloudCall<CloudState>('resumeSession');setForceLogin(false);if(restored.account?.enabled)await cloudCall('refresh')})}>恢复本机云会话</Button></>:!state.account||forceLogin?<CloudLoginForm phone={phone} code={code} busy={busy} cooldown={cooldown} error={loginError} onPhone={value=>{setPhone(value);setCode('');setLoginError('')}} onCode={value=>{setCode(value);setLoginError('')}} onSend={send} onPasswordLogin={password=>void run(()=>login('loginPassword',{phone,password}),true)} onLogin={()=>{if(!/^1[3-9]\d{9}$/.test(phone)||!/^\d{6}$/.test(code))return;void run(()=>login('login',{phone,code}),true)}}/>:<>
-        <p>已登录：{state.account.phone} <Button size="small" onClick={()=>run(()=>cloudCall('logout'))}>退出登录</Button></p>
+        {/* 2.8.0 方案 A：账号摘要条 → 云空间卡 → 账号安全卡 → 独立危险区；业务流程与校验不变 */}
+        <div className="seal-account-summary">
+          <span className="seal-account-avatar" aria-hidden="true">{state.account.phone.replace(/\D/g,'').slice(0,3)||'ID'}</span>
+          <div className="seal-account-summary__who"><strong translate="no">{state.account.phone}</strong><small>{!state.account.enabled?tt('手机号登录 · 尚未开通云空间','Signed in with phone · cloud space not enabled'):state.unlocked?tt('手机号登录 · 本机已解锁云空间','Signed in with phone · cloud space unlocked on this device'):tt('手机号登录 · 云空间尚未解锁','Signed in with phone · cloud space locked')}</small></div>
+          <Button onClick={()=>run(()=>cloudCall('logout'))}>{tt('退出登录','Sign out')}</Button>
+        </div>
+        <section className="seal-account-card" aria-label={tt('云空间','Cloud space')}>
+          <h3>{tt('云空间','Cloud space')}</h3>
+          <p className="seal-account-card__hint">{tt('文件在本机加密后上传，服务器无法读取内容','Files are encrypted on this device before upload; the server cannot read them')}</p>
+          {!state.account.enabled?<>
+            <div className="seal-cloud-agreement"><h4>云服务协议与隐私说明</h4><p>{state.account.keyRecovery===1?'云文件和文件名在本机加密后上传。服务器加密保管云空间密钥，登录后设备可自动解锁。绑定手机验证通过后可以重置访问密钥。':'云文件在本机加密后上传。请保管旧版恢复密钥，换设备时用于解锁。'}</p><p>每账号提供 300 MB 配额，文件、历史版本、回收站和公开副本计入用量。公开发布与在线 AI 处理另行授权。清空停用后，备份最多保留 7 天。</p></div>
+            <Checkbox checked={agreed} onChange={e=>setAgreed(e.target.checked)}>我已阅读并同意云服务协议与隐私说明</Checkbox>
+            <div className="seal-account-card__actions">{Boolean(state.account.keyRevision)&&<Button disabled={busy} onClick={()=>{setResetCode('');setResetOpen(true)}}>重置云空间密钥</Button>}<Button type="primary" disabled={!agreed} loading={busy} onClick={enable}>开通云空间</Button></div>
+          </>:!state.unlocked?state.account.keyRevision?<div className="seal-account-card__actions"><Button disabled={busy} onClick={()=>{setResetCode('');setResetOpen(true)}}>重置云空间密钥</Button><Button type="primary" loading={busy} onClick={()=>run(()=>cloudCall('refresh'))}>重新连接云空间</Button></div>:<>
+            <p>请用旧版恢复密钥解锁，或在一台已解锁的设备上完成迁移。</p><Input.Password aria-label="恢复密钥" value={recovery} onChange={e=>setRecovery(e.target.value)}/>
+            <div className="seal-account-card__actions"><Button type="primary" loading={busy} onClick={()=>run(async()=>{await cloudCall('unlock',{recovery});setRecovery('')})}>解锁云空间</Button></div>
+          </>:(()=>{const quota=state.account.quota||300000000,used=state.account.used||0,percent=Math.min(100,Math.round(used/quota*100)),mb=(value:number)=>(value/1000000).toFixed(1)+' MB';return <>
+            <Progress className="seal-account-meter" percent={percent} showInfo={false} strokeColor="var(--brand)" aria-label={tt('云空间用量','Cloud storage usage')}/>
+            <div className="seal-account-meter__text"><span><b>{mb(used)}</b> / {mb(quota)} · {tt(`已用 ${percent}%`,`${percent}% used`)}</span><span>{tt(`剩余 ${mb(Math.max(0,quota-used))}`,`${mb(Math.max(0,quota-used))} free`)}</span></div>
+            <div className="seal-account-card__actions">{Boolean(state.account.keyRevision)&&<Button disabled={busy} onClick={()=>{setResetCode('');setResetOpen(true)}}>重置云空间密钥</Button>}<Button type="primary" loading={busy} onClick={()=>run(()=>cloudCall('autosave',{enabled:!state.account?.autosave}))}>{state.account.autosave?'关闭':'开启'}云文档自动保存</Button></div>
+          </>})()}
+        </section>
         <AccountSecurity key={state.account.id} account={state.account} onChanged={refresh}/>
-        {!state.account.enabled?<>
-          <div className="seal-cloud-agreement"><h3>云服务协议与隐私说明</h3><p>{state.account.keyRecovery===1?'云文件和文件名在本机加密后上传。服务器加密保管云空间密钥，登录后设备可自动解锁。绑定手机验证通过后可以重置访问密钥。':'云文件在本机加密后上传。请保管旧版恢复密钥，换设备时用于解锁。'}</p><p>每账号提供 300 MB 配额，文件、历史版本、回收站和公开副本计入用量。公开发布与在线 AI 处理另行授权。清空停用后，备份最多保留 7 天。</p></div>
-          <Checkbox checked={agreed} onChange={e=>setAgreed(e.target.checked)}>我已阅读并同意云服务协议与隐私说明</Checkbox>
-          <p><Button type="primary" disabled={!agreed} loading={busy} onClick={enable}>开通云空间</Button></p>
-        </>:!state.unlocked?state.account.keyRevision?<p><Button loading={busy} onClick={()=>run(()=>cloudCall('refresh'))}>重新连接云空间</Button></p>:<><p>请用旧版恢复密钥解锁，或在一台已解锁的设备上完成迁移。</p><Input.Password aria-label="恢复密钥" value={recovery} onChange={e=>setRecovery(e.target.value)}/><p><Button loading={busy} onClick={()=>run(async()=>{await cloudCall('unlock',{recovery});setRecovery('')})}>解锁云空间</Button></p></>:<><p>云空间已开通，已用 {(state.account.used/1000000).toFixed(2)} / 300 MB。</p><Button loading={busy} onClick={()=>run(()=>cloudCall('autosave',{enabled:!state.account?.autosave}))}>{state.account.autosave?'关闭':'开启'}云文档自动保存</Button></>}
-        {Boolean(state.account.keyRevision)&&<p><Button disabled={busy} onClick={()=>{setResetCode('');setResetOpen(true)}}>重置云空间密钥</Button></p>}
       </>}
     </Modal>
     <Modal title="重置云空间密钥" open={resetOpen&&Boolean(state.account?.keyRevision)} centered confirmLoading={busy}

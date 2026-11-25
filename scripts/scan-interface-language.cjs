@@ -114,7 +114,7 @@ function 提取(文件) {
     if (父.type === 'MemberExpression' && 父.property === 节点) return
     const 文本 = 节点.type === 'StringLiteral' ? 节点.value : 节点.quasis.map(q => q.value.cooked).join('{…}')
     // 内联双语：t('中', 'English') 一类调用的第一个参数
-    const 内联 = 父.type === 'CallExpression' && 父.arguments[0] === 节点 && 父.arguments.length >= 2 && /^(t|tr|翻译|双语)$/.test(调用名(父.callee)) && !中文.test(JSON.stringify(父.arguments[1].value ?? 父.arguments[1].quasis?.map(q => q.value.cooked) ?? ''))
+    const 内联 = 父.type === 'CallExpression' && 父.arguments[0] === 节点 && 父.arguments.length >= 2 && /^(t|tt|tr|翻译|双语)$/.test(调用名(父.callee)) && !中文.test(JSON.stringify(父.arguments[1].value ?? 父.arguments[1].quasis?.map(q => q.value.cooked) ?? ''))
     记(节点, 文本, 节点.type === 'StringLiteral' ? '字符串' : '模板', 内联)
   })
   return 结果

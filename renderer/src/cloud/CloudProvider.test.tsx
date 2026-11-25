@@ -70,7 +70,10 @@ describe('固定云服务的账号界面',()=>{
     expect(await screen.findByRole('button',{name:'恢复本机云会话'})).toBeInTheDocument()
     expect(screen.queryByLabelText('手机号')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button',{name:'恢复本机云会话'}))
-    expect(await screen.findByText(/已登录：13800138000/)).toBeInTheDocument()
+    // 2.8.0 方案 A：账号摘要条显示手机号与云空间状态
+    expect(await screen.findByText('13800138000')).toBeInTheDocument()
+    expect(screen.getByText('手机号登录 · 本机已解锁云空间')).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:'退出登录'})).toBeInTheDocument()
     expect(invoke.mock.calls.filter(call=>call[0]==='resumeSession')).toHaveLength(1)
   })
 
