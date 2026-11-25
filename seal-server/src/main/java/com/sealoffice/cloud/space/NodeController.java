@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -149,6 +150,78 @@ public class NodeController {
                 "UPDATE nodes SET meta = ?, `parent` = ?, updated = ? WHERE id = ?",
                 meta, parent, clock.now(), id));
         return NodeService.nodeRow(nodeService.nodeFor(id, userId, false));
+    }
+
+    /** 批量移动单次上限 */
+    static final int MOVE_LIMIT = 200;
+
+    /**
+     * 批量移动（2.8.0 拖放移动）：{ ids: [...], parent: 目录标识 | null }。
+     * 只改父级，加密索引 meta 与节点标识绑定、不含父级，因此内容、历史版本与配额都不变。
+     * 逐项预检（存在、未在回收站、目标不是自身或子目录），任一失败整批不写，并返回逐项原因；
+     * 全部通过后在同一事务内更新。
+     */
+    @PostMapping("/v1/nodes/move")
+    public ResponseEntity<Map<String, Object>> move(@RequestBody(required = false) Map<String, Object> input) {
+        Map<String, Object> body = input == null ? Map.of() : input;
+        SessionContext.ClientUser client = SessionContext.user();
+        String userId = client.id();
+        sessionGuard(client);
+        if (!(body.get("ids") instanceof List<?> raw) || raw.isEmpty()) {
+            throw ApiException.of(400, "请选择要移动的文件或文件夹");
+        }
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        for (Object item : raw) {
+            if (!(item instanceof String id) || !NodeService.NODE_ID.matcher(id).matches()) {
+                throw ApiException.of(400, "云文件标识无效");
+            }
+            ids.add(id);
+        }
+        if (ids.size() > MOVE_LIMIT) {
+            throw ApiException.of(400, "单次最多移动 " + MOVE_LIMIT + " 项");
+        }
+        String parent = parentOf(body.get("parent"));
+        nodeService.parentFor(parent, userId);
+        java.util.Set<String> ancestors = new java.util.HashSet<>();
+        String cursor = parent;
+        while (cursor != null && ancestors.add(cursor)) {
+            cursor = nodeService.nodeFor(cursor, userId, false).getParent();
+        }
+        List<Map<String, Object>> failures = new ArrayList<>();
+        for (String id : ids) {
+            String reason = null;
+            NodeEntity node = null;
+            try {
+                node = nodeService.nodeFor(id, userId, true);
+            } catch (ApiException missing) {
+                reason = "云文件不存在或已删除";
+            }
+            if (node != null && node.getDeleted() != null && node.getDeleted() == 1) {
+                reason = "回收站文件不能移动";
+            } else if (node != null && ancestors.contains(id)) {
+                reason = "不能将目录移入自身或子目录";
+            }
+            if (reason != null) {
+                failures.add(Map.of("id", id, "error", reason));
+            }
+        }
+        if (!failures.isEmpty()) {
+            Map<String, Object> error = new LinkedHashMap<>();
+            error.put("error", failures.size() == 1 ? (String) failures.get(0).get("error") : "有 " + failures.size() + " 项无法移动，未做任何改动");
+            error.put("failures", failures);
+            return ResponseEntity.status(400).body(error);
+        }
+        long now = clock.now();
+        tx.executeWithoutResult(status -> {
+            for (String id : ids) {
+                jdbc.update("UPDATE nodes SET `parent` = ?, updated = ? WHERE id = ? AND user_id = ?", parent, now, id, userId);
+            }
+        });
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (String id : ids) {
+            items.add(NodeService.nodeRow(nodeService.nodeFor(id, userId, false)));
+        }
+        return ResponseEntity.ok(Map.of("items", items));
     }
 
     /** 移入回收站：递归子树，publications 联动下架 */

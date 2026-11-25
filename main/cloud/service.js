@@ -54,7 +54,7 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
         const chunks=[];let size=0
         res.on('data',chunk=>{size+=chunk.length;if(size>310000000){req.destroy(new Error('服务器响应过大'));return}chunks.push(chunk)})
         res.on('error',reject);res.on('end',()=>{const raw=Buffer.concat(chunks);let result;try{result=JSON.parse(raw.toString())}catch{result=null}
-          if(res.statusCode<200||res.statusCode>=300){const error=Object.assign(new Error(result?.error||'云服务请求失败'),{status:res.statusCode});if(res.statusCode===401&&state.token&&head.Authorization==='Bearer '+state.token){state.token=null;state.root=null;state.account=null;epoch++;persist()}reject(error)}else if(binary)resolve(raw);else if(result)resolve(result);else reject(new Error('服务器响应格式不正确'))
+          if(res.statusCode<200||res.statusCode>=300){const error=Object.assign(new Error(result?.error||'云服务请求失败'),{status:res.statusCode,data:result});if(res.statusCode===401&&state.token&&head.Authorization==='Bearer '+state.token){state.token=null;state.root=null;state.account=null;epoch++;persist()}reject(error)}else if(binary)resolve(raw);else if(result)resolve(result);else reject(new Error('服务器响应格式不正确'))
         })
       });active.add(req);req.on('close',()=>active.delete(req));req.on('error',reject);req.setTimeout(timeout,()=>req.destroy(new Error('云端连接超时，已保留本地待同步数据')));if(payload)req.write(payload);req.end()
     })
@@ -321,6 +321,10 @@ function createService({directory,safeStorage,transport,defaultUrl=DEFAULT_URL,m
     async purge(code){const result=await request('/v1/space/purge',{method:'POST',data:{code,confirm:'清空并停用云空间'}});epoch++;for(const req of active)req.destroy();state.root=null;state.recoveryPending=null;state.account={...state.account,enabled:false,autosave:false,envelope:null,used:0};state.links={};state.statuses={};clearOutbox();persist();return {...result,...status()}},
     folder:(name,parent,kind='folder')=>createNode({name},kind,parent),
     async update(id,changes){const node=(await list()).find(n=>n.id===id);if(!node)throw new Error('文件不存在');const meta={...node.meta,...changes};delete meta.parent;if(changes.name&&node.kind==='file'){const ext=path.extname(node.meta.filename||node.meta.name);meta.filename=/^\.(?:sealmind|sealflow)$/i.test(ext)?changes.name.replace(/\.(?:sealmind|sealflow)$/i,'')+ext:path.extname(changes.name)?changes.name:changes.name+ext}const result=await request(`/v1/nodes/${id}`,{method:'PATCH',data:{parent:changes.parent===undefined?node.parent:changes.parent,meta:encodeMeta(id,meta)}});for(const link of Object.values(state.links))if(link.id===id){link.meta=meta;link.parent=result.parent}persist();return result},
+    // 批量移动：服务端整批事务，只改父级；部分项无法移动时整批不写，并逐项说明原因
+    async move(ids,parent=null){requireSpace();if(!Array.isArray(ids)||!ids.length)throw new Error('请选择要移动的文件或文件夹')
+      try{const result=await request('/v1/nodes/move',{method:'POST',data:{ids,parent:parent??null}});for(const item of result.items)for(const link of Object.values(state.links))if(link.id===item.id)link.parent=item.parent;persist();return result}
+      catch(error){const failures=error?.data?.failures;if(!Array.isArray(failures)||failures.length<2)throw error;const names=new Map((await list().catch(()=>[])).map(n=>[n.id,n.meta?.name||n.id]));throw Object.assign(new Error(error.message+'：'+failures.map(f=>`${names.get(f.id)||String(f.id).slice(0,8)}（${f.error}）`).join('；')),{status:error.status})}},
     remove:(id,destroy=false)=>request(`/v1/nodes/${id}${destroy?'/destroy':''}`,{method:'DELETE'}),
     restore:id=>request(`/v1/nodes/${id}/restore`,{method:'POST'}),
     versions:id=>request(`/v1/nodes/${id}/versions`),

@@ -23,9 +23,13 @@ const fileIcon=(node:CloudNode)=>{
 
 // Adapted from the toolbar-list pattern: one toolbar, file results, contextual actions.
 // Existing product tokens stay scoped to this browser rather than changing the app shell.
-export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy}:{
+export interface CloudDragBinding{拖动属性:(id:string)=>Record<string,unknown>;状态类:(id:string)=>string;拖动中:boolean}
+
+export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy,drag}:{
   nodes:CloudNode[];selected:string[];onSelect:(ids:string[])=>void;onOpen:(node:CloudNode)=>void
   actions:(node:CloudNode)=>MenuProps['items'];busy:boolean
+  /** 拖放移动绑定：回收站与只读场景不传 */
+  drag?:CloudDragBinding
 }){
   const {语言}=useSettings()
   const en=语言==='en-US',t=(zh:string,english:string)=>en?english:zh
@@ -33,7 +37,7 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
   const changeView=(next:'grid'|'list')=>{setView(next);try{localStorage.setItem('seal-cloud-view',next)}catch{/* View preference must not block file actions. */}}
   const toggle=(node:CloudNode,checked:boolean)=>onSelect(checked?[...selected.filter(id=>id!==node.id),node.id]:selected.filter(id=>id!==node.id))
   const all=nodes.length>0&&nodes.every(node=>selected.includes(node.id))
-  return <div className="seal-drive-results ds-list-card">
+  return <div className={`seal-drive-results ds-list-card${drag?.拖动中?' is-drag-active':''}`}>
     <div className="seal-drive-results-header list-card-toolbar">
       <Checkbox aria-label={t('全选云文件','Select all cloud files')} checked={all} indeterminate={!all&&selected.length>0} onChange={event=>onSelect(event.target.checked?nodes.map(n=>n.id):[])} disabled={!nodes.length||busy}/>
       <span className="seal-drive-result-title">{selected.length?t(`已选择 ${selected.length} 项`,`${selected.length} selected`):t(`全部文件 · ${nodes.length} 项`,`All files · ${nodes.length} items`)}</span>
@@ -44,7 +48,8 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
     {!nodes.length?<Empty className="seal-drive-empty" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('此目录暂无文件','This folder is empty')}/>:<>
       {view==='list'?<div className="seal-drive-list-labels" aria-hidden="true"><span>{t('文件名','Name')}</span><span>{t('修改时间','Modified')}</span><span>{t('版本','Version')}</span></div>:null}
       <ul className={`seal-drive-files seal-drive-files--${view}`} aria-label={t('云文件','Cloud files')}>
-        {nodes.map(node=><li key={node.id} className={`seal-drive-file${selected.includes(node.id)?' is-selected':''}`}>
+        {nodes.map(node=><li key={node.id} className={`seal-drive-file${selected.includes(node.id)?' is-selected':''}${drag?drag.状态类(node.id):''}`}
+          {...(drag&&!busy?drag.拖动属性(node.id):{})} {...(drag&&isFolder(node)?{'data-drop-target':node.id}:{})}>
           <Checkbox className="seal-drive-file-check" aria-label={t(`选择 ${node.meta.name}`,`Select ${node.meta.name}`)} checked={selected.includes(node.id)} onChange={event=>toggle(node,event.target.checked)} disabled={busy}/>
           <button className="seal-drive-file-open" disabled={busy} onClick={()=>onOpen(node)} title={node.meta.name}>
             {isFolder(node)?<span className="seal-drive-folder-symbol" data-size={view} aria-hidden="true"/>:<Icon name={fileIcon(node)} variant="mobile" size={view==='grid'?64:34}/>}
