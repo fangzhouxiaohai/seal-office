@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "fixedAt": "2026-11-25T22:31:12+08:00",
+  "scope": "后端修复，客户端无需更新",
+  "rootCause": {
+    "summary": "blob 是 MySQL 保留字，VersionEntity 未声明列名，MyBatis-Plus 生成 SQL 未加反引号，版本查询语法错误返回 500",
+    "sql": "SELECT id,node_id,user_id,version,blob,bytes,created,upload_id FROM versions WHERE (id = ? AND user_id = ?)",
+    "evidence": "2026-11-25 22:10 访问日志 25 次 /api/v1/versions 500；应用日志 BadSqlGrammarException"
+  },
+  "changes": [
+    "VersionEntity、TeamVersionEntity、PublicationEntity 的 blob 字段增加 @TableField(\"`blob`\")",
+    "新增 VersionDownloadTest：列名转义断言与上传后版本下载接口用例"
+  ],
+  "tests": {
+    "command": "mvn -B package",
+    "total": 167,
+    "failures": 0,
+    "newTests": 2
+  },
+  "deployment": {
+    "releaseId": "20261125143017-fc0ae6",
+    "jarSha256": "dee464d431f6be1fbc39be8f614a3ee5837b785ed891cd3760745a4d6b3e75e7",
+    "service": "spring_seal-cloud",
+    "serviceActive": true,
+    "rollbackJar": "/www/wwwroot/seal.xingmasoft.com/backend-releases/20261125143017-fc0ae6/previous-seal-server.jar"
+  },
+  "checks": {
+    "capabilities": 200,
+    "adminOverviewAnonymous": 401,
+    "versionsAnonymous": 401,
+    "sqlErrorsAfterDeploy": 0,
+    "unhandledExceptionsAfterDeploy": 0,
+    "serviceStart": "2026-11-25T22:31:28+08:00"
+  },
+  "followUp": [
+    "线上 831 条版本中有 110 个对象文件缺失，需另行授权后只读核查与处理",
+    "预览错误提示按错误码映射并保留重试、下载、用编辑器打开三个出口，纳入 2.8.0 计划"
+  ]
+}

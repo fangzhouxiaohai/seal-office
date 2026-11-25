@@ -1,6 +1,7 @@
 package com.sealoffice.cloud.store.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -21,6 +22,8 @@ public class VersionEntity {
 
     private Long version;
 
+    /** blob 是 MySQL 保留字，MyBatis-Plus 生成 SQL 时必须加反引号，否则版本下载与预览返回 500 */
+    @TableField("`blob`")
     private String blob;
 
     private Long bytes;
