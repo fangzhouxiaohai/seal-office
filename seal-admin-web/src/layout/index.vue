@@ -45,7 +45,10 @@
                 <el-dropdown-item disabled>
                   <span class="role-text">{{ roleText }}</span>
                 </el-dropdown-item>
-                <el-dropdown-item command="logout" divided>
+                <el-dropdown-item command="password" divided>
+                  <el-icon><Lock /></el-icon> 修改密码
+                </el-dropdown-item>
+                <el-dropdown-item command="logout">
                   <el-icon><SwitchButton /></el-icon> 退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -62,14 +65,16 @@
         </router-view>
       </el-main>
     </el-container>
+    <ChangePasswordDialog v-model="passwordVisible" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { ArrowDown, Lock, SwitchButton } from '@element-plus/icons-vue'
+import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import { menuKey, useUserStore } from '@/stores/user'
 import { menuIcon } from '@/utils/icons'
 import { clearDynamicRoutes } from '@/router'
@@ -89,8 +94,12 @@ const roleText = computed(() =>
   userStore.user?.is_super ? '超级管理员' : userStore.roles.map((role) => role.name).join('、') || '未分配角色'
 )
 
+const passwordVisible = ref(false)
+
 function handleCommand(command: string) {
-  if (command === 'logout') {
+  if (command === 'password') {
+    passwordVisible.value = true
+  } else if (command === 'logout') {
     doLogout()
   }
 }

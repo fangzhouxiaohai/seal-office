@@ -12,6 +12,7 @@ export const actionLabels: Record<string, string> = {
   'converter-test': '转换测试',
   'sms-config': '修改短信配置',
   'sms-test': '短信测试发送',
+  'password-change': '修改本人密码',
   'release-create': '发布新版本',
   'release-update': '修改发布',
   'release-delete': '删除发布',
@@ -50,6 +51,10 @@ export function auditDetail(row: { action: string; detail?: unknown }): string {
     if (row.action === 'sms-config') {
       const v = JSON.parse(raw)
       return `签名 ${v.sign} · 模板 ${v.template}`
+    }
+    if (row.action === 'password-change') {
+      const [state, ip] = raw.split(':')
+      return `${state === 'passed' ? '修改成功' : '当前密码错误'}${ip ? ' · ' + ip : ''}`
     }
     if (row.action === 'sms-test') {
       const [phone, state] = raw.split(':')

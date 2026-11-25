@@ -38,6 +38,7 @@ public abstract class AdminTestSupport extends CloudApiTestSupport {
         jdbc.update("DELETE FROM roles");
         jdbc.update("DELETE FROM menus");
         jdbc.update("DELETE FROM admin_audit");
+        jdbc.update("DELETE FROM admin_password_overrides");
     }
 
     protected MvcResult post(String path, Object body, String token, String fromIp) throws Exception {

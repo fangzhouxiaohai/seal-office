@@ -47,9 +47,18 @@ public class AdminSessionService {
         this.adminHash = adminHash == null ? "" : adminHash;
     }
 
-    /** 是否配置了环境超管（决定管理员列表中内置账号的启用展示） */
+    /** 是否配置了环境超管（决定管理员列表中内置账号的启用展示）；本人改过密码的覆盖值同样视为已配置 */
     public boolean superuserConfigured() {
-        return !adminHash.isEmpty();
+        return !adminHash.isEmpty() || access.superuserOverride() != null;
+    }
+
+    /** 内置超管口令校验：数据库覆盖值优先，无覆盖时回退环境变量 */
+    private boolean superuserPasswordMatches(String secret) {
+        Map<String, Object> override = access.superuserOverride();
+        if (override != null) {
+            return AdminAccessService.matches(secret, (String) override.get("salt"), (String) override.get("hash"));
+        }
+        return !adminHash.isEmpty() && CryptoUtil.safeEqual(AdminAccessService.scryptHex(secret, adminSalt), adminHash);
     }
 
     /**
@@ -67,9 +76,9 @@ public class AdminSessionService {
         if (ipAttempt.count() >= LOCK_THRESHOLD || accountAttempt.count() >= LOCK_THRESHOLD) {
             throw ApiException.of(429, "登录尝试过多，请稍后再试");
         }
-        boolean rootLogin = !adminHash.isEmpty() && "admin".equals(username)
+        boolean rootLogin = "admin".equals(username)
                 && password instanceof String secret && secret.length() <= 128
-                && CryptoUtil.safeEqual(AdminAccessService.scryptHex(secret, adminSalt), adminHash);
+                && superuserPasswordMatches(secret);
         AdminPrincipal principal = rootLogin ? access.superuser() : access.authenticate(username, password);
         if (principal == null) {
             attempts.put(ipKey, new Attempt(ipAttempt.count() + 1, ipAttempt.time()));
@@ -127,5 +136,57 @@ public class AdminSessionService {
 
     public void logout(String tokenHash) {
         sessions.remove(tokenHash);
+    }
+
+    /**
+     * 管理员本人修改密码：校验当前密码（按账号与 IP 限流，15 分钟 5 次），新密码 8 至 128 位且不同于当前密码。
+     * 成功后保留当前会话、撤销该账号的其他会话；成功与失败都写管理审计，不记录密码或哈希。
+     * 当前密码错误返回 400（不是 401），避免前端把它当作登录失效而退出。
+     */
+    public Map<String, Object> changePassword(String tokenHash, AdminPrincipal actor, Object current, Object next, String ip) {
+        if (!(current instanceof String currentPassword) || currentPassword.isEmpty() || currentPassword.length() > 128) {
+            throw ApiException.of(400, "请输入当前密码");
+        }
+        if (!(next instanceof String newPassword) || newPassword.length() < 8 || newPassword.length() > 128) {
+            throw ApiException.of(400, "新密码须为 8 至 128 个字符");
+        }
+        String accountKey = "password:" + actor.id();
+        String ipKey = "password-ip:" + ip;
+        long now = clock.now();
+        Attempt accountAttempt = fresh(attempts.get(accountKey), now);
+        Attempt ipAttempt = fresh(attempts.get(ipKey), now);
+        if (accountAttempt.count() >= LOCK_THRESHOLD || ipAttempt.count() >= LOCK_THRESHOLD) {
+            throw ApiException.of(429, "修改密码尝试过多，请 15 分钟后再试");
+        }
+        boolean superuser = AdminConstants.SUPER_ID.equals(actor.id());
+        boolean valid = superuser ? superuserPasswordMatches(currentPassword) : access.verifyOwnPassword(actor.id(), currentPassword);
+        if (!valid) {
+            attempts.put(accountKey, new Attempt(accountAttempt.count() + 1, accountAttempt.time()));
+            attempts.put(ipKey, new Attempt(ipAttempt.count() + 1, ipAttempt.time()));
+            access.audit(actor, "password-change", "failed:" + ip);
+            throw ApiException.of(400, "当前密码不正确");
+        }
+        if (newPassword.equals(currentPassword)) {
+            throw ApiException.of(400, "新密码不能与当前密码相同");
+        }
+        attempts.remove(accountKey);
+        int revoked = 0;
+        if (superuser) {
+            access.setSuperuserOverride(newPassword, AdminAudit.tag(actor));
+        } else {
+            long revision = access.setOwnPassword(actor.id(), newPassword);
+            Session mine = sessions.get(tokenHash);
+            if (mine != null) {
+                sessions.put(tokenHash, new Session(mine.expires(), mine.id(), revision));
+            }
+        }
+        for (Map.Entry<String, Session> entry : sessions.entrySet()) {
+            if (!entry.getKey().equals(tokenHash) && entry.getValue().id().equals(actor.id())
+                    && sessions.remove(entry.getKey(), entry.getValue())) {
+                revoked++;
+            }
+        }
+        access.audit(actor, "password-change", "passed:" + ip + ":revoked=" + revoked);
+        return Map.of("changed", true, "revokedSessions", revoked);
     }
 }

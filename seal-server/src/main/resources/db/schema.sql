@@ -359,3 +359,13 @@ CREATE TABLE IF NOT EXISTS sms_settings (
 
 -- 运行概览更名为数据概览：只替换仍为旧默认名的覆盖行，保留管理员自定义标题
 UPDATE menus SET title = '数据概览' WHERE `key` = 'overview' AND title = '运行概览';
+
+-- 管理员本人修改密码（2.8.0）：内置超级管理员的密码覆盖值。登录时优先读取覆盖，
+-- 无覆盖时回退服务环境变量 SEAL_ADMIN_PASSWORD_HASH；删除该行即可恢复环境变量初始密码。
+CREATE TABLE IF NOT EXISTS admin_password_overrides (
+  username VARCHAR(64) PRIMARY KEY,
+  salt VARCHAR(64) NOT NULL,
+  hash VARCHAR(128) NOT NULL,
+  updated_at BIGINT NOT NULL,
+  updated_by VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

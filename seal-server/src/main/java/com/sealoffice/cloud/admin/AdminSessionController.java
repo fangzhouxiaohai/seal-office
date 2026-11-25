@@ -40,6 +40,15 @@ public class AdminSessionController {
         return Map.of("loggedOut", true);
     }
 
+    /** 管理员本人修改密码：{ currentPassword, newPassword } */
+    @PostMapping("/v1/admin/password")
+    public Map<String, Object> changePassword(@RequestBody(required = false) Map<String, Object> input,
+                                              HttpServletRequest request) {
+        Map<String, Object> body = input == null ? Map.of() : input;
+        return sessions.changePassword(AdminContext.tokenHash(), actor(), body.get("currentPassword"),
+                body.get("newPassword"), ClientIpUtil.clientIp(request));
+    }
+
     @GetMapping("/v1/admin/session")
     public Map<String, Object> session() {
         return access.profile(actor());

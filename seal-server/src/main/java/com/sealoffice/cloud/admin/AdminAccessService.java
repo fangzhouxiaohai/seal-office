@@ -151,6 +151,48 @@ public class AdminAccessService {
         return principal((String) row.get("id"));
     }
 
+    // ---------- 本人修改密码 ----------
+
+    /** 校验普通管理员本人的当前密码（账号须存在且启用） */
+    public boolean verifyOwnPassword(String id, String password) {
+        Map<String, Object> row = queryOne("SELECT salt,digest,enabled FROM admins WHERE id=?", id);
+        String salt = row == null ? DUMMY_SALT : (String) row.get("salt");
+        String digest = row == null ? DUMMY_DIGEST : (String) row.get("digest");
+        boolean valid = safeCompare(password, salt, digest);
+        return row != null && valid && ((Number) row.get("enabled")).intValue() == 1;
+    }
+
+    /** 写入普通管理员本人的新密码，账号版本号加一，返回新版本号（供保留当前会话） */
+    @Transactional
+    public long setOwnPassword(String id, String password) {
+        String salt = randomHex(16);
+        jdbc.update("UPDATE admins SET salt=?,digest=?,revision=revision+1 WHERE id=?", salt, scryptHex(password, salt), id);
+        Long revision = jdbc.queryForObject("SELECT revision FROM admins WHERE id=?", Long.class, id);
+        return revision == null ? 0L : revision;
+    }
+
+    /** 内置超管密码覆盖值；无覆盖返回 null */
+    public Map<String, Object> superuserOverride() {
+        return queryOne("SELECT salt,hash FROM admin_password_overrides WHERE username='admin'");
+    }
+
+    @Transactional
+    public void setSuperuserOverride(String password, String actor) {
+        String salt = randomHex(16);
+        jdbc.update("DELETE FROM admin_password_overrides WHERE username='admin'");
+        jdbc.update("INSERT INTO admin_password_overrides(username,salt,hash,updated_at,updated_by) VALUES('admin',?,?,?,?)",
+                salt, scryptHex(password, salt), clock.now(), actor);
+    }
+
+    static boolean matches(String password, String salt, String digest) {
+        return safeCompare(password, salt, digest);
+    }
+
+    /** 管理审计（只记录管理员、动作与结果，不记录密码或哈希） */
+    public void audit(AdminPrincipal actor, String action, String detail) {
+        log(actor, action, detail);
+    }
+
     // ---------- 角色 ----------
 
     public List<Map<String, Object>> listedRoles(AdminPrincipal actor) {
