@@ -20,7 +20,7 @@
 
 官网已部署在 [seal.xingmasoft.com](https://seal.xingmasoft.com/)，后台入口为 `/admin/`，在线办公入口仍为 `/office/`。官网源码位于 `website/`，采用独立构建；运行与发布验证见 [官网修改说明](功能修改说明-官网.md)。
 
-官网提供 2.7.8 版 Windows、Linux、安卓、鸿蒙、macOS Apple 芯片和 Intel 安装包。首屏的光晕、网格和渐变动效可以暂停，并遵循系统的减少动态效果设置。参见[官网首页下载与动效调整](功能修改说明-官网首页下载.md)。
+官网提供 2.7.10 版 Windows、Linux、安卓、鸿蒙与 macOS 通用安装包，下载地址全部来自服务器后台发布附件，不再跳转 GitHub。首屏的光晕、网格和渐变动效可以暂停，并遵循系统的减少动态效果设置。参见[官网下载更新说明](功能修改说明-官网下载2.7.10.md)。
 
 官网已做整体视觉美化：首屏与页脚增加星空动效（闪烁星点与偶发流星，离开视口自动暂停），按钮统一为胶囊样式并带光泽动效，各区块滚动显现，卡片增加悬浮光晕。改动与验证见[官网星空美化说明](功能修改说明-官网星空美化.md)。
 
@@ -837,5 +837,5 @@ renderer/src/
 
 ## 官网下载入口
 
-官网首页从项目最新发布信息获取 Windows、macOS、Linux、安卓及鸿蒙安装包地址；获取失败时可通过发布页选择下载。官网位于 `website/`，在该目录运行 `npx vite build --config vite.config.js` 构建。
-官网构建完成后可使用 `node scripts/update-website.cjs` 发布更新；该脚本会保留旧版静态资源并在服务器本地验收失败时回滚官网。
+官网下载区直接使用服务器后台发布附件地址：Windows、macOS、Linux、安卓、鸿蒙分别指向 `https://seal.xingmasoft.com/api/v1/release-assets/<附件ID>/<文件名>`，版本号与附件 ID 随每个版本同步更新；附件未上架或已下架时链接返回 404。macOS 使用通用 DMG（Apple 芯片与 Intel 通用），不按架构拆分。官网位于 `website/`，在该目录运行 `npx vite build` 构建到 `website-dist/`。
+构建完成后在仓库根目录运行 `node scripts/update-website.cjs` 发布：脚本校验入口与资源、切换 `websitecurrent`，本机回环验收失败时自动回滚官网。

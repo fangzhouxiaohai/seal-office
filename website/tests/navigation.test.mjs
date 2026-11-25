@@ -34,13 +34,16 @@ describe('移动导航', () => {
 })
 
 describe('主下载按钮', () => {
-  it('Mac 浏览器即使报告 Intel 也会跳转到同时含两个芯片版本的选择区', async () => {
+  it('Mac 浏览器直接指向 macOS 通用安装包', async () => {
+    const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
+    const escaped = version.replace(/\./g, '\\.')
     const dom = await openHomepage('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')
     const { document } = dom.window
     const primary = document.querySelector('.download-primary')
-    assert.equal(primary.hash, '#downloads')
-    assert.match(primary.textContent, /macOS 芯片/)
-    assert.equal(document.querySelector(primary.hash).querySelectorAll('[data-platform^="macos-"]').length, 2)
+    const mac = document.querySelector('[data-platform="macos"]')
+    assert.equal(primary.href, mac.href)
+    assert.match(primary.textContent, new RegExp(`macOS.*v${escaped}`))
+    assert.match(mac.textContent, /通用/)
     dom.window.close()
   })
 

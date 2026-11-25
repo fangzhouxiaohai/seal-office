@@ -45,33 +45,28 @@ describe('最新版下载', () => {
 
 
 describe('分平台下载入口', () => {
-  it('静态首页为每个包显示相应版本和来源', async () => {
+  it('静态首页为每个包显示相应版本和服务器下载地址', async () => {
     const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
     const links = Array.from(document.querySelectorAll('#downloads [data-platform]'))
-    assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos-arm64', 'macos-intel', 'linux', 'android', 'harmony'])
-    for (const link of links) {
-      const mac = /^macos-(arm64|intel)$/.exec(link.dataset.platform)
-      const base = 'https://github.com/fangzhouxiaohai/seal-office/releases/download/v'
-      if (mac) {
-        const displayedVersion = /v(\d+\.\d+\.\d+)/.exec(link.textContent)?.[1]
-        assert.equal(displayedVersion, version)
-        assert.equal(link.href, `${base}${displayedVersion}/seal-office-${displayedVersion}-macos-${mac[1]}.dmg`)
-      } else if (link.dataset.platform === 'windows' || link.dataset.platform === 'linux') {
-        const url = new URL(link.href)
-        const filename = link.dataset.platform === 'windows' ? `seal-office-setup-${version}.exe` : `seal-office-${version}-amd64.deb`
-        assert.equal(url.origin, 'https://seal.xingmasoft.com')
-        assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
-        assert.equal(url.pathname.split('/').pop(), filename)
-        assert.ok(link.textContent.includes(`v${version}`))
-      } else {
-        assert.ok(link.href.startsWith(`${base}${version}/seal-office-`))
-        assert.ok(link.textContent.includes(`v${version}`))
-      }
+    assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos', 'linux', 'android', 'harmony'])
+    const serverAssets = {
+      windows: `seal-office-setup-${version}.exe`,
+      macos: `seal-office-${version}-macos.dmg`,
+      linux: `seal-office-${version}-amd64.deb`,
+      android: `seal-office-${version}-android.apk`,
+      harmony: `seal-office-${version}-harmony.hap`,
     }
-    const intel = document.querySelector('[data-platform="macos-intel"]')
-    assert.match(intel.textContent, /Intel/)
+    for (const link of links) {
+      const platform = link.dataset.platform
+      const url = new URL(link.href)
+      assert.equal(url.origin, 'https://seal.xingmasoft.com')
+      assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
+      assert.equal(url.pathname.split('/').pop(), serverAssets[platform])
+      assert.ok(link.textContent.includes(`v${version}`))
+    }
+    assert.match(document.querySelector('[data-platform="macos"]').textContent, /通用/)
   })
 
   it('下载区直接显示平台列表', async () => {

@@ -22,8 +22,7 @@ if (primary && link) {
   primary.href = link.href
   primary.textContent = `下载 ${link.textContent.trim()}`
 } else if (primary && platform === 'macos') {
-  // macOS 浏览器可能在 Apple 芯片上也报告 Intel。
-  primary.textContent = '选择 macOS 芯片版本'
+  primary.textContent = '下载 macOS 版'
 }
 
 // 顶部首屏与底部页脚的星空动效

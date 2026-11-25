@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "version": "2.7.10",
+  "website": "https://seal.xingmasoft.com/",
+  "websiteRelease": "20261125134112-63355e92",
+  "deployedAt": "2026-11-25T21:41:12+08:00",
+  "links": [
+    {
+      "platform": "windows",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/a4d7f8e4-9cdc-4d32-afa5-0c7a125a731a/seal-office-setup-2.7.10.exe",
+      "bytes": 572279893,
+      "sha256": "9aab0e652d2bbead3c18445c0c44157136e82b1b2ce3f9ee2313bd3ef1c84c74"
+    },
+    {
+      "platform": "macos",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/cbdd46c6-ec33-4945-951d-dbf7db75cd2d/seal-office-2.7.10-macos.dmg",
+      "bytes": 231581027,
+      "sha256": "ea905e1b14160abaf9b363453cc940afa1ed6e6a2ebb442f0956c2712c3c6707"
+    },
+    {
+      "platform": "linux",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/629b8613-2295-4a8f-8dcf-f5921fb0cd42/seal-office-2.7.10-amd64.deb",
+      "bytes": 171262948,
+      "sha256": "531126681526038ddc6732529c0694ed8ca21b75f211ba20442c93d34289a718"
+    },
+    {
+      "platform": "android",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/e7a85943-eb8c-44b8-82bd-41ae3b8c7358/seal-office-2.7.10-android.apk",
+      "bytes": 56457829,
+      "sha256": "40f0a09454e0debb38b76513fb2045eb182592a8368b5608d2266289e85645cf"
+    },
+    {
+      "platform": "harmony",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/6ffcd009-c396-44f1-b22d-02788c99594d/seal-office-2.7.10-harmony.hap",
+      "bytes": 74873124,
+      "sha256": "acabff83a95a259ad18fbc32dbc9285b92188197483ec468393c700635406f69"
+    }
+  ],
+  "checks": {
+    "pages": {
+      "/": 200,
+      "/admin/": 200,
+      "/office/": 200,
+      "/share/": 200
+    },
+    "downloads": "5 个入口 HEAD 200，Content-Length 与 release/v2.7.10 本地文件逐字节一致，ETag 等于本地 SHA-256",
+    "range": "Range bytes=0-99 返回 206，Content-Range 总分片 231581027",
+    "assets": "/website-assets/assets/index-14130f59.js 与 index-dba7f7fd.css 均 200",
+    "deployScript": "node scripts/update-website.cjs 回环验收通过后切换 websitecurrent"
+  }
+}
