@@ -1,4 +1,6 @@
-import {useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
+import {createPortal} from 'react-dom'
+import {卡片位置,格式化大小,格式化时间} from './fileInfo'
 import {Button,Checkbox,Dropdown,Empty,Tooltip,type MenuProps} from 'antd'
 import Icon from '../components/Icon'
 import {useSettings} from '../store/settingsStore'
@@ -6,6 +8,8 @@ import {原生文档类型} from '../fileFormats'
 
 export interface CloudNode {
   id:string;parent:string|null;kind:string;deleted:number;version:number;updated:number
+  /** 当前版本存储字节数与首个版本时间（2.8.0 起由服务端附带；文件夹为 null） */
+  bytes?:number|null;created?:number|null
   meta:{name:string;filename?:string;[key:string]:unknown}
 }
 export const isFolder=(node:CloudNode)=>['folder','library'].includes(node.kind)
@@ -25,9 +29,11 @@ const fileIcon=(node:CloudNode)=>{
 // Existing product tokens stay scoped to this browser rather than changing the app shell.
 export interface CloudDragBinding{拖动属性:(id:string)=>Record<string,unknown>;状态类:(id:string)=>string;拖动中:boolean}
 
-export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy,drag}:{
+export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy,drag,sizes}:{
   nodes:CloudNode[];selected:string[];onSelect:(ids:string[])=>void;onOpen:(node:CloudNode)=>void
   actions:(node:CloudNode)=>MenuProps['items'];busy:boolean
+  /** 节点大小（文件夹为递归汇总）；不传则不显示大小 */
+  sizes?:Map<string,{字节:number|null;不完整:boolean}>
   /** 拖放移动绑定：回收站与只读场景不传 */
   drag?:CloudDragBinding
 }){
@@ -37,6 +43,20 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
   const changeView=(next:'grid'|'list')=>{setView(next);try{localStorage.setItem('seal-cloud-view',next)}catch{/* View preference must not block file actions. */}}
   const toggle=(node:CloudNode,checked:boolean)=>onSelect(checked?[...selected.filter(id=>id!==node.id),node.id]:selected.filter(id=>id!==node.id))
   const all=nodes.length>0&&nodes.every(node=>selected.includes(node.id))
+  const locale=en?'en-US':'zh-CN'
+  const sizeText=(node:CloudNode)=>{const value=sizes?.get(node.id);if(!value)return '—';return 格式化大小(value.字节,locale)+(value.不完整&&isFolder(node)?'+':'')}
+  // 网格视图悬停信息卡：悬停或键盘聚焦 300ms 后显示，夹在可视区域内，靠近边缘自动翻转
+  const [card,setCard]=useState<{node:CloudNode;left:number;top:number}|null>(null)
+  const cardTimer=useRef(0)
+  const hideCard=()=>{clearTimeout(cardTimer.current);setCard(null)}
+  const showCard=(node:CloudNode,element:HTMLElement)=>{
+    if(view!=='grid'||drag?.拖动中)return
+    clearTimeout(cardTimer.current)
+    cardTimer.current=window.setTimeout(()=>{const rect=element.getBoundingClientRect();const width=Math.min(260,window.innerWidth-16);setCard({node,...卡片位置(rect,{width,height:132},{width:window.innerWidth,height:window.innerHeight})})},300)
+  }
+  useEffect(()=>{if(!card)return;const close=()=>hideCard();window.addEventListener('scroll',close,true);window.addEventListener('resize',close);return()=>{window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close)}},[card])
+  useEffect(()=>()=>clearTimeout(cardTimer.current),[])
+  useEffect(()=>{if(drag?.拖动中)hideCard()},[drag?.拖动中])
   return <div className={`seal-drive-results ds-list-card${drag?.拖动中?' is-drag-active':''}`}>
     <div className="seal-drive-results-header list-card-toolbar">
       <Checkbox aria-label={t('全选云文件','Select all cloud files')} checked={all} indeterminate={!all&&selected.length>0} onChange={event=>onSelect(event.target.checked?nodes.map(n=>n.id):[])} disabled={!nodes.length||busy}/>
@@ -46,20 +66,32 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
       </div>
     </div>
     {!nodes.length?<Empty className="seal-drive-empty" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('此目录暂无文件','This folder is empty')}/>:<>
-      {view==='list'?<div className="seal-drive-list-labels" aria-hidden="true"><span>{t('文件名','Name')}</span><span>{t('修改时间','Modified')}</span><span>{t('版本','Version')}</span></div>:null}
+      {view==='list'?<div className="seal-drive-list-labels" aria-hidden="true"><span>{t('文件名','Name')}</span><span>{t('大小','Size')}</span><span>{t('修改时间','Modified')}</span><span>{t('版本','Version')}</span></div>:null}
       <ul className={`seal-drive-files seal-drive-files--${view}`} aria-label={t('云文件','Cloud files')}>
         {nodes.map(node=><li key={node.id} className={`seal-drive-file${selected.includes(node.id)?' is-selected':''}${drag?drag.状态类(node.id):''}`}
           {...(drag&&!busy?drag.拖动属性(node.id):{})} {...(drag&&isFolder(node)?{'data-drop-target':node.id}:{})}>
           <Checkbox className="seal-drive-file-check" aria-label={t(`选择 ${node.meta.name}`,`Select ${node.meta.name}`)} checked={selected.includes(node.id)} onChange={event=>toggle(node,event.target.checked)} disabled={busy}/>
-          <button className="seal-drive-file-open" disabled={busy} onClick={()=>onOpen(node)} title={node.meta.name}>
+          <button className="seal-drive-file-open" disabled={busy} onClick={()=>onOpen(node)} title={view==='grid'?undefined:node.meta.name}
+            aria-describedby={card?.node.id===node.id?'seal-drive-hover-card':undefined}
+            onMouseEnter={event=>showCard(node,event.currentTarget.closest('li')||event.currentTarget)} onMouseLeave={hideCard}
+            onFocus={event=>showCard(node,event.currentTarget.closest('li')||event.currentTarget)} onBlur={hideCard}>
             {isFolder(node)?<span className="seal-drive-folder-symbol" data-size={view} aria-hidden="true"/>:<Icon name={fileIcon(node)} variant="mobile" size={view==='grid'?64:34}/>}
             <span className="seal-drive-file-name" translate="no">{node.meta.name}</span>
           </button>
-          <span className="seal-drive-file-date">{new Date(node.updated).toLocaleString(en?'en-US':'zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+          <span className="seal-drive-file-size">{sizeText(node)}</span>
+          <span className="seal-drive-file-date">{格式化时间(node.updated,locale)}</span>
           <span className="seal-drive-file-version">{isFolder(node)?'—':t(`版本 ${node.version}`,`Version ${node.version}`)}</span>
           <Dropdown trigger={['click']} menu={{items:actions(node)}}><Button className="seal-drive-file-more" type="text" disabled={busy} aria-label={t(`更多操作 ${node.meta.name}`,`More actions for ${node.meta.name}`)} icon={<Icon name="more" size={18}/>} /></Dropdown>
         </li>)}
       </ul>
     </>}
+    {card?createPortal(<div id="seal-drive-hover-card" role="tooltip" className="seal-drive-hover-card" style={{left:card.left,top:card.top}}>
+      <strong translate="no">{card.node.meta.name}</strong>
+      <dl>
+        <dt>{t('大小','Size')}</dt><dd>{sizeText(card.node)}</dd>
+        <dt>{t('创建时间','Created')}</dt><dd>{格式化时间(card.node.created,locale)}</dd>
+        <dt>{t('修改时间','Modified')}</dt><dd>{格式化时间(card.node.updated,locale)}</dd>
+      </dl>
+    </div>,document.body):null}
   </div>
 }

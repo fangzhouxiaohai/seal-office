@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -65,5 +66,19 @@ class VersionDownloadTest extends CloudApiTestSupport {
         assertEquals(200, download.getResponse().getStatus());
         assertArrayEquals(content, download.getResponse().getContentAsByteArray());
         assertEquals("1", download.getResponse().getHeader("X-Seal-Version"));
+
+        // 2.8.0：节点列表附当前版本字节数与首个版本时间；无版本的文件夹两项为 null
+        String folder = UUID.randomUUID().toString();
+        post("/v1/nodes", Map.of("id", folder, "kind", "folder", "meta", "encrypted-folder"), token);
+        JsonNode file = null;
+        JsonNode dir = null;
+        for (JsonNode item : json(get("/v1/nodes", token)).get("items")) {
+            if (item.get("id").asText().equals(node)) file = item;
+            if (item.get("id").asText().equals(folder)) dir = item;
+        }
+        assertEquals(content.length, file.get("bytes").asLong());
+        assertEquals(jdbc.queryForObject("SELECT created FROM versions WHERE node_id = ?", Long.class, node), file.get("created").asLong());
+        assertTrue(dir.get("bytes").isNull());
+        assertTrue(dir.get("created").isNull());
     }
 }

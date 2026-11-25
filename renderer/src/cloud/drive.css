@@ -43,11 +43,13 @@
 .seal-drive-files--grid .seal-drive-file-version{display:none}
 @media(hover:hover) and (pointer:fine){.seal-drive-files--grid .seal-drive-file:not(:hover):not(:focus-within):not(.is-selected) :is(.seal-drive-file-check,.seal-drive-file-more){opacity:0}}
 .seal-drive-file-open:focus-visible,.seal-drive-path button:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:4px}
-.seal-drive-list-labels{display:grid;grid-template-columns:minmax(0,1fr) 170px 85px;gap:16px;padding:12px 46px 0 48px;font-size:12px;color:var(--text-3)}
+.seal-drive-list-labels{display:grid;grid-template-columns:minmax(0,1fr) 96px 170px 85px;gap:16px;padding:12px 46px 0 48px;font-size:12px;color:var(--text-3)}
 .seal-drive-files--list{margin-top:8px}
-.seal-drive-files--list .seal-drive-file{display:grid;grid-template-columns:20px minmax(0,1fr) 170px 85px 28px;gap:16px;align-items:center;min-height:62px;padding:10px 12px;border-bottom-color:var(--border-subtle);border-radius:0}
+.seal-drive-files--list .seal-drive-file{display:grid;grid-template-columns:20px minmax(0,1fr) 96px 170px 85px 28px;gap:16px;align-items:center;min-height:62px;padding:10px 12px;border-bottom-color:var(--border-subtle);border-radius:0}
 .seal-drive-files--list .seal-drive-file-check,.seal-drive-files--list .seal-drive-file-more{position:static}
-.seal-drive-files--list .seal-drive-file-date,.seal-drive-files--list .seal-drive-file-version{font-size:12px;color:var(--text-2)}
+.seal-drive-files--list .seal-drive-file-date,.seal-drive-files--list .seal-drive-file-version,.seal-drive-files--list .seal-drive-file-size{font-size:12px;color:var(--text-2)}
+.seal-drive-files--list .seal-drive-file-size{font-variant-numeric:tabular-nums;white-space:nowrap}
+.seal-drive-files--grid .seal-drive-file-size{display:none}
 .seal-drive-selection{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 12px;background:var(--brand-soft);border-radius:var(--drive-radius);font-size:13px}
 .seal-drive-selection>span{margin-inline-end:6px;color:var(--brand)}
 .seal-drive-trash-note{font-size:13px;color:var(--text-2)}
@@ -55,8 +57,8 @@
 .seal-drive-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 24px;text-align:center;gap:14px;color:var(--text-1)}
 .seal-drive-welcome-icon{display:grid;place-items:center;width:112px;height:112px;border-radius:28px;background:var(--brand-soft);margin-bottom:8px}
 .seal-drive-welcome h1{font-size:24px;margin:0}.seal-drive-welcome p{font-size:16px;margin:0}.seal-drive-welcome>span{color:var(--text-2);font-size:13px}.seal-drive-welcome>.ant-btn{height:40px;margin-top:12px;border-radius:var(--drive-radius);padding-inline:24px}
-@media(max-width:900px){.seal-drive-list-labels{grid-template-columns:minmax(0,1fr) 145px;padding-right:46px}.seal-drive-list-labels>span:last-child{display:none}.seal-drive-files--list .seal-drive-file{grid-template-columns:20px minmax(0,1fr) 145px 28px;gap:12px}.seal-drive-files--list .seal-drive-file-version{display:none}}
-@media(max-width:600px){.seal-drive{--drive-inset:16px;--drive-gap:14px}.seal-drive.seal-cloud-page{padding:var(--drive-inset)}.seal-drive-header h1{font-size:20px}.seal-drive-capacity>div{width:56px}.seal-drive-toolbar-end{width:100%;margin:0}.seal-drive-search.ant-input-affix-wrapper{flex:1;width:auto}.seal-drive-toolbar .ant-btn{height:44px}.seal-drive-toolbar-end>.ant-btn{width:44px}.seal-drive-primary-actions{width:100%}.seal-drive-primary-actions>.ant-btn{flex:1}.seal-drive-view .ant-btn{width:40px;height:38px}.seal-drive-files--grid{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}.seal-drive-files--grid .seal-drive-file{padding-top:28px;min-height:155px}.seal-drive-file-more.ant-btn{width:36px;height:36px}.seal-drive-file-check{top:8px;left:8px;padding:4px}.seal-drive-list-labels{grid-template-columns:1fr;padding-left:48px}.seal-drive-list-labels>span:nth-child(2){display:none}.seal-drive-files--list .seal-drive-file{grid-template-columns:24px minmax(0,1fr) 36px;gap:10px;padding:10px 0}.seal-drive-files--list .seal-drive-file-date{display:none}.seal-drive-selection .ant-btn{min-height:40px}.seal-drive-path .ant-btn{width:40px;height:40px}.seal-drive-welcome>.ant-btn{min-height:44px}}
+@media(max-width:900px){.seal-drive-list-labels{grid-template-columns:minmax(0,1fr) 88px 145px;padding-right:46px}.seal-drive-list-labels>span:last-child{display:none}.seal-drive-files--list .seal-drive-file{grid-template-columns:20px minmax(0,1fr) 88px 145px 28px;gap:12px}.seal-drive-files--list .seal-drive-file-version{display:none}}
+@media(max-width:600px){.seal-drive{--drive-inset:16px;--drive-gap:14px}.seal-drive.seal-cloud-page{padding:var(--drive-inset)}.seal-drive-header h1{font-size:20px}.seal-drive-capacity>div{width:56px}.seal-drive-toolbar-end{width:100%;margin:0}.seal-drive-search.ant-input-affix-wrapper{flex:1;width:auto}.seal-drive-toolbar .ant-btn{height:44px}.seal-drive-toolbar-end>.ant-btn{width:44px}.seal-drive-primary-actions{width:100%}.seal-drive-primary-actions>.ant-btn{flex:1}.seal-drive-view .ant-btn{width:40px;height:38px}.seal-drive-files--grid{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}.seal-drive-files--grid .seal-drive-file{padding-top:28px;min-height:155px}.seal-drive-file-more.ant-btn{width:36px;height:36px}.seal-drive-file-check{top:8px;left:8px;padding:4px}.seal-drive-list-labels{grid-template-columns:1fr;padding-left:48px}.seal-drive-list-labels>span:not(:first-child){display:none}.seal-drive-files--list .seal-drive-file-size{display:none}.seal-drive-files--list .seal-drive-file{grid-template-columns:24px minmax(0,1fr) 36px;gap:10px;padding:10px 0}.seal-drive-files--list .seal-drive-file-date{display:none}.seal-drive-selection .ant-btn{min-height:40px}.seal-drive-path .ant-btn{width:40px;height:40px}.seal-drive-welcome>.ant-btn{min-height:44px}}
 /* 2.8.0 拖放移动 */
 .seal-drive-files .seal-drive-file{touch-action:pan-y;-webkit-touch-callout:none}
 .seal-drive-results.is-drag-active,.seal-drive-results.is-drag-active *{cursor:grabbing;user-select:none}
@@ -67,3 +69,9 @@
 .seal-drive-drag-preview{position:fixed;z-index:2000;pointer-events:none;display:flex;flex-direction:column;gap:2px;max-width:min(280px,calc(100vw - 32px));padding:8px 12px;border-radius:10px;background:var(--bg-card,#fff);color:var(--text-1);box-shadow:0 8px 24px rgba(16,24,40,.18);border:1px solid var(--border);font-size:13px}
 .seal-drive-drag-preview span{font-size:12px;color:var(--text-2)}
 .seal-drive-drag-preview span.is-invalid{color:var(--danger,#dc3c3d)}
+/* 2.8.0 网格悬停信息卡 */
+.seal-drive-hover-card{position:fixed;z-index:1500;width:min(260px,calc(100vw - 16px));padding:12px 14px;border-radius:10px;background:var(--bg-card,#fff);color:var(--text-1);border:1px solid var(--border);box-shadow:0 8px 24px rgba(16,24,40,.16);pointer-events:none;font-size:12px}
+.seal-drive-hover-card strong{display:block;margin-bottom:8px;font-size:13px;font-weight:600;overflow-wrap:anywhere;line-height:1.4}
+.seal-drive-hover-card dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
+.seal-drive-hover-card dt{color:var(--text-3)}
+.seal-drive-hover-card dd{margin:0;color:var(--text-1);font-variant-numeric:tabular-nums}

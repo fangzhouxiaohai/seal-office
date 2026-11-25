@@ -54,10 +54,23 @@ public class NodeController {
         this.quota = properties.getQuota();
     }
 
-    /** 列表：含回收站项（客户端过滤），每项附 tagIds（node_tags 表） */
+    /**
+     * 列表：含回收站项（客户端过滤），每项附 tagIds（node_tags 表）。
+     * 2.8.0 起附 bytes（当前版本存储字节数，密文只比原文多数十字节）与 created（首个版本时间，
+     * 无版本的文件夹为 null），供列表大小列与网格悬停卡使用；文件名等仍在加密 meta 中。
+     */
     @GetMapping("/v1/nodes")
     public Map<String, Object> list() {
         String userId = SessionContext.user().id();
+        Map<String, long[]> stats = new java.util.HashMap<>();
+        jdbc.query("SELECT v.node_id, MIN(v.created) first_created, "
+                        + "MAX(CASE WHEN v.`version` = n.`version` THEN v.bytes ELSE NULL END) current_bytes "
+                        + "FROM versions v JOIN nodes n ON n.id = v.node_id WHERE n.user_id = ? GROUP BY v.node_id",
+                rs -> {
+                    long bytes = rs.getLong("current_bytes");
+                    boolean missing = rs.wasNull();
+                    stats.put(rs.getString("node_id"), new long[]{rs.getLong("first_created"), missing ? -1 : bytes});
+                }, userId);
         List<Map<String, Object>> items = jdbc.query(
                 "SELECT id, `parent`, kind, meta, `version`, deleted, updated FROM nodes "
                         + "WHERE user_id = ? ORDER BY updated DESC",
@@ -73,6 +86,9 @@ public class NodeController {
                     return item;
                 }, userId);
         for (Map<String, Object> item : items) {
+            long[] stat = stats.get((String) item.get("id"));
+            item.put("bytes", stat == null || stat[1] < 0 ? null : stat[1]);
+            item.put("created", stat == null ? null : stat[0]);
             item.put("tagIds", jdbc.queryForList(
                     "SELECT tag_id FROM node_tags WHERE node_id = ? AND user_id = ?",
                     String.class, item.get("id"), userId));
