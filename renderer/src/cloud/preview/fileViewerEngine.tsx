@@ -29,6 +29,8 @@ export default function FileViewerEngine({ 文件, 深色, 语言, on错误 }: {
     renderers: 渲染器,
     watermark: false,
     ai: false,
+    // 下载、打印、导出 HTML 由预览弹窗底部按钮统一接管：库内置按钮在桌面壳内无响应，打印下拉还会被弹窗裁剪
+    toolbar: { download: false, print: false, exportHtml: false, zoom: true, search: true, theme: false },
   } as any), [深色, 语言])
   return <FileViewer className="seal-preview-engine" file={文件} filename={文件.name} size={文件.size} options={options}
     onEvent={(事件: any) => { if (事件?.type === 'error') on错误(事件.error?.message || 事件.message || '预览组件无法解析此文件') }} />

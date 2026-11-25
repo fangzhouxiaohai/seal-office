@@ -14,3 +14,4 @@
 .seal-preview-zip small { flex: none; color: var(--text-3); }
 .seal-preview-notice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; padding: 24px; text-align: center; color: var(--text-2); }
 @media (max-width: 600px) { .seal-preview-body { height: 64vh; } }
+.seal-preview-notice__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }

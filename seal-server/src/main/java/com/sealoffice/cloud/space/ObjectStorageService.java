@@ -143,6 +143,8 @@ public class ObjectStorageService {
     public void streamObject(String blob, HttpServletResponse response) {
         Path file = objectsPath(blob);
         if (!Files.exists(file)) {
+            // 对象缺失属于数据完整性问题（历史清理或迁移遗留），记录对象标识便于只读核查，不伪造内容
+            log.warn("对象文件缺失：{}", blob);
             throw ApiException.of(503, "文件暂时不可用，请联系维护人员");
         }
         try (InputStream in = Files.newInputStream(file)) {

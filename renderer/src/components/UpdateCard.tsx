@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useSettings } from '../store/settingsStore'
 import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, 恢复下载状态, 取下载状态, 取下载发布, 开始下载更新, 取消下载更新, 安装已下载更新, 接收下载进度, 改变下载界面, use下载状态, 使用暂存下载, type 有效发布 } from '../update/updateCenter'
-import { 桥接 } from '../ipc/bridge'
+import { 桥接, type 更新平台 } from '../ipc/bridge'
 import '../update/updateCard.css'
 
 const 含中文 = (文本: string) => /[㐀-鿿]/u.test(文本)
@@ -95,7 +95,7 @@ function 卡片({ 发布 }: { 发布: 有效发布 }) {
 
   if (发布.mandatory) {
     if (状态.界面 !== '隐藏') return null
-    if (使用暂存下载(平台) && 更新中) return null
+    if (使用暂存下载(平台 as 更新平台 | null) && 更新中) return null
     return <Modal open centered closable={false} maskClosable={false} keyboard={false} footer={null} title="必须更新"><p>当前版本需要更新后才能继续使用。{平台 === 'harmony' ? '请在应用市场完成更新。' : ''}</p><Button type="primary" loading={更新中} onClick={()=>void 立即更新()}>重试更新</Button></Modal>
   }
   // 移动端按系统常规做法：发现新版本先弹出说明弹窗，用户点“更新”后才进入下载进度弹窗；
