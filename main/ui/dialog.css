@@ -50,4 +50,23 @@
 .seal-contact dl { display: grid; grid-template-columns: auto 1fr; gap: var(--dialog-gap); margin: var(--dialog-padding) 0; }
 .seal-contact dt, .seal-contact__hint { color: var(--dialog-muted); }
 .seal-contact dd { margin: 0; overflow-wrap: anywhere; user-select: text; }
+/* 2.8.0 弹窗可视区域约束：宽度不超过 94vw，整体高度不超过视口减上下边距；
+   标题与页脚固定，正文区独立滚动；确认框按钮区同样固定。窄屏、200% 缩放与软键盘弹出后仍可达。 */
+.ant-modal-wrap .ant-modal { max-width: min(94vw, calc(100vw - 2 * var(--seal-dialog-inset, 16px))); }
+.ant-modal .ant-modal-content {
+  --seal-dialog-max-height: calc(100vh - 2 * var(--seal-dialog-inset, 24px));
+  display: flex;
+  flex-direction: column;
+  max-height: var(--seal-dialog-max-height);
+  max-height: calc(100dvh - 2 * var(--seal-dialog-inset, 24px) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.ant-modal .ant-modal-header, .ant-modal .ant-modal-footer { flex: none; }
+.ant-modal .ant-modal-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+.ant-modal-confirm .ant-modal-body { display: flex; flex-direction: column; overflow: hidden; }
+.ant-modal-confirm .ant-modal-confirm-body-wrapper { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.ant-modal-confirm .ant-modal-confirm-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.ant-modal-confirm .ant-modal-confirm-btns { flex: none; }
+.ant-drawer-left > .ant-drawer-content-wrapper, .ant-drawer-right > .ant-drawer-content-wrapper { max-width: calc(100vw - 32px); }
+.ant-drawer-top > .ant-drawer-content-wrapper, .ant-drawer-bottom > .ant-drawer-content-wrapper { max-height: calc(100dvh - 32px); }
+@media (max-width: 600px), (max-height: 640px) { .ant-modal-wrap { --seal-dialog-inset: 8px; } .ant-modal-wrap .ant-modal { margin: 8px auto; } }
 @media (max-width: 480px) { .ant-modal .ant-modal-content { padding: var(--dialog-gap); } .seal-contact dl { grid-template-columns: 1fr; gap: 8px; } }
