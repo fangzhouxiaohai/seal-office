@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>账号与云空间面板效果图</title>
+<style>
+:root{--brand:#6a5cf5;--brand-soft:#efedff;--bg-card:#fff;--bg-page:#eef0f5;--bg-hover:#f2f5fa;--border:#e8ebf0;--border-subtle:#f0f2f5;--text-1:#1a1d24;--text-2:#5c6472;--text-3:#667085;--danger:#e34d59;--danger-soft:#fdf0f1;--ok:#0a8f1f}
+*{box-sizing:border-box}body{margin:0;background:rgba(26,29,36,.45);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--text-1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{width:min(720px,94vw);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:var(--bg-card);border-radius:14px;box-shadow:0 16px 48px rgba(16,24,40,.24);overflow:hidden}
+.dlg>header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px;border-bottom:1px solid var(--border)}
+.dlg>header h2{margin:0;font-size:18px;font-weight:600}.x{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-2);font-size:18px}
+.body{padding:16px 24px 24px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.card{border:1px solid var(--border);border-radius:10px;padding:16px}
+.card h3{margin:0 0 4px;font-size:16px;font-weight:600}.hint{margin:0;color:var(--text-3);font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text-1);font-size:14px;white-space:nowrap}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn.ghost-danger{color:var(--danger);border-color:#f3c3c7}.btn.link{border:0;padding:0 4px;color:var(--brand);height:auto}
+.summary{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;background:var(--bg-hover)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
+.summary .who{flex:1;min-width:0}.summary strong{display:block;font-size:16px}.summary small{color:var(--text-3);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;font-size:12px;background:#e8f6ea;color:var(--ok)}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--bg-hover);gap:2px}.seg span{padding:4px 14px;border-radius:8px;font-size:13px;color:var(--text-2)}.seg span.on{background:#fff;color:var(--text-1);box-shadow:0 1px 2px rgba(16,24,40,.1)}
+label{display:block;font-size:13px;color:var(--text-2);margin:12px 0 4px}
+.input{height:36px;border:1px solid var(--border);border-radius:10px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;color:var(--text-3);font-size:13px;min-width:0}
+.row{display:flex;gap:8px}.row .input{flex:1}
+.field-help{font-size:12px;color:var(--text-3);margin-top:4px}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.meter{height:8px;border-radius:4px;background:var(--bg-hover);overflow:hidden;margin:10px 0 6px}.meter i{display:block;height:100%;width:35%;background:var(--brand);border-radius:4px}
+.meter-text{display:flex;justify-content:space-between;font-size:13px;color:var(--text-2)}.meter-text b{color:var(--text-1);font-size:16px}
+.danger-zone{border:1px dashed #f3c3c7;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;background:var(--danger-soft)}
+.danger-zone div{flex:1;min-width:0}.danger-zone h4{margin:0;font-size:14px;color:var(--danger)}.danger-zone p{margin:0;font-size:12px;color:var(--text-2)}
+.cols{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tag{position:fixed;left:16px;top:12px;background:#111;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px}
+@media(max-width:620px){.cols,.pair{grid-template-columns:1fr}.body{padding:14px 16px 20px}.dlg>header{padding:16px}}
+.v{display:none}.v.show{display:flex}
+</style></head><body>
+<div class="tag" id="tag"></div>
+
+<!-- 方案 A：分组卡片 -->
+<div class="dlg v" id="A"><header><h2>账号与云空间</h2><span class="x">✕</span></header><div class="body">
+  <div class="summary"><span class="avatar">138</span><div class="who"><strong>138****5678</strong><small>手机号登录 · 本机已解锁云空间</small></div><span class="btn">退出登录</span></div>
+  <section class="card"><h3>云空间</h3><p class="hint">文件在本机加密后上传，服务器无法读取内容</p>
+    <div class="meter"><i></i></div><div class="meter-text"><span><b>105.3 MB</b> / 300 MB · 已用 35%</span><span>剩余 194.7 MB</span></div>
+    <div class="actions"><span class="btn">重置云空间密钥</span><span class="btn primary">管理云文件</span></div></section>
+  <section class="card"><h3>登录密码</h3><p class="hint">与云空间密钥相互独立，修改密码不会影响云文件</p>
+    <label>验证方式</label><span class="seg"><span class="on">当前密码</span><span>短信验证码</span></span>
+    <label>当前登录密码</label><div class="input">••••••••<span>👁</span></div>
+    <label>新登录密码</label><div class="input">15–128 个字符<span>👁</span></div><div class="field-help">支持中文、空格和符号；修改后其他设备需要重新登录</div>
+    <label>再次输入新密码</label><div class="input"><span></span><span>👁</span></div>
+    <div class="actions"><span class="btn primary">保存登录密码</span></div></section>
+  <div class="danger-zone"><div><h4>注销账号</h4><p>永久删除账号、云文件、历史版本与团队空间，不可恢复</p></div><span class="btn ghost-danger">注销账号…</span></div>
+</div></div>
+
+<!-- 方案 B：双栏面板 -->
+<div class="dlg v" id="B" style="width:min(880px,94vw)"><header><h2>账号与云空间</h2><span class="x">✕</span></header><div class="body">
+  <div class="cols">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="summary"><span class="avatar">138</span><div class="who"><strong>138****5678</strong><small>手机号登录</small></div><span class="btn">退出</span></div>
+      <section class="card"><h3>登录密码</h3><p class="hint">与云空间密钥相互独立</p>
+        <label>验证方式</label><span class="seg"><span>当前密码</span><span class="on">短信验证码</span></span>
+        <label>短信验证码</label><div class="row"><div class="input">6 位验证码</div><span class="btn">获取验证码</span></div>
+        <div class="pair"><div><label>新登录密码</label><div class="input">15–128 个字符<span>👁</span></div></div><div><label>再次输入</label><div class="input"><span></span><span>👁</span></div></div></div>
+        <div class="actions"><span class="btn primary">保存登录密码</span></div></section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <section class="card"><h3>云空间 <span class="badge">● 已开通</span></h3><p class="hint">本机加密后上传</p>
+        <div class="meter"><i></i></div><div class="meter-text"><span><b>105.3</b> / 300 MB</span><span>35%</span></div>
+        <div class="actions" style="justify-content:flex-start"><span class="btn">重置云空间密钥</span></div></section>
+      <div class="danger-zone" style="flex-direction:column;align-items:flex-start"><div><h4>注销账号</h4><p>永久删除账号与全部云数据，不可恢复</p></div><span class="btn ghost-danger">注销账号…</span></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- 方案 C：紧凑单列 -->
+<div class="dlg v" id="C" style="width:min(560px,94vw)"><header><h2>账号与云空间</h2><span class="x">✕</span></header><div class="body" style="gap:12px">
+  <div class="summary" style="padding:10px 12px"><span class="avatar" style="width:32px;height:32px;font-size:12px">138</span><div class="who"><strong style="font-size:14px">138****5678</strong></div><span class="btn link">退出登录</span></div>
+  <div><div class="meter-text"><span>云空间 <b style="font-size:14px">105.3 / 300 MB</b></span><span class="btn link">重置密钥</span></div><div class="meter" style="margin:6px 0 0"><i></i></div></div>
+  <hr style="border:0;border-top:1px solid var(--border);margin:4px 0">
+  <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-size:16px">修改登录密码</h3><span class="seg"><span class="on">密码</span><span>短信</span></span></div>
+  <div class="pair"><div class="input">当前密码<span>👁</span></div><div class="input">新密码 15–128 字符<span>👁</span></div></div>
+  <div class="row"><div class="input">再次输入新密码<span>👁</span></div><span class="btn primary">保存</span></div>
+  <div class="field-help">修改后其他设备需要重新登录</div>
+  <hr style="border:0;border-top:1px solid var(--border);margin:4px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center"><span class="hint">永久删除账号及全部云数据</span><span class="btn link" style="color:var(--danger)">注销账号…</span></div>
+</div></div>
+
+<script>const v=new URLSearchParams(location.search).get('v')||'A';document.getElementById(v).classList.add('show');document.getElementById('tag').textContent='方案 '+v+'  '+innerWidth+'×'+innerHeight</script>
+</body></html>

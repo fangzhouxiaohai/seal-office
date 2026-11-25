@@ -19,6 +19,7 @@ renderer/tmp-test/
 *.log
 __app_run.log
 design/
+!docs/design/
 main/integrity-manifest.json
 .env
 .env.*
