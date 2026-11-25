@@ -26,8 +26,8 @@ class AdminLoginTest extends AdminTestSupport {
         assertEquals("admin", profile.get("user").get("username").asText());
         assertEquals("管理员", profile.get("user").get("nickname").asText());
         assertEquals(1, profile.get("user").get("is_super").asInt());
-        assertEquals(19, profile.get("permissions").size());
-        assertEquals(11, profile.get("menus").size());
+        assertEquals(21, profile.get("permissions").size());
+        assertEquals(12, profile.get("menus").size());
         assertEquals("/seal/overview", profile.get("menus").get(0).get("path").asText());
         assertEquals("seal/overview", profile.get("menus").get(0).get("component").asText());
     }

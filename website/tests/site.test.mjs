@@ -54,7 +54,7 @@ describe('海豹办公官网页面', () => {
   })
 
   it('仅接管官网根路径并保留后台、办公应用、接口和分享路径', async () => {
-    const nginx = await file('../server/deploy/nginx-website.conf')
+    const nginx = await file('../seal-server/deploy/nginx-website.conf')
     assert.match(nginx, /location\s*=\s*\/\s*\{/)
     assert.match(nginx, /websitecurrent/)
     assert.match(nginx, /location\s+\^~\s+\/website-assets\//)
@@ -69,30 +69,29 @@ describe('海豹办公官网页面', () => {
 
 describe('管理后台路由隔离', () => {
   it('后台路由以 /admin/ 为根，登录后不会跳转到官网', async () => {
-    const router = await file('../server/tpadmin/web/src/router/index.ts')
+    const router = await file('../seal-admin-web/src/router/index.ts')
     assert.match(router, /createWebHistory\(['"]\/admin\/['"]\)/)
   })
 })
 
 describe('管理后台登录跳转', () => {
   it('登录失效时在后台路径内跳转并保留相对路由', async () => {
-    const request = await file('../server/tpadmin/web/src/utils/request.ts')
-    assert.match(request, /\/admin\/login/)
-    assert.match(request, /pathname\.slice\(['"]\/admin['"]\.length\)/)
+    const session = await file('../seal-admin-web/src/utils/session.ts')
+    assert.match(session, /location\.assign\(['"]\/admin\/login['"]\)/)
+    assert.match(session, /pathname\.startsWith\(['"]\/admin\/login['"]\)/)
   })
 })
 
 describe('官网根路径配置', () => {
   it('将根路径定位到官网文件，避免目录索引拼接到文件名', async () => {
-    const nginx = await file('../server/deploy/nginx-website.conf')
+    const nginx = await file('../seal-server/deploy/nginx-website.conf')
     assert.match(nginx, /location\s*=\s*\/\s*\{[^}]*root\s+[^;]*websitecurrent\s*;[^}]*try_files\s+\/index\.html\s+=404\s*;/s)
   })
 })
 
-describe('后台动态菜单的生产构建', () => {
-  it('菜单组件索引保持可移植的相对路径', async () => {
-    const router = await file('../server/tpadmin/web/src/router/dynamic.ts')
-    assert.match(router, /import\.meta\.glob\(['"]\.\.\/pages\/\*\*\/\*\.vue['"]\)/)
-    assert.match(router, /`\.\.\/pages\/\$\{/)
+describe('后台生产构建路径', () => {
+  it('静态资源以 /admin/ 为基础路径，与 nginx 后台规则一致', async () => {
+    const vite = await file('../seal-admin-web/vite.config.ts')
+    assert.match(vite, /base:\s*['"]\/admin\/['"]/)
   })
 })

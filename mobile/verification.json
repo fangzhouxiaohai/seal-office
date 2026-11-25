@@ -259,7 +259,7 @@
     "androidKotlinCheck": "unpackage/native-check/android",
     "web": "unpackage/web",
     "reports": "../docs/verification/v1.9.11",
-    "conversionDeployment": "../server/converter/README.md",
+    "conversionDeployment": "../converter/README.md",
     "localPreview": "http://127.0.0.1:5194/",
     "productionConversionDeployment": "../docs/后台文档转换部署与验收.md"
   },

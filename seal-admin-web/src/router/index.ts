@@ -11,6 +11,7 @@ const pageMap: Record<string, { component: () => Promise<any>; props?: Record<st
   skin: { component: () => import('@/views/review/index.vue'), props: { section: 'skin' } },
   audit: { component: () => import('@/views/audit/index.vue') },
   converter: { component: () => import('@/views/converter/index.vue') },
+  sms: { component: () => import('@/views/sms/index.vue') },
   releases: { component: () => import('@/views/releases/index.vue') },
   admins: { component: () => import('@/views/access/index.vue'), props: { scope: 'admins' } },
   roles: { component: () => import('@/views/access/index.vue'), props: { scope: 'roles' } },

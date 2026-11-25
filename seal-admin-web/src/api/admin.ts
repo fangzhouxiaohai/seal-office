@@ -3,18 +3,43 @@ import { expireSession, readToken } from '@/utils/session'
 import type {
   AdminRow,
   ConverterState,
+  DashboardStats,
   MenuRow,
   OverviewData,
   PublicationDetail,
   ReleaseAsset,
   ReleaseItem,
   ReleaseStatistics,
-  RoleRow
+  RoleRow,
+  SmsConfig,
+  SmsLogRow,
+  SmsSummary
 } from '@/types'
 
-// ------------------------------------------------------------------ 运行概览（按权限裁剪返回段落）
+// ------------------------------------------------------------------ 数据概览（按权限裁剪返回段落）
 export function fetchOverview() {
   return request.get<any, OverviewData>('/v1/admin/overview')
+}
+
+export function fetchDashboardStats() {
+  return request.get<any, DashboardStats>('/v1/admin/overview/stats')
+}
+
+// ------------------------------------------------------------------ 短信服务
+export function fetchSmsSummary() {
+  return request.get<any, SmsSummary>('/v1/admin/sms')
+}
+
+export function fetchSmsLogs(params: { page: number; size: number; status?: string; phone?: string }) {
+  return request.get<any, { items: SmsLogRow[]; total: number }>('/v1/admin/sms/logs', { params })
+}
+
+export function updateSmsSettings(sign: string, template: string) {
+  return request.patch<any, SmsConfig>('/v1/admin/sms/settings', { sign, template })
+}
+
+export function sendSmsTest(phone: string) {
+  return request.post<any, { ok: boolean; phone: string; requestId?: string }>('/v1/admin/sms/test', { phone })
 }
 
 // ------------------------------------------------------------------ 公开内容审核

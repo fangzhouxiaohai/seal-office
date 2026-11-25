@@ -2,15 +2,15 @@ package com.sealoffice.cloud.admin;
 
 import com.sealoffice.cloud.common.ApiException;
 import com.sealoffice.cloud.config.SealProperties;
-import com.sealoffice.cloud.security.ClockHolder;
 import com.sealoffice.cloud.security.SessionContext.AdminPrincipal;
-import com.sealoffice.cloud.sms.SmsSender;
 import com.sealoffice.cloud.space.UsageService;
-import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 运行概览：与 Node index.cjs 第 219-229 行逐条对应。
- * 按 can()（菜单启停感知的权限判定）裁剪 users/publications/audit/overviewCounts/runtime/sms 各段。
+ * 管理概览数据：按菜单启停感知的权限判定裁剪 users/publications/audit/overviewCounts/runtime 各段；
+ * 图表统计见 /v1/admin/overview/stats，短信相关数据已迁至独立的短信服务模块（/v1/admin/sms）。
  */
 @RestController
 public class OverviewController {
@@ -29,21 +29,35 @@ public class OverviewController {
 
     private final AdminAccessService access;
     private final UsageService usage;
-    private final SmsSender sender;
     private final SealProperties properties;
-    private final ClockHolder clock;
     private final JdbcTemplate jdbc;
-    private final Environment env;
+    private final DashboardService dashboard;
 
-    public OverviewController(AdminAccessService access, UsageService usage, SmsSender sender,
-                              SealProperties properties, ClockHolder clock, JdbcTemplate jdbc, Environment env) {
+    public OverviewController(AdminAccessService access, UsageService usage, SealProperties properties,
+                              JdbcTemplate jdbc, DashboardService dashboard) {
         this.access = access;
         this.usage = usage;
-        this.sender = sender;
         this.properties = properties;
-        this.clock = clock;
         this.jdbc = jdbc;
-        this.env = env;
+        this.dashboard = dashboard;
+    }
+
+    /** 数据概览图表统计：仅 overview:read 可见 */
+    @GetMapping("/v1/admin/overview/stats")
+    public Map<String, Object> stats() {
+        AdminPrincipal actor = AdminSessionController.actor();
+        if (!access.allowed(actor, "overview:read")) {
+            throw ApiException.of(403, "没有查看数据概览的权限");
+        }
+        Map<String, Object> result = dashboard.stats();
+        Map<String, Object> runtime = new LinkedHashMap<>();
+        runtime.put("diskFree", diskFree());
+        runtime.put("diskTotal", diskTotal());
+        runtime.put("memory", processMemory());
+        runtime.put("uptime", ManagementFactory.getRuntimeMXBean().getUptime() / 1000.0);
+        runtime.put("pendingUploads", count("SELECT COUNT(*) FROM uploads"));
+        result.put("runtime", runtime);
+        return result;
     }
 
     @GetMapping("/v1/admin/overview")
@@ -105,20 +119,14 @@ public class OverviewController {
             runtime.put("memory", processMemory());
             runtime.put("uptime", ManagementFactory.getRuntimeMXBean().getUptime() / 1000.0);
             runtime.put("pendingUploads", count("SELECT COUNT(*) FROM uploads"));
-            Map<String, Object> sms = new LinkedHashMap<>();
-            sms.put("sign", env.getProperty("SMS_SIGN_NAME", ""));
-            sms.put("template", env.getProperty("SMS_TEMPLATE_CODE", ""));
-            sms.put("lastDay", count("SELECT COUNT(*) FROM sends WHERE time>?", clock.now() - 86400000L));
             result.put("overviewCounts", counts);
-            result.put("smsConfigured", sender.configured());
             result.put("runtime", runtime);
-            result.put("sms", sms);
         }
         return result;
     }
 
-    /** H2（MySQL 模式）返回大写列标签而 MySQL 保留定义小写；统一为小写键，保证与 Node 输出一致 */
-    private static Map<String, Object> lowercaseKeys(Map<String, Object> row) {
+    /** H2（MySQL 模式）返回大写列标签而 MySQL 保留定义小写；统一为小写键 */
+    static Map<String, Object> lowercaseKeys(Map<String, Object> row) {
         Map<String, Object> result = new LinkedHashMap<>();
         row.forEach((key, value) -> result.put(key.toLowerCase(java.util.Locale.ROOT), value));
         return result;
@@ -129,13 +137,13 @@ public class OverviewController {
         return time instanceof Number number ? number.longValue() : 0L;
     }
 
-    /** 与 Node maskPhone 一致：138****1234 */
-    private static String maskPhone(String value) {
+    /** 手机号脱敏：138****1234 */
+    static String maskPhone(String value) {
         String phone = value == null ? "" : value;
         return phone.replaceAll("^(\\d{3})\\d{4}(\\d{4})$", "$1****$2");
     }
 
-    /** 与 Node statfs(root).bavail*bsize 对应的数据目录可用字节数 */
+    /** 数据目录所在磁盘的可用字节数 */
     private long diskFree() {
         try {
             Path root = Path.of(properties.getDataDir());
@@ -146,7 +154,15 @@ public class OverviewController {
         }
     }
 
-    /** 与 Node process.memoryUsage().rss 对齐：优先读 /proc/self/status 的 VmRSS，取不到时退回 JVM 堆内存 */
+    private long diskTotal() {
+        try {
+            return Files.getFileStore(Path.of(properties.getDataDir())).getTotalSpace();
+        } catch (Exception error) {
+            return 0L;
+        }
+    }
+
+    /** 进程常驻内存：优先读 /proc/self/status 的 VmRSS，取不到时退回 JVM 堆内存 */
     private static long processMemory() {
         try {
             for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("/proc/self/status"))) {

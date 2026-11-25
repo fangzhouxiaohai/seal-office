@@ -2,93 +2,123 @@
   <div class="page-container">
     <header class="page-heading">
       <div>
-        <h1>运行概览</h1>
-        <p>服务运行与空间使用情况</p>
+        <h1>数据概览</h1>
+        <p>用户增长、云空间使用、内容审核与服务运行的整体情况{{ stats ? ' · 更新于 ' + stamp(stats.generated) : '' }}</p>
       </div>
       <div class="page-actions">
-        <el-button :loading="busy" @click="refresh">刷新数据</el-button>
+        <el-button :loading="busy" :icon="Refresh" @click="refresh">刷新数据</el-button>
       </div>
     </header>
 
-    <template v-if="counts">
-      <!-- 指标卡片 -->
-      <div class="stat-row">
-        <el-card v-for="item in metrics" :key="item.label" shadow="never" class="stat-card">
-          <div class="stat-inner">
-            <span class="stat-icon" :class="`is-${item.tint}`">
-              <el-icon :size="22"><component :is="item.icon" /></el-icon>
-            </span>
-            <div class="stat-meta">
-              <span class="stat-label">{{ item.label }}</span>
-              <strong class="stat-value">{{ item.value }}</strong>
-              <span class="stat-hint">{{ item.hint }}</span>
-            </div>
+    <el-skeleton v-if="!stats && busy" :rows="12" animated />
+
+    <template v-if="stats">
+      <!-- 核心指标 -->
+      <div class="kpi-row">
+        <div v-for="item in kpis" :key="item.label" class="kpi-card">
+          <span class="kpi-icon" :class="`is-${item.tint}`">
+            <el-icon :size="20"><component :is="item.icon" /></el-icon>
+          </span>
+          <div class="kpi-meta">
+            <span class="kpi-label">{{ item.label }}</span>
+            <strong class="kpi-value">{{ item.value }}</strong>
+            <span class="kpi-hint">{{ item.hint }}</span>
           </div>
-        </el-card>
+        </div>
       </div>
 
-      <div class="overview-grid">
+      <!-- 用户趋势 + 云空间开通 -->
+      <div class="grid grid-2-1">
+        <ChartCard title="用户趋势" subtitle="近 30 天每日新增注册与活跃用户" :option="userTrend" :height="300" />
+        <ChartCard title="云空间开通" subtitle="已注册账号中开通云空间的比例" :option="spacePie" :height="300" :empty="!k.users" />
+      </div>
+
+      <!-- 累计用户 + 上传量 -->
+      <div class="grid grid-1-1">
+        <ChartCard title="累计用户" subtitle="近 30 天注册账号总数" :option="totalTrend" :height="260" />
+        <ChartCard title="云端上传" subtitle="近 30 天每日保存的文件版本数" :option="uploadBar" :height="260" />
+      </div>
+
+      <!-- 活跃时段 / 操作排行 / 上传容量 -->
+      <div class="grid grid-3">
+        <ChartCard title="活跃时段" subtitle="近 7 天各小时操作次数" :option="hourlyBar" :height="260" />
+        <ChartCard title="一周分布" subtitle="近 7 天按星期统计操作次数" :option="weekdayBar" :height="260" />
+        <ChartCard title="操作类型排行" subtitle="近 30 天" :option="actionBar" :height="260" :empty="!stats.actions.length" />
+      </div>
+
+      <!-- 公开内容 -->
+      <div class="grid grid-3">
+        <ChartCard title="公开内容类型" subtitle="演示模板、知识与皮肤" :option="kindPie" :height="260" :empty="!k.publications" />
+        <ChartCard title="审核状态" subtitle="全部公开申请" :option="statusPie" :height="260" :empty="!k.publications" />
+        <ChartCard title="在架版本" subtitle="按平台统计未下架的发布" :option="releasePie" :height="260" :empty="!k.releases" />
+      </div>
+
+      <!-- 存储 -->
+      <div class="grid grid-2-1">
+        <ChartCard title="存储占用排行" subtitle="占用最多的 10 个账号（含历史版本与回收站）" :option="storageBar" :height="300" :empty="!stats.storage.top.length" />
+        <ChartCard title="账号存储分布" subtitle="按单个账号占用分段" :option="bucketPie" :height="300" :empty="!k.users" />
+      </div>
+
+      <!-- 协作与运行 -->
+      <div class="grid grid-1-1">
         <el-card shadow="never">
           <template #header>
-            <div class="panel-head">
-              <span>云服务运行</span>
-              <el-tag type="success" effect="light">已连接</el-tag>
-            </div>
+            <div class="panel-head"><span class="panel-title">协作与终端</span></div>
           </template>
-          <dl class="detail-grid">
-            <div>
-              <dt>服务器剩余磁盘</dt>
-              <dd>{{ data.runtime ? (data.runtime.diskFree / 1000000000).toFixed(2) + ' GB' : '暂无数据' }}</dd>
+          <div class="mini-grid">
+            <div v-for="item in collaboration" :key="item.label" class="mini">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
             </div>
-            <div>
-              <dt>进程内存</dt>
-              <dd>{{ data.runtime ? sizeMB(data.runtime.memory) + ' MB' : '暂无数据' }}</dd>
-            </div>
-            <div v-if="data.quota != null">
-              <dt>每账号实际配额</dt>
-              <dd>{{ sizeMB(data.quota) }} MB</dd>
-            </div>
-            <div>
-              <dt>待提交上传</dt>
-              <dd>{{ data.runtime?.pendingUploads ?? '暂无数据' }}</dd>
-            </div>
-          </dl>
-          <div class="privacy-note">
-            <strong>客户端加密保护</strong>
-            <p>私有文档保持客户端加密，管理后台不提供解密入口。</p>
           </div>
         </el-card>
 
         <el-card shadow="never">
           <template #header>
             <div class="panel-head">
-              <span>短信服务</span>
-              <el-tag :type="data.smsConfigured ? 'success' : 'warning'" effect="light">
-                {{ data.smsConfigured ? '已配置' : '未配置' }}
+              <span class="panel-title">服务运行</span>
+              <el-tag type="success" effect="light" round>
+                <el-icon class="tag-icon"><CircleCheckFilled /></el-icon>运行中
               </el-tag>
             </div>
           </template>
-          <dl class="service-list">
-            <div>
-              <dt>短信签名</dt>
-              <dd>{{ data.sms?.sign || '未设置' }}</dd>
+          <div class="meter">
+            <div class="meter-head">
+              <span>数据磁盘</span>
+              <span>已用 {{ bytes(diskUsed) }} / 共 {{ bytes(runtime.diskTotal) }}</span>
             </div>
-            <div>
-              <dt>验证码模板</dt>
-              <dd>{{ data.sms?.template || '未设置' }}</dd>
+            <el-progress :percentage="diskPercent" :stroke-width="10" :show-text="false" :color="diskPercent >= 85 ? '#dc3c3d' : '#257de0'" />
+            <span class="meter-foot">剩余 {{ bytes(runtime.diskFree) }}{{ diskPercent >= 85 ? ' · 空间偏紧，请及时清理' : '' }}</span>
+          </div>
+          <div class="mini-grid compact">
+            <div class="mini">
+              <span>进程内存</span>
+              <strong>{{ bytes(runtime.memory) }}</strong>
             </div>
-            <div>
-              <dt>24 小时发送请求</dt>
-              <dd>{{ data.sms?.lastDay ?? '暂无数据' }}</dd>
+            <div class="mini">
+              <span>连续运行</span>
+              <strong>{{ uptime(runtime.uptime) }}</strong>
             </div>
-          </dl>
+            <div class="mini">
+              <span>待提交上传</span>
+              <strong>{{ runtime.pendingUploads }}</strong>
+            </div>
+            <div class="mini">
+              <span>每账号配额</span>
+              <strong>{{ bytes(k.quota) }}</strong>
+            </div>
+          </div>
+          <div class="privacy-note">
+            <el-icon><Lock /></el-icon>
+            <span>私有文档保持客户端加密，统计只含数量与容量，管理后台不提供解密入口。</span>
+          </div>
         </el-card>
       </div>
 
       <el-card v-if="shortcuts.length" shadow="never">
         <template #header>
           <div class="panel-head">
-            <span>常用功能 <small class="text-muted">快速访问业务管理</small></span>
+            <span class="panel-title">常用功能 <small class="text-muted">快速访问业务管理</small></span>
           </div>
         </template>
         <div class="shortcut-grid">
@@ -106,31 +136,131 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Folder, Stamp, Upload, User } from '@element-plus/icons-vue'
-import { fetchOverview } from '@/api/admin'
+import {
+  CircleCheckFilled,
+  Document,
+  Folder,
+  Lock,
+  Refresh,
+  Stamp,
+  TrendCharts,
+  User,
+  UserFilled
+} from '@element-plus/icons-vue'
+import ChartCard from '@/components/ChartCard.vue'
+import { fetchDashboardStats } from '@/api/admin'
 import { runTask } from '@/utils/run'
-import { sizeMB } from '@/utils/format'
+import { stamp } from '@/utils/format'
+import { actionLabels } from '@/utils/auditText'
 import { menuIcon } from '@/utils/icons'
+import { SERIES, barOption, bytes, lineOption, pieOption, uptime } from '@/utils/charts'
 import { menuKey, useUserStore } from '@/stores/user'
-import type { OverviewData } from '@/types'
+import type { CountItem, DashboardStats } from '@/types'
 
 const userStore = useUserStore()
-const data = ref<OverviewData>({})
+const stats = ref<DashboardStats>()
 const busy = ref(false)
 
-// 概览段落受 overview:read 权限控制，缺失时后端不会返回
-const counts = computed(() => data.value.overviewCounts)
+const k = computed(() => stats.value!.kpis)
+const runtime = computed(() => stats.value!.runtime)
+const percent = (part: number, whole: number) => (whole ? Math.round((part / whole) * 1000) / 10 : 0)
 
-const metrics = computed(() => {
-  const value = counts.value
-  if (!value) return []
+const kpis = computed(() => {
+  const v = k.value
   return [
-    { label: '账号总数', value: value.users, hint: '已注册的海豹办公账号', icon: User, tint: 'green' },
-    { label: '实际文件占用', value: sizeMB(value.used) + ' MB', hint: '包含历史版本与回收站', icon: Folder, tint: 'blue' },
-    { label: '等待审核', value: value.pending, hint: '演示模板、知识与皮肤', icon: Stamp, tint: 'orange' },
-    { label: '待提交上传', value: data.value.runtime?.pendingUploads ?? '暂无数据', hint: '当前云服务上传任务', icon: Upload, tint: 'purple' }
+    { label: '注册用户', value: v.users.toLocaleString(), hint: `今日新增 ${v.newUsersToday} · 近 7 天 ${v.newUsers7d}`, icon: User, tint: 'blue' },
+    { label: '7 日活跃', value: v.activeUsers7d.toLocaleString(), hint: `占注册用户 ${percent(v.activeUsers7d, v.users)}%`, icon: TrendCharts, tint: 'green' },
+    { label: '云空间开通', value: v.spaceUsers.toLocaleString(), hint: `开通率 ${percent(v.spaceUsers, v.users)}%`, icon: UserFilled, tint: 'purple' },
+    { label: '存储占用', value: bytes(v.storageUsed), hint: '含历史版本与回收站', icon: Folder, tint: 'orange' },
+    { label: '云端文件', value: v.files.toLocaleString(), hint: `${v.versions.toLocaleString()} 个版本 · 今日上传 ${v.uploadsToday}`, icon: Document, tint: 'aqua' },
+    { label: '待审核', value: v.pendingReviews.toLocaleString(), hint: `公开内容共 ${v.publications}`, icon: Stamp, tint: v.pendingReviews ? 'red' : 'gray' }
   ]
 })
+
+const collaboration = computed(() => {
+  const v = k.value
+  return [
+    { label: '文件夹', value: v.folders.toLocaleString() },
+    { label: '回收站条目', value: v.trashed.toLocaleString() },
+    { label: '文档共享', value: v.shares.toLocaleString() },
+    { label: '分享链接', value: v.shareLinks.toLocaleString() },
+    { label: '协作团队', value: v.teams.toLocaleString() },
+    { label: '登录终端', value: v.devices.toLocaleString() },
+    { label: '24 小时在线终端', value: v.onlineDevices24h.toLocaleString() },
+    { label: '今日操作', value: v.operationsToday.toLocaleString() }
+  ]
+})
+
+const diskUsed = computed(() => Math.max(0, runtime.value.diskTotal - runtime.value.diskFree))
+const diskPercent = computed(() => percent(diskUsed.value, runtime.value.diskTotal))
+
+const t = computed(() => stats.value!.trend)
+const userTrend = computed(() =>
+  lineOption(t.value.days, [
+    { name: '活跃用户', data: t.value.activeUsers, color: SERIES[0], area: true },
+    { name: '新增注册', data: t.value.newUsers, color: SERIES[1] }
+  ])
+)
+const totalTrend = computed(() => lineOption(t.value.days, [{ name: '累计用户', data: t.value.totalUsers, color: SERIES[6], area: true }]))
+const uploadBar = computed(() => barOption(t.value.days, [{ name: '上传版本', data: t.value.uploads, color: SERIES[2] }]))
+
+const hours = Array.from({ length: 24 }, (_, i) => `${i}时`)
+const hourlyBar = computed(() => barOption(hours, [{ name: '操作次数', data: stats.value!.hourly, color: SERIES[0] }]))
+const weekdayBar = computed(() =>
+  barOption(['周一', '周二', '周三', '周四', '周五', '周六', '周日'], [{ name: '操作次数', data: stats.value!.weekday, color: SERIES[6] }])
+)
+const actionBar = computed(() => {
+  const rows = stats.value!.actions.slice(0, 8)
+  return barOption(
+    rows.map((row) => actionLabels[String(row.action)] || String(row.action)),
+    [{ name: '次数', data: rows.map((row) => row.count), color: SERIES[0] }],
+    { horizontal: true }
+  )
+})
+
+const kindNames: Record<string, string> = { template: '演示模板', knowledge: '知识内容', skin: '界面皮肤' }
+const statusNames: Record<string, string> = { pending: '待审核', approved: '已公开', rejected: '已拒绝', withdrawn: '已撤回' }
+const platformNames: Record<string, string> = { windows: 'Windows', linux: 'Linux', macos: 'macOS', android: 'Android', harmony: 'HarmonyOS', web: '网页版' }
+
+// 颜色跟随实体：每个取值固定一个分类色位，筛选后不重新着色
+function fixedPie(rows: CountItem[], key: string, names: Record<string, string>) {
+  const order = Object.keys(names)
+  const sorted = [...rows].sort((a, b) => order.indexOf(String(a[key])) - order.indexOf(String(b[key])))
+  return pieOption(
+    sorted.map((row) => ({ name: names[String(row[key])] || String(row[key]), value: row.count })),
+    sorted.map((row) => {
+      const index = order.indexOf(String(row[key]))
+      return SERIES[index >= 0 ? index : SERIES.length - 1]
+    })
+  )
+}
+
+const kindPie = computed(() => fixedPie(stats.value!.publicationKinds, 'kind', kindNames))
+const statusPie = computed(() => fixedPie(stats.value!.publicationStatus, 'status', statusNames))
+const releasePie = computed(() => fixedPie(stats.value!.releasePlatforms, 'platform', platformNames))
+const spacePie = computed(() =>
+  pieOption(
+    [
+      { name: '已开通', value: k.value.spaceUsers },
+      { name: '未开通', value: Math.max(0, k.value.users - k.value.spaceUsers) }
+    ],
+    [SERIES[0], '#c9d2de']
+  )
+)
+const storageBar = computed(() => {
+  const rows = stats.value!.storage.top
+  return barOption(
+    rows.map((row) => row.phone),
+    [{ name: '占用', data: rows.map((row) => row.used), color: SERIES[1] }],
+    { horizontal: true, formatter: bytes }
+  )
+})
+const bucketPie = computed(() =>
+  pieOption(
+    stats.value!.storage.buckets.map((row) => ({ name: String(row.label), value: row.count })),
+    ['#c9d2de', SERIES[0], SERIES[2], SERIES[3], SERIES[1]]
+  )
+)
 
 // 快捷入口取会话菜单，排除概览自身
 const shortcuts = computed(() =>
@@ -141,8 +271,7 @@ const shortcuts = computed(() =>
 
 function refresh() {
   void runTask(busy, async () => {
-    data.value = await fetchOverview()
-    if (!data.value.overviewCounts) throw new Error('无权查看运行概览')
+    stats.value = await fetchDashboardStats()
   })
 }
 
@@ -150,78 +279,76 @@ onMounted(refresh)
 </script>
 
 <style scoped lang="scss">
-.stat-row {
+.kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.stat-inner {
+.kpi-card {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 12px;
   min-width: 0;
+  padding: 18px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 
-.stat-icon {
+.kpi-icon {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
 
-  &.is-green {
-    color: #16a376;
-    background: rgba(22, 163, 122, 0.12);
-  }
-
-  &.is-blue {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.12);
-  }
-
-  &.is-orange {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.14);
-  }
-
-  &.is-purple {
-    color: #6a5cf5;
-    background: rgba(106, 92, 245, 0.14);
-  }
+  &.is-blue { color: #257de0; background: rgba(37, 125, 224, 0.1); }
+  &.is-green { color: #0a8f1f; background: rgba(10, 172, 35, 0.1); }
+  &.is-purple { color: #6a5cf5; background: rgba(106, 92, 245, 0.12); }
+  &.is-orange { color: #d65a1a; background: rgba(244, 114, 48, 0.12); }
+  &.is-aqua { color: #00937a; background: rgba(0, 184, 148, 0.12); }
+  &.is-red { color: #dc3c3d; background: rgba(220, 60, 61, 0.1); }
+  &.is-gray { color: #8c9bab; background: #f1f4f8; }
 }
 
-.stat-meta {
+.kpi-meta {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.stat-label {
+.kpi-label {
   font-size: 13px;
   color: var(--text-2);
 }
 
-.stat-value {
+.kpi-value {
   font-size: 24px;
-  line-height: 1.35;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
-.stat-hint {
+.kpi-hint {
   font-size: 12px;
+  line-height: 1.5;
   color: var(--text-3);
 }
 
-.overview-grid {
+.grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 16px;
   margin-bottom: 16px;
 }
+
+.grid-2-1 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.grid-1-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 .panel-head {
   display: flex;
@@ -229,59 +356,82 @@ onMounted(refresh)
   justify-content: space-between;
 }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin: 8px 0 20px;
+.panel-title {
+  font-weight: 600;
+}
 
-  dt {
-    font-size: 13px;
+.tag-icon {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+
+  &.compact {
+    margin: 16px 0;
+  }
+}
+
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: #f7f8fb;
+  border-radius: 8px;
+  min-width: 0;
+
+  span {
+    font-size: 12px;
     color: var(--text-2);
   }
 
-  dd {
-    margin: 6px 0 0;
-    font-size: 21px;
-    font-weight: 600;
+  strong {
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
   }
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+
+  span:first-child {
+    font-weight: 600;
+    color: var(--text-1);
+  }
+}
+
+.meter-foot {
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .privacy-note {
-  background: #f7f8fb;
-  border-radius: 8px;
-  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
   color: var(--text-2);
+  background: var(--brand-soft);
+  border-radius: 8px;
 
-  strong {
+  .el-icon {
     color: var(--brand);
-  }
-
-  p {
-    margin: 4px 0 0;
-    font-size: 13px;
-  }
-}
-
-.service-list {
-  margin: 0;
-
-  div {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  div:last-child {
-    border: 0;
-  }
-
-  dt {
-    font-size: 13px;
-    color: var(--text-2);
-  }
-
-  dd {
-    margin: 4px 0 0;
   }
 }
 
@@ -320,21 +470,21 @@ onMounted(refresh)
   border-radius: 8px;
 }
 
-@media (max-width: 1200px) {
-  .stat-row,
-  .shortcut-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .overview-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+@media (max-width: 1500px) {
+  .kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 500px) {
-  .stat-row,
-  .shortcut-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+@media (max-width: 1100px) {
+  .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2-1,
+  .grid-1-1,
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .shortcut-grid,
+  .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .kpi-row,
+  .shortcut-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

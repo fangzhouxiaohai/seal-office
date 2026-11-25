@@ -334,3 +334,28 @@ CREATE TABLE IF NOT EXISTS admin_audit (
   time BIGINT NOT NULL,
   KEY idx_admin_audit_time (time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 短信服务独立模块：发送日志保留 90 天（sends 仅作 24 小时限频窗口）
+CREATE TABLE IF NOT EXISTS sms_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  phone VARCHAR(20),
+  ip VARCHAR(64),
+  purpose VARCHAR(32),
+  source VARCHAR(16) NOT NULL,
+  status VARCHAR(16) NOT NULL,
+  error VARCHAR(200),
+  request_id VARCHAR(80),
+  time BIGINT NOT NULL,
+  KEY idx_sms_logs_time (time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 短信签名与模板的后台覆盖值；访问密钥仍只从服务环境文件读取
+CREATE TABLE IF NOT EXISTS sms_settings (
+  name VARCHAR(32) PRIMARY KEY,
+  `value` VARCHAR(200) NOT NULL,
+  updated BIGINT NOT NULL,
+  updated_by VARCHAR(64)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 运行概览更名为数据概览：只替换仍为旧默认名的覆盖行，保留管理员自定义标题
+UPDATE menus SET title = '数据概览' WHERE `key` = 'overview' AND title = '运行概览';

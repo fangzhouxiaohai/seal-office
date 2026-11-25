@@ -1,6 +1,6 @@
-// 管理后台固定的 19 个权限点，与后端 PERMISSIONS 一一对应
+// 管理后台固定的 21 个权限点，与后端 PERMISSIONS 一一对应
 export const permissionOptions = [
-  ['overview:read', '查看运行概览'],
+  ['overview:read', '查看数据概览'],
   ['users:read', '查看用户管理'],
   ['template:read', '查看演示模板'],
   ['template:review', '审核演示模板'],
@@ -11,6 +11,8 @@ export const permissionOptions = [
   ['audit:read', '查看操作记录'],
   ['converter:read', '查看文档转换'],
   ['converter:write', '管理文档转换'],
+  ['sms:read', '查看短信服务'],
+  ['sms:write', '管理短信配置与测试发送'],
   ['releases:read', '查看版本管理'],
   ['releases:write', '发布和管理版本'],
   ['admins:read', '查看管理员'],

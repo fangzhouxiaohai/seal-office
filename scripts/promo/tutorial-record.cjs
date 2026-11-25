@@ -5,7 +5,8 @@ const {app,BrowserWindow,net,clipboard}=require('electron')
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict')
 const {spawn,spawnSync}=require('node:child_process')
 const {createZoteroLocalApi}=require('../../main/zotero/localApi')
-const {createLocalCollaborationFixture}=require('../../server/test/collaborationFixture.cjs')
+// 旧 Node 云服务及其进程内夹具已删除；PC 版云分享场景需先改接本地 seal-server 实例后才能录制。
+const createLocalCollaborationFixture=async()=>{throw new Error('云分享演示场景依赖的旧 Node 云服务夹具已删除，请先改用本地 seal-server 实例再录制 --pc-current')}
 const {createShareLinkService}=require('../../main/cloud/shareLink')
 const {randomUUID}=require('node:crypto')
 const {verifyWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')

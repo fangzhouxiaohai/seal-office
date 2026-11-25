@@ -3,16 +3,16 @@ package com.sealoffice.cloud.admin;
 import java.util.List;
 
 /**
- * 管理后台固定权限点与菜单定义，与 Node adminAccess.cjs 的 PERMISSIONS/MENUS 逐项一致。
- * 任何增删都会破坏与既有管理前端及旧授权库的兼容，禁止改动取值与顺序。
+ * 管理后台固定权限点与菜单定义。
+ * 已有权限点的取值是角色授权库的持久数据，只能追加不能改名；菜单顺序为未自定义排序时的默认顺序。
  */
 public final class AdminConstants {
 
-    /** 19 个固定权限点 */
+    /** 21 个固定权限点 */
     public static final List<String> PERMISSIONS = List.of(
             "overview:read", "users:read", "template:read", "template:review",
             "knowledge:read", "knowledge:review", "skin:read", "skin:review",
-            "audit:read", "converter:read", "converter:write",
+            "audit:read", "converter:read", "converter:write", "sms:read", "sms:write",
             "releases:read", "releases:write",
             "admins:read", "admins:write", "roles:read", "roles:write",
             "menus:read", "menus:write");
@@ -28,13 +28,14 @@ public final class AdminConstants {
     }
 
     public static final List<MenuDef> MENUS = List.of(
-            new MenuDef("overview", "运行概览", "SealOverview", "dashboard", "overview:read"),
+            new MenuDef("overview", "数据概览", "SealOverview", "dashboard", "overview:read"),
             new MenuDef("users", "用户管理", "SealUsers", "usergroup", "users:read"),
             new MenuDef("template", "演示模板审核", "SealTemplate", "view-module", "template:read"),
             new MenuDef("knowledge", "知识内容审核", "SealKnowledge", "book", "knowledge:read"),
             new MenuDef("skin", "皮肤审核", "SealSkin", "palette", "skin:read"),
             new MenuDef("audit", "操作记录", "SealAudit", "time", "audit:read"),
             new MenuDef("converter", "文档转换", "SealConverter", "file-copy", "converter:read"),
+            new MenuDef("sms", "短信服务", "SealSms", "message", "sms:read"),
             new MenuDef("releases", "版本管理", "SealReleases", "system-application", "releases:read"),
             new MenuDef("admins", "管理员管理", "SealAdmins", "user-setting", "admins:read"),
             new MenuDef("roles", "角色管理", "SealRoles", "usergroup", "roles:read"),

@@ -1,7 +1,7 @@
 // Real production browser + private conversion service; all fixtures are synthetic.
 const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict')
-const { createConverterServer } = require('../../server/converter/index.cjs')
+const { createConverterServer } = require('../../converter/index.cjs')
 const root = path.resolve(__dirname, '../..'), output = path.join(root, '.upgrade-private/mobile-format-verification')
 const formats = require('../../main/documentFormats.json')
 const remoteConfigPath = process.argv.find(value => value.startsWith('--remote-config='))?.slice(16)
@@ -16,7 +16,7 @@ app.whenReady().then(async () => {
   const executable = path.join(root, '.upgrade-private/office-runtime/program/soffice.com')
   const converter = createConverterServer({ token, executable, convert: async (...args) => {
     report.requests.push({ input: args[1], output: args[2], type: args[3] })
-    return require('../../server/converter/office.cjs').convertWithOffice(...args)
+    return require('../../converter/office.cjs').convertWithOffice(...args)
   } })
   await new Promise(resolve => converter.listen(0, '127.0.0.1', resolve))
   const serviceUrl = remote?.url || 'http://127.0.0.1:' + converter.address().port

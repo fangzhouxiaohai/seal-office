@@ -100,6 +100,7 @@ public class EraseRecords {
             }
             run(tables, "codes", "DELETE FROM codes WHERE phone = ?", execute, phone);
             run(tables, "sends", "DELETE FROM sends WHERE phone = ?", execute, phone);
+            run(tables, "sms_logs", "DELETE FROM sms_logs WHERE phone = ?", execute, phone);
             run(tables, "audit", "UPDATE audit SET detail = '' WHERE INSTR(COALESCE(detail,''), ?) > 0",
                     execute, phone);
         }

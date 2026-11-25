@@ -38,7 +38,7 @@ export interface SessionProfile {
   menus: SessionMenu[]
 }
 
-// ------------------------------------------------------------------ 运行概览
+// ------------------------------------------------------------------ 数据概览
 export interface OverviewCounts {
   users: number
   used: number
@@ -52,10 +52,107 @@ export interface RuntimeInfo {
   pendingUploads: number
 }
 
-export interface SmsInfo {
+// ------------------------------------------------------------------ 数据概览统计
+export interface CountItem {
+  count: number
+  [key: string]: string | number
+}
+
+export interface DashboardStats {
+  generated: number
+  kpis: {
+    users: number
+    newUsersToday: number
+    newUsers7d: number
+    activeUsers7d: number
+    spaceUsers: number
+    storageUsed: number
+    quota: number
+    files: number
+    folders: number
+    trashed: number
+    versions: number
+    uploadsToday: number
+    publications: number
+    pendingReviews: number
+    shares: number
+    shareLinks: number
+    teams: number
+    devices: number
+    onlineDevices24h: number
+    releases: number
+    operationsToday: number
+  }
+  trend: {
+    days: string[]
+    newUsers: number[]
+    totalUsers: number[]
+    activeUsers: number[]
+    uploads: number[]
+    uploadBytes: number[]
+    operations: number[]
+  }
+  hourly: number[]
+  weekday: number[]
+  actions: CountItem[]
+  publicationKinds: CountItem[]
+  publicationStatus: CountItem[]
+  releasePlatforms: CountItem[]
+  storage: { top: { phone: string; used: number }[]; buckets: CountItem[] }
+  runtime: RuntimeInfo & { diskTotal: number }
+}
+
+// ------------------------------------------------------------------ 短信服务
+export interface SmsConfig {
+  provider: string
+  region: string
+  accessKey: string
   sign: string
   template: string
-  lastDay: number
+  defaultSign: string
+  defaultTemplate: string
+  customized: boolean
+  updated: number
+  configured: boolean
+}
+
+export interface SmsSummary {
+  config: SmsConfig
+  limits: {
+    phoneInterval: number
+    phoneDaily: number
+    ipHourly: number
+    codeTtl: number
+    maxAttempts: number
+    retentionDays: number
+  }
+  stats: {
+    todaySent: number
+    todayFailed: number
+    weekSent: number
+    monthSent: number
+    monthFailed: number
+    successRate: number | null
+    uniquePhones7d: number
+    window24h: number
+    activeCodes: number
+  }
+  trend: { days: string[]; sent: number[]; failed: number[] }
+  hourly: number[]
+  purposes: CountItem[]
+  errors: CountItem[]
+  topIps: CountItem[]
+}
+
+export interface SmsLogRow {
+  id: number
+  phone: string
+  ip: string
+  purpose: string
+  source: string
+  status: 'sent' | 'failed'
+  error?: string
+  time: number
 }
 
 export interface CloudUser {
@@ -101,9 +198,7 @@ export interface OverviewData {
   publications?: Publication[]
   audit?: AuditRow[]
   overviewCounts?: OverviewCounts
-  smsConfigured?: boolean
   runtime?: RuntimeInfo
-  sms?: SmsInfo
 }
 
 // ------------------------------------------------------------------ 文档转换

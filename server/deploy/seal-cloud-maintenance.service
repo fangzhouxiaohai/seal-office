@@ -1,5 +1,0 @@
-[Unit]
-Description=Seal Office Cloud health and backup expiry
-[Service]
-Type=oneshot
-ExecStart=/www/wwwroot/seal.xingmasoft.com/current/deploy/health.sh

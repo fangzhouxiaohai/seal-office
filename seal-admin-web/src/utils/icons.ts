@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import {
   Brush,
+  ChatDotRound,
   Clock,
   CopyDocument,
   Grid,
@@ -21,7 +22,8 @@ const iconMap: Record<string, Component> = {
   time: Clock,
   'file-copy': CopyDocument,
   'system-application': Monitor,
-  'user-setting': UserFilled
+  'user-setting': UserFilled,
+  message: ChatDotRound
 }
 
 export const menuIcon = (name?: string): Component => iconMap[name || ''] || Monitor

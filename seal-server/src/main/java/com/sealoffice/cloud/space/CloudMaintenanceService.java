@@ -2,6 +2,7 @@ package com.sealoffice.cloud.space;
 
 import com.sealoffice.cloud.security.ClockHolder;
 import lombok.extern.slf4j.Slf4j;
+import com.sealoffice.cloud.sms.SmsLogService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -66,6 +67,7 @@ public class CloudMaintenanceService implements ApplicationRunner {
             jdbc.update("DELETE FROM codes WHERE expires < ?", clock.now());
             jdbc.update("DELETE FROM sessions WHERE expires < ?", clock.now());
             jdbc.update("DELETE FROM sends WHERE time < ?", clock.now() - DAY);
+            jdbc.update("DELETE FROM sms_logs WHERE time < ?", clock.now() - SmsLogService.RETENTION);
             jdbc.update("DELETE FROM session_devices WHERE session_hash NOT IN (SELECT hash FROM sessions)");
         });
     }

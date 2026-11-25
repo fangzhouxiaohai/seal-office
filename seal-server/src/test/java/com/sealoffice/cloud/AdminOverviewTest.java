@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 运行概览权限裁剪：对应 adminRbac.integration.test.cjs 的概览断言与 index.cjs 第 219-229 行。
+ * 数据概览权限裁剪与图表统计；短信段落已迁至短信服务模块，概览不再返回。
  */
 class AdminOverviewTest extends AdminTestSupport {
 
@@ -23,10 +23,11 @@ class AdminOverviewTest extends AdminTestSupport {
         jdbc.update("INSERT INTO users(id,phone,enabled,autosave,created) VALUES(?,?,?,?,?)",
                 UUID.randomUUID().toString(), "13812345678", 1, 0, time.get());
         JsonNode overview = body(get("/v1/admin/overview", root, ip));
-        for (String key : List.of("users", "quota", "publications", "audit",
-                "overviewCounts", "smsConfigured", "runtime", "sms")) {
+        for (String key : List.of("users", "quota", "publications", "audit", "overviewCounts", "runtime")) {
             assertTrue(overview.has(key), "缺少段落：" + key);
         }
+        assertFalse(overview.has("sms"), "短信段落应迁至短信服务模块");
+        assertFalse(overview.has("smsConfigured"), "短信段落应迁至短信服务模块");
         JsonNode user = overview.get("users").get(overview.get("users").size() - 1);
         assertEquals("138****5678", user.get("phone").asText());
         assertTrue(user.has("used"));
@@ -38,8 +39,6 @@ class AdminOverviewTest extends AdminTestSupport {
         assertTrue(overview.get("runtime").has("memory"));
         assertTrue(overview.get("runtime").has("uptime"));
         assertTrue(overview.get("runtime").has("pendingUploads"));
-        assertTrue(overview.get("sms").has("sign"));
-        assertTrue(overview.get("sms").has("lastDay"));
     }
 
     @Test
@@ -102,5 +101,45 @@ class AdminOverviewTest extends AdminTestSupport {
         assertEquals(200, patch("/v1/admin/access/menus/audit", Map.of("enabled", false), root, ip)
                 .getResponse().getStatus());
         assertEquals(403, get("/v1/admin/overview", user, ip).getResponse().getStatus());
+    }
+
+    @Test
+    void 图表统计按天聚合注册活跃与上传() throws Exception {
+        String root = rootLogin();
+        String userId = UUID.randomUUID().toString();
+        jdbc.update("INSERT INTO users(id,phone,enabled,autosave,created) VALUES(?,?,?,?,?)",
+                userId, "13912340001", 1, 0, time.get());
+        jdbc.update("INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)", userId, "login", time.get(), "");
+        jdbc.update("INSERT INTO audit(user_id,action,time,detail) VALUES(?,?,?,?)", "admin", "release-create", time.get(), "");
+        MvcResult result = get("/v1/admin/overview/stats", root, ip);
+        assertEquals(200, result.getResponse().getStatus());
+        JsonNode stats = body(result);
+        for (String key : List.of("kpis", "trend", "hourly", "weekday", "actions", "publicationKinds",
+                "publicationStatus", "releasePlatforms", "storage", "runtime")) {
+            assertTrue(stats.has(key), "缺少统计段：" + key);
+        }
+        JsonNode trend = stats.get("trend");
+        assertEquals(30, trend.get("days").size());
+        assertEquals(30, trend.get("newUsers").size());
+        int last = 29;
+        assertTrue(trend.get("newUsers").get(last).asLong() >= 1);
+        assertTrue(trend.get("activeUsers").get(last).asLong() >= 1, "当天登录用户应计入活跃");
+        assertEquals(24, stats.get("hourly").size());
+        assertEquals(7, stats.get("weekday").size());
+        assertTrue(stats.get("kpis").get("newUsersToday").asLong() >= 1);
+        assertTrue(stats.get("kpis").get("activeUsers7d").asLong() >= 1);
+        assertEquals(5, stats.get("storage").get("buckets").size());
+        assertFalse(stats.toString().contains("13912340001"), "统计不得输出完整手机号");
+    }
+
+    @Test
+    void 图表统计仅限数据概览权限() throws Exception {
+        String root = rootLogin();
+        String role = createRole(root, "审计员", List.of("audit:read"));
+        createAdmin(root, "auditor2", "StrongPassword123", List.of(role));
+        String user = adminLogin("auditor2", "StrongPassword123", ip);
+        MvcResult result = get("/v1/admin/overview/stats", user, ip);
+        assertEquals(403, result.getResponse().getStatus());
+        assertEquals("没有查看数据概览的权限", body(result).get("error").asText());
     }
 }

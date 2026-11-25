@@ -10,6 +10,8 @@ export const actionLabels: Record<string, string> = {
   'converter-config': '修改转换配置',
   'converter-token-reset': '重置转换令牌',
   'converter-test': '转换测试',
+  'sms-config': '修改短信配置',
+  'sms-test': '短信测试发送',
   'release-create': '发布新版本',
   'release-update': '修改发布',
   'release-delete': '删除发布',
@@ -45,6 +47,14 @@ export function auditDetail(row: { action: string; detail?: unknown }): string {
     }
     if (row.action === 'converter-token-reset') return `令牌指纹 ${raw}`
     if (row.action === 'converter-test') return raw === 'passed' ? '检查通过' : '检查未通过'
+    if (row.action === 'sms-config') {
+      const v = JSON.parse(raw)
+      return `签名 ${v.sign} · 模板 ${v.template}`
+    }
+    if (row.action === 'sms-test') {
+      const [phone, state] = raw.split(':')
+      return `${phone} · ${state === 'passed' ? '发送成功' : '发送失败'}`
+    }
     if (row.action.startsWith('release-')) {
       const v = JSON.parse(raw)
       return [v.platform, v.version, v.channel === 'beta' ? '测试版' : '稳定版', v.mandatory ? '强制' : '', v.withdrawn ? '已下架' : '']

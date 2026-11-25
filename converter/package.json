@@ -1,0 +1,17 @@
+{
+  "name": "seal-office-converter",
+  "version": "2.7.10",
+  "private": true,
+  "description": "海豹办公文档转换网关（LibreOffice），由 Spring Boot 后端经 8298 控制通道调用",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.cjs",
+    "start:managed": "node managed.cjs",
+    "test": "node --test test.cjs"
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1"
+  }
+}

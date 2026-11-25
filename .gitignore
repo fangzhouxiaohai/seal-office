@@ -22,10 +22,7 @@ design/
 main/integrity-manifest.json
 .env
 .env.*
-server/node_modules/
-server/data/
-server/admin/upstream/
-server/admin/dist/
+converter/node_modules/
 .upgrade-private/
 cer/
 .publish-profile/

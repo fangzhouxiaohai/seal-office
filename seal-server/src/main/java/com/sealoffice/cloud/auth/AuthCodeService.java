@@ -4,6 +4,7 @@ import com.sealoffice.cloud.common.ApiException;
 import com.sealoffice.cloud.security.ClockHolder;
 import com.sealoffice.cloud.security.CryptoUtil;
 import com.sealoffice.cloud.security.OtpSecretProvider;
+import com.sealoffice.cloud.sms.SmsLogService;
 import com.sealoffice.cloud.sms.SmsSender;
 import com.sealoffice.cloud.store.entity.CodeEntity;
 import com.sealoffice.cloud.store.entity.SendEntity;
@@ -30,15 +31,18 @@ public class AuthCodeService {
     private final OtpSecretProvider otp;
     private final ClockHolder clock;
     private final TransactionTemplate tx;
+    private final SmsLogService smsLogs;
 
     public AuthCodeService(CodeMapper codeMapper, SendMapper sendMapper, SmsSender smsSender,
-                           OtpSecretProvider otp, ClockHolder clock, TransactionTemplate transactionTemplate) {
+                           OtpSecretProvider otp, ClockHolder clock, TransactionTemplate transactionTemplate,
+                           SmsLogService smsLogs) {
         this.codeMapper = codeMapper;
         this.sendMapper = sendMapper;
         this.smsSender = smsSender;
         this.otp = otp;
         this.clock = clock;
         this.tx = transactionTemplate;
+        this.smsLogs = smsLogs;
     }
 
     /**
@@ -63,9 +67,11 @@ public class AuthCodeService {
             codeMapper.insertNew(phone, purpose, codeHash(phone, purpose, code), now + CODE_TTL);
         });
         try {
-            smsSender.send(phone, code);
+            SmsSender.SmsResult result = smsSender.send(phone, code);
+            smsLogs.sent(phone, ip, purpose, "user", result == null ? null : result.requestId());
         } catch (RuntimeException error) {
             tx.executeWithoutResult(status -> codeMapper.delete(phone, purpose));
+            smsLogs.failed(phone, ip, purpose, "user", error.getMessage());
             throw error;
         }
     }

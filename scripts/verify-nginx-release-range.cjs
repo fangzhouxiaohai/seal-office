@@ -99,7 +99,7 @@ async function verify(configuration, nginx) {
 }
 
 if (require.main === module) {
-  const configuration = process.argv[2] || path.resolve(__dirname, '../server/deploy/nginx-release-assets.conf')
+  const configuration = process.argv[2] || path.resolve(__dirname, '../seal-server/deploy/nginx-release-assets.conf')
   const nginx = process.argv[3] || '/www/server/nginx/sbin/nginx'
   verify(configuration, nginx).then(result => console.log(JSON.stringify(result))).catch(error => { console.error('Nginx 范围回归失败：' + error.message); process.exitCode = 1 })
 }

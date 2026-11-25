@@ -19,7 +19,7 @@
           <h1>云端服务<br />一切尽在掌握</h1>
           <p>
             账号状态、公开内容审核、文档转换与版本发布集中管理，
-            运行概览一页看清，权限分工精细到每个操作。
+            数据概览一页看清，权限分工精细到每个操作。
           </p>
 
           <ul class="feature-list">
@@ -129,7 +129,7 @@ const remember = ref(false)
 const form = reactive({ username: '', password: '' })
 
 const features = [
-  { icon: Odometer, title: '运行概览', desc: '账号、空间与服务状态一页掌握' },
+  { icon: Odometer, title: '数据概览', desc: '用户增长、空间使用与服务状态图表一页掌握' },
   { icon: Stamp, title: '内容审核', desc: '模板、知识、皮肤公开前把关' },
   { icon: Upload, title: '版本发布', desc: '多平台同版本发布与安装包管理' },
   { icon: UserFilled, title: '权限分工', desc: '管理员、角色、菜单精细授权' }

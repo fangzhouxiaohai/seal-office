@@ -39,16 +39,14 @@ public class AliyunSmsSender implements SmsSender {
 
     private final String accessKeyId;
     private final String accessKeySecret;
-    private final String signName;
-    private final String templateCode;
+    private final SmsSettingsService settings;
     private final ObjectMapper objectMapper;
     private final HttpClient http;
 
-    public AliyunSmsSender(Environment env, ObjectMapper objectMapper) {
+    public AliyunSmsSender(Environment env, ObjectMapper objectMapper, SmsSettingsService settings) {
         this.accessKeyId = env.getProperty("ALIYUN_ACCESS_KEY_ID", "");
         this.accessKeySecret = env.getProperty("ALIYUN_ACCESS_KEY_SECRET", "");
-        this.signName = env.getProperty("SMS_SIGN_NAME", "新疆星之远境智能科技");
-        this.templateCode = env.getProperty("SMS_TEMPLATE_CODE", "SMS_327845389");
+        this.settings = settings;
         this.objectMapper = objectMapper;
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     }
@@ -74,8 +72,9 @@ public class AliyunSmsSender implements SmsSender {
         params.put("Timestamp", TIMESTAMP.format(Instant.now()));
         params.put("Version", "2017-05-25");
         params.put("PhoneNumbers", phone);
-        params.put("SignName", signName);
-        params.put("TemplateCode", templateCode);
+        // 签名与模板每次发送时读取，管理后台修改后立即生效
+        params.put("SignName", settings.signName());
+        params.put("TemplateCode", settings.templateCode());
         params.put("TemplateParam", "{\"code\":\"" + code + "\"}");
 
         StringBuilder canonical = new StringBuilder();
