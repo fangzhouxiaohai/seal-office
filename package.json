@@ -17,6 +17,7 @@
     "test:main": "vitest run --config vitest.main.config.js",
     "test:packaging": "node --test scripts/generate-integrity.test.cjs scripts/artifact-names.test.cjs scripts/retain-web-session-assets.test.cjs scripts/macos-config.test.cjs scripts/verify-macos-candidate.test.cjs scripts/verify-macos-universal.test.cjs scripts/macos_cross_build_test.cjs && python scripts/macos_cross_verify_test.py",
     "typecheck": "tsc --noEmit",
+    "i18n:check": "node scripts/scan-interface-language.cjs --check --max-uncovered 5675",
     "icons:files": "electron build/make-file-icons.cjs",
     "pack": "npm --prefix mobile run pack:android",
     "dist": "npm --prefix mobile run pack:android",
@@ -70,6 +71,7 @@
     "yjs": "13.6.33"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@file-viewer/core": "3.3.3",
     "@file-viewer/react": "3.3.3",
     "@file-viewer/renderer-archive": "3.3.3",

@@ -980,4 +980,15 @@ export const 补充英文界面二: Record<string, string> = {
   'Excel：Unicode字符按码点计数、引用空白显示0；WPS：保留来源版本的字符计数和空白显示。切换会重新计算整个工作簿。': 'Excel: counts Unicode characters by code point and shows blanks as 0. WPS: keeps the source version’s character counting and blank display. Switching recalculates the whole workbook.',
   'https://example.com 或 #书签名': 'https://example.com or #bookmark-name',
   'Zotero 中文社区': 'Zotero Chinese community',
+  // 2.8.0 新增：云空间预览、拖放移动、文件信息与更新提示
+  '导出 HTML': 'Export HTML',
+  '此文件的内部结构与预览组件不兼容，可用海豹办公打开或下载后查看': 'This file\'s internal structure is not compatible with the preview. Open it in Seal Office or download it to view.',
+  '服务暂时不可用，请稍后重试；也可以下载文件或用海豹办公打开': 'The service is temporarily unavailable. Try again later, or download the file or open it in Seal Office.',
+  '云端文件暂时不可用，请联系维护人员；本机若有副本可直接打开': 'The cloud file is temporarily unavailable. Contact your administrator; if you have a local copy, open it directly.',
+  '预览尚未完成': 'The preview is not ready yet',
+  '大小从大到小': 'Largest first',
+  '大小从小到大': 'Smallest first',
+  '移动到…': 'Move to…',
+  'Linux 版请在浏览器中下载 DEB 安装包，再用软件中心或 dpkg 安装': 'On Linux, download the DEB package in your browser, then install it with the Software Center or dpkg',
+  '已在浏览器中打开 DEB 安装包下载地址。下载完成后用系统软件中心打开安装，或在终端执行 sudo apt install ./安装包文件名.deb': 'The DEB download page is open in your browser. When it finishes, open it with the Software Center or run sudo apt install ./package-name.deb in a terminal.',
 }

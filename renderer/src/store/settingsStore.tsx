@@ -274,6 +274,11 @@ export function use显示偏好(): 显示偏好 | undefined {
   return useContext(SettingsContext) ?? undefined
 }
 
+/** 当前界面语言；不在 SettingsProvider 内（独立页面、测试）时回退中文，不抛错 */
+export function use界面语言(): 界面语言 {
+  return useContext(SettingsContext)?.语言 ?? 'zh-CN'
+}
+
 export function use文件缩放缓存() {
   return useContext(文件缩放上下文)
 }
