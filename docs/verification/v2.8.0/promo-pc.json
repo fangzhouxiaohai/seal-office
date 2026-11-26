@@ -1,0 +1,123 @@
+{
+  "passed": true,
+  "version": "2.8.0",
+  "kind": "hands-on-tutorial",
+  "videos": [
+    {
+      "platform": "pc",
+      "file": "seal-office-2.8.0-pc-intro-1080p.mp4",
+      "bytes": 6441390,
+      "sha256": "8dab038420a662b54b69ef2b81e65969a0736780cb910aa93b198511bda622ab",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "durationSeconds": 163.66666666666666,
+      "videoAndAudioFullyDecoded": true,
+      "integratedLufs": -15.99,
+      "truePeakDb": -1.49,
+      "narrationVoice": "zh-CN-XiaoxiaoNeural",
+      "voiceRate": "+5%",
+      "voicePitch": "+4Hz",
+      "voiceConfirmedByUser": true,
+      "sourceReferenceSha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+      "steps": 12,
+      "actions": 87,
+      "functionalAssertions": 12,
+      "nativeDeviceRecording": false,
+      "sourceDisclosure": "与线上入口、构建信息及入口脚本逐字节核对的 2.8.0 PC Web 界面。使用隔离 Electron 窗口、本机演示云服务和演示资料。",
+      "sourceBundleSha256": "57a93a0212545f8799b4016fa310294b0a114374ce7d408a270c64b6bd79f3a8",
+      "sourceArchive": null,
+      "webDeployment": {
+        "publicUrl": "https://seal.xingmasoft.com/office/",
+        "hashes": {
+          "index.html": "8f030d49d63d2d58f70d007f3c9561ad8645539794b40b25ff1a433e3953dacb",
+          "build-info.json": "520c91d0714a776884bb493a334b0731b45d5c64e57904ed590823ec39b9376d",
+          "assets/index-883d382d.js": "57a93a0212545f8799b4016fa310294b0a114374ce7d408a270c64b6bd79f3a8"
+        }
+      },
+      "subtitles": 18,
+      "subtitleTiming": "语音服务句子边界，按每段配音实际开始时间放入成片。",
+      "purpleOutlineFrameChecks": [
+        {
+          "step": "intro",
+          "seconds": 1.5,
+          "purplePixels": 6141
+        },
+        {
+          "step": "cloud-size",
+          "seconds": 18.2,
+          "purplePixels": 6143
+        },
+        {
+          "step": "cloud-sort",
+          "seconds": 30.05,
+          "purplePixels": 5645
+        },
+        {
+          "step": "cloud-hover",
+          "seconds": 38.4,
+          "purplePixels": 5622
+        },
+        {
+          "step": "cloud-drag",
+          "seconds": 49.55,
+          "purplePixels": 5622
+        },
+        {
+          "step": "cloud-multi",
+          "seconds": 60.4,
+          "purplePixels": 5879
+        },
+        {
+          "step": "cloud-folder",
+          "seconds": 77.5,
+          "purplePixels": 8494
+        },
+        {
+          "step": "preview",
+          "seconds": 86.95,
+          "purplePixels": 6101
+        },
+        {
+          "step": "account",
+          "seconds": 106.0,
+          "purplePixels": 6306
+        },
+        {
+          "step": "password",
+          "seconds": 133.0,
+          "purplePixels": 9086
+        },
+        {
+          "step": "language",
+          "seconds": 137.45,
+          "purplePixels": 5999
+        },
+        {
+          "step": "outro",
+          "seconds": 149.6,
+          "purplePixels": 6163
+        }
+      ],
+      "typingFrameChanges": [
+        {
+          "step": "password",
+          "label": "逐字输入隔离演示验证码",
+          "meanPixelChange": 0.0476
+        }
+      ],
+      "preview": "seal-office-2.8.0-pc-intro-1080p-preview.mp4",
+      "previewSha256": "1856e2ab164ae800549be9ff826ce6fcf14e3a22168ffc5ec23b36703ea0d23a",
+      "sourceManifest": "pc-recording.json",
+      "visualReview": {
+        "passed": true,
+        "method": "核对完整联系表及排序、拖放、批量移动、DOCX 预览、逐字输入和语言切换的代表帧"
+      }
+    }
+  ],
+  "runtimeChanges": false,
+  "visualReview": {
+    "passed": true,
+    "method": "核对完整联系表及排序、拖放、批量移动、DOCX 预览、逐字输入和语言切换的代表帧"
+  }
+}

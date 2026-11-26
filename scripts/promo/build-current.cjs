@@ -12,6 +12,8 @@ const currentPlan = path.join(root, 'docs/promo/pc-current-storyboard.json')
 const pcCurrent = process.argv.includes('--pc-current') ||
   (fs.existsSync(currentPlan) && JSON.parse(fs.readFileSync(currentPlan, 'utf8')).version === version)
 if (pcCurrent) require('./pc-current-plan.cjs').loadPlan(root)
+const platform = process.argv.find(arg => arg.startsWith('--platform='))?.split('=')[1]
+if (platform && !['pc', 'android'].includes(platform)) throw new Error('不支持的视频平台')
 
 const sequence = pcCurrent
   ? [
@@ -21,9 +23,9 @@ const sequence = pcCurrent
       ['python', [path.join(__dirname, 'tutorial-render.py'), '--pc-current']],
     ]
   : [
-      ['python', [path.join(__dirname, 'tutorial-voice.py')]],
-      [require('electron'), [path.join(__dirname, 'tutorial-record.cjs')]],
-      ['python', [path.join(__dirname, 'tutorial-render.py')]],
+      ['python', [path.join(__dirname, 'tutorial-voice.py'), ...(platform ? ['--platform', platform] : [])]],
+      [require('electron'), [path.join(__dirname, 'tutorial-record.cjs'), ...(platform ? [`--platform=${platform}`] : [])]],
+      ['python', [path.join(__dirname, 'tutorial-render.py'), ...(platform ? [`--platform=${platform}`] : [])]],
     ]
 
 for (const [program, args] of sequence) {

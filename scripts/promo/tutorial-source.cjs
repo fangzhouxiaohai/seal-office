@@ -37,6 +37,23 @@ async function verifyWebRecordingSource(source, archive, version) {
   return { root, files: files.length, archiveSha256: sha(archiveBytes) }
 }
 
+async function verifyDeployedWebRecordingSource(source, version) {
+  const root = await fs.realpath(source)
+  const publicUrl = 'https://seal.xingmasoft.com/office/'
+  const index = await fs.readFile(path.join(root, 'index.html'), 'utf8')
+  const entry = index.match(/src="\.\/(assets\/index-[^"]+\.js)"/)?.[1]
+  const build = JSON.parse(await fs.readFile(path.join(root, 'build-info.json'), 'utf8'))
+  if (!entry || build.platform !== 'web' || build.desktopVersion !== version) throw new Error('网页录制素材的平台或版本不一致')
+  const hashes = {}
+  for (const name of ['index.html', 'build-info.json', entry]) {
+    const response = await fetch(new URL(name === 'index.html' ? '' : name, publicUrl), { redirect: 'error', signal: AbortSignal.timeout(15000) })
+    const local = await fs.readFile(path.join(root, name))
+    if (!response.ok || !local.equals(Buffer.from(await response.arrayBuffer()))) throw new Error('网页录制素材与线上版本不一致：' + name)
+    hashes[name] = sha(local)
+  }
+  return { publicUrl, hashes }
+}
+
 async function fetchPublicUpdate(url, method, version, request = globalThis.fetch) {
   const { searchParams } = url
   const platform = searchParams.get('platform')
@@ -63,4 +80,4 @@ async function fetchPublicUpdate(url, method, version, request = globalThis.fetc
   return { status: response.status, body, hasUpdate }
 }
 
-module.exports = { verifyWebRecordingSource, fetchPublicUpdate, updatePath, updateEndpoint }
+module.exports = { verifyWebRecordingSource, verifyDeployedWebRecordingSource, fetchPublicUpdate, updatePath, updateEndpoint }

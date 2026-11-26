@@ -39,9 +39,18 @@ async def generate(text,path,metadata=None):
         except Exception as exc: errors.append(type(exc).__name__)
     raise RuntimeError('Reference voice synthesis unavailable: '+','.join(errors))
 async def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--pc-current',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--pc-current',action='store_true');parser.add_argument('--platform',choices=['pc','android']);args=parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True);WORK.mkdir(parents=True,exist_ok=True)
-    reference={'originalPath':str(REFERENCE),'bytes':REFERENCE.stat().st_size,'sha256':sha(REFERENCE),
+    storyboard='pc-current-storyboard.json' if args.pc_current else 'current-storyboard.json'
+    plan=json.loads((ROOT/'docs/promo'/storyboard).read_text(encoding='utf-8'))
+    approved=plan['voice']
+    if any(approved.get(key)!=value for key,value in VOICE.items()):
+        raise ValueError('分镜配音参数与已确认设置不一致')
+    approved_hash=approved.get('referenceSha256','a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b')
+    reference_hash=sha(REFERENCE) if REFERENCE.is_file() else approved_hash
+    if reference_hash!=approved_hash:
+        raise ValueError('原试听文件的校验值与分镜不一致')
+    reference={'originalPath':str(REFERENCE),'sha256':reference_hash,'originalAvailable':REFERENCE.is_file(),
         'voiceSettings':VOICE,'identificationSource':'Existing project reference-voice settings; user listened to the 12-second tutorial preview and explicitly confirmed this voice on 2026-10-23.',
         'userConfirmed':True,
         'originalWordsOrWaveformReused':False}
@@ -52,10 +61,8 @@ async def main():
         reference.update({'previewFile':file.name,'previewText':text,'previewSha256':sha(file),'previewSeconds':duration(file)})
         (WORK/'reference-voice.json').write_text(json.dumps(reference,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         print(json.dumps(reference,ensure_ascii=False),flush=True);return
-    storyboard='pc-current-storyboard.json' if args.pc_current else 'current-storyboard.json'
-    plan=json.loads((ROOT/'docs/promo'/storyboard).read_text(encoding='utf-8'))
     allclips=[]
-    for platform in (['pc'] if args.pc_current else ['pc','android']):
+    for platform in (['pc'] if args.pc_current else [args.platform] if args.platform else ['pc','android']):
         for step in plan[platform]:
             file=WORK/(platform+'-'+step['id']+'.mp3');stamp=file.with_suffix('.source.json');metadata=file.with_suffix('.sentences.jsonl')
             expected={'voice':VOICE,'text':step['narration']}

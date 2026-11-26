@@ -1,0 +1,227 @@
+{
+  "reference": {
+    "originalPath": "D:/yewu/女声配音试听.mp3",
+    "sha256": "a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b",
+    "originalAvailable": false,
+    "voiceSettings": {
+      "name": "zh-CN-XiaoxiaoNeural",
+      "rate": "+5%",
+      "pitch": "+4Hz"
+    },
+    "identificationSource": "Existing project reference-voice settings; user listened to the 12-second tutorial preview and explicitly confirmed this voice on 2026-10-23.",
+    "userConfirmed": true,
+    "originalWordsOrWaveformReused": false
+  },
+  "clips": [
+    {
+      "platform": "pc",
+      "id": "intro",
+      "text": "海豹办公二点八版本，重点升级了我的云盘：文件可以直接拖动移动，列表显示大小，预览更稳定，账号面板也重新排版。下面在隔离的演示账号里逐项操作。",
+      "file": "pc-intro.mp3",
+      "seconds": 14.904,
+      "sha256": "f5ac17c7d0d0b3a3d31f0f05c3f01c78a6fe68a4f547e07174db4ce0fe3d4232",
+      "sentences": [
+        {
+          "text": "海豹办公二点八版本，重点升级了我的云盘：文件可以直接拖动移动，列表显示大小，预览更稳定，账号面板也重新排版。",
+          "start": 0.1,
+          "end": 11.0476195
+        },
+        {
+          "text": "下面在隔离的演示账号里逐项操作。",
+          "start": 11.0476195,
+          "end": 14.8571434
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-size",
+      "text": "打开我的云空间，切换到列表视图。新增的大小列显示每个文件的大小，文件夹显示其中全部文件的总量。",
+      "file": "pc-cloud-size.mp3",
+      "seconds": 9.864,
+      "sha256": "e7abdc1c7f0bba560f8f5d9013cf1e287062199899268f572e557525338175f8",
+      "sentences": [
+        {
+          "text": "打开我的云空间，切换到列表视图。",
+          "start": 0.1,
+          "end": 3.3452382
+        },
+        {
+          "text": "新增的大小列显示每个文件的大小，文件夹显示其中全部文件的总量。",
+          "start": 3.3452382,
+          "end": 9.8095242
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-sort",
+      "text": "在排序菜单里选择大小从大到小，最大的季度汇报排到了最前面。",
+      "file": "pc-cloud-sort.mp3",
+      "seconds": 6.288,
+      "sha256": "52378ca836ac18ab16c9347147edd5459a0801df9529870512a24297ab546a05",
+      "sentences": [
+        {
+          "text": "在排序菜单里选择大小从大到小，最大的季度汇报排到了最前面。",
+          "start": 0.1,
+          "end": 6.288
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-hover",
+      "text": "切换到网格视图，把鼠标停在文件上，信息卡会显示名称、大小、创建时间和修改时间。",
+      "file": "pc-cloud-hover.mp3",
+      "seconds": 8.616,
+      "sha256": "7cff6628123e409365f0201d2e7006f39ffe38dc31ea3753d6608efd2652040c",
+      "sentences": [
+        {
+          "text": "切换到网格视图，把鼠标停在文件上，信息卡会显示名称、大小、创建时间和修改时间。",
+          "start": 0.1,
+          "end": 8.6095241
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-drag",
+      "text": "回到列表，按住会议纪要拖到项目资料文件夹上，文件夹高亮后松开，文件就移了进去。",
+      "file": "pc-cloud-drag.mp3",
+      "seconds": 8.232,
+      "sha256": "b9b88c8f57465a707671bb2d2c06b4d6eb7ef2c5d0b584efb7ff50a363861fb8",
+      "sentences": [
+        {
+          "text": "回到列表，按住会议纪要拖到项目资料文件夹上，文件夹高亮后松开，文件就移了进去。",
+          "start": 0.1,
+          "end": 8.2285717
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-multi",
+      "text": "勾选合作协议和需求清单，点击移动到，选择合同归档。多个文件在一次操作中完成移动，任何一项不能移动时整批都不改动。",
+      "file": "pc-cloud-multi.mp3",
+      "seconds": 11.616,
+      "sha256": "b8a1807cc9d6311828369790466f11a69a90fb7d1992bfc0fc8d0e0a3ba41858",
+      "sentences": [
+        {
+          "text": "勾选合作协议和需求清单，点击移动到，选择合同归档。",
+          "start": 0.1,
+          "end": 5.4642859
+        },
+        {
+          "text": "多个文件在一次操作中完成移动，任何一项不能移动时整批都不改动。",
+          "start": 5.4642859,
+          "end": 11.5476195
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "cloud-folder",
+      "text": "打开合同归档，刚才移动的两个文件已经在这里，文件内容和历史版本保持不变。",
+      "file": "pc-cloud-folder.mp3",
+      "seconds": 7.344,
+      "sha256": "8f8221cf54530c529d9ee6e97e061fe3e15a143eb2f1a754681a028bd2fd1d6f",
+      "sentences": [
+        {
+          "text": "打开合同归档，刚才移动的两个文件已经在这里，文件内容和历史版本保持不变。",
+          "start": 0.1,
+          "end": 7.3357146
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "preview",
+      "text": "预览季度汇报。这份文档带有其他编辑器写入的编号扩展属性，二点八会在预览副本里自动修补，正文正常显示。预览底部新增了打印和导出 HTML。",
+      "file": "pc-preview.mp3",
+      "seconds": 14.592,
+      "sha256": "3d8337702f049fcbdd4f187fc60209db593bc1a38d0f91f0a607bff8a20672af",
+      "sentences": [
+        {
+          "text": "预览季度汇报。",
+          "start": 0.1,
+          "end": 1.7261905
+        },
+        {
+          "text": "这份文档带有其他编辑器写入的编号扩展属性，二点八会在预览副本里自动修补，正文正常显示。",
+          "start": 1.7261905,
+          "end": 10.6904766
+        },
+        {
+          "text": "预览底部新增了打印和导出 HTML。",
+          "start": 10.6904766,
+          "end": 14.5357148
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "account",
+      "text": "打开账号与云空间。账号信息、云空间用量和账号安全分组显示，注销账号放在单独的危险区，每组的主要按钮统一靠右。",
+      "file": "pc-account.mp3",
+      "seconds": 11.64,
+      "sha256": "520da2f8fe5aa13590c00dac4852b246e522dcb36c060bdd0fd760d854cf3a27",
+      "sentences": [
+        {
+          "text": "打开账号与云空间。",
+          "start": 0.1,
+          "end": 2.1190477
+        },
+        {
+          "text": "账号信息、云空间用量和账号安全分组显示，注销账号放在单独的危险区，每组的主要按钮统一靠右。",
+          "start": 2.1190477,
+          "end": 11.5952386
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "password",
+      "text": "展开修改登录密码，验证方式改为分段切换，验证码和获取按钮在同一行，保存按钮在右下角。",
+      "file": "pc-password.mp3",
+      "seconds": 8.784,
+      "sha256": "a57d15d0062a64d54c2051fc65036bcd9693128ac066e6941482190289851f8f",
+      "sentences": [
+        {
+          "text": "展开修改登录密码，验证方式改为分段切换，验证码和获取按钮在同一行，保存按钮在右下角。",
+          "start": 0.1,
+          "end": 8.7380956
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "language",
+      "text": "在标题栏把界面切换为英文，菜单、按钮和提示立即变成英文；切回中文同样不用重启。",
+      "file": "pc-language.mp3",
+      "seconds": 8.856,
+      "sha256": "ea1607c66e02ba56493fb31d3555bd17ad52b0d0ecab1ab1a1229adfc745cdd1",
+      "sentences": [
+        {
+          "text": "在标题栏把界面切换为英文，菜单、按钮和提示立即变成英文；切回中文同样不用重启。",
+          "start": 0.1,
+          "end": 8.8476194
+        }
+      ]
+    },
+    {
+      "platform": "pc",
+      "id": "outro",
+      "text": "此外，Windows 自动更新会打开完整的安装向导，Linux 改为在浏览器下载安装包，所有弹窗都限制在窗口之内，管理后台也支持管理员修改自己的密码。",
+      "file": "pc-outro.mp3",
+      "seconds": 13.896,
+      "sha256": "1151f306534d1da27cbd85b35f6ef474acd3c8b6738c3f38f6ab1c449566c98c",
+      "sentences": [
+        {
+          "text": "此外，Windows 自动更新会打开完整的安装向导，Linux 改为在浏览器下载安装包，所有弹窗都限制在窗口之内，管理后台也支持管理员修改自己的密码。",
+          "start": 0.1,
+          "end": 13.8452387
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1377 @@
+{
+  "passed": true,
+  "dryRun": false,
+  "version": "2.8.0",
+  "platform": "pc",
+  "build": {
+    "platform": "web",
+    "desktopVersion": "2.8.0",
+    "builtAt": "2026-11-26T13:20:13.768Z",
+    "architecture": "uni-app-x-local-webview",
+    "defaultPackagePlatform": "android"
+  },
+  "sourceArchive": null,
+  "webDeployment": {
+    "publicUrl": "https://seal.xingmasoft.com/office/",
+    "hashes": {
+      "index.html": "8f030d49d63d2d58f70d007f3c9561ad8645539794b40b25ff1a433e3953dacb",
+      "build-info.json": "520c91d0714a776884bb493a334b0731b45d5c64e57904ed590823ec39b9376d",
+      "assets/index-883d382d.js": "57a93a0212545f8799b4016fa310294b0a114374ce7d408a270c64b6bd79f3a8"
+    }
+  },
+  "bundleSha256": "57a93a0212545f8799b4016fa310294b0a114374ce7d408a270c64b6bd79f3a8",
+  "width": 1600,
+  "height": 820,
+  "fps": 20,
+  "frames": 3273,
+  "durationSeconds": 163.65,
+  "source": "Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.",
+  "nativeDeviceRecording": false,
+  "productionAccountsUsed": 0,
+  "modelRequests": 0,
+  "errors": [],
+  "assertions": [
+    {
+      "step": "cloud-size",
+      "label": "文件夹显示汇总大小",
+      "passed": true,
+      "frame": 462
+    },
+    {
+      "step": "cloud-sort",
+      "label": "按大小降序排列",
+      "passed": true,
+      "frame": 631
+    },
+    {
+      "step": "cloud-hover",
+      "label": "信息卡显示大小与时间",
+      "passed": true,
+      "frame": 788
+    },
+    {
+      "step": "cloud-drag",
+      "label": "拖动预览与目标高亮",
+      "passed": true,
+      "frame": 1024
+    },
+    {
+      "step": "cloud-drag",
+      "label": "会议纪要.docx 已从根目录移出",
+      "passed": true,
+      "frame": 1031
+    },
+    {
+      "step": "cloud-multi",
+      "label": "两个文件已离开根目录",
+      "passed": true,
+      "frame": 1498
+    },
+    {
+      "step": "cloud-folder",
+      "label": "移动结果与服务端一致",
+      "passed": true,
+      "frame": 1553
+    },
+    {
+      "step": "preview",
+      "label": "未出现 XML 解析错误",
+      "passed": true,
+      "frame": 1793
+    },
+    {
+      "step": "account",
+      "label": "云空间用量与进度条",
+      "passed": true,
+      "frame": 2206
+    },
+    {
+      "step": "password",
+      "label": "验证码已填入表单",
+      "passed": true,
+      "frame": 2656
+    },
+    {
+      "step": "language",
+      "label": "侧栏文字已变为英文",
+      "passed": true,
+      "frame": 2856
+    },
+    {
+      "step": "language",
+      "label": "切回中文无需重启",
+      "passed": true,
+      "frame": 2949
+    }
+  ],
+  "actions": [
+    {
+      "step": "intro",
+      "type": "highlight",
+      "frame": 8,
+      "seconds": 0.4,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 699,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 715.5
+      }
+    },
+    {
+      "step": "intro",
+      "type": "click",
+      "frame": 27,
+      "seconds": 1.35,
+      "label": "返回首页",
+      "x": 44,
+      "y": 715.5
+    },
+    {
+      "step": "intro",
+      "type": "highlight",
+      "frame": 38,
+      "seconds": 1.9,
+      "label": "首页入口",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 98,
+        "cx": 186.5,
+        "cy": 115
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 343,
+      "seconds": 17.15,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 699,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 715.5
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "click",
+      "frame": 361,
+      "seconds": 18.05,
+      "label": "返回首页",
+      "x": 44,
+      "y": 715.5
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 372,
+      "seconds": 18.6,
+      "label": "我的云空间",
+      "rect": {
+        "x": 86,
+        "y": 340.0703125,
+        "width": 201,
+        "height": 42,
+        "cx": 186.5,
+        "cy": 361.0703125
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "click",
+      "frame": 391,
+      "seconds": 19.55,
+      "label": "我的云空间",
+      "x": 186.5,
+      "y": 361.0703125
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 401,
+      "seconds": 20.05,
+      "label": "列表视图",
+      "rect": {
+        "x": 1189,
+        "y": 271,
+        "width": 34,
+        "height": 32,
+        "cx": 1206,
+        "cy": 287
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "click",
+      "frame": 421,
+      "seconds": 21.05,
+      "label": "列表视图",
+      "x": 1206,
+      "y": 287
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 426,
+      "seconds": 21.3,
+      "label": "大小列表头",
+      "rect": {
+        "x": 386,
+        "y": 315,
+        "width": 862,
+        "height": 34.8515625,
+        "cx": 817,
+        "cy": 332.42578125
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 442,
+      "seconds": 22.1,
+      "label": "季度汇报.docx 的大小",
+      "rect": {
+        "x": 804,
+        "y": 675.921875,
+        "width": 100,
+        "height": 22.8515625,
+        "cx": 854,
+        "cy": 687.34765625
+      }
+    },
+    {
+      "step": "cloud-size",
+      "type": "highlight",
+      "frame": 462,
+      "seconds": 23.1,
+      "label": "文件夹显示其中文件的总量",
+      "rect": {
+        "x": 386,
+        "y": 406.3515625,
+        "width": 862,
+        "height": 66,
+        "cx": 817,
+        "cy": 439.3515625
+      }
+    },
+    {
+      "step": "cloud-sort",
+      "type": "highlight",
+      "frame": 578,
+      "seconds": 28.9,
+      "label": "排序",
+      "rect": {
+        "x": 1166,
+        "y": 156.5,
+        "width": 38,
+        "height": 40,
+        "cx": 1185,
+        "cy": 176.5
+      }
+    },
+    {
+      "step": "cloud-sort",
+      "type": "click",
+      "frame": 598,
+      "seconds": 29.9,
+      "label": "排序",
+      "x": 1185,
+      "y": 176.5
+    },
+    {
+      "step": "cloud-sort",
+      "type": "highlight",
+      "frame": 604,
+      "seconds": 30.2,
+      "label": "大小从大到小",
+      "rect": {
+        "x": 1172,
+        "y": 304,
+        "width": 112.84375,
+        "height": 38,
+        "cx": 1228.421875,
+        "cy": 323
+      }
+    },
+    {
+      "step": "cloud-sort",
+      "type": "click",
+      "frame": 625,
+      "seconds": 31.25,
+      "label": "大小从大到小",
+      "x": 1228.421875,
+      "y": 323
+    },
+    {
+      "step": "cloud-sort",
+      "type": "highlight",
+      "frame": 631,
+      "seconds": 31.55,
+      "label": "最大的文件",
+      "rect": {
+        "x": 386,
+        "y": 468.3515625,
+        "width": 862,
+        "height": 66,
+        "cx": 817,
+        "cy": 501.3515625
+      }
+    },
+    {
+      "step": "cloud-hover",
+      "type": "highlight",
+      "frame": 747,
+      "seconds": 37.35,
+      "label": "网格视图",
+      "rect": {
+        "x": 1211,
+        "y": 261.5,
+        "width": 34,
+        "height": 32,
+        "cx": 1228,
+        "cy": 277.5
+      }
+    },
+    {
+      "step": "cloud-hover",
+      "type": "click",
+      "frame": 765,
+      "seconds": 38.25,
+      "label": "网格视图",
+      "x": 1228,
+      "y": 277.5
+    },
+    {
+      "step": "cloud-hover",
+      "type": "highlight",
+      "frame": 772,
+      "seconds": 38.6,
+      "label": "悬停在季度汇报.docx",
+      "rect": {
+        "x": 690.328125,
+        "y": 354,
+        "width": 116.671875,
+        "height": 102,
+        "cx": 748.6640625,
+        "cy": 405
+      }
+    },
+    {
+      "step": "cloud-hover",
+      "type": "highlight",
+      "frame": 788,
+      "seconds": 39.4,
+      "label": "悬停信息卡",
+      "rect": {
+        "x": 617,
+        "y": 493,
+        "width": 264,
+        "height": 113.6953125,
+        "cx": 749,
+        "cy": 549.84765625
+      }
+    },
+    {
+      "step": "cloud-drag",
+      "type": "highlight",
+      "frame": 971,
+      "seconds": 48.55,
+      "label": "列表视图",
+      "rect": {
+        "x": 1189,
+        "y": 271,
+        "width": 34,
+        "height": 32,
+        "cx": 1206,
+        "cy": 287
+      }
+    },
+    {
+      "step": "cloud-drag",
+      "type": "click",
+      "frame": 988,
+      "seconds": 49.4,
+      "label": "列表视图",
+      "x": 1206,
+      "y": 287
+    },
+    {
+      "step": "cloud-drag",
+      "type": "highlight",
+      "frame": 994,
+      "seconds": 49.7,
+      "label": "按住 会议纪要.docx",
+      "rect": {
+        "x": 435,
+        "y": 615.8515625,
+        "width": 357,
+        "height": 38,
+        "cx": 613.5,
+        "cy": 634.8515625
+      }
+    },
+    {
+      "step": "cloud-drag",
+      "type": "drag-start",
+      "frame": 1013,
+      "seconds": 50.65,
+      "label": "会议纪要.docx"
+    },
+    {
+      "step": "cloud-drag",
+      "type": "drop",
+      "frame": 1028,
+      "seconds": 51.4,
+      "source": "会议纪要.docx",
+      "target": "项目资料"
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1187,
+      "seconds": 59.35,
+      "label": "勾选 合作协议.docx",
+      "rect": {
+        "x": 399,
+        "y": 559.8515625,
+        "width": 24,
+        "height": 26,
+        "cx": 411,
+        "cy": 572.8515625
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1205,
+      "seconds": 60.25,
+      "label": "勾选 合作协议.docx",
+      "x": 411,
+      "y": 572.8515625
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1211,
+      "seconds": 60.55,
+      "label": "勾选 需求清单.txt",
+      "rect": {
+        "x": 399,
+        "y": 672.8515625,
+        "width": 24,
+        "height": 26,
+        "cx": 411,
+        "cy": 685.8515625
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1233,
+      "seconds": 61.65,
+      "label": "勾选 需求清单.txt",
+      "x": 411,
+      "y": 685.8515625
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1238,
+      "seconds": 61.9,
+      "label": "移动到…",
+      "rect": {
+        "x": 553.4453125,
+        "y": 259,
+        "width": 92,
+        "height": 38,
+        "cx": 599.4453125,
+        "cy": 278
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1261,
+      "seconds": 63.05,
+      "label": "移动到…",
+      "x": 599.4453125,
+      "y": 278
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1280,
+      "seconds": 64,
+      "label": "目标文件夹",
+      "rect": {
+        "x": 649,
+        "y": 340.6953125,
+        "width": 336,
+        "height": 38,
+        "cx": 817,
+        "cy": 359.6953125
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1348,
+      "seconds": 67.4,
+      "label": "目标文件夹",
+      "x": 817,
+      "y": 359.6953125
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1354,
+      "seconds": 67.7,
+      "label": "合同归档",
+      "rect": {
+        "x": 655,
+        "y": 418,
+        "width": 324,
+        "height": 38,
+        "cx": 817,
+        "cy": 437
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1422,
+      "seconds": 71.1,
+      "label": "合同归档",
+      "x": 817,
+      "y": 437
+    },
+    {
+      "step": "cloud-multi",
+      "type": "highlight",
+      "frame": 1428,
+      "seconds": 71.4,
+      "label": "确认移动",
+      "rect": {
+        "x": 901,
+        "y": 415.6953125,
+        "width": 84,
+        "height": 38,
+        "cx": 943,
+        "cy": 434.6953125
+      }
+    },
+    {
+      "step": "cloud-multi",
+      "type": "click",
+      "frame": 1492,
+      "seconds": 74.6,
+      "label": "确认移动",
+      "x": 943,
+      "y": 434.6953125
+    },
+    {
+      "step": "cloud-folder",
+      "type": "highlight",
+      "frame": 1526,
+      "seconds": 76.3,
+      "label": "打开合同归档",
+      "rect": {
+        "x": 435,
+        "y": 367.8515625,
+        "width": 367,
+        "height": 38,
+        "cx": 618.5,
+        "cy": 386.8515625
+      }
+    },
+    {
+      "step": "cloud-folder",
+      "type": "click",
+      "frame": 1547,
+      "seconds": 77.35,
+      "label": "打开合同归档",
+      "x": 618.5,
+      "y": 386.8515625
+    },
+    {
+      "step": "cloud-folder",
+      "type": "highlight",
+      "frame": 1553,
+      "seconds": 77.65,
+      "label": "合同归档中的文件",
+      "rect": {
+        "x": 386,
+        "y": 353.8515625,
+        "width": 872,
+        "height": 128,
+        "cx": 822,
+        "cy": 417.8515625
+      }
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1716,
+      "seconds": 85.8,
+      "label": "回到全部文件",
+      "rect": {
+        "x": 428,
+        "y": 220.7890625,
+        "width": 64,
+        "height": 32.421875,
+        "cx": 460,
+        "cy": 237
+      }
+    },
+    {
+      "step": "preview",
+      "type": "click",
+      "frame": 1736,
+      "seconds": 86.8,
+      "label": "回到全部文件",
+      "x": 460,
+      "y": 237
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1742,
+      "seconds": 87.1,
+      "label": "季度汇报更多操作",
+      "rect": {
+        "x": 1213,
+        "y": 494.8515625,
+        "width": 32,
+        "height": 32,
+        "cx": 1229,
+        "cy": 510.8515625
+      }
+    },
+    {
+      "step": "preview",
+      "type": "click",
+      "frame": 1763,
+      "seconds": 88.15,
+      "label": "季度汇报更多操作",
+      "x": 1229,
+      "y": 510.8515625
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1769,
+      "seconds": 88.45,
+      "label": "预览",
+      "rect": {
+        "x": 1219,
+        "y": 204,
+        "width": 112.84375,
+        "height": 38,
+        "cx": 1275.421875,
+        "cy": 223
+      }
+    },
+    {
+      "step": "preview",
+      "type": "click",
+      "frame": 1787,
+      "seconds": 89.35,
+      "label": "预览",
+      "x": 1275.421875,
+      "y": 223
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1793,
+      "seconds": 89.65,
+      "label": "正常显示的正文",
+      "rect": {
+        "x": 1073,
+        "y": 199.07968139648438,
+        "width": 214,
+        "height": 109.12033081054688,
+        "cx": 1180,
+        "cy": 253.6398468017578
+      }
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1825,
+      "seconds": 91.25,
+      "label": "新增打印",
+      "rect": {
+        "x": 904.6171875,
+        "y": 678,
+        "width": 84,
+        "height": 38,
+        "cx": 946.6171875,
+        "cy": 697
+      }
+    },
+    {
+      "step": "preview",
+      "type": "highlight",
+      "frame": 1841,
+      "seconds": 92.05,
+      "label": "新增导出 HTML",
+      "rect": {
+        "x": 992.6171875,
+        "y": 678,
+        "width": 108.3828125,
+        "height": 38,
+        "cx": 1046.80859375,
+        "cy": 697
+      }
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2054,
+      "seconds": 102.7,
+      "label": "关闭预览",
+      "rect": {
+        "x": 1243,
+        "y": 678,
+        "width": 84,
+        "height": 38,
+        "cx": 1285,
+        "cy": 697
+      }
+    },
+    {
+      "step": "account",
+      "type": "click",
+      "frame": 2117,
+      "seconds": 105.85,
+      "label": "关闭预览",
+      "x": 1285,
+      "y": 697
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2123,
+      "seconds": 106.15,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 699,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 715.5
+      }
+    },
+    {
+      "step": "account",
+      "type": "click",
+      "frame": 2151,
+      "seconds": 107.55,
+      "label": "返回首页",
+      "x": 44,
+      "y": 715.5
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2161,
+      "seconds": 108.05,
+      "label": "账号与云空间",
+      "rect": {
+        "x": 1460,
+        "y": 8.5,
+        "width": 34,
+        "height": 34,
+        "cx": 1477,
+        "cy": 25.5
+      }
+    },
+    {
+      "step": "account",
+      "type": "click",
+      "frame": 2181,
+      "seconds": 109.05,
+      "label": "账号与云空间",
+      "x": 1477,
+      "y": 25.5
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2187,
+      "seconds": 109.35,
+      "label": "账号信息",
+      "rect": {
+        "x": 1273,
+        "y": 53.342185974121094,
+        "width": 137.199951171875,
+        "height": 17.6796875,
+        "cx": 1341.5999755859375,
+        "cy": 62.182029724121094
+      }
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2206,
+      "seconds": 110.3,
+      "label": "云空间用量",
+      "rect": {
+        "x": 465,
+        "y": 259.109375,
+        "width": 670,
+        "height": 198.7890625,
+        "cx": 800,
+        "cy": 358.50390625
+      }
+    },
+    {
+      "step": "account",
+      "type": "highlight",
+      "frame": 2229,
+      "seconds": 111.45,
+      "label": "独立的危险区",
+      "rect": {
+        "x": 465,
+        "y": 567.09375,
+        "width": 670,
+        "height": 77.59375,
+        "cx": 800,
+        "cy": 605.890625
+      }
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2333,
+      "seconds": 116.65,
+      "label": "修改登录密码",
+      "rect": {
+        "x": 998,
+        "y": 486.8984375,
+        "width": 120,
+        "height": 44,
+        "cx": 1058,
+        "cy": 508.8984375
+      }
+    },
+    {
+      "step": "password",
+      "type": "click",
+      "frame": 2401,
+      "seconds": 120.05,
+      "label": "修改登录密码",
+      "x": 1058,
+      "y": 508.8984375
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2407,
+      "seconds": 120.35,
+      "label": "切换为短信验证码",
+      "rect": {
+        "x": 562.5625,
+        "y": 505.578125,
+        "width": 96.703125,
+        "height": 34,
+        "cx": 610.9140625,
+        "cy": 522.578125
+      }
+    },
+    {
+      "step": "password",
+      "type": "click",
+      "frame": 2471,
+      "seconds": 123.55,
+      "label": "切换为短信验证码",
+      "x": 610.9140625,
+      "y": 522.578125
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2477,
+      "seconds": 123.85,
+      "label": "验证码与获取按钮同一行",
+      "rect": {
+        "x": 482,
+        "y": 574.375,
+        "width": 626,
+        "height": 44,
+        "cx": 795,
+        "cy": 596.375
+      }
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2497,
+      "seconds": 124.85,
+      "label": "获取账号安全验证码",
+      "rect": {
+        "x": 946,
+        "y": 574.375,
+        "width": 162,
+        "height": 44,
+        "cx": 1027,
+        "cy": 596.375
+      }
+    },
+    {
+      "step": "password",
+      "type": "click",
+      "frame": 2564,
+      "seconds": 128.2,
+      "label": "获取账号安全验证码",
+      "x": 1027,
+      "y": 596.375
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2570,
+      "seconds": 128.5,
+      "label": "逐字输入隔离演示验证码",
+      "rect": {
+        "x": 482,
+        "y": 574.375,
+        "width": 508.53125,
+        "height": 44,
+        "cx": 736.265625,
+        "cy": 596.375
+      }
+    },
+    {
+      "step": "password",
+      "type": "click",
+      "frame": 2636,
+      "seconds": 131.8,
+      "label": "逐字输入隔离演示验证码",
+      "x": 736.265625,
+      "y": 596.375
+    },
+    {
+      "step": "password",
+      "type": "typing-start",
+      "frame": 2641,
+      "seconds": 132.05,
+      "label": "逐字输入隔离演示验证码",
+      "text": "[隔离演示验证码]"
+    },
+    {
+      "step": "password",
+      "type": "typing",
+      "frame": 2651,
+      "seconds": 132.55,
+      "label": "逐字输入隔离演示验证码",
+      "text": "[隔离演示验证码]"
+    },
+    {
+      "step": "password",
+      "type": "highlight",
+      "frame": 2656,
+      "seconds": 132.8,
+      "label": "保存按钮",
+      "rect": {
+        "x": 988,
+        "y": 672.1640625,
+        "width": 120,
+        "height": 44,
+        "cx": 1048,
+        "cy": 694.1640625
+      }
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2683,
+      "seconds": 134.15,
+      "label": "关闭账号面板",
+      "rect": {
+        "x": 1105,
+        "y": 41,
+        "width": 38,
+        "height": 38,
+        "cx": 1124,
+        "cy": 60
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2746,
+      "seconds": 137.3,
+      "label": "关闭账号面板",
+      "x": 1124,
+      "y": 60
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2752,
+      "seconds": 137.6,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 699,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 715.5
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2793,
+      "seconds": 139.65,
+      "label": "返回首页",
+      "x": 44,
+      "y": 715.5
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2804,
+      "seconds": 140.2,
+      "label": "切换界面语言",
+      "rect": {
+        "x": 1498,
+        "y": 8.5,
+        "width": 50,
+        "height": 34,
+        "cx": 1523,
+        "cy": 25.5
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2826,
+      "seconds": 141.3,
+      "label": "切换界面语言",
+      "x": 1523,
+      "y": 25.5
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2832,
+      "seconds": 141.6,
+      "label": "English",
+      "rect": {
+        "x": 1504,
+        "y": 81.92979431152344,
+        "width": 84.5625,
+        "height": 37.940330505371094,
+        "cx": 1546.28125,
+        "cy": 100.89995956420898
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2851,
+      "seconds": 142.55,
+      "label": "English",
+      "x": 1546.28125,
+      "y": 100.89995956420898
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2856,
+      "seconds": 142.8,
+      "label": "英文界面",
+      "rect": {
+        "x": 74,
+        "y": 50,
+        "width": 236,
+        "height": 639,
+        "cx": 192,
+        "cy": 369.5
+      }
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2894,
+      "seconds": 144.7,
+      "label": "Switch language",
+      "rect": {
+        "x": 1498,
+        "y": 8.5,
+        "width": 50,
+        "height": 34,
+        "cx": 1523,
+        "cy": 25.5
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2915,
+      "seconds": 145.75,
+      "label": "Switch language",
+      "x": 1523,
+      "y": 25.5
+    },
+    {
+      "step": "language",
+      "type": "highlight",
+      "frame": 2921,
+      "seconds": 146.05,
+      "label": "Simplified Chinese",
+      "rect": {
+        "x": 1390.5546875,
+        "y": 47.94490051269531,
+        "width": 151.4453125,
+        "height": 37.687774658203125,
+        "cx": 1466.27734375,
+        "cy": 66.78878784179688
+      }
+    },
+    {
+      "step": "language",
+      "type": "click",
+      "frame": 2943,
+      "seconds": 147.15,
+      "label": "Simplified Chinese",
+      "x": 1466.27734375,
+      "y": 66.78878784179688
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 2967,
+      "seconds": 148.35,
+      "label": "返回首页",
+      "rect": {
+        "x": 6,
+        "y": 699,
+        "width": 76,
+        "height": 33,
+        "cx": 44,
+        "cy": 715.5
+      }
+    },
+    {
+      "step": "outro",
+      "type": "click",
+      "frame": 2989,
+      "seconds": 149.45,
+      "label": "返回首页",
+      "x": 44,
+      "y": 715.5
+    },
+    {
+      "step": "outro",
+      "type": "highlight",
+      "frame": 3000,
+      "seconds": 150,
+      "label": "海豹办公 2.8.0",
+      "rect": {
+        "x": 86,
+        "y": 66,
+        "width": 201,
+        "height": 98,
+        "cx": 186.5,
+        "cy": 115
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "intro",
+      "index": 0,
+      "title": "二点八版本更新",
+      "chapter": "新版概览",
+      "narration": "海豹办公二点八版本，重点升级了我的云盘：文件可以直接拖动移动，列表显示大小，预览更稳定，账号面板也重新排版。下面在隔离的演示账号里逐项操作。",
+      "startFrame": 0,
+      "endFrame": 333,
+      "start": 0,
+      "end": 16.65,
+      "audio": "pc-intro.mp3",
+      "audioSeconds": 14.904,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-intro-verified.png",
+      "endScreenshotSha256": "703bec0b03616104e99894bc4c1ea0e44a6a7495c078f6e92963c63fa6f3949c"
+    },
+    {
+      "id": "cloud-size",
+      "index": 1,
+      "title": "列表显示文件大小",
+      "chapter": "云盘文件信息",
+      "narration": "打开我的云空间，切换到列表视图。新增的大小列显示每个文件的大小，文件夹显示其中全部文件的总量。",
+      "startFrame": 335,
+      "endFrame": 567,
+      "start": 16.75,
+      "end": 28.35,
+      "audio": "pc-cloud-size.mp3",
+      "audioSeconds": 9.864,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-size-verified.png",
+      "endScreenshotSha256": "4dd20c8de46fc38fe07d351938b457a36a3bb721c2f5c12abd48550e642edf9e"
+    },
+    {
+      "id": "cloud-sort",
+      "index": 2,
+      "title": "按大小排序",
+      "chapter": "云盘文件信息",
+      "narration": "在排序菜单里选择大小从大到小，最大的季度汇报排到了最前面。",
+      "startFrame": 570,
+      "endFrame": 738,
+      "start": 28.5,
+      "end": 36.9,
+      "audio": "pc-cloud-sort.mp3",
+      "audioSeconds": 6.288,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-sort-verified.png",
+      "endScreenshotSha256": "41d4097c90ec7750af5ee37e2de617f5e8f0fd1093e6a3ed4d09f5beec12f985"
+    },
+    {
+      "id": "cloud-hover",
+      "index": 3,
+      "title": "网格悬停信息卡",
+      "chapter": "云盘文件信息",
+      "narration": "切换到网格视图，把鼠标停在文件上，信息卡会显示名称、大小、创建时间和修改时间。",
+      "startFrame": 739,
+      "endFrame": 947,
+      "start": 36.95,
+      "end": 47.35,
+      "audio": "pc-cloud-hover.mp3",
+      "audioSeconds": 8.616,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-hover-verified.png",
+      "endScreenshotSha256": "92e02a38dc237cd37068fb1b1715705eb70a50a5402d76315e11214668d137d2"
+    },
+    {
+      "id": "cloud-drag",
+      "index": 4,
+      "title": "拖动文件到文件夹",
+      "chapter": "云盘移动",
+      "narration": "回到列表，按住会议纪要拖到项目资料文件夹上，文件夹高亮后松开，文件就移了进去。",
+      "startFrame": 949,
+      "endFrame": 1177,
+      "start": 47.45,
+      "end": 58.85,
+      "audio": "pc-cloud-drag.mp3",
+      "audioSeconds": 8.232,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-drag-verified.png",
+      "endScreenshotSha256": "54c39cdb4172dbab98e662ee077206692f4ab06beac3746387442a2df2eece92"
+    },
+    {
+      "id": "cloud-multi",
+      "index": 5,
+      "title": "一次移动多个文件",
+      "chapter": "云盘移动",
+      "narration": "勾选合作协议和需求清单，点击移动到，选择合同归档。多个文件在一次操作中完成移动，任何一项不能移动时整批都不改动。",
+      "startFrame": 1179,
+      "endFrame": 1506,
+      "start": 58.95,
+      "end": 75.3,
+      "audio": "pc-cloud-multi.mp3",
+      "audioSeconds": 11.616,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-multi-verified.png",
+      "endScreenshotSha256": "59ca1085074532891d7bd34ad25cf571f0ff46b53eef851b0c41c89d31ac8169"
+    },
+    {
+      "id": "cloud-folder",
+      "index": 6,
+      "title": "查看移动结果",
+      "chapter": "云盘移动",
+      "narration": "打开合同归档，刚才移动的两个文件已经在这里，文件内容和历史版本保持不变。",
+      "startFrame": 1518,
+      "endFrame": 1706,
+      "start": 75.9,
+      "end": 85.3,
+      "audio": "pc-cloud-folder.mp3",
+      "audioSeconds": 7.344,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-cloud-folder-verified.png",
+      "endScreenshotSha256": "c1c35147fef0542623963ea0e171d034f1df09f0b653b504677f6a95fd0f8619"
+    },
+    {
+      "id": "preview",
+      "index": 7,
+      "title": "预览、打印与导出",
+      "chapter": "云文件预览",
+      "narration": "预览季度汇报。这份文档带有其他编辑器写入的编号扩展属性，二点八会在预览副本里自动修补，正文正常显示。预览底部新增了打印和导出 HTML。",
+      "startFrame": 1708,
+      "endFrame": 2034,
+      "start": 85.4,
+      "end": 101.7,
+      "audio": "pc-preview.mp3",
+      "audioSeconds": 14.592,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-preview-verified.png",
+      "endScreenshotSha256": "f07763b859e00322edec098cc3c9176265388c631fff4fb7ab89dbcff96c0294"
+    },
+    {
+      "id": "account",
+      "index": 8,
+      "title": "新版账号面板",
+      "chapter": "账号与云空间",
+      "narration": "打开账号与云空间。账号信息、云空间用量和账号安全分组显示，注销账号放在单独的危险区，每组的主要按钮统一靠右。",
+      "startFrame": 2046,
+      "endFrame": 2313,
+      "start": 102.3,
+      "end": 115.65,
+      "audio": "pc-account.mp3",
+      "audioSeconds": 11.64,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-account-verified.png",
+      "endScreenshotSha256": "6ad9ca39e57533ba5530ee7b1e166fdf2e0cbe37de1c81470dab75587685c5a2"
+    },
+    {
+      "id": "password",
+      "index": 9,
+      "title": "修改登录密码",
+      "chapter": "账号与云空间",
+      "narration": "展开修改登录密码，验证方式改为分段切换，验证码和获取按钮在同一行，保存按钮在右下角。",
+      "startFrame": 2325,
+      "endFrame": 2664,
+      "start": 116.25,
+      "end": 133.2,
+      "audio": "pc-password.mp3",
+      "audioSeconds": 8.784,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-password-verified.png",
+      "endScreenshotSha256": "b20ce7c6f9a2b24c8e77b4c65f56a3c4f7273af1141bcac2f5a3fb2ad870288f"
+    },
+    {
+      "id": "language",
+      "index": 10,
+      "title": "切换英文界面",
+      "chapter": "界面语言",
+      "narration": "在标题栏把界面切换为英文，菜单、按钮和提示立即变成英文；切回中文同样不用重启。",
+      "startFrame": 2675,
+      "endFrame": 2957,
+      "start": 133.75,
+      "end": 147.85,
+      "audio": "pc-language.mp3",
+      "audioSeconds": 8.856,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-language-verified.png",
+      "endScreenshotSha256": "77d2240a49c31833509d4ba0a9575735f98762d2a24309e9c22aed942005bb8f"
+    },
+    {
+      "id": "outro",
+      "index": 11,
+      "title": "其他更新",
+      "chapter": "更多改进",
+      "narration": "此外，Windows 自动更新会打开完整的安装向导，Linux 改为在浏览器下载安装包，所有弹窗都限制在窗口之内，管理后台也支持管理员修改自己的密码。",
+      "startFrame": 2959,
+      "endFrame": 3271,
+      "start": 147.95,
+      "end": 163.55,
+      "audio": "pc-outro.mp3",
+      "audioSeconds": 13.896,
+      "endScreenshot": "release/promo/work-2.8.0-tutorial/pc-outro-verified.png",
+      "endScreenshotSha256": "703bec0b03616104e99894bc4c1ea0e44a6a7495c078f6e92963c63fa6f3949c"
+    }
+  ],
+  "recording": "release/promo/work-2.8.0-tutorial/pc-operations.mp4",
+  "recordingSha256": "e5d22f36fd3fb006a7d911f4b9d01056c93519962da7a9be7b77e74a6a7e7c4a"
+}

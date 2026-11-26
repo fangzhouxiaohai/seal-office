@@ -8,7 +8,10 @@ from candidate_paths import promo_output
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
 OUT=promo_output(ROOT);WORK=OUT/('work-'+VERSION+'-tutorial')
-FFMPEG=imageio_ffmpeg.get_ffmpeg_exe();FONT=Path('C:/Windows/Fonts/msyh.ttc');BOLD=Path('C:/Windows/Fonts/msyhbd.ttc')
+FFMPEG=imageio_ffmpeg.get_ffmpeg_exe()
+FONT=ROOT/'mobile/web/public/fonts/NotoSansSC.ttf'
+BOLD=FONT
+FONT_NAME='Noto Sans SC'
 VOICE_START=.4
 def sha(p):
     with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -61,9 +64,9 @@ WrapStyle: 2
 ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,Microsoft YaHei,{34 if mobile else 29},&H00FFFFFF,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,2,0,2,36,36,{42 if mobile else 34},1
-Style: Chapter,Microsoft YaHei,{28 if mobile else 29},&H00E9D5FF,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
-Style: End,Microsoft YaHei,{26 if mobile else 25},&H00C4B5FD,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,1,0,8,20,20,0,1
+Style: Caption,{FONT_NAME},{34 if mobile else 29},&H00FFFFFF,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,2,0,2,36,36,{42 if mobile else 34},1
+Style: Chapter,{FONT_NAME},{28 if mobile else 29},&H00E9D5FF,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+Style: End,{FONT_NAME},{26 if mobile else 25},&H00C4B5FD,&H00FFFFFF,&H00101626,&H00101626,0,0,0,0,100,100,0,0,1,1,0,8,20,20,0,1
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 '''
@@ -99,7 +102,7 @@ def main():
         if existing.get('kind')=='hands-on-tutorial' and existing.get('version')==VERSION:
             allresults=[v for v in existing['videos'] if v['platform']!=requested and (OUT/v['file']).exists() and sha(OUT/v['file'])==v['sha256']]
     fonts=WORK/'fonts';fonts.mkdir(exist_ok=True)
-    for p in [FONT,BOLD]:shutil.copy2(p,fonts/p.name)
+    shutil.copy2(FONT,fonts/FONT.name)
     all_voice=json.loads((WORK/'voice.json').read_text(encoding='utf-8'))['clips']
     for platform in ([requested] if requested else ['pc','android']):
         source=json.loads((WORK/(platform+'-recording.json')).read_text(encoding='utf-8'));assert source['passed'] and not source['errors']
@@ -142,7 +145,8 @@ def main():
         for i,(step,shot) in enumerate(chosen):
             image=Image.fromarray(cv2.cvtColor(shot,cv2.COLOR_BGR2RGB));image.thumbnail((thumbw,thumbh));contact.paste(image,(i%columns*thumbw,i//columns*thumbh))
         contact.save(OUT/(name+'-contact.jpg'),quality=93)
-        coverstep=next(s for s in source['steps'] if s['id']==('display-compact' if mobile else 'pdf-edit' if pc_current else 'word-reopen'))
+        preferred_cover = 'display-compact' if mobile else 'pdf-edit' if pc_current else 'cloud-folder'
+        coverstep=next((s for s in source['steps'] if s['id']==preferred_cover),source['steps'][0])
         cover=Image.fromarray(cv2.cvtColor(frame_at(file,coverstep['end']-1.2),cv2.COLOR_BGR2RGB));cover.save(OUT/(name+'-cover.jpg'),quality=95)
         preview=OUT/(name+'-preview.mp4');start=source['steps'][1]['start'];seconds=min(23,source['durationSeconds']-start)
         run(['-y','-ss',str(start),'-i',str(file),'-t',str(seconds),'-c:v','libx264','-preset','fast','-crf','20','-c:a','aac','-b:a','160k','-movflags','+faststart',str(preview)])
@@ -150,11 +154,11 @@ def main():
             'integratedLufs':float(levels['input_i']),'truePeakDb':float(levels['input_tp']),'narrationVoice':'zh-CN-XiaoxiaoNeural','voiceRate':'+5%','voicePitch':'+4Hz','voiceConfirmedByUser':True,
             'sourceReferenceSha256':'a13d2c5a81acd7a4e30522958393b21b0478a91ef24165bc4df16d6f82c4aa0b','steps':len(source['steps']),'actions':len(source['actions']),'functionalAssertions':len(source['assertions']),
             'nativeDeviceRecording':False,'sourceDisclosure':'海豹办公 2.6.0 生产 Web 界面在隔离 Electron 窗口中录制。本机 Zotero 接口只读取单独导入的演示文献；云分享使用本机隔离云服务及演示账号，未使用用户现有云账号。录制专用剪贴板桥接提供系统剪贴板能力。鼠标、点击圆环和紫色光晕仅用于录制标注。' if pc_current else 'Actual production Web/Android-layout interactions in isolated Electron browser windows, with recording-only pointer, click and purple target overlays. Mobile touch gestures use Chromium touch input; not a native APK physical-device recording.',
-            'sourceBundleSha256':source['bundleSha256'],'sourceArchive':source.get('sourceArchive'),
+            'sourceBundleSha256':source['bundleSha256'],'sourceArchive':source.get('sourceArchive'),'webDeployment':source.get('webDeployment'),
             'subtitles':len(cues),'subtitleTiming':'语音服务句子边界，按每段配音实际开始时间放入成片。',
             'purpleOutlineFrameChecks':purple,'typingFrameChanges':movement,'preview':preview.name,'previewSha256':sha(preview),'sourceManifest':platform+'-recording.json','visualReview':'pending'}
         allresults.append(result);print(json.dumps({'rendered':platform,'seconds':result['durationSeconds'],'steps':result['steps'],'actions':result['actions'],'sha256':result['sha256']}),flush=True)
-    report={'passed':len(allresults)==(1 if pc_current else 2),'version':VERSION,'kind':'hands-on-tutorial','videos':sorted(allresults,key=lambda v:v['platform']),'runtimeChanges':False,'visualReview':'pending'}
+    report={'passed':bool(allresults) if requested else len(allresults)==2,'version':VERSION,'kind':'hands-on-tutorial','videos':sorted(allresults,key=lambda v:v['platform']),'runtimeChanges':False,'visualReview':'pending'}
     (OUT/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 if __name__=='__main__':
     sys.stdout.reconfigure(encoding='utf-8');main()

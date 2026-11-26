@@ -1,7 +1,7 @@
 // Record actual production UI input into isolated demonstration storage.
 // Only file-picker selection and a denied fullscreen host are fixtures; codecs,
 // editing, formula evaluation, save/reopen, reading and diagram models are real.
-const {app,BrowserWindow,net,clipboard}=require('electron')
+const {app,BrowserWindow,net,clipboard,nativeImage}=require('electron')
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict')
 const {spawn,spawnSync}=require('node:child_process')
 const {createZoteroLocalApi}=require('../../main/zotero/localApi')
@@ -9,7 +9,7 @@ const {createZoteroLocalApi}=require('../../main/zotero/localApi')
 const createLocalCollaborationFixture=async()=>{throw new Error('云分享演示场景依赖的旧 Node 云服务夹具已删除，请先改用本地 seal-server 实例再录制 --pc-current')}
 const {createShareLinkService}=require('../../main/cloud/shareLink')
 const {randomUUID}=require('node:crypto')
-const {verifyWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')
+const {verifyDeployedWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version
 const pcCurrent=process.argv.includes('--pc-current')
 // --dry-run：无配音试录，用占位时长、跳过成品与线上更新核对，只用于检查画面与断言，产物带 dryrun 标记，不能作为成片。
@@ -42,10 +42,10 @@ app.on('window-all-closed',()=>{})
 app.whenReady().then(async()=>{let server,win,recording,loop,encoder,cloudFixture,cloudClient,shareLinks,originalClipboard,promoCloud,cloudInvoke,demoFolders
 try{
  fs.mkdirSync(work,{recursive:true})
- const webEvidence=!pcCurrent&&!dryRun&&requested!=='android'?await verifyWebRecordingSource(webRoot,artifact('web'),version):null
+ const webEvidence=!pcCurrent&&!dryRun&&requested!=='android'?await verifyDeployedWebRecordingSource(webRoot,version):null
  const updateQueries=[]
  if(!pcCurrent&&!probe&&!dryRun){
-  const platforms=requested?[requested==='pc'?'web':'android']:['web','android']
+  const platforms=requested==='pc'?[]:['android']
   await Promise.all(platforms.map(async platform=>{
     const url=new URL(updateEndpoint)
     url.search=new URLSearchParams({platform,version,channel:'stable'})
@@ -84,10 +84,11 @@ try{
   const mobile=platform==='android',width=mobile?432:1600,height=mobile?708:820,base=mobile?mobileRoot:webRoot
   const build=JSON.parse(fs.readFileSync(base+'/build-info.json','utf8'));assert.equal(build.desktopVersion,version)
   const entry=mobile&&fs.existsSync(base+'/office.js')?'office.js':fs.readFileSync(base+'/index.html','utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1]
-  win=new BrowserWindow({show:mobile,title:'海豹办公 · 操作教程录制',useContentSize:true,width,height,webPreferences:{partition:'tutorial-'+platform+'-'+process.pid,offscreen:!mobile,sandbox:true,contextIsolation:true,nodeIntegration:false,backgroundThrottling:false}});win.setContentSize(width,height);win.removeMenu()
+  const directCapture=mobile||process.platform==='darwin'
+  win=new BrowserWindow({show:directCapture,title:'海豹办公 · 操作教程录制',useContentSize:true,width,height,webPreferences:{partition:'tutorial-'+platform+'-'+process.pid,offscreen:!directCapture,sandbox:true,contextIsolation:true,nodeIntegration:false,backgroundThrottling:false}});win.setContentSize(width,height);win.removeMenu()
   const wc=win.webContents,errors=[],assertions=[],actions=[],steps=[];let frame=null,frames=0,activeStep=null,running=false,cursor={x:width*.55,y:height*.58}
   wc.setFrameRate(30);wc.on('paint',(_event,_dirty,image)=>{const size=image.getSize();if(size.width===width&&size.height===height)frame=image.toBitmap()})
-  let captureBusy=false;const captureTimer=mobile?setInterval(async()=>{if(captureBusy||!win||win.isDestroyed())return;captureBusy=true;try{const image=await win.capturePage(),size=image.getSize();if(size.width===width&&size.height===height)frame=image.toBitmap()}catch{}finally{captureBusy=false}},50):null
+  let captureBusy=false;const captureTimer=directCapture?setInterval(async()=>{if(captureBusy||!win||win.isDestroyed())return;captureBusy=true;try{const shot=await win.capturePage();if(!shot.isEmpty()){let bitmap=shot.resize({width,height}).toBitmap({scaleFactor:1});if(bitmap.length!==width*height*4)bitmap=nativeImage.createFromBuffer(shot.toPNG()).resize({width,height}).toBitmap();if(bitmap.length===width*height*4)frame=bitmap}}catch{}finally{captureBusy=false}},65):null
   wc.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message)})
   if(pcCurrent){wc.session.setPermissionCheckHandler((_contents,permission)=>['clipboard-read','clipboard-sanitized-write'].includes(permission));wc.session.setPermissionRequestHandler((_contents,permission,callback)=>callback(['clipboard-read','clipboard-sanitized-write'].includes(permission)))}
   wc.on('will-prevent-unload',e=>e.preventDefault());wc.session.on('will-download',(_e,item)=>item.cancel())
@@ -96,7 +97,8 @@ try{
   const check=async(code,label)=>{assert(await ev(code),label);assertions.push({step:activeStep,label,passed:true,frame:frames})}
   const log=(type,data={})=>actions.push({step:activeStep,type,frame:frames,seconds:frames/20,...data})
   await win.loadURL('http://127.0.0.1:'+server.address().port+'/'+platform+'/');await until(`!!window.electronAPI&&!!document.querySelector('.wps-app')`,'production app ready')
-  if(mobile){wc.debugger.attach('1.3');await wc.debugger.sendCommand('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5})}
+  if(directCapture){wc.focus();wc.debugger.attach('1.3')}
+  if(mobile)await wc.debugger.sendCommand('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5})
   await ev(`(()=>{
     const style=document.createElement('style');style.textContent=
       '#tutorial-overlay{position:fixed;inset:0;z-index:2147483647;pointer-events:none!important;contain:strict}' +
@@ -127,8 +129,14 @@ try{
     const rect=await ev(`(()=>{const e=${expr};if(!e)throw Error('Missing target: '+${JSON.stringify(label)});if(e.disabled)throw Error('Disabled: '+${JSON.stringify(label)});${scroll?"e.scrollIntoView({block:'nearest',inline:'nearest'});":''}const r=e.getBoundingClientRect(),x=Math.max(2,r.left),y=Math.max(2,r.top),right=Math.min(innerWidth-2,r.right),bottom=Math.min(innerHeight-2,r.bottom);if(right<=x||bottom<=y)throw Error('Target outside viewport: '+${JSON.stringify(label)});const rect={x:x-2,y:y-2,width:right-x+4,height:bottom-y+4};window.__tutorialMark(e);return {...rect,cx:(x+right)/2,cy:(y+bottom)/2}})()`)
     log('highlight',{label,rect});return rect
   }
-  const move=async(x,y,ms=350)=>{const from={...cursor},count=Math.max(2,Math.ceil(ms/35));for(let i=1;i<=count;i++){const k=i/count,t=k*k*(3-2*k);cursor={x:from.x+(x-from.x)*t,y:from.y+(y-from.y)*t};await ev(`window.__tutorialCursor(${cursor.x},${cursor.y})`);wc.sendInputEvent({type:'mouseMove',x:Math.round(cursor.x),y:Math.round(cursor.y)});await pause(ms/count)}}
-  const tap=async(expr,label,count=1)=>{const r=await focus(expr,label);await move(r.cx,r.cy);await pause(180);await ev(`window.__tutorialRing(${r.cx},${r.cy})`);for(let i=0;i<count;i++){wc.sendInputEvent({type:'mouseDown',x:Math.round(r.cx),y:Math.round(r.cy),button:'left',clickCount:i+1});await pause(65);wc.sendInputEvent({type:'mouseUp',x:Math.round(r.cx),y:Math.round(r.cy),button:'left',clickCount:i+1});if(count>1)await pause(75)}log(count>1?'double-click':'click',{label,x:r.cx,y:r.cy});await pause(330)}
+  const sendMouse=async(type,x,y,button='none',clickCount=0)=>{
+    if(process.platform==='darwin'&&!mobile){
+      const eventType={mouseDown:'mousePressed',mouseUp:'mouseReleased',mouseMove:'mouseMoved'}[type]
+      await wc.debugger.sendCommand('Input.dispatchMouseEvent',{type:eventType,x,y,button,clickCount,buttons:Number(button==='left'&&type!=='mouseUp')})
+    }else wc.sendInputEvent({type,x:Math.round(x),y:Math.round(y),...(button==='left'?{button}:{}),...(clickCount?{clickCount}:{})})
+  }
+  const move=async(x,y,ms=350)=>{const from={...cursor},count=Math.max(2,Math.ceil(ms/35));for(let i=1;i<=count;i++){const k=i/count,t=k*k*(3-2*k);cursor={x:from.x+(x-from.x)*t,y:from.y+(y-from.y)*t};await ev(`window.__tutorialCursor(${cursor.x},${cursor.y})`);await sendMouse('mouseMove',cursor.x,cursor.y);await pause(ms/count)}}
+  const tap=async(expr,label,count=1)=>{const r=await focus(expr,label);await move(r.cx,r.cy);await pause(180);await ev(`window.__tutorialRing(${r.cx},${r.cy})`);for(let i=0;i<count;i++){await sendMouse('mouseDown',r.cx,r.cy,'left',i+1);await pause(65);await sendMouse('mouseUp',r.cx,r.cy,'left',i+1);if(count>1)await pause(75)}log(count>1?'double-click':'click',{label,x:r.cx,y:r.cy});await pause(330)}
   const click=label=>tap(btn(label),label)
   const key=async(keyCode,modifiers=[])=>{const textEnter=keyCode==='Enter'&&await ev(`Boolean(document.activeElement?.isContentEditable)`);wc.sendInputEvent({type:'keyDown',keyCode,modifiers});if(textEnter)wc.sendInputEvent({type:'char',keyCode:'\r'});wc.sendInputEvent({type:'keyUp',keyCode,modifiers});await pause(120)}
   const type=async(expr,text,label,replace=false)=>{await tap(expr,label);if(replace){await key('A',['control']);await key('Backspace')}else if(await ev(`Boolean((${expr}).isContentEditable)`))await key('End',['control']);log('typing-start',{label,text});for(const c of text){if(c==='\n')await key('Enter');else{await wc.insertText(c);await pause(/[\u4e00-\u9fff]/.test(c)?65:90)}}log('typing',{label,text});await pause(280)}
@@ -334,10 +342,10 @@ try{
         await check(`!!document.querySelector('.seal-drive-file.is-drop-target')`,'目标文件夹高亮');await ev(`window.__tutorialMark(${row(targetName)})`);await pause(150)
         await touch('touchEnd',b.cx,b.cy);await ev(`window.__tutorialTouches([])`);log('drop',{source:sourceName,target:targetName})
       }else{
-        await move(a.cx,a.cy);await pause(150);wc.sendInputEvent({type:'mouseDown',x:Math.round(a.cx),y:Math.round(a.cy),button:'left',clickCount:1});log('drag-start',{label:sourceName})
-        const from={...cursor};for(let i=1;i<=24;i++){const k=i/24;cursor={x:from.x+(b.cx-from.x)*k,y:from.y+(b.cy-from.y)*k};await ev(`window.__tutorialCursor(${cursor.x},${cursor.y})`);wc.sendInputEvent({type:'mouseMove',x:Math.round(cursor.x),y:Math.round(cursor.y),button:'left'});await pause(35)}
+        await move(a.cx,a.cy);await pause(150);await sendMouse('mouseDown',a.cx,a.cy,'left',1);log('drag-start',{label:sourceName})
+        const from={...cursor};for(let i=1;i<=8;i++){const k=i/8;cursor={x:from.x+(b.cx-from.x)*k,y:from.y+(b.cy-from.y)*k};await ev(`window.__tutorialCursor(${cursor.x},${cursor.y})`);await sendMouse('mouseMove',cursor.x,cursor.y,'left');await pause(30)}
         await check(`!!document.querySelector('.seal-drive-drag-preview')&&!!document.querySelector('.seal-drive-file.is-drop-target')`,'拖动预览与目标高亮');await ev(`window.__tutorialMark(${row(targetName)})`);await pause(250)
-        wc.sendInputEvent({type:'mouseUp',x:Math.round(b.cx),y:Math.round(b.cy),button:'left',clickCount:1});await ev(`window.__tutorialRing(${b.cx},${b.cy})`);log('drop',{source:sourceName,target:targetName})
+        await sendMouse('mouseUp',b.cx,b.cy,'left',1);await ev(`window.__tutorialRing(${b.cx},${b.cy})`);log('drop',{source:sourceName,target:targetName})
       }
       await until(`!(${row(sourceName)})&&${toast('已移动 1 项')}`,'文件已移入目标文件夹',20000)
       await check(`!(${row(sourceName)})`,sourceName+' 已从根目录移出')
@@ -359,8 +367,9 @@ try{
       },
       'cloud-sort':async()=>{
         await click('排序');await tap(`[...document.querySelectorAll('.ant-dropdown-menu-item')].filter(${visible}).find(e=>e.textContent.trim()==='大小从大到小')`,'大小从大到小')
-        await until(`[...document.querySelectorAll('.seal-drive-file')].filter(${visible}).map(e=>e.querySelector('.seal-drive-file-name').textContent).filter(n=>n.includes('.'))[0]==='季度汇报.docx'`,'最大的文件排在最前')
-        await check(`true`,'按大小降序排列');await focus(row('季度汇报.docx'),'最大的文件')
+        const largestFirst=`[...document.querySelectorAll('.seal-drive-file')].filter(${visible}).map(e=>e.querySelector('.seal-drive-file-name').textContent).find(n=>n.includes('.'))==='季度汇报.docx'`
+        await until(largestFirst,'最大的文件排在最前')
+        await check(largestFirst,'按大小降序排列');await focus(row('季度汇报.docx'),'最大的文件')
       },
       'cloud-hover':async()=>{
         await view('grid');const r=await focus(rowOpen('季度汇报.docx'),'悬停在季度汇报.docx');await move(r.cx,r.cy)
@@ -373,7 +382,16 @@ try{
       'cloud-multi':async()=>{
         for(const name of ['合作协议.docx','需求清单.txt'])await tap(rowCheck(name),'勾选 '+name)
         await click('移动到…');await until(`!!document.querySelector('.ant-modal-confirm .ant-select')`,'选择目标文件夹')
-        await tap(sel('.ant-modal-confirm .ant-select'),'目标文件夹');await tap(`[...document.querySelectorAll('.ant-select-item-option')].filter(${visible}).find(e=>e.textContent.trim()==='合同归档')`,'合同归档')
+        const folderOption=`[...document.querySelectorAll('.ant-select-item-option')].filter(${visible}).find(e=>e.textContent.trim()==='合同归档')`
+        await ev(`Promise.all(document.querySelector('.ant-modal-confirm').getAnimations({subtree:true}).map(a=>a.finished.catch(()=>{})))`)
+        await pause(400)
+        await tap(sel('.ant-modal-confirm .ant-select-selector'),'目标文件夹')
+        if(!await ev(`!!(${folderOption})`)){
+          await ev(`document.querySelector('.ant-modal-confirm [role="combobox"]').focus()`)
+          await key('Down')
+        }
+        await until(`!!(${folderOption})`,'目标文件夹选项已打开')
+        await tap(folderOption,'合同归档')
         await tap(sel('.ant-modal-confirm-btns .ant-btn-primary'),'确认移动')
         await until(`!(${row('合作协议.docx')})&&!(${row('需求清单.txt')})&&${toast('已移动 2 项')}`,'两个文件已移动',20000)
         await check(`!(${row('合作协议.docx')})&&!(${row('需求清单.txt')})`,'两个文件已离开根目录')
@@ -405,6 +423,13 @@ try{
         await click('修改登录密码');await until(`!!document.querySelector('#seal-password-settings .ant-segmented')`,'修改密码表单')
         await tap(segment('短信验证码'),'切换为短信验证码');await until(`!!document.querySelector('#seal-security-code')`,'验证码输入')
         await focus(sel('.seal-account-field__row'),'验证码与获取按钮同一行');await pause(1200)
+        if(!mobile){
+          await click('获取账号安全验证码')
+          const code=promoCloud.读取验证码('13800138000')
+          assert.match(code,/^\d{6}$/)
+          await type(sel('#seal-security-code'),code,'逐字输入隔离演示验证码')
+          await check(`document.querySelector('#seal-security-code').value.length===6`,'验证码已填入表单')
+        }
         await focus(sel('#seal-password-settings .seal-account-card__actions .ant-btn-primary'),'保存按钮')
       },
       'language':async()=>{
@@ -427,8 +452,9 @@ try{
   await pause(450);await until(`document.fonts.status==='loaded'`,'fonts loaded');await pause(500)
   const rawFile=path.join(work,platform+(probe?'-probe':'')+(dryRun?'-dryrun':'')+'-operations.mp4');encoder=spawn(ffmpeg,['-y','-hide_banner','-loglevel','error','-f','rawvideo','-pixel_format','bgra','-video_size',width+'x'+height,'-framerate','20','-i','pipe:0','-an','-c:v','libx264','-preset','ultrafast','-crf','19','-pix_fmt','yuv420p','-threads','2',rawFile],{windowsHide:true,stdio:['pipe','ignore','pipe']});let encoderErrors='';encoder.stderr.on('data',b=>encoderErrors+=b);encoder.stdin.on('error',()=>{})
   const finished=new Promise((resolve,reject)=>encoder.on('exit',code=>code===0?resolve():reject(Error('Recording encoder '+code+': '+encoderErrors))));finished.catch(()=>{})
-  running=true;loop=(async()=>{while(running){const tick=Date.now();if(frame){if(!encoder.stdin.write(frame))await new Promise(r=>encoder.stdin.once('drain',r));frames++}await pause(Math.max(1,50-(Date.now()-tick)))}})()
-  const waitFrames=async target=>{while(frames<target)await pause(35)}
+  let frameError
+  running=true;loop=(async()=>{while(running){const tick=Date.now();if(frame){await new Promise((resolve,reject)=>encoder.stdin.write(frame,error=>error?reject(error):resolve()));frames++}await pause(Math.max(1,50-(Date.now()-tick)))}})().catch(error=>{frameError=error})
+  const waitFrames=async target=>{const limit=Date.now()+45000;while(frames<target){if(frameError||encoder.exitCode!==null)throw new Error('视频编码提前结束：'+(encoderErrors||frameError?.message||encoder.exitCode));if(Date.now()>limit)throw new Error('录制窗口在时限内未产生足够画面：'+frames+'/'+target);await pause(35)}}
   const scenes=probe==='display'
     ? plan[platform].slice(0,plan[platform].findIndex(s=>s.id===(mobile?'reading-enter':'sheet-open')))
     : probe==='reading'?plan[platform].filter(s=>s.id.startsWith('reading-')):probe==='word'?plan[platform].filter(s=>['new-word','word-title','word-body'].includes(s.id)):probe==='cloud'?plan[platform].filter(s=>s.id.startsWith('cloud-')):probe==='pdf'?plan[platform].filter(s=>s.id.startsWith('pdf-')||s.id==='outro'):probe==='after-cloud'?plan[platform].slice(plan[platform].findIndex(s=>s.id==='sheet-open')):plan[platform]
@@ -443,10 +469,9 @@ try{
     console.log(JSON.stringify({platform,step:scene.id,seconds:(frames-startFrame)/20,actions:actions.filter(a=>a.step===scene.id).length,assertions:assertions.length}),true)
   }
   running=false;await loop;encoder.stdin.end();await finished;encoder=null
-  const sourceArchive=pcCurrent||dryRun?null:{name:path.basename(artifact(mobile?'android':'web')),sha256:mobile?sha(artifact('android')):webEvidence.archiveSha256,...(mobile?{}:{files:webEvidence.files})}
-  const report={passed:true,dryRun,version,platform,build,sourceArchive,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,filePickerFixture:true,realFileSave:true,savedWordReopened:!mobile,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
+  const sourceArchive=mobile&&!dryRun?{name:path.basename(artifact('android')),sha256:sha(artifact('android'))}:null
+  const report={passed:true,dryRun,version,platform,build,sourceArchive,webDeployment:mobile?null:webEvidence,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
   fs.writeFileSync(path.join(work,platform+(probe?'-probe':'')+(dryRun?'-dryrun':'')+'-recording.json'),JSON.stringify(report,null,2)+'\n');assert.equal(errors.length,0,errors.join('\n'));clearInterval(captureTimer);win.destroy();win=null
  }
- app.exit(0)
-}catch(e){console.error(e.stack);if(win&&!win.isDestroyed()){try{fs.writeFileSync(path.join(work,'failure.png'),(await win.capturePage()).toPNG());fs.writeFileSync(path.join(work,'failure-dom.txt'),await win.webContents.executeJavaScript('document.body.innerText'))}catch{}}encoder?.kill();app.exit(1)
-}finally{server?.closeAllConnections?.();server?.close();await cloudFixture?.cleanup?.();promoCloud?.停止();if(originalClipboard){if(!originalClipboard.image.isEmpty())clipboard.writeImage(originalClipboard.image);else clipboard.writeText(originalClipboard.text)}}})
+}catch(e){console.error(e.stack);process.exitCode=1;if(win&&!win.isDestroyed()){try{fs.writeFileSync(path.join(work,'failure.png'),(await win.capturePage()).toPNG());fs.writeFileSync(path.join(work,'failure-dom.txt'),await win.webContents.executeJavaScript('document.body.innerText'))}catch{}}encoder?.kill()
+}finally{if(win&&!win.isDestroyed())win.destroy();server?.closeAllConnections?.();server?.close();await cloudFixture?.cleanup?.();promoCloud?.停止();if(originalClipboard){if(!originalClipboard.image.isEmpty())clipboard.writeImage(originalClipboard.image);else clipboard.writeText(originalClipboard.text)}app.exit(process.exitCode||0)}})
