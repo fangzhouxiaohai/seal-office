@@ -1,0 +1,132 @@
+{
+  "passed": true,
+  "version": "2.8.0",
+  "checks": [
+    {
+      "platform": "windows",
+      "filename": "seal-office-setup-2.8.0.exe",
+      "bytes": 572280971,
+      "sha256": "bd69473567ad42bdb8eb5d9a21f27e0f956b83458c947f409e97eaef46c0ff40",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/d1c9aade-0632-4d5f-a0f4-601b812cf2dd/seal-office-setup-2.8.0.exe",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/d1c9aade-0632-4d5f-a0f4-601b812cf2dd/seal-office-setup-2.8.0.exe",
+        "sha256": "bd69473567ad42bdb8eb5d9a21f27e0f956b83458c947f409e97eaef46c0ff40",
+        "bytes": 572280971,
+        "publishedAt": 1795669316580
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "windows-store",
+      "filename": "seal-office-2.8.0-microsoft-store-x64.msix",
+      "bytes": 806442891,
+      "sha256": "8fa000e7807a2d8c4d80c046a86d3f1f5205f45658c9c25a61531d623b27cafd",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/f6a0c1d4-6eeb-4947-9fe3-1f1203c0bd51/seal-office-2.8.0-microsoft-store-x64.msix",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "ms-windows-store://pdp/?productid=9NGPL705R5Z3",
+        "sha256": "8fa000e7807a2d8c4d80c046a86d3f1f5205f45658c9c25a61531d623b27cafd",
+        "bytes": 806442891,
+        "publishedAt": 1795669316586
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "linux",
+      "filename": "seal-office-2.8.0-amd64.deb",
+      "bytes": 154858148,
+      "sha256": "b4b905f558f02d8a85540a0f3ed1a0ed3e51d41d499376de26b22df1f16994f8",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/5af27f2b-9763-47cd-8409-6eba89d1f228/seal-office-2.8.0-amd64.deb",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/5af27f2b-9763-47cd-8409-6eba89d1f228/seal-office-2.8.0-amd64.deb",
+        "sha256": "b4b905f558f02d8a85540a0f3ed1a0ed3e51d41d499376de26b22df1f16994f8",
+        "bytes": 154858148,
+        "publishedAt": 1795669316634
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "android",
+      "filename": "seal-office-2.8.0-android.apk",
+      "bytes": 56467109,
+      "sha256": "d80d811ca99095da469e700cff78a9d93ab22a8545e0d8536d921f824f536c67",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/05ca0147-f491-4600-9681-3d47f53e090f/seal-office-2.8.0-android.apk",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/05ca0147-f491-4600-9681-3d47f53e090f/seal-office-2.8.0-android.apk",
+        "sha256": "d80d811ca99095da469e700cff78a9d93ab22a8545e0d8536d921f824f536c67",
+        "bytes": 56467109,
+        "publishedAt": 1795669316639
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "harmony",
+      "filename": "seal-office-2.8.0-harmony.hap",
+      "bytes": 74901790,
+      "sha256": "ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/b52c4a40-26e4-40a3-b516-40f9b84a798f/seal-office-2.8.0-harmony.hap",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/b52c4a40-26e4-40a3-b516-40f9b84a798f/seal-office-2.8.0-harmony.hap",
+        "sha256": "ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6",
+        "bytes": 74901790,
+        "publishedAt": 1795669316645
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    },
+    {
+      "platform": "web",
+      "filename": "seal-office-2.8.0-web.zip",
+      "bytes": 52808489,
+      "sha256": "a830284727582051aad1aca472afecb534dc3dac4130c69be032adbd812908b0",
+      "publicDownload": "https://seal.xingmasoft.com/api/v1/release-assets/7c158672-abaa-4a95-9c04-cd3b2dce43f7/seal-office-2.8.0-web.zip",
+      "oldVersion": "2.7.10",
+      "oldResponse": {
+        "hasUpdate": true,
+        "version": "2.8.0",
+        "mandatory": false,
+        "notes": "# 海豹办公 2.8.0\n\n- Windows 更新改为启动完整安装向导：交接进程等待主程序退出后无参数启动安装程序，失败时打开安装包所在目录并记录安装日志。\n- Linux 更新确认后改为浏览器下载 DEB 安装包，鸿蒙应用市场更新失败时回退官网下载区，界面写明各平台更新方式。\n- 全部弹窗约束在程序可视区域内，标题与底部操作固定、正文滚动，小窗口与手机窄屏下关闭与提交始终可达。\n- 修复云空间预览部分 DOCX 因缺少命名空间导致的 XML 报错，全实体 MySQL 保留字统一转义，修复历史版本下载返回 500。\n- 预览工具栏接管打印与导出 HTML：PDF 原件直送系统打印，其他格式打印当前渲染结果，隐藏第三方自带下载与打印按钮。\n- 新增云盘拖放移动与批量移动：鼠标拖动、触屏长按、悬停进入文件夹、边缘滚动与 Esc 取消，失败项逐条说明原因。\n- 云空间列表新增文件与文件夹大小列并支持按大小排序，文件夹递归汇总；网格视图悬停显示名称、大小、创建与修改时间。\n- 账号与云空间面板按分组卡片改版：账号摘要、云空间用量、账号安全与独立危险区分区更清晰，业务流程、接口与校验不变。\n- 管理后台新增管理员本人修改密码，保留当前会话并撤销其他会话，含 15 分钟 5 次限流与不含密码的审计记录。\n- 界面语言台账与扫描守卫上线，应用页首批迁移为显式文案键，英文模式下应用页无中文残留。",
+        "url": "https://seal.xingmasoft.com/api/v1/release-assets/7c158672-abaa-4a95-9c04-cd3b2dce43f7/seal-office-2.8.0-web.zip",
+        "sha256": "a830284727582051aad1aca472afecb534dc3dac4130c69be032adbd812908b0",
+        "bytes": 52808489,
+        "publishedAt": 1795669316651
+      },
+      "currentResponse": {
+        "hasUpdate": false
+      }
+    }
+  ]
+}

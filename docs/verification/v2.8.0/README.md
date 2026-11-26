@@ -59,7 +59,37 @@
 5. 鸿蒙签名配置在 `mobile/manifest.json` 中是绝对路径，本机指向 `D:/seal-office-signing`，另一台 macOS 机器指向用户目录。本次打包时临时切换为本机路径，提交前已恢复为仓库原有值，避免影响另一台机器。
 6. 桌面与 Linux 两包若分别重新构建，会因 `dist/file-viewer` 下三个生成文件含构建时间戳而与工作区校验值不一致。本次改为“一次渲染层构建 → Windows EXE/MSIX → Linux DEB”顺序，使两包与最终工作区逐字节一致。
 
-## 六、未完成的验收与限制
+## 六、后台版本发布
+
+- 命令：`python scripts/publish-backend-update.py --previous 2.7.10`，先 `--check` 预检通过。
+- 上传并发布六个平台：windows、windows-store、linux、android、harmony、web；macOS 本轮无 2.8.0 安装包，未创建该平台记录。
+- 每个平台均完成：上传后字段校验、匿名公开下载全字节 SHA-256 复核、2.7.10 查询返回 `hasUpdate: true` 且版本为 2.8.0、2.8.0 查询返回 `hasUpdate: false`。
+- 公开下载地址（附件 ID 由后台生成）：
+
+| 平台 | 附件地址 |
+| --- | --- |
+| windows | `https://seal.xingmasoft.com/api/v1/release-assets/d1c9aade-0632-4d5f-a0f4-601b812cf2dd/seal-office-setup-2.8.0.exe` |
+| windows-store | `https://seal.xingmasoft.com/api/v1/release-assets/f6a0c1d4-6eeb-4947-9fe3-1f1203c0bd51/seal-office-2.8.0-microsoft-store-x64.msix` |
+| linux | `https://seal.xingmasoft.com/api/v1/release-assets/5af27f2b-9763-47cd-8409-6eba89d1f228/seal-office-2.8.0-amd64.deb` |
+| android | `https://seal.xingmasoft.com/api/v1/release-assets/05ca0147-f491-4600-9681-3d47f53e090f/seal-office-2.8.0-android.apk` |
+| harmony | `https://seal.xingmasoft.com/api/v1/release-assets/b52c4a40-26e4-40a3-b516-40f9b84a798f/seal-office-2.8.0-harmony.hap` |
+| web | `https://seal.xingmasoft.com/api/v1/release-assets/7c158672-abaa-4a95-9c04-cd3b2dce43f7/seal-office-2.8.0-web.zip` |
+
+明细见 `backend-update.json`。
+
+## 七、官网下载区
+
+- `website/index.html` 首屏改为“最新版 v2.8.0”，Windows、Linux、安卓、鸿蒙四个入口切换为 2.8.0 附件地址；macOS 入口保留 2.7.10 通用包并明确标注版本。
+- 官网测试 21 项通过；`npx vite build` 产出 `website-dist/`。
+- `node scripts/update-website.cjs` 发布标识 `20261126050956-0f6c79ef`，上一版 `20261125134112-63355e92`。
+- 线上验收：首页 200 且显示 v2.8.0；五个下载入口 HEAD 200，Content-Length 与本地文件一致，四个 2.8.0 附件 ETag 等于本地 SHA-256；`/admin/`、`/office/`、`/share/`、`/api/v1/capabilities` 均 200。明细见 `website-downloads.json` 与[官网下载更新说明](../../功能修改说明-官网下载2.8.0.md)。
+
+## 八、仓库发布页
+
+- 标签 `v2.8.0` 已推送到 GitHub 与 GitCode（提交 `527a738`）。
+- `python scripts/publish-current-release.py` 将六个平台的安装包与 `SHA256SUMS.txt` 发布为两个仓库的最新发行版，并逐字节复核远端附件。
+
+## 九、未完成的验收与限制
 
 - macOS 2.8.0 DMG 未构建：本轮在 Windows 机器执行，DMG 需要在 macOS 上构建并验签，官网 macOS 入口继续指向已发布的 2.7.10 通用包并标注版本。
 - Windows 安装程序与 MSIX 未做实体机安装演练；静态校验与 electron-builder 签名日志已归档。

@@ -35,14 +35,14 @@ describe('移动导航', () => {
 
 describe('主下载按钮', () => {
   it('Mac 浏览器直接指向 macOS 通用安装包', async () => {
-    const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
-    const escaped = version.replace(/\./g, '\\.')
     const dom = await openHomepage('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')
     const { document } = dom.window
     const primary = document.querySelector('.download-primary')
     const mac = document.querySelector('[data-platform="macos"]')
     assert.equal(primary.href, mac.href)
-    assert.match(primary.textContent, new RegExp(`macOS.*v${escaped}`))
+    // macOS 通用包可能在主机构建能力受限时沿用上一版，主按钮文案须与该包自身版本一致。
+    const macVersion = mac.href.match(/seal-office-(\d+\.\d+\.\d+)-macos\.dmg/)[1]
+    assert.match(primary.textContent, new RegExp(`macOS.*v${macVersion.replace(/\./g, '\\.')}`))
     assert.match(mac.textContent, /通用/)
     dom.window.close()
   })

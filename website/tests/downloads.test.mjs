@@ -45,15 +45,21 @@ describe('最新版下载', () => {
 
 
 describe('分平台下载入口', () => {
+  const compare = (left, right) => {
+    const a = left.split('.').map(Number), b = right.split('.').map(Number)
+    for (let index = 0; index < 3; index++) if (a[index] !== b[index]) return a[index] - b[index]
+    return 0
+  }
+
   it('静态首页为每个包显示相应版本和服务器下载地址', async () => {
     const version = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
     const links = Array.from(document.querySelectorAll('#downloads [data-platform]'))
     assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos', 'linux', 'android', 'harmony'])
+    assert.match(document.querySelector('.hero-badge').textContent, new RegExp('最新版 v' + version.replaceAll('.', '\\.')))
     const serverAssets = {
       windows: `seal-office-setup-${version}.exe`,
-      macos: `seal-office-${version}-macos.dmg`,
       linux: `seal-office-${version}-amd64.deb`,
       android: `seal-office-${version}-android.apk`,
       harmony: `seal-office-${version}-harmony.hap`,
@@ -63,8 +69,18 @@ describe('分平台下载入口', () => {
       const url = new URL(link.href)
       assert.equal(url.origin, 'https://seal.xingmasoft.com')
       assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
-      assert.equal(url.pathname.split('/').pop(), serverAssets[platform])
-      assert.ok(link.textContent.includes(`v${version}`))
+      const name = url.pathname.split('/').pop()
+      const assetVersion = name.match(/^seal-office-(?:setup-)?(\d+\.\d+\.\d+)/)?.[1]
+      assert.ok(assetVersion, `${platform} 下载地址缺少版本号`)
+      assert.ok(link.textContent.includes(`v${assetVersion}`), `${platform} 文案版本与下载地址不一致`)
+      assert.ok(compare(assetVersion, version) <= 0, `${platform} 下载版本不得高于当前版本`)
+      if (platform === 'macos') {
+        // macOS 沿用最近一次在苹果主机上构建并验签的通用包，版本与文件名必须自洽。
+        assert.equal(name, `seal-office-${assetVersion}-macos.dmg`)
+        continue
+      }
+      assert.equal(name, serverAssets[platform])
+      assert.equal(assetVersion, version)
     }
     assert.match(document.querySelector('[data-platform="macos"]').textContent, /通用/)
   })

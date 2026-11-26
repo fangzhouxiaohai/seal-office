@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "version": "2.8.0",
+  "homepage": "https://seal.xingmasoft.com/",
+  "releaseId": "20261126050956-0f6c79ef",
+  "previousReleaseId": "20261125134112-63355e92",
+  "badge": "最新版 v2.8.0",
+  "downloads": [
+    {
+      "platform": "windows",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/d1c9aade-0632-4d5f-a0f4-601b812cf2dd/seal-office-setup-2.8.0.exe",
+      "bytes": 572280971,
+      "sha256": "bd69473567ad42bdb8eb5d9a21f27e0f956b83458c947f409e97eaef46c0ff40",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "platform": "macos",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/cbdd46c6-ec33-4945-951d-dbf7db75cd2d/seal-office-2.7.10-macos.dmg",
+      "bytes": 231581027,
+      "sha256": "ea905e1b14160abaf9b363453cc940afa1ed6e6a2ebb442f0956c2712c3c6707",
+      "status": 200,
+      "matchesLocal": true,
+      "note": "macOS 2.8.0 未在 Windows 主机上构建，入口沿用最近一次苹果主机构建的 2.7.10 通用包"
+    },
+    {
+      "platform": "linux",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/5af27f2b-9763-47cd-8409-6eba89d1f228/seal-office-2.8.0-amd64.deb",
+      "bytes": 154858148,
+      "sha256": "b4b905f558f02d8a85540a0f3ed1a0ed3e51d41d499376de26b22df1f16994f8",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "platform": "android",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/05ca0147-f491-4600-9681-3d47f53e090f/seal-office-2.8.0-android.apk",
+      "bytes": 56467109,
+      "sha256": "d80d811ca99095da469e700cff78a9d93ab22a8545e0d8536d921f824f536c67",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "platform": "harmony",
+      "url": "https://seal.xingmasoft.com/api/v1/release-assets/b52c4a40-26e4-40a3-b516-40f9b84a798f/seal-office-2.8.0-harmony.hap",
+      "bytes": 74901790,
+      "sha256": "ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "routes": {
+    "admin": 200,
+    "office": 200,
+    "share": 200,
+    "capabilities": 200
+  },
+  "notes": "五个入口 HEAD 返回 200，Content-Length 与 release/v2.8.0 本地文件一致，ETag 等于本地 SHA-256；macOS 入口为 2.7.10 通用包"
+}
