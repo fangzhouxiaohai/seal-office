@@ -2,16 +2,27 @@
   "passed": true,
   "version": "2.8.0",
   "bundleName": "com.sealoffice.mobile",
-  "builtOn": "Windows 本机（HBuilderX 5.34 + DevEco Studio SDK）",
+  "builtOn": "Windows 本机（hvigor 6.26.8 + DevEco Studio SDK）",
   "appPack": {
     "filename": "seal-office-2.8.0-harmony.app",
-    "bytes": 45233048,
-    "sha256": "0a518ae4f34c25d91f2e40e0686730565cd5fc84bd9aea34ed2c4a13a567db83",
+    "bytes": 45235533,
+    "sha256": "e9980c7242b07c41101954f79a5becfd11aa6dba4298e4faed401e0f62bd7b59",
     "purpose": "AppGallery 上架",
     "publicReleaseAttachment": false,
     "signatureVerified": true,
-    "contents": ["pack.info", "entry-default-signed.hap"],
-    "buildNote": "HBuilderX 5.34 Windows 命令行未产出 App Pack，改用 DevEco Studio app_packing_tool 生成容器后由 hap-sign-tool 签名"
+    "contents": [
+      { "name": "pack.info", "bytes": 772, "sha256": "5480e00bb1c52dd35037250917d9910780d1b7c79c291303ad6897dc7a130706" },
+      { "name": "entry-default.hap", "bytes": 74744885, "sha256": "0f333e00a41b6b303a6761dc18f09fd30fe08343106e918e5126782a244735ba", "signed": false },
+      { "name": "pac.json", "bytes": 36, "sha256": "63e01f330849458b7c74a160ba27b5933b1999a8d7acaa232787a5b31e0c87f2" }
+    ],
+    "packInfo": {
+      "bundleName": "com.sealoffice.mobile",
+      "bundleType": "app",
+      "versionCode": 20800,
+      "versionName": "2.8.0",
+      "packages": [{ "name": "entry-default", "moduleType": "entry", "deviceType": ["phone"] }]
+    },
+    "buildNote": "按华为 FAQ「996 软件包上传报错」流程重建：hvigor assembleApp 生成官方 pack.info 与未签名 App Pack（HAP 名称为 entry-default.hap），再用 DevEco hap-sign-tool 对 App 包签名。首版上架包使用模块级 pack.info 且 HAP 名为 entry-default-signed.hap，AppGallery 报「软件包解析失败」，已作废。"
   },
   "hap": {
     "filename": "seal-office-2.8.0-harmony.hap",
@@ -22,11 +33,18 @@
     "signatureVerified": true,
     "embeddedEditorSha256": "ed509ac824e05ae17bfa461d8c1e9f09cd87c98391cbe13c053955f4081c7d5e",
     "crcPassed": true,
-    "resourceIdentityVerified": true
+    "resourceIdentityVerified": true,
+    "note": "独立安装用 HAP 未改动，仍为后台与仓库发行页已发布的同一份签名包；App Pack 内按应用市场流程放置未签名 HAP，由市场在分发时处理"
   },
-  "verification": "DevEco Studio hap-sign-tool verify-app 分别对 App Pack 与 HAP 验签通过；hap-check 核对应用身份、版本、ZIP CRC、内置编辑器与完整字库",
-  "limitations": [
+  "verification": [
+    "hap-sign-tool verify-app 对 App Pack 验签通过，对独立 HAP 验签通过",
+    "解压 App Pack 确认 HAP 名称为 entry-default.hap，pack.info 含 summary 与 packages，且应用身份、版本、模块与应用一致",
+    "hap-check 核对独立 HAP 应用身份、版本、ZIP CRC、内置编辑器与完整字库"
+  ],
+  "limits": [
     "未在鸿蒙真机安装：Release Profile 只能经 AppGallery（含测试渠道）安装，HAP 直接 hdc 安装需要含设备 UDID 的调试 Profile",
-    "签名口令取自 D:\\seal-office-signing，未写入仓库"
+    "App Pack 由本机 hvigor 构建后在仓库外签名，签名材料位于 D:\\seal-office-signing，未写入仓库",
+    "DevEco 的加密口令依赖本机 material 密钥库，本机缺失，故签名由 hap-sign-tool 直接完成",
+    "应用市场实际接收结果需再次上传确认；本记录只证明包结构与签名符合官方流程"
   ]
 }

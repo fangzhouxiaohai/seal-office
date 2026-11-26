@@ -24,7 +24,7 @@
 | Web 静态包 | `seal-office-2.8.0-web.zip` | 52,808,489 | `a830284727582051aad1aca472afecb534dc3dac4130c69be032adbd812908b0` |
 | Android APK | `seal-office-2.8.0-android.apk` | 56,467,109 | `d80d811ca99095da469e700cff78a9d93ab22a8545e0d8536d921f824f536c67` |
 | HarmonyOS HAP | `seal-office-2.8.0-harmony.hap` | 74,901,790 | `ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6` |
-| HarmonyOS App Pack（上架专用，不对外分发） | `seal-office-2.8.0-harmony.app` | 45,233,048 | `0a518ae4f34c25d91f2e40e0686730565cd5fc84bd9aea34ed2c4a13a567db83` |
+| HarmonyOS App Pack（上架专用，不对外分发） | `seal-office-2.8.0-harmony.app` | 45,235,533 | `e9980c7242b07c41101954f79a5becfd11aa6dba4298e4faed401e0f62bd7b59` |
 
 版本号统一为 2.8.0，移动构建号 20800；应用身份、桌面中文显示名“海豹办公”、安卓包名 `com.sealoffice.mobile` 与既有签名证书指纹 `53b13e1c76a826eb15879061e8840d9bc051156ff9ed33530339f444cd3997ad` 均未改变。`release/v2.8.0/SHA256SUMS.txt` 收录六个对外发行文件；App Pack 按规范只留在本机与验收记录，不上传仓库发行页。
 
@@ -54,8 +54,8 @@
 
 1. 管理后台 `npm ci` 被用户级 npm 配置 `allow-scripts` 拦截（npm 11 不允许项目级安装使用该参数）。未修改仓库配置，改用临时 `NPM_CONFIG_USERCONFIG`（仅含镜像源）完成依赖安装与构建。
 2. 安卓 Gradle 任务 `prepareOfficeAssets` 原先把资源版本硬编码为 `2.7.10`，导致 2.8.0 资源被判为不匹配。已改为与模块 `versionName` 比较，避免后续升级再次遗漏。
-3. HBuilderX 5.34 命令行会因 hvigor 任务缓存把 `SignHap` 判为已执行，删除旧签名产物后不再重新签名；本次清理 `.hvigor/cache` 后重新编译，并改用 DevEco 工具补齐 App Pack。
-4. HBuilderX Windows 命令行未产出 App Pack `.app`，改用 DevEco Studio `app_packing_tool` 以已签名 HAP 生成容器，再由 `hap-sign-tool` 签名并验签；HAP 另行独立签名验签。
+3. HBuilderX 5.34 命令行会因 hvigor 任务缓存把 `SignHap` 判为已执行，删除旧签名产物后不再重新签名；本次清理 `.hvigor/cache` 后重新编译。
+4. 首版鸿蒙上架包（45,233,048 字节，`0a518ae4…`）上传 AppGallery 报“软件包解析失败”，原因是它使用模块级 `pack.info`（缺少 `packages`）且内部 HAP 命名为 `entry-default-signed.hap`。按华为《软件包上传报错 996》流程重建：hvigor `assembleApp` 产出官方 `pack.info` 与未签名 App Pack（内部 HAP 名为 `entry-default.hap`，含 `pac.json`），再用 DevEco `hap-sign-tool` 对 App 包签名，`verify-app` 通过。详见 `harmony-package.json`。
 5. 鸿蒙签名配置在 `mobile/manifest.json` 中是绝对路径，本机指向 `D:/seal-office-signing`，另一台 macOS 机器指向用户目录。本次打包时临时切换为本机路径，提交前已恢复为仓库原有值，避免影响另一台机器。
 6. 桌面与 Linux 两包若分别重新构建，会因 `dist/file-viewer` 下三个生成文件含构建时间戳而与工作区校验值不一致。本次改为“一次渲染层构建 → Windows EXE/MSIX → Linux DEB”顺序，使两包与最终工作区逐字节一致。
 
