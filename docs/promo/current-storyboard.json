@@ -1,4 +1,6 @@
 {
+  "version": "2.8.0",
+  "cloud": true,
   "voice": {
     "name": "zh-CN-XiaoxiaoNeural",
     "rate": "+5%",
@@ -11,197 +13,149 @@
     "color": "#A855F7",
     "purpose": "紫色光晕标出真实操作目标，标注层不遮挡文字或拦截输入。"
   },
+  "source": "生产 Web 构建（横版）与 Android 工作台资源（竖版），连接本机隔离云服务（seal-server 测试类路径演示启动器，H2 内存库），演示账号与文件由录制脚本现场写入。",
   "pc": [
     {
-      "id": "new-word",
-      "chapter": "文字编辑",
-      "title": "新建文字文档",
-      "narration": "在海豹办公二点七点二，从首页点击新建，再选文字文档。文件默认打开简洁模式，工具图标和底部文件标签仍然可用。",
-      "minimumSeconds": 11
-    },
-    {
-      "id": "word-title",
-      "chapter": "文字编辑",
-      "title": "输入计划标题",
-      "narration": "点击正文，输入每周工作计划。按回车，开始填写正文。",
-      "minimumSeconds": 7
-    },
-    {
-      "id": "word-body",
-      "chapter": "文字编辑",
-      "title": "填写计划正文",
-      "narration": "写下本周目标，再另起一段记录需求、汇报和交付的时间。",
-      "minimumSeconds": 8
-    },
-    {
-      "id": "word-save",
-      "chapter": "文字编辑",
-      "title": "保存每周工作计划",
-      "narration": "点击保存，将计划存为海豹文字文件。底部文件标签上的未保存标记随即消失。",
-      "minimumSeconds": 9
-    },
-    {
-      "id": "display-default",
-      "chapter": "显示设置",
-      "title": "确认默认显示比例",
-      "narration": "先看右下角，当前文档以百分之百显示。上方的简洁工具区保留了常用操作。",
-      "minimumSeconds": 8
-    },
-    {
-      "id": "display-full",
-      "chapter": "显示设置",
-      "title": "关闭简洁模式",
-      "narration": "从工作区打开设置中心，关闭简洁模式。点回底部文件标签，标题栏和工具文字恢复显示。",
-      "minimumSeconds": 11
-    },
-    {
-      "id": "display-zoom-option",
-      "chapter": "显示设置",
-      "title": "开启默认放大至百分之一百五十",
-      "narration": "在全局设置中重新开启简洁模式，再开启默认放大至百分之一百五十。切回这份已打开的文档，右下角依然显示百分之百。",
-      "minimumSeconds": 13
-    },
-    {
-      "id": "word-reopen",
-      "chapter": "显示设置",
-      "title": "重新打开，按百分之一百五十查看",
-      "narration": "关闭已保存的文档，从首页重新打开。正文保留，右下角显示百分之一百五十。",
-      "minimumSeconds": 11
-    },
-    {
-      "id": "sheet-open",
-      "chapter": "表格计算",
-      "title": "打开项目预算表",
-      "narration": "回到首页，打开准备好的项目预算表。预算列已经填写，合计单元格留空。",
-      "minimumSeconds": 8
-    },
-    {
-      "id": "sheet-formula",
-      "chapter": "表格计算",
-      "title": "输入公式并核对结果",
-      "narration": "在名称框输入 D 五。点击公式栏，输入求和公式，选取 D 二到 D 四，按回车后得到两千三百六十。",
-      "minimumSeconds": 13
-    },
-    {
-      "id": "template-open",
-      "chapter": "演示模板",
-      "title": "预览演示模板",
-      "narration": "打开演示模板市场，在精选推荐中选择一套模板，先看页面布局和配图。",
-      "minimumSeconds": 8
-    },
-    {
-      "id": "template-use",
-      "chapter": "演示模板",
-      "title": "打开可编辑的演示副本",
-      "narration": "点击使用并编辑副本，再切到第二页。模板里的文字、图形和图片都可以继续编辑。",
-      "minimumSeconds": 9
-    },
-    {
-      "id": "check-update",
-      "chapter": "版本更新",
-      "title": "手动检查当前版本",
-      "narration": "打开设置中心，在关于与更新中点击检查更新。服务器返回结果后，页面显示已是最新版本，二点七点二。",
+      "id": "intro",
+      "chapter": "新版概览",
+      "title": "二点八版本更新",
+      "narration": "海豹办公二点八版本，重点升级了我的云盘：文件可以直接拖动移动，列表显示大小，预览更稳定，账号面板也重新排版。下面在隔离的演示账号里逐项操作。",
       "minimumSeconds": 12
     },
     {
+      "id": "cloud-size",
+      "chapter": "云盘文件信息",
+      "title": "列表显示文件大小",
+      "narration": "打开我的云空间，切换到列表视图。新增的大小列显示每个文件的大小，文件夹显示其中全部文件的总量。",
+      "minimumSeconds": 10
+    },
+    {
+      "id": "cloud-sort",
+      "chapter": "云盘文件信息",
+      "title": "按大小排序",
+      "narration": "在排序菜单里选择大小从大到小，最大的季度汇报排到了最前面。",
+      "minimumSeconds": 8
+    },
+    {
+      "id": "cloud-hover",
+      "chapter": "云盘文件信息",
+      "title": "网格悬停信息卡",
+      "narration": "切换到网格视图，把鼠标停在文件上，信息卡会显示名称、大小、创建时间和修改时间。",
+      "minimumSeconds": 10
+    },
+    {
+      "id": "cloud-drag",
+      "chapter": "云盘移动",
+      "title": "拖动文件到文件夹",
+      "narration": "回到列表，按住会议纪要拖到项目资料文件夹上，文件夹高亮后松开，文件就移了进去。",
+      "minimumSeconds": 11
+    },
+    {
+      "id": "cloud-multi",
+      "chapter": "云盘移动",
+      "title": "一次移动多个文件",
+      "narration": "勾选合作协议和需求清单，点击移动到，选择合同归档。多个文件在一次操作中完成移动，任何一项不能移动时整批都不改动。",
+      "minimumSeconds": 13
+    },
+    {
+      "id": "cloud-folder",
+      "chapter": "云盘移动",
+      "title": "查看移动结果",
+      "narration": "打开合同归档，刚才移动的两个文件已经在这里，文件内容和历史版本保持不变。",
+      "minimumSeconds": 9
+    },
+    {
+      "id": "preview",
+      "chapter": "云文件预览",
+      "title": "预览、打印与导出",
+      "narration": "预览季度汇报。这份文档带有其他编辑器写入的编号扩展属性，二点八会在预览副本里自动修补，正文正常显示。预览底部新增了打印和导出 HTML。",
+      "minimumSeconds": 14
+    },
+    {
+      "id": "account",
+      "chapter": "账号与云空间",
+      "title": "新版账号面板",
+      "narration": "打开账号与云空间。账号信息、云空间用量和账号安全分组显示，注销账号放在单独的危险区，每组的主要按钮统一靠右。",
+      "minimumSeconds": 12
+    },
+    {
+      "id": "password",
+      "chapter": "账号与云空间",
+      "title": "修改登录密码",
+      "narration": "展开修改登录密码，验证方式改为分段切换，验证码和获取按钮在同一行，保存按钮在右下角。",
+      "minimumSeconds": 10
+    },
+    {
+      "id": "language",
+      "chapter": "界面语言",
+      "title": "切换英文界面",
+      "narration": "在标题栏把界面切换为英文，菜单、按钮和提示立即变成英文；切回中文同样不用重启。",
+      "minimumSeconds": 10
+    },
+    {
       "id": "outro",
-      "chapter": "海豹办公 2.7.2",
-      "title": "打开网页版开始编辑",
-      "narration": "可以打开海豹办公网页版，试试简洁模式和显示比例。",
-      "minimumSeconds": 7
+      "chapter": "更多改进",
+      "title": "其他更新",
+      "narration": "此外，Windows 自动更新会打开完整的安装向导，Linux 改为在浏览器下载安装包，所有弹窗都限制在窗口之内，管理后台也支持管理员修改自己的密码。",
+      "minimumSeconds": 13
     }
   ],
   "android": [
     {
-      "id": "new-word",
-      "chapter": "文字编辑",
-      "title": "从服务页新建文字",
-      "narration": "海豹办公二点七点二，在手机上也能编辑文件。从底部进入服务，点击文字，新建一份工作计划。",
-      "minimumSeconds": 11
-    },
-    {
-      "id": "word-body",
-      "chapter": "文字编辑",
-      "title": "逐字输入工作计划",
-      "narration": "输入每周工作计划，再填写本周目标和交付安排。光标所在的段落会用紫色轮廓标出。",
-      "minimumSeconds": 12
-    },
-    {
-      "id": "word-save",
-      "chapter": "文字编辑",
-      "title": "保存工作计划",
-      "narration": "点击保存，把工作计划存为海豹文字文件。文件标签上的未保存标记随即消失。",
-      "minimumSeconds": 9
-    },
-    {
-      "id": "display-full",
-      "chapter": "显示设置",
-      "title": "关闭简洁模式",
-      "narration": "打开编辑区的设置中心，关闭简洁模式。点回底部文件标签，就能看到带文字的工具区。",
-      "minimumSeconds": 11
-    },
-    {
-      "id": "display-compact",
-      "chapter": "显示设置",
-      "title": "重新开启简洁模式",
-      "narration": "在首页进入我的，再打开应用设置。开启简洁模式，返回文件，工具区收起文字并保留图标。",
-      "minimumSeconds": 12
-    },
-    {
-      "id": "reading-enter",
-      "chapter": "全屏阅读",
-      "title": "进入全屏阅读",
-      "narration": "打开一份长文档，点击全屏左右翻页阅读。进入后，顶部和底部工具栏自动隐藏。",
-      "minimumSeconds": 9
-    },
-    {
-      "id": "reading-swipe",
-      "chapter": "全屏阅读",
-      "title": "向左滑动翻到下一页",
-      "narration": "在正文中向左滑动，切换到下一页。",
-      "minimumSeconds": 6
-    },
-    {
-      "id": "reading-controls",
-      "chapter": "全屏阅读",
-      "title": "双击唤出工具栏",
-      "narration": "双击页面，顶部和底部的工具栏重新出现。停止操作约三秒，工具栏自动收起。",
-      "minimumSeconds": 9
-    },
-    {
-      "id": "reading-zoom",
-      "chapter": "全屏阅读",
-      "title": "双指放大阅读内容",
-      "narration": "双指向外展开，放大当前阅读内容。再次双击唤出工具栏，就可以点击退出全屏阅读。",
+      "id": "intro",
+      "chapter": "新版概览",
+      "title": "二点八版本更新",
+      "narration": "海豹办公二点八版本，手机上的云盘同样可以直接拖动移动文件，账号面板也重新排版。下面在隔离的演示账号里操作。",
       "minimumSeconds": 10
     },
     {
-      "id": "sheet-open",
-      "chapter": "表格计算",
-      "title": "打开项目预算表",
-      "narration": "回到首页，导入项目预算表。底部标签可以在已打开的文档和表格之间切换。",
-      "minimumSeconds": 8
+      "id": "cloud-open",
+      "chapter": "云盘",
+      "title": "打开云盘",
+      "narration": "打开云盘，隔离的演示账号里准备了几份文件和两个文件夹。手机宽度下列表保持简洁，文件大小可在电脑端列表中查看。",
+      "minimumSeconds": 9
     },
     {
-      "id": "sheet-formula",
-      "chapter": "表格计算",
-      "title": "在手机上计算合计",
-      "narration": "选中 D 五，在公式栏输入求和公式，按回车。预算合计显示两千三百六十。",
+      "id": "cloud-drag",
+      "chapter": "云盘移动",
+      "title": "长按拖动文件",
+      "narration": "长按会议纪要约半秒，拖到项目资料文件夹上，文件夹高亮后松手，文件就移了进去。",
+      "minimumSeconds": 11
+    },
+    {
+      "id": "cloud-multi",
+      "chapter": "云盘移动",
+      "title": "一次移动多个文件",
+      "narration": "勾选合作协议和需求清单，点击移动到，选择合同归档，多个文件在一次操作中完成移动。",
+      "minimumSeconds": 11
+    },
+    {
+      "id": "cloud-folder",
+      "chapter": "云盘移动",
+      "title": "查看移动结果",
+      "narration": "打开合同归档，刚才移动的两个文件已经在这里。",
+      "minimumSeconds": 7
+    },
+    {
+      "id": "account",
+      "chapter": "账号与云空间",
+      "title": "新版账号面板",
+      "narration": "打开账号与云空间，账号信息、云空间用量和账号安全分组显示，注销账号放在单独的危险区。",
       "minimumSeconds": 10
     },
     {
-      "id": "check-update",
-      "chapter": "版本更新",
-      "title": "手动检查当前版本",
-      "narration": "从我的页面打开应用设置，在关于与更新中点击检查更新。页面显示已是最新版本，二点七点二。",
-      "minimumSeconds": 12
+      "id": "password",
+      "chapter": "账号与云空间",
+      "title": "修改登录密码",
+      "narration": "展开修改登录密码，验证方式改为分段切换，在手机宽度下按钮上下排列，便于点按。",
+      "minimumSeconds": 9
     },
     {
       "id": "outro",
-      "chapter": "海豹办公 2.7.2",
-      "title": "获取适合设备的安装包",
-      "narration": "这段操作来自当前安卓构建的移动布局。需要安装时，可以到项目发行页选择安卓安装包。",
-      "minimumSeconds": 8
+      "chapter": "更多改进",
+      "title": "其他更新",
+      "narration": "此外，所有弹窗都限制在屏幕之内，鸿蒙版在应用市场不可用时会引导到官网下载页。",
+      "minimumSeconds": 9
     }
   ]
 }

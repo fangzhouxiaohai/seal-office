@@ -12,9 +12,15 @@ const {randomUUID}=require('node:crypto')
 const {verifyWebRecordingSource,fetchPublicUpdate,updatePath,updateEndpoint}=require('./tutorial-source.cjs')
 const root=path.resolve(__dirname,'../..'),version=require('../../package.json').version
 const pcCurrent=process.argv.includes('--pc-current')
+// --dry-run：无配音试录，用占位时长、跳过成品与线上更新核对，只用于检查画面与断言，产物带 dryrun 标记，不能作为成片。
+const dryRun=process.argv.includes('--dry-run')
+const promoCloudApi=require('./promo-cloud.cjs')
 const candidatePaths=require('./candidate-paths.cjs').promoPaths(root,version)
 const plan=pcCurrent?require('../../docs/promo/pc-current-storyboard.json'):require('../../docs/promo/current-storyboard.json'),out=candidatePaths.output,work=path.join(out,'work-'+version+'-tutorial')
-const voices=JSON.parse(fs.readFileSync(path.join(work,'voice.json'),'utf8')).clips
+const voices=(()=>{const file=path.join(work,'voice.json');if(fs.existsSync(file)&&!dryRun)return JSON.parse(fs.readFileSync(file,'utf8')).clips
+  if(!dryRun)throw Error('缺少配音 voice.json，请先运行 tutorial-voice.py')
+  // 占位时长：约每秒 4.3 个字，仅用于试录
+  return ['pc','android'].flatMap(platform=>(plan[platform]||[]).map(s=>({platform,id:s.id,seconds:Math.round(s.narration.length/4.3*10)/10,file:'dry-run-silent'})))})()
 const requested=process.argv.find(a=>a.startsWith('--platform='))?.split('=')[1]
 const probe=process.argv.find(a=>a.startsWith('--probe='))?.split('=')[1]
 const ffmpeg=spawnSync('python',['-c','import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())'],{encoding:'utf8',windowsHide:true}).stdout.trim()
@@ -23,20 +29,22 @@ app.setPath('userData',path.join(work,'profile-'+process.pid));app.disableHardwa
 if(!global.fetch)global.fetch=net.fetch.bind(net)
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=p=>require('node:crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex')
 const artifact=platform=>platform==='android'?candidatePaths.androidApk:candidatePaths.webZip
-const mobileRoot=pcCurrent||requested==='pc'?null:require('./android-source.cjs').verifyAndroidRecordingSource(
+const webRoot=path.resolve(process.env.SEAL_PROMO_WEB_ROOT||path.join(root,'mobile/unpackage/web'))
+const mobileRoot=pcCurrent||requested==='pc'?null:dryRun?path.resolve(process.env.SEAL_PROMO_ANDROID_ROOT||webRoot):require('./android-source.cjs').verifyAndroidRecordingSource(
   process.env.SEAL_PROMO_ANDROID_ROOT||path.join(root,'android-studio/app/src/main/assets/apps/__UNI__B52B65B/www/static/office'),
   artifact('android'),version)
-const webRoot=path.resolve(process.env.SEAL_PROMO_WEB_ROOT||path.join(root,'mobile/unpackage/web'))
+// 分镜声明 cloud:true 时连接本机隔离云服务（seal-server 测试类路径演示启动器）
+const useCloud=pcCurrent||plan.cloud===true
 const visible="e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&!e.closest('[hidden]')&&!e.closest('.ant-modal-wrap[style*=\"display: none\"]')"
 const sel=s=>`[...document.querySelectorAll(${JSON.stringify(s)})].filter(${visible})[0]`
 const btn=(label,scope='document')=>`[...${scope}.querySelectorAll('button,[role="tab"]')].filter(${visible}).find(e=>e.getAttribute('aria-label')===${JSON.stringify(label)}||e.textContent.replace(/\\s/g,'')===${JSON.stringify(label.replace(/\s/g,''))})`
 app.on('window-all-closed',()=>{})
-app.whenReady().then(async()=>{let server,win,recording,loop,encoder,cloudFixture,cloudClient,shareLinks,originalClipboard
+app.whenReady().then(async()=>{let server,win,recording,loop,encoder,cloudFixture,cloudClient,shareLinks,originalClipboard,promoCloud,cloudInvoke,demoFolders
 try{
  fs.mkdirSync(work,{recursive:true})
- const webEvidence=!pcCurrent&&requested!=='android'?await verifyWebRecordingSource(webRoot,artifact('web'),version):null
+ const webEvidence=!pcCurrent&&!dryRun&&requested!=='android'?await verifyWebRecordingSource(webRoot,artifact('web'),version):null
  const updateQueries=[]
- if(!pcCurrent&&!probe){
+ if(!pcCurrent&&!probe&&!dryRun){
   const platforms=requested?[requested==='pc'?'web':'android']:['web','android']
   await Promise.all(platforms.map(async platform=>{
     const url=new URL(updateEndpoint)
@@ -46,6 +54,7 @@ try{
       `线上更新服务尚未确认 ${platform} ${version} 为最新版本（HTTP ${result.status}）`)
   }))
  }
+ if(!pcCurrent&&useCloud)promoCloud=await promoCloudApi.启动隔离云服务(work)
  if(pcCurrent)originalClipboard={text:clipboard.readText(),image:clipboard.readImage()}
  if(pcCurrent){cloudFixture=await createLocalCollaborationFixture(null,{clients:false});cloudClient=await cloudFixture.client('13800111001');shareLinks=createShareLinkService(cloudClient);const saved=await cloudClient.save({linkId:randomUUID(),name:'项目计划-分享演示.txt',data:Buffer.from('项目计划分享链接演示资料。此文件仅用于本地隔离录制。').toString('base64')});assert.equal(saved.statuses[saved.id],'云端已保存')}
  const zotero=createZoteroLocalApi()
@@ -62,16 +71,19 @@ try{
     }
     return
   }
-  if(u.pathname==='/api/clipboard'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy()});req.on('end',()=>{try{const value=JSON.parse(body).text;if(typeof value!=='string')throw Error('复制文字无效');clipboard.writeText(value);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true}))}catch(error){res.writeHead(400);res.end(error.message)}});return}if(u.pathname==='/api/cloud'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>body+=chunk);req.on('end',async()=>{try{const {action,input}=JSON.parse(body);const allowed={status:()=>cloudClient.status(),list:()=>cloudClient.list(),pending:()=>cloudClient.pending(),shareLinkCreate:()=>shareLinks.shareLinkCreate(input),shareLinkList:()=>shareLinks.shareLinkList()};if(!allowed[action])throw Error('录制环境不支持此云操作');const data=await allowed[action]();res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}catch(error){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))}});return}if(u.pathname==='/api/zotero'){if(!pcCurrent){res.writeHead(404);res.end();return}zotero.列条目({关键词:'海豹办公二点六演示文献',上限:5}).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}).catch(error=>{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))});return}if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
+  if(u.pathname==='/api/clipboard'){if(!pcCurrent){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy()});req.on('end',()=>{try{const value=JSON.parse(body).text;if(typeof value!=='string')throw Error('复制文字无效');clipboard.writeText(value);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true}))}catch(error){res.writeHead(400);res.end(error.message)}});return}if(u.pathname==='/api/cloud'){if(!useCloud){res.writeHead(404);res.end();return}let body='';req.on('data',chunk=>body+=chunk);req.on('end',async()=>{try{const {action,input}=JSON.parse(body);if(cloudInvoke){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(await cloudInvoke(action,input)));return}const allowed={status:()=>cloudClient.status(),list:()=>cloudClient.list(),pending:()=>cloudClient.pending(),shareLinkCreate:()=>shareLinks.shareLinkCreate(input),shareLinkList:()=>shareLinks.shareLinkList()};if(!allowed[action])throw Error('录制环境不支持此云操作');const data=await allowed[action]();res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}catch(error){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))}});return}if(u.pathname==='/api/zotero'){if(!pcCurrent){res.writeHead(404);res.end();return}zotero.列条目({关键词:'海豹办公二点六演示文献',上限:5}).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:true,数据:data}))}).catch(error=>{res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({成功:false,错误:error.message}))});return}if(u.pathname.startsWith('/api/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({version:1,collaboration:1,realtime:1,diagramRealtime:1,passwordAuth:1,accountDeletion:1,sms:false}));return}
   const base=u.pathname.startsWith('/android/')?mobileRoot:webRoot,file=path.resolve(base,'.'+decodeURIComponent(u.pathname).replace(/^\/(?:pc|android)\//,'/').replace(/\/$/,'/index.html'))
   if(!file.startsWith(base+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
-  if(pcCurrent&&path.basename(file)==='index.html'){const inject=`<script>Object.defineProperty(window,'electronAPI',{configurable:true,get(){return this.__tutorialBridge},set(api){api.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};api.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};this.__tutorialBridge=api}})</script>`;res.writeHead(200,{'Content-Type':'text/html'});res.end(fs.readFileSync(file,'utf8').replace('<script type="module"',inject+'<script type="module"'));return}
+  if(useCloud&&path.basename(file)==='index.html'){const inject=`<script>Object.defineProperty(window,'electronAPI',{configurable:true,get(){return this.__tutorialBridge},set(api){${pcCurrent?'':'if(api.cloud)api.cloud.invoke=async(action,input)=>{const r=await fetch(\'/api/cloud\',{method:\'POST\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({action,input})});return r.json()};this.__tutorialBridge=api;return;'}api.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};api.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};this.__tutorialBridge=api}})</script>`;res.writeHead(200,{'Content-Type':'text/html'});res.end(fs.readFileSync(file,'utf8').replace('<script type="module"',inject+'<script type="module"'));return}
   res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ttf':'font/ttf'})[path.extname(file)]||'application/octet-stream'});fs.createReadStream(file).pipe(res)
  });await new Promise(r=>server.listen(0,'127.0.0.1',r))
  for(const platform of requested?[requested]:(pcCurrent?['pc']:['pc','android'])){
-  assert(['pc','android'].includes(platform));const mobile=platform==='android',width=mobile?432:1600,height=mobile?708:820,base=mobile?mobileRoot:webRoot
+  assert(['pc','android'].includes(platform))
+  // 每个画幅使用独立的演示账号与初始演示文件，互不影响
+  if(promoCloud){cloudClient=await promoCloudApi.准备演示账号(promoCloud,work,platform==='android'?'13800138001':'13800138000');demoFolders=await promoCloudApi.写入演示文件(cloudClient);cloudInvoke=promoCloudApi.云调用通道(cloudClient)}
+  const mobile=platform==='android',width=mobile?432:1600,height=mobile?708:820,base=mobile?mobileRoot:webRoot
   const build=JSON.parse(fs.readFileSync(base+'/build-info.json','utf8'));assert.equal(build.desktopVersion,version)
-  const entry=mobile?'office.js':fs.readFileSync(base+'/index.html','utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1]
+  const entry=mobile&&fs.existsSync(base+'/office.js')?'office.js':fs.readFileSync(base+'/index.html','utf8').match(/src="\.\/(assets\/index-[^"]+\.js)"/)[1]
   win=new BrowserWindow({show:mobile,title:'海豹办公 · 操作教程录制',useContentSize:true,width,height,webPreferences:{partition:'tutorial-'+platform+'-'+process.pid,offscreen:!mobile,sandbox:true,contextIsolation:true,nodeIntegration:false,backgroundThrottling:false}});win.setContentSize(width,height);win.removeMenu()
   const wc=win.webContents,errors=[],assertions=[],actions=[],steps=[];let frame=null,frames=0,activeStep=null,running=false,cursor={x:width*.55,y:height*.58}
   wc.setFrameRate(30);wc.on('paint',(_event,_dirty,image)=>{const size=image.getSize();if(size.width===width&&size.height===height)frame=image.toBitmap()})
@@ -104,7 +116,7 @@ try{
     window.__tutorialTouches=(points)=>{overlay.querySelectorAll('.tutorial-touch').forEach(n=>n.remove());for(const p of points){const n=document.createElement('i');n.className='tutorial-touch';n.style.left=p.x+'px';n.style.top=p.y+'px';overlay.append(n)}};
     window.__tutorialSaveCalls=[];const a=window.electronAPI,save=a.saveToFile.bind(a),dialog=a.showSaveDialog.bind(a);
     ${pcCurrent?"a.zotero.invoke=async()=>{const r=await fetch('/api/zotero');return r.json()};":''}
-    ${pcCurrent?"a.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};":''}
+    ${useCloud?"a.cloud.invoke=async(action,input)=>{const r=await fetch('/api/cloud',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})});return r.json()};":''}
     ${pcCurrent?"Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:async text=>{const r=await fetch('/api/clipboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});if(!r.ok)throw Error('剪贴板写入失败')}});":''}
     a.showSaveDialog=async(...args)=>dialog(window.__tutorialSaveName||args[0],...args.slice(1));
     a.saveToFile=async(...args)=>{const r=await save(...args);window.__tutorialSaveCalls.push({path:args[0],success:r.成功});return r};
@@ -296,10 +308,124 @@ try{
     const 打开工作簿 = operations['sheet-open']
     operations['sheet-open'] = async () => { await click('完成'); await 打开工作簿() }
   }
+  // 2.8.0 介绍：云盘文件信息、拖放与批量移动、预览修补、账号面板、界面语言。全部连接本机隔离云服务的真实接口。
+  if(plan.version==='2.8.0'){
+    const row=name=>`[...document.querySelectorAll('.seal-drive-file')].filter(${visible}).find(e=>e.querySelector('.seal-drive-file-name')?.textContent.trim()===${JSON.stringify(name)})`
+    const rowOpen=name=>`(${row(name)})?.querySelector('.seal-drive-file-open')`
+    const rowCheck=name=>`(${row(name)})?.querySelector('.seal-drive-file-check')`
+    const rowSize=name=>`(${row(name)})?.querySelector('.seal-drive-file-size')`
+    const toast=text=>`[...document.querySelectorAll('.ant-message-notice')].some(e=>e.textContent.includes(${JSON.stringify(text)}))`
+    const openCloud=async()=>{
+      if(mobile){await tap(btn('云盘'),'云盘')}else await nav('my-cloud','我的云空间')
+      await until(`!!(${row('季度汇报.docx')})`,'隔离演示云文件已列出',30000)
+    }
+    const view=async mode=>{const label=mode==='list'?'列表视图':'网格视图';if(await ev(`(${btn(label)})?.getAttribute('aria-pressed')!=='true'`))await click(label);await until(`!!document.querySelector('.seal-drive-files--${mode}')`,label)}
+    const root=async()=>{await tap(`[...document.querySelectorAll('.seal-drive-path button')].filter(${visible}).find(e=>e.textContent.trim()==='全部文件')`,'回到全部文件');await until(`!!(${row('合同归档')})`,'根目录')}
+    // 鼠标或触屏把 source 拖到 target：悬停 300ms 后松开（少于 600ms，避免自动进入文件夹）
+    const drag=async(sourceName,targetName)=>{
+      const a=await focus(rowOpen(sourceName),'按住 '+sourceName),b=await ev(`(()=>{const r=(${row(targetName)}).getBoundingClientRect();return {cx:r.left+r.width*.45,cy:r.top+r.height/2}})()`)
+      if(mobile){
+        if(!wc.debugger.isAttached())wc.debugger.attach('1.3')
+        const touch=(type,x,y)=>wc.debugger.sendCommand('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x:Math.round(x),y:Math.round(y),id:1}]})
+        await ev(`window.__tutorialTouches([{x:${a.cx},y:${a.cy}}])`);await touch('touchStart',a.cx,a.cy);log('long-press',{label:sourceName});await pause(520)
+        await until(`!!document.querySelector('.seal-drive-drag-preview')`,'长按后进入拖动')
+        for(let i=1;i<=18;i++){const x=a.cx+(b.cx-a.cx)*i/18,y=a.cy+(b.cy-a.cy)*i/18;await touch('touchMove',x,y);await ev(`window.__tutorialTouches([{x:${x},y:${y}}])`);await pause(45)}
+        // 到达目标后 600ms 内松手，避免触发悬停自动进入文件夹
+        await check(`!!document.querySelector('.seal-drive-file.is-drop-target')`,'目标文件夹高亮');await ev(`window.__tutorialMark(${row(targetName)})`);await pause(150)
+        await touch('touchEnd',b.cx,b.cy);await ev(`window.__tutorialTouches([])`);log('drop',{source:sourceName,target:targetName})
+      }else{
+        await move(a.cx,a.cy);await pause(150);wc.sendInputEvent({type:'mouseDown',x:Math.round(a.cx),y:Math.round(a.cy),button:'left',clickCount:1});log('drag-start',{label:sourceName})
+        const from={...cursor};for(let i=1;i<=24;i++){const k=i/24;cursor={x:from.x+(b.cx-from.x)*k,y:from.y+(b.cy-from.y)*k};await ev(`window.__tutorialCursor(${cursor.x},${cursor.y})`);wc.sendInputEvent({type:'mouseMove',x:Math.round(cursor.x),y:Math.round(cursor.y),button:'left'});await pause(35)}
+        await check(`!!document.querySelector('.seal-drive-drag-preview')&&!!document.querySelector('.seal-drive-file.is-drop-target')`,'拖动预览与目标高亮');await ev(`window.__tutorialMark(${row(targetName)})`);await pause(250)
+        wc.sendInputEvent({type:'mouseUp',x:Math.round(b.cx),y:Math.round(b.cy),button:'left',clickCount:1});await ev(`window.__tutorialRing(${b.cx},${b.cy})`);log('drop',{source:sourceName,target:targetName})
+      }
+      await until(`!(${row(sourceName)})&&${toast('已移动 1 项')}`,'文件已移入目标文件夹',20000)
+      await check(`!(${row(sourceName)})`,sourceName+' 已从根目录移出')
+    }
+    const openAccount=async()=>{
+      if(await ev(`!!(${btn('关闭预览')})`))await tap(btn('关闭预览'),'关闭预览')
+      if(mobile){await tap(btn('我的'),'我的');await tap(btn('账号与安全'),'账号与安全')}else{await home();await tap(sel('.wps-titlebar__avatar'),'账号与云空间')}
+      await until(`!!document.querySelector('.seal-account-summary')`,'账号与云空间面板')
+    }
+    Object.assign(operations,{
+      'intro':async()=>{await home();await focus(sel(mobile?'.seal-mobile-nav':'.wps-homesidebar__actions'),mobile?'底部导航':'首页入口');await pause(1500)},
+      'cloud-size':async()=>{
+        await openCloud();if(!mobile)await view('list')
+        await until(`/KB|MB/.test((${rowSize('季度汇报.docx')})?.textContent||'')`,'文件显示大小')
+        if(!mobile)await focus(sel('.seal-drive-list-labels'),'大小列表头')
+        await pause(900);await focus(rowSize('季度汇报.docx')||row('季度汇报.docx'),'季度汇报.docx 的大小');await pause(1100)
+        await check(`/KB|MB|B/.test((${rowSize('项目资料')})?.textContent||'')`,'文件夹显示汇总大小')
+        await focus(row('项目资料'),'文件夹显示其中文件的总量')
+      },
+      'cloud-sort':async()=>{
+        await click('排序');await tap(`[...document.querySelectorAll('.ant-dropdown-menu-item')].filter(${visible}).find(e=>e.textContent.trim()==='大小从大到小')`,'大小从大到小')
+        await until(`[...document.querySelectorAll('.seal-drive-file')].filter(${visible}).map(e=>e.querySelector('.seal-drive-file-name').textContent).filter(n=>n.includes('.'))[0]==='季度汇报.docx'`,'最大的文件排在最前')
+        await check(`true`,'按大小降序排列');await focus(row('季度汇报.docx'),'最大的文件')
+      },
+      'cloud-hover':async()=>{
+        await view('grid');const r=await focus(rowOpen('季度汇报.docx'),'悬停在季度汇报.docx');await move(r.cx,r.cy)
+        await until(`!!document.querySelector('#seal-drive-hover-card')`,'悬停信息卡出现')
+        await check(`['大小','创建时间','修改时间'].every(t=>document.querySelector('#seal-drive-hover-card').textContent.includes(t))`,'信息卡显示大小与时间')
+        await focus(sel('#seal-drive-hover-card'),'悬停信息卡',false);await pause(2400)
+      },
+      'cloud-open':async()=>{await openCloud();await focus(sel('.seal-drive-files'),'隔离演示云文件');await pause(1500)},
+      'cloud-drag':async()=>{if(!mobile){await move(cursor.x,cursor.y-160);await view('list')}await drag('会议纪要.docx','项目资料')},
+      'cloud-multi':async()=>{
+        for(const name of ['合作协议.docx','需求清单.txt'])await tap(rowCheck(name),'勾选 '+name)
+        await click('移动到…');await until(`!!document.querySelector('.ant-modal-confirm .ant-select')`,'选择目标文件夹')
+        await tap(sel('.ant-modal-confirm .ant-select'),'目标文件夹');await tap(`[...document.querySelectorAll('.ant-select-item-option')].filter(${visible}).find(e=>e.textContent.trim()==='合同归档')`,'合同归档')
+        await tap(sel('.ant-modal-confirm-btns .ant-btn-primary'),'确认移动')
+        await until(`!(${row('合作协议.docx')})&&!(${row('需求清单.txt')})&&${toast('已移动 2 项')}`,'两个文件已移动',20000)
+        await check(`!(${row('合作协议.docx')})&&!(${row('需求清单.txt')})`,'两个文件已离开根目录')
+      },
+      'cloud-folder':async()=>{
+        await tap(rowOpen('合同归档'),'打开合同归档')
+        await until(`!!(${row('合作协议.docx')})&&!!(${row('需求清单.txt')})`,'合同归档中出现两个文件')
+        await check(`!!(${row('合作协议.docx')})&&!!(${row('需求清单.txt')})`,'移动结果与服务端一致')
+        await focus(sel('.seal-drive-files'),'合同归档中的文件')
+      },
+      'preview':async()=>{
+        await root()
+        await tap(`(${row('季度汇报.docx')})?.querySelector('.seal-drive-file-more')`,'季度汇报更多操作')
+        await tap(`[...document.querySelectorAll('.ant-dropdown-menu-item')].filter(${visible}).find(e=>e.textContent.trim()==='预览')`,'预览')
+        await until(`!!document.querySelector('.seal-preview-modal')`,'预览弹窗')
+        // 预览组件把正文渲染在 Shadow DOM / 同源 iframe 中，逐层读取文本
+        const previewText=`(()=>{const walk=n=>{let t=n.textContent||'';for(const e of n.querySelectorAll('*')){if(e.shadowRoot)t+=walk(e.shadowRoot);if(e.tagName==='IFRAME'&&e.contentDocument)t+=walk(e.contentDocument.documentElement)}return t};const b=document.querySelector('.seal-preview-body');return b?walk(b):''})()`
+        await until(`${previewText}.includes('预算执行')`,'DOCX 正文已渲染',40000)
+        await check(`!/Namespace prefix|parsererror|预览失败/.test(${previewText})`,'未出现 XML 解析错误')
+        await focus(sel('.seal-preview-body'),'正常显示的正文',false);await pause(1800)
+        await focus(btn('打印'),'新增打印');await pause(900);await focus(btn('导出 HTML'),'新增导出 HTML')
+      },
+      'account':async()=>{
+        await openAccount();await focus(sel('.seal-account-summary'),'账号信息');await pause(1100)
+        await check(`/MB/.test(document.querySelector('.seal-account-meter__text')?.textContent||'')`,'云空间用量与进度条')
+        await focus(sel('.seal-account-card'),'云空间用量');await pause(1300);await focus(sel('.seal-danger-zone'),'独立的危险区');await pause(1100)
+      },
+      'password':async()=>{
+        await click('修改登录密码');await until(`!!document.querySelector('#seal-password-settings .ant-segmented')`,'修改密码表单')
+        await tap(segment('短信验证码'),'切换为短信验证码');await until(`!!document.querySelector('#seal-security-code')`,'验证码输入')
+        await focus(sel('.seal-account-field__row'),'验证码与获取按钮同一行');await pause(1200)
+        await focus(sel('#seal-password-settings .seal-account-card__actions .ant-btn-primary'),'保存按钮')
+      },
+      'language':async()=>{
+        if(await ev(`!!document.querySelector('.seal-account-modal .ant-modal-close')`))await tap(sel('.seal-account-modal .ant-modal-close'),'关闭账号面板')
+        await home();await click('切换界面语言');await tap(`[...document.querySelectorAll('[role="menuitem"]')].filter(${visible}).find(e=>e.textContent.trim()==='English')`,'English')
+        const side=`(document.querySelector('.wps-homesidebar')?.textContent||'')`
+        await until(`${side}.includes('Recent')&&${side}.includes('New')`,'首页切换为英文')
+        await check(`${side}.includes('Recent')&&!${side}.includes('最近')`,'侧栏文字已变为英文')
+        await focus(sel('.wps-homesidebar'),'英文界面');await pause(2200)
+        await tap(`[...document.querySelectorAll('button')].filter(${visible}).find(e=>/language/i.test(e.getAttribute('aria-label')||''))`,'Switch language')
+        await tap(`[...document.querySelectorAll('[role="menuitem"]')].filter(${visible}).find(e=>['简体中文','Simplified Chinese'].includes(e.textContent.trim()))`,'Simplified Chinese')
+        await until(`${side}.includes('最近')`,'切回中文')
+        await check(`${side}.includes('最近')`,'切回中文无需重启')
+      },
+      'outro':async()=>{await home();await focus(sel(mobile?'.seal-mobile-nav':'.wps-homesidebar__actions'),'海豹办公 2.8.0');await pause(1800)},
+    })
+  }
   // Mobile sheet starts after the assistant demonstration; close only its modal.
   if(mobile){const original=operations['sheet-open'];operations['sheet-open']=async()=>{if(await ev(`!!(${btn('收起智能助手')})`))await tap(btn('收起智能助手'),'关闭助手');await original()}}
   await pause(450);await until(`document.fonts.status==='loaded'`,'fonts loaded');await pause(500)
-  const rawFile=path.join(work,platform+(probe?'-probe':'')+'-operations.mp4');encoder=spawn(ffmpeg,['-y','-hide_banner','-loglevel','error','-f','rawvideo','-pixel_format','bgra','-video_size',width+'x'+height,'-framerate','20','-i','pipe:0','-an','-c:v','libx264','-preset','ultrafast','-crf','19','-pix_fmt','yuv420p','-threads','2',rawFile],{windowsHide:true,stdio:['pipe','ignore','pipe']});let encoderErrors='';encoder.stderr.on('data',b=>encoderErrors+=b);encoder.stdin.on('error',()=>{})
+  const rawFile=path.join(work,platform+(probe?'-probe':'')+(dryRun?'-dryrun':'')+'-operations.mp4');encoder=spawn(ffmpeg,['-y','-hide_banner','-loglevel','error','-f','rawvideo','-pixel_format','bgra','-video_size',width+'x'+height,'-framerate','20','-i','pipe:0','-an','-c:v','libx264','-preset','ultrafast','-crf','19','-pix_fmt','yuv420p','-threads','2',rawFile],{windowsHide:true,stdio:['pipe','ignore','pipe']});let encoderErrors='';encoder.stderr.on('data',b=>encoderErrors+=b);encoder.stdin.on('error',()=>{})
   const finished=new Promise((resolve,reject)=>encoder.on('exit',code=>code===0?resolve():reject(Error('Recording encoder '+code+': '+encoderErrors))));finished.catch(()=>{})
   running=true;loop=(async()=>{while(running){const tick=Date.now();if(frame){if(!encoder.stdin.write(frame))await new Promise(r=>encoder.stdin.once('drain',r));frames++}await pause(Math.max(1,50-(Date.now()-tick)))}})()
   const waitFrames=async target=>{while(frames<target)await pause(35)}
@@ -317,10 +443,10 @@ try{
     console.log(JSON.stringify({platform,step:scene.id,seconds:(frames-startFrame)/20,actions:actions.filter(a=>a.step===scene.id).length,assertions:assertions.length}),true)
   }
   running=false;await loop;encoder.stdin.end();await finished;encoder=null
-  const sourceArchive=pcCurrent?null:{name:path.basename(artifact(mobile?'android':'web')),sha256:mobile?sha(artifact('android')):webEvidence.archiveSha256,...(mobile?{}:{files:webEvidence.files})}
-  const report={passed:true,version,platform,build,sourceArchive,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,filePickerFixture:true,realFileSave:true,savedWordReopened:!mobile,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
-  fs.writeFileSync(path.join(work,platform+(probe?'-probe':'')+'-recording.json'),JSON.stringify(report,null,2)+'\n');assert.equal(errors.length,0,errors.join('\n'));clearInterval(captureTimer);win.destroy();win=null
+  const sourceArchive=pcCurrent||dryRun?null:{name:path.basename(artifact(mobile?'android':'web')),sha256:mobile?sha(artifact('android')):webEvidence.archiveSha256,...(mobile?{}:{files:webEvidence.files})}
+  const report={passed:true,dryRun,version,platform,build,sourceArchive,bundleSha256:sha(path.join(base,entry)),width,height,fps:20,frames,durationSeconds:frames/20,source:'Actual production UI with trusted Electron mouse/keyboard input, isolated demonstration storage and recording-only purple target/cursor overlays.',nativeDeviceRecording:false,filePickerFixture:true,realFileSave:true,savedWordReopened:!mobile,productionAccountsUsed:0,modelRequests:0,errors,assertions,actions,steps,recording:path.relative(root,rawFile).replaceAll('\\','/'),recordingSha256:sha(rawFile)}
+  fs.writeFileSync(path.join(work,platform+(probe?'-probe':'')+(dryRun?'-dryrun':'')+'-recording.json'),JSON.stringify(report,null,2)+'\n');assert.equal(errors.length,0,errors.join('\n'));clearInterval(captureTimer);win.destroy();win=null
  }
  app.exit(0)
 }catch(e){console.error(e.stack);if(win&&!win.isDestroyed()){try{fs.writeFileSync(path.join(work,'failure.png'),(await win.capturePage()).toPNG());fs.writeFileSync(path.join(work,'failure-dom.txt'),await win.webContents.executeJavaScript('document.body.innerText'))}catch{}}encoder?.kill();app.exit(1)
-}finally{server?.closeAllConnections?.();server?.close();await cloudFixture?.cleanup?.();if(originalClipboard){if(!originalClipboard.image.isEmpty())clipboard.writeImage(originalClipboard.image);else clipboard.writeText(originalClipboard.text)}}})
+}finally{server?.closeAllConnections?.();server?.close();await cloudFixture?.cleanup?.();promoCloud?.停止();if(originalClipboard){if(!originalClipboard.image.isEmpty())clipboard.writeImage(originalClipboard.image);else clipboard.writeText(originalClipboard.text)}}})
