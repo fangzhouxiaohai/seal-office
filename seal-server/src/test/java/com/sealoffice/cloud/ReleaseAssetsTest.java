@@ -421,6 +421,43 @@ class ReleaseAssetsTest extends AdminTestSupport {
     }
 
     @Test
+    void macOS芯片包可单独补发与替换且仅通用包用于客户端更新() throws Exception {
+        String root = rootLogin();
+        String version = "2.7.2";
+        byte[] dmg = diskImage();
+        String universal = uploadOk("macos", version, "seal-office-2.7.2-macos.dmg", dmg, root);
+        assertEquals(200, post("/v1/admin/releases/batch", Map.of("version", version,
+                "platforms", List.of(Map.of("platform", "macos", "assetId", universal))), root, ip)
+                .getResponse().getStatus());
+
+        for (String platform : List.of("macos-arm64", "macos-intel")) {
+            String filename = "seal-office-2.7.2-" + platform + ".dmg";
+            String original = uploadOk(platform, version, filename, dmg, root);
+            MvcResult supplemented = post("/v1/admin/releases/batch", Map.of("version", version,
+                    "platforms", List.of(Map.of("platform", platform, "assetId", original))), root, ip);
+            assertEquals(200, supplemented.getResponse().getStatus());
+            JsonNode release = body(supplemented).get("items").get(0);
+            String originalPath = downloadPath(release.get("asset"));
+            assertArrayEquals(dmg, get(originalPath, null, ip).getResponse().getContentAsByteArray());
+
+            byte[] replacement = diskImage();
+            replacement[0] = 1;
+            String next = uploadOk(platform, version, filename, replacement, root);
+            MvcResult updated = patch("/v1/admin/releases/" + release.get("id").asText(),
+                    Map.of("assetId", next, "expectedAssetId", original), root, ip);
+            assertEquals(200, updated.getResponse().getStatus());
+            String nextPath = downloadPath(body(updated).get("item").get("asset"));
+            assertArrayEquals(replacement, get(nextPath, null, ip).getResponse().getContentAsByteArray());
+            assertEquals(404, get(originalPath, null, ip).getResponse().getStatus());
+            assertEquals(400, get("/v1/updates/latest?platform=" + platform + "&version=2.7.1", null, ip)
+                    .getResponse().getStatus());
+        }
+
+        String latest = body(get("/v1/updates/latest?platform=macos&version=2.7.1", null, ip)).get("url").asText();
+        assertTrue(latest.endsWith("/" + universal + "/seal-office-2.7.2-macos.dmg"));
+    }
+
+    @Test
     void macOS拒绝改名文件无效UDIF尾部和越界区间且失败不留附件() throws Exception {
         String root = rootLogin();
         List<java.util.function.Consumer<byte[]>> mutations = List.of(

@@ -12,8 +12,9 @@
 
 - 三份最终成品均通过磁盘镜像校验、只读挂载、签名验证、架构检查，以及隔离启动、沙箱、原生图形、文件事件、更新暂存状态和程序坞事件检查。通用包通过 ASAR 路径和头摘要校验。文件及程序坞事件由测试触发。
 - 本轮使用临时签名，尚未通过 Apple 公证。最终成品在未安装 LibreOffice 的环境验收，依赖该程序的转换用例使用 `--skip-external-conversion` 跳过。此前同一通用应用曾在装有 LibreOffice 时通过 DOCX 转 PDF 测试。
-- GitHub 发行接口确认三份 DMG 的大小和 SHA-256。GitCode 的三份 DMG 与校验清单通过公开下载全字节核对。官网部署 `20261126153031-fb8f7955` 已公开 Apple 芯片和 Intel 两个入口。
-- 后台发布预检通过，正式发布时管理员登录返回 HTTP 401。匿名更新接口尚未提供 2.8.0 macOS 更新。
+- GitHub 发行接口确认三份 DMG 的大小和 SHA-256。GitCode 的三份 DMG 与校验清单通过公开下载全字节核对。官网部署 `20261126163936-86dbec4f` 已公开 Apple 芯片和 Intel 两个入口，两个入口均使用自有服务器地址。
+- 后台单平台补发入口已恢复并部署。2.8.0 的 Apple 芯片、Intel 芯片和客户端通用 DMG 已通过服务器流式校验后独立上架，匿名下载全量字节与 SHA-256 均核对通过。旧版 `2.7.10` 查询返回 2.8.0 通用包，2.8.0 查询返回 `hasUpdate=false`。本机后台登录返回 HTTP 401，本轮通过 SSH 调用后台的附件校验和版本发布服务完成上架。
+- 自有服务器附件地址：Apple 芯片 `https://seal.xingmasoft.com/api/v1/release-assets/8da8801e-75e3-4a2b-8a02-289143caee4f/seal-office-2.8.0-macos-arm64.dmg`，Intel 芯片 `https://seal.xingmasoft.com/api/v1/release-assets/08d34500-0117-4740-9a9a-53fd7b3c0707/seal-office-2.8.0-macos-intel.dmg`，客户端通用包 `https://seal.xingmasoft.com/api/v1/release-assets/3dc17163-13f9-4f6d-bdd6-1580899f5e56/seal-office-2.8.0-macos.dmg`。
 
 [GitHub 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.8.0) · [GitCode 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.8.0) · [官网下载区](https://seal.xingmasoft.com/#downloads)
 

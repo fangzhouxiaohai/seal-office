@@ -111,8 +111,13 @@ export function batchRelease(data: {
   return request.post<any, any>('/v1/admin/releases/batch', data)
 }
 
-export function updateRelease(id: string, data: { mandatory?: boolean; withdrawn?: boolean }) {
-  return request.patch<any, any>(`/v1/admin/releases/${encodeURIComponent(id)}`, data)
+export function updateRelease(id: string, data: {
+  mandatory?: boolean
+  withdrawn?: boolean
+  assetId?: string
+  expectedAssetId?: string | null
+}) {
+  return request.patch<any, { item: ReleaseItem }>(`/v1/admin/releases/${encodeURIComponent(id)}`, data)
 }
 
 export function deleteRelease(id: string) {

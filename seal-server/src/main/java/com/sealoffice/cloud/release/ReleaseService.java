@@ -28,8 +28,11 @@ import java.util.regex.Pattern;
 @Service
 public class ReleaseService {
 
-    public static final List<String> PLATFORMS =
+    public static final List<String> UPDATE_PLATFORMS =
             List.of("windows", "windows-store", "macos", "linux", "web", "android", "harmony");
+    private static final Set<String> MACOS_PACKAGES = Set.of("macos", "macos-arm64", "macos-intel");
+    private static final List<String> PLATFORMS =
+            java.util.stream.Stream.concat(UPDATE_PLATFORMS.stream(), java.util.stream.Stream.of("macos-arm64", "macos-intel")).toList();
     public static final List<String> CHANNELS = List.of("stable", "beta");
 
     private static final Pattern SHA_PATTERN = Pattern.compile("^[a-f0-9]{64}$");
@@ -196,7 +199,7 @@ public class ReleaseService {
 
     /** 仅约束新建：macOS 必须绑定已校验 DMG；平台+版本+通道不得重复 */
     private void assertNew(Map<String, Object> release) {
-        if ("macos".equals(release.get("platform")) && release.get("assetId") == null) {
+        if (MACOS_PACKAGES.contains(release.get("platform")) && release.get("assetId") == null) {
             throw ApiException.of(400, "macOS 新版本必须先上传并绑定已校验的 DMG 安装包");
         }
         if (findBy("SELECT id FROM releases WHERE platform=? AND version=? AND channel=?",
@@ -327,7 +330,7 @@ public class ReleaseService {
 
     @Transactional
     public Map<String, Object> update(AdminPrincipal actor, String id, Map<String, Object> input) {
-        Map<String, Object> existing = findBy("SELECT * FROM releases WHERE id=?", id);
+        Map<String, Object> existing = findBy("SELECT * FROM releases WHERE id=? FOR UPDATE", id);
         if (existing == null) {
             throw ApiException.of(404, "发布记录不存在");
         }
@@ -341,9 +344,15 @@ public class ReleaseService {
                 && (!(input.get("assetId") instanceof String value) || value.isEmpty())) {
             throw ApiException.of(400, "替换附件必须提供已上传的安装包");
         }
-        if (input.containsKey("expectedAssetId") && (!input.containsKey("assetId")
-                || !(input.get("expectedAssetId") instanceof String value) || value.isEmpty())) {
-            throw ApiException.of(400, "原附件标识无效");
+        if (input.containsKey("expectedAssetId")) {
+            Object expectedAsset = input.get("expectedAssetId");
+            if (!input.containsKey("assetId") || (expectedAsset != null
+                    && (!(expectedAsset instanceof String value) || value.isEmpty()))) {
+                throw ApiException.of(400, "原附件标识无效");
+            }
+            if (!java.util.Objects.equals(existing.get("asset_id"), expectedAsset)) {
+                throw ApiException.of(409, "发布附件已变化，请刷新后重试");
+            }
         }
         Map<String, Object> current = presentRelease(existing);
         Map<String, Object> mergedInput = new LinkedHashMap<>(current);
@@ -355,13 +364,6 @@ public class ReleaseService {
         Map<String, Object> merged = prepareRelease(mergedInput);
         boolean withdrawn = input.containsKey("withdrawn")
                 ? (boolean) input.get("withdrawn") : (boolean) current.get("withdrawn");
-        if (input.containsKey("expectedAssetId")) {
-            Map<String, Object> fresh = findBy("SELECT * FROM releases WHERE id=?", id);
-            Object currentAsset = fresh.get("asset_id");
-            if (currentAsset == null || !currentAsset.equals(input.get("expectedAssetId"))) {
-                throw ApiException.of(409, "发布附件已变化，请刷新后重试");
-            }
-        }
         jdbc.update("UPDATE releases SET mandatory=?,min_version=?,notes=?,url=?,sha256=?,bytes=?,version_code=?,"
                         + "withdrawn=?,asset_id=? WHERE id=?",
                 (boolean) merged.get("mandatory") ? 1 : 0, merged.get("minVersion"), merged.get("notes"),

@@ -49,6 +49,8 @@ public class ReleaseAssetService {
         FILENAMES.put("windows", version -> "seal-office-setup-" + version + ".exe");
         FILENAMES.put("windows-store", version -> "seal-office-" + version + "-microsoft-store-x64.msix");
         FILENAMES.put("macos", version -> "seal-office-" + version + "-macos.dmg");
+        FILENAMES.put("macos-arm64", version -> "seal-office-" + version + "-macos-arm64.dmg");
+        FILENAMES.put("macos-intel", version -> "seal-office-" + version + "-macos-intel.dmg");
         FILENAMES.put("linux", version -> "seal-office-" + version + "-amd64.deb");
         FILENAMES.put("web", version -> "seal-office-" + version + "-web.zip");
         FILENAMES.put("android", version -> "seal-office-" + version + "-android.apk");

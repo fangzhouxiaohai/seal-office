@@ -7,7 +7,7 @@
       </div>
       <div class="page-actions">
         <el-button :loading="busy" @click="refresh">刷新列表</el-button>
-        <el-button v-if="canWrite" type="primary" @click="openComposer">发布版本</el-button>
+        <el-button v-if="canWrite" type="primary" :disabled="busy" @click="openComposer()">发布版本</el-button>
       </div>
     </header>
 
@@ -55,7 +55,7 @@
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="detail = row">编辑</el-button>
+            <el-button link type="primary" :disabled="busy" @click="detail = row">{{ canWrite ? '编辑' : '查看' }}</el-button>
             <el-button v-if="canWrite" link type="danger" :disabled="busy" @click="pendingVersionDelete = row">删除</el-button>
           </template>
         </el-table-column>
@@ -75,7 +75,7 @@
     <!-- 发布版本弹窗 -->
     <el-dialog
       v-model="composing"
-      title="发布版本"
+      :title="replacing ? '上传平台附件' : supplementing ? '补发平台' : '发布版本'"
       width="1100px"
       :close-on-click-modal="false"
       :before-close="requestClose"
@@ -85,22 +85,22 @@
         <p class="text-muted">填写一份更新说明，按需选择平台并分别上传附件。未选择的平台不发布。</p>
         <el-form label-position="top" class="release-fields">
           <el-form-item label="版本号">
-            <el-input v-model="form.version" :disabled="busy || hasAssets" placeholder="例如 2.7.2" />
-            <small v-if="hasAssets" class="text-muted">附件已上传，清空选择后才能修改版本号。</small>
+            <el-input v-model="form.version" :disabled="busy || hasAssets || supplementing" placeholder="例如 2.7.2" />
+            <small v-if="hasAssets && !supplementing" class="text-muted">附件已上传，清空选择后才能修改版本号。</small>
           </el-form-item>
           <el-form-item label="发布通道">
-            <el-select v-model="form.channel">
+            <el-select v-model="form.channel" :disabled="busy || supplementing">
               <el-option label="稳定版" value="stable" />
               <el-option label="测试版" value="beta" />
             </el-select>
           </el-form-item>
-          <el-form-item label="更新说明" class="span-all">
+          <el-form-item v-if="!replacing" label="更新说明" class="span-all">
             <el-input v-model="form.notes" type="textarea" :rows="4" placeholder="逐条说明本次更新内容" />
           </el-form-item>
-          <el-form-item label="最低可用版本">
+          <el-form-item v-if="!replacing" label="最低可用版本">
             <el-input v-model="form.minVersion" placeholder="低于此版本时强制更新" />
           </el-form-item>
-          <el-form-item label="强制更新">
+          <el-form-item v-if="!replacing" label="强制更新">
             <div class="mandatory-row">
               <el-tag :type="form.mandatory ? 'danger' : 'info'" effect="light">{{ form.mandatory ? '已开启' : '未开启' }}</el-tag>
               <el-button size="small" @click="form.mandatory ? (form.mandatory = false) : (confirmMandatory = true)">
@@ -111,10 +111,11 @@
         </el-form>
 
         <div class="release-platforms">
-          <section v-for="p in platforms" :key="p.key" class="release-platform">
-            <el-checkbox v-model="selections[p.key].selected" :disabled="busy">
+          <section v-for="p in availablePlatforms" :key="p.key" class="release-platform">
+            <el-checkbox v-if="!replacing" v-model="selections[p.key].selected" :disabled="busy">
               <strong>{{ p.label }}</strong>
             </el-checkbox>
+            <strong v-else>{{ p.label }}</strong>
             <p class="text-muted">{{ p.hint }}</p>
             <template v-if="selections[p.key].selected">
               <div class="file-row">
@@ -147,7 +148,7 @@
                 <p>上传完成：{{ selections[p.key].asset?.filename }} · {{ fileSize(selections[p.key].asset?.bytes ?? 0) }}</p>
                 <p class="text-muted">SHA-256：{{ selections[p.key].asset?.sha256 }}</p>
               </div>
-              <el-form-item v-if="p.key === 'windows-store'" label="微软商店链接" class="store-url">
+              <el-form-item v-if="p.key === 'windows-store' && !replacing" label="微软商店链接" class="store-url">
                 <el-input v-model="form.storeUrl" />
               </el-form-item>
             </template>
@@ -159,27 +160,29 @@
         <div class="release-footer">
           <span v-if="closeHint" class="close-hint">{{ closeHint }}</span>
           <span class="text-muted">已选择 {{ selected.length }} 个平台</span>
-          <el-button :disabled="busy" @click="resetDraft">清空选择</el-button>
+          <el-button v-if="!supplementing" :disabled="busy" @click="resetDraft">清空选择</el-button>
           <el-button :disabled="busy" @click="requestClose(() => (composing = false))">取消</el-button>
           <el-button
             type="primary"
             :loading="busy && !uploading"
-            :disabled="busy || !selected.length || !form.version.trim()"
+            :disabled="busy || !selected.length || !form.version.trim() || (replacing && !selections[replacing.platform].asset)"
             @click="publish"
           >
-            发布所选平台
+            {{ replacing ? '保存附件' : '发布所选平台' }}
           </el-button>
         </div>
       </template>
     </el-dialog>
 
-    <!-- 版本详情（平台发布管理） -->
     <el-dialog
       :model-value="Boolean(detail)"
       :title="detail ? detail.version + ' 平台发布管理' : ''"
       width="760px"
+      class="release-dialog"
+      :before-close="requestClose"
       @close="detail = null"
     >
+      <div class="release-scroll">
       <section v-for="row in detail?.items || []" :key="row.id" class="detail-platform">
         <h3>
           {{ label(row.platform) }}
@@ -190,9 +193,14 @@
         </h3>
         <p>{{ row.notes || '未填写更新说明' }}</p>
         <p class="text-muted">
-          {{ row.asset?.filename || row.url || '无附件' }}<template v-if="row.asset?.bytes">，{{ fileSize(row.asset.bytes) }}</template>
+          <a v-if="row.asset && !row.withdrawn" :href="row.asset.url">{{ row.asset.filename }}</a>
+          <template v-else>{{ row.asset?.filename || row.url || '无附件' }}</template>
+          <template v-if="row.asset?.bytes">，{{ fileSize(row.asset.bytes) }}</template>
         </p>
         <div v-if="canWrite" class="detail-actions">
+          <el-button v-if="platforms.some((p) => p.key === row.platform)" size="small" :disabled="busy" @click="openComposer(detail, row)">
+            {{ row.asset ? '替换附件' : '上传附件' }}
+          </el-button>
           <el-button size="small" :disabled="busy" @click="requestMandatory(row)">
             {{ row.mandatory ? '取消强制' : '设为强制' }}
           </el-button>
@@ -202,6 +210,10 @@
           <el-button size="small" type="danger" plain :disabled="busy" @click="pendingDelete = row">删除</el-button>
         </div>
       </section>
+      </div>
+      <template #footer>
+        <el-button v-if="canWrite && detail && missingPlatforms(detail).length" type="primary" :disabled="busy" @click="openComposer(detail)">补发平台</el-button>
+      </template>
     </el-dialog>
 
     <!-- 各类确认弹窗 -->
@@ -269,11 +281,12 @@ interface Platform {
   hint: string
 }
 
-// 七个发行平台与安装包命名模板，与仓库发行命名规则一致
 const platforms: Platform[] = [
   { key: 'windows', label: 'Windows 安装版', extension: '.exe', filename: (v) => `seal-office-setup-${v}.exe`, hint: '安装程序下载后自动校验，确认一致才启动安装。' },
   { key: 'windows-store', label: 'Windows 商店版', extension: '.msix', filename: (v) => `seal-office-${v}-microsoft-store-x64.msix`, hint: '商店附件单独归档，客户端通过下方商店链接更新。' },
-  { key: 'macos', label: 'macOS', extension: '.dmg', filename: (v) => `seal-office-${v}-macos.dmg`, hint: '上传已验收的 DMG，用户下载后按 macOS 提示安装。' },
+  { key: 'macos', label: 'macOS 通用版', extension: '.dmg', filename: (v) => `seal-office-${v}-macos.dmg`, hint: '客户端更新使用通用 DMG。' },
+  { key: 'macos-arm64', label: 'macOS Apple 芯片', extension: '.dmg', filename: (v) => `seal-office-${v}-macos-arm64.dmg`, hint: '官网下载。' },
+  { key: 'macos-intel', label: 'macOS Intel 芯片', extension: '.dmg', filename: (v) => `seal-office-${v}-macos-intel.dmg`, hint: '官网下载。' },
   { key: 'linux', label: 'Ubuntu', extension: '.deb', filename: (v) => `seal-office-${v}-amd64.deb`, hint: '下载 DEB 安装包后，由用户按系统提示安装。' },
   { key: 'web', label: '网页版', extension: '.zip', filename: (v) => `seal-office-${v}-web.zip`, hint: '先部署新网页再发布通知；可上传网页归档，也可不附文件。' },
   { key: 'android', label: 'Android', extension: '.apk', filename: (v) => `seal-office-${v}-android.apk`, hint: '上传已验收的正式 APK，用户下载后确认安装。' },
@@ -309,8 +322,17 @@ const closeHint = ref('')
 const confirmMandatory = ref(false)
 const pendingMandatory = ref<ReleaseItem | null>(null)
 const pendingDelete = ref<ReleaseItem | null>(null)
+interface ReleaseGroup {
+  key: string
+  version: string
+  channel: string
+  publishedAt: number
+  items: ReleaseItem[]
+}
 const pendingVersionDelete = ref<any>(null)
-const detail = ref<any>(null)
+const detail = ref<ReleaseGroup | null>(null)
+const supplementing = ref<ReleaseGroup | null>(null)
+const replacing = ref<ReleaseItem | null>(null)
 
 const filter = ref<'all' | 'published' | 'withdrawn'>('all')
 const search = ref('')
@@ -328,13 +350,18 @@ const fileInputs = new Map<string, HTMLInputElement>()
 let disposed = false
 let controller: AbortController | null = null
 
-const selected = computed(() => platforms.filter((p) => selections.value[p.key].selected))
+const missingPlatforms = (group: ReleaseGroup) => platforms.filter((p) => !group.items.some((row) => row.platform === p.key))
+const availablePlatforms = computed(() => {
+  if (replacing.value) return platforms.filter((p) => p.key === replacing.value?.platform)
+  return supplementing.value ? missingPlatforms(supplementing.value) : platforms
+})
+const selected = computed(() => availablePlatforms.value.filter((p) => selections.value[p.key].selected))
 const hasAssets = computed(() => Object.values(selections.value).some((row) => Boolean(row.asset)))
 const label = (key: string) => platforms.find((p) => p.key === key)?.label || key
 
 // 按 版本/通道 分组，组内任意平台未下架即视为已上架
 const groups = computed(() => {
-  const map = new Map<string, any>()
+  const map = new Map<string, ReleaseGroup>()
   for (const item of items.value) {
     const key = item.version + '/' + item.channel
     const group = map.get(key) || { key, version: item.version, channel: item.channel, publishedAt: 0, items: [] }
@@ -360,6 +387,7 @@ const pagedRows = computed(() => rows.value.slice((page.value - 1) * pageSize, p
 
 function setFileInput(key: string, el: any) {
   if (el) fileInputs.set(key, el as HTMLInputElement)
+  else fileInputs.delete(key)
 }
 
 function triggerFile(key: string) {
@@ -432,7 +460,16 @@ function resetDraft() {
   }
 }
 
-function openComposer() {
+function openComposer(group?: ReleaseGroup | null, row?: ReleaseItem) {
+  resetDraft()
+  supplementing.value = group || null
+  replacing.value = row || null
+  if (group) {
+    form.value.version = group.version
+    form.value.channel = group.channel
+    form.value.notes = group.items.find((item) => item.notes)?.notes || ''
+  }
+  if (row) selections.value[row.platform].selected = true
   closeHint.value = ''
   composing.value = true
 }
@@ -458,6 +495,17 @@ function protectUpload(event: BeforeUnloadEvent) {
 
 function publish() {
   void runTask(busy, async () => {
+    const target = replacing.value
+    if (target) {
+      const asset = selections.value[target.platform].asset
+      if (!asset) throw new Error('请先上传安装包')
+      await updateRelease(target.id, { assetId: asset.id, expectedAssetId: target.asset?.id ?? null })
+      if (disposed) return
+      composing.value = false
+      ElMessage.success(label(target.platform) + ' 附件已保存')
+      await load()
+      return
+    }
     if (!selected.value.length) throw new Error('请至少选择一个需要发布的平台')
     const entries = selected.value.map((p) => {
       const state = selections.value[p.key]

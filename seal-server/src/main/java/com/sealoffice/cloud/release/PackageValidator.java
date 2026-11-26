@@ -30,7 +30,7 @@ public final class PackageValidator {
     public static void validate(Path filename, String platform, long size) {
         try (SeekableByteChannel file = Files.newByteChannel(filename, StandardOpenOption.READ)) {
             switch (platform) {
-                case "macos" -> validateDmg(file, size);
+                case "macos", "macos-arm64", "macos-intel" -> validateDmg(file, size);
                 case "windows" -> validatePe(file, size);
                 case "linux" -> validateDeb(file, size);
                 default -> validateZipPlatform(file, size, platform);

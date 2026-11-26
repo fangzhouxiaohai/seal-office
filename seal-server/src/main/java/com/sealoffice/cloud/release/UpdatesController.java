@@ -33,7 +33,7 @@ public class UpdatesController {
         if (!rateLimiter.allow(String.valueOf(ClientIpUtil.clientIp(request)))) {
             throw ApiException.of(429, "更新检查过于频繁，请稍后再试");
         }
-        if (platform == null || !ReleaseService.PLATFORMS.contains(platform)) {
+        if (platform == null || !ReleaseService.UPDATE_PLATFORMS.contains(platform)) {
             throw ApiException.of(400, "平台无效");
         }
         if (Versions.parseVersion(version) == null) {

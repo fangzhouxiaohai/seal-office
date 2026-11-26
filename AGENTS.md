@@ -22,7 +22,7 @@
 
 # 打包目录与视频更新规则
 
-- 每次 macOS 发版，官网必须同时提供当前版本的 Apple 芯片和 Intel 两个独立 DMG 下载入口，文件名分别为 `seal-office-${version}-macos-arm64.dmg` 和 `seal-office-${version}-macos-intel.dmg`。两份包均须验收并上传两个仓库发行页。客户端后台更新另用同版本通用 DMG。
+- 官网的客户端安装包下载入口固定使用自有服务器 `https://seal.xingmasoft.com/api/v1/release-assets/` 的已上架附件地址。每次 macOS 发版必须同时提供当前版本的 Apple 芯片和 Intel 两个独立 DMG 下载入口，文件名分别为 `seal-office-${version}-macos-arm64.dmg` 和 `seal-office-${version}-macos-intel.dmg`。两份包均须验收并同步上传两个仓库发行页。客户端后台更新使用同版本通用 DMG。
 
 - `release/` 顶层只保留 `promo/` 和当前 `package.json` 版本对应的 `v<版本>/` 一个版本目录。每次打包前执行 `npm run release:prepare`，清理本机旧版本产物目录；远端历史发行和仓库历史验收报告保留。
 - EXE 安装包、MSIX、DEB、Web ZIP、移动云打包源码 ZIP 与校验文件放在 `release/v<版本>/`；安卓 Java 工程位于仓库根目录 `android-studio/`，工作源码及旧安卓、鸿蒙源码分别位于 `mobile/`、`android-mobile/` 与 `harmony-mobile/`。不得把安装包或额外平台目录放在 `release/` 顶层。发行包统一英文 `seal-office` 前缀。

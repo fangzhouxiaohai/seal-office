@@ -68,7 +68,9 @@ describe('分平台下载入口', () => {
       const platform = link.dataset.platform
       const url = new URL(link.href)
       if (platform === 'macos-arm64' || platform === 'macos-intel') {
-        assert.equal(url.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-${platform}.dmg`)
+        assert.equal(url.origin, 'https://seal.xingmasoft.com')
+        assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
+        assert.equal(url.pathname.split('/').pop(), `seal-office-${version}-${platform}.dmg`)
         assert.ok(link.textContent.includes(`v${version}`))
         assert.ok(link.textContent.includes(platform === 'macos-arm64' ? 'Apple 芯片' : 'Intel 芯片'))
         continue
