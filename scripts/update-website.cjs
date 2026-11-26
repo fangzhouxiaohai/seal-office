@@ -18,6 +18,17 @@ function validateWebsite(files) {
   })
 }
 
+function macDownloads(html, version) {
+  const names = require('../build/artifact-names.json')
+  return [['macos-arm64', names.macosArm64], ['macos-intel', names.macosIntel]].map(([platform, template]) => {
+    const links = [...html.matchAll(new RegExp(`data-platform="${platform}"\\s+href="([^"]+)"`, 'g'))]
+    const name = template.replace('${version}', version)
+    const expected = `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/${name}`
+    if (links.length !== 1 || links[0][1] !== expected) throw new Error('官网缺少当前版本的 macOS 下载入口：' + name)
+    return expected
+  })
+}
+
 function makeActivationScript(id, assets) {
   if (!/^\d{14}-[a-f0-9]{8}$/.test(id) || assets.some(p => !/^assets\/[a-zA-Z0-9_.-]+\.(js|css)$/.test(p))) throw new Error('发布标识或资源路径无效')
   const remote = `${siteRoot}/website-releases/${id}`
@@ -83,6 +94,11 @@ function main() {
   const files = new Map()
   collect(path.join(root, 'website-dist'), '', files)
   const assets = validateWebsite(files).map(item => item.path)
+  const downloads = macDownloads(files.get('index.html').toString(), require('../package.json').version)
+  for (const url of downloads) {
+    const status = run('curl', ['--fail', '--silent', '--show-error', '--location', '--max-time', '45', '--head', '--output', '/dev/null', '--write-out', '%{http_code}', url])
+    if (status !== '200') throw new Error('macOS 安装包不可下载：' + url)
+  }
   const config = path.join(root, '.upgrade-private/deploy-server.json')
   const password = process.env.SEAL_DEPLOY_PASSWORD || (fs.existsSync(config) && JSON.parse(fs.readFileSync(config, 'utf8')).password)
   if (!password) throw new Error('缺少官网部署凭据，请在本机配置 SEAL_DEPLOY_PASSWORD 或 .upgrade-private/deploy-server.json')

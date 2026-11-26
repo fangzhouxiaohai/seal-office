@@ -48,12 +48,9 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: 校验验收脚本
         run: node --test scripts/verify-macos-candidate.test.cjs
-      - name: 安装文档转换工具
+      - name: 确认运行环境未安装 LibreOffice
         run: |
-          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
-            brew install --cask libreoffice
-          fi
-          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+          test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice
       - uses: actions/download-artifact@v4
         with:
           name: macos-cross-validation-input
@@ -95,4 +92,4 @@ jobs:
           else
             echo '未公证测试包未通过系统默认安全评估；仍需单独验证用户首次打开流程。'
           fi
-          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-candidate.cjs "$app" --skip-external-conversion

@@ -22,7 +22,7 @@ if (primary && link) {
   primary.href = link.href
   primary.textContent = `下载 ${link.textContent.trim()}`
 } else if (primary && platform === 'macos') {
-  primary.textContent = '下载 macOS 版'
+  primary.textContent = '选择 macOS 芯片版本'
 }
 
 // 顶部首屏与底部页脚的星空动效

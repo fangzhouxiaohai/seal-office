@@ -4,6 +4,8 @@
   "windowsStore": "seal-office-${version}-microsoft-store-x64.msix",
   "ubuntu": "seal-office-${version}-amd64.deb",
   "macos": "seal-office-${version}-macos.dmg",
+  "macosArm64": "seal-office-${version}-macos-arm64.dmg",
+  "macosIntel": "seal-office-${version}-macos-intel.dmg",
   "web": "seal-office-${version}-web.zip",
   "android": "seal-office-${version}-android.apk",
   "harmony": "seal-office-${version}-harmony.hap",

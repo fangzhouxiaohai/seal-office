@@ -5,7 +5,7 @@ import { App as AntdApp, Button, Modal } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useSettings } from '../store/settingsStore'
-import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, 恢复下载状态, 取下载状态, 取下载发布, 开始下载更新, 取消下载更新, 安装已下载更新, 接收下载进度, 改变下载界面, use下载状态, 使用暂存下载, type 有效发布 } from '../update/updateCenter'
+import { 展示更新, 检查更新, 稍后提醒, use更新卡片, 执行更新, 读取更新平台, 自动检查间隔, 启动检查延迟, 恢复下载状态, 取下载状态, 取下载发布, 开始下载更新, 取消下载更新, 安装已下载更新, 接收下载进度, 改变下载界面, use下载状态, 使用暂存下载, 是网页版, type 有效发布 } from '../update/updateCenter'
 import { 桥接, type 更新平台 } from '../ipc/bridge'
 import '../update/updateCard.css'
 
@@ -20,7 +20,7 @@ export const 发布日期 = (时间?: number) => {
 /** 自动检查：开启时启动检查一次并每 4 小时检查一次；关闭时不发任何请求；失败静默 */
 function use自动检查(开启: boolean) {
   useEffect(() => {
-    if (!开启) return
+    if (!开启 || 是网页版()) return
     let 有效 = true
     const 执行 = () => {
       void 恢复下载状态().catch(() => null).then(() => {
@@ -260,7 +260,7 @@ function use下载进度订阅() {
   }, [])
 }
 
-export function 更新卡片宿主() {
+function 客户端更新卡片宿主() {
   const 状态 = use更新卡片()
   const 移动端 = document.documentElement.dataset.sealPlatform === 'app'
   use下载进度订阅()
@@ -268,8 +268,16 @@ export function 更新卡片宿主() {
   return <>{状态 ? <卡片 key={状态.发布.version} 发布={状态.发布} /> : null}{移动端 ? <下载界面 /> : null}<更新入口 /></>
 }
 
+export function 更新卡片宿主() {
+  return 是网页版() ? null : <客户端更新卡片宿主 />
+}
+
 /** 应用级挂载：展示卡片并按设置执行自动检查 */
 export default function UpdateCard() {
+  return 是网页版() ? null : <客户端更新卡片 />
+}
+
+function 客户端更新卡片() {
   const { 自动检查更新 } = useSettings()
   use自动检查(自动检查更新)
   return <更新卡片宿主 />

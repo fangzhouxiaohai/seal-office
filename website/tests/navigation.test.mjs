@@ -34,16 +34,14 @@ describe('移动导航', () => {
 })
 
 describe('主下载按钮', () => {
-  it('Mac 浏览器直接指向 macOS 通用安装包', async () => {
+  it('Mac 浏览器进入两种芯片版本的下载列表', async () => {
     const dom = await openHomepage('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')
     const { document } = dom.window
     const primary = document.querySelector('.download-primary')
-    const mac = document.querySelector('[data-platform="macos"]')
-    assert.equal(primary.href, mac.href)
-    // macOS 通用包可能在主机构建能力受限时沿用上一版，主按钮文案须与该包自身版本一致。
-    const macVersion = mac.href.match(/seal-office-(\d+\.\d+\.\d+)-macos\.dmg/)[1]
-    assert.match(primary.textContent, new RegExp(`macOS.*v${macVersion.replace(/\./g, '\\.')}`))
-    assert.match(mac.textContent, /通用/)
+    assert.equal(primary.hash, '#downloads')
+    assert.match(primary.textContent, /选择 macOS 芯片版本/)
+    assert.ok(document.querySelector('[data-platform="macos-arm64"]'))
+    assert.ok(document.querySelector('[data-platform="macos-intel"]'))
     dom.window.close()
   })
 

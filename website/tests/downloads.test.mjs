@@ -56,7 +56,7 @@ describe('分平台下载入口', () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
     const { document } = new JSDOM(html).window
     const links = Array.from(document.querySelectorAll('#downloads [data-platform]'))
-    assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos', 'linux', 'android', 'harmony'])
+    assert.deepEqual(links.map(link => link.dataset.platform), ['windows', 'macos-arm64', 'macos-intel', 'linux', 'android', 'harmony'])
     assert.match(document.querySelector('.hero-badge').textContent, new RegExp('最新版 v' + version.replaceAll('.', '\\.')))
     const serverAssets = {
       windows: `seal-office-setup-${version}.exe`,
@@ -67,6 +67,12 @@ describe('分平台下载入口', () => {
     for (const link of links) {
       const platform = link.dataset.platform
       const url = new URL(link.href)
+      if (platform === 'macos-arm64' || platform === 'macos-intel') {
+        assert.equal(url.href, `https://github.com/fangzhouxiaohai/seal-office/releases/download/v${version}/seal-office-${version}-${platform}.dmg`)
+        assert.ok(link.textContent.includes(`v${version}`))
+        assert.ok(link.textContent.includes(platform === 'macos-arm64' ? 'Apple 芯片' : 'Intel 芯片'))
+        continue
+      }
       assert.equal(url.origin, 'https://seal.xingmasoft.com')
       assert.match(url.pathname, /^\/api\/v1\/release-assets\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\//)
       const name = url.pathname.split('/').pop()
@@ -74,15 +80,9 @@ describe('分平台下载入口', () => {
       assert.ok(assetVersion, `${platform} 下载地址缺少版本号`)
       assert.ok(link.textContent.includes(`v${assetVersion}`), `${platform} 文案版本与下载地址不一致`)
       assert.ok(compare(assetVersion, version) <= 0, `${platform} 下载版本不得高于当前版本`)
-      if (platform === 'macos') {
-        // macOS 沿用最近一次在苹果主机上构建并验签的通用包，版本与文件名必须自洽。
-        assert.equal(name, `seal-office-${assetVersion}-macos.dmg`)
-        continue
-      }
       assert.equal(name, serverAssets[platform])
       assert.equal(assetVersion, version)
     }
-    assert.match(document.querySelector('[data-platform="macos"]').textContent, /通用/)
   })
 
   it('下载区直接显示平台列表', async () => {

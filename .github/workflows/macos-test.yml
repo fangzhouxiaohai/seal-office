@@ -50,13 +50,9 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: 执行平台测试
         run: npx vitest run --config vitest.main.config.js main/mac/platform.test.js main/fileAssociation.test.js main/fileAssociation.integration.test.js main/update/stagedUpdater.test.js main/ipc/updateChannel.test.js
-      - name: 安装系统转换引擎
+      - name: 确认运行环境未安装 LibreOffice
         run: |
-          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
-            if [ "$MACHINE" = x86_64 ]; then brew update; fi
-            brew install --cask libreoffice
-          fi
-          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+          test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice
       - name: 构建临时签名测试包
         run: |
           test "$(uname -m)" = "$MACHINE"
@@ -101,7 +97,7 @@ jobs:
               raise RuntimeError('应用文件关联不完整：' + ', '.join(sorted(expected - actual)))
           PY
           test ! -e "$app/Contents/Resources/office-runtime/program/soffice.com"
-          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-candidate.cjs "$app" --skip-external-conversion
           (cd "$RELEASE_DIR" && shasum -a 256 "$(basename "$dmg")" > macos-test-sha256.txt)
           printf '%s\n' '仅供隔离测试：未进行开发者签名、公证或真实访达、程序坞手工验收，不得作为正式发行包。' > "$RELEASE_DIR/macos-test-status.txt"
       - name: 保存隔离测试附件
@@ -198,13 +194,9 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: 安装系统转换引擎
+      - name: 确认运行环境未安装 LibreOffice
         run: |
-          if [ ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice ]; then
-            if [ "$EXPECTED_ARCH" = x86_64 ]; then brew update; fi
-            brew install --cask libreoffice
-          fi
-          /Applications/LibreOffice.app/Contents/MacOS/soffice --version
+          test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice
       - uses: actions/download-artifact@v4
         with:
           name: macos-universal-update
@@ -231,5 +223,5 @@ jobs:
           codesign --verify --deep --strict "$app"
           lipo "$app/Contents/MacOS/海豹办公" -verify_arch x86_64 arm64
           node -e "require('./scripts/verify-macos-universal.cjs').校验完整性(process.argv[1])" "$app"
-          node scripts/verify-macos-candidate.cjs "$app"
+          node scripts/verify-macos-candidate.cjs "$app" --skip-external-conversion
           node scripts/verify-macos-universal.cjs --canvas "$app"

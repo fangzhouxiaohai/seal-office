@@ -13,12 +13,13 @@ import FontLibraryCard from '../fonts/FontLibraryCard'
 import { resetShortcutOverrides } from '../shortcuts/shortcuts'
 import { 桥接 } from '../ipc/bridge'
 import { 读取提醒目录, 保存提醒目录, 提醒目录名称, type 提醒目录 } from '../components/NewFileNotifier'
-import { 检查更新, 展示更新, 读取更新平台, 手动检查间隔 } from '../update/updateCenter'
+import { 检查更新, 展示更新, 读取更新平台, 手动检查间隔, 是网页版 } from '../update/updateCenter'
 import '../update/updateCard.css'
 import './settings.css'
 
 const SettingsPage = () => {
   const 桌面系统功能 = !document.documentElement.dataset.sealPlatform
+  const 客户端更新 = !是网页版()
   const { message, modal } = AntdApp.useApp()
   const { 主题, 切换主题, 恢复默认主题, 语言, 设置语言, 启动时检查默认程序, 设置启动时检查默认程序, 自动检查更新, 设置自动检查更新 } = useSettings()
   const { 简洁模式, 设置简洁模式, 默认放大, 设置默认放大, 恢复默认显示设置 } = useSettings()
@@ -366,21 +367,21 @@ const SettingsPage = () => {
         <AiSettingsCard />
 
         {/* 关于与更新 */}
-        {组标题('关于与更新')}
+        {组标题(客户端更新 ? '关于与更新' : '关于')}
         <div className="settings-wps-card">
-          {设置行(
+          {客户端更新 && 设置行(
             '自动检查更新',
             '启动时检查一次，运行期间每 4 小时检查一次；关闭后不再自动联网检查，仍可手动检查',
             <Switch aria-label="自动检查更新" checked={自动检查更新} onChange={设置自动检查更新} />
           )}
           {设置行(
             '当前版本',
-            '手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始',
+            客户端更新 ? '手动检查不受自动检查开关影响；普通更新显示右下角入口，强制更新自动开始' : '',
             <div className="settings-update-control">
               <span className="settings-wps-row__status">{当前版本}</span>
-              {检查状态 ? <span className="settings-wps-row__status" role="status">{检查状态.文字}</span> : null}
-              {检查状态?.可重试 ? <Button size="small" disabled={检查中} onClick={() => void 手动检查更新()}>重试</Button> : null}
-              <Button size="small" loading={检查中} disabled={检查中} onClick={() => void 手动检查更新()}>检查更新</Button>
+              {客户端更新 && 检查状态 ? <span className="settings-wps-row__status" role="status">{检查状态.文字}</span> : null}
+              {客户端更新 && 检查状态?.可重试 ? <Button size="small" disabled={检查中} onClick={() => void 手动检查更新()}>重试</Button> : null}
+              {客户端更新 ? <Button size="small" loading={检查中} disabled={检查中} onClick={() => void 手动检查更新()}>检查更新</Button> : null}
             </div>
           )}
         </div>

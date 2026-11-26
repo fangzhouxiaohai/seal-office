@@ -208,3 +208,36 @@ describe('更新卡片', () => {
     expect(screen.getAllByText('更新失败').length).toBeGreaterThan(0)
   })
 })
+
+
+describe('网页版更新入口', () => {
+  beforeEach(() => {
+    document.documentElement.dataset.sealPlatform = 'web'
+    重置更新状态()
+    vi.spyOn(桥接, 'backupLoad').mockResolvedValue({ 成功: true, 内容: null })
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+    delete document.documentElement.dataset.sealPlatform
+  })
+
+  it('关于页仅显示版本，不显示自动检查或手动更新入口', () => {
+    渲染设置页()
+    expect(screen.getByText('当前版本')).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: '自动检查更新' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '检查更新' })).toBeNull()
+    expect(screen.queryByText('关于与更新')).toBeNull()
+  })
+
+  it('即使已有开启偏好，启动与运行八小时也不查询更新', async () => {
+    vi.useFakeTimers()
+    localStorage.setItem('seal-update-auto', '开启')
+    const 查询 = 模拟桌面().mockResolvedValue({ 成功: true, 数据: 新版 })
+    render(<外壳><UpdateCard /></外壳>)
+    await act(async () => { await vi.advanceTimersByTimeAsync(自动检查间隔 * 2) })
+    expect(查询).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: '更新' })).toBeNull()
+  })
+})

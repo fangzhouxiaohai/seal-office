@@ -14,6 +14,8 @@ test('all distribution names use the requested English convention, including Sto
     windowsStore: 'seal-office-2.0.0-microsoft-store-x64.msix',
     ubuntu: 'seal-office-2.0.0-amd64.deb',
     macos: 'seal-office-2.0.0-macos.dmg',
+    macosArm64: 'seal-office-2.0.0-macos-arm64.dmg',
+    macosIntel: 'seal-office-2.0.0-macos-intel.dmg',
     web: 'seal-office-2.0.0-web.zip',
     android: 'seal-office-2.0.0-android.apk',
     harmony: 'seal-office-2.0.0-harmony.hap',

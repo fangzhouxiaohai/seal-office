@@ -79,7 +79,7 @@ async function 停止进程(进程, 等待 = 3000) {
   }
 }
 
-async function 验收(应用) {
+async function 验收(应用, 跳过外部转换 = false) {
   if (process.platform !== 'darwin' || !应用 || !path.isAbsolute(应用)) throw new Error('需要苹果系统上的隔离应用路径')
   const 控制 = new AbortController()
   const 总信号 = 控制.signal
@@ -150,15 +150,17 @@ async function 验收(应用) {
     assert.equal(await 主进程.计算("process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences().sandbox"), true)
     进度('加载原生图形模块')
     assert.equal(await 主进程.计算(图形表达式(), 20000), '89504e470d0a1a0a')
-    进度('转换文稿')
-    assert.equal(await 主进程.计算(`(async()=>{const e=process.mainModule.require('electron'), p=process.mainModule.require('path'), fs=process.mainModule.require('fs'); const c=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/nativeConversion.js')); const pdf=await c.转换文档(fs.readFileSync(${JSON.stringify(文稿)}),'docx','pdf','word'); return pdf.subarray(0,5).toString()})()`, 110000), '%PDF-')
+    if (!跳过外部转换) {
+      进度('转换文稿')
+      assert.equal(await 主进程.计算(`(async()=>{const e=process.mainModule.require('electron'), p=process.mainModule.require('path'), fs=process.mainModule.require('fs'); const c=process.mainModule.require(p.join(e.app.getAppPath(),'main/office/nativeConversion.js')); const pdf=await c.转换文档(fs.readFileSync(${JSON.stringify(文稿)}),'docx','pdf','word'); return pdf.subarray(0,5).toString()})()`, 110000), '%PDF-')
+    }
     进度('验证文件事件')
     await 主进程.计算(`(()=>{const e=process.mainModule.require('electron');e.app.emit('open-file',{preventDefault(){}},${JSON.stringify(文稿)});return true})()`)
     const 打开截止 = Date.now() + 30000
     let 已打开 = false
     while (Date.now() < 打开截止) {
       检查进程()
-      if (await 渲染.计算("document.body.innerText.includes('中文验收.docx')")) { 已打开 = true; break }
+      if (await 渲染.计算("document.body?.innerText.includes('中文验收.docx')")) { 已打开 = true; break }
       await 延迟(100)
     }
     assert(已打开, '主进程文件打开事件未到达界面')
@@ -168,7 +170,7 @@ async function 验收(应用) {
     进度('验证程序坞事件')
     await 主进程.计算("(()=>{const e=process.mainModule.require('electron');for(const w of e.BrowserWindow.getAllWindows())w.destroy();e.app.emit('activate');e.app.emit('activate');return true})()")
     assert.equal(await 主进程.计算("process.mainModule.require('electron').BrowserWindow.getAllWindows().length"), 1)
-    console.log('通过：隔离应用启动、沙箱、文件事件、程序坞事件、实际文稿转换')
+    console.log('通过：隔离应用启动、沙箱、文件事件、程序坞事件' + (跳过外部转换 ? '。未运行依赖系统转换器的文稿转换。' : '、实际文稿转换'))
     console.log('文件及程序坞事件由测试触发，尚须真实访达与程序坞手工验收。')
   } catch (错误) {
     throw new Error(`验收失败（${阶段}）：${错误.message}\n应用日志：\n${fs.readFileSync(日志路径, 'utf8').slice(-12000)}`, { cause: 错误 })
@@ -180,4 +182,4 @@ async function 验收(应用) {
 }
 
 module.exports = { 读取目标, 打开连接, 停止进程, 有界等待, 图形表达式, 窗口表达式, 等待窗口, 核对更新状态 }
-if (require.main === module) 验收(process.argv[2]).catch(错误 => { console.error(错误); process.exitCode = 1 })
+if (require.main === module) 验收(process.argv[2], process.argv.includes('--skip-external-conversion')).catch(错误 => { console.error(错误); process.exitCode = 1 })

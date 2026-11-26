@@ -27,8 +27,8 @@ test('备用复测沿用原始固定产物和系统验收步骤', () => {
   assert.equal(String(artifact.with['run-id']), '43485198435')
   assert.equal(artifact.with.repository, 'fangzhouxiaohai/seal-office')
   const commands = backup.jobs.verify.steps.map(step => step.run || '').join('\n')
-  for (const expected of ['467583156', 'ee5239b483c4823016eee38f8902d60e552b196a45d72a3c190d0a244eacd256', 'hdiutil verify', 'codesign --verify --deep --strict', 'verify-macos-candidate.cjs', 'verify-macos-universal.cjs --canvas', 'soffice --version']) assert.ok(commands.includes(expected), expected)
-  assert.doesNotMatch(commands, /gh\s+release|git\s+push|release-assets/)
+  for (const expected of ['467583156', 'ee5239b483c4823016eee38f8902d60e552b196a45d72a3c190d0a244eacd256', 'hdiutil verify', 'codesign --verify --deep --strict', 'verify-macos-candidate.cjs "$app" --skip-external-conversion', 'verify-macos-universal.cjs --canvas', 'test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice']) assert.ok(commands.includes(expected), expected)
+  assert.doesNotMatch(commands, /gh\s+release|git\s+push|release-assets|brew\s+install/)
 })
 
 test('备用复测逐文件直接运行全部验收测试并保留隔离进程', () => {

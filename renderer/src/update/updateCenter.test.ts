@@ -74,3 +74,24 @@ describe('暂存下载路径', () => {
     for (const 平台 of ['windows', 'macos', 'android'] as const) expect(使用暂存下载(平台)).toBe(true)
   })
 })
+
+describe('网页版由服务器部署更新', () => {
+  beforeEach(() => { 重置更新状态(); document.documentElement.dataset.sealPlatform = 'web' })
+  afterEach(() => { delete document.documentElement.dataset.sealPlatform; vi.restoreAllMocks(); 重置更新状态() })
+
+  it('不读取客户端版本接口或发出更新查询', async () => {
+    const 版本 = vi.spyOn(桥接.update, 'info')
+    const 查询 = vi.spyOn(桥接.update, 'check')
+    expect(await 检查更新()).toEqual({ 类型: '不支持' })
+    expect(版本).not.toHaveBeenCalled()
+    expect(查询).not.toHaveBeenCalled()
+  })
+
+  it('不执行安装、打开下载或刷新页面', async () => {
+    const 安装 = vi.spyOn(桥接.update, 'install')
+    const 外部 = vi.spyOn(桥接, 'openExternal')
+    expect(await 执行更新({ hasUpdate: true, version: '2.8.1' })).toEqual({ 成功: false, 错误: '当前运行方式不支持在线更新' })
+    expect(安装).not.toHaveBeenCalled()
+    expect(外部).not.toHaveBeenCalled()
+  })
+})

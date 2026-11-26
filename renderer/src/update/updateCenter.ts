@@ -1,5 +1,5 @@
 // 版本更新中心：各端统一的检查入口、更新卡片状态与「立即更新」平台行为。
-// 桌面经主进程（版本取 app.getVersion()，安装包由主进程下载校验）；Web 与移动端经云服务通道查询，版本取构建时注入的 __APP_VERSION__。
+// 桌面经主进程查询，移动端经云服务查询；网页版由服务器部署更新。
 import { useSyncExternalStore } from 'react'
 import { 桥接, type 更新平台, type 版本发布 } from '../ipc/bridge'
 import { 初始下载状态, 应用下载进度, 应跳过自动检查, 更新下载界面, type 下载界面状态, type 下载进度 } from './downloadState'
@@ -20,6 +20,11 @@ export const 启动检查延迟 = 1500
 export const 手动检查间隔 = 5000
 
 let 平台信息: Promise<{ 平台: 更新平台; 版本: string }> | null = null
+
+export function 是网页版(): boolean {
+  return (typeof __SEAL_PLATFORM__ === 'string' && __SEAL_PLATFORM__ === 'web')
+    || (typeof document !== 'undefined' && document.documentElement.dataset.sealPlatform === 'web')
+}
 
 /** 判定当前端的更新平台与版本号 */
 export function 读取更新平台(): Promise<{ 平台: 更新平台; 版本: string }> {
@@ -44,10 +49,11 @@ export function 读取更新平台(): Promise<{ 平台: 更新平台; 版本: st
 
 /** 向服务端查询一次，结果如实返回：有新版、已最新、失败、商店版或不支持 */
 export async function 检查更新(通道: 'stable' | 'beta' = 'stable'): Promise<检查结果> {
+  if (是网页版()) return { 类型: '不支持' }
   let 平台: 更新平台, 版本: string
   try { ({ 平台, 版本 } = await 读取更新平台()) }
   catch (错误) { return { 类型: '失败', 错误: 错误 instanceof Error ? 错误.message : '无法读取版本信息' } }
-  if (平台 === 'unsupported') return { 类型: '不支持' }
+  if (平台 === 'unsupported' || 平台 === 'web') return { 类型: '不支持' }
   let 响应: { 成功: boolean; 数据?: 版本发布; 错误?: string; 状态码?: number; 不支持?: boolean }
   try {
     if (平台 === 'windows' || 平台 === 'windows-store' || 平台 === 'linux' || 平台 === 'macos') 响应 = await 桥接.update.check(通道)
@@ -199,8 +205,9 @@ export function 使用暂存下载(平台: 更新平台 | null | undefined): boo
 
 export type 更新执行结果 = { 成功: true; 提示?: string } | { 成功: false; 错误: string }
 
-/** 「立即更新」：Windows 下载校验后安装；商店版打开商店；Ubuntu 与 macOS 打开安装包下载；Web 刷新；移动端打开下载或市场地址。 */
-export async function 执行更新(发布: 有效发布, 刷新页面: () => void = () => window.location.reload()): Promise<更新执行结果> {
+/** 「立即更新」：桌面打开安装包或商店；移动端打开下载或市场地址。 */
+export async function 执行更新(发布: 有效发布): Promise<更新执行结果> {
+  if (是网页版()) return { 成功: false, 错误: '当前运行方式不支持在线更新' }
   let 平台: 更新平台
   try { ({ 平台 } = await 读取更新平台()) }
   catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '无法读取版本信息' } }
@@ -214,7 +221,6 @@ export async function 执行更新(发布: 有效发布, 刷新页面: () => voi
       : '已在浏览器中打开 DEB 安装包下载地址。下载完成后用系统软件中心打开安装，或在终端执行 sudo apt install ./安装包文件名.deb'
     return { 成功: true, 提示: 结果.数据?.已打开商店 ? '已打开微软商店，请在商店中完成更新' : 结果.数据?.已打开下载 ? 下载提示 : '安装包校验通过，正在启动安装程序，海豹办公即将退出' }
   }
-  if (平台 === 'web') { 刷新页面(); return { 成功: true } }
   if (平台 === 'harmony') {
     const 结果 = await 桥接.update.openStore()
     if (结果.成功 && 结果.数据?.已显示) return { 成功: true, 提示: '已打开应用市场更新弹窗，请按系统提示完成更新' }
