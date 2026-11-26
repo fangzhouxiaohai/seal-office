@@ -8,7 +8,7 @@
 
 主进程按文件、Office、PDF、系统和模型服务拆分 IPC；渲染层统一通过 `renderer/src/ipc/bridge.ts` 类型安全调用。
 
-当前桌面与移动客户端版本为 **2.7.8**，移动构建号为 **20708**。各端共用编辑器与服务。鸿蒙沿用 UTS 宿主，安卓使用 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` 或 `dist:ubuntu`。参见[移动与网页版项目](mobile/README.md)与[打包规范](docs/打包规范.md)。
+当前桌面与移动客户端版本为 **2.8.0**，移动构建号为 **20800**。各端共用编辑器与服务。鸿蒙沿用 UTS 宿主，安卓使用 [Android Studio Java 原生宿主](android-studio/README.md)，原 HBuilderX 工程继续保留。历史移动成品保留在对应发行页，iOS 尚未生成 IPA。Windows 安装程序与商店包使用 `dist:windows:all`，Ubuntu 打包使用 `pack:ubuntu` 或 `dist:ubuntu`。2.8.0 安装包见 [GitHub 发行页](https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.8.0) 与 [GitCode 发行页](https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.8.0)，成品校验与限制见[2.8.0 打包与发布验收](docs/verification/v2.8.0/README.md)。参见[移动与网页版项目](mobile/README.md)与[打包规范](docs/打包规范.md)。
 
 账号、云空间、PPT 市场与知识库的范围及验收门槛见[云端与知识库升级计划](docs/下一版云端与知识库升级计划.md)。
 

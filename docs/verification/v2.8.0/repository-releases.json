@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "version": "2.8.0",
+  "tag": "v2.8.0",
+  "tagCommit": "527a738f83acdd113825c1a8ece4f0f8180e46c9",
+  "releases": {
+    "github": "https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.8.0",
+    "gitcode": "https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.8.0"
+  },
+  "title": "海豹办公 2.8.0",
+  "notes": "docs/release-notes/v2.8.0.md",
+  "assets": [
+    { "name": "seal-office-setup-2.8.0.exe", "bytes": 572280971, "sha256": "bd69473567ad42bdb8eb5d9a21f27e0f956b83458c947f409e97eaef46c0ff40" },
+    { "name": "seal-office-2.8.0-microsoft-store-x64.msix", "bytes": 806442891, "sha256": "8fa000e7807a2d8c4d80c046a86d3f1f5205f45658c9c25a61531d623b27cafd" },
+    { "name": "seal-office-2.8.0-amd64.deb", "bytes": 154858148, "sha256": "b4b905f558f02d8a85540a0f3ed1a0ed3e51d41d499376de26b22df1f16994f8" },
+    { "name": "seal-office-2.8.0-android.apk", "bytes": 56467109, "sha256": "d80d811ca99095da469e700cff78a9d93ab22a8545e0d8536d921f824f536c67" },
+    { "name": "seal-office-2.8.0-harmony.hap", "bytes": 74901790, "sha256": "ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6" },
+    { "name": "seal-office-2.8.0-web.zip", "bytes": 52808489, "sha256": "a830284727582051aad1aca472afecb534dc3dac4130c69be032adbd812908b0" },
+    { "name": "SHA256SUMS.txt", "bytes": 581, "sha256": "d3fa83614c445e02bcfb1907eb40d33f65d7b73fb3d583ea75bf52b0c19efb25" }
+  ],
+  "verification": [
+    "GitHub 与 GitCode 均以 latest 正式版发布，附件名与大小和 release/v2.8.0 一致",
+    "GitHub 附件经公开重定向 HEAD 复核：Windows 安装程序 572,280,971 字节、HAP 74,901,790 字节、SHA256SUMS.txt 581 字节",
+    "GitCode HAP 经公开下载全字节复核：74,901,790 字节，SHA-256 ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6",
+    "发布脚本对两个仓库每个附件完成上传后摘要与公开下载校验"
+  ],
+  "notPublished": [
+    "seal-office-2.8.0-harmony.app：鸿蒙上架专用容器，按规范只留本机与验收记录",
+    "seal-office-2.8.0-macos.dmg：本轮未产出 2.8.0 macOS 安装包"
+  ]
+}

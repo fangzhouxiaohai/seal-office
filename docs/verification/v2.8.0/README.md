@@ -88,6 +88,9 @@
 
 - 标签 `v2.8.0` 已推送到 GitHub 与 GitCode（提交 `527a738`）。
 - `python scripts/publish-current-release.py` 将六个平台的安装包与 `SHA256SUMS.txt` 发布为两个仓库的最新发行版，并逐字节复核远端附件。
+- GitHub：<https://github.com/fangzhouxiaohai/seal-office/releases/tag/v2.8.0>
+- GitCode：<https://gitcode.com/gcw_pGfMiWVg/seal-office/releases/v2.8.0>
+- 两个仓库各 7 个附件，名称与大小一致；GitHub 附件经公开重定向 HEAD 复核，GitCode HAP 经公开下载全字节 SHA-256 复核。App Pack 不入发行页。明细见 `repository-releases.json`。
 
 ## 九、未完成的验收与限制
 
