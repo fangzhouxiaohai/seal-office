@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "version": "2.8.0",
+  "bundleName": "com.sealoffice.mobile",
+  "builtOn": "Windows 本机（HBuilderX 5.34 + DevEco Studio SDK）",
+  "appPack": {
+    "filename": "seal-office-2.8.0-harmony.app",
+    "bytes": 45233048,
+    "sha256": "0a518ae4f34c25d91f2e40e0686730565cd5fc84bd9aea34ed2c4a13a567db83",
+    "purpose": "AppGallery 上架",
+    "publicReleaseAttachment": false,
+    "signatureVerified": true,
+    "contents": ["pack.info", "entry-default-signed.hap"],
+    "buildNote": "HBuilderX 5.34 Windows 命令行未产出 App Pack，改用 DevEco Studio app_packing_tool 生成容器后由 hap-sign-tool 签名"
+  },
+  "hap": {
+    "filename": "seal-office-2.8.0-harmony.hap",
+    "bytes": 74901790,
+    "sha256": "ecec774764ae5da63863f7e564aa01a02e2c90e91474c76b2fefe3b18ff963d6",
+    "purpose": "鸿蒙安装包",
+    "publicReleaseAttachment": true,
+    "signatureVerified": true,
+    "embeddedEditorSha256": "ed509ac824e05ae17bfa461d8c1e9f09cd87c98391cbe13c053955f4081c7d5e",
+    "crcPassed": true,
+    "resourceIdentityVerified": true
+  },
+  "verification": "DevEco Studio hap-sign-tool verify-app 分别对 App Pack 与 HAP 验签通过；hap-check 核对应用身份、版本、ZIP CRC、内置编辑器与完整字库",
+  "limitations": [
+    "未在鸿蒙真机安装：Release Profile 只能经 AppGallery（含测试渠道）安装，HAP 直接 hdc 安装需要含设备 UDID 的调试 Profile",
+    "签名口令取自 D:\\seal-office-signing，未写入仓库"
+  ]
+}

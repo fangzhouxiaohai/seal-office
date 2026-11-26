@@ -1,0 +1,27 @@
+{
+  "version": "2.8.0",
+  "mode": "static-package-inspection",
+  "packages": [
+    {
+      "platform": "windows",
+      "archive": "release\\v2.8.0\\win-unpacked\\resources\\app.asar",
+      "appAsarSha256": "0fad0761e2771b233fc547cc2d473e9e5366983e180870a2b747de31ace30a44",
+      "checkedIntegrityFiles": 623,
+      "matchesFinalWorkspaceBuild": true,
+      "fileCount": 27051,
+      "passed": true
+    },
+    {
+      "platform": "linux",
+      "archive": "release\\v2.8.0\\linux-unpacked\\resources\\app.asar",
+      "appAsarSha256": "65b68d38e02b39283f7adb58f11fae09569e351376db1191cf70e343509657df",
+      "checkedIntegrityFiles": 623,
+      "matchesFinalWorkspaceBuild": true,
+      "fileCount": 27003,
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Linux installation and UI execution are not established by static checks."
+  ]
+}
