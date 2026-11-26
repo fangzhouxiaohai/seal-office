@@ -61,6 +61,9 @@ export function use拖放移动({ 节点表, 已选, 启用, on移动, on进入�
   const [拖动, set拖动] = useState<拖动状态 | null>(null)
   const 按下 = useRef<按下记录 | null>(null), 拖动引用 = useRef<拖动状态 | null>(null), 悬停 = useRef<{ id: string; 计时器: number } | null>(null)
   const 抑制点击 = useRef(false), 滚动 = useRef(0), 参数 = useRef({ 节点表, on移动, on进入文件夹, on结束, t })
+  // 触摸事件始终派发给按下时的元素；悬停进入文件夹后该行会被移出页面，事件不再冒泡到 window，
+  // 因此触摸监听同时挂在按下的元素上（见 拖动属性.onTouchStart）。
+  const 触摸处理 = useRef<{ 移动: (e: TouchEvent) => void; 结束: () => void } | null>(null)
   参数.current = { 节点表, on移动, on进入文件夹, on结束, t }
   拖动引用.current = 拖动
 
@@ -139,6 +142,7 @@ export function use拖放移动({ 节点表, 已选, 启用, on移动, on进入�
     const 鼠标抬起 = (e: PointerEvent) => { if (e.pointerType !== 'touch') { if (按下.current?.已开始) 结束(true); else 按下.current = null } }
     const 触摸移动 = (e: TouchEvent) => { const 点 = e.touches[0]; if (点) 移动(点.clientX, 点.clientY, 按下.current?.已开始 ? e : undefined) }
     const 触摸结束 = () => { if (按下.current?.已开始) 结束(true); else { if (按下.current?.计时器) clearTimeout(按下.current.计时器); 按下.current = null } }
+    触摸处理.current = { 移动: 触摸移动, 结束: 触摸结束 }
     const 按键 = (e: KeyboardEvent) => { if (e.key === 'Escape' && 拖动引用.current) { e.preventDefault(); 结束(false) } }
     const 点击 = (e: MouseEvent) => { if (抑制点击.current) { e.preventDefault(); e.stopPropagation(); 抑制点击.current = false } }
     const 指针取消 = (e: PointerEvent) => { if (e.pointerType !== 'touch') 结束(false) }
@@ -177,6 +181,13 @@ export function use拖放移动({ 节点表, 已选, 启用, on移动, on进入�
       const 点 = e.touches[0]
       if (!点 || e.touches.length > 1) return
       const 记录: 按下记录 = { id, x: 点.clientX, y: 点.clientY, 触摸: true, 已开始: false }
+      // 挂在触摸目标元素上并阻止继续冒泡：元素仍在页面时只由这里处理，被移出页面后依然能收到后续事件
+      const 元素 = e.target as HTMLElement
+      const 移动 = (事件: TouchEvent) => { 事件.stopPropagation(); 触摸处理.current?.移动(事件) }
+      const 完成 = (事件: TouchEvent) => { 事件.stopPropagation(); 元素.removeEventListener('touchmove', 移动); 元素.removeEventListener('touchend', 完成); 元素.removeEventListener('touchcancel', 完成); 触摸处理.current?.结束() }
+      元素.addEventListener('touchmove', 移动, { passive: false })
+      元素.addEventListener('touchend', 完成)
+      元素.addEventListener('touchcancel', 完成)
       记录.计时器 = window.setTimeout(() => { if (按下.current === 记录) { 记录.已开始 = true; 开始(id, 记录.x, 记录.y); 更新位置(记录.x, 记录.y) } }, 400)
       按下.current = 记录
     },
