@@ -6,7 +6,7 @@ import {readUpload} from './fileData'
 import {通过路径打开文件} from '../fileOpen'
 import {useAppStore} from '../store'
 import Icon from '../components/Icon'
-import CloudFileBrowser,{isFolder,type CloudNode as Node} from './CloudFileBrowser'
+import CloudFileBrowser,{fileIcon,isFolder,type CloudNode as Node} from './CloudFileBrowser'
 import {use拖放移动,根目录,投放检查} from './dragMove'
 import {计算大小} from './fileInfo'
 import {useSettings} from '../store/settingsStore'
@@ -27,8 +27,11 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
   const sizes=useMemo(()=>计算大小(nodes),[nodes])
   // 拖放移动：投放调用批量移动接口；悬停进入的文件夹在拖动结束后回到起始目录
   const dragOrigin=useRef<{parent:string|null}|null>(null)
-  const moveMany=(ids:string[],target:string|null)=>run(async()=>{await cloudCall('move',{ids,parent:target});setSelected([]);if(search)setSearch('');message.success(t(`已移动 ${ids.length} 项`,`Moved ${ids.length} item${ids.length>1?'s':''}`))})
-  const drag=use拖放移动({节点表:nodes,已选:selected,启用:!trash&&!busy&&!showShares,t,on移动:(ids,target)=>void moveMany(ids,target),on进入文件夹:id=>{if(!dragOrigin.current)dragOrigin.current={parent};setParent(id)},on结束:()=>{const origin=dragOrigin.current;dragOrigin.current=null;if(origin)setParent(origin.parent)}})
+  // 同一时刻只提交一笔移动：服务端确认后才提示成功，失败时保留选择以便重试
+  const moving=useRef(false)
+  const moveMany=async(ids:string[],target:string|null)=>{if(moving.current)return;moving.current=true;try{await run(async()=>{await cloudCall('move',{ids,parent:target});setSelected([]);if(search)setSearch('');message.success(t(`已移动 ${ids.length} 项`,`Moved ${ids.length} item${ids.length>1?'s':''}`))})}finally{moving.current=false}}
+  const dragIcon=(id:string)=>{const node=nodes.find(n=>n.id===id);if(!node)return null;return isFolder(node)?<span className="seal-drive-folder-symbol" data-size="list"/>:<Icon name={fileIcon(node)} variant="mobile" size={28}/>}
+  const drag=use拖放移动({节点表:nodes,已选:selected,启用:!trash&&!busy&&!showShares,t,图标:dragIcon,on移动:(ids,target)=>void moveMany(ids,target),on进入文件夹:id=>{if(!dragOrigin.current)dragOrigin.current={parent};setParent(id)},on结束:()=>{const origin=dragOrigin.current;dragOrigin.current=null;if(origin)setParent(origin.parent)}})
   const context=useRef('');context.current=JSON.stringify([cloud.state.account?.id,cloud.state.account?.enabled,cloud.state.unlocked,trash])
   const loadVersion=useRef(0)
   const load=async()=>{const key=context.current,version=++loadVersion.current;let listError:unknown=null,pendingError:unknown=null
@@ -49,7 +52,7 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     window.addEventListener('seal-before-native-back',back)
     return()=>window.removeEventListener('seal-before-native-back',back)
   },[parent,nodes,showShares])
-  const run=async(task:()=>Promise<any>)=>{setBusy(true);try{await task();await load()}catch(e){modal.error({title:'云文件操作失败',content:e instanceof Error?e.message:'操作失败'})}finally{setBusy(false)}}
+  const run=async(task:()=>Promise<any>)=>{setBusy(true);try{await task();await load()}catch(e){modal.error({title:t('云文件操作失败','Cloud file action failed'),content:e instanceof Error?e.message:t('操作失败','The action failed')})}finally{setBusy(false)}}
   const nameDialog=(title:string,initial:string,task:(name:string)=>Promise<any>)=>{
     let name=initial,submitting=false
     const dialog=modal.confirm({title,centered:true,content:<Input aria-label={title} defaultValue={initial} maxLength={120} onChange={e=>name=e.target.value}/>,onOk:(close:()=>void)=>{
@@ -110,7 +113,7 @@ export default function CloudFilesPage({trash=false}:{trash?:boolean}){
     {selected.length?<div className="seal-drive-selection"><span>{t(`已选择 ${selected.length} 项`,`${selected.length} selected`)}</span>{trash?<Button disabled={busy} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('restore',{id:n.id});setSelected([])})}>{t('恢复','Restore')}</Button>:<Button disabled={busy||!selection.length||selection.some(isFolder)} onClick={()=>void run(async()=>{for(const n of selection)await cloudCall('download',{id:n.id})})}>{t('下载','Download')}</Button>}{!trash?<Button disabled={busy||!selection.length} onClick={()=>moveDialog(selection.map(n=>n.id))}>{t('移动到…','Move to…')}</Button>:null}<Button danger disabled={busy} onClick={()=>remove(selection,trash)}>{trash?t('彻底删除','Delete permanently'):t('删除','Delete')}</Button><Button type="text" onClick={()=>setSelected([])}>{t('取消选择','Clear selection')}</Button></div>:null}
     {error?<p className="seal-cloud-error">{error}</p>:null}
     {pending.length?<div className="seal-cloud-card seal-cloud-pending"><h2>{t('待同步文件（已在本机加密保留）','Files waiting to sync (encrypted on this device)')}</h2><Button loading={busy} onClick={()=>void run(()=>cloudCall('flush'))}>{t('重试同步','Retry sync')}</Button>{pending.map(p=><p key={p.id}><span className="seal-cloud-pending__name" translate="no">{p.name}</span> · {p.status} <Button onClick={()=>void run(()=>cloudCall('exportPending',{id:p.id}))}>{t('导出本机副本','Export local copy')}</Button>{p.status==='版本冲突'?<Button onClick={()=>void run(()=>cloudCall('keepConflict',{id:p.id}))}>{t('保留为冲突副本','Keep as conflict copy')}</Button>:null}<Button danger onClick={()=>modal.confirm({title:t('清除这条待同步记录？','Clear this pending sync record?'),content:t('此操作会删除本机加密待同步副本。请先导出需要的内容；已保存的云端版本与原本地文件不受影响。','This removes the encrypted pending copy on this device. Export anything needed first. The saved cloud version and original local file are not affected.'),onOk:()=>run(()=>cloudCall('discardPending',{id:p.id}))})}>{t('清除记录','Clear record')}</Button></p>)}</div>:null}
-    {!loaded&&!error?<LoadingState 文字={t('正在读取云空间文件…','Loading cloud files…')}/>:<CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):默认打开方式(node.meta.filename||node.meta.name)==='preview'?setPreviewing(node):void download(node,true)} actions={actions} drag={trash?undefined:drag} sizes={sizes}/>}
+    {!loaded&&!error?<LoadingState 文字={t('正在读取云空间文件…','Loading cloud files…')}/>:<CloudFileBrowser nodes={shown} selected={selected} onSelect={setSelected} busy={busy} onOpen={node=>trash?setSelected([node.id]):isFolder(node)?setParent(node.id):默认打开方式(node.meta.filename||node.meta.name)==='preview'?setPreviewing(node):void download(node,true)} actions={actions} drag={trash?undefined:drag} sizes={sizes} dropFolder={trash||search?undefined:parent??根目录} dropFolderName={parent?nodes.find(n=>n.id===parent)?.meta.name:t('全部文件','All files')}/>}
     {drag.浮层}
     {sharing?<ShareLinkDialog 文件={{id:sharing.id,name:sharing.meta.name}} onClose={()=>setSharing(null)}/>:null}
     {previewing?<CloudPreview 节点={{id:previewing.id,name:previewing.meta.filename||previewing.meta.name}} 大小={typeof previewing.meta.size==='number'?previewing.meta.size:undefined} 引擎={当前预览引擎} onClose={()=>setPreviewing(null)} on下载={()=>void download(previewing)} on用编辑器打开={()=>{const node=previewing;setPreviewing(null);void download(node,true)}}/>:null}

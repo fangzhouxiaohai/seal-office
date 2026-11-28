@@ -1,0 +1,551 @@
+{
+  "时间": "2026-11-28T14:41:54.826Z",
+  "文件数": 34,
+  "引用数": 85,
+  "结果": [
+    {
+      "文件": "main/fonts/fontService.js",
+      "类别": "桌面主进程其他",
+      "行": [
+        {
+          "行号": 37,
+          "文本": "directories.push(path.join(process.resourcesPath, 'fonts'), path.join(process.resourcesPath, 'office-runtime', 'Fonts'))"
+        }
+      ]
+    },
+    {
+      "文件": "main/office/compatibleFormats.js",
+      "类别": "桌面主进程转换",
+      "行": [
+        {
+          "行号": 3,
+          "文本": "const { 转换文档, 兼容读取警告 } = require('./nativeConversion')"
+        }
+      ]
+    },
+    {
+      "文件": "main/office/nativeConversion.js",
+      "类别": "桌面主进程转换",
+      "行": [
+        {
+          "行号": 8,
+          "文本": "const { 定位兼容引擎, 选择兼容过滤器 } = require('./nativeRuntime')"
+        },
+        {
+          "行号": 11,
+          "文本": "return 定位兼容引擎({ 根目录: app.isPackaged ? process.resourcesPath : path.join(__dirname, '../../.upgrade-private') })"
+        },
+        {
+          "行号": 34,
+          "文本": "const 参数 = [`-env:UserInstallation=${pathToFileURL(配置).href}`, '--headless', '--nologo', '--nodefault', '--nofirststartwizard', '--nolockcheck', '--convert-to',"
+        },
+        {
+          "行号": 45,
+          "文本": "// Only stop this job's process tree; stopping the launcher alone leaves soffice.bin alive."
+        },
+        {
+          "行号": 48,
+          "文本": "// detached gives this conversion its own process group, including soffice.bin."
+        }
+      ]
+    },
+    {
+      "文件": "main/office/nativeRuntime.js",
+      "类别": "桌面主进程转换",
+      "行": [
+        {
+          "行号": 3,
+          "文本": "function 定位兼容引擎({ 平台 = process.platform, 根目录 }) {"
+        },
+        {
+          "行号": 5,
+          "文本": "const 文件 = path.join(根目录, 'office-runtime', 'program', 'soffice.com')"
+        },
+        {
+          "行号": 10,
+          "文本": "for (const 文件 of ['/usr/bin/libreoffice', '/usr/bin/soffice']) {"
+        },
+        {
+          "行号": 13,
+          "文本": "throw new Error('文档兼容引擎缺失，请安装 libreoffice-writer、libreoffice-calc、libreoffice-impress 后重试')"
+        },
+        {
+          "行号": 16,
+          "文本": "const 文件 = '/Applications/LibreOffice.app/Contents/MacOS/soffice'"
+        },
+        {
+          "行号": 18,
+          "文本": "throw new Error('文档兼容引擎缺失，请安装 LibreOffice 到“应用程序”目录后重试')"
+        },
+        {
+          "行号": 23,
+          "文本": "// Ubuntu LTS keeps older LibreOffice releases. These export filter names remain"
+        },
+        {
+          "行号": 25,
+          "文本": "function 选择兼容过滤器(过滤器, 平台 = process.platform) {"
+        },
+        {
+          "行号": 34,
+          "文本": "module.exports = { 定位兼容引擎, 选择兼容过滤器 }"
+        }
+      ]
+    },
+    {
+      "文件": "renderer/src/sheet/formulaFixtures.ts",
+      "类别": "桌面与网页渲染层",
+      "行": [
+        {
+          "行号": 1,
+          "文本": "/** 独立已知值样例；LibreOffice oracle 复用输入，不把 Formula.js 的输出当作预期。 */"
+        }
+      ]
+    },
+    {
+      "文件": "renderer/src/sheet/formulaSupport.md",
+      "类别": "桌面与网页渲染层",
+      "行": [
+        {
+          "行号": 24,
+          "文本": "- WORKDAY、WORKDAY.INTL、NETWORKDAYS、NETWORKDAYS.INTL 支持日期/天数/周末参数的形状广播；假日范围始终作为一整个假日集合传给每个结果，不能逐元素拆成对应假日。1904 数组日期、闰日、工作日、周末和假日另以真实 XLSX 错缓存输入，由 LibreOffice 与本机 "
+        },
+        {
+          "行号": 29,
+          "文本": "原基础函数、扩展、模型、1904 上下文和公式兼容回归通过。独立 LibreOffice 26.8.1 隔离配置强制重算使用真实 main/office/xlsxCodec.js 新公式写出，记录原始式、标准 OOXML 存储式、重写式、原式/存储式两种引擎结果。228 个原始函数样例保留全部行；补充 TYPE(\"ab"
+        },
+        {
+          "行号": 31,
+          "文本": "数组另用真实主进程新建 XLSX、全部结果缓存故意写错为 9999，再由独立引擎强制重算。LibreOffice 26.8.1 为 32/33，唯一失败为不识别标准 ANCHORARRAY；本机 WPS 为 31/33，原有两个 Unicode/空白语义差异完整保留，应用 WPS 来源模式后实际原生文件导入、本机重新计"
+        }
+      ]
+    },
+    {
+      "文件": "mobile/web/core.cjs",
+      "类别": "移动网页与打包",
+      "行": [
+        {
+          "行号": 18,
+          "文本": "const conversion = require('./nativeConversion.cjs')"
+        }
+      ]
+    },
+    {
+      "文件": "mobile/scripts/core-build.mjs",
+      "类别": "移动网页与打包",
+      "行": [
+        {
+          "行号": 20,
+          "文本": "context.onResolve({ filter: /\\.\\/nativeConversion$/ }, args => {"
+        },
+        {
+          "行号": 21,
+          "文本": "if (args.importer.replaceAll('\\\\', '/').includes('/main/office/')) return { path: path.join(directory, 'web/nativeConversion.cjs') }"
+        }
+      ]
+    },
+    {
+      "文件": "converter/Dockerfile",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 2,
+          "文本": "RUN apt-get update && apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation && rm -"
+        },
+        {
+          "行号": 6,
+          "文本": "ENV HOST=0.0.0.0 PORT=8298 SEAL_OFFICE_EXECUTABLE=soffice"
+        }
+      ]
+    },
+    {
+      "文件": "converter/README.md",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 11,
+          "文本": "运行环境：Node.js 20 或以上、LibreOffice Writer/Calc/Impress、中文字体。访问令牌通过环境变量设置，不进入仓库或日志。下面所有命令在项目根目录执行。"
+        },
+        {
+          "行号": 28,
+          "文本": "若不使用 Docker，设置 `SEAL_OFFICE_EXECUTABLE` 为 `soffice` 的绝对路径，再运行 `node converter/index.cjs`。Windows 可使用项目准备好的 `.upgrade-private/office-runtime/program/soffice.com`"
+        },
+        {
+          "行号": 36,
+          "文本": "- LibreOffice 与镜像内字体的许可证由镜像发行包附带；服务本身沿用项目许可证。首次构建需下载系统软件包，服务器运行时无需调用第三方文档转换网站。"
+        }
+      ]
+    },
+    {
+      "文件": "converter/deploy/prepare-converter-runtime.sh",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 38,
+          "文本": "chroot \"$runtime\" /usr/bin/env DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get -o Acquire::Retries=3 install -y --no-install-recommends libreoffice-writer libre"
+        },
+        {
+          "行号": 40,
+          "文本": "chroot \"$runtime\" /usr/bin/soffice --version"
+        }
+      ]
+    },
+    {
+      "文件": "converter/deploy/seal-office-converter.service",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 15,
+          "文本": "Environment=SEAL_OFFICE_EXECUTABLE=/usr/bin/soffice"
+        }
+      ]
+    },
+    {
+      "文件": "converter/index.cjs",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 82,
+          "文本": "const server = createConverterServer({ token: process.env.SEAL_CONVERTER_TOKEN, executable: process.env.SEAL_OFFICE_EXECUTABLE || 'soffice', origins: (process.e"
+        }
+      ]
+    },
+    {
+      "文件": "converter/managed.cjs",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 27,
+          "文本": "async function createManagedConverter({ controlToken, executable = 'soffice', convert = convertWithOffice, probe, origins = ['*'] } = {}) {"
+        },
+        {
+          "行号": 92,
+          "文本": "if (require.main === module) createManagedConverter({ controlToken: process.env.SEAL_CONVERTER_CONTROL_TOKEN, executable: process.env.SEAL_OFFICE_EXECUTABLE || "
+        }
+      ]
+    },
+    {
+      "文件": "converter/office.cjs",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 11,
+          "文本": "async function convertWithOffice(bytes, inputExtension, outputExtension, type, { executable = 'soffice', timeout = 90000,signal } = {}) {"
+        }
+      ]
+    },
+    {
+      "文件": "converter/package.json",
+      "类别": "服务端转换服务",
+      "行": [
+        {
+          "行号": 5,
+          "文本": "\"description\": \"海豹办公文档转换网关（LibreOffice），由 Spring Boot 后端经 8298 控制通道调用\","
+        }
+      ]
+    },
+    {
+      "文件": "build/electron-ubuntu.cjs",
+      "类别": "安装包配置",
+      "行": [
+        {
+          "行号": 35,
+          "文本": "depends: ['libgtk-3-0', 'libnotify4', 'libnss3', 'libxss1', 'libxtst6', 'xdg-utils', 'libatspi2.0-0', 'libuuid1', 'libsecret-1-0', 'libasound2 | libasound2t64',"
+        }
+      ]
+    },
+    {
+      "文件": "build/office-runtime-notice.txt",
+      "类别": "安装包配置",
+      "行": [
+        {
+          "行号": 3,
+          "文本": "This distribution includes the unmodified LibreOffice 26.8.1 Windows x64"
+        },
+        {
+          "行号": 5,
+          "文本": "third-party notices, fonts and dictionaries in resources/office-runtime."
+        },
+        {
+          "行号": 6,
+          "文本": "LibreOffice is licensed under the Mozilla Public License 2.0 and additional"
+        },
+        {
+          "行号": 10,
+          "文本": "https://download.documentfoundation.org/libreoffice/src/26.8.1/"
+        },
+        {
+          "行号": 12,
+          "文本": "https://www.libreoffice.org/about-us/source-code/"
+        },
+        {
+          "行号": 15,
+          "文本": "LibreOffice_26.8.1_Win_x86-64.msi"
+        },
+        {
+          "行号": 19,
+          "文本": "install LibreOffice system-wide. Seal Office is not affiliated with The"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/build-windows-release.ps1",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 9,
+          "文本": "& npm.cmd run prepare:office-runtime"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/prepare-office-runtime.py",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 12,
+          "文本": "NAME = f'LibreOffice_{VERSION}_Win_x86-64.msi'"
+        },
+        {
+          "行号": 13,
+          "文本": "URL = f'https://download.documentfoundation.org/libreoffice/stable/{VERSION}/win/x86_64/{NAME}'"
+        },
+        {
+          "行号": 14,
+          "文本": "ARCHIVE_NAME = f'LibreOffice_{VERSION}.1_Win_x86-64.msi'"
+        },
+        {
+          "行号": 15,
+          "文本": "ARCHIVE_URL = f'https://downloadarchive.documentfoundation.org/libreoffice/old/{VERSION}.1/win/x86_64/{ARCHIVE_NAME}'"
+        },
+        {
+          "行号": 18,
+          "文本": "DESTINATION = ROOT / '.upgrade-private' / 'office-runtime'"
+        },
+        {
+          "行号": 29,
+          "文本": "if receipt.exists() and (DESTINATION / 'program' / 'soffice.com').exists():"
+        },
+        {
+          "行号": 41,
+          "文本": "print(f'Downloading LibreOffice {VERSION} from the official distribution...', flush=True)"
+        },
+        {
+          "行号": 58,
+          "文本": "candidates = list(staging.rglob('soffice.com'))"
+        },
+        {
+          "行号": 68,
+          "文本": "receipt.write_text(json.dumps({'version': VERSION, 'url': URL, 'sha256': SHA256, 'source': f'https://download.documentfoundation.org/libreoffice/src/{VERSION}/'"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/verify-deb-artifact.py",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 40,
+          "文本": "for package in ['libreoffice-writer', 'libreoffice-calc', 'libreoffice-impress', 'fonts-noto-cjk']:"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/verify-macos-candidate.cjs",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 155,
+          "文本": "assert.equal(await 主进程.计算(`(async()=>{const e=process.mainModule.require('electron'), p=process.mainModule.require('path'), fs=process.mainModule.require('fs');"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/verify-office-pdf.cjs",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 4,
+          "文本": "const { 转换文档 } = require('../main/office/nativeConversion')"
+        },
+        {
+          "行号": 10,
+          "文本": "const result = { startedAt:new Date().toISOString(),engine:'bundled LibreOffice, isolated profile per job',checks:[],failures:[] }"
+        }
+      ]
+    },
+    {
+      "文件": "scripts/verify-ubuntu-release.cjs",
+      "类别": "构建、验收与部署脚本",
+      "行": [
+        {
+          "行号": 66,
+          "文本": "check(!fs.existsSync('/opt/海豹办公/resources/office-runtime/program/soffice.com'), 'Linux package excludes Windows compatibility binaries')"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-cross-validation.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 51,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 53,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-intel-validation.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 51,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 53,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-test.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 53,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 55,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        },
+        {
+          "行号": 99,
+          "文本": "test ! -e \"$app/Contents/Resources/office-runtime/program/soffice.com\""
+        },
+        {
+          "行号": 197,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 199,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-universal-arm-backup.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 33,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 37,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-universal-e2652a.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 158,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-universal-experiment.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 160,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/macos-universal-retest.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 39,
+          "文本": "- name: 确认运行环境未安装 LibreOffice"
+        },
+        {
+          "行号": 43,
+          "文本": "test ! -x /Applications/LibreOffice.app/Contents/MacOS/soffice"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/ubuntu.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 74,
+          "文本": "# The runner's Azure mirror can throttle large LibreOffice downloads"
+        },
+        {
+          "行号": 92,
+          "文本": "dpkg-query -W -f='${Package} ${Version} ${Architecture}\\n' seal-office libreoffice-writer libreoffice-calc libreoffice-impress"
+        }
+      ]
+    },
+    {
+      "文件": ".github/workflows/windows-candidate.yml",
+      "类别": "持续集成",
+      "行": [
+        {
+          "行号": 14,
+          "文本": "- 'scripts/prepare-office-runtime.py'"
+        }
+      ]
+    },
+    {
+      "文件": "package.json",
+      "类别": "安装包配置",
+      "行": [
+        {
+          "行号": 23,
+          "文本": "\"check:office-free\": \"node scripts/check-office-runtime-free.cjs --check\","
+        },
+        {
+          "行号": 27,
+          "文本": "\"prepare:office-runtime\": \"python scripts/prepare-office-runtime.py\","
+        },
+        {
+          "行号": 32,
+          "文本": "\"pack:windows\": \"npm run release:prepare && npm run prepare:office-runtime && npm run build && electron-builder --win --dir\","
+        },
+        {
+          "行号": 33,
+          "文本": "\"dist:windows\": \"npm run release:prepare && npm run prepare:office-runtime && npm run build && electron-builder --win\","
+        },
+        {
+          "行号": 163,
+          "文本": "\"from\": \"build/office-runtime-notice.txt\","
+        },
+        {
+          "行号": 164,
+          "文本": "\"to\": \"office-runtime-notice.txt\""
+        },
+        {
+          "行号": 175,
+          "文本": "\"from\": \".upgrade-private/office-runtime\","
+        },
+        {
+          "行号": 176,
+          "文本": "\"to\": \"office-runtime\","
+        }
+      ]
+    }
+  ]
+}

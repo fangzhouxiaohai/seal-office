@@ -52,7 +52,7 @@ export interface 演讲者推送数据 { 快照: unknown; 显示器名称?: stri
 export interface 演讲者状态结果 { 成功: boolean; 状态?: unknown; 会话标识?: string; 显示器名称?: string; 提示?: string; 错误?: string }
 export interface 演讲者接口 {
   screens: () => Promise<{ 成功: boolean; 显示器?: 显示器信息[]; 错误?: string }>
-  open: (选项: { 显示器?: string }) => Promise<演讲者打开结果>
+  open: (选项: { 显示器?: string; 语言?: 'zh-CN' | 'en-US' }) => Promise<演讲者打开结果>
   update: (会话标识: string, 数据: 演讲者推送数据) => Promise<{ 成功: boolean; 错误?: string }>
   close: (会话标识: string) => Promise<{ 成功: boolean; 错误?: string }>
   control: (会话标识: string | undefined, 动作: string) => Promise<{ 成功: boolean; 错误?: string }>
@@ -335,7 +335,7 @@ export const 桥接 = {
   presenter: {
     get 可用() { return typeof 取后端()?.presenter?.open === 'function' },
     screens: (): Promise<{ 成功: boolean; 显示器?: 显示器信息[]; 错误?: string }> => 取后端()?.presenter?.screens() ?? 失败('当前环境不支持显示器检测'),
-    open: (选项: { 显示器?: string }): Promise<演讲者打开结果> => 取后端()?.presenter?.open(选项) ?? 失败('当前环境不支持演讲者视图'),
+    open: (选项: { 显示器?: string; 语言?: 'zh-CN' | 'en-US' }): Promise<演讲者打开结果> => 取后端()?.presenter?.open(选项) ?? 失败('当前环境不支持演讲者视图'),
     update: (会话标识: string, 数据: 演讲者推送数据) => 取后端()?.presenter?.update(会话标识, 数据) ?? 失败('当前环境不支持演讲者视图'),
     close: (会话标识: string) => 取后端()?.presenter?.close(会话标识) ?? 失败('当前环境不支持演讲者视图'),
     control: (会话标识: string | undefined, 动作: string) => 取后端()?.presenter?.control(会话标识, 动作) ?? 失败('当前环境不支持演讲者控制'),

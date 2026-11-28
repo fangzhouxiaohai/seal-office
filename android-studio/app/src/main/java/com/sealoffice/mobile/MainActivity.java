@@ -51,7 +51,12 @@ import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -109,7 +114,15 @@ public final class MainActivity extends Activity {
     private boolean installFromNotification;
     private boolean restoredPermissionRequest;
     private LinearLayout failure;
+    private TextView failureTitle;
     private TextView failureDetail;
+    private Button failureRetry;
+    private String failureKey;
+    private Object[] failureArguments = new Object[0];
+    // 产品界面语言：网页工作区随状态上报同步，故障页与宿主提示据此显示
+    private String language = HostText.CHINESE;
+    // 系统栏与软键盘让位尺寸：页面加载完成或尺寸变化时写入页面 CSS 变量
+    private SystemBarInsets systemBars;
     private boolean ready;
     private boolean startupPending = true;
     private int backSequence;
@@ -144,9 +157,14 @@ public final class MainActivity extends Activity {
             } catch (Exception error) { updater.reportStartFailure("", 0, false, "恢复更新授权状态失败，请重新开始下载"); }
         }
         installFromNotification = UpdateService.isInstallIntent(this, getIntent());
+        language = HostText.normalize(getSharedPreferences("seal_host", MODE_PRIVATE).getString("language", HostText.CHINESE));
+        // 2.8.1：安卓 15 起 targetSdk 35+ 强制边到边，各系统版本统一由宿主把系统栏让出 WebView。
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.rgb(245, 247, 255));
         getWindow().setNavigationBarColor(Color.rgb(245, 247, 255));
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        WindowInsetsControllerCompat systemBarAppearance = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        systemBarAppearance.setAppearanceLightStatusBars(true);
+        systemBarAppearance.setAppearanceLightNavigationBars(true);
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(245, 247, 255));
         web = new WebView(this);
@@ -156,29 +174,38 @@ public final class MainActivity extends Activity {
         failure.setOrientation(LinearLayout.VERTICAL);
         failure.setGravity(android.view.Gravity.CENTER);
         failure.setPadding(32, 32, 32, 32);
-        TextView title = new TextView(this);
-        title.setText("海豹办公暂时无法打开");
-        title.setTextSize(20);
-        title.setTextColor(Color.rgb(25, 31, 51));
-        failure.addView(title);
+        failureTitle = new TextView(this);
+        failureTitle.setTextSize(20);
+        failureTitle.setTextColor(Color.rgb(25, 31, 51));
+        failure.addView(failureTitle);
         failureDetail = new TextView(this);
         failureDetail.setTextColor(Color.rgb(75, 87, 116));
         failureDetail.setPadding(0, 16, 0, 16);
         failure.addView(failureDetail);
-        Button retry = new Button(this);
-        retry.setText("重新打开");
-        retry.setOnClickListener(value -> openOffice());
-        failure.addView(retry);
+        failureRetry = new Button(this);
+        failureRetry.setOnClickListener(value -> openOffice());
+        failure.addView(failureRetry);
         failure.setVisibility(View.GONE);
         root.addView(failure, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
+        // 承载 WebView 的容器按状态栏、导航栏、挖孔与软键盘加内边距，WebView 高度等于系统栏之间的可用区域；
+        // 键盘弹出时底部取导航栏与键盘中的较大者，WebView 随之收缩（等同 adjustResize）。
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            systemBars = SystemBarInsets.of(bars.left, bars.top, bars.right, bars.bottom, ime.bottom);
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            publishSystemBars();
+            return WindowInsetsCompat.CONSUMED;
+        });
+        ViewCompat.requestApplyInsets(root);
         if (!configureWebView()) return;
         openOffice();
     }
 
     private boolean configureWebView() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            showFailure("系统网页组件版本过旧，无法建立安全的原生连接，请更新系统 WebView 后重试");
+            showFailure("failure.webview");
             return false;
         }
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
@@ -259,9 +286,10 @@ public final class MainActivity extends Activity {
                 evaluate("window.uni=window.uni||{};window.uni.webView={postMessage:function(value){SealHost.postMessage(JSON.stringify(value))}};" +
                         "window.sealNative=" + config + ";window.open=function(url){SealHost.postMessage(JSON.stringify({data:{action:'open-external',token:window.sealNative.token,url:String(url)}}));return null};" +
                         "window.dispatchEvent(new Event('seal-native-ready'));");
+                publishSystemBars();
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) ui.post(() -> showFailure("本地工作台加载失败（" + error.getErrorCode() + "），请重新打开"));
+                if (request.isForMainFrame()) ui.post(() -> showFailure("failure.load", error.getErrorCode()));
             }
         });
         return true;
@@ -302,15 +330,28 @@ public final class MainActivity extends Activity {
         failure.setVisibility(View.GONE);
         web.setVisibility(View.INVISIBLE);
         web.loadUrl(ENTRY + "&reload=" + System.currentTimeMillis());
-        ui.postDelayed(() -> { if (!ready && failure.getVisibility() != View.VISIBLE) showFailure("原生工作台连接超时，请重新打开") ; }, 20000);
+        ui.postDelayed(() -> { if (!ready && failure.getVisibility() != View.VISIBLE) showFailure("failure.timeout"); }, 20000);
     }
 
-    private void showFailure(String detail) {
+    private void showFailure(String key, Object... arguments) {
         ready = false;
         web.setVisibility(View.INVISIBLE);
-        failureDetail.setText(detail);
+        failureKey = key;
+        failureArguments = arguments;
+        renderFailureText();
         failure.setVisibility(View.VISIBLE);
         startupPending = false;
+    }
+
+    /** 故障页文字按当前产品语言渲染；语言同步后再次打开故障页即采用新语言。 */
+    private void renderFailureText() {
+        failureTitle.setText(HostText.get("failure.title", language));
+        failureRetry.setText(HostText.get("failure.retry", language));
+        failureDetail.setText(failureKey == null ? "" : HostText.get(failureKey, language, failureArguments));
+    }
+
+    private void publishSystemBars() {
+        if (systemBars != null) evaluate(systemBars.script(getResources().getDisplayMetrics().density));
     }
 
     private void evaluate(String code) {
@@ -336,6 +377,11 @@ public final class MainActivity extends Activity {
             if (data == null || !token.equals(data.optString("token"))) return;
             String action = data.optString("action");
             if ("state".equals(action)) {
+                String reported = data.optString("language");
+                if (!reported.isEmpty() && !HostText.normalize(reported).equals(language)) {
+                    language = HostText.normalize(reported);
+                    getSharedPreferences("seal_host", MODE_PRIVATE).edit().putString("language", language).apply();
+                }
                 ready = true;
                 web.setVisibility(View.VISIBLE);
                 failure.setVisibility(View.GONE);

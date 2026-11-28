@@ -3,7 +3,11 @@ const { randomUUID } = require('crypto')
 
 const 允许动作 = new Set(['下一页', '上一页', '暂停', '继续', '结束', '首尾'])
 
-function 显示器标签(显示器, 主屏) {
+// 2.8.1：演讲者窗口标题、显示器名称与单屏提示随产品界面语言（由编辑窗口在打开时传入）
+const 英文 = 语言 => 语言 === 'en-US'
+const 窗口标题 = 语言 => 英文(语言) ? 'Presenter view' : '演讲者视图'
+function 显示器标签(显示器, 主屏, 语言) {
+  if (英文(语言)) return `${主屏 ? 'Primary display' : 'Extended display'} ${显示器.id} (${显示器.bounds.width}×${显示器.bounds.height})`
   return `${主屏 ? '主显示器' : '扩展显示器'} ${显示器.id}（${显示器.bounds.width}×${显示器.bounds.height}）`
 }
 
@@ -26,11 +30,11 @@ function 注册演讲者通道(ipcMain, {
   const 取窗口 = fromWebContents ?? ((发送者) => BrowserWindow?.fromWebContents?.(发送者) ?? null)
   let 会话 = null
 
-  const 显示器列表 = () => {
+  const 显示器列表 = (语言) => {
     const 主屏 = screen?.getPrimaryDisplay?.() ?? null
     return (screen?.getAllDisplays?.() ?? []).map((项) => ({
       标识: String(项.id),
-      名称: 显示器标签(项, 项.id === 主屏?.id),
+      名称: 显示器标签(项, 项.id === 主屏?.id, 语言),
       主屏: 项.id === 主屏?.id,
       宽: 项.bounds.width,
       高: 项.bounds.height,
@@ -39,8 +43,8 @@ function 注册演讲者通道(ipcMain, {
     }))
   }
 
-  const 选择显示器 = (请求) => {
-    const 列表 = 显示器列表()
+  const 选择显示器 = (请求, 语言) => {
+    const 列表 = 显示器列表(语言)
     const 主屏 = 列表.find((项) => 项.主屏) ?? 列表[0]
     if (请求 === '第二屏') {
       const 扩展 = 列表.find((项) => !项.主屏)
@@ -48,7 +52,9 @@ function 注册演讲者通道(ipcMain, {
       return { 显示器: 扩展 }
     }
     if (请求 && 请求 !== '主屏') {
-      const 指定 = 列表.find((项) => 项.标识 === String(请求) || 项.名称 === 请求)
+      // 按标识或任一语言下的显示器名称匹配，偏好在语言切换前保存的名称也能找到
+      const 其他语言 = 显示器列表(英文(语言) ? 'zh-CN' : 'en-US')
+      const 指定 = 列表.find((项, 序号) => 项.标识 === String(请求) || 项.名称 === 请求 || 其他语言[序号]?.名称 === 请求)
       if (!指定) return { 错误: `未找到所选显示器（${String(请求)}），请重新选择` }
       return { 显示器: 指定 }
     }
@@ -104,7 +110,7 @@ function 注册演讲者通道(ipcMain, {
     catch (错误) { return { 成功: false, 错误: 错误 instanceof Error ? 错误.message : '演讲者视图操作失败' } }
   }
 
-  ipcMain.handle('system.presenter.screens', () => 执行(() => ({ 显示器: 显示器列表() })))
+  ipcMain.handle('system.presenter.screens', (事件, 选项 = {}) => 执行(() => ({ 显示器: 显示器列表(选项?.语言) })))
 
   ipcMain.handle('system.presenter.open', (事件, 选项 = {}) => 执行(() => {
     const 编辑窗口 = 取窗口(事件?.sender)
@@ -114,15 +120,18 @@ function 注册演讲者通道(ipcMain, {
       会话.窗口.focus?.()
       return { 会话标识: 会话.会话标识, 显示器名称: 会话.显示器名称, 已有窗口: true }
     }
-    const 选择 = 选择显示器(选项.显示器)
+    const 语言 = 选项?.语言 === 'en-US' ? 'en-US' : 'zh-CN'
+    const 选择 = 选择显示器(选项.显示器, 语言)
     if (选择.错误) throw new Error(选择.错误)
     const 目标显示器 = 选择.显示器
     const 原始 = screen.getAllDisplays().find((项) => 项.id === 目标显示器.内部标识) ?? screen.getPrimaryDisplay()
     const 窗口 = new BrowserWindow({
       x: 原始.bounds.x, y: 原始.bounds.y, width: 原始.bounds.width, height: 原始.bounds.height,
-      minWidth: 640, minHeight: 480, title: '演讲者视图', backgroundColor: '#111418', autoHideMenuBar: true,
+      minWidth: 640, minHeight: 480, title: 窗口标题(语言), backgroundColor: '#111418', autoHideMenuBar: true,
       webPreferences: { preload, nodeIntegration: false, contextIsolation: true, sandbox: true },
     })
+    // 页面载入后的 <title> 不覆盖按产品语言设定的窗口标题
+    窗口.on?.('page-title-updated', (事件) => 事件?.preventDefault?.())
     const 会话标识 = randomUUID()
     会话 = { 会话标识, 窗口, 编辑窗口, 显示器内部标识: 原始.id, 显示器名称: 目标显示器.名称, 状态: null, 正在关闭: false }
     窗口.on?.('closed', () => {
@@ -136,8 +145,8 @@ function 注册演讲者通道(ipcMain, {
     return {
       会话标识,
       显示器名称: 目标显示器.名称,
-      ...(显示器列表().filter((项) => !项.主屏).length === 0
-        ? { 提示: '本机只有一台显示器：演讲者窗口与观众画面位于同一台显示器，切到演讲者视图时观众会看到演讲者窗口内容' }
+      ...(显示器列表(语言).filter((项) => !项.主屏).length === 0
+        ? { 提示: 英文(语言) ? 'This computer has only one display. The presenter window and the audience view share it, so the audience sees the presenter window when you switch to it.' : '本机只有一台显示器：演讲者窗口与观众画面位于同一台显示器，切到演讲者视图时观众会看到演讲者窗口内容' }
         : {}),
     }
   }))

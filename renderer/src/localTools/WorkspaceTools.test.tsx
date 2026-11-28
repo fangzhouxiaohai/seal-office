@@ -6,6 +6,7 @@ import { SettingsProvider } from '../store/settingsStore'
 import MultiTablePage from './MultiTablePage'
 import NotesPage from './NotesPage'
 import { newBaseTable } from './workspaceTools'
+import { 桥接 } from '../ipc/bridge'
 const show = (node: React.ReactNode) => render(<SettingsProvider><ConfigProvider button={{autoInsertSpace:false}}><App>{node}</App></ConfigProvider></SettingsProvider>)
 beforeEach(() => localStorage.clear())
 afterEach(() => { localStorage.clear(); vi.restoreAllMocks() })
@@ -60,8 +61,54 @@ it('删除正在筛选的状态字段后仍显示原记录，不能留下无法�
   await user.click(screen.getByRole('combobox',{name:'筛选状态'}))
   await user.click(screen.getByText('待开始',{selector:'.ant-select-item-option-content'}))
   expect(screen.getByText('筛选后的原记录')).toBeInTheDocument()
-  await user.click(within(screen.getByText('状态 · 状态').closest('div')!).getByRole('button',{name:'删除'}))
-  await user.click(within(await screen.findByRole('dialog')).getByRole('button',{name:'OK'}))
+  await user.click(within(screen.getByText('状态 · 状态').closest('div')!).getByRole('button',{name:'删除字段：状态'}))
+  const dialog = await screen.findByRole('dialog')
+  expect(dialog).toHaveTextContent('删除字段「状态」？1 条记录中的该字段值将一并删除')
+  await user.click(within(dialog).getByRole('button',{name:'删除字段'}))
   await waitFor(()=>expect(JSON.parse(localStorage.getItem('seal-multitable-v1')!).tables[0].fields.some((f:{id:string})=>f.id==='status')).toBe(false))
   expect(screen.getByText('筛选后的原记录')).toBeInTheDocument()
+})
+
+it('记录行、字段条与页脚使用图标按钮：只操作所点对象，导出筛选后的记录', async () => {
+  const table = newBaseTable()
+  table.records = [{id:'a',updated:1,values:{title:'甲记录',status:'待开始'}},{id:'b',updated:2,values:{title:'乙记录',status:'进行中'}},{id:'c',updated:3,values:{title:'丙记录',status:'已完成'}}]
+  localStorage.setItem('seal-multitable-v1',JSON.stringify({schema:1,tables:[table]}))
+  const user = userEvent.setup(), result = show(<MultiTablePage/>)
+  const edit = screen.getByRole('button',{name:'编辑记录：乙记录'}), remove = screen.getByRole('button',{name:'删除记录：乙记录'})
+  expect(edit.querySelector('svg')?.getAttribute('data-icon')).toBe('edit')
+  expect(remove.querySelector('svg')?.getAttribute('data-icon')).toBe('trash')
+  expect(edit.closest('.tool-row-actions')).toBe(remove.closest('.tool-row-actions'))
+  // 点图标不切换行选中状态
+  await user.click(edit)
+  expect(within(await screen.findByRole('dialog')).getByRole('textbox',{name:'事项'})).toHaveValue('乙记录')
+  await user.click(within(screen.getByRole('dialog')).getByRole('button',{name:/取\s*消/}))
+  expect(result.container.querySelectorAll('.ant-table-row-selected')).toHaveLength(0)
+  await user.click(remove)
+  const dialog = await screen.findByRole('dialog',{name:'删除记录'})
+  expect(dialog).toHaveTextContent('删除记录「乙记录」？')
+  await user.click(within(dialog).getByRole('button',{name:'删除记录'}))
+  await waitFor(()=>expect(JSON.parse(localStorage.getItem('seal-multitable-v1')!).tables[0].records.map((r:{id:string})=>r.id)).toEqual(['a','c']))
+  // 字段条：齿轮与垃圾桶并排，提示带字段名
+  const settings = screen.getByRole('button',{name:'设置字段「事项」'})
+  expect(settings.querySelector('svg')?.getAttribute('data-icon')).toBe('settings')
+  expect(settings.closest('.seal-icon-actions')).toBe(screen.getByRole('button',{name:'删除字段：事项'}).closest('.seal-icon-actions'))
+  // 页脚导出图标：三条记录筛到一条，CSV 只含该条
+  vi.spyOn(桥接, 'showSaveDialog').mockResolvedValue('/tmp/视图.csv' as never)
+  const saved = vi.spyOn(桥接, 'saveToFile').mockResolvedValue({ 成功: true } as never)
+  fireEvent.change(screen.getByRole('textbox',{name:'搜索记录'}),{target:{value:'丙'}})
+  const exportButton = screen.getByRole('button',{name:'导出当前视图 CSV'})
+  expect(exportButton.querySelector('svg')?.getAttribute('data-icon')).toBe('export-file')
+  await user.click(exportButton)
+  await waitFor(()=>expect(saved).toHaveBeenCalledTimes(1))
+  const csv = String(saved.mock.calls[0][1])
+  expect(csv).toContain('丙记录'); expect(csv).not.toContain('甲记录')
+})
+
+it('只剩一个字段时删除图标禁用并说明原因', () => {
+  const table = newBaseTable(); table.fields = [table.fields[0]]
+  localStorage.setItem('seal-multitable-v1',JSON.stringify({schema:1,tables:[table]}))
+  show(<MultiTablePage/>)
+  const remove = screen.getByRole('button',{name:'删除字段：事项'})
+  expect(remove).toBeDisabled()
+  expect(remove).toHaveAttribute('title','至少保留一个字段，不能删除')
 })

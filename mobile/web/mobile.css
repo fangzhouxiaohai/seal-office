@@ -67,7 +67,6 @@ html[data-seal-platform="app"] { --seal-bottom-inset: 0px; }
   .assistant-launcher { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
   .ant-drawer-content-wrapper { max-width: 100%; }
   .ant-modal { max-width: calc(100% - 24px); margin-inline: auto; }
-  .ant-modal-body { max-height: 70dvh; overflow-y: auto; }
   .seal-print-preview .pdf-viewer { min-height: 0; height: min(62dvh, 680px); }
   .seal-print-preview .pdf-viewer__toolbar { flex-wrap: wrap; gap: 6px; padding: 8px; }
   .seal-print-preview .pdf-viewer__name { flex-basis: 100%; }

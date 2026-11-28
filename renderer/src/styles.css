@@ -1065,6 +1065,8 @@ button {
 .wps-ribbon-group {
   display: flex;
   flex-direction: column;
+  /* 2.8.1：分组按内容宽度排列，空间不足时由 .wps-ribbon-panel 横向滚动，不再压缩按钮使文字折行 */
+  flex: 0 0 auto;
   padding: 0 10px;
 }
 
@@ -1078,6 +1080,11 @@ button {
   gap: 2px;
   flex: 1 1 auto;
   min-height: 62px;
+}
+
+/* 组内按钮、输入框与格式控件一律保持自身宽度 */
+.wps-ribbon-group__body > * {
+  flex-shrink: 0;
 }
 
 /* wps-ribbon-group__name 已彻底删除，桌面端与移动端均不渲染 */
@@ -1148,6 +1155,7 @@ button {
   padding: 0 4px;
   text-align: left;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .wps-ribbon-button__caret {
@@ -3929,3 +3937,11 @@ button {
 .wps-context-menu__swatch { display: block; width: 14px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
 .wps-context-menu__item-label { flex: 1 1 auto; min-width: 0; }
 .wps-float-panel__swatch { display: inline-block; width: 14px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+
+/* 2.8.1 图标按钮：中性前景、透明底，悬停浅底，键盘焦点清晰轮廓；危险动作悬停或聚焦时用危险色 */
+.ant-btn.seal-icon-action { display: inline-grid; place-items: center; flex: none; width: 32px; min-width: 32px; height: 32px; padding: 0; border-radius: 8px; color: var(--text-2); background: transparent; }
+.ant-btn.seal-icon-action:not(:disabled):hover { color: var(--text-1); background: var(--bg-hover); }
+.ant-btn.seal-icon-action:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.ant-btn.seal-icon-action--danger:not(:disabled):is(:hover, :focus-visible) { color: var(--danger, #dc3c3d); background: color-mix(in srgb, var(--danger, #dc3c3d) 10%, transparent); }
+.seal-icon-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; }
+@media (pointer: coarse) { .ant-btn.seal-icon-action { width: 44px; min-width: 44px; height: 44px; } }

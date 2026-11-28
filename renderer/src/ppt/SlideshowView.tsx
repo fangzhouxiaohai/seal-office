@@ -204,7 +204,7 @@ const 放映内容 = ({ 文稿, 当前索引, on翻页, on退出, 图片地址, 
   /** 演讲者窗口只接收只读快照；失败时展示真实原因，不影响观众画面继续放映 */
   const 打开演讲者 = React.useCallback(async (静默 = false) => {
     if (!桥接.presenter.可用) { if (!静默) modal.warning({ title: '无法打开演讲者视图', content: '当前环境不支持演讲者窗口，请使用 Windows 桌面版。' }); return }
-    const 结果 = await 桥接.presenter.open({ 显示器: 偏好.屏幕 })
+    const 结果 = await 桥接.presenter.open({ 显示器: 偏好.屏幕, 语言: document.documentElement.lang === 'en-US' ? 'en-US' : 'zh-CN' })
     if (!结果.成功 || !结果.会话标识) { if (!静默) modal.warning({ title: '无法打开演讲者视图', content: 结果.错误 ?? '系统未返回有效演讲者会话' }); return }
     set演讲者({ 会话标识: 结果.会话标识, 显示器名称: 结果.显示器名称 ?? '未获取到显示器信息', ...(结果.提示 ? { 提示: 结果.提示 } : {}) })
     // 演讲者窗口取得焦点后，观众画面必须继续播放：解除此前因失焦产生的暂停

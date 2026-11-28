@@ -5,6 +5,8 @@ import { CredentialDialog, validPhone } from '../collaboration/common'
 import type { TeamEntry } from '../collaboration/types'
 import { RealtimeClient } from '../collaboration/realtimeClient'
 import Icon from '../components/Icon'
+import IconAction from '../components/IconAction'
+import { useT } from '../i18n/t'
 import CloudDiagramEditor from './CloudDiagramEditor'
 import { createCloudDiagram, diagramEntryKey, diagramExtension, diagramType, loadDiagramCloudEntries, openDiagramCloud, parseDiagramCloud, validateDiagramCloud, type DiagramCloudEntry, type DiagramCloudModel } from './diagramCloud'
 import { 新建图, type 图类型 } from './diagramData'
@@ -24,7 +26,7 @@ export function DiagramCloudCreateDialog({ type, model, onClose, onCreated }: { 
 }
 
 export default function DiagramCloudLibrary({ 类型, requested, onRequestHandled, onSaveLocal }: Props) {
-  const cloud = useCloud(), { modal } = App.useApp(), accountId = cloud.state.account?.id || ''
+  const cloud = useCloud(), { modal } = App.useApp(), t = useT(), accountId = cloud.state.account?.id || ''
   const [items, setItems] = useState<DiagramCloudEntry[]>([]), [busy, setBusy] = useState(false), [error, setError] = useState(''), [offline, setOffline] = useState(false)
   const [query, setQuery] = useState(''), [scope, setScope] = useState('all'), [sort, setSort] = useState('name')
   const [active, setActive] = useState<{ entry: DiagramCloudEntry; model: DiagramCloudModel } | null>(null), [creating, setCreating] = useState<DiagramCloudModel | null>(null)
@@ -44,12 +46,13 @@ export default function DiagramCloudLibrary({ 类型, requested, onRequestHandle
     <div className="diagram-project-filters"><label>项目来源<select aria-label="云项目来源" value={scope} onChange={event => setScope(event.target.value)}><option value="all">全部来源</option><option value="node">我的云空间</option><option value="share">共享给我的</option><option value="team">团队空间</option></select></label><label>搜索云项目<Input aria-label="搜索云项目" allowClear value={query} onChange={event => setQuery(event.target.value)} /></label><label>项目排序<select aria-label="云项目排序" value={sort} onChange={event => setSort(event.target.value)}><option value="name">名称</option><option value="scope">来源</option></select></label></div>
     <p role="status">{offline ? '本机缓存' : '云项目'} · {shown.length} 个项目</p>
     <ul className="diagram-project-grid" aria-label={`云${类型}项目列表`}>{shown.map(entry => <li className="diagram-project-card" key={diagramEntryKey(entry)} data-cloud-project-id={entry.binding.nodeId || entry.binding.id}>
-      <button className="diagram-project-preview diagram-cloud-preview" aria-label={`打开云项目：${entry.title}`} disabled={busy} onClick={() => void run(() => open(entry))}><Icon name={类型 === '脑图' ? 'mindmap' : 'flow'} size={56} /></button><div className="diagram-project-card__body"><h2>{entry.title}</h2><p>{entry.binding.kind === 'node' ? '我的云空间' : entry.binding.kind === 'share' ? '共享给我的' : `团队 · ${entry.teamName || '团队空间'}`} · {entry.binding.editable ? '可编辑' : '只读'}</p><div className="diagram-project-card__actions">
-        <Button disabled={busy} onClick={() => void run(() => open(entry))}>打开项目</Button><Button disabled={busy} onClick={() => void run(async () => onSaveLocal(parseDiagramCloud(await openDiagramCloud(entry))))}>另存本机</Button>
-        {entry.binding.kind === 'node' && <Button disabled={busy || offline} onClick={() => { setSharing(entry); setPhone(''); setPermission('read') }}>共享</Button>}
-        {entry.binding.kind !== 'share' && entry.binding.editable && <Button disabled={busy || offline} aria-label={`重命名云项目：${entry.title}`} onClick={() => { setRenaming(entry); setName(entry.title) }}>重命名</Button>}
-        <Button disabled={busy || offline} onClick={() => void run(async () => { const model = parseDiagramCloud(await openDiagramCloud(entry)); setCreating({ ...model, title: (model.title.slice(0, 116) + ' 副本') }) })}>另存到云端</Button>
-        {entry.binding.kind !== 'share' && entry.binding.editable && <Button disabled={busy || offline} danger onClick={() => modal.confirm({ title: entry.binding.kind === 'node' ? '移入云回收站？' : '删除团队项目？', content: entry.binding.kind === 'node' ? '项目进入个人云空间回收站，可从云空间恢复。现有本机项目保留。' : '此操作会删除团队文件及实时房间，请先另存需要的副本。', okText: '确认删除', cancelText: '取消', okType: 'danger', onOk: async () => { await cloud.call(entry.binding.kind === 'node' ? 'remove' : 'teamRemoveNode', entry.binding.kind === 'node' ? { id: entry.binding.id } : { id: entry.binding.id, nodeId: entry.binding.nodeId }); await refresh() } })}>删除</Button>}
+      <button className="diagram-project-preview diagram-cloud-preview" aria-label={`打开云项目：${entry.title}`} disabled={busy} onClick={() => void run(() => open(entry))}><Icon name={类型 === '脑图' ? 'mindmap' : 'flow'} size={56} /></button><div className="diagram-project-card__body"><h2 translate="no" data-ui-language-ignore="true">{entry.title}</h2><p>{entry.binding.kind === 'node' ? '我的云空间' : entry.binding.kind === 'share' ? '共享给我的' : `团队 · ${entry.teamName || '团队空间'}`} · {entry.binding.editable ? '可编辑' : '只读'}</p><div className="diagram-project-card__actions seal-icon-actions">
+        {/* 2.8.1：主操作“打开项目”保留文字；其余按权限显示的命令为图标按钮，提示与读屏名称带项目名。离线、忙碌和权限限制仍作用于原命令 */}
+        <Button disabled={busy} onClick={() => void run(() => open(entry))}>{t('diagram.cloud.open')}</Button><IconAction icon="save-as" disabled={busy} label={t('diagram.cloud.savelocal', { name: entry.title })} onClick={() => void run(async () => onSaveLocal(parseDiagramCloud(await openDiagramCloud(entry))))} />
+        {entry.binding.kind === 'node' && <IconAction icon="share" disabled={busy || offline} label={t('diagram.cloud.share', { name: entry.title })} onClick={() => { setSharing(entry); setPhone(''); setPermission('read') }} />}
+        {entry.binding.kind !== 'share' && entry.binding.editable && <IconAction icon="rename" disabled={busy || offline} label={t('diagram.cloud.rename', { name: entry.title })} onClick={() => { setRenaming(entry); setName(entry.title) }} />}
+        <IconAction icon="cloud-upload" disabled={busy || offline} label={t('diagram.cloud.savecloud', { name: entry.title })} onClick={() => void run(async () => { const model = parseDiagramCloud(await openDiagramCloud(entry)); setCreating({ ...model, title: t('diagram.projects.copy.suffix', { name: model.title.slice(0, 116) }) }) })} />
+        {entry.binding.kind !== 'share' && entry.binding.editable && <IconAction icon="trash" danger disabled={busy || offline} label={t('diagram.cloud.delete', { name: entry.title })} onClick={() => { const node = entry.binding.kind === 'node'; modal.confirm({ title: t(node ? 'diagram.cloud.delete.node.title' : 'diagram.cloud.delete.team.title'), content: t(node ? 'diagram.cloud.delete.node.content' : 'diagram.cloud.delete.team.content', { name: entry.title }), okText: t(node ? 'diagram.cloud.delete.node.ok' : 'diagram.cloud.delete.team.ok'), cancelText: t('diagram.projects.cancel'), okType: 'danger', onOk: async () => { await cloud.call(node ? 'remove' : 'teamRemoveNode', node ? { id: entry.binding.id } : { id: entry.binding.id, nodeId: entry.binding.nodeId }); await refresh() } }) }} />}
       </div></div></li>)}</ul>
     {!busy && !shown.length && <div className="diagram-project-empty"><h2>{query ? '没有匹配的云项目' : `还没有云端${类型}`}</h2><p>新建云项目，或从本机项目选择“同步到云端”。收到的共享和已加入团队中的图形也会显示在这里。</p></div>}
     <DiagramCloudCreateDialog type={类型} model={creating} onClose={() => setCreating(null)} onCreated={(entry, model) => { setCreating(null); setActive({ entry, model }); void refresh() }} />

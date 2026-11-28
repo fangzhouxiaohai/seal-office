@@ -53,12 +53,21 @@
 /* 2.8.0 弹窗可视区域约束：宽度不超过 94vw，整体高度不超过视口减上下边距；
    标题与页脚固定，正文区独立滚动；确认框按钮区同样固定。窄屏、200% 缩放与软键盘弹出后仍可达。 */
 .ant-modal-wrap .ant-modal { max-width: min(94vw, calc(100vw - 2 * var(--seal-dialog-inset, 16px))); }
+/* 2.8.1 只用一套可用高度：--seal-viewport-height 为移动端 visualViewport 实测值（桌面回退 100vh），
+   减去仍覆盖页面的上下安全区。安卓宿主已把系统栏让出 WebView 时，--seal-safe-* 由宿主写为 0；
+   iOS、网页版与鸿蒙沿用 env(safe-area-inset-*)。不使用 dvh，旧 WebView 也能得到有效高度。 */
+:root {
+  --seal-safe-top: env(safe-area-inset-top, 0px);
+  --seal-safe-right: env(safe-area-inset-right, 0px);
+  --seal-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --seal-safe-left: env(safe-area-inset-left, 0px);
+  --seal-dialog-viewport-height: calc(var(--seal-viewport-height, 100vh) - var(--seal-safe-top) - var(--seal-safe-bottom));
+}
 .ant-modal .ant-modal-content {
-  --seal-dialog-max-height: calc(100vh - 2 * var(--seal-dialog-inset, 24px));
+  --seal-dialog-max-height: calc(var(--seal-dialog-viewport-height) - 2 * var(--seal-dialog-inset, 24px));
   display: flex;
   flex-direction: column;
   max-height: var(--seal-dialog-max-height);
-  max-height: calc(100dvh - 2 * var(--seal-dialog-inset, 24px) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 .ant-modal .ant-modal-header, .ant-modal .ant-modal-footer { flex: none; }
 .ant-modal .ant-modal-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
@@ -67,6 +76,11 @@
 .ant-modal-confirm .ant-modal-confirm-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .ant-modal-confirm .ant-modal-confirm-btns { flex: none; }
 .ant-drawer-left > .ant-drawer-content-wrapper, .ant-drawer-right > .ant-drawer-content-wrapper { max-width: calc(100vw - 32px); }
-.ant-drawer-top > .ant-drawer-content-wrapper, .ant-drawer-bottom > .ant-drawer-content-wrapper { max-height: calc(100dvh - 32px); }
-@media (max-width: 600px), (max-height: 640px) { .ant-modal-wrap { --seal-dialog-inset: 8px; } .ant-modal-wrap .ant-modal { margin: 8px auto; } }
+.ant-drawer-top > .ant-drawer-content-wrapper, .ant-drawer-bottom > .ant-drawer-content-wrapper { max-height: calc(var(--seal-dialog-viewport-height) - 32px); }
+/* 窄屏或矮屏：弹窗容器顶部对齐并可纵向滚动，上下让出安全区并至少留 8 像素；
+   弹窗用自动外边距居中，内容超出时自动退为顶部对齐，标题与底部按钮都能滚动到，不会上下同时被裁。 */
+@media (max-width: 600px), (max-height: 640px) {
+  .ant-modal-wrap { --seal-dialog-inset: 8px; align-items: flex-start; overflow-y: auto; box-sizing: border-box; padding: calc(var(--seal-safe-top) + 8px) var(--seal-safe-right) calc(var(--seal-safe-bottom) + 8px) var(--seal-safe-left); }
+  .ant-modal-wrap .ant-modal { margin: auto; }
+}
 @media (max-width: 480px) { .ant-modal .ant-modal-content { padding: var(--dialog-gap); } .seal-contact dl { grid-template-columns: 1fr; gap: 8px; } }

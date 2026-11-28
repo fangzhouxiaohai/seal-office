@@ -39,7 +39,7 @@ export default function SheetFormatControls({ command, label, value = '', disabl
           onKeyDown={e => { if (e.key === 'Enter' && valid) choose(draft) }}/>
         <button type="button" disabled={!valid} onClick={() => choose(draft)}>应用</button></div>
     </div>}>
-    <button type="button" className="wps-ribbon-button sheet-color-trigger" aria-label={label} title={label}
+    <button type="button" className="wps-ribbon-button sheet-color-trigger" data-seal-command={command} aria-label={label} title={label}
       disabled={disabled} onMouseDown={e => e.preventDefault()}>
       <span style={{borderBottom: '3px solid ' + (/^#[\da-f]{6}$/i.test(value) ? value : 'currentColor')}}><Icon name={command === 'cell.fill' ? 'shading' : 'language'}/></span>{label}
     </button>

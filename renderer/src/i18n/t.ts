@@ -6,8 +6,9 @@ import { 台账, type 文案键 } from './ledger'
 export type 文案参数 = Record<string, string | number>
 
 export function 取文案(键: 文案键, 语言: 界面语言, 参数: 文案参数 = {}): string {
-  const 条目 = 台账[键]
-  const 模板 = 语言 === 'en-US' ? 条目.en : 条目.zh
+  const 条目: { zh: string; en: string; enOne?: string } = 台账[键]
+  // 英文单复数：count 为 1 时取单数形式；0 与多项用复数
+  const 模板 = 语言 === 'en-US' ? (条目.enOne !== undefined && Number(参数.count) === 1 ? 条目.enOne : 条目.en) : 条目.zh
   return 模板.replace(/\{(\w+)\}/g, (原样, 名称) => 名称 in 参数 ? String(参数[名称]) : 原样)
 }
 

@@ -13,7 +13,7 @@ export interface CloudNode {
   meta:{name:string;filename?:string;[key:string]:unknown}
 }
 export const isFolder=(node:CloudNode)=>['folder','library'].includes(node.kind)
-const fileIcon=(node:CloudNode)=>{
+export const fileIcon=(node:CloudNode)=>{
   if(isFolder(node))return 'folder'
   const extension=(node.meta.filename||node.meta.name).split('.').pop()?.toLowerCase()
   const native=原生文档类型(extension||'')
@@ -27,15 +27,21 @@ const fileIcon=(node:CloudNode)=>{
 
 // Adapted from the toolbar-list pattern: one toolbar, file results, contextual actions.
 // Existing product tokens stay scoped to this browser rather than changing the app shell.
-export interface CloudDragBinding{拖动属性:(id:string)=>Record<string,unknown>;状态类:(id:string)=>string;拖动中:boolean}
+export interface CloudDragBinding{拖动属性:(id:string)=>Record<string,unknown>;状态类:(id:string)=>string;拖动中:boolean
+  /** 文件区根元素：拖动时据此确定横向命中范围与实际纵向滚动容器 */
+  区域?:React.RefObject<HTMLDivElement>
+  拖动目标?:string|null;拖动原因?:string|null
+}
 
-export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy,drag,sizes}:{
+export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions,busy,drag,sizes,dropFolder,dropFolderName}:{
   nodes:CloudNode[];selected:string[];onSelect:(ids:string[])=>void;onOpen:(node:CloudNode)=>void
   actions:(node:CloudNode)=>MenuProps['items'];busy:boolean
   /** 节点大小（文件夹为递归汇总）；不传则不显示大小 */
   sizes?:Map<string,{字节:number|null;不完整:boolean}>
   /** 拖放移动绑定：回收站与只读场景不传 */
   drag?:CloudDragBinding
+  /** 当前目录（根目录用 __root__）：悬停进入空目录后，空白文件区作为投放目标 */
+  dropFolder?:string;dropFolderName?:string
 }){
   const {语言}=useSettings()
   const en=语言==='en-US',t=(zh:string,english:string)=>en?english:zh
@@ -57,7 +63,8 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
   useEffect(()=>{if(!card)return;const close=()=>hideCard();window.addEventListener('scroll',close,true);window.addEventListener('resize',close);return()=>{window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close)}},[card])
   useEffect(()=>()=>clearTimeout(cardTimer.current),[])
   useEffect(()=>{if(drag?.拖动中)hideCard()},[drag?.拖动中])
-  return <div className={`seal-drive-results ds-list-card${drag?.拖动中?' is-drag-active':''}`}>
+  const emptyDrop=Boolean(drag?.拖动中&&dropFolder)
+  return <div ref={drag?.区域} className={`seal-drive-results ds-list-card${drag?.拖动中?' is-drag-active':''}`}>
     <div className="seal-drive-results-header list-card-toolbar">
       <Checkbox aria-label={t('全选云文件','Select all cloud files')} checked={all} indeterminate={!all&&selected.length>0} onChange={event=>onSelect(event.target.checked?nodes.map(n=>n.id):[])} disabled={!nodes.length||busy}/>
       <span className="seal-drive-result-title">{selected.length?t(`已选择 ${selected.length} 项`,`${selected.length} selected`):t(`全部文件 · ${nodes.length} 项`,`All files · ${nodes.length} items`)}</span>
@@ -65,7 +72,7 @@ export default function CloudFileBrowser({nodes,selected,onSelect,onOpen,actions
         {(['list','grid'] as const).map(mode=><Tooltip key={mode} title={mode==='grid'?t('网格视图','Grid view'):t('列表视图','List view')}><Button aria-label={mode==='grid'?t('网格视图','Grid view'):t('列表视图','List view')} aria-pressed={view===mode} type="text" className={view===mode?'is-active':undefined} icon={<Icon name={mode} size={17}/>} onClick={()=>changeView(mode)}/></Tooltip>)}
       </div>
     </div>
-    {!nodes.length?<Empty className="seal-drive-empty" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('此目录暂无文件','This folder is empty')}/>:<>
+    {!nodes.length?emptyDrop?<div className={`seal-drive-empty seal-drive-empty-drop${drag?.拖动目标===dropFolder?(drag?.拖动原因?' is-drop-invalid':' is-drop-target'):''}`} data-drop-target={dropFolder} data-drop-hint="empty"><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={drag?.拖动目标===dropFolder&&drag?.拖动原因?drag.拖动原因:t(`松开移入『${dropFolderName||''}』`,`Release to move into "${dropFolderName||''}"`)}/></div>:<Empty className="seal-drive-empty" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('此目录暂无文件','This folder is empty')}/>:<>
       {view==='list'?<div className="seal-drive-list-labels" aria-hidden="true"><span>{t('文件名','Name')}</span><span>{t('大小','Size')}</span><span>{t('修改时间','Modified')}</span><span>{t('版本','Version')}</span></div>:null}
       <ul className={`seal-drive-files seal-drive-files--${view}`} aria-label={t('云文件','Cloud files')}>
         {nodes.map(node=><li key={node.id} className={`seal-drive-file${selected.includes(node.id)?' is-selected':''}${drag?drag.状态类(node.id):''}`}

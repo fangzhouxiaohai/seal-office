@@ -176,3 +176,23 @@ describe('演讲者窗口生命周期', () => {
     expect(结果.显示器[1]).toMatchObject({ 主屏: false })
   })
 })
+
+describe('演讲者窗口语言（2.8.1）', () => {
+  it('窗口标题、显示器名称与单屏提示随打开时的产品语言，页面标题不覆盖窗口标题', async () => {
+    const 英文环境 = 创建环境()
+    const 英文结果 = await 英文环境.调用('system.presenter.open', undefined, { 语言: 'en-US' })
+    expect(英文结果.成功).toBe(true)
+    const 窗口 = 英文环境.窗口列表[0]
+    expect(窗口.选项.title).toBe('Presenter view')
+    expect(英文结果.显示器名称).toBe('Primary display 1 (1920×1080)')
+    expect(英文结果.提示).toMatch(/^This computer has only one display/)
+    const 事件 = { preventDefault: vi.fn() }
+    窗口.emit('page-title-updated', 事件, '海豹办公')
+    expect(事件.preventDefault).toHaveBeenCalled()
+
+    const 中文环境 = 创建环境()
+    const 中文结果 = await 中文环境.调用('system.presenter.open', undefined, {})
+    expect(中文环境.窗口列表[0].选项.title).toBe('演讲者视图')
+    expect(中文结果.显示器名称).toBe('主显示器 1（1920×1080）')
+  })
+})

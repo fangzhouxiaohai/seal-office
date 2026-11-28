@@ -412,7 +412,7 @@ body { background: var(--bg-app); letter-spacing: .01em; }
 .wps-ribbon-group + .wps-ribbon-group { border-left: 1px dashed color-mix(in srgb, var(--text-3) 22%, transparent); }
 .wps-ribbon-group__name { font-size: 11.5px; color: color-mix(in srgb, var(--text-3) 90%, transparent); }
 .wps-ribbon-button { border-radius: 10px; }
-.wps-ribbon-button--large { padding: 7px 9px; }
+.wps-ribbon-button--large, .wps-ribbon-button.sheet-color-trigger { padding: 7px 9px; }
 .wps-ribbon-button--small { border-radius: 8px; }
 .wps-ribbon-button:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
 .wps-ribbon-button--active { background: color-mix(in srgb, var(--brand) 14%, var(--bg-card)); color: var(--brand); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 25%, transparent); }

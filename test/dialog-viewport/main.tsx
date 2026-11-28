@@ -28,6 +28,24 @@ function 打开账号面板() {
   return null
 }
 
+// 系统栏占位（2.8.1）：?bars=顶部高度,底部高度 在视口上下放模拟状态栏与导航栏，
+// 并按安卓宿主约定写入 --seal-safe-top / --seal-safe-bottom，验证页面样式据此避开系统栏。
+// ?bars=...&nohost=1 只放系统栏、不写变量，对应 2.8.0 安卓宿主未传系统栏尺寸的现场。
+const 系统栏 = new URLSearchParams(location.search).get('bars')
+if (系统栏) {
+  const [顶, 底] = 系统栏.split(',').map(Number)
+  if (!new URLSearchParams(location.search).get('nohost')) {
+    document.documentElement.style.setProperty('--seal-safe-top', `${顶}px`)
+    document.documentElement.style.setProperty('--seal-safe-bottom', `${底}px`)
+  }
+  for (const [类名, 样式] of [['seal-test-status-bar', `top:0;height:${顶}px`], ['seal-test-navigation-bar', `bottom:0;height:${底}px`]]) {
+    const 条 = document.createElement('div')
+    条.className = 类名
+    条.setAttribute('style', `position:fixed;left:0;right:0;${样式};background:rgba(20,20,20,.35);z-index:2147483647;pointer-events:none`)
+    document.body.appendChild(条)
+  }
+}
+
 const 长段落 = Array.from({ length: 60 }, (_, i) => <p key={i}>第 {i + 1} 段：账号与云空间、历史版本、导入导出与帮助手册等长内容需要在正文区滚动，标题和底部按钮始终可见。A long English sentence to check wrapping in narrow windows.</p>)
 const 场景 = new URLSearchParams(location.search).get('case') || 'long'
 

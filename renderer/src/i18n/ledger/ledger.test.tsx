@@ -16,7 +16,25 @@ describe('文案台账', () => {
       expect(条目.en).not.toMatch(/[㐀-鿿]/u)
       const 占位 = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join()
       expect(占位(条目.en)).toBe(占位(条目.zh))
+      const 单数 = (条目 as { enOne?: string }).enOne
+      if (单数 !== undefined) {
+        expect(单数).not.toMatch(/[㐀-鿿]/u)
+        expect(占位(单数)).toBe(占位(条目.zh))
+        expect(占位(条目.zh)).toContain('count')
+      }
     }
+  })
+  it('英文按 0、1、多项区分单复数，中文不变', () => {
+    expect(取文案('diagram.projects.nodes', 'en-US', { count: 0 })).toBe('0 nodes')
+    expect(取文案('diagram.projects.nodes', 'en-US', { count: 1 })).toBe('1 node')
+    expect(取文案('diagram.projects.nodes', 'en-US', { count: 5 })).toBe('5 nodes')
+    expect(取文案('diagram.projects.nodes', 'zh-CN', { count: 1 })).toBe('1 个节点')
+  })
+  it('截图中的两个组合按钮按完整消息翻译', () => {
+    expect(取文案('diagram.projects.create', 'en-US', { kind: 取文案('diagram.kind.flowchart', 'en-US') })).toBe('New flowchart project')
+    expect(取文案('diagram.projects.create', 'zh-CN', { kind: 取文案('diagram.kind.flowchart', 'zh-CN') })).toBe('新建流程图项目')
+    expect(取文案('diagram.projects.tab.trash', 'en-US', { count: 0 })).toBe('Recycle bin (0)')
+    expect(取文案('diagram.projects.tab.trash', 'zh-CN', { count: 0 })).toBe('回收站 (0)')
   })
   it('按语言取词并替换占位参数，缺参数时保留原占位', () => {
     expect(取文案('apps.page.title', 'zh-CN')).toBe('应用')

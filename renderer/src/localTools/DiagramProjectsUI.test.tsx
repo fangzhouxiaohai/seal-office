@@ -24,7 +24,7 @@ it.each(['脑图', '流程图'] as const)('%s真正多项目：创建A/B、输�
   await userEvent.type(screen.getByLabelText('搜索项目'), '甲新名'); expect(screen.queryByRole('button', { name: '打开项目：乙项目' })).toBeNull(); expect(screen.getAllByRole('button', { name: /打开项目：甲新名/ })).toHaveLength(2)
   await userEvent.clear(screen.getByLabelText('搜索项目')); await userEvent.selectOptions(screen.getByLabelText('项目排序'), 'name'); const titles = [...view.container.querySelectorAll<HTMLElement>('[data-project-title]')].map(n => n.dataset.projectTitle!); expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b, 'zh-CN')))
   await userEvent.click(screen.getByRole('button', { name: '删除项目：甲新名' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '删除项目' })).getByRole('button', { name: '移入回收站' })); expect(screen.queryByRole('button', { name: '打开项目：甲新名' })).toBeNull(); expect(record('甲新名', type).trashedAt).toBeTypeOf('number')
-  await userEvent.click(screen.getByRole('button', { name: '回收站' })); await userEvent.click(screen.getByRole('button', { name: '恢复项目：甲新名' })); await userEvent.click(screen.getByRole('button', { name: '项目列表' })); await userEvent.click(screen.getByRole('button', { name: '打开项目：甲新名' })); expect(record('甲新名', type).graph).toEqual(a.graph); expect(record('甲新名', type).history).toEqual(a.history); await back()
+  await userEvent.click(screen.getByRole('button', { name: '回收站 (1)' })); await userEvent.click(screen.getByRole('button', { name: '恢复项目：甲新名' })); await userEvent.click(screen.getByRole('button', { name: /^项目列表 \(\d+\)$/ })); await userEvent.click(screen.getByRole('button', { name: '打开项目：甲新名' })); expect(record('甲新名', type).graph).toEqual(a.graph); expect(record('甲新名', type).history).toEqual(a.history); await back()
   view.unmount(); const again = show(type); await screen.findByRole('button', { name: '打开项目：乙项目' }); expect(again.container.querySelector('[data-diagram-editor]')).toBeNull(); expect(record('乙项目', type)).toEqual(b); expect(record('甲新名 副本', type)).toEqual(copy); expect(localStorage.getItem(legacyDiagramKey(type))).toBe(original); expect(localStorage.getItem(legacyDiagramKey(type) + ':backup-v2')).toBe(original)
 })
 
@@ -36,5 +36,23 @@ it('损坏的旧图不被新建覆盖，错误提供原始备份和重试入口'
 it('失效名称不创建假项目，永久删除必须在回收站确认且不影响别的项目', async () => {
   show(); await screen.findByRole('button', { name: '新建脑图项目' }); await create('甲'); await back(); await create('乙'); const b = record('乙'); await back()
   await userEvent.click(screen.getByRole('button', { name: '新建脑图项目' })); await userEvent.clear(screen.getByLabelText('项目名称')); fireEvent.click(screen.getByRole('button', { name: '创建项目' })); expect(screen.getByRole('alert')).toHaveTextContent('项目名称'); await userEvent.click(screen.getByRole('button', { name: '取消' }))
-  await userEvent.click(screen.getByRole('button', { name: '删除项目：甲' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '删除项目' })).getByRole('button', { name: '移入回收站' })); await userEvent.click(screen.getByRole('button', { name: '回收站' })); await userEvent.click(screen.getByRole('button', { name: '永久删除项目：甲' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '永久删除项目' })).getByRole('button', { name: '永久删除' })); await waitFor(() => expect(new DiagramProjectStore('脑图').load().items).toHaveLength(1)); expect(record('乙')).toEqual(b)
+  await userEvent.click(screen.getByRole('button', { name: '删除项目：甲' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '删除项目' })).getByRole('button', { name: '移入回收站' })); await userEvent.click(screen.getByRole('button', { name: '回收站 (1)' })); await userEvent.click(screen.getByRole('button', { name: '永久删除项目：甲' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '永久删除项目' })).getByRole('button', { name: '永久删除' })); await waitFor(() => expect(new DiagramProjectStore('脑图').load().items).toHaveLength(1)); expect(record('乙')).toEqual(b)
+})
+
+it.each(['脑图', '流程图'] as const)('%s项目卡四个图标按钮同一行，命中预期图形，提示与读屏名称写明对象', async type => {
+  const view = show(type); await create('导出', type); await back()
+  const card = view.container.querySelector<HTMLElement>('[data-project-title="导出"]')!
+  const actions = card.querySelector('.diagram-project-card__actions')!
+  const buttons = [...actions.querySelectorAll('button')]
+  expect(buttons.map(b => b.getAttribute('aria-label'))).toEqual(['重命名项目：导出', '同步到云端：导出', '复制项目：导出', '删除项目：导出'])
+  expect(buttons.map(b => b.querySelector('svg')?.getAttribute('data-icon'))).toEqual(['rename', 'cloud-upload', 'copy', 'trash'])
+  expect(buttons.every(b => !b.textContent?.trim())).toBe(true)
+  expect(buttons[3].className).toContain('seal-icon-action--danger')
+  // 键盘可达且回车只执行一次：复制按钮生成一个独立副本
+  buttons[2].focus(); expect(document.activeElement).toBe(buttons[2]); await userEvent.keyboard('{Enter}')
+  expect(new DiagramProjectStore(type).load().items.filter(s => s.project.title === '导出 副本')).toHaveLength(1)
+  await userEvent.click(screen.getByRole('button', { name: '删除项目：导出' })); await userEvent.click(within(await screen.findByRole('dialog', { name: '删除项目' })).getByRole('button', { name: '移入回收站' }))
+  await userEvent.click(screen.getByRole('button', { name: '回收站 (1)' }))
+  const trashed = view.container.querySelector<HTMLElement>('[data-project-title="导出"] .diagram-project-card__actions')!
+  expect([...trashed.querySelectorAll('button')].map(b => b.querySelector('svg')?.getAttribute('data-icon'))).toEqual(['restore', 'delete-forever'])
 })

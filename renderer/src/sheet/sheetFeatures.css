@@ -338,8 +338,11 @@
 @media (max-width: 480px) { .wps-sheet-format-dialog { grid-template-columns: 1fr; } }
 .wps-ribbon-panel .seal-font-trigger[data-seal-command-menu="cell.font"] { width: 128px; flex-direction: row; }
 .wps-ribbon-panel .seal-font-trigger[data-seal-command-menu="cell.font"] .wps-ribbon-button__value { display: block; }
-.sheet-size-control { width: 48px; height: 30px; align-self: center; padding: 2px 4px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-panel); color: var(--text-1); }
-.sheet-color-trigger { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+/* 2.8.1：字号固定 48 像素宽、数字单行；字体颜色与填充颜色按“图标 + 文字 + 内边距”的内容宽度单行显示，
+   与同组大按钮同为 20 像素图标区、4 像素间距与 1.2 倍行高，宽度不足时由功能区横向滚动承载。 */
+.sheet-size-control { box-sizing: border-box; flex: 0 0 48px; width: 48px; height: 30px; align-self: center; padding: 2px 4px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-panel); color: var(--text-1); white-space: nowrap; }
+.sheet-color-trigger { display: inline-flex; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 56px; padding: 6px 8px; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+.sheet-color-trigger > span:first-child { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 20px; line-height: 0; }
 .sheet-color-panel { width: min(290px, 82vw); }
 .sheet-color-swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
 .sheet-color-swatches button { aspect-ratio: 1; border: 1px solid #9998; border-radius: 3px; cursor: pointer; }

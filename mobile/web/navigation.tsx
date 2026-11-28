@@ -82,12 +82,14 @@ export default function MobileNavigation() {
         }
         return
       }
-      const state = { action: 'state', token: window.sealNative.token, backToDesktop: 底部标签栏可见(document), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length }
+      // language：产品界面语言，原生宿主据此显示故障页等原生文案（2.8.1）
+      const state = { action: 'state', token: window.sealNative.token, backToDesktop: 底部标签栏可见(document), unsaved: store.workspaceTabs.filter((tab) => tab.dirty).length, language: document.documentElement.lang === 'en-US' ? 'en-US' : 'zh-CN' }
       const value = JSON.stringify(state)
       if (value !== lastState) { lastState = value; window.uni?.webView?.postMessage({ data: state }) }
     }
     const observer = new MutationObserver(report)
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert', 'aria-hidden'] })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] })
     window.addEventListener('seal-native-ready', report)
     document.addEventListener('fullscreenchange', report)
     report()
