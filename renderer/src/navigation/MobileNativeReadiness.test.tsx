@@ -63,7 +63,17 @@ it.each(['首页', '完整', '简洁'] as const)('%s工作区绘制后向原生�
   expect(上报).not.toHaveBeenCalled()
   绘制一帧()
   expect(上报).toHaveBeenCalledOnce()
-  expect(上报).toHaveBeenCalledWith({ data: { action: 'state', token: '原生工作区测试', backToDesktop: true, unsaved: 1 } })
+  expect(上报).toHaveBeenCalledWith({ data: { action: 'state', token: '原生工作区测试', backToDesktop: true, unsaved: 1, language: 'zh-CN' } })
+})
+
+it('状态上报带产品界面语言，原生故障页据此显示（2.8.1）', () => {
+  document.documentElement.lang = 'en-US'
+  try {
+    render(工作区('完整'))
+    绘制一帧()
+    绘制一帧()
+    expect(上报).toHaveBeenCalledWith({ data: expect.objectContaining({ action: 'state', language: 'en-US' }) })
+  } finally { document.documentElement.lang = '' }
 })
 
 it('启动占位消失前不上报，且两帧之间恢复占位时重新等待', () => {
