@@ -89,7 +89,7 @@ describe('演讲者视图接入', () => {
     const 翻页 = vi.fn()
     const 文稿 = 添加幻灯片(创建演示文稿())
     render(<AntdApp><SlideshowView 文稿={文稿} 当前索引={0} 请求演讲者 on翻页={翻页} on退出={vi.fn()} /></AntdApp>)
-    await waitFor(() => expect(接口.打开).toHaveBeenCalledWith({ 显示器: '主屏' }))
+    await waitFor(() => expect(接口.打开).toHaveBeenCalledWith({ 显示器: '主屏', 语言: 'zh-CN' }))
     await waitFor(() => expect(接口.更新).toHaveBeenCalled())
     expect(接口.更新.mock.calls[0][1].快照.页码).toBe(1)
     act(() => 接口.控制('下一页'))
