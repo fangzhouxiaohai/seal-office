@@ -20,8 +20,8 @@ android {
         applicationId 'com.sealoffice.mobile'
         minSdk 28
         targetSdk 36
-        versionCode 20800
-        versionName '2.8.0'
+        versionCode 20801
+        versionName '2.8.1'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         manifestPlaceholders = [appLabel: '海豹办公']
     }
